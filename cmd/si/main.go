@@ -5,7 +5,7 @@
 //	si check <dir|file.md>
 //	si new <name>
 //	si rules
-//	si --export css-rules|rules|example [--output path]
+//	si --export css-rules|rules|conf|example [--output path]
 package main
 
 import (
@@ -57,9 +57,10 @@ Usage:
         scaffold <name>/ with a deck that uses every rule
   si rules
         print the markdown rules (RULES.md)
-  si --export css-rules|rules|example [--output <path>]
+  si --export css-rules|rules|conf|example [--output <path>]
         css-rules: starter stylesheet with every --si-* token and .si-* hook
         rules:     RULES.md
+        conf:      a starter si.conf with the default keys and features
         example:   the showcase decks (default output: ./si-example)
 
 Flags (GNU style, before or after the path):
@@ -70,7 +71,7 @@ Flags (GNU style, before or after the path):
       --addr <host:port> play address (default 127.0.0.1:7070)
       --open            play: open the browser
       --no-inline-media build: copy images and videos next to the HTML instead of data URIs
-      --export <what>   css-rules, rules or example
+      --export <what>   css-rules, rules, conf or example
   -h, --help            this help
       --version         print the version
 
@@ -382,6 +383,8 @@ func export(o *options, stdout, stderr io.Writer) int {
 		return write(assets.StarterCSS())
 	case "rules":
 		return write(simpleideas.Rules)
+	case "conf":
+		return write(config.Default)
 	case "example":
 		out := o.output
 		if out == "" {
@@ -394,7 +397,7 @@ func export(o *options, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "si: wrote the showcase decks to %s; try: si play %s\n", out, out)
 		return exitOK
 	}
-	return usageErr(stderr, fmt.Sprintf("unknown --export %q (css-rules, rules, example)", o.export))
+	return usageErr(stderr, fmt.Sprintf("unknown --export %q (css-rules, rules, conf, example)", o.export))
 }
 
 func scaffold(name string, stdout, stderr io.Writer) int {

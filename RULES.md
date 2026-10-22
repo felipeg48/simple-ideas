@@ -460,7 +460,7 @@ references shared assets as `../images/...`.
 | `o` | overview grid of every slide (click one to open it, Esc closes) |
 | `p` or `Shift+S` | teleprompter window |
 | `t` | break timer HUD: pick minutes, countdown to project during a break |
-| `a` | annotate: a pen layer over the slide |
+| `a` | draw: a pen layer over the slide |
 | `d` | light / dark (remembered) |
 | `f` | full screen |
 | `?` | key help |
@@ -473,7 +473,7 @@ references shared assets as `../images/...`.
   to leave projected during a break. It needs no network and works from
   `file://`.
 
-- **Annotate** (`a`): a transient pen over the current slide, for circling or
+- **Draw** (`a`): a transient pen over the current slide, for circling or
   underlining as you talk. Drag to draw (mouse, touch, or pen — pen pressure
   varies the stroke); `c` cycles colour, `e` erases strokes, `z` undoes the
   last, `x` clears all, `Esc` turns it off. Strokes use the theme colours and
@@ -522,25 +522,26 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 
 | Key | Effect |
 |---|---|
-| `theme: crdb` | default theme when a deck sets no `theme:` and there is no `--theme` |
+| `theme: <name>` | default theme when a deck sets no `theme:` and there is no `--theme` |
 | `keys.<action>: <key>` | remap a command key |
 | `feature.<name>: off` | turn a feature off (its key stops working and its toolbar button is hidden) |
 
-Remappable **actions**: `overview`, `presenter`, `annotate`, `timer`, `mode`,
-`fullscreen`, `help`. Toggleable **features**: `annotate`, `timer`,
+Remappable **actions**: `overview`, `presenter`, `draw`, `timer`, `mode`,
+`fullscreen`, `help`. Toggleable **features**: `draw`, `timer`,
 `presenter`, `overview`.
 
 ```
-# si.conf
+# si.conf — flat key: value, same style as front matter (not YAML)
 theme: crdb
-keys.annotate: w      # draw with w instead of a
+keys.draw: w          # draw with w instead of a
 feature.timer: off    # no break-timer HUD for these decks
 ```
 
-Theme precedence: `--theme` flag > a deck's `theme:` front matter > `si.conf` >
-the built-in default (`studio`). `si play` re-reads `si.conf` on every request,
-so edits show up on reload. An unknown key or a bad value is a warning printed
-to the terminal, never a failed build.
+Run `si --export conf` to print a starter `si.conf` with every key and feature
+at its default. Theme precedence: `--theme` flag > a deck's `theme:` front
+matter > `si.conf` > the built-in default (`studio`). `si play` re-reads
+`si.conf` on every request, so edits show up on reload. An unknown key or a bad
+value is a warning printed to the terminal, never a failed build.
 
 ## 17. What si check reports
 

@@ -324,7 +324,7 @@ const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <tr><td>p</td><td>presenter teleprompter: notes, timer, next slide; drives this window</td></tr>
 <tr><td>t</td><td>break timer: pick minutes, countdown to project during a break</td></tr>
 <tr><td>d</td><td>light / dark</td></tr>
-<tr><td>a</td><td>annotate: pen over the slide (c colour, e erase, z undo, x clear, Esc off)</td></tr>
+<tr><td>a</td><td>draw: pen over the slide (c colour, e erase, z undo, x clear, Esc off)</td></tr>
 <tr><td>f</td><td>full screen</td></tr>
 <tr><td>swipe</td><td>next / previous on touch screens</td></tr>
 <tr><td>#5 or #5.2</td><td>open slide 5 (at step 2)</td></tr>

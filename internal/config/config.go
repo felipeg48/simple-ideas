@@ -22,10 +22,32 @@ import (
 )
 
 // Actions are the remappable single-key commands (keys.<action>).
-var Actions = []string{"overview", "presenter", "annotate", "timer", "mode", "fullscreen", "help"}
+var Actions = []string{"overview", "presenter", "draw", "timer", "mode", "fullscreen", "help"}
 
 // Features are the toggleable features (feature.<name>).
-var Features = []string{"annotate", "timer", "presenter", "overview"}
+var Features = []string{"draw", "timer", "presenter", "overview"}
+
+// Default is an annotated si.conf showing every setting at its built-in value.
+// `si --export conf` prints it. Keep it in sync with the deck.js defaults.
+const Default = `# si.conf — every value shown is the built-in default.
+# Keep only the lines you change; anything omitted uses the default.
+# Flat key: value (same style as deck front matter), not YAML.
+
+theme: studio          # studio | paper | mono | crdb (aliases cockroachdb, cockroachlabs)
+
+keys.overview:   o
+keys.presenter:  p
+keys.draw:       a
+keys.timer:      t
+keys.mode:       d
+keys.fullscreen: f
+keys.help:       ?
+
+feature.draw:      on
+feature.timer:     on
+feature.presenter: on
+feature.overview:  on
+`
 
 // Config is a parsed si.conf. Zero value is a usable empty config.
 type Config struct {
@@ -54,7 +76,33 @@ func parseBool(v string) (bool, bool) {
 	return false, false
 }
 
-// Parse reads a flat key: value config.
+func (c *Config) setKey(action, v string, ln int) {
+	if !contains(Actions, action) {
+		c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: unknown action %q", ln, action))
+		return
+	}
+	if v == "" {
+		c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: keys.%s needs a key", ln, action))
+		return
+	}
+	c.Keys[action] = v
+}
+
+func (c *Config) setFeature(name, v string, ln int) {
+	if !contains(Features, name) {
+		c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: unknown feature %q", ln, name))
+		return
+	}
+	b, ok := parseBool(v)
+	if !ok {
+		c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: feature.%s wants on/off, got %q", ln, name, v))
+		return
+	}
+	c.Features[name] = b
+}
+
+// Parse reads a flat `key: value` config (the same style as deck front matter,
+// not YAML). Recognised: `theme:`, `keys.<action>:`, `feature.<name>:`.
 func Parse(r io.Reader) *Config {
 	c := &Config{Keys: map[string]string{}, Features: map[string]bool{}}
 	sc := bufio.NewScanner(r)
@@ -68,33 +116,22 @@ func Parse(r io.Reader) *Config {
 			c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: expected `key: value`", ln))
 			continue
 		}
-		k, v = strings.TrimSpace(k), strings.TrimSpace(v)
+		k = strings.TrimSpace(k)
+		// strip an inline comment: a # with whitespace before it
+		for i := 1; i < len(v); i++ {
+			if v[i] == '#' && (v[i-1] == ' ' || v[i-1] == '\t') {
+				v = v[:i]
+				break
+			}
+		}
+		v = strings.TrimSpace(v)
 		switch {
 		case k == "theme":
 			c.Theme = v
 		case strings.HasPrefix(k, "keys."):
-			a := strings.TrimPrefix(k, "keys.")
-			if !contains(Actions, a) {
-				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: unknown action %q", ln, a))
-				continue
-			}
-			if v == "" {
-				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: keys.%s needs a key", ln, a))
-				continue
-			}
-			c.Keys[a] = v
-		case strings.HasPrefix(k, "feature."):
-			f := strings.TrimPrefix(k, "feature.")
-			if !contains(Features, f) {
-				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: unknown feature %q", ln, f))
-				continue
-			}
-			b, ok := parseBool(v)
-			if !ok {
-				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: feature.%s wants on/off, got %q", ln, f, v))
-				continue
-			}
-			c.Features[f] = b
+			c.setKey(strings.TrimPrefix(k, "keys."), v, ln)
+		case strings.HasPrefix(k, "feature."), strings.HasPrefix(k, "features."):
+			c.setFeature(strings.TrimPrefix(strings.TrimPrefix(k, "features."), "feature."), v, ln)
 		default:
 			c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: unknown key %q", ln, k))
 		}

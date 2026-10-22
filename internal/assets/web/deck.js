@@ -8,9 +8,9 @@
   var data = JSON.parse(document.getElementById('si-data').textContent);
   /* si.conf (optional): remap command keys and turn features on/off, over the defaults */
   var cfg = window.SI_CONFIG || {};
-  var cmd = { overview: 'o', presenter: 'p', annotate: 'a', timer: 't', mode: 'd', fullscreen: 'f', help: '?' };
+  var cmd = { overview: 'o', presenter: 'p', draw: 'a', timer: 't', mode: 'd', fullscreen: 'f', help: '?' };
   if (cfg.keys) for (var _k in cfg.keys) if (cmd.hasOwnProperty(_k) && cfg.keys[_k]) cmd[_k] = cfg.keys[_k];
-  var feat = { annotate: true, timer: true, presenter: true, overview: true };
+  var feat = { draw: true, timer: true, presenter: true, overview: true };
   if (cfg.features) for (var _f in cfg.features) if (feat.hasOwnProperty(_f)) feat[_f] = !!cfg.features[_f];
   var byKey = {}; for (var _a in cmd) byKey[cmd[_a]] = _a;
   var slides = Array.prototype.slice.call(deck.children).filter(function (e) { return e.classList.contains('si-slide'); });
@@ -307,17 +307,17 @@
   function runCmd(a) {
     if (a === 'overview') { if (feat.overview) overview(); }
     else if (a === 'presenter') { if (feat.presenter) openPresenter(); }
-    else if (a === 'annotate') { if (feat.annotate) toggleDraw(); }
+    else if (a === 'draw') { if (feat.draw) toggleDraw(); }
     else if (a === 'timer') { if (feat.timer) hudShow(); }
     else if (a === 'mode') toggleMode();
     else if (a === 'fullscreen') fullscreen();
     else if (a === 'help') toggleHelp();
   }
-  var actions = { next: forward, prev: backward, overview: function () { runCmd('overview'); }, draw: function () { runCmd('annotate'); }, presenter: function () { runCmd('presenter'); }, mode: toggleMode, help: function () { toggleHelp(); }, fullscreen: fullscreen };
+  var actions = { next: forward, prev: backward, overview: function () { runCmd('overview'); }, draw: function () { runCmd('draw'); }, presenter: function () { runCmd('presenter'); }, mode: toggleMode, help: function () { toggleHelp(); }, fullscreen: fullscreen };
   /* a disabled feature hides its toolbar button */
   if (!feat.overview) { var _bo = document.querySelector('[data-si-action="overview"]'); if (_bo) _bo.style.display = 'none'; }
   if (!feat.presenter) { var _bp = document.querySelector('[data-si-action="presenter"]'); if (_bp) _bp.style.display = 'none'; }
-  if (!feat.annotate) { var _bd = document.querySelector('[data-si-action="draw"]'); if (_bd) _bd.style.display = 'none'; }
+  if (!feat.draw) { var _bd = document.querySelector('[data-si-action="draw"]'); if (_bd) _bd.style.display = 'none'; }
   document.addEventListener('keydown', function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     var tag = (document.activeElement && document.activeElement.tagName) || '';
@@ -330,7 +330,7 @@
       return;
     }
     if (drawMode) {
-      if (e.key === 'Escape' || e.key === cmd.annotate) { e.preventDefault(); toggleDraw(false); return; }
+      if (e.key === 'Escape' || e.key === cmd.draw) { e.preventDefault(); toggleDraw(false); return; }
       if (e.key === 'c') { e.preventDefault(); cycleColor(); return; }
       if (e.key === 'e') { e.preventDefault(); toggleEraser(); return; }
       if (e.key === 'z') { e.preventDefault(); undoStroke(); return; }
