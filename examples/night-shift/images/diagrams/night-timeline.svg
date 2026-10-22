@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 300" class="night" aria-label="The overnight timeline: mix at ten, bulk rise through the small hours, shape at four, bake at five, out the door by seven">
+<style>
+.night{font-family:var(--si-font-body,system-ui,sans-serif)}
+.night text{fill:var(--si-fg,#16171b)}
+.night .line{stroke:var(--si-line,#d9d6ce);stroke-width:4;stroke-linecap:round}
+.night .rise{stroke:var(--si-accent,#3657d6);stroke-width:10;stroke-linecap:round}
+.night .dot{fill:var(--si-accent,#3657d6)}
+.night .t{font-family:var(--si-font-mono,ui-monospace,monospace);font-size:20px;fill:var(--si-muted,#5d626c)}
+.night .lbl{font-size:22px;font-weight:700}
+</style>
+
+<line class="line" x1="70" y1="150" x2="970" y2="150"/>
+<!-- the long bulk rise -->
+<line class="rise" x1="210" y1="150" x2="640" y2="150"/>
+
+<g>
+  <circle class="dot" cx="130" cy="150" r="9"/>
+  <text class="t" x="130" y="120" text-anchor="middle">22:00</text>
+  <text class="lbl" x="130" y="200" text-anchor="middle">mix</text>
+</g>
+<g>
+  <circle class="dot" cx="640" cy="150" r="9"/>
+  <text class="t" x="640" y="120" text-anchor="middle">04:00</text>
+  <text class="lbl" x="640" y="200" text-anchor="middle">shape</text>
+</g>
+<g>
+  <circle class="dot" cx="780" cy="150" r="9"/>
+  <text class="t" x="780" y="120" text-anchor="middle">05:00</text>
+  <text class="lbl" x="780" y="200" text-anchor="middle">bake</text>
+</g>
+<g>
+  <circle class="dot" cx="920" cy="150" r="9"/>
+  <text class="t" x="920" y="120" text-anchor="middle">07:00</text>
+  <text class="lbl" x="920" y="200" text-anchor="middle">open</text>
+</g>
+
+<text class="t" x="425" y="240" text-anchor="middle">six hours of bulk rise, while the town sleeps</text>
+</svg>

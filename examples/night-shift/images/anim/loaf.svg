@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" class="loaf" aria-label="A loaf through the night: shaped, scored, loaded into the oven, springing in the heat, then baked golden">
+<style>
+/* deck tokens with fallbacks; colour text with classes, never fill= on text.
+   never write a less-than sign in here. */
+.loaf{font-family:var(--si-font-body,system-ui,sans-serif)}
+.loaf text{fill:var(--si-fg,#16171b)}
+.loaf .sub{fill:var(--si-muted,#5d626c);font-size:22px}
+.loaf .bench{fill:var(--si-surface-2,#ecebe6)}
+.loaf .oven{fill:none;stroke:var(--si-line,#d9d6ce);stroke-width:6}
+.loaf .score{stroke:var(--si-fg,#16171b);stroke-width:4;stroke-linecap:round;opacity:.5}
+.loaf .heat{stroke:var(--si-warn,#c77c02);stroke-width:5;stroke-linecap:round}
+
+/* the loaf itself: dough-pale, rounding and colouring as the night goes on */
+.loaf .body{fill:var(--si-bg,#f6f5f1);stroke:var(--si-line,#d9d6ce);stroke-width:4;
+  transform-box:fill-box;transform-origin:50% 100%;transition:transform 1s cubic-bezier(.3,.1,.2,1),fill .9s ease,stroke .9s ease}
+.loaf[data-state~="shaped"] .body{transform:scaleX(1.18)}
+.loaf[data-state~="sprung"] .body{transform:scaleX(1.18) scaleY(1.22)}
+.loaf[data-state~="baked"] .body{transform:scaleX(1.18) scaleY(1.22);fill:var(--si-warn,#c77c02);stroke:#9a5b00}
+</style>
+
+<!-- the bench -->
+<rect class="bench" x="80" y="430" width="840" height="20" rx="10"/>
+
+<!-- the oven, wheeled in for the bake -->
+<g data-show="oven baking sprung baked">
+  <rect class="oven" x="300" y="150" width="400" height="300" rx="20"/>
+  <line class="oven" x1="300" y1="210" x2="700" y2="210"/>
+</g>
+
+<!-- heat -->
+<g data-show="baking" class="heat">
+  <line x1="360" y1="300" x2="360" y2="250"/>
+  <line x1="500" y1="320" x2="500" y2="260"/>
+  <line x1="640" y1="300" x2="640" y2="250"/>
+</g>
+
+<!-- the loaf -->
+<ellipse class="body" cx="500" cy="400" rx="150" ry="52"/>
+
+<!-- scoring on top, cut just before the oven -->
+<g class="score" data-show="scored baking sprung baked">
+  <line x1="455" y1="372" x2="430" y2="398"/>
+  <line x1="505" y1="368" x2="480" y2="394"/>
+  <line x1="555" y1="372" x2="530" y2="398"/>
+</g>
+
+<!-- the stage, in words -->
+<text class="sub" x="500" y="510" text-anchor="middle" data-show="shaped" data-hide="scored">a shaped loaf, resting</text>
+<text class="sub" x="500" y="510" text-anchor="middle" data-show="scored" data-hide="baking sprung baked">scored, ready for the heat</text>
+<text class="sub" x="500" y="510" text-anchor="middle" data-show="baking" data-hide="baked">oven spring — it rises fast</text>
+<text class="sub" x="500" y="510" text-anchor="middle" data-show="baked">baked: a dark, crackling crust</text>
+</svg>
