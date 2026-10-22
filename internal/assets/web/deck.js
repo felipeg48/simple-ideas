@@ -6,6 +6,13 @@
   var deck = document.querySelector('.si-deck');
   if (!deck) return;
   var data = JSON.parse(document.getElementById('si-data').textContent);
+  /* si.conf (optional): remap command keys and turn features on/off, over the defaults */
+  var cfg = window.SI_CONFIG || {};
+  var cmd = { overview: 'o', presenter: 'p', annotate: 'a', timer: 't', mode: 'd', fullscreen: 'f', help: '?' };
+  if (cfg.keys) for (var _k in cfg.keys) if (cmd.hasOwnProperty(_k) && cfg.keys[_k]) cmd[_k] = cfg.keys[_k];
+  var feat = { annotate: true, timer: true, presenter: true, overview: true };
+  if (cfg.features) for (var _f in cfg.features) if (feat.hasOwnProperty(_f)) feat[_f] = !!cfg.features[_f];
+  var byKey = {}; for (var _a in cmd) byKey[cmd[_a]] = _a;
   var slides = Array.prototype.slice.call(deck.children).filter(function (e) { return e.classList.contains('si-slide'); });
   var n = slides.length, cur = -1, step = 0;
   var counter = document.querySelector('.si-counter');
@@ -297,20 +304,33 @@
     syncPenUI();
   }
 
-  var actions = { next: forward, prev: backward, overview: function () { overview(); }, draw: function () { toggleDraw(); }, presenter: openPresenter, mode: toggleMode, help: function () { toggleHelp(); }, fullscreen: fullscreen };
+  function runCmd(a) {
+    if (a === 'overview') { if (feat.overview) overview(); }
+    else if (a === 'presenter') { if (feat.presenter) openPresenter(); }
+    else if (a === 'annotate') { if (feat.annotate) toggleDraw(); }
+    else if (a === 'timer') { if (feat.timer) hudShow(); }
+    else if (a === 'mode') toggleMode();
+    else if (a === 'fullscreen') fullscreen();
+    else if (a === 'help') toggleHelp();
+  }
+  var actions = { next: forward, prev: backward, overview: function () { runCmd('overview'); }, draw: function () { runCmd('annotate'); }, presenter: function () { runCmd('presenter'); }, mode: toggleMode, help: function () { toggleHelp(); }, fullscreen: fullscreen };
+  /* a disabled feature hides its toolbar button */
+  if (!feat.overview) { var _bo = document.querySelector('[data-si-action="overview"]'); if (_bo) _bo.style.display = 'none'; }
+  if (!feat.presenter) { var _bp = document.querySelector('[data-si-action="presenter"]'); if (_bp) _bp.style.display = 'none'; }
+  if (!feat.annotate) { var _bd = document.querySelector('[data-si-action="draw"]'); if (_bd) _bd.style.display = 'none'; }
   document.addEventListener('keydown', function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     var tag = (document.activeElement && document.activeElement.tagName) || '';
     if (/INPUT|SELECT|TEXTAREA/.test(tag)) return;
     if (hud && hud.classList.contains('is-open')) {
-      if (e.key === 'Escape' || e.key === 't') { e.preventDefault(); hudShow(false); return; }
+      if (e.key === 'Escape' || e.key === cmd.timer) { e.preventDefault(); hudShow(false); return; }
       if (e.key === ' ') { e.preventDefault(); hudPause(); return; }
       var pi = '1234567'.indexOf(e.key); if (pi >= 0) { e.preventDefault(); hudStart(hudMins[pi]); return; }
       if (/^(Arrow|Page|Home|End|Enter)/.test(e.key)) e.preventDefault();
       return;
     }
     if (drawMode) {
-      if (e.key === 'Escape' || e.key === 'a') { e.preventDefault(); toggleDraw(false); return; }
+      if (e.key === 'Escape' || e.key === cmd.annotate) { e.preventDefault(); toggleDraw(false); return; }
       if (e.key === 'c') { e.preventDefault(); cycleColor(); return; }
       if (e.key === 'e') { e.preventDefault(); toggleEraser(); return; }
       if (e.key === 'z') { e.preventDefault(); undoStroke(); return; }
@@ -325,14 +345,10 @@
         e.preventDefault(); backward(); break;
       case 'Home': e.preventDefault(); go(0, 0); break;
       case 'End': e.preventDefault(); go(n - 1, 'end'); break;
-      case 'o': overview(); break;
-      case 'a': toggleDraw(); break;
-      case 'p': case 'S': openPresenter(); break;
-      case 'f': fullscreen(); break;
-      case 'd': toggleMode(); break;
-      case 't': hudShow(); break;
-      case '?': case 'h': toggleHelp(); break;
       case 'Escape': toggleHelp(false); if (deck.classList.contains('si-overview')) overview(false); break;
+      case 'S': runCmd('presenter'); break;
+      case 'h': runCmd('help'); break;
+      default: { var act = byKey[e.key]; if (act) runCmd(act); }
     }
   });
   each(document.querySelectorAll('[data-si-action]'), function (b) {

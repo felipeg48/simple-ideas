@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/felipeg48/simple-ideas/internal/assets"
+	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/yuin/goldmark"
 )
@@ -36,6 +37,8 @@ type Options struct {
 	Media MediaMode
 	// Theme overrides the deck's `theme:` front matter; empty keeps it.
 	Theme string
+	// Config is an optional si.conf: default theme, key remaps, feature toggles.
+	Config *config.Config
 }
 
 // Result is a rendered deck.
@@ -210,6 +213,9 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	if theme == "" {
 		theme = m.Theme
 	}
+	if theme == "" && opt.Config != nil {
+		theme = opt.Config.Theme
+	}
 	if theme == "" {
 		theme = "studio"
 	}
@@ -270,6 +276,18 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 		"name": d.Name, "title": plain(d.Title()), "minutes": d.Minutes(), "plan": plan, "transition": m.Transition, "aspect": ratio,
 	})
 	fmt.Fprintf(&b, "<script type=\"application/json\" id=\"si-data\">%s</script>\n", data)
+	keys := map[string]string{}
+	feats := map[string]bool{}
+	if opt.Config != nil {
+		if opt.Config.Keys != nil {
+			keys = opt.Config.Keys
+		}
+		if opt.Config.Features != nil {
+			feats = opt.Config.Features
+		}
+	}
+	cfg, _ := json.Marshal(map[string]any{"keys": keys, "features": feats})
+	fmt.Fprintf(&b, "<script>window.SI_CONFIG=%s;</script>\n", cfg)
 	if dr.mermaid {
 		src := MermaidURL
 		if m.Mermaid != "" {

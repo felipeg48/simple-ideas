@@ -27,7 +27,8 @@ this file; `examples/showcase.md` uses every rule in a real talk.
 13. [Code, Mermaid, tables, links](#13-code-mermaid-tables-links)
 14. [Presenting: keys, touch, overview, print](#14-presenting-keys-touch-overview-print)
 15. [Styling: themes and your own CSS](#15-styling-themes-and-your-own-css)
-16. [What si check reports](#16-what-si-check-reports)
+16. [Configuring keys and features (si.conf)](#16-configuring-keys-and-features-siconf)
+17. [What si check reports](#17-what-si-check-reports)
 
 ## 1. Decks and files
 
@@ -513,7 +514,35 @@ references shared assets as `../images/...`.
 .si-step.is-latest { color: var(--si-accent-2); }
 ```
 
-## 16. What si check reports
+## 16. Configuring keys and features (si.conf)
+
+An optional `si.conf` next to the deck (or `--conf <path>`) sets project-wide
+defaults without editing each deck. It uses the same `key: value` style as
+front matter — no new syntax. Blank lines and `#` comments are ignored.
+
+| Key | Effect |
+|---|---|
+| `theme: crdb` | default theme when a deck sets no `theme:` and there is no `--theme` |
+| `keys.<action>: <key>` | remap a command key |
+| `feature.<name>: off` | turn a feature off (its key stops working and its toolbar button is hidden) |
+
+Remappable **actions**: `overview`, `presenter`, `annotate`, `timer`, `mode`,
+`fullscreen`, `help`. Toggleable **features**: `annotate`, `timer`,
+`presenter`, `overview`.
+
+```
+# si.conf
+theme: crdb
+keys.annotate: w      # draw with w instead of a
+feature.timer: off    # no break-timer HUD for these decks
+```
+
+Theme precedence: `--theme` flag > a deck's `theme:` front matter > `si.conf` >
+the built-in default (`studio`). `si play` re-reads `si.conf` on every request,
+so edits show up on reload. An unknown key or a bad value is a warning printed
+to the terminal, never a failed build.
+
+## 17. What si check reports
 
 `si check <dir|file.md>` exits 1 on any of:
 

@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/render"
 )
@@ -25,6 +26,7 @@ type Server struct {
 	Root     string   // directory or deck file
 	CSSPaths []string // user CSS files or directories (--css)
 	Theme    string   // --theme override; empty keeps each deck's theme: front matter
+	Conf     string   // --conf path; empty falls back to si.conf next to the deck
 	Interval time.Duration
 
 	dir     string
@@ -34,7 +36,7 @@ type Server struct {
 }
 
 // New prepares a server for root.
-func New(root string, css []string, theme string) (*Server, error) {
+func New(root string, css []string, theme, conf string) (*Server, error) {
 	abs, err := filepath.Abs(root)
 	if err != nil {
 		return nil, err
@@ -43,7 +45,7 @@ func New(root string, css []string, theme string) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Server{Root: abs, CSSPaths: css, Theme: theme, Interval: 300 * time.Millisecond, clients: map[chan struct{}]bool{}}
+	s := &Server{Root: abs, CSSPaths: css, Theme: theme, Conf: conf, Interval: 300 * time.Millisecond, clients: map[chan struct{}]bool{}}
 	if st.IsDir() {
 		s.dir = abs
 	} else {
@@ -92,7 +94,11 @@ func (s *Server) deck(w http.ResponseWriter, md string) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	res := render.Deck(d, render.Options{LiveReload: true, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme})
+	cfg := config.Load(s.Conf, filepath.Join(s.dir, "si.conf"))
+	for _, w := range cfg.Warnings {
+		log.Printf("si.conf: %s", w)
+	}
+	res := render.Deck(d, render.Options{LiveReload: true, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg})
 	for _, p := range res.Problems {
 		log.Printf("si play: %s", p)
 	}
