@@ -147,6 +147,21 @@ img,svg,video{max-width:100%}
 .si-hud-presets button:hover,.si-hud-presets button:focus-visible{border-color:var(--si-accent);outline:none}
 .si-hud-hint{margin:0;font-family:var(--si-font-mono);font-size:clamp(.7rem,2vmin,1rem);color:var(--si-muted)}
 
+/* annotate (a): a transient pen layer over the deck; strokes clear on slide change.
+   screen-space, like the other chrome — not slide content, so pointer px is fine */
+.si-draw{position:fixed;inset:0;width:100%;height:100%;z-index:23;pointer-events:none;touch-action:none}
+.si-draw path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+body.si-drawing .si-draw{pointer-events:auto;cursor:crosshair}
+.si-draw-bar{position:fixed;left:50%;bottom:max(1rem,env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:24;display:none;
+  gap:.4rem;align-items:center;padding:.4rem .5rem;background:var(--si-surface);border:1px solid var(--si-line);border-radius:.8rem;box-shadow:var(--si-shadow);
+  font:clamp(11px,.5vw + 8px,15px)/1.2 var(--si-font-mono);color:var(--si-muted)}
+body.si-drawing .si-draw-bar{display:flex}
+.si-draw-bar button{font:inherit;color:var(--si-fg);background:var(--si-surface);border:1px solid var(--si-line);border-radius:.45em;padding:.35em .6em;cursor:pointer}
+.si-draw-bar button:hover,.si-draw-bar button:focus-visible{border-color:var(--si-accent);outline:none}
+.si-draw-bar button.is-on{border-color:var(--si-accent);background:var(--si-surface-2)}
+.si-swatch{width:1.5em;height:1.5em;padding:0;border-radius:50%;background:var(--_c);border:2px solid var(--si-line)}
+.si-swatch.is-on{border-color:var(--si-fg);box-shadow:0 0 0 2px var(--si-bg),0 0 0 4px var(--_c)}
+
 /* reduced motion: no transitions, no animation, no travelling packets */
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{transition-duration:0s!important;transition-delay:0s!important;animation:none!important}
@@ -161,5 +176,5 @@ img,svg,video{max-width:100%}
   .si-slide:last-child{break-after:auto}
   .si-inner{overflow:hidden;font-size:calc(var(--_u) * 1.7 * var(--si-scale))}
   .si-step{opacity:1;transform:none}
-  .si-bar,.si-progress,.si-help,.si-hud,.si-problems{display:none!important}
+  .si-bar,.si-progress,.si-help,.si-hud,.si-draw,.si-draw-bar,.si-problems{display:none!important}
 }

@@ -73,6 +73,7 @@
     if (k === 'end') k = max;
     k = Math.max(0, Math.min(max, k || 0));
     if (i !== cur) {
+      clearStrokes();
       var tx = next.getAttribute('data-transition') || data.transition || 'fade';
       var key = canvasKey(next);
       var carry = !instant && prev && Math.abs(i - cur) === 1 && key !== '' && key === canvasKey(prev);
@@ -240,7 +241,63 @@
     if (document.fullscreenElement) document.exitFullscreen();
     else if (root.requestFullscreen) root.requestFullscreen();
   }
-  var actions = { next: forward, prev: backward, overview: function () { overview(); }, presenter: openPresenter, mode: toggleMode, help: function () { toggleHelp(); }, fullscreen: fullscreen };
+  /* ---------- annotate (a): a transient pen layer over the slides; cleared on slide change ---------- */
+  var draw = document.querySelector('.si-draw'), drawBar = document.querySelector('.si-draw-bar');
+  var penColors = ['var(--si-accent)', 'var(--si-crit)', 'var(--si-ok)', 'var(--si-fg)'];
+  var drawMode = false, erasing = false, drawing = false, penColor = penColors[0], curPath = null;
+  function toggleDraw(on) {
+    if (!draw) return;
+    if (on === undefined) on = !drawMode;
+    drawMode = on; if (!on) { drawing = false; erasing = false; }
+    document.body.classList.toggle('si-drawing', on);
+    draw.setAttribute('aria-hidden', on ? 'false' : 'true');
+    syncPenUI();
+  }
+  function clearStrokes() { if (draw) while (draw.firstChild) draw.removeChild(draw.firstChild); }
+  function undoStroke() { if (draw && draw.lastChild) draw.removeChild(draw.lastChild); }
+  function cycleColor() { penColor = penColors[(penColors.indexOf(penColor) + 1) % penColors.length]; erasing = false; syncPenUI(); }
+  function toggleEraser() { erasing = !erasing; syncPenUI(); }
+  function syncPenUI() {
+    if (!drawBar) return;
+    each(drawBar.querySelectorAll('[data-si-pen]'), function (b) { b.classList.toggle('is-on', !erasing && b.getAttribute('data-si-pen') === penColor); });
+    var er = drawBar.querySelector('[data-si-draw="erase"]'); if (er) er.classList.toggle('is-on', erasing);
+  }
+  function dStart(e) {
+    if (!drawMode) return;
+    e.preventDefault(); drawing = true;
+    if (erasing) { eraseAt(e); return; }
+    curPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    curPath.setAttribute('d', 'M ' + e.clientX + ' ' + e.clientY);
+    curPath.setAttribute('stroke', penColor);
+    curPath.setAttribute('stroke-width', ((e.pointerType === 'pen' && e.pressure) ? 1 + e.pressure * 7 : 4).toFixed(1));
+    draw.appendChild(curPath);
+  }
+  function dMove(e) {
+    if (!drawMode || !drawing) return;
+    if (erasing) { eraseAt(e); return; }
+    if (curPath) curPath.setAttribute('d', curPath.getAttribute('d') + ' L ' + e.clientX + ' ' + e.clientY);
+  }
+  function dEnd() { drawing = false; curPath = null; }
+  function eraseAt(e) { var el = document.elementFromPoint(e.clientX, e.clientY); if (el && el.parentNode === draw) draw.removeChild(el); }
+  if (draw) {
+    draw.addEventListener('pointerdown', dStart);
+    window.addEventListener('pointermove', dMove);
+    window.addEventListener('pointerup', dEnd);
+    window.addEventListener('pointercancel', dEnd);
+  }
+  if (drawBar) {
+    each(drawBar.querySelectorAll('[data-si-pen]'), function (b) { b.addEventListener('click', function () { penColor = b.getAttribute('data-si-pen'); erasing = false; syncPenUI(); b.blur(); }); });
+    each(drawBar.querySelectorAll('[data-si-draw]'), function (b) {
+      b.addEventListener('click', function () {
+        var a = b.getAttribute('data-si-draw');
+        if (a === 'erase') toggleEraser(); else if (a === 'undo') undoStroke(); else if (a === 'clear') clearStrokes(); else if (a === 'done') toggleDraw(false);
+        b.blur();
+      });
+    });
+    syncPenUI();
+  }
+
+  var actions = { next: forward, prev: backward, overview: function () { overview(); }, draw: function () { toggleDraw(); }, presenter: openPresenter, mode: toggleMode, help: function () { toggleHelp(); }, fullscreen: fullscreen };
   document.addEventListener('keydown', function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     var tag = (document.activeElement && document.activeElement.tagName) || '';
@@ -252,6 +309,13 @@
       if (/^(Arrow|Page|Home|End|Enter)/.test(e.key)) e.preventDefault();
       return;
     }
+    if (drawMode) {
+      if (e.key === 'Escape' || e.key === 'a') { e.preventDefault(); toggleDraw(false); return; }
+      if (e.key === 'c') { e.preventDefault(); cycleColor(); return; }
+      if (e.key === 'e') { e.preventDefault(); toggleEraser(); return; }
+      if (e.key === 'z') { e.preventDefault(); undoStroke(); return; }
+      if (e.key === 'x') { e.preventDefault(); clearStrokes(); return; }
+    }
     switch (e.key) {
       case 'ArrowRight': case 'ArrowDown': case 'PageDown': case 'Enter': case 'j': case 'n':
         e.preventDefault(); forward(); break;
@@ -262,6 +326,7 @@
       case 'Home': e.preventDefault(); go(0, 0); break;
       case 'End': e.preventDefault(); go(n - 1, 'end'); break;
       case 'o': overview(); break;
+      case 'a': toggleDraw(); break;
       case 'p': case 'S': openPresenter(); break;
       case 'f': fullscreen(); break;
       case 'd': toggleMode(); break;

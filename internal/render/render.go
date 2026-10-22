@@ -291,7 +291,7 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <span class="si-controls">
 <button type="button" data-si-action="prev" aria-label="Previous">&larr;</button><button type="button" data-si-action="next" aria-label="Next">&rarr;</button>
-<button type="button" data-si-action="overview" title="Overview (o)">Overview</button><button type="button" data-si-action="presenter" title="Presenter teleprompter (p)">Presenter</button>
+<button type="button" data-si-action="overview" title="Overview (o)">Overview</button><button type="button" data-si-action="presenter" title="Presenter teleprompter (p)">Presenter</button><button type="button" data-si-action="draw" title="Annotate (a)">Draw</button>
 <button type="button" data-si-action="mode" title="Light / dark (d)">Theme</button><button type="button" data-si-action="fullscreen" title="Full screen (f)">Full screen</button><button type="button" data-si-action="help" title="Keys (?)">?</button>
 </span>
 <span class="si-counter" aria-live="polite"></span>
@@ -306,6 +306,7 @@ const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <tr><td>p</td><td>presenter teleprompter: notes, timer, next slide; drives this window</td></tr>
 <tr><td>t</td><td>break timer: pick minutes, countdown to project during a break</td></tr>
 <tr><td>d</td><td>light / dark</td></tr>
+<tr><td>a</td><td>annotate: pen over the slide (c colour, e erase, z undo, x clear, Esc off)</td></tr>
 <tr><td>f</td><td>full screen</td></tr>
 <tr><td>swipe</td><td>next / previous on touch screens</td></tr>
 <tr><td>#5 or #5.2</td><td>open slide 5 (at step 2)</td></tr>
@@ -316,6 +317,11 @@ const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <div class="si-hud-presets"><button type="button" data-si-min="5">5</button><button type="button" data-si-min="10">10</button><button type="button" data-si-min="15">15</button><button type="button" data-si-min="20">20</button><button type="button" data-si-min="30">30</button><button type="button" data-si-min="45">45</button><button type="button" data-si-min="60">60</button></div>
 <p class="si-hud-hint">1-7 pick minutes · space pause · t / Esc close</p>
 </div></div>
+<svg class="si-draw" aria-hidden="true"></svg>
+<div class="si-draw-bar" aria-label="Annotate">
+<button type="button" class="si-swatch" data-si-pen="var(--si-accent)" title="Accent" style="--_c:var(--si-accent)"></button><button type="button" class="si-swatch" data-si-pen="var(--si-crit)" title="Red" style="--_c:var(--si-crit)"></button><button type="button" class="si-swatch" data-si-pen="var(--si-ok)" title="Green" style="--_c:var(--si-ok)"></button><button type="button" class="si-swatch" data-si-pen="var(--si-fg)" title="Ink" style="--_c:var(--si-fg)"></button>
+<button type="button" data-si-draw="erase" title="Eraser (e)">Erase</button><button type="button" data-si-draw="undo" title="Undo (z)">Undo</button><button type="button" data-si-draw="clear" title="Clear all (x)">Clear</button><button type="button" data-si-draw="done" title="Done (Esc)">Done</button>
+</div>
 `
 
 // LiveReloadJS reloads the page when si play reports a change; the URL hash

@@ -459,6 +459,7 @@ references shared assets as `../images/...`.
 | `o` | overview grid of every slide (click one to open it, Esc closes) |
 | `p` or `Shift+S` | teleprompter window |
 | `t` | break timer HUD: pick minutes, countdown to project during a break |
+| `a` | annotate: a pen layer over the slide |
 | `d` | light / dark (remembered) |
 | `f` | full screen |
 | `?` | key help |
@@ -470,6 +471,12 @@ references shared assets as `../images/...`.
   critical and flash. While it is open the deck does not advance, so it is safe
   to leave projected during a break. It needs no network and works from
   `file://`.
+
+- **Annotate** (`a`): a transient pen over the current slide, for circling or
+  underlining as you talk. Drag to draw (mouse, touch, or pen — pen pressure
+  varies the stroke); `c` cycles colour, `e` erases strokes, `z` undoes the
+  last, `x` clears all, `Esc` turns it off. Strokes use the theme colours and
+  clear when you change slides; they are not saved and do not print.
 
 - The URL hash is the position (`#7`, `#7.2`); reloads keep it, so live
   reload in `si play` stays on your slide.
