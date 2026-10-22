@@ -19,9 +19,13 @@ var keywords = map[string]string{
 		"lambda yield pass break continue True False None async await",
 	"javascript": "const let var function return if else for while new class import export from async await true " +
 		"false null undefined this of typeof",
-	"java":   "class public private protected static final void int long boolean new return if else for while try catch throw throws import package extends implements interface record var true false null",
-	"rust":   "fn let mut pub struct enum impl trait use mod match if else for while loop return self Self true false",
-	"sql":    "select from where and or not in like between is null insert into values update set delete join on group by order limit as create table",
+	"java": "class public private protected static final void int long boolean new return if else for while try catch throw throws import package extends implements interface record var true false null",
+	"rust": "fn let mut pub struct enum impl trait use mod match if else for while loop return self Self true false",
+	"sql": "select distinct from where and or not in like between is null insert into values update set delete " +
+		"join inner left right outer full cross on using group by having order limit offset as create table alter " +
+		"drop truncate add column constraint primary key foreign references unique default check cascade index view " +
+		"database schema sequence show explain analyze begin commit rollback savepoint release cluster setting role " +
+		"user grant revoke to with recursive union all exists case when then else end asc desc returning upsert",
 	"yaml":   "true false null yes no on off",
 	"json":   "true false null",
 	"bash":   "if then else fi for do done while case esac function in export local return",
@@ -66,7 +70,12 @@ func langRE(lang string) *regexp.Regexp {
 		parts = append(parts, `(?P<y>(?m:^[ \t]*-?[ \t]*[\w.\-/]+[ \t]*[:=]))`)
 	}
 	if kw := strings.Fields(keywords[lang]); len(kw) > 0 {
-		parts = append(parts, `(?P<k>\b(?:`+strings.Join(kw, "|")+`)\b)`)
+		group := `\b(?:` + strings.Join(kw, "|") + `)\b`
+		if lang == "sql" {
+			// SQL keywords are case-insensitive; most CockroachDB SQL is UPPERCASE.
+			group = `(?i:` + group + `)`
+		}
+		parts = append(parts, `(?P<k>`+group+`)`)
 	}
 	parts = append(parts, `(?P<n>\b\d[\w.]*\b)`)
 	re := regexp.MustCompile(strings.Join(parts, "|"))

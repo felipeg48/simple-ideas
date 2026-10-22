@@ -24,6 +24,7 @@ import (
 type Server struct {
 	Root     string   // directory or deck file
 	CSSPaths []string // user CSS files or directories (--css)
+	Theme    string   // --theme override; empty keeps each deck's theme: front matter
 	Interval time.Duration
 
 	dir     string
@@ -33,7 +34,7 @@ type Server struct {
 }
 
 // New prepares a server for root.
-func New(root string, css []string) (*Server, error) {
+func New(root string, css []string, theme string) (*Server, error) {
 	abs, err := filepath.Abs(root)
 	if err != nil {
 		return nil, err
@@ -42,7 +43,7 @@ func New(root string, css []string) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Server{Root: abs, CSSPaths: css, Interval: 300 * time.Millisecond, clients: map[chan struct{}]bool{}}
+	s := &Server{Root: abs, CSSPaths: css, Theme: theme, Interval: 300 * time.Millisecond, clients: map[chan struct{}]bool{}}
 	if st.IsDir() {
 		s.dir = abs
 	} else {
@@ -91,7 +92,7 @@ func (s *Server) deck(w http.ResponseWriter, md string) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	res := render.Deck(d, render.Options{LiveReload: true, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink})
+	res := render.Deck(d, render.Options{LiveReload: true, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme})
 	for _, p := range res.Problems {
 		log.Printf("si play: %s", p)
 	}

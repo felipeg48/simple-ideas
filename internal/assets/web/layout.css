@@ -133,6 +133,20 @@ img,svg,video{max-width:100%}
 .si-problems{position:fixed;top:0;left:0;right:0;z-index:30;max-height:40vh;overflow:auto;margin:0;padding:.7rem 1rem;font:14px/1.4 var(--si-font-mono);color:#fff;background:#b42318}
 .si-problems ul{margin:.3rem 0 0;padding-left:1.2rem}
 
+/* break timer HUD (t): a full-screen countdown to project during a break.
+ * body-level overlay (outside the .si-slide size container), so it uses
+ * vmin/clamp/rem like the rest of the chrome, never cqi/cqb. */
+.si-hud{position:fixed;inset:0;z-index:25;display:none;place-items:center;padding:1rem;background:color-mix(in srgb,var(--si-bg) 85%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.si-hud.is-open{display:grid}
+.si-hud>div{display:flex;flex-direction:column;align-items:center;gap:clamp(.8rem,3vmin,2rem);width:min(92vw,60rem);max-width:100%;text-align:center}
+.si-hud-time{font-family:var(--si-font-mono);font-weight:700;font-variant-numeric:tabular-nums;line-height:1;font-size:clamp(3rem,min(30vmin,22vw),26rem);color:var(--si-fg)}
+.si-hud.is-over .si-hud-time{color:var(--si-crit);animation:si-hud-flash 1s steps(1) infinite}
+@keyframes si-hud-flash{50%{opacity:.25}}
+.si-hud-presets{display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(.4rem,1.2vmin,.8rem);max-width:100%}
+.si-hud-presets button{font:inherit;font-family:var(--si-font-mono);color:var(--si-fg);background:var(--si-surface);border:1px solid var(--si-line);border-radius:.5em;padding:.5em 1em;min-width:3em;cursor:pointer}
+.si-hud-presets button:hover,.si-hud-presets button:focus-visible{border-color:var(--si-accent);outline:none}
+.si-hud-hint{margin:0;font-family:var(--si-font-mono);font-size:clamp(.7rem,2vmin,1rem);color:var(--si-muted)}
+
 /* reduced motion: no transitions, no animation, no travelling packets */
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{transition-duration:0s!important;transition-delay:0s!important;animation:none!important}
@@ -147,5 +161,5 @@ img,svg,video{max-width:100%}
   .si-slide:last-child{break-after:auto}
   .si-inner{overflow:hidden;font-size:calc(var(--_u) * 1.7 * var(--si-scale))}
   .si-step{opacity:1;transform:none}
-  .si-bar,.si-progress,.si-help,.si-problems{display:none!important}
+  .si-bar,.si-progress,.si-help,.si-hud,.si-problems{display:none!important}
 }

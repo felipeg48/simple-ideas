@@ -64,6 +64,7 @@ Usage:
 Flags (GNU style, before or after the path):
   -o, --output <path>   output directory (build) or file (export)
       --css <path>      user stylesheet file or directory; repeatable; loads after the theme
+      --theme <name>    built-in theme: studio, paper, mono, crdb (aliases cockroachdb, cockroachlabs); overrides theme: front matter
       --addr <host:port> play address (default 127.0.0.1:7070)
       --open            play: open the browser
       --no-inline-media build: copy images and videos next to the HTML instead of data URIs
@@ -81,11 +82,11 @@ func (m *multi) String() string     { return strings.Join(*m, ",") }
 func (m *multi) Set(v string) error { *m = append(*m, v); return nil }
 
 type options struct {
-	output, addr, export string
-	open, help, ver      bool
-	noInline             bool
-	css                  multi
-	args                 []string
+	output, addr, export, theme string
+	open, help, ver             bool
+	noInline                    bool
+	css                         multi
+	args                        []string
 }
 
 // parseArgs accepts GNU-style long flags anywhere on the command line:
@@ -104,6 +105,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.help, "h", false, "")
 	fl.BoolVar(&o.ver, "version", false, "")
 	fl.Var(&o.css, "css", "")
+	fl.StringVar(&o.theme, "theme", "", "")
 	for {
 		if err := fl.Parse(argv); err != nil {
 			return nil, err
@@ -228,7 +230,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 		if o.noInline {
 			mode = render.MediaCopy
 		}
-		res := render.Deck(d, render.Options{UserCSS: css, Media: mode})
+		res := render.Deck(d, render.Options{UserCSS: css, Media: mode, Theme: o.theme})
 		for _, p := range res.Problems {
 			fmt.Fprintf(stderr, "  error: %s\n", p)
 			failed = true
@@ -304,7 +306,7 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "si: %v\n", err)
 		return exitUsage
 	}
-	srv, err := serve.New(src, o.css)
+	srv, err := serve.New(src, o.css, o.theme)
 	if err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
 		return exitProblems

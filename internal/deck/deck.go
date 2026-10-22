@@ -30,7 +30,7 @@ const (
 var (
 	Layouts     = []string{"default", "center", "two-col", "split", "quote", "big-number", "image"}
 	Transitions = []string{"fade", "slide", "zoom", "none"}
-	Themes      = []string{"studio", "paper", "mono"}
+	Themes      = []string{"studio", "paper", "mono", "crdb", "cockroachdb", "cockroachlabs"}
 	Modes       = []string{"auto", "light", "dark"}
 	Aspects     = []string{"16:9", "16:10", "4:3", "1:1", "9:16"}
 )
@@ -56,7 +56,7 @@ type Meta struct {
 	Title      string
 	Author     string
 	Date       string
-	Theme      string // studio | paper | mono
+	Theme      string // studio | paper | mono | crdb (aliases: cockroachdb, cockroachlabs)
 	Mode       string // auto | light | dark
 	Accent     string // CSS colour
 	Transition string // default slide transition

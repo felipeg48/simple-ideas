@@ -148,7 +148,7 @@
     go(i, 0, true);
   });
 
-  /* ---------- theme mode (t) ---------- */
+  /* ---------- theme mode (d) ---------- */
   function effectiveDark() {
     var m = root.getAttribute('data-si-mode');
     if (m) return m === 'dark';
@@ -160,6 +160,29 @@
     save('si-mode', mode);
     renderMermaid(true);
     announce();
+  }
+
+  /* ---------- break timer HUD (t): a full-screen countdown to project during a break ---------- */
+  var hud = document.querySelector('.si-hud'), hudTime = hud && hud.querySelector('.si-hud-time');
+  var hudMins = [5, 10, 15, 20, 30, 45, 60], hudEnd = 0, hudLeft = 0, hudPaused = false, hudTimer = 0;
+  function hudPad(x) { return (x < 10 ? '0' : '') + x; }
+  function hudFmt(ms) { if (ms < 0) ms = 0; var s = Math.round(ms / 1000); return Math.floor(s / 60) + ':' + hudPad(s % 60); }
+  function hudShow(on) {
+    if (!hud) return;
+    if (on === undefined) on = !hud.classList.contains('is-open');
+    hud.classList.toggle('is-open', on);
+    hud.setAttribute('aria-hidden', on ? 'false' : 'true');
+    if (!on) { clearInterval(hudTimer); hudTimer = 0; hud.classList.remove('is-over'); }
+  }
+  function hudStart(m) {
+    hudEnd = Date.now() + m * 60000; hudPaused = false; hud.classList.remove('is-over');
+    clearInterval(hudTimer); hudTick(); hudTimer = setInterval(hudTick, 250);
+  }
+  function hudPause() { if (!hudTimer) return; hudPaused = !hudPaused; if (!hudPaused) hudEnd = Date.now() + hudLeft; }
+  function hudTick() {
+    if (!hudPaused) hudLeft = hudEnd - Date.now();
+    if (hudTime) hudTime.textContent = hudFmt(hudLeft);
+    if (hudLeft <= 0) { hudLeft = 0; if (hudTime) hudTime.textContent = '0:00'; hud.classList.add('is-over'); clearInterval(hudTimer); hudTimer = 0; }
   }
 
   /* ---------- presenter view (p): a second window synced over BroadcastChannel ---------- */
@@ -222,6 +245,13 @@
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     var tag = (document.activeElement && document.activeElement.tagName) || '';
     if (/INPUT|SELECT|TEXTAREA/.test(tag)) return;
+    if (hud && hud.classList.contains('is-open')) {
+      if (e.key === 'Escape' || e.key === 't') { e.preventDefault(); hudShow(false); return; }
+      if (e.key === ' ') { e.preventDefault(); hudPause(); return; }
+      var pi = '1234567'.indexOf(e.key); if (pi >= 0) { e.preventDefault(); hudStart(hudMins[pi]); return; }
+      if (/^(Arrow|Page|Home|End|Enter)/.test(e.key)) e.preventDefault();
+      return;
+    }
     switch (e.key) {
       case 'ArrowRight': case 'ArrowDown': case 'PageDown': case 'Enter': case 'j': case 'n':
         e.preventDefault(); forward(); break;
@@ -234,7 +264,8 @@
       case 'o': overview(); break;
       case 'p': case 'S': openPresenter(); break;
       case 'f': fullscreen(); break;
-      case 't': toggleMode(); break;
+      case 'd': toggleMode(); break;
+      case 't': hudShow(); break;
       case '?': case 'h': toggleHelp(); break;
       case 'Escape': toggleHelp(false); if (deck.classList.contains('si-overview')) overview(false); break;
     }
@@ -242,10 +273,14 @@
   each(document.querySelectorAll('[data-si-action]'), function (b) {
     b.addEventListener('click', function () { var f = actions[b.getAttribute('data-si-action')]; if (f) f(); b.blur(); });
   });
+  each(hud ? hud.querySelectorAll('[data-si-min]') : [], function (x) {
+    x.addEventListener('click', function () { hudStart(+x.getAttribute('data-si-min')); x.blur(); });
+  });
   if (help) help.addEventListener('click', function () { toggleHelp(false); });
   var tx0 = 0, ty0 = 0, t0 = 0;
   document.addEventListener('touchstart', function (e) { var t = e.changedTouches[0]; tx0 = t.clientX; ty0 = t.clientY; t0 = Date.now(); }, { passive: true });
   document.addEventListener('touchend', function (e) {
+    if (hud && hud.classList.contains('is-open')) return;
     if (deck.classList.contains('si-overview')) return;
     var t = e.changedTouches[0], dx = t.clientX - tx0, dy = t.clientY - ty0;
     if (Date.now() - t0 < 700 && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) { if (dx < 0) forward(); else backward(); }

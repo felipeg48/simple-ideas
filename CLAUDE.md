@@ -102,6 +102,36 @@ teleprompter via the popup page). Never the Playwright MCP browser tools.
    `examples/showcase.md` (as content, not instructions); `si check
    examples`; screenshot it headless and look at it.
 
+## Migrating an existing deck into si
+
+Turning an existing deck (AsciiDoc/reveal.js, PowerPoint, a pile of slides)
+into an si deck is not a mechanical format conversion — it is an editorial
+pass. The steps that matter:
+
+1. **Analyse the content first.** Read the whole source, understand the
+   narrative, and decide what each slide is really for.
+2. **Remove duplicate and unnecessary slides.** Source decks are full of
+   near-duplicates ("... Pt. 1/Pt. 2"), restated headings, filler, and
+   course cross-sell. Merge or cut them. Preserve every substantive teaching
+   point, SQL snippet and setting name — prune redundancy, not material.
+3. **Replace static images with native visuals.** Imported raster/SVG images
+   do not follow the theme or dark mode. Prefer, in order: a stronger layout
+   (`two-col`, `big-number`, `quote`), an inline `<!-- svg: -->` canvas or
+   diagram coloured with `--si-*` tokens, or a highlighted code block. Reserve
+   step-animated canvases (section 10 of RULES.md) for the 1–2 concepts per
+   section that genuinely benefit; everything else can be a static themed SVG
+   or a layout. No slide should be a wall of text.
+4. **Verify visually.** `si check`, then screenshot headless and look — an
+   agent-authored SVG that passes `check` can still be visually wrong.
+5. **Ship it as a split deck, not one monolith.** The standard structure is a
+   thin main deck (`<deck>.md`: front matter, title, agenda, one
+   `<!-- include: sections/NN-*.md -->` per section, closing) plus one file per
+   section under `sections/`, with `images/anim/` (animated canvases) and
+   `images/diagrams/` (static diagrams). `si build <dir>` builds only the main
+   deck — subdirectories and non-`.md` files are skipped. Section files
+   reference shared assets as `../images/...` (a module's paths are relative to
+   itself). See RULES.md §12.
+
 ## Roadmap ideas
 
 - More themes and a theme gallery page; `theme:` from a CSS file path.

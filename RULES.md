@@ -416,6 +416,23 @@ The file's slides are spliced in place; its `# H1` becomes a section slide
 (`a.md` → `b.md` → `a.md`) is an error. Paths inside the module stay relative
 to the module.
 
+**Recommended layout for a multi-section deck** (and the standard output of a
+migration): a thin main deck plus one file per section.
+
+```
+deck/
+  my-deck.md             front matter, title, agenda, one include per section, closing
+  sections/01-intro.md   one file per section — edit these
+  sections/02-....md
+  images/anim/*.svg       step-animated canvases
+  images/diagrams/*.svg   static themed diagrams
+```
+
+`si build deck/` builds only `my-deck.md`: `si` skips subdirectories and
+non-`.md` files, so the `sections/` fragments never render as separate decks.
+A section lives in `sections/`, so its own paths are relative to itself — it
+references shared assets as `../images/...`.
+
 ## 13. Code, Mermaid, tables, links
 
 - Fenced code with a language gets a small built-in highlighter (Go, Python,
@@ -441,10 +458,18 @@ to the module.
 | Home / End | first / last slide |
 | `o` | overview grid of every slide (click one to open it, Esc closes) |
 | `p` or `Shift+S` | teleprompter window |
-| `t` | light / dark (remembered) |
+| `t` | break timer HUD: pick minutes, countdown to project during a break |
+| `d` | light / dark (remembered) |
 | `f` | full screen |
 | `?` | key help |
 | swipe left / right | next / previous on touch screens |
+
+- **Break timer** (`t`): opens a full-screen HUD that floats over the deck.
+  `1`–`7` pick 5 / 10 / 15 / 20 / 30 / 45 / 60 minutes and start the countdown;
+  `Space` pauses and resumes; `t` or `Esc` closes it. At zero the digits turn
+  critical and flash. While it is open the deck does not advance, so it is safe
+  to leave projected during a break. It needs no network and works from
+  `file://`.
 
 - The URL hash is the position (`#7`, `#7.2`); reloads keep it, so live
   reload in `si play` stays on your slide.
@@ -457,8 +482,11 @@ to the module.
 
 ## 15. Styling: themes and your own CSS
 
-- `theme:` picks a built-in theme (`studio`, `paper`, `mono`), each with a
-  light and a dark palette.
+- `theme:` picks a built-in theme (`studio`, `paper`, `mono`, `crdb`), each
+  with a light and a dark palette. `crdb` is the CockroachDB University brand
+  (cream / ink / purple; aliases `cockroachdb`, `cockroachlabs`).
+- `--theme <name>` on `si play` / `si build` overrides the deck's `theme:`
+  front matter, so one set of decks can be built in several themes.
 - `--css <file.css|dir>` (repeatable) loads your stylesheets after the theme;
   `si play` watches them and reloads, static output inlines them (relative
   `url()` files become data URIs).

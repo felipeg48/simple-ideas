@@ -34,6 +34,8 @@ type Options struct {
 	UserCSS []Stylesheet
 	// Media says how images, videos and background files are referenced.
 	Media MediaMode
+	// Theme overrides the deck's `theme:` front matter; empty keeps it.
+	Theme string
 }
 
 // Result is a rendered deck.
@@ -204,10 +206,14 @@ var pageSizes = map[string]string{"16:9": "13.333in 7.5in", "16:10": "12in 7.5in
 func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options) []byte {
 	d := dr.d
 	m := d.Meta
-	theme := m.Theme
+	theme := opt.Theme
+	if theme == "" {
+		theme = m.Theme
+	}
 	if theme == "" {
 		theme = "studio"
 	}
+	theme = assets.CanonicalTheme(theme)
 	aspect := m.Aspect
 	if aspect == "" {
 		aspect = "16:9"
@@ -286,7 +292,7 @@ const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <span class="si-controls">
 <button type="button" data-si-action="prev" aria-label="Previous">&larr;</button><button type="button" data-si-action="next" aria-label="Next">&rarr;</button>
 <button type="button" data-si-action="overview" title="Overview (o)">Overview</button><button type="button" data-si-action="presenter" title="Presenter teleprompter (p)">Presenter</button>
-<button type="button" data-si-action="mode" title="Light / dark (t)">Theme</button><button type="button" data-si-action="fullscreen" title="Full screen (f)">Full screen</button><button type="button" data-si-action="help" title="Keys (?)">?</button>
+<button type="button" data-si-action="mode" title="Light / dark (d)">Theme</button><button type="button" data-si-action="fullscreen" title="Full screen (f)">Full screen</button><button type="button" data-si-action="help" title="Keys (?)">?</button>
 </span>
 <span class="si-counter" aria-live="polite"></span>
 </nav>
@@ -298,12 +304,18 @@ const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <tr><td>Home / End</td><td>first / last slide</td></tr>
 <tr><td>o</td><td>overview grid; click a slide to open it</td></tr>
 <tr><td>p</td><td>presenter teleprompter: notes, timer, next slide; drives this window</td></tr>
-<tr><td>t</td><td>light / dark</td></tr>
+<tr><td>t</td><td>break timer: pick minutes, countdown to project during a break</td></tr>
+<tr><td>d</td><td>light / dark</td></tr>
 <tr><td>f</td><td>full screen</td></tr>
 <tr><td>swipe</td><td>next / previous on touch screens</td></tr>
 <tr><td>#5 or #5.2</td><td>open slide 5 (at step 2)</td></tr>
 <tr><td>print</td><td>one slide per page, every step shown</td></tr>
 </table></div></div>
+<div class="si-hud" role="dialog" aria-label="Break timer" aria-hidden="true"><div>
+<div class="si-hud-time">0:00</div>
+<div class="si-hud-presets"><button type="button" data-si-min="5">5</button><button type="button" data-si-min="10">10</button><button type="button" data-si-min="15">15</button><button type="button" data-si-min="20">20</button><button type="button" data-si-min="30">30</button><button type="button" data-si-min="45">45</button><button type="button" data-si-min="60">60</button></div>
+<p class="si-hud-hint">1-7 pick minutes · space pause · t / Esc close</p>
+</div></div>
 `
 
 // LiveReloadJS reloads the page when si play reports a change; the URL hash

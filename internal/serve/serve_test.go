@@ -18,7 +18,7 @@ func TestServeRenderAndReload(t *testing.T) {
 	if err := os.WriteFile(deck, []byte("# Talk\n\nfirst version\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	s, err := New(dir, nil)
+	s, err := New(dir, nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func TestSingleFileRedirects(t *testing.T) {
 	dir := t.TempDir()
 	p := filepath.Join(dir, "one.md")
 	os.WriteFile(p, []byte("# One\n"), 0o644)
-	s, err := New(p, nil)
+	s, err := New(p, nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}

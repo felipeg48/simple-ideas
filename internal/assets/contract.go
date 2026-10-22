@@ -70,8 +70,8 @@ type Hook struct {
 // Hooks lists every stable `.si-*` class and attribute hook. A test fails if
 // the built-in CSS uses a `.si-*` class that is not listed here.
 var Hooks = []Hook{
-	{`:root[data-si-theme="studio"]`, "the deck theme from front matter (studio, paper, mono)"},
-	{`:root[data-si-mode="dark"]`, "explicit dark mode (t toggles); without the attribute prefers-color-scheme decides"},
+	{`:root[data-si-theme="studio"]`, "the deck theme from front matter (studio, paper, mono, crdb)"},
+	{`:root[data-si-mode="dark"]`, "explicit dark mode (d toggles); without the attribute prefers-color-scheme decides"},
 	{`.si-deck`, "the full-viewport container of all slides"},
 	{`.si-deck.si-overview`, "overview grid (o)"},
 	{`.si-deck[data-si-tx="fade"]`, "transition running: fade, slide, zoom, none or canvas (same SVG on both slides)"},
@@ -125,6 +125,10 @@ var Hooks = []Hook{
 	{`body.si-ui`, "set while the mouse moves: controls visible"},
 	{`.si-progress`, "progress bar"},
 	{`.si-help`, "keyboard help overlay (?)"},
+	{`.si-hud`, "break timer overlay (t): a full-screen countdown projected during a break"},
+	{`.si-hud-time`, "the large mm:ss countdown digits; .is-over turns it critical at zero"},
+	{`.si-hud-presets`, "the row of preset-minute buttons (1-7)"},
+	{`.si-hud-hint`, "the key hint under the countdown"},
 	{`.si-problems`, "deck problems banner (si play only)"},
 	{`.si-index`, "the deck index page"},
 	{`.si-card`, "one deck card on the index page"},
@@ -141,6 +145,10 @@ const (
 	sansStack  = `ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`
 	serifStack = `"Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif`
 	monoStack  = `ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace`
+	// CockroachDB University brand fonts: Geist / Geist Mono named first, then a
+	// system fallback so decks stay self-contained (no bundled font file).
+	crdbSans = `"Geist", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
+	crdbMono = `"Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace`
 )
 
 // layoutDefaults are mode-independent defaults shared by every theme.
@@ -211,6 +219,23 @@ var Themes = map[string]Theme{
 			"--si-shadow": "none",
 		},
 	},
+	// CockroachDB University brand (aliases cockroachdb, cockroachlabs).
+	// Light values are the brand's own cream/ink/purple; dark is derived.
+	"crdb": {
+		Base: map[string]string{"--si-font-body": crdbSans, "--si-font-heading": crdbSans, "--si-font-mono": crdbMono},
+		Light: map[string]string{
+			"--si-bg": "#f2f1ee", "--si-fg": "#101913", "--si-muted": "#6d6d6d", "--si-surface": "#ffffff",
+			"--si-surface-2": "#ece9e2", "--si-line": "#e5e4dc", "--si-accent": "#9059ff", "--si-accent-2": "#502482",
+			"--si-on-accent": "#ffffff", "--si-ok": "#43541f", "--si-warn": "#9a5b00", "--si-crit": "#b4232f",
+			"--si-shadow": "0 .1em .3em rgb(16 25 19 / .06), 0 .6em 1.6em rgb(80 36 130 / .1)",
+		},
+		Dark: map[string]string{
+			"--si-bg": "#101913", "--si-fg": "#f2f1ee", "--si-muted": "#9a9d94", "--si-surface": "#18231b",
+			"--si-surface-2": "#1f2b22", "--si-line": "#2b3a2f", "--si-accent": "#a67cff", "--si-accent-2": "#c8acff",
+			"--si-on-accent": "#101913", "--si-ok": "#8dbb3a", "--si-warn": "#e0a53a", "--si-crit": "#ef6b74",
+			"--si-shadow": "0 .6em 1.8em rgb(0 0 0 / .45)",
+		},
+	},
 }
 
 func decls(maps ...map[string]string) string {
@@ -232,10 +257,23 @@ func decls(maps ...map[string]string) string {
 	return b.String()
 }
 
+// themeAliases map alternate spellings to a built-in theme name.
+var themeAliases = map[string]string{"cockroachdb": "crdb", "cockroachlabs": "crdb"}
+
+// CanonicalTheme resolves a theme alias (e.g. "cockroachlabs") to its built-in
+// name; unknown names pass through unchanged.
+func CanonicalTheme(name string) string {
+	if a, ok := themeAliases[name]; ok {
+		return a
+	}
+	return name
+}
+
 // ThemeCSS returns the token declarations of a theme inside the si.theme
 // layer: light values on :root, dark values under prefers-color-scheme (when
 // no explicit mode is set) and under data-si-mode="dark".
 func ThemeCSS(name string) string {
+	name = CanonicalTheme(name)
 	th, ok := Themes[name]
 	if !ok {
 		th = Themes["studio"]
@@ -289,7 +327,7 @@ func StarterCSS() string {
 			fmt.Fprintf(&b, "  /* %s */\n  %s: %s;\n", t.Desc, t.Name, all[t.Name])
 		}
 	}
-	b.WriteString("}\n\n/* dark mode: pressed t, or the system prefers dark and the deck has no mode pinned */\n")
+	b.WriteString("}\n\n/* dark mode: pressed d, or the system prefers dark and the deck has no mode pinned */\n")
 	b.WriteString(":root[data-si-mode=\"dark\"] {\n")
 	keys := make([]string, 0, len(th.Dark))
 	for k := range th.Dark {
