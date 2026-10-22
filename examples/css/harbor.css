@@ -1,0 +1,61 @@
+/* Harbor: an example brand theme for simple-ideas.
+ *   si play --css examples/css/harbor.css examples
+ *   si --css examples/css/ --output html/ examples
+ * Themes set tokens and looks; the fluid layout stays built in.
+ * Start your own with: si --export css-rules --output my-theme.css */
+
+:root {
+  --si-bg: #f3efe6;
+  --si-fg: #0e2235;
+  --si-muted: #4f6275;
+  --si-surface: #fffaf0;
+  --si-surface-2: #e7e0d1;
+  --si-line: #d4cab6;
+  --si-accent: #e4572e;
+  --si-accent-2: #17607d;
+  --si-on-accent: #ffffff;
+  --si-font-heading: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --si-heading-weight: 700;
+  --si-heading-tracking: -0.015em;
+  --si-radius: .3em;
+  --si-h2-size: 1.95em;
+  --si-step-duration: .6s;
+}
+
+:root[data-si-mode="dark"] {
+  --si-bg: #0b1a28;
+  --si-fg: #f1ece2;
+  --si-muted: #9fb2c3;
+  --si-surface: #11263a;
+  --si-surface-2: #163049;
+  --si-line: #23405c;
+  --si-accent: #ff7a50;
+  --si-accent-2: #6cc3e0;
+  --si-on-accent: #0b1a28;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-si-mode]) {
+    --si-bg: #0b1a28;
+    --si-fg: #f1ece2;
+    --si-muted: #9fb2c3;
+    --si-surface: #11263a;
+    --si-surface-2: #163049;
+    --si-line: #23405c;
+    --si-accent: #ff7a50;
+    --si-accent-2: #6cc3e0;
+    --si-on-accent: #0b1a28;
+  }
+}
+
+/* a heavier rule under slide headings, a wave on the title slide */
+.si-content h2.si-heading::after { height: .16em; width: 1.6em; border-radius: 0; }
+.si-title h1.si-heading::after {
+  width: 3em; height: .3em; background: none;
+  border-bottom: .08em solid var(--si-accent);
+  border-radius: 0 0 50% 50%;
+}
+.si-title .si-sub { font-style: italic; }
+.si-kicker { color: var(--si-accent-2); }
+.si-body li::marker { content: "\2014  "; color: var(--si-accent); }
+.si-step.is-latest { color: var(--si-accent-2); }
+.si-progress { height: 4px; background: linear-gradient(90deg, var(--si-accent-2), var(--si-accent)); }

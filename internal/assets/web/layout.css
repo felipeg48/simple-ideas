@@ -1,0 +1,151 @@
+/* simple-ideas layout mechanics.
+ * Unlayered on purpose: these rules win over the si.theme and si.user layers,
+ * so a theme or a user stylesheet changes looks and tokens, never the fluid
+ * layout. Every size here is relative to the slide (cqi/cqb container units)
+ * or to the fluid base font size (em). No fixed canvas, no transform scaling.
+ */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{overflow:hidden;background:var(--si-bg);color:var(--si-fg);-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+
+/* the deck fills the viewport; one slide at a time */
+.si-deck{position:fixed;inset:0;overflow:hidden}
+.si-slide{position:absolute;inset:0;width:auto;height:auto;margin:0;container-type:size;overflow:hidden;
+  visibility:hidden;opacity:0;background:var(--si-slide-bg);
+  transition:opacity var(--si-transition-duration) ease,transform var(--si-transition-duration) cubic-bezier(.2,.7,.2,1),visibility 0s linear var(--si-transition-duration)}
+.si-slide.si-current{visibility:visible;opacity:1;transform:none;transition-delay:0s;z-index:1}
+.si-deck[data-si-tx="slide"] .si-slide.si-past{transform:translateX(-7%)}
+.si-deck[data-si-tx="slide"] .si-slide.si-future{transform:translateX(7%)}
+.si-deck[data-si-tx="zoom"] .si-slide.si-past{transform:scale(1.07)}
+.si-deck[data-si-tx="zoom"] .si-slide.si-future{transform:scale(.93)}
+.si-deck[data-si-tx="none"] .si-slide,.si-deck[data-si-tx="canvas"] .si-slide{transition:none}
+/* same SVG canvas on both slides: the canvas stays, its state animates, the words around it fade in */
+.si-deck[data-si-tx="canvas"] .si-current .si-inner>:not(.si-body),
+.si-deck[data-si-tx="canvas"] .si-current .si-body>:not(.si-figure):not(:has(.si-figure)),
+.si-deck[data-si-tx="canvas"] .si-current .si-col>:not(.si-figure):not(:has(.si-figure)){animation:si-enter var(--si-transition-duration) ease both}
+@keyframes si-enter{from{opacity:0;transform:translateY(.35em)}}
+.si-slide:not(.si-current) *{animation-play-state:paused}
+
+/* fluid type: the base size follows the slide (container units), so a phone,
+ * a laptop, a 4K screen, a portrait tablet and an overview tile all reflow */
+.si-inner{--_u:min(1cqi,1.75cqb);position:absolute;inset:0;display:flex;flex-direction:column;min-width:0;
+  overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
+  padding:max(var(--si-pad-y),env(safe-area-inset-top,0px)) max(var(--si-pad-x),env(safe-area-inset-right,0px)) max(calc(var(--si-pad-y) + 1.4rem),env(safe-area-inset-bottom,0px)) max(var(--si-pad-x),env(safe-area-inset-left,0px));
+  font-size:clamp(15px,calc(var(--_u) * 1.7 * var(--si-scale) * var(--_fit,1)),76px)}
+/* safe vertical centring: auto margins never push overflowing content off the top */
+.si-inner>:first-child{margin-top:auto}
+.si-inner>:last-child{margin-bottom:auto}
+.si-body{min-width:0}
+.si-body>:last-child,.si-col>:last-child,.si-sub>:last-child{margin-bottom:0}
+img,svg,video{max-width:100%}
+.si-body{display:flow-root}
+
+/* backgrounds: a media layer under the content; object-fit keeps it fluid */
+.si-bg{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.si-bg-media{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:var(--si-bg-fit,cover);object-position:var(--si-bg-position,center);
+  opacity:var(--si-bg-opacity,1);filter:blur(var(--si-bg-blur,0px))}
+.si-bg-media[style*="--si-bg-blur"]{transform:scale(1.06)}
+.si-bg-overlay{position:absolute;inset:0}
+
+/* images: a paragraph holding one image becomes a figure; the image directive sizes and places it */
+.si-image{margin:.5em auto;width:var(--si-img-width,fit-content);max-width:100%;display:flex;flex-direction:column;align-items:center;gap:.35em}
+.si-image>img{display:block;width:auto;max-width:100%;height:auto;max-height:58cqb}
+.si-image[style*="--si-img-width"]>img{width:100%;max-height:none}
+.si-image[data-ratio]>img{width:100%;max-height:none;aspect-ratio:var(--si-img-ratio);object-fit:var(--si-img-fit,cover);object-position:var(--si-img-position,center)}
+.si-image[data-align="left"]{float:left;width:var(--si-img-width,42%);margin:.2em var(--si-gap) .6em 0}
+.si-image[data-align="right"]{float:right;width:var(--si-img-width,42%);margin:.2em 0 .6em var(--si-gap)}
+.si-image[data-align="center"]{margin-inline:auto}
+.si-body.si-cols .si-image>img{max-height:74cqb}
+/* image layout: the first image fills the slide, the words sit on it */
+.si-slide[data-layout="image"] .si-image{position:absolute;inset:0;z-index:0;margin:0;width:auto;max-width:none;display:block;float:none}
+.si-slide[data-layout="image"] .si-image>img{width:100%;height:100%;max-height:none;object-fit:cover;border-radius:0;box-shadow:none}
+.si-slide[data-layout="image"] .si-caption{position:absolute;right:var(--si-pad-x);top:calc(var(--si-pad-y) * .6);z-index:2}
+.si-slide[data-layout="image"] .si-inner::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:linear-gradient(to top,rgb(0 0 0 / .72),rgb(0 0 0 / .1) 65%)}
+.si-slide[data-layout="image"] .si-head,.si-slide[data-layout="image"] .si-body>:not(.si-image){position:relative;z-index:1}
+.si-slide[data-layout="image"] .si-body{position:static}
+.si-slide[data-layout="image"] .si-inner>:last-child{margin-bottom:0}
+
+/* layouts */
+.si-slide[data-layout="center"] .si-inner,.si-title .si-inner,.si-closing .si-inner{align-items:center;text-align:center}
+.si-slide[data-layout="center"] .si-body,.si-title .si-sub,.si-closing .si-sub{margin-inline:auto}
+.si-slide[data-layout="center"] .si-body>*{margin-inline:auto}
+.si-slide[data-layout="center"] .si-body>:is(ul,ol){width:fit-content;text-align:left}
+.si-body.si-cols{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:var(--si-gap) calc(var(--si-gap) * 1.6);align-items:start}
+.si-slide[data-layout="split"] .si-body.si-cols{grid-auto-columns:auto;grid-template-columns:minmax(0,2fr) minmax(0,3fr);align-items:center}
+.si-col.si-flow{columns:2;column-gap:calc(var(--si-gap) * 1.6)}
+.si-col.si-flow>*{break-inside:avoid}
+/* two columns stack on a narrow or portrait slide (not in the overview grid) */
+@container (width < 46rem) or (aspect-ratio < 4/5){
+  .si-deck:not(.si-overview) .si-body.si-cols,
+  .si-deck:not(.si-overview) .si-slide[data-layout="split"] .si-body.si-cols{grid-auto-flow:row;grid-template-columns:minmax(0,1fr)}
+  .si-deck:not(.si-overview) .si-col.si-flow{columns:1}
+  .si-deck:not(.si-overview) .si-image[data-align]{float:none;width:var(--si-img-width,100%);max-width:100%;margin-inline:auto}
+}
+.si-slide[data-layout="quote"] .si-inner,.si-slide[data-layout="big-number"] .si-inner{justify-content:center}
+
+/* SVG canvases scale with their viewBox */
+.si-figure{margin:.5em 0;display:flex;justify-content:center;min-height:0;min-width:0}
+.si-figure>svg{display:block;width:100%;height:auto;max-height:60cqb}
+.si-slide[data-layout="center"] .si-figure>svg{max-height:66cqb}
+.si-body.si-cols .si-figure>svg{max-height:74cqb}
+.si-mermaid svg{width:100%;max-width:100%!important;height:auto;max-height:60cqb}
+
+/* build steps */
+.si-step{opacity:0;transform:translateY(.35em);transition:opacity var(--si-step-duration) ease,transform var(--si-step-duration) ease}
+.si-step.is-visible{opacity:1;transform:none}
+
+/* SVG canvas helpers: data-show, data-hide, data-alert, data-ok, data-flow,
+ * data-packets (word rules are generated per deck) */
+.si-canvas *{transition:opacity var(--si-canvas-duration) ease,transform var(--si-canvas-duration) ease,fill var(--si-canvas-duration) ease,stroke var(--si-canvas-duration) ease}
+.si-canvas [data-show]{opacity:0}
+.si-canvas .si-packets{opacity:0}
+@keyframes si-pulse{50%{stroke-opacity:.3}}
+@keyframes si-flow{to{stroke-dashoffset:-48}}
+
+/* overview grid (o): every slide becomes a tile; container units make the tiles reflow like the slides */
+.si-deck.si-overview{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,19rem),1fr));grid-auto-rows:max-content;gap:clamp(.6rem,1.5vw,1.4rem);
+  align-content:start;overflow-y:auto;padding:clamp(.6rem,2vw,1.6rem);padding-bottom:3.5rem}
+.si-overview .si-slide{position:relative;inset:auto;aspect-ratio:var(--_aspect,16/10);container-type:inline-size;--si-pad-y:5cqi;--si-pad-x:6cqi;visibility:visible;opacity:1;transform:none;transition:none;cursor:pointer;
+  border:1px solid var(--si-line);border-radius:.6rem;background-color:var(--si-bg)}
+.si-overview .si-slide.si-current{outline:3px solid var(--si-accent);outline-offset:2px}
+.si-overview .si-inner{font-size:calc(var(--_u) * 1.7 * var(--si-scale));overflow:hidden;pointer-events:none}
+.si-overview .si-step{opacity:1;transform:none}
+
+/* chrome */
+.si-bar{position:fixed;left:0;right:0;bottom:0;z-index:10;display:flex;justify-content:flex-end;align-items:center;gap:.5rem;
+  padding:.35rem max(.7rem,env(safe-area-inset-right,0px)) max(.4rem,env(safe-area-inset-bottom,0px));pointer-events:none;
+  font:clamp(11px,.5vw + 8px,15px)/1.2 var(--si-font-mono);color:var(--si-muted)}
+.si-bar>*{pointer-events:auto}
+.si-controls{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:.3rem;opacity:0;transition:opacity .2s}
+.si-counter{white-space:nowrap}
+.si-bar:hover .si-controls,.si-bar:focus-within .si-controls,.si-deck.si-overview~.si-bar .si-controls,body.si-ui .si-controls{opacity:1}
+@media (hover:none){.si-controls{opacity:.8}}
+.si-controls button{font:inherit;color:var(--si-fg);background:var(--si-surface);border:1px solid var(--si-line);border-radius:.45em;padding:.4em .65em;min-height:2.1em;cursor:pointer}
+.si-controls button:hover,.si-controls button:focus-visible{border-color:var(--si-accent);outline:none}
+.si-progress{position:fixed;left:0;bottom:0;height:3px;width:0;z-index:11;background:var(--si-accent);transition:width .3s ease}
+.si-help{position:fixed;inset:0;z-index:20;display:none;place-items:center;padding:1rem;background:color-mix(in srgb,var(--si-bg) 80%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.si-help.is-open{display:grid}
+.si-help>div{max-width:min(36rem,100%);max-height:100%;overflow:auto;background:var(--si-surface);border:1px solid var(--si-line);border-radius:.8rem;padding:1.1rem 1.4rem;box-shadow:var(--si-shadow);font-family:var(--si-font-body)}
+.si-help table{border-collapse:collapse;width:100%}
+.si-help td{padding:.25em .9em .25em 0;vertical-align:top}
+.si-help td:first-child{font-family:var(--si-font-mono);color:var(--si-accent);white-space:nowrap}
+.si-problems{position:fixed;top:0;left:0;right:0;z-index:30;max-height:40vh;overflow:auto;margin:0;padding:.7rem 1rem;font:14px/1.4 var(--si-font-mono);color:#fff;background:#b42318}
+.si-problems ul{margin:.3rem 0 0;padding-left:1.2rem}
+
+/* reduced motion: no transitions, no animation, no travelling packets */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition-duration:0s!important;transition-delay:0s!important;animation:none!important}
+  .si-canvas .si-packets{display:none}
+}
+
+/* print: one slide per page, every step and the final canvas state shown */
+@media print{
+  html,body{height:auto;overflow:visible;background:var(--si-bg)}
+  .si-deck{position:static;overflow:visible}
+  .si-slide{position:relative;inset:auto;width:100vw;height:100vh;visibility:visible;opacity:1;transform:none;transition:none;break-after:page;break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .si-slide:last-child{break-after:auto}
+  .si-inner{overflow:hidden;font-size:calc(var(--_u) * 1.7 * var(--si-scale))}
+  .si-step{opacity:1;transform:none}
+  .si-bar,.si-progress,.si-help,.si-problems{display:none!important}
+}

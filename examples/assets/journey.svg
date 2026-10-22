@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" class="journey" aria-label="An order's journey: shop, payments, warehouse, courier, doorstep">
+<style>
+/* Authoring contract, in short:
+   - si adds class "si-canvas" and data-state="words" to the svg root element.
+   - never write a less-than sign in here: inline SVG styles are parsed as markup.
+   - helper attributes need no CSS: data-show, data-hide, data-alert, data-ok,
+     data-flow, data-packets (see RULES.md).
+   - your own rules use .journey[data-state~="word"] and animate with CSS
+     transitions: the same canvas on consecutive slides changes state in place.
+   - colours come from the deck tokens with a fallback for viewing the file alone. */
+.journey{font-family:var(--si-font-body,system-ui,sans-serif)}
+.journey text{fill:var(--si-fg,#16171b)}
+.journey .card{fill:var(--si-surface,#fff);stroke:var(--si-line,#d9d6ce);stroke-width:2.5}
+.journey .name{font-size:25px;font-weight:700}
+.journey .sub{font-size:16px;fill:var(--si-muted,#5d626c)}
+.journey .wire{fill:none;stroke:var(--si-line,#d9d6ce);stroke-width:5;stroke-linecap:round}
+.journey .tag rect{fill:var(--si-accent-2,#0b8a7a)}
+.journey .tag text{fill:#fff;font-size:16px;font-weight:700}
+.journey .tag.bad rect{fill:var(--si-crit,#d23c3c)}
+.journey .tag.warn rect{fill:var(--si-warn,#c77c02)}
+.journey .tile{fill:var(--si-surface-2,#ecebe6)}
+.journey .label{font-size:16px;fill:var(--si-muted,#5d626c)}
+.journey .value{font-size:28px;font-weight:800}
+.journey .value.ok{fill:var(--si-ok,#178a4c)}
+.journey .value.bad{fill:var(--si-crit,#d23c3c)}
+.journey .value.warn{fill:var(--si-warn,#c77c02)}
+.journey .token rect{fill:var(--si-accent,#3657d6)}
+.journey .token text{fill:var(--si-on-accent,#fff);font-size:17px;font-weight:700}
+.journey .bar{fill:var(--si-bg,#f6f5f1);stroke:var(--si-line,#d9d6ce);stroke-width:2}
+.journey .fill{fill:var(--si-warn,#c77c02)}
+.journey .van{fill:var(--si-accent-2,#0b8a7a)}
+.journey .check{fill:var(--si-ok,#178a4c)}
+
+/* the order token travels from station to station; later stages win by source order */
+.journey .token{transition:transform 1s cubic-bezier(.3,.1,.2,1)}
+.journey[data-state~="paid"] .token{transform:translateX(235px)}
+.journey[data-state~="declined"] .token{transform:translateX(235px)}
+.journey[data-state~="packed"] .token{transform:translateX(470px)}
+.journey[data-state~="shipped"] .token{transform:translateX(705px)}
+.journey[data-state~="delivered"] .token{transform:translateX(940px)}
+.journey[data-state~="declined"] .token rect{fill:var(--si-crit,#d23c3c)}
+
+/* the warehouse queue grows under the backlog, shrinks once a second picker joins */
+.journey .fill{transform-box:fill-box;transform-origin:0 50%;transform:scaleX(.06);transition:transform 1.4s ease}
+.journey[data-state~="backlog"] .fill{transform:scaleX(1)}
+.journey[data-state~="extra"] .fill{transform:scaleX(.12)}
+.journey .picker{transform:translate(0,0);transition:transform .9s ease,opacity .9s ease}
+.journey[data-state~="extra"] .picker{transform:translate(14px,-14px)}
+</style>
+
+<!-- stations -->
+<g data-ok="placed"><rect class="card" x="30" y="40" width="170" height="120" rx="16"/><text class="name" x="115" y="94" text-anchor="middle">shop</text><text class="sub" x="115" y="124" text-anchor="middle">checkout</text></g>
+<g data-alert="declined" data-ok="paid"><rect class="card" x="265" y="40" width="170" height="120" rx="16"/><text class="name" x="350" y="94" text-anchor="middle">payments</text><text class="sub" x="350" y="124" text-anchor="middle">card, wallet</text></g>
+<g class="picker" data-show="extra"><rect class="card" x="500" y="40" width="170" height="120" rx="16" opacity=".85"/></g>
+<g data-alert="backlog" data-ok="packed"><rect class="card" x="500" y="40" width="170" height="120" rx="16"/><text class="name" x="585" y="94" text-anchor="middle">warehouse</text><text class="sub" x="585" y="124" text-anchor="middle">pick and pack</text></g>
+<g data-ok="shipped"><rect class="card" x="735" y="40" width="170" height="120" rx="16"/><text class="name" x="820" y="94" text-anchor="middle">courier</text><text class="sub" x="820" y="124" text-anchor="middle">route 7</text></g>
+<g data-ok="delivered"><rect class="card" x="970" y="40" width="170" height="120" rx="16"/><text class="name" x="1055" y="94" text-anchor="middle">doorstep</text><text class="sub" x="1055" y="124" text-anchor="middle">Mrs. Okafor</text></g>
+
+<!-- links: packets travel while a stage is live -->
+<path class="wire" id="w1" d="M200 100 H265" data-packets="placed" data-packets-count="2" data-packets-dur="1.2"/>
+<path class="wire" id="w2" d="M435 100 H500" data-packets="paid" data-packets-count="2" data-packets-dur="1.2"/>
+<path class="wire" id="w3" d="M670 100 H735" data-packets="shipped" data-packets-count="2" data-packets-dur="1.2"/>
+<path class="wire" id="w4" d="M905 100 H970" data-flow="shipped"/>
+
+<!-- the order -->
+<g class="token" data-show="placed"><rect x="40" y="186" width="150" height="50" rx="25"/><text x="115" y="217" text-anchor="middle">order #4711</text></g>
+
+<!-- what happens under each station -->
+<g class="tag bad" data-show="declined"><rect x="270" y="262" width="160" height="34" rx="17"/><text x="350" y="285" text-anchor="middle">card declined</text></g>
+<g class="tag" data-show="retry"><rect x="270" y="262" width="160" height="34" rx="17"/><text x="350" y="285" text-anchor="middle">paid on retry</text></g>
+<g data-show="backlog extra"><rect class="bar" x="505" y="262" width="160" height="26" rx="13"/><rect class="fill" x="507" y="264" width="156" height="22" rx="11"/>
+  <text class="sub" x="585" y="318" text-anchor="middle" data-show="backlog" data-hide="extra">1,200 orders waiting</text>
+  <text class="sub" x="585" y="318" text-anchor="middle" data-show="extra">second picker: 90 waiting</text></g>
+<g data-show="shipped"><rect class="van" x="772" y="258" width="66" height="36" rx="6"/><rect class="van" x="838" y="270" width="24" height="24" rx="4"/><circle cx="790" cy="298" r="8" class="check"/><circle cx="846" cy="298" r="8" class="check"/></g>
+<g data-show="delivered"><circle class="check" cx="1055" cy="278" r="26"/><path d="M1043 278 l9 9 l17 -19" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></g>
+
+<!-- the customer's view: three tiles, the same screen all talk -->
+<rect class="tile" x="30" y="390" width="360" height="130" rx="16"/>
+<text class="label" x="54" y="424">order status</text>
+<text class="value" x="54" y="478" data-show="placed" data-hide="paid declined">placed</text>
+<text class="value bad" x="54" y="478" data-show="declined">payment failed</text>
+<text class="value" x="54" y="478" data-show="paid" data-hide="packed">paid</text>
+<text class="value" x="54" y="478" data-show="packed" data-hide="shipped">packed</text>
+<text class="value" x="54" y="478" data-show="shipped" data-hide="delivered">on its way</text>
+<text class="value ok" x="54" y="478" data-show="delivered">delivered</text>
+
+<rect class="tile" x="420" y="390" width="360" height="130" rx="16"/>
+<text class="label" x="444" y="424">promised</text>
+<text class="value ok" x="444" y="478" data-hide="backlog">Thursday</text>
+<text class="value warn" x="444" y="478" data-show="backlog">Friday, late</text>
+
+<rect class="tile" x="810" y="390" width="360" height="130" rx="16"/>
+<text class="label" x="834" y="424">alerts</text>
+<text class="value ok" x="834" y="478" data-hide="declined backlog">none</text>
+<text class="value bad" x="834" y="478" data-show="declined">1 payment</text>
+<text class="value warn" x="834" y="478" data-show="backlog">warehouse queue</text>
+</svg>

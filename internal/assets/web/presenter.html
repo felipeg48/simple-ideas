@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teleprompter · __TITLE__</title>
+<style>
+__CSS__
+body{overflow:hidden;height:100%}
+.pv{--pv-size:1;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:clamp(.5rem,1vw,.9rem);
+  height:100vh;height:100dvh;padding:clamp(.5rem,1vw,.9rem);font-family:var(--si-font-body);color:var(--si-fg);background:var(--si-bg)}
+.pv-top{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:.3rem 1.4rem;font-family:var(--si-font-mono);font-size:clamp(12px,.55vw + 8px,17px);color:var(--si-muted)}
+.pv-top b{color:var(--si-fg);font-family:var(--si-font-body);font-size:1.2em;font-weight:700}
+.pv-clocks{margin-left:auto;display:flex;flex-wrap:wrap;gap:.3rem 1.2rem;align-items:baseline}
+.pv-clocks strong{font-size:1.5em;color:var(--si-fg);font-variant-numeric:tabular-nums}
+.pv-clocks .over strong{color:var(--si-warn)}.pv-clocks .late strong{color:var(--si-crit)}
+.pv-clocks .pace{color:var(--si-muted)}
+.pv-prompt{position:relative;min-height:0;display:flex;flex-direction:column;border:1px solid var(--si-line);border-radius:.7rem;background:var(--si-surface);overflow:hidden}
+.pv-prompt-head{display:flex;justify-content:space-between;gap:1rem;padding:.45rem .9rem;font-family:var(--si-font-mono);font-size:.8rem;color:var(--si-muted);border-bottom:1px solid var(--si-line)}
+.pv-notes{flex:1 1 auto;overflow-y:auto;padding:1.2rem 1.4rem 45vh;font-size:calc(clamp(1.35rem,1.7vw + .6rem,3.2rem) * var(--pv-size));line-height:1.5;scroll-behavior:auto}
+.pv-notes p{margin:0 0 .75em}.pv-notes ul,.pv-notes ol{padding-left:1.2em;margin:0 0 .75em}.pv-notes li{margin:.25em 0}
+.pv-notes code{font-size:.85em}
+.pv-notes strong{color:var(--si-accent)}
+.pv-prompt::after{content:"";position:absolute;left:0;right:0;top:34%;height:0;border-top:2px dashed color-mix(in srgb,var(--si-accent) 45%,transparent);pointer-events:none}
+.pv.mirror .pv-notes{transform:scaleX(-1)}
+.pv-side{min-height:0;display:flex;flex-direction:column;gap:.5rem;overflow:auto}
+.pv-label{font-family:var(--si-font-mono);font-size:.78rem;color:var(--si-muted)}
+.pv-screen{position:relative;width:100%;aspect-ratio:var(--_aspect,16/9);flex:none;border:1px solid var(--si-line);border-radius:.6rem;overflow:hidden;background:var(--si-bg)}
+.pv-screen .si-slide{position:absolute;inset:0;visibility:visible;opacity:1;transform:none;transition:none}
+.pv-screen .si-inner{font-size:calc(var(--_u) * 1.7 * var(--si-scale));overflow:hidden}
+.pv-screen .si-step{transition:none}
+.pv.prompter-only{grid-template-columns:minmax(0,1fr)}
+.pv.prompter-only .pv-side{display:none}
+.pv-bar{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.35rem;align-items:center;font-size:.9rem}
+.pv-bar button{font:inherit;color:var(--si-fg);background:var(--si-surface);border:1px solid var(--si-line);border-radius:.45rem;padding:.4em .8em;cursor:pointer}
+.pv-bar button:hover,.pv-bar button[aria-pressed="true"]{border-color:var(--si-accent)}
+.pv-bar button[aria-pressed="true"]{color:var(--si-on-accent);background:var(--si-accent)}
+.pv-bar .sep{width:1px;align-self:stretch;background:var(--si-line);margin:0 .2rem}
+.pv-bar small{font-family:var(--si-font-mono);color:var(--si-muted)}
+.pv-keys{margin-left:auto;font-family:var(--si-font-mono);font-size:.72rem;color:var(--si-muted)}
+@media (max-width:52rem),(orientation:portrait){
+  .pv{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(40vh,1fr) auto auto;height:auto;min-height:100dvh}
+  body{overflow:auto}
+  .pv-side{flex-direction:row;overflow:visible}.pv-side>div{flex:1 1 0;min-width:0}
+  .pv-keys{display:none}
+}
+</style></head>
+<body>
+<div class="pv" id="pv">
+  <div class="pv-top"><b id="title"></b><span id="pos"></span>
+    <span class="pv-clocks">
+      <span id="slideclock">slide <strong id="slideel">00:00</strong> <span id="slideplan"></span></span>
+      <span id="totalclock">total <strong id="elapsed">00:00</strong> <span id="planned"></span></span>
+      <span class="pace" id="pace"></span>
+      <span>clock <strong id="clock"></strong></span>
+    </span></div>
+  <div class="pv-prompt"><div class="pv-prompt-head"><span id="nmins"></span><span id="scrollstate"></span></div><div class="pv-notes" id="notes"></div></div>
+  <div class="pv-side">
+    <div><div class="pv-label">Now</div><div class="pv-screen" id="cur"></div></div>
+    <div><div class="pv-label" id="label">Next</div><div class="pv-screen" id="next"></div></div>
+  </div>
+  <div class="pv-bar">
+    <button id="prev" title="Previous (left, PgUp)">Prev</button><button id="nextb" title="Next (right, space, PgDn)">Next</button>
+    <span class="sep"></span>
+    <button id="auto" aria-pressed="false" title="Auto-scroll (a)">Auto-scroll</button><button id="slower" title="Slower (-)">&minus;</button><small id="speed"></small><button id="faster" title="Faster (+)">+</button>
+    <span class="sep"></span>
+    <button id="smaller" title="Smaller text ([)">A&minus;</button><button id="bigger" title="Bigger text (])">A+</button>
+    <button id="mirror" aria-pressed="false" title="Mirror for teleprompter glass (m)">Mirror</button>
+    <button id="only" aria-pressed="false" title="Notes only (x)">Notes only</button>
+    <span class="sep"></span>
+    <button id="timer" title="Pause or resume the timer (t)">Pause</button><button id="reset" title="Reset the timer (0)">Reset</button>
+    <span class="pv-keys">&larr; &rarr; space: navigate · &uarr; &darr;: scroll · a auto · +/- speed · [ ] size · m mirror · x notes only</span>
+  </div>
+</div>
+<script>
+(function () {
+  'use strict';
+  var D = __DATA__;
+  var $ = function (id) { return document.getElementById(id); };
+  var pv = $('pv'), notes = $('notes');
+  document.documentElement.style.setProperty('--_aspect', D.aspect);
+  var chan = new BroadcastChannel('si:' + D.name);
+  function send(cmd) { chan.postMessage({ type: 'cmd', cmd: cmd }); }
+  function load(k, d) { try { var v = localStorage.getItem('si-prompter-' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }
+  function save(k, v) { try { localStorage.setItem('si-prompter-' + k, JSON.stringify(v)); } catch (e) {} }
+
+  /* ---------- teleprompter settings ---------- */
+  var size = load('size', 1), speed = load('speed', 4), mirror = load('mirror', false), only = load('only', false), auto = false;
+  function settings() {
+    pv.style.setProperty('--pv-size', size);
+    pv.classList.toggle('mirror', mirror); $('mirror').setAttribute('aria-pressed', mirror);
+    pv.classList.toggle('prompter-only', only); $('only').setAttribute('aria-pressed', only);
+    $('auto').setAttribute('aria-pressed', auto);
+    $('speed').textContent = 'speed ' + speed;
+    $('scrollstate').textContent = auto ? 'auto-scroll ' + speed : 'manual scroll';
+    save('size', size); save('speed', speed); save('mirror', mirror); save('only', only);
+  }
+  /* auto-scroll: speed 1..10, in lines per ten seconds, so it follows the text size */
+  var lastT = 0, carry = 0;
+  function frame(t) {
+    if (auto) {
+      var dt = lastT ? Math.min(0.1, (t - lastT) / 1000) : 0;
+      var line = parseFloat(getComputedStyle(notes).fontSize) * 1.5;
+      carry += speed * 0.1 * line * dt;
+      if (carry >= 1) { notes.scrollTop += Math.floor(carry); carry -= Math.floor(carry); }
+    }
+    lastT = t;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  /* ---------- timers: total vs plan, this slide vs its minutes, pace ---------- */
+  var start = Date.now(), paused = 0, pausedAt = 0, slideStart = Date.now(), cur = -1, plan = [], total = 0;
+  function now() { return pausedAt || Date.now(); }
+  function fmt(ms) { var neg = ms < 0, s = Math.floor(Math.abs(ms) / 1000); return (neg ? '-' : '') + pad(Math.floor(s / 60)) + ':' + pad(s % 60); }
+  function pad(x) { return (x < 10 ? '0' : '') + x; }
+  function tick() {
+    var el = now() - start - paused, sl = now() - slideStart;
+    $('elapsed').textContent = fmt(el);
+    $('slideel').textContent = fmt(sl);
+    var mins = plan[cur] || 0;
+    $('slideclock').className = mins && sl > mins * 90000 ? 'late' : (mins && sl > mins * 60000 ? 'over' : '');
+    $('totalclock').className = total && el > total * 60000 ? 'late' : '';
+    if (total && cur >= 0) {
+      var due = 0; for (var i = 0; i < cur; i++) due += plan[i] || 0;
+      var diff = el - Math.min(sl, mins * 60000) - due * 60000;
+      $('pace').textContent = Math.abs(diff) < 15000 ? 'on time' : (diff > 0 ? fmt(diff) + ' behind' : fmt(-diff) + ' ahead');
+    }
+    var d = new Date(); $('clock').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  function toggleTimer() {
+    if (pausedAt) { paused += Date.now() - pausedAt; slideStart += Date.now() - pausedAt; pausedAt = 0; $('timer').textContent = 'Pause'; }
+    else { pausedAt = Date.now(); $('timer').textContent = 'Resume'; }
+    tick();
+  }
+  function resetTimer() { start = slideStart = Date.now(); paused = 0; if (pausedAt) pausedAt = Date.now(); tick(); }
+  setInterval(tick, 250);
+
+  /* ---------- sync with the audience window ---------- */
+  chan.onmessage = function (e) {
+    var m = e.data || {};
+    if (m.type !== 'state') return;
+    plan = m.plan || plan; total = m.total || 0;
+    document.documentElement.setAttribute('data-si-mode', m.dark ? 'dark' : 'light');
+    $('title').textContent = m.title || D.title;
+    $('pos').textContent = 'slide ' + (m.i + 1) + ' / ' + m.n + (m.kmax ? '  ·  step ' + m.k + ' / ' + m.kmax : '');
+    $('slideplan').textContent = m.minutes ? '/ ' + m.minutes + ' min' : '';
+    $('planned').textContent = total ? '/ ' + total + ' min' : '';
+    $('nmins').textContent = 'Notes, slide ' + (m.i + 1) + (m.minutes ? ' · ' + m.minutes + ' min' : '');
+    $('cur').innerHTML = m.cur;
+    $('next').innerHTML = m.next || '';
+    $('label').textContent = m.label;
+    if (m.i !== cur) {
+      cur = m.i; slideStart = now();
+      notes.innerHTML = m.notes || '<p><em>No notes for this slide.</em></p>';
+      notes.scrollTop = 0; carry = 0;
+    }
+    tick();
+  };
+
+  /* ---------- controls: buttons and keys drive both windows ---------- */
+  $('prev').onclick = function () { send('prev'); };
+  $('nextb').onclick = function () { send('next'); };
+  $('auto').onclick = function () { auto = !auto; settings(); };
+  $('slower').onclick = function () { speed = Math.max(1, speed - 1); settings(); };
+  $('faster').onclick = function () { speed = Math.min(10, speed + 1); settings(); };
+  $('smaller').onclick = function () { size = Math.max(0.6, +(size - 0.1).toFixed(2)); settings(); };
+  $('bigger').onclick = function () { size = Math.min(2.5, +(size + 0.1).toFixed(2)); settings(); };
+  $('mirror').onclick = function () { mirror = !mirror; settings(); };
+  $('only').onclick = function () { only = !only; settings(); };
+  $('timer').onclick = toggleTimer;
+  $('reset').onclick = resetTimer;
+  Array.prototype.forEach.call(document.querySelectorAll('button'), function (b) { b.addEventListener('click', function () { b.blur(); }); });
+  document.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'PageDown': case 'Enter': case 'n': e.preventDefault(); send('next'); break;
+      case ' ': e.preventDefault(); send(e.shiftKey ? 'prev' : 'next'); break;
+      case 'ArrowLeft': case 'PageUp': case 'Backspace': case 'p': e.preventDefault(); send('prev'); break;
+      case 'ArrowDown': e.preventDefault(); notes.scrollTop += notes.clientHeight * 0.15; break;
+      case 'ArrowUp': e.preventDefault(); notes.scrollTop -= notes.clientHeight * 0.15; break;
+      case 'Home': e.preventDefault(); send('first'); break;
+      case 'End': e.preventDefault(); send('last'); break;
+      case 'a': auto = !auto; settings(); break;
+      case '+': case '=': speed = Math.min(10, speed + 1); settings(); break;
+      case '-': case '_': speed = Math.max(1, speed - 1); settings(); break;
+      case ']': size = Math.min(2.5, +(size + 0.1).toFixed(2)); settings(); break;
+      case '[': size = Math.max(0.6, +(size - 0.1).toFixed(2)); settings(); break;
+      case 'm': mirror = !mirror; settings(); break;
+      case 'x': only = !only; settings(); break;
+      case 'r': notes.scrollTop = 0; break;
+      case 't': toggleTimer(); break;
+      case '0': resetTimer(); break;
+    }
+  });
+  settings(); tick();
+  send('hello');
+})();
+</script>
+</body></html>

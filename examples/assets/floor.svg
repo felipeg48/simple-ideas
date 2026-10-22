@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-label="Warehouse floor plan: six aisles, a packing table and two pickers">
+<rect width="800" height="500" rx="24" fill="#eef1f6"/>
+<g fill="#c9d3e3">
+<rect x="60" y="60" width="60" height="300" rx="8"/><rect x="160" y="60" width="60" height="300" rx="8"/><rect x="260" y="60" width="60" height="300" rx="8"/>
+<rect x="360" y="60" width="60" height="300" rx="8"/><rect x="460" y="60" width="60" height="300" rx="8"/><rect x="560" y="60" width="60" height="300" rx="8"/>
+</g>
+<g fill="#8fa3c4">
+<rect x="70" y="80" width="40" height="30" rx="4"/><rect x="70" y="160" width="40" height="30" rx="4"/><rect x="170" y="120" width="40" height="30" rx="4"/>
+<rect x="270" y="220" width="40" height="30" rx="4"/><rect x="370" y="90" width="40" height="30" rx="4"/><rect x="470" y="260" width="40" height="30" rx="4"/><rect x="570" y="150" width="40" height="30" rx="4"/>
+</g>
+<rect x="660" y="60" width="90" height="300" rx="12" fill="#3657d6" opacity=".18"/>
+<text x="705" y="215" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#3657d6" text-anchor="middle" transform="rotate(-90 705 215)">packing</text>
+<path d="M140 400 C 260 450, 420 380, 640 420" fill="none" stroke="#0b8a7a" stroke-width="6" stroke-dasharray="12 10" stroke-linecap="round"/>
+<circle cx="140" cy="400" r="18" fill="#0b8a7a"/><circle cx="640" cy="420" r="18" fill="#d97706"/>
+<text x="140" y="460" font-family="system-ui, sans-serif" font-size="20" fill="#334155" text-anchor="middle">picker 1</text>
+<text x="640" y="470" font-family="system-ui, sans-serif" font-size="20" fill="#334155" text-anchor="middle">picker 2</text>
+</svg>

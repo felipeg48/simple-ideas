@@ -1,0 +1,14 @@
+# binaries
+/bin/
+/si
+*.exe
+
+# build output
+/out/
+/html/
+/si-example/
+
+# editors and OS
+.DS_Store
+.idea/
+.vscode/

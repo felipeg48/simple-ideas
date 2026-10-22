@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" class="mini">
+<defs><linearGradient id="g"><stop offset="0" stop-color="#000"/></linearGradient></defs>
+<rect id="box" x="10" y="10" width="80" height="80" fill="url(#g)" data-show="on" data-alert="bad"/>
+<path id="wire" d="M90 50 H190" data-packets="on" data-flow="busy"/>
+<text x="100" y="20" data-hide="on">idle</text>
+</svg>

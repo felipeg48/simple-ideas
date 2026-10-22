@@ -1,0 +1,85 @@
+/* simple-ideas built-in looks: typography, colour, code, tables, layouts.
+ * Everything here reads the --si-* tokens and lives in the si.theme layer,
+ * so a user stylesheet (layer si.user) overrides any of it. */
+@layer si.theme{
+body{font-family:var(--si-font-body);line-height:1.45}
+.si-inner{line-height:1.45}
+a{color:var(--si-accent);text-underline-offset:.16em;text-decoration-thickness:.06em}
+.si-heading{font-family:var(--si-font-heading);font-weight:var(--si-heading-weight);letter-spacing:var(--si-heading-tracking);
+  text-transform:var(--si-heading-case);line-height:1.08;margin:0 0 .55em;text-wrap:balance}
+h1.si-heading{font-size:var(--si-h1-size)}
+h2.si-heading{font-size:var(--si-h2-size)}
+.si-content h2.si-heading::after{content:"";display:block;width:2.4em;height:.11em;margin-top:.3em;border-radius:1em;background:var(--si-accent)}
+.si-slide[data-layout="center"] h2.si-heading::after{margin-inline:auto}
+.si-body h3{font-family:var(--si-font-heading);font-size:1.12em;color:var(--si-accent-2);margin:.5em 0 .3em;text-transform:var(--si-heading-case)}
+.si-body p,.si-body li,.si-sub p{max-width:var(--si-measure)}
+.si-body p{margin:0 0 .7em}
+.si-body ul,.si-body ol{margin:0 0 .7em;padding-left:1.25em}
+.si-body li{margin:.28em 0}
+.si-body li::marker{color:var(--si-accent)}
+.si-body strong{color:var(--si-accent-2);font-weight:700}
+.si-body em{color:var(--si-fg)}
+.si-body del{color:var(--si-muted)}
+.si-body hr{border:0;border-top:1px solid var(--si-line);margin:1em 0}
+.si-body blockquote{margin:.6em 0;padding:.6em 1em;border-left:.22em solid var(--si-accent);background:var(--si-surface);border-radius:0 var(--si-radius) var(--si-radius) 0}
+.si-body blockquote p{margin:0}
+code{font-family:var(--si-font-mono);font-size:.86em;background:var(--si-surface-2);padding:.06em .32em;border-radius:.3em}
+pre.si-code{position:relative;font-family:var(--si-font-mono);font-size:.7em;line-height:1.55;margin:.5em 0;padding:1em 1.2em;
+  max-height:62cqb;overflow:auto;background:var(--si-surface);color:var(--si-fg);border:1px solid var(--si-line);border-radius:var(--si-radius);box-shadow:var(--si-shadow);tab-size:4}
+pre.si-code[data-lang]::before{content:attr(data-lang);position:absolute;top:.55em;right:.9em;font-size:.72em;letter-spacing:.12em;text-transform:uppercase;color:var(--si-muted)}
+pre.si-code code{background:none;padding:0;font-size:inherit;border-radius:0}
+.si-tk-c{color:var(--si-muted);font-style:italic}.si-tk-s{color:var(--si-accent-2)}.si-tk-k{color:var(--si-accent);font-weight:600}
+.si-tk-n{color:var(--si-warn)}.si-tk-f{color:var(--si-accent-2)}.si-tk-v{color:var(--si-warn)}.si-tk-m{color:var(--si-accent);font-weight:700}.si-tk-y{color:var(--si-accent-2)}
+.si-body table{border-collapse:collapse;width:100%;font-size:.86em;margin:.4em 0 .8em}
+.si-body th,.si-body td{padding:.45em .75em;border-bottom:1px solid var(--si-line);text-align:left;vertical-align:top}
+.si-body th{background:var(--si-surface-2);font-weight:650}
+.si-body tr:last-child td{border-bottom:0}
+.si-body img{border-radius:var(--si-radius)}
+pre.si-mermaid{background:none;border:0;text-align:center;margin:.4em 0;font-family:var(--si-font-mono);color:var(--si-muted);white-space:pre-wrap}
+
+/* title, section and closing slides */
+.si-title h1.si-heading,.si-closing h1.si-heading{font-size:calc(var(--si-h1-size) * 1.12);margin-bottom:.3em}
+.si-title h1.si-heading::after{content:"";display:block;width:1.3em;height:.075em;margin:.32em auto 0;border-radius:1em;background:var(--si-accent)}
+.si-sub{color:var(--si-muted);font-size:1.22em;max-width:42ch}
+.si-sub p{margin:0 0 .5em}
+.si-byline{margin:1.6em 0 0;font-family:var(--si-font-mono);font-size:.78em;letter-spacing:.06em;color:var(--si-muted)}
+.si-section .si-inner{box-shadow:inset max(.35rem,.9cqi) 0 0 var(--si-accent)}
+.si-kicker{margin:0 0 .7em;font-family:var(--si-font-mono);font-size:.8em;letter-spacing:.18em;text-transform:uppercase;color:var(--si-accent)}
+.si-section .si-sub{margin-inline:0}
+
+/* quote layout */
+.si-slide[data-layout="quote"] .si-body blockquote{font-family:var(--si-font-heading);font-size:1.85em;line-height:1.22;font-weight:500;letter-spacing:-.01em;
+  background:none;border:0;padding:0;margin:0 0 .6em;max-width:28ch;text-wrap:balance}
+.si-slide[data-layout="quote"] .si-body blockquote::before{content:"\201C";display:block;font-family:Georgia,"Times New Roman",serif;font-size:3em;line-height:.8;height:.45em;color:var(--si-accent)}
+.si-slide[data-layout="quote"] .si-body>p{color:var(--si-muted);font-size:1.05em}
+
+/* big-number layout: the first paragraph is the number, the rest the caption */
+.si-slide[data-layout="big-number"] .si-body>p:first-child,.si-slide[data-layout="big-number"] .si-body>.si-step:first-child>p{
+  font-family:var(--si-font-heading);font-size:5.6em;font-weight:800;line-height:.95;letter-spacing:-.045em;color:var(--si-accent);margin:0 0 .12em}
+.si-slide[data-layout="big-number"] .si-body>p:first-child strong{color:inherit}
+.si-bg-dark[data-layout="big-number"] .si-body>p:first-child{color:var(--si-fg)}
+.si-slide[data-layout="big-number"] .si-body>p:not(:first-child){font-size:1.3em;color:var(--si-muted);max-width:36ch}
+
+/* split layout: the second column sits on a panel */
+.si-slide[data-layout="split"] .si-col+.si-col{background:var(--si-surface-2);border-radius:var(--si-radius);padding:1em}
+
+/* backgrounds: overlays and a readable palette on dark or light backgrounds */
+.si-bg-overlay[data-overlay="dark"],.si-bg-overlay[data-overlay="auto"]{background:linear-gradient(180deg,rgb(0 0 0 / .3),rgb(0 0 0 / .62))}
+.si-bg-overlay[data-overlay="light"]{background:linear-gradient(180deg,rgb(255 255 255 / .55),rgb(255 255 255 / .8))}
+.si-bg-dark,.si-slide[data-layout="image"]{--si-fg:#fff;--si-muted:rgb(255 255 255 / .8);--si-line:rgb(255 255 255 / .28);--si-surface:rgb(12 14 18 / .55);--si-surface-2:rgb(255 255 255 / .14);color:var(--si-fg)}
+.si-bg-light{--si-fg:#121316;--si-muted:rgb(18 19 22 / .74);--si-line:rgb(18 19 22 / .2);--si-surface:rgb(255 255 255 / .72);--si-surface-2:rgb(255 255 255 / .55);color:var(--si-fg)}
+.si-caption{font-size:.7em;color:var(--si-muted);text-align:center;max-width:60ch}
+.si-slide[data-layout="image"] .si-caption{color:rgb(255 255 255 / .85);background:rgb(0 0 0 / .45);padding:.25em .7em;border-radius:1em}
+.si-image>img{border-radius:var(--si-radius);box-shadow:var(--si-shadow)}
+
+/* index page */
+.si-index{min-height:100%;overflow:auto;padding:clamp(1rem,5vw,4rem)}
+.si-index h1{font-family:var(--si-font-heading);font-size:clamp(1.8rem,3vw + 1rem,3.4rem);margin:0 0 .2em;letter-spacing:var(--si-heading-tracking)}
+.si-index>p{color:var(--si-muted);margin:0 0 2rem}
+.si-index .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,20rem),1fr));gap:1rem}
+.si-card{display:block;padding:1.2rem 1.3rem;border:1px solid var(--si-line);border-radius:.8rem;background:var(--si-surface);color:var(--si-fg);text-decoration:none;box-shadow:var(--si-shadow);transition:border-color .2s,transform .2s}
+.si-card:hover,.si-card:focus-visible{border-color:var(--si-accent);transform:translateY(-2px);outline:none}
+.si-card b{display:block;font-family:var(--si-font-heading);font-size:1.25rem;margin-bottom:.3rem}
+.si-card span{display:block;color:var(--si-muted);font-size:.95rem}
+.si-card small{display:block;margin-top:.8rem;font-family:var(--si-font-mono);color:var(--si-accent)}
+}
