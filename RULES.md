@@ -371,7 +371,10 @@ itself does not fade; only the words around the canvas do.
    references with them. `<image href>` files are embedded.
 8. With reduced motion, transitions are instant and packets are hidden.
 
-`si new` and `examples/assets/journey.svg` are a complete worked example.
+`si new` and `examples/assets/journey.svg` are a complete worked example. To
+build one from scratch, run `si new-canvas <name>` for a working, commented
+starter canvas plus a deck that drives it, and follow the step-by-step recipe in
+`docs/authoring-canvases.md`.
 
 ## 11. Speaker notes and the teleprompter
 

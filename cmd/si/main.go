@@ -55,6 +55,8 @@ Usage:
         validate decks: title, directives, assets, includes; exit 1 on a problem
   si new <name>
         scaffold <name>/ with a deck that uses every rule
+  si new-canvas <name>
+        scaffold <name>.svg (a working animated canvas) + <name>.md to preview it
   si rules
         print the markdown rules (RULES.md)
   si --export css-rules|rules|conf|example [--output <path>]
@@ -178,6 +180,11 @@ func run(argv []string, stdout, stderr io.Writer) int {
 			return usageErr(stderr, "new needs a <name>")
 		}
 		return scaffold(rest[0], stdout, stderr)
+	case "new-canvas":
+		if len(rest) != 1 {
+			return usageErr(stderr, "new-canvas needs a <name>")
+		}
+		return scaffoldCanvas(rest[0], stdout, stderr)
 	case "build":
 		if len(rest) != 1 {
 			return usageErr(stderr, "build needs one <dir|file.md>")
