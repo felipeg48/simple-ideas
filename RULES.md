@@ -437,7 +437,7 @@ non-`.md` files, so the `sections/` fragments never render as separate decks.
 A section lives in `sections/`, so its own paths are relative to itself — it
 references shared assets as `../images/...`.
 
-## 13. Code, Mermaid, tables, links
+## 13. Code, Mermaid, stage diagrams, tables, links
 
 - Fenced code with a language gets a small built-in highlighter (Go, Python,
   JavaScript/TypeScript, Java, Kotlin, Rust, SQL, YAML, TOML, JSON, Bash,
@@ -448,6 +448,28 @@ references shared assets as `../images/...`.
   that have a Mermaid fence. Offline, the diagram source shows as text. Set
   `mermaid: off` to always keep the source, or `mermaid: <url>` to load the
   script from elsewhere.
+- ```` ```stage ```` fences generate a themed, animated flow diagram — a
+  native, offline, themeable alternative to Mermaid for **simple flows**
+  (chains, fan-out, merges). Boxes, arrows, labels and a travelling dot or
+  marching dashes are emitted as self-contained SVG coloured with the deck
+  tokens; no runtime script, and motion pauses under reduced motion. Use
+  `mermaid` for dense graphs instead.
+
+  ```stage
+  dir: LR                              # LR (default) or TB
+  Read --> Cache
+  Cache -->|hit| Fast[Return fast]     # id[Label] renames; -->|x| labels an edge
+  Cache -->|miss| Disk --> Fill --> Fast
+  dot Read..Fast 2s                    # a dot loops along the route Read->Fast
+  flow Read..Disk                      # marching dashes along a route
+  ```
+
+  Nodes appear in first-seen order; `dot`/`flow A..B [dur]` take the shortest
+  route A→B. A bad block (unknown node, no route, malformed `dir`) is a `si
+  check` problem. The generator lays out chains, fan-out and merges with
+  longest-path layering (no crossing minimisation); diagrams size like any
+  figure, so give a wide one its own `##` slide. Full reference with many
+  examples: `docs/stage-diagrams.md`.
 - GitHub tables, strikethrough (`~~x~~`), autolinks and task lists work.
 - Relative links to `.md` files point at the generated `.html`:
   `[appendix](appendix.md)` → `appendix.html`.

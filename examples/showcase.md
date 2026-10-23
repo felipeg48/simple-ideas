@@ -30,6 +30,21 @@ Reveal one line at a time. The point of the last line: each team is green on its
 
 ---
 
+## The five hand-offs, start to finish
+
+```stage
+dir: LR
+Order --> Payment --> Warehouse --> Courier --> Delivered
+dot Order..Delivered 3s
+```
+
+- One order, three teams; the dot is the promise in flight
+
+Notes: (0.5 min)
+The same five stations the canvas uses next, drawn flat. The dot is the order moving Thursday-ward across every hand-off.
+
+---
+
 ## The journey on one screen
 
 <!-- svg: assets/journey.svg placed -->

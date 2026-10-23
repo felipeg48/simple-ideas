@@ -59,6 +59,7 @@ type deckRenderer struct {
 	words     map[string]bool
 	files     map[string]string
 	svgN      int
+	stageN    int
 	mermaid   bool
 	problems  []deck.Problem
 	warnings  []deck.Problem

@@ -51,7 +51,9 @@ func (r *nodeRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
 // nodeRenderer renders the custom nodes and fenced code (highlighting, mermaid).
 type nodeRenderer struct{ dr *deckRenderer }
 
-func (r *nodeRenderer) div(w util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+func (r *nodeRenderer) div(
+	w util.BufWriter, _ []byte, node ast.Node, entering bool,
+) (ast.WalkStatus, error) {
 	n := node.(*divNode)
 	if entering {
 		fmt.Fprintf(w, `<div class="%s"`, n.class)
@@ -65,7 +67,9 @@ func (r *nodeRenderer) div(w util.BufWriter, _ []byte, node ast.Node, entering b
 	return ast.WalkContinue, nil
 }
 
-func (r *nodeRenderer) raw(w util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+func (r *nodeRenderer) raw(
+	w util.BufWriter, _ []byte, node ast.Node, entering bool,
+) (ast.WalkStatus, error) {
 	if entering {
 		w.WriteString(node.(*rawNode).html)
 		w.WriteString("\n")
@@ -73,7 +77,9 @@ func (r *nodeRenderer) raw(w util.BufWriter, _ []byte, node ast.Node, entering b
 	return ast.WalkSkipChildren, nil
 }
 
-func (r *nodeRenderer) fence(w util.BufWriter, src []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+func (r *nodeRenderer) fence(
+	w util.BufWriter, src []byte, node ast.Node, entering bool,
+) (ast.WalkStatus, error) {
 	if !entering {
 		return ast.WalkContinue, nil
 	}
@@ -88,6 +94,17 @@ func (r *nodeRenderer) fence(w util.BufWriter, src []byte, node ast.Node, enteri
 	if lang == "mermaid" && r.dr.d.Meta.Mermaid != "off" {
 		r.dr.mermaid = true
 		fmt.Fprintf(w, "<pre class=\"si-mermaid\">%s</pre>\n", html.EscapeString(body))
+		return ast.WalkSkipChildren, nil
+	}
+	if lang == "stage" {
+		r.dr.stageN++
+		svg, err := genStage(body, r.dr.stageN)
+		if err != nil {
+			r.dr.problems = append(r.dr.problems, deck.Problem{File: r.dr.d.Path, Msg: "stage: " + err.Error()})
+			fmt.Fprintf(w, "<figure class=\"si-figure\"><pre class=\"si-code\">stage: %s</pre></figure>\n", html.EscapeString(err.Error()))
+			return ast.WalkSkipChildren, nil
+		}
+		fmt.Fprintf(w, "<figure class=\"si-figure\">%s</figure>\n", svg)
 		return ast.WalkSkipChildren, nil
 	}
 	if lang != "" {
