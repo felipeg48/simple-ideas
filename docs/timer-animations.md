@@ -4,32 +4,53 @@ The break timer (`t`) can run a themed animation layer behind its translucent
 HUD — the layering is **SLIDE │ ANIMATION │ TIMER**. Turn it on in `si.conf`:
 
 ```
-timer.animation: globe        # built-in: globe | ranges | roaches
+timer.animation: waves        # built-in: waves | orbit | bokeh
 ```
 
 Three built-ins ship with si:
 
 | name | what it is |
 |---|---|
-| `globe` | a rotating wireframe globe with orbiting nodes; spins faster as time runs down |
-| `ranges` | range replicas distributing and rebalancing across nodes |
-| `roaches` | cockroaches wandering the screen; they speed up and scatter near zero |
+| `waves` | layered sine waves drifting across the screen; they drift faster as time runs down |
+| `orbit` | a constellation of nodes orbiting a centre, linked when they drift close |
+| `bokeh` | soft dots rising and fading — a calm ambient field |
 
 All three are drawn with the deck's theme tokens (so they match `crdb`, `paper`,
 your custom theme, dark mode …) and pause under `prefers-reduced-motion`.
 
+## A toggle between several
+
+List more than one, comma-separated, and the HUD shows a toggle so you can
+switch between them live during the break:
+
+```
+timer.animation: waves,orbit,bokeh
+```
+
+The first is the default; your choice is remembered per browser.
+
+## Digital or analog face
+
+The countdown shows as digits by default. Switch it to an analog sport-clock
+dial (a depleting ring with a sweeping hand) — set a default and/or toggle it
+live in the HUD:
+
+```
+timer.face: analog            # digital (default) | analog
+```
+
 ## Custom animations
 
 Point `timer.animation.path` at a directory and `timer.animation` (or
-`timer.animation.name`) at a file stem:
+`timer.animation.name`) at a file stem (a comma list works here too):
 
 ```
 timer.animation.path: ./anim
-timer.animation.name: orbit
+timer.animation.name: myanim
 ```
 
-si loads `./anim/orbit.js` or `./anim/orbit.svg` (by extension) and inlines it,
-so the built HTML stays self-contained. The path is resolved relative to the
+si loads `./anim/myanim.js` or `./anim/myanim.svg` (by extension) and inlines
+it, so the built HTML stays self-contained. The path is resolved relative to the
 current directory, then the deck. A missing animation is a `si check` problem.
 
 ### The `.js` format
@@ -58,7 +79,7 @@ function (canvas, api) {
 intensify, drain, or resolve as the break runs out. Read theme colours from
 `api.tokens` (resolved `--si-*` values) rather than hard-coding, so the
 animation re-themes for free. The built-ins in `internal/assets/web/anim/` are
-the reference — `globe.js` is the smallest.
+the reference — `bokeh.js` is the smallest.
 
 ### The `.svg` format
 

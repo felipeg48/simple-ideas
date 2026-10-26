@@ -519,9 +519,12 @@ references shared assets as `../images/...`.
   open the deck does not advance, so it is safe to leave projected during a
   break. It needs no network and works from `file://`. The presets default to
   `5,10,15,20,30,45,60` minutes; override them in `si.conf` with `timer.time` and
-  `timer.unit` (minutes or seconds). A `timer.animation` runs a themed animation
-  layer behind the translucent HUD (SLIDE │ ANIMATION │ TIMER) — built-ins
-  `globe`, `ranges`, `roaches`, or your own; see §16 and `docs/timer-animations.md`.
+  `timer.unit` (minutes or seconds). The countdown shows as digits or, with
+  `timer.face: analog`, an analog sport-clock dial — toggle it live in the HUD.
+  A `timer.animation` runs a themed animation layer behind the translucent HUD
+  (SLIDE │ ANIMATION │ TIMER) — built-ins `waves`, `orbit`, `bokeh`, or your own;
+  list several (comma-separated) for a toggle. See §16 and
+  `docs/timer-animations.md`.
 
 - **Draw** (`a`): a transient pen over the current slide, for circling or
   underlining as you talk. Drag to draw (mouse, touch, or pen — pen pressure
@@ -596,7 +599,8 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `feature.<name>: off` | turn a feature off (its key stops working and its toolbar button is hidden) |
 | `timer.time: 10,15,30` | break-timer presets (default `5,10,15,20,30,45,60`) |
 | `timer.unit: seconds` | preset unit: `minutes` (default) or `seconds` |
-| `timer.animation: globe` | animation behind the timer HUD: `globe`, `ranges`, `roaches`, or a custom name |
+| `timer.face: analog` | countdown face: `digital` (default) or `analog` (sport-clock dial) |
+| `timer.animation: waves,orbit` | animation(s) behind the timer HUD: `waves`, `orbit`, `bokeh`, or custom names; a comma list gives a toggle |
 | `timer.animation.path: ./anim` | directory of custom `<name>.js` / `<name>.svg` animations |
 
 Nesting is written as dotted keys (`timer.animation.path`), not YAML.

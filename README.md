@@ -100,7 +100,7 @@ Notes: (1.5 min)
 The token reaches payments and turns red.
 ```
 
-The full format, with an example for every rule: [RULES.md](RULES.md)
+The full format, with an example for every rule: [RULES.md](docs/RULES.md)
 (also `si rules`).
 
 Or, if you prefer AsciiDoc, name the file `*.adoc` — si converts it and every
@@ -172,7 +172,7 @@ it wins without specificity games; the fluid layout mechanics stay built in.
 
 - **[User manual](docs/reference/user-manual.md)** — rules, syntax, examples
   (also `si manual --slides` / `si manual --pdf`)
-- **[RULES.md](RULES.md)** — the complete format reference (also `si rules`)
+- **[RULES.md](docs/RULES.md)** — the complete format reference (also `si rules`)
 - [docs/stage-diagrams.md](docs/stage-diagrams.md) — the `stage` flow DSL
 - [docs/authoring-canvases.md](docs/authoring-canvases.md) — hand-authored animated canvases
 - [docs/timer-animations.md](docs/timer-animations.md) — the break-timer animation layer

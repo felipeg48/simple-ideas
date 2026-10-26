@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	simpleideas "github.com/felipeg48/simple-ideas"
+	docs "github.com/felipeg48/simple-ideas/docs"
 	"github.com/felipeg48/simple-ideas/examples"
 	"github.com/felipeg48/simple-ideas/internal/assets"
 	"github.com/felipeg48/simple-ideas/internal/config"
@@ -35,7 +35,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/serve"
 )
 
-const version = "0.3.0"
+const version = "0.4.0"
 
 // Exit codes.
 const (
@@ -183,7 +183,7 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, "si", version)
 		return exitOK
 	case "rules":
-		fmt.Fprint(stdout, simpleideas.Rules)
+		fmt.Fprint(stdout, docs.Rules)
 		return exitOK
 	case "play":
 		if len(rest) != 1 {
@@ -522,7 +522,7 @@ func export(o *options, stdout, stderr io.Writer) int {
 	case "css-rules":
 		return write(assets.StarterCSS())
 	case "rules":
-		return write(simpleideas.Rules)
+		return write(docs.Rules)
 	case "conf":
 		return write(config.Default)
 	case "example":

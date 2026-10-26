@@ -3,7 +3,7 @@ package assets
 import "testing"
 
 func TestAnim(t *testing.T) {
-	for _, n := range []string{"globe", "ranges", "roaches"} {
+	for _, n := range []string{"waves", "orbit", "bokeh"} {
 		if code, kind, ok := Animation(n); !ok || kind != "js" || len(code) < 50 {
 			t.Errorf("%s: ok=%v kind=%s len=%d", n, ok, kind, len(code))
 		}

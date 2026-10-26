@@ -200,19 +200,45 @@
 
   /* ---------- break timer HUD (t): a full-screen countdown to project during a break ---------- */
   var hud = document.querySelector('.si-hud'), hudTime = hud && hud.querySelector('.si-hud-time');
+  var hudDial = hud && hud.querySelector('.si-hud-dial');
   var tcfg = cfg.timer || {};
   var hudUnit = tcfg.unit === 'seconds' ? 'seconds' : 'minutes';
   var hudMul = hudUnit === 'seconds' ? 1000 : 60000;
   var hudMins = (tcfg.time && tcfg.time.length) ? tcfg.time : [5, 10, 15, 20, 30, 45, 60];
+  var hudAnims = (tcfg.animations && tcfg.animations.length) ? tcfg.animations : [];
+  var animKinds = tcfg.animKinds || {};
+  var savedAnim = load('si-anim');
+  var animCurrent = hudAnims.indexOf(savedAnim) >= 0 ? savedAnim : (hudAnims[0] || '');
+  var savedFace = load('si-face');
+  var faceCurrent = (savedFace === 'analog' || savedFace === 'digital') ? savedFace : (tcfg.face === 'analog' ? 'analog' : 'digital');
   var hudEnd = 0, hudLeft = 0, hudTotal = 0, hudPaused = false, hudTimer = 0;
   function hudPad(x) { return (x < 10 ? '0' : '') + x; }
   function hudFmt(ms) { if (ms < 0) ms = 0; var s = Math.round(ms / 1000); return Math.floor(s / 60) + ':' + hudPad(s % 60); }
+  var dialArc = hudDial && hudDial.querySelectorAll('circle')[1];
+  var dialHand = hudDial && hudDial.querySelector('line');
+  var dialText = hudDial && hudDial.querySelector('text');
+  var DIAL_C = 2 * Math.PI * 44; // circumference of the r=44 ring
+  if (dialArc) dialArc.style.strokeDasharray = DIAL_C;
+  function applyFace() {
+    var analog = faceCurrent === 'analog' && !!hudDial;
+    if (hudTime) hudTime.hidden = analog;
+    // hudDial is an <svg>: the `hidden` IDL property is not reflected on SVG
+    // elements, so toggle the content attribute directly.
+    if (hudDial) { if (analog) hudDial.removeAttribute('hidden'); else hudDial.setAttribute('hidden', ''); }
+  }
+  function dialUpdate() {
+    if (!dialArc) return;
+    var elapsed = hudTotal > 0 ? Math.max(0, Math.min(1, 1 - hudLeft / hudTotal)) : 0;
+    dialArc.style.strokeDashoffset = DIAL_C * elapsed; // ring empties as time runs down
+    if (dialHand) dialHand.setAttribute('transform', 'rotate(' + (elapsed * 360) + ' 50 50)');
+    if (dialText) dialText.textContent = hudFmt(hudLeft);
+  }
   function hudShow(on) {
     if (!hud) return;
     if (on === undefined) on = !hud.classList.contains('is-open');
     hud.classList.toggle('is-open', on);
     hud.setAttribute('aria-hidden', on ? 'false' : 'true');
-    if (on) { startAnim(); } // runs continuously while the HUD is open, independent of the countdown
+    if (on) { applyFace(); dialUpdate(); startAnim(); } // runs continuously while the HUD is open, independent of the countdown
     else { clearInterval(hudTimer); hudTimer = 0; hud.classList.remove('is-over'); stopAnim(); }
   }
   function hudStart(m) {
@@ -244,15 +270,15 @@
   }
   function startAnim() {
     stopAnim();
-    if (!tcfg.animation) return;
+    if (!animCurrent) return;
     animLayer = document.createElement('div');
     animLayer.className = 'si-anim';
     animLayer.setAttribute('aria-hidden', 'true');
-    if (tcfg.animKind === 'svg') {
-      var tpl = document.getElementById('si-anim-svg');
+    if (animKinds[animCurrent] === 'svg') {
+      var tpl = document.getElementById('si-anim-svg-' + animCurrent);
       if (tpl) animLayer.innerHTML = tpl.innerHTML;
       deck.appendChild(animLayer);
-    } else if (typeof window.__siAnim === 'function') {
+    } else if (window.__siAnims && typeof window.__siAnims[animCurrent] === 'function') {
       var cv = document.createElement('canvas');
       animLayer.appendChild(cv); deck.appendChild(animLayer);
       sizeAnimCanvas(cv);
@@ -262,7 +288,7 @@
         fraction: function () { return hudTotal > 0 ? Math.max(0, Math.min(1, 1 - hudLeft / hudTotal)) : 0; },
         remaining: function () { return Math.max(0, hudLeft / 1000); }
       };
-      try { animStop = window.__siAnim(cv, api); } catch (e) { if (window.console) console.warn('si-anim', e); }
+      try { animStop = window.__siAnims[animCurrent](cv, api); } catch (e) { if (window.console) console.warn('si-anim', e); }
     }
     if (hud) hud.classList.add('has-anim');
   }
@@ -271,7 +297,8 @@
   function hudTick() {
     if (!hudPaused) hudLeft = hudEnd - Date.now();
     if (hudTime) hudTime.textContent = hudFmt(hudLeft);
-    if (hudLeft <= 0) { hudLeft = 0; if (hudTime) hudTime.textContent = '0:00'; hud.classList.add('is-over'); clearInterval(hudTimer); hudTimer = 0; }
+    dialUpdate();
+    if (hudLeft <= 0) { hudLeft = 0; if (hudTime) hudTime.textContent = '0:00'; dialUpdate(); hud.classList.add('is-over'); clearInterval(hudTimer); hudTimer = 0; }
   }
 
   /* ---------- presenter view (p): a second window synced over BroadcastChannel ---------- */
@@ -451,6 +478,30 @@
     if (hint) {
       var keyspan = hudMins.length > 1 ? '1-' + Math.min(9, hudMins.length) : '1';
       hint.textContent = keyspan + ' pick ' + hudUnit + ' · space pause · ' + (cmd.timer || 't') + ' / Esc close';
+    }
+    /* toggle row: pick the animation (when several) and the face (digital/analog) */
+    var toggle = hud.querySelector('.si-hud-toggle');
+    if (toggle) {
+      toggle.textContent = '';
+      function seg(labels, values, getCur, onPick) {
+        if (values.length < 2) return;
+        var grp = document.createElement('div');
+        grp.className = 'si-hud-seg';
+        values.forEach(function (val, i) {
+          var b = document.createElement('button');
+          b.type = 'button'; b.textContent = labels[i];
+          b.setAttribute('aria-pressed', getCur() === val ? 'true' : 'false');
+          b.addEventListener('click', function () {
+            onPick(val);
+            each(grp.querySelectorAll('button'), function (x, j) { x.setAttribute('aria-pressed', values[j] === val ? 'true' : 'false'); });
+            b.blur();
+          });
+          grp.appendChild(b);
+        });
+        toggle.appendChild(grp);
+      }
+      seg(hudAnims, hudAnims, function () { return animCurrent; }, function (v) { animCurrent = v; save('si-anim', v); if (hud.classList.contains('is-open')) startAnim(); });
+      if (hudDial) seg(['Digital', 'Analog'], ['digital', 'analog'], function () { return faceCurrent; }, function (v) { faceCurrent = v; save('si-face', v); applyFace(); dialUpdate(); });
     }
   })();
   if (help) help.addEventListener('click', function () { toggleHelp(false); });

@@ -66,14 +66,17 @@ type deckRenderer struct {
 	stageN    int
 	cur       *slideCtx // the slide being rendered, for the stage fence's steps
 	mermaid   bool
-	themeName string // resolved theme name (or "custom" for a CSS-file theme)
-	themeCSS  string // the si.theme layer CSS for this deck
-	animName  string // resolved timer-animation name (empty if none)
-	animKind  string // "js" or "svg"
-	animCode  string // the animation source
+	themeName string      // resolved theme name (or "custom" for a CSS-file theme)
+	themeCSS  string      // the si.theme layer CSS for this deck
+	anims     []animEntry // resolved break-timer animations (empty if none)
 	problems  []deck.Problem
 	warnings  []deck.Problem
 }
+
+// animEntry is one resolved break-timer animation: its name, kind ("js"/"svg")
+// and source. timer.animation may name several (comma-separated), which the HUD
+// offers as a toggle.
+type animEntry struct{ name, kind, code string }
 
 func (dr *deckRenderer) at(sc *slideCtx, format string, a ...any) deck.Problem {
 	p := deck.Problem{File: dr.d.Path, Msg: fmt.Sprintf(format, a...)}
@@ -219,11 +222,12 @@ func plain(s string) string { return strings.TrimSpace(tagRE.ReplaceAllString(s,
 
 var pageSizes = map[string]string{"16:9": "13.333in 7.5in", "16:10": "12in 7.5in", "4:3": "10in 7.5in", "1:1": "7.5in 7.5in", "9:16": "7.5in 13.333in"}
 
-// resolveAnim resolves the configured break-timer animation into dr.anim*.
-// timer.animation names a built-in (globe/ranges/roaches) or, with
-// timer.animation.path set, a <name>.js|.svg file in that directory (resolved
-// relative to cwd, then the deck dir). A configured-but-missing animation is a
-// deck problem; no configured animation leaves the fields empty (no layer).
+// resolveAnim resolves the configured break-timer animation(s) into dr.anims.
+// timer.animation names one or more built-ins (waves/orbit/bokeh) or, with
+// timer.animation.path set, <name>.js|.svg files in that directory (resolved
+// relative to cwd, then the deck dir); a comma-separated list becomes a toggle
+// in the HUD. A configured-but-missing animation is a deck problem; no
+// configured animation leaves dr.anims empty (no layer).
 func (dr *deckRenderer) resolveAnim() {
 	if dr.opt.Config == nil {
 		return
@@ -232,25 +236,35 @@ func (dr *deckRenderer) resolveAnim() {
 	if t.Animation == "" {
 		return
 	}
-	if t.AnimationPath != "" {
+	for _, raw := range strings.Split(t.Animation, ",") {
+		name := strings.TrimSpace(raw)
+		if name == "" {
+			continue
+		}
+		dr.resolveOneAnim(name, t.AnimationPath)
+	}
+}
+
+func (dr *deckRenderer) resolveOneAnim(name, dir string) {
+	if dir != "" {
 		for _, k := range []string{"js", "svg"} {
-			p := filepath.Join(t.AnimationPath, t.Animation+"."+k)
+			p := filepath.Join(dir, name+"."+k)
 			if !filepath.IsAbs(p) {
 				if _, err := os.Stat(p); err != nil {
-					p = filepath.Join(filepath.Dir(dr.d.Path), t.AnimationPath, t.Animation+"."+k)
+					p = filepath.Join(filepath.Dir(dr.d.Path), dir, name+"."+k)
 				}
 			}
 			if b, err := os.ReadFile(p); err == nil {
-				dr.animName, dr.animKind, dr.animCode = t.Animation, k, string(b)
+				dr.anims = append(dr.anims, animEntry{name, k, string(b)})
 				return
 			}
 		}
 	}
-	if code, kind, ok := assets.Animation(t.Animation); ok {
-		dr.animName, dr.animKind, dr.animCode = t.Animation, kind, code
+	if code, kind, ok := assets.Animation(name); ok {
+		dr.anims = append(dr.anims, animEntry{name, kind, code})
 		return
 	}
-	dr.problems = append(dr.problems, deck.Problem{File: dr.d.Path, Msg: fmt.Sprintf("timer.animation: no animation %q (built-ins: globe, ranges, roaches)", t.Animation)})
+	dr.problems = append(dr.problems, deck.Problem{File: dr.d.Path, Msg: fmt.Sprintf("timer.animation: no animation %q (built-ins: %s)", name, strings.Join(assets.AnimationNames(), ", "))})
 }
 
 // resolveTheme sets dr.themeName and dr.themeCSS. The theme is the --theme flag,
@@ -413,17 +427,29 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 			feats = opt.Config.Features
 		}
 		t := opt.Config.Timer
-		if len(t.Times) > 0 || t.Unit != "" || dr.animName != "" {
-			timer = map[string]any{"time": t.Times, "unit": t.Unit, "animation": dr.animName, "animKind": dr.animKind}
+		if len(t.Times) > 0 || t.Unit != "" || t.Face != "" || len(dr.anims) > 0 {
+			names := make([]string, 0, len(dr.anims))
+			kinds := map[string]string{}
+			for _, a := range dr.anims {
+				names = append(names, a.name)
+				kinds[a.name] = a.kind
+			}
+			timer = map[string]any{"time": t.Times, "unit": t.Unit, "face": t.Face, "animations": names, "animKinds": kinds}
 		}
 	}
 	cfg, _ := json.Marshal(map[string]any{"keys": keys, "features": feats, "timer": timer})
 	fmt.Fprintf(&b, "<script>window.SI_CONFIG=%s;</script>\n", cfg)
-	if dr.animName != "" {
-		if dr.animKind == "js" {
-			b.WriteString("<script>window.__siAnim=(" + dr.animCode + "\n);</script>\n")
-		} else {
-			fmt.Fprintf(&b, "<template id=\"si-anim-svg\">%s</template>\n", dr.animCode)
+	if len(dr.anims) > 0 {
+		var js []string
+		for _, a := range dr.anims {
+			if a.kind == "js" {
+				js = append(js, strconv.Quote(a.name)+":("+a.code+"\n)")
+			} else {
+				fmt.Fprintf(&b, "<template id=\"si-anim-svg-%s\">%s</template>\n", html.EscapeString(a.name), a.code)
+			}
+		}
+		if len(js) > 0 {
+			b.WriteString("<script>window.__siAnims={" + strings.Join(js, ",") + "};</script>\n")
 		}
 	}
 	if dr.mermaid {
@@ -470,7 +496,15 @@ const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 </table></div></div>
 <div class="si-hud" role="dialog" aria-label="Break timer" aria-hidden="true"><div>
 <div class="si-hud-time">0:00</div>
+<svg class="si-hud-dial" viewBox="0 0 100 100" aria-hidden="true" fill="none" stroke="currentColor" hidden>
+<circle cx="50" cy="50" r="44" stroke-width="3" opacity="0.18"></circle>
+<circle cx="50" cy="50" r="44" stroke-width="3" stroke-linecap="round" transform="rotate(-90 50 50)"></circle>
+<line x1="50" y1="50" x2="50" y2="9" stroke-width="2" stroke-linecap="round"></line>
+<circle cx="50" cy="50" r="2.6" fill="currentColor" stroke="none"></circle>
+<text x="50" y="50" fill="currentColor" stroke="none" text-anchor="middle" dominant-baseline="central">0:00</text>
+</svg>
 <div class="si-hud-presets"><button type="button" data-si-min="5">5</button><button type="button" data-si-min="10">10</button><button type="button" data-si-min="15">15</button><button type="button" data-si-min="20">20</button><button type="button" data-si-min="30">30</button><button type="button" data-si-min="45">45</button><button type="button" data-si-min="60">60</button></div>
+<div class="si-hud-toggle"></div>
 <p class="si-hud-hint">1-7 pick minutes · space pause · t / Esc close</p>
 </div></div>
 <svg class="si-draw" aria-hidden="true"></svg>

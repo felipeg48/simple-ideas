@@ -48,12 +48,13 @@ feature.timer:     on
 feature.presenter: on
 feature.overview:  on
 
-# break timer (t): presets, unit, and a background animation layer
+# break timer (t): presets, unit, a background animation layer, and the face
 # timer.time: 5,10,15,20,30,45,60   # preset durations shown in the HUD
 # timer.unit: minutes               # minutes (default) or seconds
-# timer.animation: globe            # built-in: globe | ranges | roaches (off if unset)
+# timer.face: digital               # digital (default) or analog (sport-clock dial)
+# timer.animation: waves,orbit      # built-in: waves | orbit | bokeh; a comma list gives a toggle (off if unset)
 # timer.animation.path: ./anim      # optional dir of custom .js/.svg animations
-# timer.animation.name: globe       # the file stem to run from that dir
+# timer.animation.name: waves       # the file stem(s) to run from that dir
 `
 
 // Config is a parsed si.conf. Zero value is a usable empty config.
@@ -69,8 +70,9 @@ type Config struct {
 type TimerConfig struct {
 	Times         []int  // preset durations; empty = built-in 5,10,15,20,30,45,60
 	Unit          string // "minutes" (default) or "seconds"
-	Animation     string // animation name (built-in, or a file stem under AnimationPath)
+	Animation     string // animation name(s); comma-separated gives a HUD toggle
 	AnimationPath string // optional directory of custom animation files
+	Face          string // "digital" (default) or "analog" (sport-clock dial)
 }
 
 func (c *Config) setTimerTimes(v string, ln int) {
@@ -173,6 +175,12 @@ func Parse(r io.Reader) *Config {
 			c.Timer.AnimationPath = v
 		case k == "timer.animation.name", k == "timer.animation":
 			c.Timer.Animation = v
+		case k == "timer.face":
+			if v != "digital" && v != "analog" {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: timer.face wants digital/analog, got %q", ln, v))
+			} else {
+				c.Timer.Face = v
+			}
 		case strings.HasPrefix(k, "keys."):
 			c.setKey(strings.TrimPrefix(k, "keys."), v, ln)
 		case strings.HasPrefix(k, "feature."), strings.HasPrefix(k, "features."):
@@ -206,5 +214,5 @@ func Load(paths ...string) *Config {
 // Empty reports whether the config sets nothing.
 func (c *Config) Empty() bool {
 	return c == nil || (c.Theme == "" && len(c.Keys) == 0 && len(c.Features) == 0 &&
-		len(c.Timer.Times) == 0 && c.Timer.Unit == "" && c.Timer.Animation == "" && c.Timer.AnimationPath == "")
+		len(c.Timer.Times) == 0 && c.Timer.Unit == "" && c.Timer.Animation == "" && c.Timer.AnimationPath == "" && c.Timer.Face == "")
 }

@@ -49,7 +49,7 @@ what you chose.
 | `internal/serve/` | `si play`: on-the-fly render, static files, SSE `/_si/events`, mtime-polling watcher (decks, assets, `--css` paths) |
 | `internal/config/` | optional `si.conf` (flat `key: value`, stdlib): default theme, `keys.*` command remaps, `feature.*` on/off; injected into the deck as `window.SI_CONFIG`, read by `deck.js` |
 | `internal/assets/` | embedded web files (`web/layout.css` unlayered mechanics, `web/theme.css` looks, `web/deck.js` runtime, `web/presenter.html` teleprompter) and `contract.go` (tokens, hooks, theme values, starter CSS) |
-| `rules.go` | embeds RULES.md for `si rules` |
+| `docs/docs.go` | embeds RULES.md + reference/user-manual.md for `si rules` / `si manual` (in `docs/` so go:embed can reach them; no `.go` at the repo root) |
 | `examples/` | showcase deck, included appendix, `assets/journey.svg` canvas, media, `css/harbor.css` theme; embedded for `si new` and `--export example` |
 | `docs/screenshots/` | headless screenshots referenced by the README |
 

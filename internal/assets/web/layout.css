@@ -153,6 +153,17 @@ img,svg,video{max-width:100%}
 .si-hud-presets button{font:inherit;font-family:var(--si-font-mono);color:var(--si-fg);background:var(--si-surface);border:1px solid var(--si-line);border-radius:.5em;padding:.5em 1em;min-width:3em;cursor:pointer}
 .si-hud-presets button:hover,.si-hud-presets button:focus-visible{border-color:var(--si-accent);outline:none}
 .si-hud-hint{margin:0;font-family:var(--si-font-mono);font-size:clamp(.7rem,2vmin,1rem);color:var(--si-muted)}
+.si-hud-dial{width:min(60vmin,30rem);aspect-ratio:1;height:auto;color:var(--si-accent)}
+.si-hud-dial text{font-family:var(--si-font-mono);font-weight:700;font-variant-numeric:tabular-nums;font-size:16px;fill:var(--si-fg)}
+.si-hud.is-over .si-hud-dial{color:var(--si-crit)}
+.si-hud-toggle{display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(.5rem,2vmin,1rem)}
+.si-hud-toggle:empty{display:none}
+.si-hud-seg{display:inline-flex;border:1px solid var(--si-line);border-radius:.5em;overflow:hidden}
+.si-hud-seg button{font:inherit;font-family:var(--si-font-mono);font-size:clamp(.7rem,1.8vmin,.95rem);color:var(--si-muted);background:var(--si-surface);border:0;border-left:1px solid var(--si-line);padding:.4em .9em;cursor:pointer}
+.si-hud-seg button:first-child{border-left:0}
+.si-hud-seg button[aria-pressed=true]{color:var(--si-bg);background:var(--si-accent)}
+.si-hud-seg button:hover,.si-hud-seg button:focus-visible{outline:none;color:var(--si-fg)}
+.si-hud-seg button[aria-pressed=true]:hover{color:var(--si-bg)}
 
 /* annotate (a): a transient pen layer over the deck; strokes clear on slide change.
    screen-space, like the other chrome — not slide content, so pointer px is fine */

@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	simpleideas "github.com/felipeg48/simple-ideas"
+	docs "github.com/felipeg48/simple-ideas/docs"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/render"
 )
@@ -33,7 +33,7 @@ func runManual(o *options, stdout, stderr io.Writer) int {
 	}
 	defer os.RemoveAll(dir)
 	md := filepath.Join(dir, "si-manual.md")
-	if err := os.WriteFile(md, []byte(simpleideas.Manual), 0o644); err != nil {
+	if err := os.WriteFile(md, []byte(docs.Manual), 0o644); err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
 		return exitProblems
 	}
