@@ -212,13 +212,14 @@
     if (on === undefined) on = !hud.classList.contains('is-open');
     hud.classList.toggle('is-open', on);
     hud.setAttribute('aria-hidden', on ? 'false' : 'true');
-    if (!on) { clearInterval(hudTimer); hudTimer = 0; hud.classList.remove('is-over'); stopAnim(); }
+    if (on) { startAnim(); } // runs continuously while the HUD is open, independent of the countdown
+    else { clearInterval(hudTimer); hudTimer = 0; hud.classList.remove('is-over'); stopAnim(); }
   }
   function hudStart(m) {
     hudTotal = m * hudMul;
     hudEnd = Date.now() + hudTotal; hudLeft = hudTotal; hudPaused = false; hud.classList.remove('is-over');
     clearInterval(hudTimer); hudTick(); hudTimer = setInterval(hudTick, 250);
-    startAnim();
+    if (!animLayer) startAnim(); // keep the already-running loop; only start if not already
   }
 
   /* ---------- timer animation layer: SLIDE | ANIMATION | TIMER (behind the HUD) ---------- */
