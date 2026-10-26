@@ -238,17 +238,18 @@
     if (on === undefined) on = !hud.classList.contains('is-open');
     hud.classList.toggle('is-open', on);
     hud.setAttribute('aria-hidden', on ? 'false' : 'true');
-    if (on) { applyFace(); dialUpdate(); startAnim(); } // runs continuously while the HUD is open, independent of the countdown
+    if (on) { applyFace(); dialUpdate(); hudApplyChrome(); startAnim(); } // runs continuously while the HUD is open, independent of the countdown
     else { clearInterval(hudTimer); hudTimer = 0; hud.classList.remove('is-over', 'is-focus'); stopAnim(); }
   }
-  // is-focus: once the countdown starts, hide the presets/toggles/hint so only
-  // the clock (and the animation) show; any key or click brings them back.
-  function hudReveal() { if (hud) hud.classList.remove('is-focus'); }
+  // is-focus hides the presets/toggles/hint so only the clock (and the animation)
+  // show. It is tied to the countdown: focus while running, chrome back while
+  // paused or not started — so Space (pause) reveals the controls, resume hides them.
+  function hudApplyChrome() { if (hud) hud.classList.toggle('is-focus', !!hudTimer && !hudPaused); }
   function hudStart(m) {
     hudTotal = m * hudMul;
     hudEnd = Date.now() + hudTotal; hudLeft = hudTotal; hudPaused = false; hud.classList.remove('is-over');
-    hud.classList.add('is-focus');
-    clearInterval(hudTimer); hudTick(); hudTimer = setInterval(hudTick, 250);
+    clearInterval(hudTimer); hudTimer = setInterval(hudTick, 250); hudTick();
+    hudApplyChrome();
     if (!animLayer) startAnim(); // keep the already-running loop; only start if not already
   }
 
@@ -297,12 +298,12 @@
     if (hud) hud.classList.add('has-anim');
   }
   window.addEventListener('resize', function () { if (animLayer && animLayer._cv) sizeAnimCanvas(animLayer._cv); });
-  function hudPause() { if (!hudTimer) return; hudPaused = !hudPaused; if (!hudPaused) hudEnd = Date.now() + hudLeft; }
+  function hudPause() { if (!hudTimer) return; hudPaused = !hudPaused; if (!hudPaused) hudEnd = Date.now() + hudLeft; hudApplyChrome(); }
   function hudTick() {
     if (!hudPaused) hudLeft = hudEnd - Date.now();
     if (hudTime) hudTime.textContent = hudFmt(hudLeft);
     dialUpdate();
-    if (hudLeft <= 0) { hudLeft = 0; if (hudTime) hudTime.textContent = '0:00'; dialUpdate(); hud.classList.add('is-over'); clearInterval(hudTimer); hudTimer = 0; }
+    if (hudLeft <= 0) { hudLeft = 0; if (hudTime) hudTime.textContent = '0:00'; dialUpdate(); hud.classList.add('is-over'); clearInterval(hudTimer); hudTimer = 0; hudApplyChrome(); }
   }
 
   /* ---------- find slide (/) : jump by number or search titles + body ---------- */
@@ -532,8 +533,7 @@
     if (/INPUT|SELECT|TEXTAREA/.test(tag)) return;
     if (hud && hud.classList.contains('is-open')) {
       if (e.key === 'Escape' || e.key === cmd.timer) { e.preventDefault(); hudShow(false); return; }
-      if (e.key === ' ') { e.preventDefault(); hudPause(); return; }
-      if (hud.classList.contains('is-focus')) { e.preventDefault(); hudReveal(); return; } // any other key brings the chrome back
+      if (e.key === ' ') { e.preventDefault(); hudPause(); return; } // pause reveals the controls; resume hides them
       var pi = '123456789'.indexOf(e.key); if (pi >= 0 && pi < hudMins.length) { e.preventDefault(); hudStart(hudMins[pi]); return; }
       if (/^(Arrow|Page|Home|End|Enter)/.test(e.key)) e.preventDefault();
       return;
@@ -566,7 +566,7 @@
   /* rebuild the HUD preset buttons + hint from the configured times/unit */
   (function () {
     if (!hud) return;
-    hud.addEventListener('click', function (e) { if (!e.target.closest('button') && hud.classList.contains('is-focus')) hudReveal(); });
+    hud.addEventListener('click', function (e) { if (!e.target.closest('button') && hudTimer) hudPause(); }); // click the clock to pause (reveal) / resume (hide)
     var presets = hud.querySelector('.si-hud-presets'), hint = hud.querySelector('.si-hud-hint');
     if (presets) {
       presets.textContent = '';
