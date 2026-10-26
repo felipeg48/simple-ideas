@@ -2,6 +2,7 @@ package deck
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -9,8 +10,9 @@ import (
 // that Parse understands, so `.adoc`/`.asciidoc` decks feed the same pipeline.
 // It is a focused preprocessor, not a full AsciiDoc implementation (stdlib only,
 // no dependency): document header + attributes, section headings (as slides),
-// lists, source/listing blocks, admonitions, links, images, inline bold and
-// comments. Anything else is passed through unchanged; see docs/asciidoc.md.
+// lists, description lists, source/listing blocks, tables, quote blocks,
+// admonitions, includes, links, images, inline bold and comments. Anything else
+// is passed through unchanged; see docs/asciidoc.md.
 //
 // A deck that already begins with an si `---` front-matter block is left alone
 // (that block passes through); otherwise an AsciiDoc `= Title` header and its
@@ -22,14 +24,20 @@ func adocToMarkdown(src string) string {
 
 	inFence := false // inside a converted code fence (pass body verbatim)
 	inComment := false
+	inQuote := false  // inside a ____ quote block
+	inTable := false  // inside a |=== table
 	pendingLang := "" // from a preceding [source,lang]
+	pendingCols := 0  // from a preceding [cols=...]
+	var tableCells []string
+	tableCols := 0
 	wrote := len(out) > 0
 
 	for ; i < len(lines); i++ {
 		line := lines[i]
+		trim := strings.TrimSpace(line)
 
 		// block comment ////
-		if strings.TrimSpace(line) == "////" {
+		if trim == "////" {
 			inComment = !inComment
 			continue
 		}
@@ -53,9 +61,52 @@ func adocToMarkdown(src string) string {
 			continue
 		}
 
+		// table |=== ... |===
+		if !inTable && trim == "|===" {
+			inTable, tableCols, tableCells = true, pendingCols, nil
+			pendingCols = 0
+			continue
+		}
+		if inTable {
+			if trim == "|===" {
+				emitTable(tableCells, tableCols, &out)
+				inTable, wrote = false, true
+				continue
+			}
+			if strings.HasPrefix(trim, "|") {
+				cells := tableCellsFromLine(trim)
+				if tableCols == 0 && len(cells) > 0 {
+					tableCols = len(cells) // header row sets the column count
+				}
+				tableCells = append(tableCells, cells...)
+			}
+			continue // blank / continuation lines inside a table are ignored
+		}
+
+		// quote block ____ ... ____
+		if !inQuote && trim == "____" {
+			out = append(out, "")
+			inQuote = true
+			continue
+		}
+		if inQuote {
+			if trim == "____" {
+				out = append(out, "")
+				inQuote = false
+			} else {
+				out = append(out, "> "+adocInline(line))
+			}
+			continue
+		}
+
 		// [source,go] / [source] / [,go] attribute line before a block
 		if m := adocSourceRE.FindStringSubmatch(line); m != nil {
 			pendingLang = m[1]
+			continue
+		}
+		// [cols=...] before a table sets its column count
+		if m := adocColsRE.FindStringSubmatch(line); m != nil {
+			pendingCols = colsCount(m[1])
 			continue
 		}
 		// a stray block attribute like [quote] or [.role] we don't handle: drop it
@@ -64,6 +115,13 @@ func adocToMarkdown(src string) string {
 		}
 		// line comment //
 		if strings.HasPrefix(line, "//") && !strings.HasPrefix(line, "///") {
+			continue
+		}
+
+		// include::path[] -> si include directive (expandIncludes converts .adoc too)
+		if m := adocIncludeRE.FindStringSubmatch(line); m != nil {
+			out = append(out, "<!-- include: "+m[1]+" -->")
+			wrote = true
 			continue
 		}
 
@@ -84,7 +142,7 @@ func adocToMarkdown(src string) string {
 		}
 
 		// thematic break (not an si slide break, which is ---)
-		if strings.TrimSpace(line) == "'''" {
+		if trim == "'''" {
 			out = append(out, "***")
 			wrote = true
 			continue
@@ -94,6 +152,20 @@ func adocToMarkdown(src string) string {
 		if m := adocAdmonRE.FindStringSubmatch(line); m != nil {
 			label := m[1][:1] + strings.ToLower(m[1][1:])
 			out = append(out, "> **"+label+":** "+adocInline(m[2]))
+			wrote = true
+			continue
+		}
+
+		// code callout list: "<1> text" (below a listing block) -> numbered item
+		if m := adocCalloutRE.FindStringSubmatch(line); m != nil {
+			out = append(out, m[1]+". "+adocInline(m[2]))
+			wrote = true
+			continue
+		}
+
+		// description list: Term:: definition -> **Term** — definition
+		if m := adocDescRE.FindStringSubmatch(line); m != nil {
+			out = append(out, "**"+adocInline(m[1])+"** — "+adocInline(m[2]))
 			wrote = true
 			continue
 		}
@@ -117,14 +189,21 @@ func adocToMarkdown(src string) string {
 		}
 		out = append(out, line)
 	}
+	if inTable { // unterminated table: emit what we have
+		emitTable(tableCells, tableCols, &out)
+	}
 	return strings.Join(out, "\n")
 }
 
 var (
 	adocHeadingRE = regexp.MustCompile(`^(=+)\s+(.*)$`)
 	adocSourceRE  = regexp.MustCompile(`^\[source(?:%[^,\]]*)?\s*,?\s*([a-zA-Z0-9]*)\]\s*$`)
+	adocColsRE    = regexp.MustCompile(`^\[cols=([^\]]+)\]\s*$`)
 	adocAttrRE    = regexp.MustCompile(`^\[[^\]]*\]\s*$`)
 	adocAdmonRE   = regexp.MustCompile(`^(NOTE|TIP|IMPORTANT|WARNING|CAUTION):\s+(.*)$`)
+	adocDescRE    = regexp.MustCompile(`^(\S[^:]*?)::[ \t]+(.+)$`)
+	adocCalloutRE = regexp.MustCompile(`^<(\d+)>\s+(.+)$`)
+	adocIncludeRE = regexp.MustCompile(`^include::(\S+?)\[[^\]]*\]\s*$`)
 	adocULRE      = regexp.MustCompile(`^(\*+)\s+(.*)$`)
 	adocOLRE      = regexp.MustCompile(`^(\.+)\s+(.*)$`)
 	adocBlockImg  = regexp.MustCompile(`^image::(\S+)\[([^\]]*)\]\s*$`)
@@ -142,6 +221,72 @@ func adocInline(line string) string {
 	line = adocLinkRE.ReplaceAllString(line, "[$2]($1)")
 	line = adocBoldRE.ReplaceAllString(line, "$1**$2**$3")
 	return line
+}
+
+// tableCellsFromLine splits an AsciiDoc table row ("|a |b") into trimmed cells.
+// Cells start with "|"; text before the first pipe is dropped.
+func tableCellsFromLine(line string) []string {
+	parts := strings.Split(strings.TrimSpace(line), "|")
+	var cells []string
+	for i, p := range parts {
+		if i == 0 {
+			continue // before the first pipe (empty on a well-formed row)
+		}
+		cells = append(cells, strings.TrimSpace(p))
+	}
+	return cells
+}
+
+// colsCount reads a column count from a [cols=...] spec: "1,1,2" -> 3,
+// "3*" -> 3, "4" -> 4. Returns 0 when it can't tell (caller infers from the
+// header row instead).
+func colsCount(spec string) int {
+	spec = strings.TrimSpace(strings.Trim(strings.TrimSpace(spec), `"'`))
+	if strings.Contains(spec, ",") {
+		return len(strings.Split(spec, ","))
+	}
+	if i := strings.IndexByte(spec, '*'); i > 0 { // "3*" repeat spec
+		if n, err := strconv.Atoi(strings.TrimSpace(spec[:i])); err == nil {
+			return n
+		}
+	}
+	if n, err := strconv.Atoi(spec); err == nil {
+		return n
+	}
+	return 0
+}
+
+// emitTable writes a GFM table from cells laid out row-major in `cols` columns.
+// The first row is the header. A short final row is padded with empty cells.
+func emitTable(cells []string, cols int, out *[]string) {
+	if len(cells) == 0 {
+		return
+	}
+	if cols < 1 {
+		cols = len(cells)
+	}
+	for len(cells)%cols != 0 {
+		cells = append(cells, "")
+	}
+	row := func(r int) string {
+		var b strings.Builder
+		b.WriteByte('|')
+		for c := 0; c < cols; c++ {
+			b.WriteString(" " + adocInline(cells[r*cols+c]) + " |")
+		}
+		return b.String()
+	}
+	*out = append(*out, "", row(0))
+	var sep strings.Builder
+	sep.WriteByte('|')
+	for c := 0; c < cols; c++ {
+		sep.WriteString(" --- |")
+	}
+	*out = append(*out, sep.String())
+	for r := 1; r < len(cells)/cols; r++ {
+		*out = append(*out, row(r))
+	}
+	*out = append(*out, "")
 }
 
 // adocHeader consumes an AsciiDoc document header (= Title plus :attr: value

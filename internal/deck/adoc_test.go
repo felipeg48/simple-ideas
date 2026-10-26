@@ -53,6 +53,67 @@ NOTE: heads up.
 	}
 }
 
+func TestAdocDeepFeatures(t *testing.T) {
+	src := `== Features
+
+A quote:
+
+[quote]
+____
+Simplicity is prerequisite for reliability.
+____
+
+Options::
+Term:: a *bold* definition
+
+[cols="1,1"]
+|===
+| Name | Role
+
+| Ada | Engineer
+| Bob | Designer
+|===
+
+include::appendix.adoc[]
+`
+	md := adocToMarkdown(src)
+	for _, want := range []string{
+		"> Simplicity is prerequisite",     // quote block -> blockquote
+		"**Term** — a **bold** definition", // description list + inline bold
+		"| Name | Role |",                  // table header
+		"| --- | --- |",                    // table separator
+		"| Ada | Engineer |",               // table data row
+		"<!-- include: appendix.adoc -->",  // include::
+	} {
+		if !strings.Contains(md, want) {
+			t.Errorf("missing %q in:\n%s", want, md)
+		}
+	}
+}
+
+func TestAdocCallouts(t *testing.T) {
+	src := "[source,go]\n----\nfmt.Println(\"hi\") // <1>\n----\n<1> prints a greeting\n<2> and returns\n"
+	md := adocToMarkdown(src)
+	for _, want := range []string{
+		"fmt.Println(\"hi\") // <1>", // marker kept verbatim in the code
+		"1. prints a greeting",       // callout list -> numbered item
+		"2. and returns",
+	} {
+		if !strings.Contains(md, want) {
+			t.Errorf("missing %q in:\n%s", want, md)
+		}
+	}
+}
+
+func TestColsCount(t *testing.T) {
+	cases := map[string]int{`"1,1,2"`: 3, `3*`: 3, `4`: 4, `"a,b"`: 2, `~`: 0}
+	for spec, want := range cases {
+		if got := colsCount(spec); got != want {
+			t.Errorf("colsCount(%q)=%d, want %d", spec, got, want)
+		}
+	}
+}
+
 func TestParseAdocDeck(t *testing.T) {
 	dir := t.TempDir()
 	p := filepath.Join(dir, "talk.adoc")

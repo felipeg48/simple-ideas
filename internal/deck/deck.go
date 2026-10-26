@@ -336,7 +336,11 @@ func (d *Deck) expandIncludes(file string, lines []srcLine, stack []string) []sr
 			d.problem(l.file, l.no, "include not found: %s", val)
 			continue
 		}
-		inc := splitLines(string(raw))
+		rawStr := string(raw)
+		if ext := strings.ToLower(filepath.Ext(target)); ext == ".adoc" || ext == ".asciidoc" {
+			rawStr = adocToMarkdown(rawStr) // included AsciiDoc is converted too
+		}
+		inc := splitLines(rawStr)
 		// a module's own front matter is ignored: the including deck decides
 		sub := &Deck{}
 		start := sub.frontMatter(target, inc)

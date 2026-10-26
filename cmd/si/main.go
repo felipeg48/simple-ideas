@@ -77,7 +77,8 @@ Flags (GNU style, before or after the path):
       --css <path>      user stylesheet file or directory; repeatable; loads after the theme
       --theme <name>    built-in theme: studio, paper, mono, crdb (aliases cockroachdb, cockroachlabs), or a path to a .css theme file; overrides theme: front matter
       --conf <path>     read si.conf (key remaps, feature toggles, default theme); default: si.conf next to the deck
-      --title <text>    build: heading for the generated index.html (default: the source dir name)
+      --title <text>    build: title for the generated index.html — its <title> and <h1> (default: the source dir name)
+      --site <text>     alias for --title (reads as "the site/landing page title")
       --ai <command>    migrate: pipe the migration prompt to this agent command (e.g. "claude -p")
       --addr <host:port> play address (default 127.0.0.1:7070)
       --open            play: open the browser
@@ -125,6 +126,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.theme, "theme", "", "")
 	fl.StringVar(&o.conf, "conf", "", "")
 	fl.StringVar(&o.title, "title", "", "")
+	fl.StringVar(&o.title, "site", "", "") // alias: the index page/site title (<title> + <h1>)
 	fl.StringVar(&o.ai, "ai", "", "")
 	fl.BoolVar(&o.slides, "slides", false, "")
 	for {
@@ -315,7 +317,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 		title = filepath.Base(filepath.Dir(src))
 	}
 	if o.title != "" {
-		title = o.title // --title overrides the index heading
+		title = o.title // --title / --site overrides the index title + heading
 	}
 	if err := os.WriteFile(filepath.Join(out, "index.html"), render.Index(title, entries, render.Options{UserCSS: css}), 0o644); err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)

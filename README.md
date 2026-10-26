@@ -69,6 +69,7 @@ make install
 si new talk                 # talk/talk.md uses every rule
 si play talk --open         # present with live reload at http://127.0.0.1:7070/
 si talk --output html/      # one self-contained HTML file per deck + index.html
+si courses/ --site "CockroachDB Courses" -o site/   # a tiled landing page over many decks
 si check talk               # validate; exit 1 on a problem
 ```
 
@@ -100,7 +101,7 @@ The full format, with an example for every rule: [RULES.md](RULES.md)
 | Command | What it does |
 |---|---|
 | `si play <dir\|file.md> [--addr 127.0.0.1:7070] [--open] [--css path]...` | serve the decks, rendered from markdown on every request; live reload over server-sent events when a deck, an asset or a stylesheet changes; the URL hash keeps your slide. Use `--addr 0.0.0.0:7070` to open on a phone (prints a LAN URL + QR) |
-| `si [build] <dir\|file.md> [--output html/] [--css path]... [--no-inline-media] [--pdf] [--title text]` | write one self-contained HTML file per deck plus `index.html`; `--pdf` also writes a PDF per deck (needs headless Chrome); `--title` sets the index heading |
+| `si [build] <dir\|file.md> [--output html/] [--css path]... [--no-inline-media] [--pdf] [--site text]` | write one self-contained HTML file per deck plus `index.html` (a landing page with a tile per deck); `--pdf` also writes a PDF per deck (needs headless Chrome); `--site text` (alias `--title`) sets the landing page's `<title>` and `<h1>` |
 | `si check <dir\|file.md>` | validate decks: title, directives, options, missing files, include cycles, malformed `stage` blocks, broken canvas SVGs |
 | `si new <name>` | scaffold `<name>/<name>.md` with assets, a module and a theme |
 | `si new-canvas <name>` | scaffold `<name>.svg` (a working animated canvas) + a deck to preview it |
