@@ -60,6 +60,7 @@ type deckRenderer struct {
 	files     map[string]string
 	svgN      int
 	stageN    int
+	cur       *slideCtx // the slide being rendered, for the stage fence's steps
 	mermaid   bool
 	problems  []deck.Problem
 	warnings  []deck.Problem

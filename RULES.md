@@ -465,8 +465,20 @@ references shared assets as `../images/...`.
   ```
 
   Nodes appear in first-seen order; `dot`/`flow A..B [dur]` take the shortest
-  route A→B. A bad block (unknown node, no route, malformed `dir`) is a `si
-  check` problem. The generator lays out chains, fan-out and merges with
+  route A→B. Add `step <node...>` lines to walk the flow on build steps — each
+  `step` line is one click that lights its nodes (cumulatively), driven by the
+  same step runtime as a canvas:
+
+  ```stage
+  dir: LR
+  Ingest --> Validate --> Transform --> Load
+  step Ingest
+  step Validate
+  step Transform Load
+  ```
+
+  A bad block (unknown node, no route, malformed `dir`, unknown `step` node) is
+  a `si check` problem. The generator lays out chains, fan-out and merges with
   longest-path layering (no crossing minimisation); diagrams size like any
   figure, so give a wide one its own `##` slide. Full reference with many
   examples: `docs/stage-diagrams.md`.

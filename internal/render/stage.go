@@ -37,6 +37,7 @@ type stageGraph struct {
 	idx   map[string]int
 	edges []stageEdge
 	anims []stageAnim
+	steps [][]string // each build step highlights these node ids (cumulative)
 
 	// filled by layout()
 	depth            []int
@@ -110,6 +111,12 @@ func parseStage(body string) (*stageGraph, error) {
 			if err := anim("flow", line[len("flow "):]); err != nil {
 				return nil, err
 			}
+		case strings.HasPrefix(line, "step "):
+			nodes := strings.Fields(line[len("step "):])
+			if len(nodes) == 0 {
+				return nil, fmt.Errorf("step needs at least one node")
+			}
+			g.steps = append(g.steps, nodes)
 		case strings.Contains(line, "-->"):
 			if err := parseEdgeLine(g, line, register); err != nil {
 				return nil, err
@@ -129,6 +136,13 @@ func parseStage(body string) (*stageGraph, error) {
 		}
 		if _, ok := g.idx[a.to]; !ok {
 			return nil, fmt.Errorf("%s references unknown node %q", a.kind, a.to)
+		}
+	}
+	for _, st := range g.steps {
+		for _, id := range st {
+			if _, ok := g.idx[id]; !ok {
+				return nil, fmt.Errorf("step references unknown node %q", id)
+			}
 		}
 	}
 	return g, nil
@@ -283,12 +297,15 @@ func (g *stageGraph) route(from, to int) ([]int, bool) {
 	return path, true
 }
 
-// genStage turns a fence body into inline SVG. seq scopes the per-animation CSS
-// so several stage diagrams on one slide do not collide.
-func genStage(body string, seq int) (string, error) {
+// genStage turns a fence body into inline SVG. seq scopes the per-animation and
+// per-step CSS so several stage diagrams on one slide do not collide. It returns
+// the SVG and, when the fence has `step` lines, the per-step state ops (e.g.
+// "+k1s1") the caller emits as <span data-step data-ops> so the deck's step
+// runtime drives the generated canvas's data-state.
+func genStage(body string, seq int) (svg string, stepOps []string, err error) {
 	g, err := parseStage(body)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	g.layout()
 
@@ -297,20 +314,40 @@ func genStage(body string, seq int) (string, error) {
 	for i, a := range g.anims {
 		r, ok := g.route(g.idx[a.from], g.idx[a.to])
 		if !ok {
-			return "", fmt.Errorf("%s has no path %s..%s", a.kind, a.from, a.to)
+			return "", nil, fmt.Errorf("%s has no path %s..%s", a.kind, a.from, a.to)
 		}
 		routes[i] = r
 	}
 
+	// each build step adds one seq-scoped state word; a highlighted node stays lit.
+	stepWord := func(i int) string { return fmt.Sprintf("k%ds%d", seq, i+1) }
+	stepped := len(g.steps) > 0
+	for i := range g.steps {
+		stepOps = append(stepOps, "+"+stepWord(i))
+	}
+
 	var b strings.Builder
-	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" class="si-stage s%d" role="img">`, g.vbW, g.vbH, seq)
+	class := fmt.Sprintf("si-stage s%d", seq)
+	attrs := ""
+	if stepped { // join the canvas step machinery
+		class = fmt.Sprintf("si-stage si-canvas s%d", seq)
+		attrs = ` data-base="" data-state=""`
+	}
+	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" class="%s"%s role="img">`, g.vbW, g.vbH, class, attrs)
 	b.WriteString(stageStyle)
 	for i, a := range g.anims {
-		d := g.pathD(routes[i])
 		if a.kind == "dot" {
-			fmt.Fprintf(&b, `.s%d .a%d{offset-path:path('%s');animation:si-stage-move %s linear infinite}`, seq, i, d, a.dur)
+			fmt.Fprintf(&b, `.s%d .a%d{offset-path:path('%s');animation:si-stage-move %s linear infinite}`, seq, i, g.pathD(routes[i]), a.dur)
 		} else {
 			fmt.Fprintf(&b, `.s%d .a%d{animation:si-stage-flow %s linear infinite}`, seq, i, a.dur)
+		}
+	}
+	for i, st := range g.steps { // highlight each step's nodes when its word is set
+		w := stepWord(i)
+		for _, id := range st {
+			k := g.idx[id]
+			fmt.Fprintf(&b, `.s%d[data-state~="%s"] .n%d{stroke:var(--si-accent,#3657d6);stroke-width:4}`, seq, w, k)
+			fmt.Fprintf(&b, `.s%d[data-state~="%s"] .l%d{fill:var(--si-accent,#3657d6)}`, seq, w, k)
 		}
 	}
 	b.WriteString(stageKeyframes)
@@ -325,8 +362,8 @@ func genStage(body string, seq int) (string, error) {
 		}
 	}
 	for i, nd := range g.nodes {
-		fmt.Fprintf(&b, `<rect class="node" x="%d" y="%d" width="%d" height="%d" rx="14"/>`, g.tlx[i], g.tly[i], sBoxW, sBoxH)
-		fmt.Fprintf(&b, `<text class="lbl" x="%d" y="%d">%s</text>`, g.cx[i], g.cy[i], html.EscapeString(nd.label))
+		fmt.Fprintf(&b, `<rect class="node n%d" x="%d" y="%d" width="%d" height="%d" rx="14"/>`, i, g.tlx[i], g.tly[i], sBoxW, sBoxH)
+		fmt.Fprintf(&b, `<text class="lbl l%d" x="%d" y="%d">%s</text>`, i, g.cx[i], g.cy[i], html.EscapeString(nd.label))
 	}
 	for _, e := range g.edges { // edge labels on top, with a halo for legibility
 		if e.label != "" {
@@ -339,13 +376,13 @@ func genStage(body string, seq int) (string, error) {
 		}
 	}
 	b.WriteString(`</svg>`)
-	return b.String(), nil
+	return b.String(), stepOps, nil
 }
 
 const stageStyle = `<style>` +
 	`.si-stage{font-family:var(--si-font-body,system-ui,sans-serif)}` +
-	`.si-stage .node{fill:var(--si-surface,#fff);stroke:var(--si-line,#d9d6ce);stroke-width:2.5}` +
-	`.si-stage .lbl{fill:var(--si-fg,#16171b);font-size:22px;font-weight:700;text-anchor:middle;dominant-baseline:central}` +
+	`.si-stage .node{fill:var(--si-surface,#fff);stroke:var(--si-line,#d9d6ce);stroke-width:2.5;transition:stroke .35s ease,stroke-width .35s ease}` +
+	`.si-stage .lbl{fill:var(--si-fg,#16171b);font-size:22px;font-weight:700;text-anchor:middle;dominant-baseline:central;transition:fill .35s ease}` +
 	`.si-stage .edge{stroke:var(--si-muted,#6b7280);stroke-width:2.5;fill:none}` +
 	`.si-stage .head{fill:var(--si-muted,#6b7280)}` +
 	`.si-stage .elbl{fill:var(--si-fg,#16171b);font-size:15px;font-weight:600;text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke:var(--si-bg,#fff);stroke-width:4px}` +

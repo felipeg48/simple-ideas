@@ -32,6 +32,8 @@ Rules of the grammar:
 - **`A --> B --> C`** chains; **`A -->|text| B`** puts `text` on the arrow.
 - **`dot A..B [dur]`** and **`flow A..B [dur]`** animate the shortest route from
   `A` to `B`. A bare number means seconds (`2` → `2s`); default `1.6s`.
+- **`step <node...>`** adds a build step that lights those nodes (cumulatively)
+  as you click through the slide — see example 7.
 - A block with an unknown node, an impossible route, or a bad `dir` is reported
   by `si check`.
 
@@ -112,6 +114,24 @@ dot Client..DB 2s
 `flow` draws the path as marching dashes; `dot` sends a marker along it. Using
 both reads as "traffic flowing, with a request in flight."
 
+### 7. Step-driven: walk the flow click by click
+
+```stage
+dir: LR
+Ingest --> Validate --> Transform --> Load
+step Ingest
+step Validate
+step Transform
+step Load
+```
+
+Each `step` line is one build step: clicking through the slide lights `Ingest`,
+then `Validate`, and so on, each staying lit (the accent outline). This uses the
+same step runtime as a hand-authored canvas — the slide's step counter reflects
+the `step` lines automatically. List more than one node on a line to light them
+together (`step Transform Load`). `step` composes with `dot`/`flow`: the dot
+keeps looping while you walk the steps.
+
 ## Sizing: make diagrams big
 
 A stage diagram sizes like any figure: it fills the width and is capped in
@@ -128,9 +148,9 @@ big two-line title gets squeezed. If a diagram looks small:
   boundary where you switch to the `mermaid` fence.
 - **No manual positioning, styling per node, or subgraphs.** The point is that
   a flow is described, not drawn — the theme and layout are automatic.
-- **No step-driven reveal yet.** The dot/flow loop continuously; tying a stage
-  diagram to build steps (light up a box on keypress N) is a future addition.
-  For step-driven state today, hand-author a canvas — see
+- **Step reveal is highlight-only.** `step` lights nodes with the accent outline;
+  it does not hide/show nodes or re-colour edges. For richer step-driven state
+  (show/hide, ok/alert per shape), hand-author a canvas — see
   `docs/authoring-canvases.md` and RULES.md §10.
 
 ## How it renders (for the curious)

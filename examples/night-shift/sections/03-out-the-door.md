@@ -12,6 +12,23 @@ Notes: Bread keeps baking as it cools. Cutting too soon trades a clean crumb for
 
 ---
 
+## From rack to counter
+
+```stage
+dir: LR
+Cool --> Bag --> Load[Load the van] --> Shop
+step Cool
+step Bag
+step Load
+step Shop
+```
+
+- Walk it one step at a time; the batch is tracked to the shelf
+
+Notes: Each click moves the batch one hand-off closer to the door.
+
+---
+
 <!-- layout: big-number -->
 
 **180 loaves**

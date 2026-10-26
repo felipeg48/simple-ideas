@@ -98,13 +98,23 @@ func (r *nodeRenderer) fence(
 	}
 	if lang == "stage" {
 		r.dr.stageN++
-		svg, err := genStage(body, r.dr.stageN)
+		svg, stepOps, err := genStage(body, r.dr.stageN)
 		if err != nil {
 			r.dr.problems = append(r.dr.problems, deck.Problem{File: r.dr.d.Path, Msg: "stage: " + err.Error()})
 			fmt.Fprintf(w, "<figure class=\"si-figure\"><pre class=\"si-code\">stage: %s</pre></figure>\n", html.EscapeString(err.Error()))
 			return ast.WalkSkipChildren, nil
 		}
 		fmt.Fprintf(w, "<figure class=\"si-figure\">%s</figure>\n", svg)
+		// emit one state-step span per `step` line, numbered after the slide's
+		// existing steps, so deck.js drives the generated canvas's data-state.
+		if sc := r.dr.cur; sc != nil && len(stepOps) > 0 {
+			for i, ops := range stepOps {
+				fmt.Fprintf(w, `<span class="si-step si-state" data-step="%d" data-ops="%s" hidden></span>`+"\n",
+					sc.steps+1+i, html.EscapeString(ops))
+			}
+			sc.steps += len(stepOps)
+			sc.ops = append(sc.ops, stepOps...)
+		}
 		return ast.WalkSkipChildren, nil
 	}
 	if lang != "" {
@@ -148,6 +158,8 @@ func (dr *deckRenderer) toHTML(md string, sc *slideCtx) string {
 	if sc != nil {
 		dr.transform(doc, src, sc)
 	}
+	dr.cur = sc // the stage fence reads/updates this slide's step count
+	defer func() { dr.cur = nil }()
 	var buf bytes.Buffer
 	if err := dr.md.Renderer().Render(&buf, src, doc); err != nil {
 		dr.problem(sc, "render: %v", err)

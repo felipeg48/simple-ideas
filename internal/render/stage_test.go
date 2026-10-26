@@ -7,7 +7,7 @@ import (
 )
 
 func TestGenStageChain(t *testing.T) {
-	svg, err := genStage("dir: LR\nStart --> Validate --> Done\ndot Start..Done 1s", 1)
+	svg, _, err := genStage("dir: LR\nStart --> Validate --> Done\ndot Start..Done 1s", 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func TestGenStageChain(t *testing.T) {
 
 func TestGenStageLabels(t *testing.T) {
 	// node label A[Label], edge label -->|hit|
-	svg, err := genStage("Cache -->|hit| Fast[Fast path]", 1)
+	svg, _, err := genStage("Cache -->|hit| Fast[Fast path]", 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,11 +45,11 @@ func TestGenStageLabels(t *testing.T) {
 
 func TestGenStageFanOutAndFlow(t *testing.T) {
 	// one parent, two children (fan-out) with a flow animation down one branch
-	svg, err := genStage("Req --> Hit\nReq --> Miss\nflow Req..Miss 1.2s", 1)
+	svg, _, err := genStage("Req --> Hit\nReq --> Miss\nflow Req..Miss 1.2s", 1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n := strings.Count(svg, `class="node"`); n != 3 {
+	if n := strings.Count(svg, `class="node n`); n != 3 {
 		t.Errorf("nodes = %d, want 3", n)
 	}
 	if !strings.Contains(svg, `class="flow a0"`) || !strings.Contains(svg, `animation:si-stage-flow 1.2s`) {
@@ -58,8 +58,8 @@ func TestGenStageFanOutAndFlow(t *testing.T) {
 }
 
 func TestGenStageTB(t *testing.T) {
-	lr, _ := genStage("A --> B --> C", 1)
-	tb, _ := genStage("dir: TB\nA --> B --> C", 1)
+	lr, _, _ := genStage("A --> B --> C", 1)
+	tb, _, _ := genStage("dir: TB\nA --> B --> C", 1)
 	// a vertical chain is taller than wide; a horizontal one is wider than tall.
 	if vbTall(tb) == vbTall(lr) {
 		t.Error("TB and LR should produce different aspect ratios")
@@ -72,15 +72,54 @@ func TestGenStageTB(t *testing.T) {
 func TestGenStageErrors(t *testing.T) {
 	for _, bad := range []string{
 		"dir: diagonal\nA --> B",
-		"dot A..Z\nA --> B",  // Z unknown
-		"flow A..C\nA --> B", // no route A->C (C unknown)
-		"dot nope",           // no A..B
-		"A -->|oops B",       // unterminated edge label
-		"",                   // no nodes
+		"dot A..Z\nA --> B",   // Z unknown
+		"flow A..C\nA --> B",  // no route A->C (C unknown)
+		"dot nope",            // no A..B
+		"A -->|oops B",        // unterminated edge label
+		"step Ghost\nA --> B", // step references unknown node
+		"",                    // no nodes
 	} {
-		if _, err := genStage(bad, 1); err == nil {
+		if _, _, err := genStage(bad, 1); err == nil {
 			t.Errorf("expected error for %q", bad)
 		}
+	}
+}
+
+func TestGenStageSteps(t *testing.T) {
+	svg, ops, err := genStage("A[Alpha] --> B[Beta] --> C[Gamma]\nstep A\nstep B\nstep C", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ops) != 3 {
+		t.Fatalf("stepOps = %d, want 3: %v", len(ops), ops)
+	}
+	for _, want := range []string{
+		`class="si-stage si-canvas s1"`, // joins the canvas step machinery
+		`data-base=""`,
+		`+k1s1`, `+k1s3`, // step ops are seq-scoped
+		`.s1[data-state~="k1s1"] .n0{stroke:var(--si-accent`, // step 1 lights node 0
+		`.s1[data-state~="k1s3"] .n2{stroke:var(--si-accent`, // step 3 lights node 2
+	} {
+		if want[0] == '+' {
+			found := false
+			for _, o := range ops {
+				if o == want {
+					found = true
+				}
+			}
+			if !found {
+				t.Errorf("stepOps missing %q: %v", want, ops)
+			}
+			continue
+		}
+		if !strings.Contains(svg, want) {
+			t.Errorf("missing %q", want)
+		}
+	}
+	// a stage with no step lines stays a plain figure, not a canvas
+	plain, ops2, _ := genStage("A --> B", 1)
+	if len(ops2) != 0 || strings.Contains(plain, "si-canvas") {
+		t.Error("unstepped stage should not be a canvas or emit step ops")
 	}
 }
 
