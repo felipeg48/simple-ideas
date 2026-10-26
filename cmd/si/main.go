@@ -35,7 +35,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/serve"
 )
 
-const version = "0.1.0"
+const version = "0.2.0"
 
 // Exit codes.
 const (
