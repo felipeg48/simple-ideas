@@ -271,8 +271,9 @@ func (d *Deck) setMeta(key, val string) bool {
 func validateMeta(key, val string) string {
 	switch key {
 	case "theme":
-		if strings.HasSuffix(strings.ToLower(val), ".css") {
-			return "" // a theme CSS file path; existence is checked at render time
+		lower := strings.ToLower(val)
+		if strings.HasSuffix(lower, ".css") || strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") {
+			return "" // a theme CSS file path or URL; resolved at render time
 		}
 		return oneOf("theme", val, Themes)
 	case "mode":

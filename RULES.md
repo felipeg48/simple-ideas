@@ -542,6 +542,13 @@ references shared assets as `../images/...`.
   file. Define the `--si-*` tokens (see `si --export css-rules`); resolved
   relative to the deck, then the current directory. A missing file is a `si
   check` problem. `examples/css/harbor.css` is a complete example theme.
+- `theme:` can also be an `https://…` (or `http://…`) URL — for example a raw
+  file from a GitHub repo. It is fetched **at build time** and cached for an
+  hour under the temp dir, and its contents are inlined into the deck, so the
+  built HTML stays self-contained (no runtime network dependency). An
+  unreachable URL is a `si check` problem (a fresh-enough cache is reused if the
+  network is down); builds that use a URL theme need network access the first
+  time.
 - `--theme <name|file.css>` on `si play` / `si build` overrides the deck's
   `theme:` front matter, so one set of decks can be built in several themes.
 - `si --export themes [--output dir]` writes one sample deck per built-in theme;
