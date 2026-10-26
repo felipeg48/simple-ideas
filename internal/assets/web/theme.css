@@ -80,7 +80,7 @@ pre.si-mermaid{background:none;border:0;text-align:center;margin:.4em 0;font-fam
 .si-card{display:flex;flex-direction:column;height:100%;padding:1.2rem 1.3rem;border:1px solid var(--si-line);border-radius:.8rem;background:var(--si-surface);color:var(--si-fg);text-decoration:none;box-shadow:var(--si-shadow);transition:border-color .2s,transform .2s}
 .si-card:hover,.si-card:focus-visible{border-color:var(--si-accent);transform:translateY(-2px);outline:none}
 .si-card b{display:block;font-family:var(--si-font-heading);font-size:1.25rem;margin-bottom:.3rem}
-.si-card span{display:block;color:var(--si-muted);font-size:.95rem}
+.si-card>span{display:block;color:var(--si-muted);font-size:.95rem}
 .si-card small{display:block;margin-top:auto;padding-top:.8rem;font-family:var(--si-font-mono);color:var(--si-accent)}
 .si-card-wrap{position:relative;display:block;height:100%}
 .si-card-pdf{position:absolute;top:.8rem;right:.8rem;z-index:1;font-family:var(--si-font-mono);font-size:.72rem;font-weight:700;letter-spacing:.04em;color:var(--si-accent);background:var(--si-bg);border:1px solid var(--si-line);border-radius:.4em;padding:.2em .5em;text-decoration:none}
@@ -93,11 +93,14 @@ pre.si-mermaid{background:none;border:0;text-align:center;margin:.4em 0;font-fam
 .si-view button:first-child{border-left:0}
 .si-view button[aria-pressed=true]{color:var(--si-bg);background:var(--si-accent)}
 .si-badges{display:flex;flex-wrap:wrap;gap:.4em;margin:.1rem 0 .3rem}
-.si-badge{display:inline-block;font-family:var(--si-font-mono);font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--si-bg);background:var(--si-accent);border-radius:.4em;padding:.15em .5em;white-space:nowrap}
-.si-badge[data-status=beta]{background:var(--si-warn)}
-.si-badge[data-status=new]{background:var(--si-ok)}
-.si-badge[data-status=deprecated]{background:var(--si-crit)}
-.si-badge-ver{color:var(--si-fg);background:transparent;border:1px solid var(--si-line);letter-spacing:0;text-transform:none}
+/* Badges: fixed CockroachDB-brand backgrounds with white text (readable in light
+   and dark). Override the fg/bg custom properties to recolour, e.g.
+   .si-badge[data-status=beta]{background:#123456} */
+.si-badge{--si-badge-fg:#fff;--si-badge-bg:#6933ff;display:inline-block;font-family:var(--si-font-mono);font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--si-badge-fg);background:var(--si-badge-bg);border-radius:.4em;padding:.15em .5em;white-space:nowrap}
+.si-badge[data-status=beta]{--si-badge-bg:#9a5b00}
+.si-badge[data-status=new]{--si-badge-bg:#4a6a1e}
+.si-badge[data-status=deprecated]{--si-badge-bg:#b4232f}
+.si-badge-ver{--si-badge-fg:var(--si-fg);--si-badge-bg:transparent;border:1px solid var(--si-line);letter-spacing:0;text-transform:none}
 .si-list td .si-badge+.si-badge{margin-left:.35em}
 .si-list{width:100%;border-collapse:collapse;font-size:.95rem}
 .si-list th{text-align:left;font-family:var(--si-font-mono);font-size:.8rem;color:var(--si-muted);font-weight:600;padding:.5em .7em;border-bottom:1px solid var(--si-line)}

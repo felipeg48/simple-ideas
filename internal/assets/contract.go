@@ -29,6 +29,8 @@ var Tokens = []Token{
 	{"--si-accent", "accent: heading rule, bullets, links, progress bar", ""},
 	{"--si-accent-2", "second accent: bold text, h3, code strings", ""},
 	{"--si-on-accent", "text drawn on an accent fill", ""},
+	{"--si-badge-fg", "index status/version badge text colour (defaults to white)", ""},
+	{"--si-badge-bg", "index status/version badge background (CockroachDB-brand defaults; override per data-status)", ""},
 	{"--si-ok", "status colour for good states (SVG canvases: data-ok)", ""},
 	{"--si-warn", "status colour for warnings", ""},
 	{"--si-crit", "status colour for failures (SVG canvases: data-alert)", ""},

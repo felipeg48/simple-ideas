@@ -35,7 +35,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/serve"
 )
 
-const version = "0.5.2"
+const version = "0.5.3"
 
 // Exit codes.
 const (
@@ -273,12 +273,16 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 		}
 	}
 	var entries []render.IndexEntry
+	indexTheme := o.theme // the index page follows --theme; else the first deck's theme
 	for _, f := range files {
 		d, err := deck.Parse(f)
 		if err != nil {
 			fmt.Fprintf(stderr, "si: %v\n", err)
 			failed = true
 			continue
+		}
+		if indexTheme == "" && d.Meta.Theme != "" {
+			indexTheme = d.Meta.Theme
 		}
 		mode := render.MediaInline
 		if o.noInline {
@@ -330,7 +334,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	if o.title != "" {
 		title = o.title // --title / --site overrides the index title + heading
 	}
-	if err := os.WriteFile(filepath.Join(out, "index.html"), render.Index(title, entries, render.Options{UserCSS: css}), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(out, "index.html"), render.Index(title, entries, render.Options{UserCSS: css, Theme: indexTheme}), 0o644); err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
 		return exitProblems
 	}
