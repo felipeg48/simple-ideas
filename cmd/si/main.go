@@ -72,6 +72,7 @@ Flags (GNU style, before or after the path):
       --css <path>      user stylesheet file or directory; repeatable; loads after the theme
       --theme <name>    built-in theme: studio, paper, mono, crdb (aliases cockroachdb, cockroachlabs), or a path to a .css theme file; overrides theme: front matter
       --conf <path>     read si.conf (key remaps, feature toggles, default theme); default: si.conf next to the deck
+      --title <text>    build: heading for the generated index.html (default: the source dir name)
       --addr <host:port> play address (default 127.0.0.1:7070)
       --open            play: open the browser
       --no-inline-media build: copy images and videos next to the HTML instead of data URIs
@@ -90,11 +91,11 @@ func (m *multi) String() string     { return strings.Join(*m, ",") }
 func (m *multi) Set(v string) error { *m = append(*m, v); return nil }
 
 type options struct {
-	output, addr, export, theme, conf string
-	open, help, ver                   bool
-	noInline, pdf                     bool
-	css                               multi
-	args                              []string
+	output, addr, export, theme, conf, title string
+	open, help, ver                          bool
+	noInline, pdf                            bool
+	css                                      multi
+	args                                     []string
 }
 
 // parseArgs accepts GNU-style long flags anywhere on the command line:
@@ -116,6 +117,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.Var(&o.css, "css", "")
 	fl.StringVar(&o.theme, "theme", "", "")
 	fl.StringVar(&o.conf, "conf", "", "")
+	fl.StringVar(&o.title, "title", "", "")
 	for {
 		if err := fl.Parse(argv); err != nil {
 			return nil, err
@@ -295,6 +297,9 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	title := filepath.Base(filepath.Clean(src))
 	if st, err := os.Stat(src); err == nil && !st.IsDir() {
 		title = filepath.Base(filepath.Dir(src))
+	}
+	if o.title != "" {
+		title = o.title // --title overrides the index heading
 	}
 	if err := os.WriteFile(filepath.Join(out, "index.html"), render.Index(title, entries, render.Options{UserCSS: css}), 0o644); err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
