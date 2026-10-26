@@ -531,6 +531,7 @@ type IndexEntry struct {
 	Subtitle string
 	Slides   int
 	Minutes  float64
+	PDF      string // optional relative href to a slides PDF (pdfs/<name>.pdf); empty = no badge
 }
 
 // Index renders the deck index page.
@@ -553,8 +554,16 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 		if e.Minutes > 0 {
 			mins = fmt.Sprintf(" · %s min", strconv.FormatFloat(e.Minutes, 'f', -1, 64))
 		}
-		fmt.Fprintf(&b, "<a class=\"si-card\" href=\"%s\"><b>%s</b><span>%s</span><small>%d slides%s</small></a>\n",
-			html.EscapeString(e.Href), html.EscapeString(e.Title), html.EscapeString(e.Subtitle), e.Slides, mins)
+		if e.PDF == "" {
+			fmt.Fprintf(&b, "<a class=\"si-card\" href=\"%s\"><b>%s</b><span>%s</span><small>%d slides%s</small></a>\n",
+				html.EscapeString(e.Href), html.EscapeString(e.Title), html.EscapeString(e.Subtitle), e.Slides, mins)
+		} else {
+			// Two sibling links in a positioned wrapper: the card opens the deck, the
+			// badge downloads the PDF. (Nesting <a> in <a> is invalid HTML.)
+			fmt.Fprintf(&b, "<div class=\"si-card-wrap\"><a class=\"si-card\" href=\"%s\"><b>%s</b><span>%s</span><small>%d slides%s</small></a>"+
+				"<a class=\"si-card-pdf\" href=\"%s\" download title=\"Download the slides as PDF\">PDF</a></div>\n",
+				html.EscapeString(e.Href), html.EscapeString(e.Title), html.EscapeString(e.Subtitle), e.Slides, mins, html.EscapeString(e.PDF))
+		}
 	}
 	b.WriteString("</div>\n</main>\n")
 	if opt.LiveReload {

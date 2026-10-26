@@ -145,6 +145,8 @@ var Hooks = []Hook{
 	{`.si-problems`, "deck problems banner (si play only)"},
 	{`.si-index`, "the deck index page"},
 	{`.si-card`, "one deck card on the index page"},
+	{`.si-card-wrap`, "wrapper around a deck card that also carries the PDF badge"},
+	{`.si-card-pdf`, "the PDF download badge on a deck card (si build --pdf)"},
 }
 
 // Theme holds the token values of one theme. Base values apply in both modes.

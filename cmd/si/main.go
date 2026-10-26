@@ -35,7 +35,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/serve"
 )
 
-const version = "0.4.3"
+const version = "0.5.0"
 
 // Exit codes.
 const (
@@ -51,7 +51,7 @@ Usage:
         serve the decks, rendered from markdown on every request, live reload on change
   si [build] <dir|file.md> [--output html/] [--css <dir|file.css>]... [--no-inline-media] [--pdf]
         write one self-contained HTML file per deck plus index.html
-        --pdf also renders each deck to <name>.pdf via headless Chrome
+        --pdf also renders each deck to pdfs/<name>.pdf and adds a PDF badge to the index tiles
   si check <dir|file.md>
         validate decks: title, directives, assets, includes; exit 1 on a problem
   si new <name>
@@ -86,7 +86,7 @@ Flags (GNU style, before or after the path):
       --addr <host:port> play address (default 127.0.0.1:7070)
       --open            play: open the browser
       --no-inline-media build: copy images and videos next to the HTML instead of data URIs
-      --pdf             build: also render each deck to a PDF via headless Chrome
+      --pdf             build: also render each deck to pdfs/<name>.pdf and link it from the index tiles (needs headless Chrome)
       --export <what>   css-rules, rules, conf, example or themes
   -h, --help            this help
       --version         print the version
@@ -304,18 +304,24 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			failed = true
 			continue
 		}
-		entries = append(entries, render.Entry(d))
+		entry := render.Entry(d)
 		fmt.Fprintf(stdout, "  %-28s %3d slides  %5s min  %3d steps  %2d canvases  %4d KB\n",
 			d.Name+".html", len(d.Slides), strconv.FormatFloat(d.Minutes(), 'f', -1, 64), res.Steps, res.Canvases, len(res.HTML)/1024)
 		if chrome != "" {
-			pdf := filepath.Join(out, d.Name+".pdf")
-			if err := deckToPDF(chrome, dest, pdf); err != nil {
+			rel := filepath.Join("pdfs", d.Name+".pdf") // a pdfs/ folder beside the decks; linked from the index tiles
+			pdf := filepath.Join(out, rel)
+			if err := os.MkdirAll(filepath.Dir(pdf), 0o755); err != nil {
+				fmt.Fprintf(stderr, "si: %v\n", err)
+				failed = true
+			} else if err := deckToPDF(chrome, dest, pdf); err != nil {
 				fmt.Fprintf(stderr, "si: pdf %s: %v\n", d.Name, err)
 				failed = true
 			} else {
-				fmt.Fprintf(stdout, "  %-28s (pdf)\n", d.Name+".pdf")
+				entry.PDF = filepath.ToSlash(rel)
+				fmt.Fprintf(stdout, "  %-28s (pdf)\n", rel)
 			}
 		}
+		entries = append(entries, entry)
 	}
 	title := filepath.Base(filepath.Clean(src))
 	if st, err := os.Stat(src); err == nil && !st.IsDir() {

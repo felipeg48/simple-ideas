@@ -82,4 +82,7 @@ pre.si-mermaid{background:none;border:0;text-align:center;margin:.4em 0;font-fam
 .si-card b{display:block;font-family:var(--si-font-heading);font-size:1.25rem;margin-bottom:.3rem}
 .si-card span{display:block;color:var(--si-muted);font-size:.95rem}
 .si-card small{display:block;margin-top:.8rem;font-family:var(--si-font-mono);color:var(--si-accent)}
+.si-card-wrap{position:relative;display:block}
+.si-card-pdf{position:absolute;top:.8rem;right:.8rem;z-index:1;font-family:var(--si-font-mono);font-size:.72rem;font-weight:700;letter-spacing:.04em;color:var(--si-accent);background:var(--si-bg);border:1px solid var(--si-line);border-radius:.4em;padding:.2em .5em;text-decoration:none}
+.si-card-pdf:hover,.si-card-pdf:focus-visible{color:var(--si-bg);background:var(--si-accent);border-color:var(--si-accent);outline:none}
 }
