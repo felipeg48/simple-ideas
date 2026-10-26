@@ -68,6 +68,9 @@ type deckRenderer struct {
 	mermaid   bool
 	themeName string // resolved theme name (or "custom" for a CSS-file theme)
 	themeCSS  string // the si.theme layer CSS for this deck
+	animName  string // resolved timer-animation name (empty if none)
+	animKind  string // "js" or "svg"
+	animCode  string // the animation source
 	problems  []deck.Problem
 	warnings  []deck.Problem
 }
@@ -100,6 +103,7 @@ func Deck(d *deck.Deck, opt Options) Result {
 	var slides strings.Builder
 	res := Result{}
 	dr.resolveTheme()
+	dr.resolveAnim()
 	for i, s := range d.Slides {
 		sh, sc := dr.slide(s, i+1)
 		slides.WriteString(sh)
@@ -214,6 +218,40 @@ func (dr *deckRenderer) postprocess(h, dir string, sc *slideCtx) string {
 func plain(s string) string { return strings.TrimSpace(tagRE.ReplaceAllString(s, "")) }
 
 var pageSizes = map[string]string{"16:9": "13.333in 7.5in", "16:10": "12in 7.5in", "4:3": "10in 7.5in", "1:1": "7.5in 7.5in", "9:16": "7.5in 13.333in"}
+
+// resolveAnim resolves the configured break-timer animation into dr.anim*.
+// timer.animation names a built-in (globe/ranges/roaches) or, with
+// timer.animation.path set, a <name>.js|.svg file in that directory (resolved
+// relative to cwd, then the deck dir). A configured-but-missing animation is a
+// deck problem; no configured animation leaves the fields empty (no layer).
+func (dr *deckRenderer) resolveAnim() {
+	if dr.opt.Config == nil {
+		return
+	}
+	t := dr.opt.Config.Timer
+	if t.Animation == "" {
+		return
+	}
+	if t.AnimationPath != "" {
+		for _, k := range []string{"js", "svg"} {
+			p := filepath.Join(t.AnimationPath, t.Animation+"."+k)
+			if !filepath.IsAbs(p) {
+				if _, err := os.Stat(p); err != nil {
+					p = filepath.Join(filepath.Dir(dr.d.Path), t.AnimationPath, t.Animation+"."+k)
+				}
+			}
+			if b, err := os.ReadFile(p); err == nil {
+				dr.animName, dr.animKind, dr.animCode = t.Animation, k, string(b)
+				return
+			}
+		}
+	}
+	if code, kind, ok := assets.Animation(t.Animation); ok {
+		dr.animName, dr.animKind, dr.animCode = t.Animation, kind, code
+		return
+	}
+	dr.problems = append(dr.problems, deck.Problem{File: dr.d.Path, Msg: fmt.Sprintf("timer.animation: no animation %q (built-ins: globe, ranges, roaches)", t.Animation)})
+}
 
 // resolveTheme sets dr.themeName and dr.themeCSS. The theme is the --theme flag,
 // then the deck's theme: front matter, then si.conf, then studio. A value ending
@@ -366,6 +404,7 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	fmt.Fprintf(&b, "<script type=\"application/json\" id=\"si-data\">%s</script>\n", data)
 	keys := map[string]string{}
 	feats := map[string]bool{}
+	var timer any
 	if opt.Config != nil {
 		if opt.Config.Keys != nil {
 			keys = opt.Config.Keys
@@ -373,9 +412,20 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 		if opt.Config.Features != nil {
 			feats = opt.Config.Features
 		}
+		t := opt.Config.Timer
+		if len(t.Times) > 0 || t.Unit != "" || dr.animName != "" {
+			timer = map[string]any{"time": t.Times, "unit": t.Unit, "animation": dr.animName, "animKind": dr.animKind}
+		}
 	}
-	cfg, _ := json.Marshal(map[string]any{"keys": keys, "features": feats})
+	cfg, _ := json.Marshal(map[string]any{"keys": keys, "features": feats, "timer": timer})
 	fmt.Fprintf(&b, "<script>window.SI_CONFIG=%s;</script>\n", cfg)
+	if dr.animName != "" {
+		if dr.animKind == "js" {
+			b.WriteString("<script>window.__siAnim=(" + dr.animCode + "\n);</script>\n")
+		} else {
+			fmt.Fprintf(&b, "<template id=\"si-anim-svg\">%s</template>\n", dr.animCode)
+		}
+	}
 	if dr.mermaid {
 		src := MermaidURL
 		if m.Mermaid != "" {

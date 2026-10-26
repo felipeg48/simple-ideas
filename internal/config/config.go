@@ -47,6 +47,13 @@ feature.draw:      on
 feature.timer:     on
 feature.presenter: on
 feature.overview:  on
+
+# break timer (t): presets, unit, and a background animation layer
+# timer.time: 5,10,15,20,30,45,60   # preset durations shown in the HUD
+# timer.unit: minutes               # minutes (default) or seconds
+# timer.animation: globe            # built-in: globe | ranges | roaches (off if unset)
+# timer.animation.path: ./anim      # optional dir of custom .js/.svg animations
+# timer.animation.name: globe       # the file stem to run from that dir
 `
 
 // Config is a parsed si.conf. Zero value is a usable empty config.
@@ -54,7 +61,33 @@ type Config struct {
 	Theme    string            // default theme, or ""
 	Keys     map[string]string // action -> key
 	Features map[string]bool   // feature -> enabled
+	Timer    TimerConfig       // break-timer presets, unit and animation
 	Warnings []string          // unknown keys / bad values, for the caller to report
+}
+
+// TimerConfig holds the break-timer settings (timer.* keys).
+type TimerConfig struct {
+	Times         []int  // preset durations; empty = built-in 5,10,15,20,30,45,60
+	Unit          string // "minutes" (default) or "seconds"
+	Animation     string // animation name (built-in, or a file stem under AnimationPath)
+	AnimationPath string // optional directory of custom animation files
+}
+
+func (c *Config) setTimerTimes(v string, ln int) {
+	var out []int
+	for _, f := range strings.Split(v, ",") {
+		f = strings.TrimSpace(f)
+		if f == "" {
+			continue
+		}
+		n := 0
+		if _, err := fmt.Sscanf(f, "%d", &n); err != nil || n <= 0 {
+			c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: timer.time wants positive numbers, got %q", ln, f))
+			return
+		}
+		out = append(out, n)
+	}
+	c.Timer.Times = out
 }
 
 func contains(s []string, v string) bool {
@@ -128,6 +161,18 @@ func Parse(r io.Reader) *Config {
 		switch {
 		case k == "theme":
 			c.Theme = v
+		case k == "timer.time":
+			c.setTimerTimes(v, ln)
+		case k == "timer.unit":
+			if v != "minutes" && v != "seconds" {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: timer.unit wants minutes/seconds, got %q", ln, v))
+			} else {
+				c.Timer.Unit = v
+			}
+		case k == "timer.animation.path":
+			c.Timer.AnimationPath = v
+		case k == "timer.animation.name", k == "timer.animation":
+			c.Timer.Animation = v
 		case strings.HasPrefix(k, "keys."):
 			c.setKey(strings.TrimPrefix(k, "keys."), v, ln)
 		case strings.HasPrefix(k, "feature."), strings.HasPrefix(k, "features."):
@@ -160,5 +205,6 @@ func Load(paths ...string) *Config {
 
 // Empty reports whether the config sets nothing.
 func (c *Config) Empty() bool {
-	return c == nil || (c.Theme == "" && len(c.Keys) == 0 && len(c.Features) == 0)
+	return c == nil || (c.Theme == "" && len(c.Keys) == 0 && len(c.Features) == 0 &&
+		len(c.Timer.Times) == 0 && c.Timer.Unit == "" && c.Timer.Animation == "" && c.Timer.AnimationPath == "")
 }

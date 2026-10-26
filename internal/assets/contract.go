@@ -129,6 +129,7 @@ var Hooks = []Hook{
 	{`.si-hud-time`, "the large mm:ss countdown digits; .is-over turns it critical at zero"},
 	{`.si-hud-presets`, "the row of preset-minute buttons (1-7)"},
 	{`.si-hud-hint`, "the key hint under the countdown"},
+	{`.si-anim`, "the break-timer animation layer behind the HUD (timer.animation)"},
 	{`.si-draw`, "annotation pen overlay (a): transient strokes drawn over the slide"},
 	{`.si-drawing`, "on <body> while the pen is active: the overlay captures the pointer"},
 	{`.si-draw-bar`, "the annotate toolbar: colour swatches, eraser, undo, clear, done"},

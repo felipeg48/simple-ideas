@@ -200,7 +200,11 @@
 
   /* ---------- break timer HUD (t): a full-screen countdown to project during a break ---------- */
   var hud = document.querySelector('.si-hud'), hudTime = hud && hud.querySelector('.si-hud-time');
-  var hudMins = [5, 10, 15, 20, 30, 45, 60], hudEnd = 0, hudLeft = 0, hudPaused = false, hudTimer = 0;
+  var tcfg = cfg.timer || {};
+  var hudUnit = tcfg.unit === 'seconds' ? 'seconds' : 'minutes';
+  var hudMul = hudUnit === 'seconds' ? 1000 : 60000;
+  var hudMins = (tcfg.time && tcfg.time.length) ? tcfg.time : [5, 10, 15, 20, 30, 45, 60];
+  var hudEnd = 0, hudLeft = 0, hudTotal = 0, hudPaused = false, hudTimer = 0;
   function hudPad(x) { return (x < 10 ? '0' : '') + x; }
   function hudFmt(ms) { if (ms < 0) ms = 0; var s = Math.round(ms / 1000); return Math.floor(s / 60) + ':' + hudPad(s % 60); }
   function hudShow(on) {
@@ -208,12 +212,60 @@
     if (on === undefined) on = !hud.classList.contains('is-open');
     hud.classList.toggle('is-open', on);
     hud.setAttribute('aria-hidden', on ? 'false' : 'true');
-    if (!on) { clearInterval(hudTimer); hudTimer = 0; hud.classList.remove('is-over'); }
+    if (!on) { clearInterval(hudTimer); hudTimer = 0; hud.classList.remove('is-over'); stopAnim(); }
   }
   function hudStart(m) {
-    hudEnd = Date.now() + m * 60000; hudPaused = false; hud.classList.remove('is-over');
+    hudTotal = m * hudMul;
+    hudEnd = Date.now() + hudTotal; hudLeft = hudTotal; hudPaused = false; hud.classList.remove('is-over');
     clearInterval(hudTimer); hudTick(); hudTimer = setInterval(hudTick, 250);
+    startAnim();
   }
+
+  /* ---------- timer animation layer: SLIDE | ANIMATION | TIMER (behind the HUD) ---------- */
+  var animLayer = null, animStop = null;
+  function animTokens() {
+    function v(n) { return getComputedStyle(root).getPropertyValue(n).trim(); }
+    return {
+      accent: v('--si-accent'), accent2: v('--si-accent-2'), fg: v('--si-fg'), bg: v('--si-bg'),
+      muted: v('--si-muted'), ok: v('--si-ok'), warn: v('--si-warn'), crit: v('--si-crit'),
+      surface: v('--si-surface'), line: v('--si-line')
+    };
+  }
+  function sizeAnimCanvas(cv) {
+    var dpr = window.devicePixelRatio || 1;
+    cv.width = Math.max(1, Math.round(window.innerWidth * dpr));
+    cv.height = Math.max(1, Math.round(window.innerHeight * dpr));
+  }
+  function stopAnim() {
+    if (animStop) { try { animStop(); } catch (e) {} animStop = null; }
+    if (animLayer) { animLayer.remove(); animLayer = null; }
+    if (hud) hud.classList.remove('has-anim');
+  }
+  function startAnim() {
+    stopAnim();
+    if (!tcfg.animation) return;
+    animLayer = document.createElement('div');
+    animLayer.className = 'si-anim';
+    animLayer.setAttribute('aria-hidden', 'true');
+    if (tcfg.animKind === 'svg') {
+      var tpl = document.getElementById('si-anim-svg');
+      if (tpl) animLayer.innerHTML = tpl.innerHTML;
+      deck.appendChild(animLayer);
+    } else if (typeof window.__siAnim === 'function') {
+      var cv = document.createElement('canvas');
+      animLayer.appendChild(cv); deck.appendChild(animLayer);
+      sizeAnimCanvas(cv);
+      animLayer._cv = cv;
+      var api = {
+        tokens: animTokens(), reduced: reduced,
+        fraction: function () { return hudTotal > 0 ? Math.max(0, Math.min(1, 1 - hudLeft / hudTotal)) : 0; },
+        remaining: function () { return Math.max(0, hudLeft / 1000); }
+      };
+      try { animStop = window.__siAnim(cv, api); } catch (e) { if (window.console) console.warn('si-anim', e); }
+    }
+    if (hud) hud.classList.add('has-anim');
+  }
+  window.addEventListener('resize', function () { if (animLayer && animLayer._cv) sizeAnimCanvas(animLayer._cv); });
   function hudPause() { if (!hudTimer) return; hudPaused = !hudPaused; if (!hudPaused) hudEnd = Date.now() + hudLeft; }
   function hudTick() {
     if (!hudPaused) hudLeft = hudEnd - Date.now();
@@ -353,7 +405,7 @@
     if (hud && hud.classList.contains('is-open')) {
       if (e.key === 'Escape' || e.key === cmd.timer) { e.preventDefault(); hudShow(false); return; }
       if (e.key === ' ') { e.preventDefault(); hudPause(); return; }
-      var pi = '1234567'.indexOf(e.key); if (pi >= 0) { e.preventDefault(); hudStart(hudMins[pi]); return; }
+      var pi = '123456789'.indexOf(e.key); if (pi >= 0 && pi < hudMins.length) { e.preventDefault(); hudStart(hudMins[pi]); return; }
       if (/^(Arrow|Page|Home|End|Enter)/.test(e.key)) e.preventDefault();
       return;
     }
@@ -382,9 +434,24 @@
   each(document.querySelectorAll('[data-si-action]'), function (b) {
     b.addEventListener('click', function () { var f = actions[b.getAttribute('data-si-action')]; if (f) f(); b.blur(); });
   });
-  each(hud ? hud.querySelectorAll('[data-si-min]') : [], function (x) {
-    x.addEventListener('click', function () { hudStart(+x.getAttribute('data-si-min')); x.blur(); });
-  });
+  /* rebuild the HUD preset buttons + hint from the configured times/unit */
+  (function () {
+    if (!hud) return;
+    var presets = hud.querySelector('.si-hud-presets'), hint = hud.querySelector('.si-hud-hint');
+    if (presets) {
+      presets.textContent = '';
+      hudMins.forEach(function (m) {
+        var btn = document.createElement('button');
+        btn.type = 'button'; btn.setAttribute('data-si-min', m); btn.textContent = m;
+        btn.addEventListener('click', function () { hudStart(m); btn.blur(); });
+        presets.appendChild(btn);
+      });
+    }
+    if (hint) {
+      var keyspan = hudMins.length > 1 ? '1-' + Math.min(9, hudMins.length) : '1';
+      hint.textContent = keyspan + ' pick ' + hudUnit + ' · space pause · ' + (cmd.timer || 't') + ' / Esc close';
+    }
+  })();
   if (help) help.addEventListener('click', function () { toggleHelp(false); });
   var tx0 = 0, ty0 = 0, t0 = 0;
   document.addEventListener('touchstart', function (e) { var t = e.changedTouches[0]; tx0 = t.clientX; ty0 = t.clientY; t0 = Date.now(); }, { passive: true });

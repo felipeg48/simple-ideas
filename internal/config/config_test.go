@@ -57,3 +57,24 @@ func TestLoadMissing(t *testing.T) {
 		t.Errorf("missing files should yield an empty config, got %+v", c)
 	}
 }
+
+func TestParseTimer(t *testing.T) {
+	c := Parse(strings.NewReader("timer.time: 10, 15, 30\ntimer.unit: seconds\ntimer.animation: globe\n"))
+	if len(c.Warnings) != 0 {
+		t.Fatalf("warnings: %v", c.Warnings)
+	}
+	if len(c.Timer.Times) != 3 || c.Timer.Times[0] != 10 || c.Timer.Times[2] != 30 {
+		t.Errorf("times=%v", c.Timer.Times)
+	}
+	if c.Timer.Unit != "seconds" || c.Timer.Animation != "globe" {
+		t.Errorf("unit=%q anim=%q", c.Timer.Unit, c.Timer.Animation)
+	}
+	// path + name variant
+	c2 := Parse(strings.NewReader("timer.animation.path: ./a\ntimer.animation.name: x\ntimer.unit: hours\n"))
+	if c2.Timer.AnimationPath != "./a" || c2.Timer.Animation != "x" {
+		t.Errorf("path=%q name=%q", c2.Timer.AnimationPath, c2.Timer.Animation)
+	}
+	if len(c2.Warnings) != 1 { // bad unit "hours"
+		t.Errorf("expected 1 warning for bad unit, got %v", c2.Warnings)
+	}
+}

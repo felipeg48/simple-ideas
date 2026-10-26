@@ -510,11 +510,14 @@ references shared assets as `../images/...`.
 | swipe left / right | next / previous on touch screens |
 
 - **Break timer** (`t`): opens a full-screen HUD that floats over the deck.
-  `1`–`7` pick 5 / 10 / 15 / 20 / 30 / 45 / 60 minutes and start the countdown;
-  `Space` pauses and resumes; `t` or `Esc` closes it. At zero the digits turn
-  critical and flash. While it is open the deck does not advance, so it is safe
-  to leave projected during a break. It needs no network and works from
-  `file://`.
+  Number keys pick a preset and start the countdown; `Space` pauses and resumes;
+  `t` or `Esc` closes it. At zero the digits turn critical and flash. While it is
+  open the deck does not advance, so it is safe to leave projected during a
+  break. It needs no network and works from `file://`. The presets default to
+  `5,10,15,20,30,45,60` minutes; override them in `si.conf` with `timer.time` and
+  `timer.unit` (minutes or seconds). A `timer.animation` runs a themed animation
+  layer behind the translucent HUD (SLIDE │ ANIMATION │ TIMER) — built-ins
+  `globe`, `ranges`, `roaches`, or your own; see §16 and `docs/timer-animations.md`.
 
 - **Draw** (`a`): a transient pen over the current slide, for circling or
   underlining as you talk. Drag to draw (mouse, touch, or pen — pen pressure
@@ -587,6 +590,12 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `theme: <name>` | default theme when a deck sets no `theme:` and there is no `--theme` |
 | `keys.<action>: <key>` | remap a command key |
 | `feature.<name>: off` | turn a feature off (its key stops working and its toolbar button is hidden) |
+| `timer.time: 10,15,30` | break-timer presets (default `5,10,15,20,30,45,60`) |
+| `timer.unit: seconds` | preset unit: `minutes` (default) or `seconds` |
+| `timer.animation: globe` | animation behind the timer HUD: `globe`, `ranges`, `roaches`, or a custom name |
+| `timer.animation.path: ./anim` | directory of custom `<name>.js` / `<name>.svg` animations |
+
+Nesting is written as dotted keys (`timer.animation.path`), not YAML.
 
 Remappable **actions**: `overview`, `presenter`, `draw`, `timer`, `mode`,
 `fullscreen`, `help`. Toggleable **features**: `draw`, `timer`,
