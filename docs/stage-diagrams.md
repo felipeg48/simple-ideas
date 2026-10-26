@@ -32,8 +32,9 @@ Rules of the grammar:
 - **`A --> B --> C`** chains; **`A -->|text| B`** puts `text` on the arrow.
 - **`dot A..B [dur]`** and **`flow A..B [dur]`** animate the shortest route from
   `A` to `B`. A bare number means seconds (`2` → `2s`); default `1.6s`.
-- **`step <node...>`** adds a build step that lights those nodes (cumulatively)
-  as you click through the slide — see example 7.
+- **`step <node...>`** adds a build step that acts on those nodes (cumulatively)
+  as you click through the slide. An optional op leads the line — `highlight`
+  (default), `ok`, `alert`, `show`, `hide` — see example 7.
 - A block with an unknown node, an impossible route, or a bad `dir` is reported
   by `si check`.
 
@@ -118,19 +119,29 @@ both reads as "traffic flowing, with a request in flight."
 
 ```stage
 dir: LR
-Ingest --> Validate --> Transform --> Load
-step Ingest
-step Validate
-step Transform
-step Load
+Submit --> Check --> Deploy --> Done
+step Submit
+step ok Check
+step alert Deploy
+step show Done
 ```
 
-Each `step` line is one build step: clicking through the slide lights `Ingest`,
-then `Validate`, and so on, each staying lit (the accent outline). This uses the
-same step runtime as a hand-authored canvas — the slide's step counter reflects
-the `step` lines automatically. List more than one node on a line to light them
-together (`step Transform Load`). `step` composes with `dot`/`flow`: the dot
-keeps looping while you walk the steps.
+Each `step` line is one build step. The first word can be an op that changes how
+the node reacts:
+
+| op | effect |
+|---|---|
+| `highlight` (default) | accent outline |
+| `ok` | green outline + label |
+| `alert` | red outline + label, pulsing |
+| `show` | the node starts hidden and fades in on this step |
+| `hide` | the node fades out on this step |
+
+List more than one node after the op to act on them together (`step ok A B`).
+Plain `step A` is `highlight A`. This uses the same step runtime as a
+hand-authored canvas — the slide's step counter reflects the `step` lines
+automatically, and `step` composes with `dot`/`flow` (the dot keeps looping
+while you walk the steps).
 
 ## Sizing: make diagrams big
 
@@ -148,9 +159,9 @@ big two-line title gets squeezed. If a diagram looks small:
   boundary where you switch to the `mermaid` fence.
 - **No manual positioning, styling per node, or subgraphs.** The point is that
   a flow is described, not drawn — the theme and layout are automatic.
-- **Step reveal is highlight-only.** `step` lights nodes with the accent outline;
-  it does not hide/show nodes or re-colour edges. For richer step-driven state
-  (show/hide, ok/alert per shape), hand-author a canvas — see
+- **Step ops act on whole nodes.** `step` highlights/oks/alerts/shows/hides
+  nodes; it does not recolour individual edges or animate along a route on a
+  step. For finer step-driven state, hand-author a canvas — see
   `docs/authoring-canvases.md` and RULES.md §10.
 
 ## How it renders (for the curious)

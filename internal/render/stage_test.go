@@ -86,7 +86,7 @@ func TestGenStageErrors(t *testing.T) {
 }
 
 func TestGenStageSteps(t *testing.T) {
-	svg, ops, err := genStage("A[Alpha] --> B[Beta] --> C[Gamma]\nstep A\nstep B\nstep C", 1)
+	svg, ops, err := genStage("A[Alpha] --> B[Beta] --> C[Gamma]\nstep A\nstep ok B\nstep show C", 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,8 +97,10 @@ func TestGenStageSteps(t *testing.T) {
 		`class="si-stage si-canvas s1"`, // joins the canvas step machinery
 		`data-base=""`,
 		`+k1s1`, `+k1s3`, // step ops are seq-scoped
-		`.s1[data-state~="k1s1"] .n0{stroke:var(--si-accent`, // step 1 lights node 0
-		`.s1[data-state~="k1s3"] .n2{stroke:var(--si-accent`, // step 3 lights node 2
+		`.s1[data-state~="k1s1"] .n0{stroke:var(--si-accent`, // step 1 highlights node 0
+		`.s1[data-state~="k1s2"] .n1{stroke:var(--si-ok`,     // step 2 oks node 1
+		`.s1[data-state~="k1s3"] .n2,`,                       // step 3 shows node 2
+		`.s1 .n2,.s1 .l2{opacity:0}`,                         // show-target starts hidden
 	} {
 		if want[0] == '+' {
 			found := false
@@ -116,7 +118,11 @@ func TestGenStageSteps(t *testing.T) {
 			t.Errorf("missing %q", want)
 		}
 	}
-	// a stage with no step lines stays a plain figure, not a canvas
+	// alert pulses; a stage with no step lines stays a plain figure
+	al, _, _ := genStage("A --> B\nstep alert B", 1)
+	if !strings.Contains(al, "si-stage-pulse") {
+		t.Error("alert op should pulse")
+	}
 	plain, ops2, _ := genStage("A --> B", 1)
 	if len(ops2) != 0 || strings.Contains(plain, "si-canvas") {
 		t.Error("unstepped stage should not be a canvas or emit step ops")

@@ -466,15 +466,17 @@ references shared assets as `../images/...`.
 
   Nodes appear in first-seen order; `dot`/`flow A..B [dur]` take the shortest
   route A→B. Add `step <node...>` lines to walk the flow on build steps — each
-  `step` line is one click that lights its nodes (cumulatively), driven by the
-  same step runtime as a canvas:
+  `step` line is one click. An optional op leads the line:
+  `highlight` (default, accent outline), `ok` (green), `alert` (red, pulsing),
+  `show` (the node starts hidden and fades in), `hide` (fades out):
 
   ```stage
   dir: LR
-  Ingest --> Validate --> Transform --> Load
-  step Ingest
-  step Validate
-  step Transform Load
+  Submit --> Check --> Deploy --> Done
+  step Submit
+  step ok Check
+  step alert Deploy
+  step show Done
   ```
 
   A bad block (unknown node, no route, malformed `dir`, unknown `step` node) is

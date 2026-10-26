@@ -20,7 +20,7 @@ Cool --> Bag --> Load[Load the van] --> Shop
 step Cool
 step Bag
 step Load
-step Shop
+step ok Shop
 ```
 
 - Walk it one step at a time; the batch is tracked to the shelf

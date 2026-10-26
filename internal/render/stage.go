@@ -31,13 +31,21 @@ type stageAnim struct {
 	dur      string
 }
 
+// stageStep is one build step: an op applied to a set of node ids.
+type stageStep struct {
+	op    string // highlight | ok | alert | show | hide
+	nodes []string
+}
+
+var stageStepOps = map[string]bool{"highlight": true, "ok": true, "alert": true, "show": true, "hide": true}
+
 type stageGraph struct {
 	dir   string
 	nodes []stageNode
 	idx   map[string]int
 	edges []stageEdge
 	anims []stageAnim
-	steps [][]string // each build step highlights these node ids (cumulative)
+	steps []stageStep // each build step applies an op to its nodes
 
 	// filled by layout()
 	depth            []int
@@ -112,11 +120,15 @@ func parseStage(body string) (*stageGraph, error) {
 				return nil, err
 			}
 		case strings.HasPrefix(line, "step "):
-			nodes := strings.Fields(line[len("step "):])
-			if len(nodes) == 0 {
+			f := strings.Fields(line[len("step "):])
+			op := "highlight"
+			if len(f) > 0 && stageStepOps[f[0]] {
+				op, f = f[0], f[1:]
+			}
+			if len(f) == 0 {
 				return nil, fmt.Errorf("step needs at least one node")
 			}
-			g.steps = append(g.steps, nodes)
+			g.steps = append(g.steps, stageStep{op: op, nodes: f})
 		case strings.Contains(line, "-->"):
 			if err := parseEdgeLine(g, line, register); err != nil {
 				return nil, err
@@ -139,7 +151,7 @@ func parseStage(body string) (*stageGraph, error) {
 		}
 	}
 	for _, st := range g.steps {
-		for _, id := range st {
+		for _, id := range st.nodes {
 			if _, ok := g.idx[id]; !ok {
 				return nil, fmt.Errorf("step references unknown node %q", id)
 			}
@@ -342,13 +354,35 @@ func genStage(body string, seq int) (svg string, stepOps []string, err error) {
 			fmt.Fprintf(&b, `.s%d .a%d{animation:si-stage-flow %s linear infinite}`, seq, i, a.dur)
 		}
 	}
-	for i, st := range g.steps { // highlight each step's nodes when its word is set
+	for i, st := range g.steps { // apply each step's op to its nodes when its word is set
 		w := stepWord(i)
-		for _, id := range st {
+		for _, id := range st.nodes {
 			k := g.idx[id]
-			fmt.Fprintf(&b, `.s%d[data-state~="%s"] .n%d{stroke:var(--si-accent,#3657d6);stroke-width:4}`, seq, w, k)
-			fmt.Fprintf(&b, `.s%d[data-state~="%s"] .l%d{fill:var(--si-accent,#3657d6)}`, seq, w, k)
+			switch st.op {
+			case "ok":
+				fmt.Fprintf(&b, `.s%d[data-state~="%s"] .n%d{stroke:var(--si-ok,#178a4c);stroke-width:4}.s%d[data-state~="%s"] .l%d{fill:var(--si-ok,#178a4c)}`, seq, w, k, seq, w, k)
+			case "alert":
+				fmt.Fprintf(&b, `.s%d[data-state~="%s"] .n%d{stroke:var(--si-crit,#c4314b);stroke-width:4;animation:si-stage-pulse 1.1s ease-in-out infinite}.s%d[data-state~="%s"] .l%d{fill:var(--si-crit,#c4314b)}`, seq, w, k, seq, w, k)
+			case "show":
+				fmt.Fprintf(&b, `.s%d[data-state~="%s"] .n%d,.s%d[data-state~="%s"] .l%d{opacity:1}`, seq, w, k, seq, w, k)
+			case "hide":
+				fmt.Fprintf(&b, `.s%d[data-state~="%s"] .n%d,.s%d[data-state~="%s"] .l%d{opacity:0}`, seq, w, k, seq, w, k)
+			default: // highlight
+				fmt.Fprintf(&b, `.s%d[data-state~="%s"] .n%d{stroke:var(--si-accent,#3657d6);stroke-width:4}.s%d[data-state~="%s"] .l%d{fill:var(--si-accent,#3657d6)}`, seq, w, k, seq, w, k)
+			}
 		}
+	}
+	// show-target nodes start hidden (revealed by their step's word above).
+	shown := map[int]bool{}
+	for _, st := range g.steps {
+		if st.op == "show" {
+			for _, id := range st.nodes {
+				shown[g.idx[id]] = true
+			}
+		}
+	}
+	for k := range shown {
+		fmt.Fprintf(&b, `.s%d .n%d,.s%d .l%d{opacity:0}`, seq, k, seq, k)
 	}
 	b.WriteString(stageKeyframes)
 	b.WriteString(`</style>`)
@@ -381,8 +415,8 @@ func genStage(body string, seq int) (svg string, stepOps []string, err error) {
 
 const stageStyle = `<style>` +
 	`.si-stage{font-family:var(--si-font-body,system-ui,sans-serif)}` +
-	`.si-stage .node{fill:var(--si-surface,#fff);stroke:var(--si-line,#d9d6ce);stroke-width:2.5;transition:stroke .35s ease,stroke-width .35s ease}` +
-	`.si-stage .lbl{fill:var(--si-fg,#16171b);font-size:22px;font-weight:700;text-anchor:middle;dominant-baseline:central;transition:fill .35s ease}` +
+	`.si-stage .node{fill:var(--si-surface,#fff);stroke:var(--si-line,#d9d6ce);stroke-width:2.5;transition:stroke .35s ease,stroke-width .35s ease,opacity .35s ease}` +
+	`.si-stage .lbl{fill:var(--si-fg,#16171b);font-size:22px;font-weight:700;text-anchor:middle;dominant-baseline:central;transition:fill .35s ease,opacity .35s ease}` +
 	`.si-stage .edge{stroke:var(--si-muted,#6b7280);stroke-width:2.5;fill:none}` +
 	`.si-stage .head{fill:var(--si-muted,#6b7280)}` +
 	`.si-stage .elbl{fill:var(--si-fg,#16171b);font-size:15px;font-weight:600;text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke:var(--si-bg,#fff);stroke-width:4px}` +
@@ -391,7 +425,8 @@ const stageStyle = `<style>` +
 
 const stageKeyframes = `@keyframes si-stage-move{from{offset-distance:0%}to{offset-distance:100%}}` +
 	`@keyframes si-stage-flow{to{stroke-dashoffset:-18}}` +
-	`@media (prefers-reduced-motion:reduce){.si-stage .dot{animation:none;offset-distance:50%}.si-stage .flow{animation:none}}`
+	`@keyframes si-stage-pulse{0%,100%{stroke-width:4}50%{stroke-width:7}}` +
+	`@media (prefers-reduced-motion:reduce){.si-stage .dot{animation:none;offset-distance:50%}.si-stage .flow{animation:none}.si-stage .node{animation:none}}`
 
 func rnd(f float64) int { return int(math.Round(f)) }
 
