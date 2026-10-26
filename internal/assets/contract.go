@@ -104,6 +104,7 @@ var Hooks = []Hook{
 	{`.si-kicker`, "small label above a section heading (Part 2)"},
 	{`.si-sub`, "subtitle block of title, section and closing slides"},
 	{`.si-byline`, "author and date line of the title slide"},
+	{`.si-colophon`, "copyright line on the title slide (© year copyright front matter)"},
 	{`.si-body`, "content below the heading"},
 	{`.si-body.si-cols`, "a body split into columns (two-col, split, or column directives)"},
 	{`.si-col`, "one column of two-col and split layouts"},

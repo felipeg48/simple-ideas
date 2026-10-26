@@ -43,6 +43,7 @@ pre.si-mermaid{background:none;border:0;text-align:center;margin:.4em 0;font-fam
 .si-sub{color:var(--si-muted);font-size:1.22em;max-width:42ch}
 .si-sub p{margin:0 0 .5em}
 .si-byline{margin:1.6em 0 0;font-family:var(--si-font-mono);font-size:.78em;letter-spacing:.06em;color:var(--si-muted)}
+.si-colophon{margin:.5em 0 0;font-family:var(--si-font-mono);font-size:.68em;letter-spacing:.04em;color:var(--si-muted)}
 .si-section .si-inner{box-shadow:inset max(.35rem,.9cqi) 0 0 var(--si-accent)}
 .si-kicker{margin:0 0 .7em;font-family:var(--si-font-mono);font-size:.8em;letter-spacing:.18em;text-transform:uppercase;color:var(--si-accent)}
 .si-section .si-sub{margin-inline:0}

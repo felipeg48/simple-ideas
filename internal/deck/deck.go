@@ -66,10 +66,12 @@ type Meta struct {
 	Lang       string
 	Status     string // optional course status badge on the index (e.g. beta, preview, new)
 	Version    string // optional course version badge on the index (e.g. v1.2.0)
+	Year       string // optional year shown in the title-slide copyright line
+	Copyright  string // optional copyright holder shown on the title slide (© year holder)
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright"}
 
 // Slide is one slide of a deck.
 type Slide struct {
@@ -265,7 +267,7 @@ func (d *Deck) setMeta(key, val string) bool {
 	ptr := map[string]*string{
 		"title": &m.Title, "author": &m.Author, "date": &m.Date, "theme": &m.Theme, "mode": &m.Mode,
 		"accent": &m.Accent, "transition": &m.Transition, "aspect": &m.Aspect, "mermaid": &m.Mermaid, "lang": &m.Lang,
-		"background": &m.Background, "status": &m.Status, "version": &m.Version,
+		"background": &m.Background, "status": &m.Status, "version": &m.Version, "year": &m.Year, "copyright": &m.Copyright,
 	}[key]
 	if ptr == nil {
 		return false

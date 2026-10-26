@@ -68,6 +68,7 @@ lang: en
 |---|---|---|---|
 | `title` | text | the `# H1` | page title and index card |
 | `author`, `date` | text | none | byline on the title slide |
+| `year`, `copyright` | text | none | a copyright line on the title slide: `© {year} {copyright}` (either alone works) |
 | `theme` | `studio`, `paper`, `mono` | `studio` | built-in look (sans, serif, monospace) |
 | `mode` | `auto`, `light`, `dark` | `auto` | `auto` follows `prefers-color-scheme`; `t` toggles while presenting |
 | `accent` | CSS colour | theme accent | sets `--si-accent` |

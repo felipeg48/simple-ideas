@@ -172,6 +172,9 @@ func (dr *deckRenderer) slide(s *deck.Slide, n int) (string, *slideCtx) {
 			if by := strings.Trim(dr.d.Meta.Author+" · "+dr.d.Meta.Date, " ·"); by != "" {
 				fmt.Fprintf(&b, `<p class="si-byline">%s</p>`+"\n", html.EscapeString(by))
 			}
+			if notice := copyrightLine(dr.d.Meta.Year, dr.d.Meta.Copyright); notice != "" {
+				fmt.Fprintf(&b, `<p class="si-colophon">%s</p>`+"\n", html.EscapeString(notice))
+			}
 		}
 	case deck.KindSection:
 		fmt.Fprintf(&b, `<p class="si-kicker">Part %d</p>`+"\n", s.Part)
@@ -219,6 +222,17 @@ func (dr *deckRenderer) postprocess(h, dir string, sc *slideCtx) string {
 }
 
 func plain(s string) string { return strings.TrimSpace(tagRE.ReplaceAllString(s, "")) }
+
+// copyrightLine builds the title-slide colophon from the year and copyright
+// holder: "© 2026 CockroachLabs", "© 2026" or "© CockroachLabs". Empty when
+// neither is set.
+func copyrightLine(year, holder string) string {
+	year, holder = strings.TrimSpace(year), strings.TrimSpace(holder)
+	if year == "" && holder == "" {
+		return ""
+	}
+	return strings.TrimSpace("© " + strings.TrimSpace(year+" "+holder))
+}
 
 var pageSizes = map[string]string{"16:9": "13.333in 7.5in", "16:10": "12in 7.5in", "4:3": "10in 7.5in", "1:1": "7.5in 7.5in", "9:16": "7.5in 13.333in"}
 
