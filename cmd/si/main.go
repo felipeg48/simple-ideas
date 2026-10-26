@@ -35,7 +35,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/serve"
 )
 
-const version = "0.2.0"
+const version = "0.3.0"
 
 // Exit codes.
 const (
@@ -63,6 +63,9 @@ Usage:
         AI agent, or run it with --ai "claude -p" / --ai "gemini", etc.)
   si manual [--slides] [--pdf] [--output dir]
         render the built-in user manual as self-contained HTML (and PDF with --pdf)
+  si selfupdate
+        download the latest release binary for this OS/arch (checksum-verified) and
+        replace the running si; needs write access to si's install directory
   si rules
         print the markdown rules (RULES.md)
   si --export css-rules|rules|conf|example|themes [--output <path>]
@@ -209,6 +212,8 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		return runMigrate(rest[0], o, stdout, stderr)
 	case "manual":
 		return runManual(o, stdout, stderr)
+	case "selfupdate":
+		return selfUpdate(stdout, stderr)
 	case "build":
 		if len(rest) != 1 {
 			return usageErr(stderr, "build needs one <dir|file.md>")

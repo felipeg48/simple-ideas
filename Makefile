@@ -1,4 +1,5 @@
 BIN := bin/si
+INSTALL_DIR ?= $(HOME)/.bin
 
 .PHONY: build test install play-example examples check fmt clean
 
@@ -10,8 +11,22 @@ test:
 	go vet ./...
 	go test ./...
 
-install:
-	go install ./cmd/si
+install: build
+	@mkdir -p "$(INSTALL_DIR)"
+	@cp "$(BIN)" "$(INSTALL_DIR)/si"
+	@echo "installed $(INSTALL_DIR)/si"
+	@case ":$$PATH:" in \
+	  *":$(INSTALL_DIR):"*) echo "$(INSTALL_DIR) is already on your PATH";; \
+	  *) rc="$$HOME/.bashrc"; case "$$SHELL" in *zsh) rc="$$HOME/.zshrc";; esac; \
+	     printf 'Add %s to PATH in %s? [y/N] ' "$(INSTALL_DIR)" "$$rc"; read ans; \
+	     if [ "$$ans" = y ] || [ "$$ans" = Y ]; then \
+	       printf '\nexport PATH="%s:$$PATH"\n' "$(INSTALL_DIR)" >> "$$rc"; \
+	       echo "added to $$rc — run: source $$rc"; \
+	     else \
+	       echo 'not added; add this to your shell rc:'; \
+	       echo '  export PATH="$(INSTALL_DIR):$$PATH"'; \
+	     fi;; \
+	esac
 
 play-example: build
 	$(BIN) play examples --open

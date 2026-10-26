@@ -59,8 +59,15 @@ Or the usual Go tooling:
 
 ```bash
 go install github.com/felipeg48/simple-ideas/cmd/si@latest
-# or, from a clone
+# or, from a clone — builds bin/si, copies it to ~/.bin, and offers to add
+# ~/.bin to your PATH in .zshrc/.bashrc (override dir: make install INSTALL_DIR=~/bin)
 make install
+```
+
+**Update** an installed binary in place (checksum-verified, no reinstall):
+
+```bash
+si selfupdate
 ```
 
 ## Quick start
@@ -96,6 +103,23 @@ The token reaches payments and turns red.
 The full format, with an example for every rule: [RULES.md](RULES.md)
 (also `si rules`).
 
+Or, if you prefer AsciiDoc, name the file `*.adoc` — si converts it and every
+feature still works ([docs/asciidoc.md](docs/asciidoc.md)):
+
+```asciidoc
+= The Thursday Promise
+:author: Logistics
+
+How one order crosses five teams and still arrives on time.
+
+== Payment: declined, then paid
+
+NOTE: the token reaches payments and turns red.
+
+* 21:04: the card fails a fraud check
+* 21:05: an automatic retry goes through
+```
+
 ## Commands
 
 | Command | What it does |
@@ -107,6 +131,7 @@ The full format, with an example for every rule: [RULES.md](RULES.md)
 | `si new-canvas <name>` | scaffold `<name>.svg` (a working animated canvas) + a deck to preview it |
 | `si migrate <dir\|file> [--ai "<cmd>"]` | print an editorial-migration prompt for an existing deck; `--ai "claude -p"` pipes it to an agent |
 | `si manual [--slides] [--pdf] [--out dir]` | render the built-in user manual as self-contained HTML (and PDF with `--pdf`) |
+| `si selfupdate` | download the latest release for your OS/arch (checksum-verified) and replace the running `si` |
 | `si rules` | print RULES.md |
 | `si --theme <name\|file.css\|url>` | override the theme: a built-in (`studio`, `paper`, `mono`, `crdb`), a CSS file, or an `https://` URL |
 | `si --export css-rules\|rules\|conf\|example\|themes [--output path]` | starter stylesheet · RULES.md · starter `si.conf` · the showcase decks · a sample deck per theme (a gallery) |
