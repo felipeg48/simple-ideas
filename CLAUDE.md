@@ -148,5 +148,7 @@ pass. The steps that matter:
 - Speaker view extras: notes from a separate file, rehearsal timings saved
   per slide.
 - Replace the remaining Python deck builder workflows (fully Python-free).
-- `si play` QR code for opening the deck on a phone on the same network.
-- AI-assisted migration (`si --ai <agent> --migrate`): agentic deck import.
+- `si play` QR code for opening the deck on a phone on the same network. (Done:
+  `si play --addr 0.0.0.0` prints a LAN URL + QR.)
+- AI-assisted migration: `si migrate <src>` prints an editorial-migration prompt
+  (optionally piped to an agent with `--ai`). Next: a tighter agent loop.

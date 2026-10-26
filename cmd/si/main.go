@@ -58,6 +58,9 @@ Usage:
         scaffold <name>/ with a deck that uses every rule
   si new-canvas <name>
         scaffold <name>.svg (a working animated canvas) + <name>.md to preview it
+  si migrate <dir|file> [--output dir] [--ai "<command>"]
+        print an editorial-migration prompt for an existing deck (pipe it to an
+        AI agent, or run it with --ai "claude -p" / --ai "gemini", etc.)
   si rules
         print the markdown rules (RULES.md)
   si --export css-rules|rules|conf|example|themes [--output <path>]
@@ -73,6 +76,7 @@ Flags (GNU style, before or after the path):
       --theme <name>    built-in theme: studio, paper, mono, crdb (aliases cockroachdb, cockroachlabs), or a path to a .css theme file; overrides theme: front matter
       --conf <path>     read si.conf (key remaps, feature toggles, default theme); default: si.conf next to the deck
       --title <text>    build: heading for the generated index.html (default: the source dir name)
+      --ai <command>    migrate: pipe the migration prompt to this agent command (e.g. "claude -p")
       --addr <host:port> play address (default 127.0.0.1:7070)
       --open            play: open the browser
       --no-inline-media build: copy images and videos next to the HTML instead of data URIs
@@ -91,11 +95,11 @@ func (m *multi) String() string     { return strings.Join(*m, ",") }
 func (m *multi) Set(v string) error { *m = append(*m, v); return nil }
 
 type options struct {
-	output, addr, export, theme, conf, title string
-	open, help, ver                          bool
-	noInline, pdf                            bool
-	css                                      multi
-	args                                     []string
+	output, addr, export, theme, conf, title, ai string
+	open, help, ver                              bool
+	noInline, pdf                                bool
+	css                                          multi
+	args                                         []string
 }
 
 // parseArgs accepts GNU-style long flags anywhere on the command line:
@@ -118,6 +122,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.theme, "theme", "", "")
 	fl.StringVar(&o.conf, "conf", "", "")
 	fl.StringVar(&o.title, "title", "", "")
+	fl.StringVar(&o.ai, "ai", "", "")
 	for {
 		if err := fl.Parse(argv); err != nil {
 			return nil, err
@@ -191,6 +196,11 @@ func run(argv []string, stdout, stderr io.Writer) int {
 			return usageErr(stderr, "new-canvas needs a <name>")
 		}
 		return scaffoldCanvas(rest[0], stdout, stderr)
+	case "migrate":
+		if len(rest) != 1 {
+			return usageErr(stderr, "migrate needs one <dir|file> to migrate")
+		}
+		return runMigrate(rest[0], o, stdout, stderr)
 	case "build":
 		if len(rest) != 1 {
 			return usageErr(stderr, "build needs one <dir|file.md>")

@@ -78,6 +78,7 @@ The full format, with an example for every rule: [RULES.md](RULES.md)
 | `si check <dir\|file.md>` | validate decks: title, directives, options, missing files, include cycles, malformed `stage` blocks, broken canvas SVGs |
 | `si new <name>` | scaffold `<name>/<name>.md` with assets, a module and a theme |
 | `si new-canvas <name>` | scaffold `<name>.svg` (a working animated canvas) + a deck to preview it |
+| `si migrate <dir\|file> [--ai "<cmd>"]` | print an editorial-migration prompt for an existing deck; `--ai "claude -p"` pipes it to an agent |
 | `si rules` | print RULES.md |
 | `si --theme <name\|file.css\|url>` | override the theme: a built-in (`studio`, `paper`, `mono`, `crdb`), a CSS file, or an `https://` URL |
 | `si --export css-rules\|rules\|conf\|example\|themes [--output path]` | starter stylesheet · RULES.md · starter `si.conf` · the showcase decks · a sample deck per theme (a gallery) |
