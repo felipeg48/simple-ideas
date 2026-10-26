@@ -385,10 +385,12 @@
   if (findInput) {
     findInput.addEventListener('input', function () { findSearch(findInput.value); findSel = 0; findRender(); });
     findInput.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') { e.preventDefault(); findShow(false); }
-      else if (e.key === 'ArrowDown') { e.preventDefault(); findMove(1); }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); findMove(-1); }
-      else if (e.key === 'Enter') { e.preventDefault(); if (findResults.length) findGo(findResults[findSel].i); }
+      // stopPropagation so the key never reaches the global nav handler — notably
+      // Enter, which (after findGo blurs the input) would otherwise advance a slide.
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); findShow(false); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); findMove(1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); findMove(-1); }
+      else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); if (findResults.length) findGo(findResults[findSel].i); }
     });
     find.addEventListener('click', function (e) { if (e.target === find) findShow(false); });
   }
