@@ -350,6 +350,9 @@ itself does not fade; only the words around the canvas do.
    | `data-ok="paid"` | shapes inside get the `--si-ok` stroke; a `text` with it turns `--si-ok` |
    | `data-flow="shipped"` | the path gets marching dashes |
    | `data-packets="paid"` | dots travel along the path (`data-packets-count`, `data-packets-dur` seconds, `data-packets-r`) |
+   | `data-grow="loaded"` | the element scales up from its base (0 → full height, grown from the bottom) — for bars |
+   | `data-move="sent"` | the element travels to the end of its own `offset-path` (set the path in your SVG CSS) |
+   | `data-count="s1:0 s2:4200"` | the element's text ticks to the number of the active state word (last match wins) |
 
    Each attribute takes several words (any of them matches).
 4. For anything else write CSS **inside the SVG** with the state selector and

@@ -9,6 +9,7 @@
 .loaf .oven{fill:none;stroke:var(--si-line,#d9d6ce);stroke-width:6}
 .loaf .score{stroke:var(--si-fg,#16171b);stroke-width:4;stroke-linecap:round;opacity:.5}
 .loaf .heat{stroke:var(--si-warn,#c77c02);stroke-width:5;stroke-linecap:round}
+.loaf .temp{fill:var(--si-warn,#c77c02);font-size:30px;font-weight:800;text-anchor:end}
 
 /* the loaf itself: dough-pale, rounding and colouring as the night goes on */
 .loaf .body{fill:var(--si-bg,#f6f5f1);stroke:var(--si-line,#d9d6ce);stroke-width:4;
@@ -25,6 +26,8 @@
 <g data-show="oven baking sprung baked">
   <rect class="oven" x="300" y="150" width="400" height="300" rx="20"/>
   <line class="oven" x1="300" y1="210" x2="700" y2="210"/>
+  <text class="temp" x="662" y="195" data-count="oven:180 baking:245 sprung:245 baked:245">180</text>
+  <text class="sub" x="668" y="195" text-anchor="start">°C</text>
 </g>
 
 <!-- heat -->

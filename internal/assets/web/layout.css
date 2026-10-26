@@ -96,10 +96,12 @@ img,svg,video{max-width:100%}
 .si-step.is-visible{opacity:1;transform:none}
 
 /* SVG canvas helpers: data-show, data-hide, data-alert, data-ok, data-flow,
- * data-packets (word rules are generated per deck) */
+ * data-packets, data-grow, data-move, data-count (word rules generated per deck) */
 .si-canvas *{transition:opacity var(--si-canvas-duration) ease,transform var(--si-canvas-duration) ease,fill var(--si-canvas-duration) ease,stroke var(--si-canvas-duration) ease}
 .si-canvas [data-show]{opacity:0}
 .si-canvas .si-packets{opacity:0}
+.si-canvas [data-grow]{transform:scaleY(0);transform-origin:bottom;transform-box:fill-box}
+.si-canvas [data-move]{offset-distance:0%;offset-rotate:0deg;transition:offset-distance var(--si-canvas-duration) cubic-bezier(.3,.1,.2,1)}
 @keyframes si-pulse{50%{stroke-opacity:.3}}
 @keyframes si-flow{to{stroke-dashoffset:-48}}
 

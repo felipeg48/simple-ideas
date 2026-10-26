@@ -53,6 +53,13 @@ the full table):
   (and `data-alert` pulses); a `<text>` with it recolours too.
 - `data-flow="…"` (marching dashes) and `data-packets="…"` (travelling dots)
   for paths.
+- `data-grow="…"` — a bar scales up from its base (0 → full) when the word is
+  set; good for a value growing over steps.
+- `data-move="…"` — the element travels to the end of its own `offset-path`
+  (you set `offset-path: path('…')` in the SVG's CSS) when the word is set.
+- `data-count="s1:0 s2:4200"` — the element's text ticks to the number of the
+  active state word (the last matching word wins); animated on the current slide,
+  instant in print/PDF and under reduced motion.
 
 Each takes several words; any match fires it.
 

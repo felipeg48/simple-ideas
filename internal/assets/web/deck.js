@@ -54,7 +54,34 @@
     });
   }
   function applyCanvas(s, k) { each(s.querySelectorAll('svg.si-canvas'), function (svg) { svg.setAttribute('data-state', stateAt(s, svg, k)); }); }
-  function apply(s, k) { applySteps(s, k); applyCanvas(s, k); }
+  /* data-count="word:number ..." ticks the element's text to the number of the
+     active state word (last match wins); animated on the current slide only. */
+  function fmtCount(n) { return String(Math.round(n)); }
+  function reduceMotion() { return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+  function tweenCount(el, from, to) {
+    var dur = 650, t0 = 0;
+    function fr(t) { if (!t0) t0 = t; var p = Math.min(1, (t - t0) / dur); var e = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; el.textContent = fmtCount(from + (to - from) * e); if (p < 1) requestAnimationFrame(fr); }
+    requestAnimationFrame(fr);
+  }
+  function applyCounts(s) {
+    var printing = window.matchMedia && window.matchMedia('print').matches;
+    var animate = s.classList.contains('si-current') && !reduceMotion() && !printing;
+    each(s.querySelectorAll('svg.si-canvas [data-count]'), function (el) {
+      var svg = el.closest('svg.si-canvas'); if (!svg) return;
+      var state = (svg.getAttribute('data-state') || '').split(/\s+/), target = null;
+      el.getAttribute('data-count').split(/\s+/).forEach(function (pair) {
+        var p = pair.split(':');
+        if (p.length === 2 && state.indexOf(p[0]) >= 0) target = parseFloat(p[1]);
+      });
+      if (target === null) return;
+      var from = parseFloat(el.getAttribute('data-count-now'));
+      if (isNaN(from)) from = parseFloat((el.textContent || '').replace(/[^0-9.\-]/g, '')) || 0;
+      el.setAttribute('data-count-now', target);
+      if (!animate || from === target) { el.textContent = fmtCount(target); return; }
+      tweenCount(el, from, target);
+    });
+  }
+  function apply(s, k) { applySteps(s, k); applyCanvas(s, k); applyCounts(s); }
   function canvasKey(s) {
     var f = s.querySelectorAll('.si-figure[data-src]');
     return f.length === 1 ? f[0].getAttribute('data-src') : '';
@@ -101,6 +128,7 @@
       applySteps(next, k);
       if (carry) void next.getBoundingClientRect(); /* flush styles so the state change below transitions */
       applyCanvas(next, k);
+      applyCounts(next);
       fit(next);
     } else {
       apply(next, k);

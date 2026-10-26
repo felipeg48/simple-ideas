@@ -17,7 +17,7 @@ var (
 	idRefRE     = regexp.MustCompile(`(url\(\s*#|href="#)([^)"\s]+)`)
 	rootAttrRE  = regexp.MustCompile(`\s(width|height)="([\d.]+)(px)?"`)
 	svgImageRE  = regexp.MustCompile(`(<image\b[^>]*?\s(?:xlink:)?href=")([^"#][^"]*)"`)
-	helperRE    = regexp.MustCompile(`data-(show|hide|alert|ok|flow|packets)="([^"]*)"`)
+	helperRE    = regexp.MustCompile(`data-(show|hide|alert|ok|flow|packets|grow|move|count)="([^"]*)"`)
 	classAttrRE = regexp.MustCompile(`\sclass="`)
 )
 
@@ -203,7 +203,7 @@ func (dr *deckRenderer) inlineSVG(svg, prefix, state, dir string, sc *slideCtx) 
 // attributes used by this deck's SVGs.
 func (dr *deckRenderer) helperCSS() string {
 	// hide rules come last so data-hide wins over data-show on one element
-	rank := map[string]int{"show": 0, "ok": 1, "alert": 2, "flow": 3, "packets": 4, "hide": 5}
+	rank := map[string]int{"show": 0, "grow": 1, "move": 1, "ok": 2, "alert": 3, "flow": 4, "packets": 5, "count": 6, "hide": 7}
 	keys := make([]string, 0, len(dr.words))
 	for k := range dr.words {
 		keys = append(keys, k)
@@ -233,6 +233,10 @@ func (dr *deckRenderer) helperCSS() string {
 			fmt.Fprintf(&b, `%s text[data-ok~="%s"]{fill:var(--si-ok)}`, on, w)
 		case "flow":
 			fmt.Fprintf(&b, `%s [data-flow~="%s"]{stroke-dasharray:14 10;animation:si-flow 1.1s linear infinite}`, on, w)
+		case "grow":
+			fmt.Fprintf(&b, `%s [data-grow~="%s"]{transform:scaleY(1)}`, on, w)
+		case "move":
+			fmt.Fprintf(&b, `%s [data-move~="%s"]{offset-distance:100%%}`, on, w)
 		case "packets":
 			fmt.Fprintf(&b, `%s .si-packets[data-for~="%s"]{opacity:1}`, on, w)
 		}
