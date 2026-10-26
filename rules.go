@@ -8,3 +8,8 @@ import _ "embed"
 //
 //go:embed RULES.md
 var Rules string
+
+// Manual is the user-manual deck, rendered by `si manual`.
+//
+//go:embed docs/reference/user-manual.md
+var Manual string

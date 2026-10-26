@@ -61,6 +61,8 @@ Usage:
   si migrate <dir|file> [--output dir] [--ai "<command>"]
         print an editorial-migration prompt for an existing deck (pipe it to an
         AI agent, or run it with --ai "claude -p" / --ai "gemini", etc.)
+  si manual [--slides] [--pdf] [--output dir]
+        render the built-in user manual as self-contained HTML (and PDF with --pdf)
   si rules
         print the markdown rules (RULES.md)
   si --export css-rules|rules|conf|example|themes [--output <path>]
@@ -97,7 +99,7 @@ func (m *multi) Set(v string) error { *m = append(*m, v); return nil }
 type options struct {
 	output, addr, export, theme, conf, title, ai string
 	open, help, ver                              bool
-	noInline, pdf                                bool
+	noInline, pdf, slides                        bool
 	css                                          multi
 	args                                         []string
 }
@@ -109,6 +111,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl := flag.NewFlagSet("si", flag.ContinueOnError)
 	fl.SetOutput(io.Discard)
 	fl.StringVar(&o.output, "output", "", "")
+	fl.StringVar(&o.output, "out", "", "")
 	fl.StringVar(&o.output, "o", "", "")
 	fl.StringVar(&o.addr, "addr", "127.0.0.1:7070", "")
 	fl.StringVar(&o.export, "export", "", "")
@@ -123,6 +126,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.conf, "conf", "", "")
 	fl.StringVar(&o.title, "title", "", "")
 	fl.StringVar(&o.ai, "ai", "", "")
+	fl.BoolVar(&o.slides, "slides", false, "")
 	for {
 		if err := fl.Parse(argv); err != nil {
 			return nil, err
@@ -201,6 +205,8 @@ func run(argv []string, stdout, stderr io.Writer) int {
 			return usageErr(stderr, "migrate needs one <dir|file> to migrate")
 		}
 		return runMigrate(rest[0], o, stdout, stderr)
+	case "manual":
+		return runManual(o, stdout, stderr)
 	case "build":
 		if len(rest) != 1 {
 			return usageErr(stderr, "build needs one <dir|file.md>")

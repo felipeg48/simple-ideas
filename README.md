@@ -29,7 +29,25 @@ self-contained HTML files you can mail, host or open from a USB stick.
 
 ## Install
 
-Go 1.26 or newer:
+**Download a release binary** (no Go needed) from the
+[releases page](https://github.com/felipeg48/simple-ideas/releases) — pick your
+OS/arch, then:
+
+```bash
+# macOS / Linux
+chmod +x si_* && sudo mv si_* /usr/local/bin/si
+# Windows: move si_*.exe somewhere on your PATH
+```
+
+**Or build from source** (Go 1.26+). A one-off setup script checks for Go and
+builds `bin/si`:
+
+```bash
+./setup.sh            # macOS / Linux
+.\setup.ps1           # Windows (PowerShell)   — or: setup.bat
+```
+
+Or the usual Go tooling:
 
 ```bash
 go install github.com/felipeg48/simple-ideas/cmd/si@latest
@@ -79,6 +97,7 @@ The full format, with an example for every rule: [RULES.md](RULES.md)
 | `si new <name>` | scaffold `<name>/<name>.md` with assets, a module and a theme |
 | `si new-canvas <name>` | scaffold `<name>.svg` (a working animated canvas) + a deck to preview it |
 | `si migrate <dir\|file> [--ai "<cmd>"]` | print an editorial-migration prompt for an existing deck; `--ai "claude -p"` pipes it to an agent |
+| `si manual [--slides] [--pdf] [--out dir]` | render the built-in user manual as self-contained HTML (and PDF with `--pdf`) |
 | `si rules` | print RULES.md |
 | `si --theme <name\|file.css\|url>` | override the theme: a built-in (`studio`, `paper`, `mono`, `crdb`), a CSS file, or an `https://` URL |
 | `si --export css-rules\|rules\|conf\|example\|themes [--output path]` | starter stylesheet · RULES.md · starter `si.conf` · the showcase decks · a sample deck per theme (a gallery) |
@@ -115,6 +134,16 @@ Your `--css` loads in the `si.user` cascade layer after the built-in theme, so
 it wins without specificity games; the fluid layout mechanics stay built in.
 `examples/css/harbor.css` is a complete brand theme (usable as `theme: harbor.css`).
 
+## Documentation
+
+- **[User manual](docs/reference/user-manual.md)** — rules, syntax, examples
+  (also `si manual --slides` / `si manual --pdf`)
+- **[RULES.md](RULES.md)** — the complete format reference (also `si rules`)
+- [docs/stage-diagrams.md](docs/stage-diagrams.md) — the `stage` flow DSL
+- [docs/authoring-canvases.md](docs/authoring-canvases.md) — hand-authored animated canvases
+- [docs/timer-animations.md](docs/timer-animations.md) — the break-timer animation layer
+- **[Developer reference](docs/reference/developer-reference.md)** — architecture and how to extend si
+
 ## Development
 
 ```bash
@@ -123,4 +152,6 @@ make build          # bin/si
 make play-example   # si play examples --open
 ```
 
-See [CLAUDE.md](CLAUDE.md) for the code layout and how to add a directive.
+See [CLAUDE.md](CLAUDE.md) and the
+[developer reference](docs/reference/developer-reference.md) for the code layout
+and how to add a directive, theme, canvas helper or timer animation.
