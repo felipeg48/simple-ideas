@@ -29,6 +29,8 @@ self-contained HTML files you can mail, host or open from a USB stick.
   backgrounds with overlays; sized, aligned, captioned and full-bleed images.
 - **Self-contained output:** CSS, JS, SVGs, images and video in one HTML file;
   or `si build --pdf` for a PDF per deck. Open on a phone with a QR code.
+- **Markdown or AsciiDoc:** author decks in `*.md` or `*.adoc` — both feed the
+  same pipeline ([docs/asciidoc.md](docs/asciidoc.md)).
 - **Your own look:** four built-in themes (incl. the CockroachDB `crdb` brand),
   a CSS theme file or URL, or your CSS on a documented `--si-*` token and
   `.si-*` hook contract.
@@ -148,6 +150,7 @@ it wins without specificity games; the fluid layout mechanics stay built in.
 - [docs/stage-diagrams.md](docs/stage-diagrams.md) — the `stage` flow DSL
 - [docs/authoring-canvases.md](docs/authoring-canvases.md) — hand-authored animated canvases
 - [docs/timer-animations.md](docs/timer-animations.md) — the break-timer animation layer
+- [docs/asciidoc.md](docs/asciidoc.md) — authoring decks in AsciiDoc (`.adoc`)
 - **[Developer reference](docs/reference/developer-reference.md)** — architecture and how to extend si
 
 ## Development

@@ -3,6 +3,10 @@
 Everything `si` understands, with an example for each rule. `si rules` prints
 this file; `examples/showcase.md` uses every rule in a real talk.
 
+> **AsciiDoc too.** A deck can be `*.adoc` / `*.asciidoc` instead of `*.md`; si
+> converts the AsciiDoc to this same format and everything below applies. See
+> `docs/asciidoc.md` for the supported subset.
+
 > **The layout rule.** Slides are fluid and responsive, never fixed. There is
 > no 1280×720 canvas scaled by a transform: every slide fills the viewport and
 > reflows, type follows the slide size (container units and `clamp()`), two

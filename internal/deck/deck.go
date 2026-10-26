@@ -196,8 +196,12 @@ func Parse(path string) (*Deck, error) {
 	if err != nil {
 		return nil, err
 	}
+	src := string(raw)
+	if ext := strings.ToLower(filepath.Ext(abs)); ext == ".adoc" || ext == ".asciidoc" {
+		src = adocToMarkdown(src) // AsciiDoc decks feed the same Markdown pipeline
+	}
 	d := &Deck{Path: abs, Name: strings.TrimSuffix(filepath.Base(abs), filepath.Ext(abs))}
-	lines := splitLines(string(raw))
+	lines := splitLines(src)
 	start := d.frontMatter(abs, lines)
 	var out []srcLine
 	for i, t := range lines[start:] {
@@ -550,9 +554,15 @@ func rel(p string) string {
 	return p
 }
 
-// List returns the decks in dir: every *.md except README.md and files whose
-// name starts with `_` or `.` (modules meant only for inclusion). A file path
-// is returned as is.
+// isDeckFile reports whether a filename is a deck source (Markdown or AsciiDoc).
+func isDeckFile(name string) bool {
+	l := strings.ToLower(name)
+	return strings.HasSuffix(l, ".md") || strings.HasSuffix(l, ".adoc") || strings.HasSuffix(l, ".asciidoc")
+}
+
+// List returns the decks in dir: every *.md / *.adoc / *.asciidoc except
+// README.md and files whose name starts with `_` or `.` (modules meant only for
+// inclusion). A file path is returned as is.
 func List(path string) ([]string, error) {
 	st, err := os.Stat(path)
 	if err != nil {
@@ -568,7 +578,7 @@ func List(path string) ([]string, error) {
 	var out []string
 	for _, e := range entries {
 		n := e.Name()
-		if e.IsDir() || !strings.HasSuffix(strings.ToLower(n), ".md") || strings.HasPrefix(n, "_") ||
+		if e.IsDir() || !isDeckFile(n) || strings.HasPrefix(n, "_") ||
 			strings.HasPrefix(n, ".") || strings.EqualFold(n, "README.md") {
 			continue
 		}
