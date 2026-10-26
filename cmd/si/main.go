@@ -49,8 +49,9 @@ const usage = `si: markdown in, animated fluid HTML slide decks out
 Usage:
   si play <dir|file.md> [--addr 127.0.0.1:7070] [--open] [--css <dir|file.css>]...
         serve the decks, rendered from markdown on every request, live reload on change
-  si [build] <dir|file.md> [--output html/] [--css <dir|file.css>]... [--no-inline-media]
+  si [build] <dir|file.md> [--output html/] [--css <dir|file.css>]... [--no-inline-media] [--pdf]
         write one self-contained HTML file per deck plus index.html
+        --pdf also renders each deck to <name>.pdf via headless Chrome
   si check <dir|file.md>
         validate decks: title, directives, assets, includes; exit 1 on a problem
   si new <name>
@@ -73,6 +74,7 @@ Flags (GNU style, before or after the path):
       --addr <host:port> play address (default 127.0.0.1:7070)
       --open            play: open the browser
       --no-inline-media build: copy images and videos next to the HTML instead of data URIs
+      --pdf             build: also render each deck to a PDF via headless Chrome
       --export <what>   css-rules, rules, conf or example
   -h, --help            this help
       --version         print the version
@@ -89,7 +91,7 @@ func (m *multi) Set(v string) error { *m = append(*m, v); return nil }
 type options struct {
 	output, addr, export, theme, conf string
 	open, help, ver                   bool
-	noInline                          bool
+	noInline, pdf                     bool
 	css                               multi
 	args                              []string
 }
@@ -106,6 +108,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.export, "export", "", "")
 	fl.BoolVar(&o.open, "open", false, "")
 	fl.BoolVar(&o.noInline, "no-inline-media", false, "")
+	fl.BoolVar(&o.pdf, "pdf", false, "")
 	fl.BoolVar(&o.help, "help", false, "")
 	fl.BoolVar(&o.help, "h", false, "")
 	fl.BoolVar(&o.ver, "version", false, "")
@@ -237,6 +240,12 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "si.conf: %s\n", w)
 	}
 	failed := false
+	chrome := ""
+	if o.pdf {
+		if chrome = findChrome(); chrome == "" {
+			fmt.Fprintln(stderr, "si: --pdf needs Google Chrome/Chromium; none found — writing HTML only")
+		}
+	}
 	var entries []render.IndexEntry
 	for _, f := range files {
 		d, err := deck.Parse(f)
@@ -272,6 +281,15 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 		entries = append(entries, render.Entry(d))
 		fmt.Fprintf(stdout, "  %-28s %3d slides  %5s min  %3d steps  %2d canvases  %4d KB\n",
 			d.Name+".html", len(d.Slides), strconv.FormatFloat(d.Minutes(), 'f', -1, 64), res.Steps, res.Canvases, len(res.HTML)/1024)
+		if chrome != "" {
+			pdf := filepath.Join(out, d.Name+".pdf")
+			if err := deckToPDF(chrome, dest, pdf); err != nil {
+				fmt.Fprintf(stderr, "si: pdf %s: %v\n", d.Name, err)
+				failed = true
+			} else {
+				fmt.Fprintf(stdout, "  %-28s (pdf)\n", d.Name+".pdf")
+			}
+		}
 	}
 	title := filepath.Base(filepath.Clean(src))
 	if st, err := os.Stat(src); err == nil && !st.IsDir() {
@@ -370,6 +388,64 @@ func openBrowser(url string) {
 		c = exec.Command("xdg-open", url)
 	}
 	_ = c.Start()
+}
+
+// findChrome returns a path to a headless-capable Chromium browser, or "".
+func findChrome() string {
+	var candidates []string
+	switch runtime.GOOS {
+	case "darwin":
+		candidates = []string{
+			"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+			"/Applications/Chromium.app/Contents/MacOS/Chromium",
+			"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+			"/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+		}
+	case "windows":
+		candidates = []string{
+			`C:\Program Files\Google\Chrome\Application\chrome.exe`,
+			`C:\Program Files (x86)\Google\Chrome\Application\chrome.exe`,
+			`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`,
+		}
+	default:
+		candidates = []string{"google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge"}
+	}
+	for _, c := range candidates {
+		if filepath.IsAbs(c) {
+			if _, err := os.Stat(c); err == nil {
+				return c
+			}
+			continue
+		}
+		if p, err := exec.LookPath(c); err == nil {
+			return p
+		}
+	}
+	return ""
+}
+
+// deckToPDF renders a built deck HTML to a self-contained PDF with headless
+// Chrome. The deck is loaded at #print so deck.js shows every slide in its
+// final state (all steps revealed, canvases at their last state).
+func deckToPDF(chrome, htmlPath, pdfPath string) error {
+	abs, err := filepath.Abs(htmlPath)
+	if err != nil {
+		return err
+	}
+	url := "file://" + filepath.ToSlash(abs) + "#print"
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, chrome,
+		"--headless=new", "--disable-gpu", "--no-pdf-header-footer",
+		"--virtual-time-budget=2000",
+		"--print-to-pdf="+pdfPath, url)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("%v: %s", err, strings.TrimSpace(string(out)))
+	}
+	if fi, err := os.Stat(pdfPath); err != nil || fi.Size() == 0 {
+		return fmt.Errorf("no PDF produced")
+	}
+	return nil
 }
 
 func export(o *options, stdout, stderr io.Writer) int {

@@ -523,7 +523,9 @@ references shared assets as `../images/...`.
 - When a slide is too tall for the window the fluid type shrinks a little,
   then the slide scrolls; nothing is cut off.
 - **Print** (browser print, or print to PDF): one slide per page at the deck
-  `aspect`, every step revealed, canvases in their final state.
+  `aspect`, every step revealed, canvases in their final state. `si build --pdf`
+  writes a `<name>.pdf` next to each deck using headless Chrome (needs Chrome or
+  Chromium installed; without it, HTML is still written).
 
 ## 15. Styling: themes and your own CSS
 

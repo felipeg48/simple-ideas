@@ -452,8 +452,13 @@
   }
 
   /* ---------- print: every slide in its final state ---------- */
-  window.addEventListener('beforeprint', function () { slides.forEach(function (s) { apply(s, maxStep(s)); }); });
+  function printAll() { slides.forEach(function (s) { apply(s, maxStep(s)); }); }
+  window.addEventListener('beforeprint', printAll);
   window.addEventListener('afterprint', function () { go(cur, step, true); });
+  /* si build --pdf loads the deck at #print; headless Chrome's --print-to-pdf
+     does not reliably fire beforeprint, so force every canvas to its final
+     state here too. */
+  if (location.hash === '#print') printAll();
 
   var fitTimer = 0;
   window.addEventListener('resize', function () { clearTimeout(fitTimer); fitTimer = setTimeout(function () { fit(slides[cur]); }, 100); });
