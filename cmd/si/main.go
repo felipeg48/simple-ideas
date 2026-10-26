@@ -361,6 +361,17 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	url := "http://" + ln.Addr().String() + "/"
 	fmt.Fprintf(stdout, "si play: serving %s at %s (live reload on; Ctrl+C stops)\n", src, url)
+	if ta, ok := ln.Addr().(*net.TCPAddr); ok {
+		if ta.IP.IsLoopback() {
+			fmt.Fprintf(stdout, "  to open on a phone on your network: si play %s --addr 0.0.0.0:%d\n", src, ta.Port)
+		} else if ip := lanIP(); ip != "" {
+			lan := fmt.Sprintf("http://%s:%d/", ip, ta.Port)
+			fmt.Fprintf(stdout, "  on your network: %s\n", lan)
+			if qr, err := qrString(lan); err == nil {
+				fmt.Fprint(stdout, qr)
+			}
+		}
+	}
 	stop := make(chan struct{})
 	go srv.Watch(stop)
 	hs := &http.Server{Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}
@@ -394,6 +405,23 @@ func openBrowser(url string) {
 		c = exec.Command("xdg-open", url)
 	}
 	_ = c.Start()
+}
+
+// lanIP returns the host's first private non-loopback IPv4, for opening the deck
+// from another device on the same network. Empty if none is found.
+func lanIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ""
+	}
+	for _, a := range addrs {
+		if ipn, ok := a.(*net.IPNet); ok {
+			if ip := ipn.IP.To4(); ip != nil && !ip.IsLoopback() && ip.IsPrivate() {
+				return ip.String()
+			}
+		}
+	}
+	return ""
 }
 
 // findChrome returns a path to a headless-capable Chromium browser, or "".

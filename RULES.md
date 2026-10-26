@@ -531,6 +531,9 @@ references shared assets as `../images/...`.
   `aspect`, every step revealed, canvases in their final state. `si build --pdf`
   writes a `<name>.pdf` next to each deck using headless Chrome (needs Chrome or
   Chromium installed; without it, HTML is still written).
+- **Open on a phone**: run `si play <dir> --addr 0.0.0.0:7070` to serve on your
+  network; `si play` then prints a LAN URL and a QR code to scan. (The default
+  address is loopback-only, so it prints the `--addr` hint instead.)
 
 ## 15. Styling: themes and your own CSS
 
