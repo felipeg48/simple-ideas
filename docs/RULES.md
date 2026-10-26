@@ -507,6 +507,7 @@ references shared assets as `../images/...`.
 | `o` | overview grid of every slide (click one to open it, Esc closes) |
 | `p` or `Shift+S` | teleprompter window |
 | `t` | break timer HUD: pick minutes, countdown to project during a break |
+| `/` | find a slide: search titles and text, or type a number to jump |
 | `a` | draw: a pen layer over the slide |
 | `d` | light / dark (remembered) |
 | `f` | full screen |
@@ -523,14 +524,23 @@ references shared assets as `../images/...`.
   `timer.face: analog`, an analog sport-clock dial — toggle it live in the HUD.
   A `timer.animation` runs a themed animation layer behind the translucent HUD
   (SLIDE │ ANIMATION │ TIMER) — built-ins `waves`, `orbit`, `bokeh`, or your own;
-  list several (comma-separated) for a toggle. See §16 and
-  `docs/timer-animations.md`.
+  list several (comma-separated) for a toggle (a **None** option is always
+  offered). Once the countdown starts the HUD hides its presets and toggles so
+  only the clock and the animation show — `Space` still pauses; any other key or
+  a click brings the controls back. See §16 and `docs/timer-animations.md`.
+
+- **Find a slide** (`/`): opens a search palette over the deck. Type to search
+  slide titles and body text — results list the slide number, title and the
+  matched snippet, ranked title-matches first; `↑`/`↓` move the selection and
+  `Enter` (or a click) jumps. Type a **number** to go straight to that slide
+  (e.g. `/12` → slide 12). `Esc` closes. Disable with `feature.find: off`.
 
 - **Draw** (`a`): a transient pen over the current slide, for circling or
   underlining as you talk. Drag to draw (mouse, touch, or pen — pen pressure
-  varies the stroke); `c` cycles colour, `e` erases strokes, `z` undoes the
-  last, `x` clears all, `Esc` turns it off. Strokes use the theme colours and
-  clear when you change slides; they are not saved and do not print.
+  varies the stroke); the toolbar picks the colour (accent, red, green, ink) and
+  the brush size (thin / medium / thick); `c` cycles colour, `e` erases strokes,
+  `z` undoes the last, `x` clears all, `Esc` turns it off. Strokes use the theme
+  colours and clear when you change slides; they are not saved and do not print.
 
 - The URL hash is the position (`#7`, `#7.2`); reloads keep it, so live
   reload in `si play` stays on your slide.
@@ -605,9 +615,9 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 
 Nesting is written as dotted keys (`timer.animation.path`), not YAML.
 
-Remappable **actions**: `overview`, `presenter`, `draw`, `timer`, `mode`,
-`fullscreen`, `help`. Toggleable **features**: `draw`, `timer`,
-`presenter`, `overview`.
+Remappable **actions**: `overview`, `presenter`, `draw`, `timer`, `find`,
+`mode`, `fullscreen`, `help`. Toggleable **features**: `draw`, `timer`,
+`presenter`, `overview`, `find`.
 
 ```
 # si.conf — flat key: value, same style as front matter (not YAML)

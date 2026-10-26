@@ -487,6 +487,7 @@ const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <tr><td>o</td><td>overview grid; click a slide to open it</td></tr>
 <tr><td>p</td><td>presenter teleprompter: notes, timer, next slide; drives this window</td></tr>
 <tr><td>t</td><td>break timer: pick minutes, countdown to project during a break</td></tr>
+<tr><td>/</td><td>find a slide: search titles and text, or type a number to jump</td></tr>
 <tr><td>d</td><td>light / dark</td></tr>
 <tr><td>a</td><td>draw: pen over the slide (c colour, e erase, z undo, x clear, Esc off)</td></tr>
 <tr><td>f</td><td>full screen</td></tr>
@@ -507,10 +508,15 @@ const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <div class="si-hud-toggle"></div>
 <p class="si-hud-hint">1-7 pick minutes · space pause · t / Esc close</p>
 </div></div>
+<div class="si-find" role="dialog" aria-label="Find slide" aria-hidden="true"><div>
+<input class="si-find-input" type="text" autocomplete="off" spellcheck="false" placeholder="Search slides, or type a number to jump…" aria-label="Search slides or go to a number">
+<ul class="si-find-list" role="listbox"></ul>
+</div></div>
 <svg class="si-draw" aria-hidden="true"></svg>
 <div class="si-draw-bar" aria-label="Annotate">
 <button type="button" class="si-swatch" data-si-pen="var(--si-accent)" title="Accent" style="--_c:var(--si-accent)"></button><button type="button" class="si-swatch" data-si-pen="var(--si-crit)" title="Red" style="--_c:var(--si-crit)"></button><button type="button" class="si-swatch" data-si-pen="var(--si-ok)" title="Green" style="--_c:var(--si-ok)"></button><button type="button" class="si-swatch" data-si-pen="var(--si-fg)" title="Ink" style="--_c:var(--si-fg)"></button>
-<button type="button" data-si-draw="erase" title="Eraser (e)">Erase</button><button type="button" data-si-draw="undo" title="Undo (z)">Undo</button><button type="button" data-si-draw="clear" title="Clear all (x)">Clear</button><button type="button" data-si-draw="done" title="Done (Esc)">Done</button>
+<span class="si-draw-sep" aria-hidden="true"></span><button type="button" class="si-brush" data-si-size="2" title="Thin" style="--_s:2px"></button><button type="button" class="si-brush" data-si-size="5" title="Medium" style="--_s:5px"></button><button type="button" class="si-brush" data-si-size="9" title="Thick" style="--_s:9px"></button>
+<span class="si-draw-sep" aria-hidden="true"></span><button type="button" data-si-draw="erase" title="Eraser (e)">Erase</button><button type="button" data-si-draw="undo" title="Undo (z)">Undo</button><button type="button" data-si-draw="clear" title="Clear all (x)">Clear</button><button type="button" data-si-draw="done" title="Done (Esc)">Done</button>
 </div>
 `
 

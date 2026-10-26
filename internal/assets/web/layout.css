@@ -164,6 +164,25 @@ img,svg,video{max-width:100%}
 .si-hud-seg button[aria-pressed=true]{color:var(--si-bg);background:var(--si-accent)}
 .si-hud-seg button:hover,.si-hud-seg button:focus-visible{outline:none;color:var(--si-fg)}
 .si-hud-seg button[aria-pressed=true]:hover{color:var(--si-bg)}
+.si-hud.is-focus .si-hud-presets,.si-hud.is-focus .si-hud-toggle,.si-hud.is-focus .si-hud-hint{display:none}
+
+/* find (/): a go-to-slide palette — search titles + body, or type a number */
+.si-find{position:fixed;inset:0;z-index:26;display:none;justify-content:center;align-items:flex-start;padding:clamp(1rem,8vmin,6rem) 1rem;background:color-mix(in srgb,var(--si-bg) 70%,transparent);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.si-find.is-open{display:flex}
+.si-find>div{display:flex;flex-direction:column;gap:.6rem;width:min(92vw,46rem)}
+.si-find-input{font:inherit;font-size:clamp(1rem,3.2vmin,1.5rem);color:var(--si-fg);background:var(--si-surface);border:1px solid var(--si-line);border-radius:.5em;padding:.6em .8em}
+.si-find-input:focus-visible{outline:none;border-color:var(--si-accent)}
+.si-find-list{list-style:none;margin:0;padding:0;overflow-y:auto;max-height:60vh;border-radius:.5em}
+.si-find-list li{display:flex;align-items:baseline;gap:.6em;padding:.5em .7em;border-radius:.4em;cursor:pointer;color:var(--si-fg)}
+.si-find-list li[aria-selected=true]{background:var(--si-accent);color:var(--si-bg)}
+.si-find-list li[aria-disabled=true]{color:var(--si-muted);cursor:default}
+.si-find-list b{font-family:var(--si-font-mono);font-variant-numeric:tabular-nums;color:var(--si-muted);min-width:2.4em;text-align:right}
+.si-find-list li[aria-selected=true] b{color:var(--si-bg)}
+.si-find-list span{font-weight:600}
+.si-find-list small{color:var(--si-muted);font-size:.82em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.si-find-list li[aria-selected=true] small{color:var(--si-bg)}
+.si-find-list mark{background:transparent;color:var(--si-accent);font-weight:700}
+.si-find-list li[aria-selected=true] mark{color:var(--si-bg);text-decoration:underline}
 
 /* annotate (a): a transient pen layer over the deck; strokes clear on slide change.
    screen-space, like the other chrome — not slide content, so pointer px is fine */
@@ -177,8 +196,13 @@ body.si-drawing .si-draw-bar{display:flex}
 .si-draw-bar button{font:inherit;color:var(--si-fg);background:var(--si-surface);border:1px solid var(--si-line);border-radius:.45em;padding:.35em .6em;cursor:pointer}
 .si-draw-bar button:hover,.si-draw-bar button:focus-visible{border-color:var(--si-accent);outline:none}
 .si-draw-bar button.is-on{border-color:var(--si-accent);background:var(--si-surface-2)}
-.si-swatch{width:1.5em;height:1.5em;padding:0;border-radius:50%;background:var(--_c);border:2px solid var(--si-line)}
-.si-swatch.is-on{border-color:var(--si-fg);box-shadow:0 0 0 2px var(--si-bg),0 0 0 4px var(--_c)}
+.si-draw-sep{width:1px;align-self:stretch;margin:0 .15rem;background:var(--si-line)}
+/* .si-draw-bar .si-swatch is more specific than ".si-draw-bar button", so the colour wins */
+.si-draw-bar .si-swatch{width:1.5em;height:1.5em;padding:0;border-radius:50%;background:var(--_c);border:2px solid var(--si-line)}
+.si-draw-bar .si-swatch.is-on{border-color:var(--si-fg);background:var(--_c);box-shadow:0 0 0 2px var(--si-bg),0 0 0 4px var(--_c)}
+.si-draw-bar .si-brush{width:1.9em;height:1.9em;display:grid;place-items:center;background:var(--si-surface)}
+.si-draw-bar .si-brush::before{content:"";width:var(--_s);height:var(--_s);border-radius:50%;background:var(--si-fg)}
+.si-draw-bar .si-brush.is-on{border-color:var(--si-accent);background:var(--si-surface-2)}
 
 /* reduced motion: no transitions, no animation, no travelling packets */
 @media (prefers-reduced-motion: reduce){
@@ -194,5 +218,5 @@ body.si-drawing .si-draw-bar{display:flex}
   .si-slide:last-child{break-after:auto}
   .si-inner{overflow:hidden;font-size:calc(var(--_u) * 1.7 * var(--si-scale))}
   .si-step{opacity:1;transform:none}
-  .si-bar,.si-progress,.si-help,.si-hud,.si-anim,.si-draw,.si-draw-bar,.si-problems{display:none!important}
+  .si-bar,.si-progress,.si-help,.si-hud,.si-find,.si-anim,.si-draw,.si-draw-bar,.si-problems{display:none!important}
 }

@@ -25,6 +25,9 @@ self-contained HTML files you can mail, host or open from a USB stick.
 - **A real teleprompter:** notes in large type with auto-scroll, mirror mode,
   per-slide and total timers with pace, per-slide rehearsal timings, previews,
   synced with the audience window.
+- **Present with ease:** jump to any slide with the `/` find palette (search
+  titles and text, or type a number); a full-screen break timer (digital or
+  analog) with an optional animation; and a pen to annotate the slide live.
 - **Backgrounds and images:** colours, gradients, images and muted video
   backgrounds with overlays; sized, aligned, captioned and full-bleed images.
 - **Self-contained output:** CSS, JS, SVGs, images and video in one HTML file;

@@ -22,10 +22,10 @@ import (
 )
 
 // Actions are the remappable single-key commands (keys.<action>).
-var Actions = []string{"overview", "presenter", "draw", "timer", "mode", "fullscreen", "help"}
+var Actions = []string{"overview", "presenter", "draw", "timer", "mode", "fullscreen", "find", "help"}
 
 // Features are the toggleable features (feature.<name>).
-var Features = []string{"draw", "timer", "presenter", "overview"}
+var Features = []string{"draw", "timer", "presenter", "overview", "find"}
 
 // Default is an annotated si.conf showing every setting at its built-in value.
 // `si --export conf` prints it. Keep it in sync with the deck.js defaults.
@@ -41,12 +41,14 @@ keys.draw:       a
 keys.timer:      t
 keys.mode:       d
 keys.fullscreen: f
+keys.find:       /
 keys.help:       ?
 
 feature.draw:      on
 feature.timer:     on
 feature.presenter: on
 feature.overview:  on
+feature.find:      on
 
 # break timer (t): presets, unit, a background animation layer, and the face
 # timer.time: 5,10,15,20,30,45,60   # preset durations shown in the HUD

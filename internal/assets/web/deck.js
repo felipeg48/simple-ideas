@@ -8,9 +8,9 @@
   var data = JSON.parse(document.getElementById('si-data').textContent);
   /* si.conf (optional): remap command keys and turn features on/off, over the defaults */
   var cfg = window.SI_CONFIG || {};
-  var cmd = { overview: 'o', presenter: 'p', draw: 'a', timer: 't', mode: 'd', fullscreen: 'f', help: '?' };
+  var cmd = { overview: 'o', presenter: 'p', draw: 'a', timer: 't', mode: 'd', fullscreen: 'f', find: '/', help: '?' };
   if (cfg.keys) for (var _k in cfg.keys) if (cmd.hasOwnProperty(_k) && cfg.keys[_k]) cmd[_k] = cfg.keys[_k];
-  var feat = { draw: true, timer: true, presenter: true, overview: true };
+  var feat = { draw: true, timer: true, presenter: true, overview: true, find: true };
   if (cfg.features) for (var _f in cfg.features) if (feat.hasOwnProperty(_f)) feat[_f] = !!cfg.features[_f];
   var byKey = {}; for (var _a in cmd) byKey[cmd[_a]] = _a;
   var slides = Array.prototype.slice.call(deck.children).filter(function (e) { return e.classList.contains('si-slide'); });
@@ -208,7 +208,7 @@
   var hudAnims = (tcfg.animations && tcfg.animations.length) ? tcfg.animations : [];
   var animKinds = tcfg.animKinds || {};
   var savedAnim = load('si-anim');
-  var animCurrent = hudAnims.indexOf(savedAnim) >= 0 ? savedAnim : (hudAnims[0] || '');
+  var animCurrent = savedAnim === 'none' ? 'none' : (hudAnims.indexOf(savedAnim) >= 0 ? savedAnim : (hudAnims[0] || ''));
   var savedFace = load('si-face');
   var faceCurrent = (savedFace === 'analog' || savedFace === 'digital') ? savedFace : (tcfg.face === 'analog' ? 'analog' : 'digital');
   var hudEnd = 0, hudLeft = 0, hudTotal = 0, hudPaused = false, hudTimer = 0;
@@ -239,11 +239,15 @@
     hud.classList.toggle('is-open', on);
     hud.setAttribute('aria-hidden', on ? 'false' : 'true');
     if (on) { applyFace(); dialUpdate(); startAnim(); } // runs continuously while the HUD is open, independent of the countdown
-    else { clearInterval(hudTimer); hudTimer = 0; hud.classList.remove('is-over'); stopAnim(); }
+    else { clearInterval(hudTimer); hudTimer = 0; hud.classList.remove('is-over', 'is-focus'); stopAnim(); }
   }
+  // is-focus: once the countdown starts, hide the presets/toggles/hint so only
+  // the clock (and the animation) show; any key or click brings them back.
+  function hudReveal() { if (hud) hud.classList.remove('is-focus'); }
   function hudStart(m) {
     hudTotal = m * hudMul;
     hudEnd = Date.now() + hudTotal; hudLeft = hudTotal; hudPaused = false; hud.classList.remove('is-over');
+    hud.classList.add('is-focus');
     clearInterval(hudTimer); hudTick(); hudTimer = setInterval(hudTick, 250);
     if (!animLayer) startAnim(); // keep the already-running loop; only start if not already
   }
@@ -270,7 +274,7 @@
   }
   function startAnim() {
     stopAnim();
-    if (!animCurrent) return;
+    if (!animCurrent || animCurrent === 'none') return;
     animLayer = document.createElement('div');
     animLayer.className = 'si-anim';
     animLayer.setAttribute('aria-hidden', 'true');
@@ -299,6 +303,94 @@
     if (hudTime) hudTime.textContent = hudFmt(hudLeft);
     dialUpdate();
     if (hudLeft <= 0) { hudLeft = 0; if (hudTime) hudTime.textContent = '0:00'; dialUpdate(); hud.classList.add('is-over'); clearInterval(hudTimer); hudTimer = 0; }
+  }
+
+  /* ---------- find slide (/) : jump by number or search titles + body ---------- */
+  var find = document.querySelector('.si-find');
+  var findInput = find && find.querySelector('.si-find-input');
+  var findList = find && find.querySelector('.si-find-list');
+  var findIndex = null, findResults = [], findSel = 0;
+  function escHTML(s) { return s.replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+  function slideTitle(i) { return slides[i].getAttribute('data-title') || ('Slide ' + (i + 1)); }
+  function buildIndex() {
+    findIndex = [];
+    for (var i = 0; i < n; i++) {
+      var inner = slides[i].querySelector('.si-inner');
+      var text = (inner ? inner.textContent : slides[i].textContent) || '';
+      findIndex.push(text.replace(/\s+/g, ' ').trim());
+    }
+  }
+  function snippet(text, at, len) {
+    var s = Math.max(0, at - 30);
+    return (s > 0 ? '…' : '') + escHTML(text.slice(s, at)) +
+      '<mark>' + escHTML(text.slice(at, at + len)) + '</mark>' +
+      escHTML(text.slice(at + len, at + len + 46)) + (at + len + 46 < text.length ? '…' : '');
+  }
+  function findSearch(q) {
+    q = q.trim(); findResults = [];
+    if (!q) { for (var i = 0; i < n; i++) findResults.push({ i: i }); return; }
+    if (/^\d+$/.test(q)) {
+      var num = Math.max(1, Math.min(n, parseInt(q, 10)));
+      findResults.push({ i: num - 1, jump: num });
+      return;
+    }
+    var ql = q.toLowerCase(), hits = [];
+    for (var j = 0; j < n; j++) {
+      var inT = slideTitle(j).toLowerCase().indexOf(ql);
+      if (inT >= 0) { hits.push({ i: j, pri: 0, snip: snippet(slideTitle(j), inT, q.length) }); continue; }
+      var body = findIndex[j], inB = body.toLowerCase().indexOf(ql);
+      if (inB >= 0) hits.push({ i: j, pri: 1, snip: snippet(body, inB, q.length) });
+    }
+    hits.sort(function (a, b) { return a.pri - b.pri || a.i - b.i; });
+    findResults = hits.slice(0, 12);
+  }
+  function findRender() {
+    if (!findList) return;
+    if (!findResults.length) { findList.innerHTML = '<li aria-disabled="true">No matches</li>'; return; }
+    findList.innerHTML = '';
+    findResults.forEach(function (r, idx) {
+      var li = document.createElement('li');
+      li.setAttribute('data-i', r.i);
+      li.setAttribute('aria-selected', idx === findSel ? 'true' : 'false');
+      var extra = r.jump ? '<small>go to slide ' + r.jump + '</small>' : (r.snip ? '<small>' + r.snip + '</small>' : '');
+      li.innerHTML = '<b>' + (r.i + 1) + '</b> <span>' + escHTML(slideTitle(r.i)) + '</span> ' + extra;
+      li.addEventListener('click', function () { findGo(r.i); });
+      li.addEventListener('mousemove', function () { if (findSel !== idx) { findSel = idx; markSel(); } });
+      findList.appendChild(li);
+    });
+  }
+  function markSel() {
+    if (!findList) return;
+    each(findList.children, function (li, idx) { li.setAttribute('aria-selected', idx === findSel ? 'true' : 'false'); });
+    var sel = findList.children[findSel];
+    if (sel && sel.scrollIntoView) sel.scrollIntoView({ block: 'nearest' });
+  }
+  function findMove(d) {
+    if (!findResults.length) return;
+    findSel = Math.max(0, Math.min(findResults.length - 1, findSel + d));
+    markSel();
+  }
+  function findGo(i) { findShow(false); go(i, 0); }
+  function findShow(on) {
+    if (!find || !feat.find) return;
+    if (on === undefined) on = !find.classList.contains('is-open');
+    find.classList.toggle('is-open', on);
+    find.setAttribute('aria-hidden', on ? 'false' : 'true');
+    if (on) {
+      if (!findIndex) buildIndex();
+      findInput.value = ''; findSearch(''); findSel = 0; findRender();
+      setTimeout(function () { findInput.focus(); }, 0);
+    } else if (findInput) { findInput.blur(); }
+  }
+  if (findInput) {
+    findInput.addEventListener('input', function () { findSearch(findInput.value); findSel = 0; findRender(); });
+    findInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); findShow(false); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); findMove(1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); findMove(-1); }
+      else if (e.key === 'Enter') { e.preventDefault(); if (findResults.length) findGo(findResults[findSel].i); }
+    });
+    find.addEventListener('click', function (e) { if (e.target === find) findShow(false); });
   }
 
   /* ---------- presenter view (p): a second window synced over BroadcastChannel ---------- */
@@ -360,6 +452,7 @@
   var draw = document.querySelector('.si-draw'), drawBar = document.querySelector('.si-draw-bar');
   var penColors = ['var(--si-accent)', 'var(--si-crit)', 'var(--si-ok)', 'var(--si-fg)'];
   var drawMode = false, erasing = false, drawing = false, penColor = penColors[0], curPath = null;
+  var penSize = +load('si-pen-size') || 5;
   function toggleDraw(on) {
     if (!draw) return;
     if (on === undefined) on = !drawMode;
@@ -375,6 +468,7 @@
   function syncPenUI() {
     if (!drawBar) return;
     each(drawBar.querySelectorAll('[data-si-pen]'), function (b) { b.classList.toggle('is-on', !erasing && b.getAttribute('data-si-pen') === penColor); });
+    each(drawBar.querySelectorAll('[data-si-size]'), function (b) { b.classList.toggle('is-on', +b.getAttribute('data-si-size') === penSize); });
     var er = drawBar.querySelector('[data-si-draw="erase"]'); if (er) er.classList.toggle('is-on', erasing);
   }
   function dStart(e) {
@@ -383,8 +477,10 @@
     if (erasing) { eraseAt(e); return; }
     curPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     curPath.setAttribute('d', 'M ' + e.clientX + ' ' + e.clientY);
-    curPath.setAttribute('stroke', penColor);
-    curPath.setAttribute('stroke-width', ((e.pointerType === 'pen' && e.pressure) ? 1 + e.pressure * 7 : 4).toFixed(1));
+    // inline style (not a presentation attribute) so the CSS var() resolves
+    curPath.style.stroke = penColor;
+    var w = (e.pointerType === 'pen' && e.pressure) ? penSize * (0.5 + e.pressure) : penSize;
+    curPath.setAttribute('stroke-width', w.toFixed(1));
     draw.appendChild(curPath);
   }
   function dMove(e) {
@@ -402,6 +498,7 @@
   }
   if (drawBar) {
     each(drawBar.querySelectorAll('[data-si-pen]'), function (b) { b.addEventListener('click', function () { penColor = b.getAttribute('data-si-pen'); erasing = false; syncPenUI(); b.blur(); }); });
+    each(drawBar.querySelectorAll('[data-si-size]'), function (b) { b.addEventListener('click', function () { penSize = +b.getAttribute('data-si-size'); save('si-pen-size', penSize); syncPenUI(); b.blur(); }); });
     each(drawBar.querySelectorAll('[data-si-draw]'), function (b) {
       b.addEventListener('click', function () {
         var a = b.getAttribute('data-si-draw');
@@ -419,9 +516,10 @@
     else if (a === 'timer') { if (feat.timer) hudShow(); }
     else if (a === 'mode') toggleMode();
     else if (a === 'fullscreen') fullscreen();
+    else if (a === 'find') { if (feat.find) findShow(); }
     else if (a === 'help') toggleHelp();
   }
-  var actions = { next: forward, prev: backward, overview: function () { runCmd('overview'); }, draw: function () { runCmd('draw'); }, presenter: function () { runCmd('presenter'); }, mode: toggleMode, help: function () { toggleHelp(); }, fullscreen: fullscreen };
+  var actions = { next: forward, prev: backward, overview: function () { runCmd('overview'); }, draw: function () { runCmd('draw'); }, presenter: function () { runCmd('presenter'); }, find: function () { runCmd('find'); }, mode: toggleMode, help: function () { toggleHelp(); }, fullscreen: fullscreen };
   /* a disabled feature hides its toolbar button */
   if (!feat.overview) { var _bo = document.querySelector('[data-si-action="overview"]'); if (_bo) _bo.style.display = 'none'; }
   if (!feat.presenter) { var _bp = document.querySelector('[data-si-action="presenter"]'); if (_bp) _bp.style.display = 'none'; }
@@ -433,6 +531,7 @@
     if (hud && hud.classList.contains('is-open')) {
       if (e.key === 'Escape' || e.key === cmd.timer) { e.preventDefault(); hudShow(false); return; }
       if (e.key === ' ') { e.preventDefault(); hudPause(); return; }
+      if (hud.classList.contains('is-focus')) { e.preventDefault(); hudReveal(); return; } // any other key brings the chrome back
       var pi = '123456789'.indexOf(e.key); if (pi >= 0 && pi < hudMins.length) { e.preventDefault(); hudStart(hudMins[pi]); return; }
       if (/^(Arrow|Page|Home|End|Enter)/.test(e.key)) e.preventDefault();
       return;
@@ -456,7 +555,7 @@
       case 'Escape': toggleHelp(false); if (deck.classList.contains('si-overview')) overview(false); break;
       case 'S': runCmd('presenter'); break;
       case 'h': runCmd('help'); break;
-      default: { var act = byKey[e.key]; if (act) runCmd(act); }
+      default: { var act = byKey[e.key]; if (act) { e.preventDefault(); runCmd(act); } }
     }
   });
   each(document.querySelectorAll('[data-si-action]'), function (b) {
@@ -465,6 +564,7 @@
   /* rebuild the HUD preset buttons + hint from the configured times/unit */
   (function () {
     if (!hud) return;
+    hud.addEventListener('click', function (e) { if (!e.target.closest('button') && hud.classList.contains('is-focus')) hudReveal(); });
     var presets = hud.querySelector('.si-hud-presets'), hint = hud.querySelector('.si-hud-hint');
     if (presets) {
       presets.textContent = '';
@@ -500,7 +600,9 @@
         });
         toggle.appendChild(grp);
       }
-      seg(hudAnims, hudAnims, function () { return animCurrent; }, function (v) { animCurrent = v; save('si-anim', v); if (hud.classList.contains('is-open')) startAnim(); });
+      if (hudAnims.length) { // always offer "None" to turn the animation off
+        seg(hudAnims.concat(['None']), hudAnims.concat(['none']), function () { return animCurrent || 'none'; }, function (v) { animCurrent = v; save('si-anim', v); if (hud.classList.contains('is-open')) startAnim(); });
+      }
       if (hudDial) seg(['Digital', 'Analog'], ['digital', 'analog'], function () { return faceCurrent; }, function (v) { faceCurrent = v; save('si-face', v); applyFace(); dialUpdate(); });
     }
   })();
