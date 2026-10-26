@@ -76,8 +76,15 @@ lang: en
 | `background` | as the [background directive](#7-backgrounds) | none | background of every slide without its own |
 | `mermaid` | `off` or a script URL | pinned CDN URL | how Mermaid fences render |
 | `lang` | language tag | `en` | `<html lang>` |
+| `status` | short text (`beta`, `preview`, `new`, `deprecated`, …) | none | a badge on the deck's index tile / list row; `beta`/`new`/`deprecated` are colour-coded |
+| `version` | text (e.g. `v1.2.0`) | none | an outlined version badge on the index tile / list row |
 
 An included module's own front matter is ignored; the including deck decides.
+
+The generated `index.html` offers a **Tiles / List** toggle (top-right, remembered
+per browser); list view is a table with Course, Status, Slides, Time and a PDF
+column. `status`/`version` badges and the PDF column come from each deck's front
+matter and `si build --pdf`.
 
 ## 3. Slides and headings
 

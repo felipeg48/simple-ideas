@@ -147,6 +147,12 @@ var Hooks = []Hook{
 	{`.si-card`, "one deck card on the index page"},
 	{`.si-card-wrap`, "wrapper around a deck card that also carries the PDF badge"},
 	{`.si-card-pdf`, "the PDF download badge on a deck card (si build --pdf)"},
+	{`.si-index-head`, "the index page header: title/count on the left, the view toggle on the right"},
+	{`.si-view`, "the Tiles/List view toggle on the index page"},
+	{`.si-badges`, "the row of status/version badges on a deck card"},
+	{`.si-badge`, "a status or version badge (status: / version: front matter); data-status colours known values"},
+	{`.si-badge-ver`, "the version-badge variant (outlined, not filled)"},
+	{`.si-list`, "the index list/table view: Course, Status, Slides, Time, PDF columns"},
 }
 
 // Theme holds the token values of one theme. Base values apply in both modes.

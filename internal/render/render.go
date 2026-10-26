@@ -532,6 +532,8 @@ type IndexEntry struct {
 	Slides   int
 	Minutes  float64
 	PDF      string // optional relative href to a slides PDF (pdfs/<name>.pdf); empty = no badge
+	Status   string // optional status badge (e.g. beta, preview, new)
+	Version  string // optional version badge (e.g. v1.2.0)
 }
 
 // Index renders the deck index page.
@@ -548,24 +550,61 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 		b.WriteString("<style>\n" + css + "</style>\n")
 	}
 	b.WriteString(`<script>try{var m=localStorage.getItem('si-mode');if(m)document.documentElement.setAttribute('data-si-mode',m)}catch(e){}</script>` + "\n")
-	fmt.Fprintf(&b, "</head>\n<body>\n<main class=\"si-index\">\n<h1>%s</h1>\n<p>%d deck(s)</p>\n<div class=\"grid\">\n", html.EscapeString(title), len(entries))
+	b.WriteString("</head>\n<body>\n<main class=\"si-index\" data-view=\"tiles\">\n")
+	fmt.Fprintf(&b, "<header class=\"si-index-head\"><div><h1>%s</h1><p>%d deck(s)</p></div>"+
+		"<div class=\"si-view\" role=\"group\" aria-label=\"View\"><button type=\"button\" data-view=\"tiles\">Tiles</button><button type=\"button\" data-view=\"list\">List</button></div></header>\n",
+		html.EscapeString(title), len(entries))
+
+	badges := func(e IndexEntry) string {
+		var s string
+		if e.Status != "" {
+			s += fmt.Sprintf("<span class=\"si-badge\" data-status=\"%s\">%s</span>", html.EscapeString(strings.ToLower(e.Status)), html.EscapeString(strings.ToUpper(e.Status)))
+		}
+		if e.Version != "" {
+			s += fmt.Sprintf("<span class=\"si-badge si-badge-ver\">%s</span>", html.EscapeString(e.Version))
+		}
+		return s
+	}
+
+	b.WriteString("<div class=\"grid\">\n")
 	for _, e := range entries {
 		mins := ""
 		if e.Minutes > 0 {
 			mins = fmt.Sprintf(" · %s min", strconv.FormatFloat(e.Minutes, 'f', -1, 64))
 		}
+		bg := badges(e)
+		if bg != "" {
+			bg = "<div class=\"si-badges\">" + bg + "</div>"
+		}
+		inner := fmt.Sprintf("<b>%s</b><span>%s</span>%s<small>%d slides%s</small>",
+			html.EscapeString(e.Title), html.EscapeString(e.Subtitle), bg, e.Slides, mins)
 		if e.PDF == "" {
-			fmt.Fprintf(&b, "<a class=\"si-card\" href=\"%s\"><b>%s</b><span>%s</span><small>%d slides%s</small></a>\n",
-				html.EscapeString(e.Href), html.EscapeString(e.Title), html.EscapeString(e.Subtitle), e.Slides, mins)
+			fmt.Fprintf(&b, "<a class=\"si-card\" href=\"%s\">%s</a>\n", html.EscapeString(e.Href), inner)
 		} else {
 			// Two sibling links in a positioned wrapper: the card opens the deck, the
 			// badge downloads the PDF. (Nesting <a> in <a> is invalid HTML.)
-			fmt.Fprintf(&b, "<div class=\"si-card-wrap\"><a class=\"si-card\" href=\"%s\"><b>%s</b><span>%s</span><small>%d slides%s</small></a>"+
+			fmt.Fprintf(&b, "<div class=\"si-card-wrap\"><a class=\"si-card\" href=\"%s\">%s</a>"+
 				"<a class=\"si-card-pdf\" href=\"%s\" download title=\"Download the slides as PDF\">PDF</a></div>\n",
-				html.EscapeString(e.Href), html.EscapeString(e.Title), html.EscapeString(e.Subtitle), e.Slides, mins, html.EscapeString(e.PDF))
+				html.EscapeString(e.Href), inner, html.EscapeString(e.PDF))
 		}
 	}
-	b.WriteString("</div>\n</main>\n")
+	b.WriteString("</div>\n")
+
+	b.WriteString("<table class=\"si-list\"><thead><tr><th>Course</th><th>Status</th><th>Slides</th><th>Time</th><th>PDF</th></tr></thead><tbody>\n")
+	for _, e := range entries {
+		t := ""
+		if e.Minutes > 0 {
+			t = strconv.FormatFloat(e.Minutes, 'f', -1, 64) + " min"
+		}
+		pdf := "—"
+		if e.PDF != "" {
+			pdf = fmt.Sprintf("<a href=\"%s\" download>PDF</a>", html.EscapeString(e.PDF))
+		}
+		fmt.Fprintf(&b, "<tr><td><a href=\"%s\">%s</a></td><td>%s</td><td>%d</td><td>%s</td><td>%s</td></tr>\n",
+			html.EscapeString(e.Href), html.EscapeString(e.Title), badges(e), e.Slides, t, pdf)
+	}
+	b.WriteString("</tbody></table>\n</main>\n")
+	b.WriteString(`<script>(function(){var m=document.querySelector('.si-index');if(!m)return;var btns=m.querySelectorAll('.si-view button');function set(v){m.setAttribute('data-view',v);btns.forEach(function(x){x.setAttribute('aria-pressed',x.getAttribute('data-view')===v?'true':'false')});try{localStorage.setItem('si-index-view',v)}catch(e){}}var saved;try{saved=localStorage.getItem('si-index-view')}catch(e){}set(saved==='list'?'list':'tiles');btns.forEach(function(b){b.addEventListener('click',function(){set(b.getAttribute('data-view'))})})})();</script>` + "\n")
 	if opt.LiveReload {
 		b.WriteString(LiveReloadJS)
 	}
@@ -575,7 +614,7 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 
 // Entry builds an index entry for a parsed deck.
 func Entry(d *deck.Deck) IndexEntry {
-	e := IndexEntry{Href: d.Name + ".html", Title: plain(d.Title()), Slides: len(d.Slides), Minutes: d.Minutes()}
+	e := IndexEntry{Href: d.Name + ".html", Title: plain(d.Title()), Slides: len(d.Slides), Minutes: d.Minutes(), Status: d.Meta.Status, Version: d.Meta.Version}
 	if len(d.Slides) > 0 {
 		for _, line := range strings.Split(d.Slides[0].Body, "\n") {
 			if t := strings.TrimSpace(line); t != "" && !strings.HasPrefix(t, "<!--") {

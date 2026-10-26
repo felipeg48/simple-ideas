@@ -64,10 +64,12 @@ type Meta struct {
 	Mermaid    string // "" (CDN default), "off", or a script URL
 	Background string // default background of every slide
 	Lang       string
+	Status     string // optional course status badge on the index (e.g. beta, preview, new)
+	Version    string // optional course version badge on the index (e.g. v1.2.0)
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version"}
 
 // Slide is one slide of a deck.
 type Slide struct {
@@ -263,7 +265,7 @@ func (d *Deck) setMeta(key, val string) bool {
 	ptr := map[string]*string{
 		"title": &m.Title, "author": &m.Author, "date": &m.Date, "theme": &m.Theme, "mode": &m.Mode,
 		"accent": &m.Accent, "transition": &m.Transition, "aspect": &m.Aspect, "mermaid": &m.Mermaid, "lang": &m.Lang,
-		"background": &m.Background,
+		"background": &m.Background, "status": &m.Status, "version": &m.Version,
 	}[key]
 	if ptr == nil {
 		return false
