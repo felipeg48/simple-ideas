@@ -37,12 +37,46 @@ func (dr *deckRenderer) canvas(val string, sc *slideCtx) *rawNode {
 		return &rawNode{html: fmt.Sprintf(`<figure class="si-figure"><p>missing SVG: %s</p></figure>`, html.EscapeString(path)), media: true}
 	}
 	dr.svgN++
+	for _, p := range lintSVG(string(raw)) {
+		dr.problem(sc, "%s: %s", path, p)
+	}
 	svg := dr.inlineSVG(string(raw), fmt.Sprintf("c%d-", dr.svgN), strings.Join(base, " "), filepath.Dir(filepath.Join(sc.s.Dir, path)), sc)
 	sc.canvases = append(sc.canvases, canvasRef{path: path, base: base})
 	return &rawNode{
 		html:  fmt.Sprintf(`<figure class="si-figure" data-src="%s">%s</figure>`, html.EscapeString(path), svg),
 		media: true,
 	}
+}
+
+// lintSVG reports authored-SVG mistakes that silently break a canvas: a
+// less-than sign inside a <style> block (parsed as markup in inline SVG, RULES
+// §10) and a root with no viewBox and no width+height to derive one (breaks
+// fluid scaling, RULES §1). It targets hand-authored svg: files; generated
+// stage SVGs are correct by construction.
+func lintSVG(raw string) []string {
+	var probs []string
+	rest := raw
+	for {
+		i := strings.Index(rest, "<style")
+		if i < 0 {
+			break
+		}
+		open := strings.IndexByte(rest[i:], '>')
+		end := strings.Index(rest[i:], "</style>")
+		if open < 0 || end < 0 {
+			break
+		}
+		if strings.Contains(rest[i+open+1:i+end], "<") {
+			probs = append(probs, "a '<' inside <style> breaks inline SVG (RULES §10)")
+		}
+		rest = rest[i+end+len("</style>"):]
+	}
+	if root := svgRootRE.FindString(raw); root != "" && !strings.Contains(root, "viewBox") {
+		if !strings.Contains(root, "width=") || !strings.Contains(root, "height=") {
+			probs = append(probs, "no viewBox and no width+height to derive one (breaks fluid scaling, RULES §1)")
+		}
+	}
+	return probs
 }
 
 // resolveState applies state words to the previous state of the same SVG.

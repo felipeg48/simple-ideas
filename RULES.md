@@ -581,5 +581,8 @@ value is a warning printed to the terminal, never a failed build.
 - a `steps:` list with more state tokens than items
 - an `image` directive not followed by a paragraph holding one image
 - a second `# H1` inside a slide
+- a malformed `stage` block (unknown node, impossible `dot`/`flow` route, bad `dir`)
+- an authored canvas SVG with a `<` inside its `<style>`, or with no `viewBox`
+  and no `width`+`height` to derive one
 
 Warnings (exit 0): inlined files above 2 MB.
