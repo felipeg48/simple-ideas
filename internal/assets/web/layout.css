@@ -170,7 +170,7 @@ body.si-drawing .si-draw-bar{display:flex}
 
 /* print: one slide per page, every step and the final canvas state shown */
 @media print{
-  @page{size:1280px 720px;margin:0}
+  @page{size:13.333in 7.5in;margin:0}
   html,body{height:auto;overflow:visible;background:var(--si-bg)}
   .si-deck{position:static;overflow:visible}
   .si-slide{position:relative;inset:auto;width:100vw;height:100vh;visibility:visible;opacity:1;transform:none;transition:none;break-after:page;break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}
