@@ -135,6 +135,10 @@ pass. The steps that matter:
 
 ## Roadmap ideas
 
+- **`si play` terminal drawer** (PINNED, see `docs/terminal.md`): a bottom→middle
+  HUD with multiple tabs to run local commands during demos (`docker ps`,
+  `cockroach start-single-node`, `cockroach sql`). Play-only + loopback-only.
+  Open decisions: vanilla vs xterm.js, PTY (dep) vs stdlib `os/exec`, transport.
 - A `stage` fence that generates animated flow SVGs (Mermaid-like) is in
   (`docs/stage-diagrams.md`); next: step-driven reveal beyond highlight
   (show/hide, ok/alert per node), single-level fan-out polish.
