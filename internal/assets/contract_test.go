@@ -86,3 +86,18 @@ func unique(in []string) []string {
 	sort.Strings(out)
 	return out
 }
+
+func TestThemeNames(t *testing.T) {
+	names := ThemeNames()
+	if len(names) != len(Themes) {
+		t.Fatalf("ThemeNames=%d, Themes=%d", len(names), len(Themes))
+	}
+	if names[0] != "studio" {
+		t.Errorf("studio should be first, got %q", names[0])
+	}
+	for _, n := range names {
+		if _, ok := Themes[n]; !ok {
+			t.Errorf("%q not a built-in theme", n)
+		}
+	}
+}

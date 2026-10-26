@@ -532,8 +532,15 @@ references shared assets as `../images/...`.
 - `theme:` picks a built-in theme (`studio`, `paper`, `mono`, `crdb`), each
   with a light and a dark palette. `crdb` is the CockroachDB University brand
   (cream / ink / purple; aliases `cockroachdb`, `cockroachlabs`).
-- `--theme <name>` on `si play` / `si build` overrides the deck's `theme:`
-  front matter, so one set of decks can be built in several themes.
+- `theme:` (or `--theme`) can instead be a path ending in `.css`: the file's
+  contents become the `si.theme` layer, so you ship a whole palette from one
+  file. Define the `--si-*` tokens (see `si --export css-rules`); resolved
+  relative to the deck, then the current directory. A missing file is a `si
+  check` problem. `examples/css/harbor.css` is a complete example theme.
+- `--theme <name|file.css>` on `si play` / `si build` overrides the deck's
+  `theme:` front matter, so one set of decks can be built in several themes.
+- `si --export themes [--output dir]` writes one sample deck per built-in theme;
+  `si play dir` (or `si build dir`) then shows them side by side as a gallery.
 - `--css <file.css|dir>` (repeatable) loads your stylesheets after the theme;
   `si play` watches them and reloads, static output inlines them (relative
   `url()` files become data URIs).

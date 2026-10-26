@@ -273,6 +273,19 @@ func CanonicalTheme(name string) string {
 	return name
 }
 
+// ThemeNames returns the built-in theme names in a stable gallery order
+// (studio first as the default, then the rest alphabetically).
+func ThemeNames() []string {
+	rest := make([]string, 0, len(Themes))
+	for n := range Themes {
+		if n != "studio" {
+			rest = append(rest, n)
+		}
+	}
+	sort.Strings(rest)
+	return append([]string{"studio"}, rest...)
+}
+
 // ThemeCSS returns the token declarations of a theme inside the si.theme
 // layer: light values on :root, dark values under prefers-color-scheme (when
 // no explicit mode is set) and under data-si-mode="dark".

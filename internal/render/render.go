@@ -62,6 +62,8 @@ type deckRenderer struct {
 	stageN    int
 	cur       *slideCtx // the slide being rendered, for the stage fence's steps
 	mermaid   bool
+	themeName string // resolved theme name (or "custom" for a CSS-file theme)
+	themeCSS  string // the si.theme layer CSS for this deck
 	problems  []deck.Problem
 	warnings  []deck.Problem
 }
@@ -93,6 +95,7 @@ func Deck(d *deck.Deck, opt Options) Result {
 	dr.md = dr.markdown()
 	var slides strings.Builder
 	res := Result{}
+	dr.resolveTheme()
 	for i, s := range d.Slides {
 		sh, sc := dr.slide(s, i+1)
 		slides.WriteString(sh)
@@ -208,20 +211,46 @@ func plain(s string) string { return strings.TrimSpace(tagRE.ReplaceAllString(s,
 
 var pageSizes = map[string]string{"16:9": "13.333in 7.5in", "16:10": "12in 7.5in", "4:3": "10in 7.5in", "1:1": "7.5in 7.5in", "9:16": "7.5in 13.333in"}
 
-func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options) []byte {
-	d := dr.d
-	m := d.Meta
-	theme := opt.Theme
+// resolveTheme sets dr.themeName and dr.themeCSS. The theme is the --theme flag,
+// then the deck's theme: front matter, then si.conf, then studio. A value ending
+// in .css is a user theme file (resolved relative to cwd, then the deck dir) whose
+// contents become the si.theme layer; a read error is a deck problem and falls
+// back to studio.
+func (dr *deckRenderer) resolveTheme() {
+	theme := dr.opt.Theme
 	if theme == "" {
-		theme = m.Theme
+		theme = dr.d.Meta.Theme
 	}
-	if theme == "" && opt.Config != nil {
-		theme = opt.Config.Theme
+	if theme == "" && dr.opt.Config != nil {
+		theme = dr.opt.Config.Theme
 	}
 	if theme == "" {
 		theme = "studio"
 	}
-	theme = assets.CanonicalTheme(theme)
+	if strings.HasSuffix(strings.ToLower(theme), ".css") {
+		p := theme
+		if !filepath.IsAbs(p) {
+			if _, err := os.Stat(p); err != nil {
+				p = filepath.Join(filepath.Dir(dr.d.Path), theme)
+			}
+		}
+		raw, err := os.ReadFile(p)
+		if err != nil {
+			dr.problems = append(dr.problems, deck.Problem{File: dr.d.Path, Msg: fmt.Sprintf("theme: cannot read %s: %v", theme, err)})
+			dr.themeName, dr.themeCSS = "studio", assets.ThemeCSS("studio")
+			return
+		}
+		dr.themeName = "custom"
+		dr.themeCSS = "@layer si.theme{\n" + string(raw) + "\n}\n"
+		return
+	}
+	dr.themeName = assets.CanonicalTheme(theme)
+	dr.themeCSS = assets.ThemeCSS(dr.themeName)
+}
+
+func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options) []byte {
+	d := dr.d
+	m := d.Meta
 	aspect := m.Aspect
 	if aspect == "" {
 		aspect = "16:9"
@@ -235,7 +264,7 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	if m.Mode == "light" || m.Mode == "dark" {
 		modeAttr = ` data-si-mode="` + m.Mode + `"`
 	}
-	fmt.Fprintf(&b, "<!doctype html>\n<html lang=\"%s\" data-si-theme=\"%s\"%s>\n<head>\n", html.EscapeString(lang), theme, modeAttr)
+	fmt.Fprintf(&b, "<!doctype html>\n<html lang=\"%s\" data-si-theme=\"%s\"%s>\n<head>\n", html.EscapeString(lang), dr.themeName, modeAttr)
 	b.WriteString(`<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
@@ -243,7 +272,7 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 <link rel="icon" href="data:,">
 `)
 	fmt.Fprintf(&b, "<title>%s</title>\n", html.EscapeString(plain(d.Title())))
-	b.WriteString(`<style id="si-css">` + "\n" + assets.LayerOrder + assets.LayoutCSS + assets.ThemeCSS(theme) + assets.ThemeLooksCSS)
+	b.WriteString(`<style id="si-css">` + "\n" + assets.LayerOrder + assets.LayoutCSS + dr.themeCSS + assets.ThemeLooksCSS)
 	b.WriteString(dr.helperCSS())
 	fmt.Fprintf(&b, "@page{size:%s;margin:0}\n", pageSizes[aspect])
 	if m.Accent != "" {

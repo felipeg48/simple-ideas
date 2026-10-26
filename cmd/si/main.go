@@ -60,22 +60,23 @@ Usage:
         scaffold <name>.svg (a working animated canvas) + <name>.md to preview it
   si rules
         print the markdown rules (RULES.md)
-  si --export css-rules|rules|conf|example [--output <path>]
+  si --export css-rules|rules|conf|example|themes [--output <path>]
         css-rules: starter stylesheet with every --si-* token and .si-* hook
         rules:     RULES.md
         conf:      a starter si.conf with the default keys and features
         example:   the showcase decks (default output: ./si-example)
+        themes:    one sample deck per built-in theme (default: ./si-themes)
 
 Flags (GNU style, before or after the path):
   -o, --output <path>   output directory (build) or file (export)
       --css <path>      user stylesheet file or directory; repeatable; loads after the theme
-      --theme <name>    built-in theme: studio, paper, mono, crdb (aliases cockroachdb, cockroachlabs); overrides theme: front matter
+      --theme <name>    built-in theme: studio, paper, mono, crdb (aliases cockroachdb, cockroachlabs), or a path to a .css theme file; overrides theme: front matter
       --conf <path>     read si.conf (key remaps, feature toggles, default theme); default: si.conf next to the deck
       --addr <host:port> play address (default 127.0.0.1:7070)
       --open            play: open the browser
       --no-inline-media build: copy images and videos next to the HTML instead of data URIs
       --pdf             build: also render each deck to a PDF via headless Chrome
-      --export <what>   css-rules, rules, conf or example
+      --export <what>   css-rules, rules, conf, example or themes
   -h, --help            this help
       --version         print the version
 
@@ -479,8 +480,19 @@ func export(o *options, stdout, stderr io.Writer) int {
 		}
 		fmt.Fprintf(stdout, "si: wrote the showcase decks to %s; try: si play %s\n", out, out)
 		return exitOK
+	case "themes":
+		out := o.output
+		if out == "" {
+			out = "si-themes"
+		}
+		if err := writeThemeGallery(out); err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitProblems
+		}
+		fmt.Fprintf(stdout, "si: wrote %d theme sample decks to %s; try: si play %s\n", len(assets.ThemeNames()), out, out)
+		return exitOK
 	}
-	return usageErr(stderr, fmt.Sprintf("unknown --export %q (css-rules, rules, conf, example)", o.export))
+	return usageErr(stderr, fmt.Sprintf("unknown --export %q (css-rules, rules, conf, example, themes)", o.export))
 }
 
 func scaffold(name string, stdout, stderr io.Writer) int {
@@ -520,6 +532,64 @@ func writeExamples(dir, mainName string) error {
 		return os.WriteFile(dest, raw, 0o644)
 	})
 }
+
+// writeThemeGallery writes one sample deck per built-in theme into dir, so that
+// `si play dir` (or `si build dir`) shows a gallery: the same content rendered in
+// every theme, linked from index.html. dir must not exist or be empty.
+func writeThemeGallery(dir string) error {
+	if entries, err := os.ReadDir(dir); err == nil && len(entries) > 0 {
+		return fmt.Errorf("%s exists and is not empty", dir)
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	for _, name := range assets.ThemeNames() {
+		md := strings.ReplaceAll(themeSample, "THEME", name)
+		if err := os.WriteFile(filepath.Join(dir, name+".md"), []byte(md), 0o644); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// themeSample is one deck's worth of content exercising a theme's tokens and
+// looks (headings, body, accent, code, a flow). THEME is the theme name.
+const themeSample = "---\ntitle: THEME theme\ntheme: THEME\n---\n\n" + `# The THEME theme
+
+The same sample deck, rendered in every built-in theme.
+
+---
+
+## Headings, text, and accent
+
+- A bullet, and a [link](https://example.com)
+- **Bold**, *italic*, and ` + "`inline code`" + `
+- The accent colours bullets, links and the rule under headings
+
+Notes: Press d to flip light/dark and see both palettes.
+
+---
+
+## A flow, themed
+
+` + "```stage\ndir: LR\nDraft --> Review --> Ship\ndot Draft..Ship 2s\n```" + `
+
+- Boxes, arrows and the moving dot pick up the theme tokens
+
+---
+
+## Code
+
+` + "```go\nfunc main() {\n\tfmt.Println(\"the THEME theme\")\n}\n```" + `
+
+---
+
+<!-- layout: big-number -->
+
+**THEME**
+
+one of the built-in themes.
+`
 
 func copyFile(src, dest string) error {
 	raw, err := os.ReadFile(src)

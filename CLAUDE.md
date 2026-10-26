@@ -135,14 +135,18 @@ pass. The steps that matter:
 
 ## Roadmap ideas
 
-- More themes and a theme gallery page; `theme:` from a CSS file path.
-- PDF export without the browser print dialog (headless Chrome `--print-to-pdf`).
+- A `stage` fence that generates animated flow SVGs (Mermaid-like) is in
+  (`docs/stage-diagrams.md`); next: step-driven reveal beyond highlight
+  (show/hide, ok/alert per node), single-level fan-out polish.
+- More themes; `theme:` from a remote URL (the CSS-file path and the
+  `si --export themes` gallery already exist).
 - SVG helpers: `data-move` along a path, counters that tick between states,
-  `data-grow` bars; an SVG lint in `si check` (less-than sign in `<style>`,
-  missing viewBox).
+  `data-grow` bars. (The `si check` SVG lint — `<` in `<style>`, missing
+  viewBox — is done.)
 - Shared media: a data URI used on many slides embedded once (the showcase
   repeats the dusk photo).
 - Speaker view extras: notes from a separate file, rehearsal timings saved
   per slide.
 - Replace the remaining Python deck builder workflows (fully Python-free).
 - `si play` QR code for opening the deck on a phone on the same network.
+- AI-assisted migration (`si --ai <agent> --migrate`): agentic deck import.
