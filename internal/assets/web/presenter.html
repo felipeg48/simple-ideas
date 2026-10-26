@@ -18,6 +18,7 @@ body{overflow:hidden;height:100%}
 .pv-notes p{margin:0 0 .75em}.pv-notes ul,.pv-notes ol{padding-left:1.2em;margin:0 0 .75em}.pv-notes li{margin:.25em 0}
 .pv-notes code{font-size:.85em}
 .pv-notes strong{color:var(--si-accent)}
+.pv-rehearse{color:var(--si-muted);font-variant-numeric:tabular-nums;opacity:.85}
 .pv-prompt::after{content:"";position:absolute;left:0;right:0;top:34%;height:0;border-top:2px dashed color-mix(in srgb,var(--si-accent) 45%,transparent);pointer-events:none}
 .pv.mirror .pv-notes{transform:scaleX(-1)}
 .pv-side{min-height:0;display:flex;flex-direction:column;gap:.5rem;overflow:auto}
@@ -46,7 +47,7 @@ body{overflow:hidden;height:100%}
 <div class="pv" id="pv">
   <div class="pv-top"><b id="title"></b><span id="pos"></span>
     <span class="pv-clocks">
-      <span id="slideclock">slide <strong id="slideel">00:00</strong> <span id="slideplan"></span></span>
+      <span id="slideclock">slide <strong id="slideel">00:00</strong> <span id="slideplan"></span> <span id="rehearse" class="pv-rehearse"></span></span>
       <span id="totalclock">total <strong id="elapsed">00:00</strong> <span id="planned"></span></span>
       <span class="pace" id="pace"></span>
       <span>clock <strong id="clock"></strong></span>
@@ -108,6 +109,8 @@ body{overflow:hidden;height:100%}
 
   /* ---------- timers: total vs plan, this slide vs its minutes, pace ---------- */
   var start = Date.now(), paused = 0, pausedAt = 0, slideStart = Date.now(), cur = -1, plan = [], total = 0;
+  /* rehearsal: actual time spent per slide this run (persisted), and the prior run for reference */
+  var prevSpent = load('rehearse-' + D.name, []), spent = [];
   function now() { return pausedAt || Date.now(); }
   function fmt(ms) { var neg = ms < 0, s = Math.floor(Math.abs(ms) / 1000); return (neg ? '-' : '') + pad(Math.floor(s / 60)) + ':' + pad(s % 60); }
   function pad(x) { return (x < 10 ? '0' : '') + x; }
@@ -124,13 +127,15 @@ body{overflow:hidden;height:100%}
       $('pace').textContent = Math.abs(diff) < 15000 ? 'on time' : (diff > 0 ? fmt(diff) + ' behind' : fmt(-diff) + ' ahead');
     }
     var d = new Date(); $('clock').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
+    var prev = cur >= 0 ? prevSpent[cur] : 0;
+    $('rehearse').textContent = prev ? 'last ' + fmt(prev) : '';
   }
   function toggleTimer() {
     if (pausedAt) { paused += Date.now() - pausedAt; slideStart += Date.now() - pausedAt; pausedAt = 0; $('timer').textContent = 'Pause'; }
     else { pausedAt = Date.now(); $('timer').textContent = 'Resume'; }
     tick();
   }
-  function resetTimer() { start = slideStart = Date.now(); paused = 0; if (pausedAt) pausedAt = Date.now(); tick(); }
+  function resetTimer() { start = slideStart = Date.now(); paused = 0; if (pausedAt) pausedAt = Date.now(); prevSpent = spent.slice(); spent = []; tick(); }
   setInterval(tick, 250);
 
   /* ---------- sync with the audience window ---------- */
@@ -148,6 +153,7 @@ body{overflow:hidden;height:100%}
     $('next').innerHTML = m.next || '';
     $('label').textContent = m.label;
     if (m.i !== cur) {
+      if (cur >= 0) { spent[cur] = (spent[cur] || 0) + (now() - slideStart); save('rehearse-' + D.name, spent); }
       cur = m.i; slideStart = now();
       notes.innerHTML = m.notes || '<p><em>No notes for this slide.</em></p>';
       notes.scrollTop = 0; carry = 0;

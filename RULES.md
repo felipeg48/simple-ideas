@@ -407,7 +407,8 @@ static HTML (`file://`), and either window drives both.
 | Notes only | `x` hides the previews, the notes fill the window |
 | Previews | the current slide (with its step state) and the next step or slide |
 | Clocks | time on this slide against its `(N min)` (amber when over, red at 1.5×), total against the deck plan, ahead/behind pace, wall clock |
-| Timer | `t` pause/resume, `0` reset |
+| Rehearsal | the time you spent on each slide is recorded per run; next to the slide clock it shows `last M:SS` — your previous run's time for this slide, to pace against |
+| Timer | `t` pause/resume, `0` reset (promotes this run to the `last` reference and starts fresh) |
 | Navigation | → ← Space PgDn PgUp Home End, buttons |
 
 Settings (size, speed, mirror, notes only) are remembered per browser.
