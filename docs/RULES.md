@@ -79,6 +79,10 @@ lang: en
 | `lang` | language tag | `en` | `<html lang>` |
 | `status` | short text (`beta`, `preview`, `new`, `deprecated`, …) | none | a badge on the deck's index tile / list row; `beta`/`new`/`deprecated` are colour-coded |
 | `version` | text (e.g. `v1.2.0`) | none | an outlined version badge on the index tile / list row |
+| `footer` | text | none | small text in a corner of every slide; a slide's own `<!-- footer: … -->` overrides it, `<!-- footer: off -->` hides it (e.g. the title slide) |
+| `footer-position` | `bottom-right` (default), `bottom-left`, `bottom-center`, `top-right`, `top-left`, `top-center` (short: `br`, `bl`, `bc`, `tr`, `tl`, `tc`) | `bottom-right` | which corner the footer sits in |
+| `watermark` | text, or an image path | none | a faint layer behind every slide — literal text (e.g. `Draft`) is drawn large and angled; an image path is inlined once and centred |
+| `watermark-opacity` | number `0`–`1` | `0.06` | how visible the watermark is |
 
 An included module's own front matter is ignored; the including deck decides.
 

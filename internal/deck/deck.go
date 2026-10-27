@@ -31,8 +31,10 @@ var (
 	Layouts     = []string{"default", "center", "two-col", "split", "quote", "big-number", "image"}
 	Transitions = []string{"fade", "slide", "zoom", "none"}
 	Themes      = []string{"studio", "paper", "mono", "crdb", "cockroachdb", "cockroachlabs"}
-	Modes       = []string{"auto", "light", "dark"}
-	Aspects     = []string{"16:9", "16:10", "4:3", "1:1", "9:16"}
+	// FooterPositions are the accepted footer-position values (long form plus short aliases).
+	FooterPositions = []string{"bottom-right", "bottom-left", "bottom-center", "top-right", "top-left", "top-center", "br", "bl", "bc", "tr", "tl", "tc"}
+	Modes           = []string{"auto", "light", "dark"}
+	Aspects         = []string{"16:9", "16:10", "4:3", "1:1", "9:16"}
 )
 
 // Directives lists every `<!-- name: value -->` directive. Slide-level ones
@@ -43,6 +45,7 @@ var Directives = map[string]string{
 	"layout":     "slide", // slide layout
 	"transition": "slide", // slide transition
 	"background": "slide", // slide background
+	"footer":     "slide", // per-slide footer override (`off` hides it)
 	"class":      "slide", // extra classes on the slide
 	"svg":        "body",  // inline an animated SVG canvas
 	"step":       "body",  // reveal the next block as one step
@@ -68,10 +71,15 @@ type Meta struct {
 	Version    string // optional course version badge on the index (e.g. v1.2.0)
 	Year       string // optional year shown in the title-slide copyright line
 	Copyright  string // optional copyright holder shown on the title slide (© year holder)
+
+	Footer           string // text shown in a corner of every slide; a slide's `footer:` overrides it, `footer: off` hides it
+	FooterPos        string // footer corner: bottom-right (default), bottom-left, bottom-center, top-right, top-left, top-center
+	Watermark        string // faint text, or an image path, shown across every slide
+	WatermarkOpacity string // watermark opacity (a CSS number); default 0.06
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity"}
 
 // Slide is one slide of a deck.
 type Slide struct {
@@ -84,6 +92,7 @@ type Slide struct {
 	Layout     string
 	Transition string
 	Background string
+	Footer     string // per-slide footer override: text, or "off" to hide; empty inherits the deck footer
 	Classes    []string
 	Part       int    // section slides: 1-based number of the section in the deck
 	Dir        string // directory of the source file: base for relative paths
@@ -146,7 +155,7 @@ var (
 	notesRE     = regexp.MustCompile(`^Notes:\s*(.*)$`)
 	minutesRE   = regexp.MustCompile(`\((\d+(?:\.\d+)?)\s*min\)`)
 	directiveRE = regexp.MustCompile(`^\s*<!--\s*([a-z][a-z-]*)\s*(?::\s*(.*?))?\s*-->\s*$`)
-	metaRE      = regexp.MustCompile(`^([a-z]+)\s*:\s*(.*?)\s*$`)
+	metaRE      = regexp.MustCompile(`^([a-z][a-z-]*)\s*:\s*(.*?)\s*$`)
 	colourRE    = regexp.MustCompile(`^(#[0-9a-fA-F]{3,8}|[a-zA-Z]+|(rgb|rgba|hsl|hsla|oklch|oklab|color-mix)\(.*\))$`)
 	imageExtRE  = regexp.MustCompile(`(?i)\.(png|jpe?g|gif|webp|svg|avif)$`)
 )
@@ -268,6 +277,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"title": &m.Title, "author": &m.Author, "date": &m.Date, "theme": &m.Theme, "mode": &m.Mode,
 		"accent": &m.Accent, "transition": &m.Transition, "aspect": &m.Aspect, "mermaid": &m.Mermaid, "lang": &m.Lang,
 		"background": &m.Background, "status": &m.Status, "version": &m.Version, "year": &m.Year, "copyright": &m.Copyright,
+		"footer": &m.Footer, "footer-position": &m.FooterPos, "watermark": &m.Watermark, "watermark-opacity": &m.WatermarkOpacity,
 	}[key]
 	if ptr == nil {
 		return false
@@ -290,6 +300,8 @@ func validateMeta(key, val string) string {
 		return oneOf("transition", val, Transitions)
 	case "aspect":
 		return oneOf("aspect", val, Aspects)
+	case "footer-position":
+		return oneOf("footer-position", val, FooterPositions)
 	case "accent":
 		if !colourRE.MatchString(val) {
 			return fmt.Sprintf("accent %q is not a CSS colour", val)
@@ -511,6 +523,8 @@ func (d *Deck) slideDirective(s *Slide, l srcLine, name, val string) bool {
 	case "background":
 		d.checkBackground(l.file, l.no, s.Dir, val)
 		s.Background = val
+	case "footer":
+		s.Footer = val
 	case "class":
 		s.Classes = append(s.Classes, strings.Fields(val)...)
 	case "svg":

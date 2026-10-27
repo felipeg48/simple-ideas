@@ -209,6 +209,37 @@ func TestParseDirective(t *testing.T) {
 	}
 }
 
+func TestFooterAndWatermarkMeta(t *testing.T) {
+	dir := write(t, map[string]string{"d.md": "---\ntitle: T\nfooter: Training Team\nfooter-position: bottom-left\nwatermark: Draft\nwatermark-opacity: 0.08\n---\n\n# T\n\n<!-- footer: off -->\n\nhi\n\n---\n\n## S\n\nbody\n"})
+	d, err := Parse(filepath.Join(dir, "d.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Problems) != 0 {
+		t.Fatalf("unexpected problems: %v", d.Problems)
+	}
+	if d.Meta.Footer != "Training Team" || d.Meta.FooterPos != "bottom-left" || d.Meta.Watermark != "Draft" || d.Meta.WatermarkOpacity != "0.08" {
+		t.Errorf("meta = %+v", d.Meta)
+	}
+	if d.Slides[0].Footer != "off" { // per-slide override hides the footer on the title slide
+		t.Errorf("title slide footer = %q, want off", d.Slides[0].Footer)
+	}
+}
+
+func TestFooterPositionInvalid(t *testing.T) {
+	dir := write(t, map[string]string{"d.md": "---\ntitle: T\nfooter-position: rbc\n---\n\n# T\n\nhi\n"})
+	d, _ := Parse(filepath.Join(dir, "d.md"))
+	found := false
+	for _, p := range d.Problems {
+		if strings.Contains(p.Msg, "footer-position") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected a footer-position problem, got %v", d.Problems)
+	}
+}
+
 func TestParseBackground(t *testing.T) {
 	tests := []struct {
 		in, kind, value, err string

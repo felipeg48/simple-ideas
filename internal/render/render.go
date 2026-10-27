@@ -75,6 +75,10 @@ type deckRenderer struct {
 	anims     []animEntry // resolved break-timer animations (empty if none)
 	problems  []deck.Problem
 	warnings  []deck.Problem
+	wmDone    bool   // watermark resolved once (deck-level)
+	wmKind    string // "" | "text" | "img"
+	wmText    string // watermark text
+	wmImg     string // watermark image as a data URI (inlined once)
 }
 
 // animEntry is one resolved break-timer animation: its name, kind ("js"/"svg")
@@ -165,6 +169,7 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 	}
 	fmt.Fprintf(&b, ` data-src="%s:%d">`+"\n", html.EscapeString(filepath.Base(s.File)), s.Line)
 	b.WriteString(layer)
+	b.WriteString(dr.watermark(sc))
 	b.WriteString(`<div class="si-inner">` + "\n")
 	title := dr.inline(s.Title)
 	bodyClass := "si-body"
@@ -198,6 +203,7 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 		fmt.Fprintf(&b, `<div class="%s">%s</div>`+"\n", bodyClass, body)
 	}
 	b.WriteString("</div>\n")
+	b.WriteString(dr.footer(s))
 	if s.Notes != "" || s.HasMinutes {
 		fmt.Fprintf(&b, `<aside class="si-notes" hidden>%s</aside>`+"\n", dr.postprocess(dr.toHTML(s.Notes, nil), s.Dir, sc))
 	}
@@ -231,6 +237,63 @@ func (dr *deckRenderer) postprocess(h, dir string, sc *slideCtx) string {
 }
 
 func plain(s string) string { return strings.TrimSpace(tagRE.ReplaceAllString(s, "")) }
+
+// watermark returns the per-slide watermark element. The deck-level value is
+// resolved once (text vs inlined image); every slide reuses it so the image is
+// embedded a single time (as a --si-wm-img var set on .si-deck in page()).
+func (dr *deckRenderer) watermark(sc *slideCtx) string {
+	if !dr.wmDone {
+		dr.wmDone = true
+		if val := dr.d.Meta.Watermark; val != "" {
+			if deck.IsImagePath(val) {
+				if uri, ok := dr.media(filepath.Dir(dr.d.Path), val, sc); ok {
+					dr.wmKind, dr.wmImg = "img", uri
+				} else {
+					dr.problem(sc, "missing file: %s", val)
+				}
+			} else {
+				dr.wmKind, dr.wmText = "text", val
+			}
+		}
+	}
+	switch dr.wmKind {
+	case "text":
+		return `<div class="si-watermark si-wm-text" aria-hidden="true">` + html.EscapeString(dr.wmText) + "</div>\n"
+	case "img":
+		return `<div class="si-watermark si-wm-img" aria-hidden="true"></div>` + "\n"
+	}
+	return ""
+}
+
+// footer returns the per-slide footer element. A slide's own `footer:` wins over
+// the deck default; `off` (or empty on both) hides it.
+func (dr *deckRenderer) footer(s *deck.Slide) string {
+	text := dr.d.Meta.Footer
+	if s.Footer != "" {
+		text = s.Footer
+	}
+	if text == "" || text == "off" {
+		return ""
+	}
+	return fmt.Sprintf(`<div class="si-footer" data-pos="%s">%s</div>`+"\n", footerPos(dr.d.Meta.FooterPos), html.EscapeString(text))
+}
+
+// footerPos normalises a footer-position to its long form; empty is bottom-right.
+func footerPos(p string) string {
+	switch p {
+	case "bl", "bottom-left":
+		return "bottom-left"
+	case "bc", "bottom-center":
+		return "bottom-center"
+	case "tr", "top-right":
+		return "top-right"
+	case "tl", "top-left":
+		return "top-left"
+	case "tc", "top-center":
+		return "top-center"
+	}
+	return "bottom-right"
+}
 
 // copyrightLine builds the title-slide colophon from the year and copyright
 // holder: "© 2026 CockroachLabs", "© 2026" or "© CockroachLabs". Empty when
@@ -411,6 +474,16 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 		fmt.Fprintf(&b, "@layer si.theme{:root,:root:not([data-si-mode]),:root[data-si-mode=\"dark\"]{--si-accent:%s}}\n", m.Accent)
 	}
 	b.WriteString("</style>\n")
+	if dr.wmImg != "" || d.Meta.WatermarkOpacity != "" {
+		var decls []string
+		if dr.wmImg != "" {
+			decls = append(decls, `--si-wm-img:url("`+dr.wmImg+`")`)
+		}
+		if d.Meta.WatermarkOpacity != "" {
+			decls = append(decls, "--si-wm-opacity:"+d.Meta.WatermarkOpacity)
+		}
+		fmt.Fprintf(&b, "<style>.si-deck{%s}</style>\n", strings.Join(decls, ";"))
+	}
 	if css := UserCSS(opt.UserCSS); css != "" {
 		b.WriteString(`<style id="si-user">` + "\n" + css + "</style>\n")
 	}

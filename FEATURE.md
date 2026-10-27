@@ -79,6 +79,20 @@ deck (plus an index). Go stdlib + goldmark only; every deck is self-contained.
 - **Docs:** `si manual` renders the user manual (`--pdf` / `--slides`);
   `docs/reference/` holds the user manual + developer reference.
 
+## Shipped — v0.6.2
+
+- **Footer** (front matter). `footer: <text>` puts small muted text in a corner of
+  every slide; `footer-position:` picks the corner (`bottom-right` default, plus the
+  other five, with short aliases `br`/`bl`/…). A slide's own `<!-- footer: … -->`
+  overrides it and `<!-- footer: off -->` hides it (e.g. the title slide).
+- **Watermark** (front matter). `watermark: Draft` draws a large faint angled word
+  behind every slide; `watermark: ./img.png` inlines an image once (centred);
+  `watermark-opacity:` tunes it (default 0.06). Shows in the overview and in print.
+- Also fixed: front-matter keys may now contain hyphens (`metaRE`) — previously a
+  hyphenated key silently rejected the whole front-matter block.
+- New hooks `.si-footer`, `.si-watermark`, `.si-wm-text`, `.si-wm-img`; tokens
+  `--si-wm-opacity`, `--si-wm-img`.
+
 ## Shipped — v0.6.1
 
 - **Topic-column Overview.** Pressing `o` now groups the overview into one column

@@ -5,9 +5,15 @@ date: 2026
 theme: paper
 accent: "#e4572e"
 transition: slide
+footer: Internal
+footer-position: bottom-left
+watermark: Draft
+watermark-opacity: 0.08
 ---
 
 # Golden **deck**
+
+<!-- footer: off -->
 
 A subtitle with `code`.
 

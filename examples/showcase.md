@@ -6,9 +6,14 @@ theme: studio
 accent: "#3657d6"
 transition: fade
 aspect: 16:9
+footer: Northwind Logistics
+watermark: Confidential
+watermark-opacity: 0.05
 ---
 
 # The Thursday Promise
+
+<!-- footer: off -->
 
 How one order crosses five teams, fails twice, and still arrives on time.
 

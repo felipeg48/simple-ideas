@@ -62,6 +62,8 @@ var Tokens = []Token{
 	{"--si-img-fit", "image object-fit inside a ratio box; set by fit=", "cover"},
 	{"--si-img-position", "image object-position inside a ratio box; set by position=", "center"},
 	{"--si-ov-cols", "overview: number of topic columns, set by the runtime when the grid opens", ""},
+	{"--si-wm-opacity", "watermark opacity (watermark-opacity front matter)", "0.06"},
+	{"--si-wm-img", "watermark image, inlined as a data URI (set from the watermark front matter)", ""},
 }
 
 // Hook is a stable selector user CSS may target.
@@ -82,6 +84,10 @@ var Hooks = []Hook{
 	{`.si-slide`, "one slide; a size container, so cqi/cqb units refer to it"},
 	{`.si-slide.si-current`, "the slide on screen"},
 	{`.si-slide.si-sel`, "overview: the keyboard-selected tile (arrows move it, Enter opens it)"},
+	{`.si-watermark`, "a faint watermark layer behind every slide's content (watermark front matter)"},
+	{`.si-wm-text`, "a text watermark (watermark: some text)"},
+	{`.si-wm-img`, "an image watermark (watermark: ./path.png), inlined once via --si-wm-img"},
+	{`.si-footer`, "small footer text in a corner of every slide (footer / footer-position front matter)"},
 	{`.si-slide.si-past`, "slides before the current one"},
 	{`.si-slide.si-future`, "slides after the current one"},
 	{`.si-slide.si-title`, "the title slide (first # H1)"},

@@ -5,17 +5,18 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state
 
-- **Latest release: v0.6.1** (version bumped in `cmd/si/main.go`; tag + push to
-  publish). CI + release workflows are green; every `v*` tag cross-compiles 6
-  binaries + `SHA256SUMS`.
+- **Latest release: v0.6.2** (version bumped in `cmd/si/main.go`; tag + push to
+  publish). CI + release workflows are green.
 - Working tree should be clean on `main`. Tests/vet/fmt all green.
-- **v0.6.1 shipped the topic-column Overview:** pressing `o` lays slides out in
-  one column per topic (the `<!-- include: -->` section a slide belongs to,
-  emitted as `data-topic`), each column headed by its section title; ← → move
-  across topics, ↑ ↓ within a column, Enter opens the selected slide. Framing
-  slides (title/agenda before the first section) form a leading "Intro" column.
-- **v0.6.0 shipped the `si play` terminal drawer** (full xterm.js + PTY,
-  multi-tab, play+loopback only). Reference: `docs/terminal.md`. Toggle `` ` ``.
+- **v0.6.2 shipped footer + watermark** (deck front matter). `footer:` /
+  `footer-position:` put muted text in a slide corner (per-slide `<!-- footer: off -->`
+  overrides); `watermark:` draws faint angled text or an inlined image behind every
+  slide, `watermark-opacity:` tunes it. Also fixed: front-matter keys may contain
+  hyphens (metaRE) — a hyphenated key used to reject the whole block.
+- **v0.6.1 shipped the topic-column Overview** (press `o`): one column per section,
+  arrow-select, Enter to open. Framing slides form a leading "Intro" column.
+- **v0.6.0 shipped the `si play` terminal drawer** (xterm.js + PTY, play+loopback
+  only). Reference: `docs/terminal.md`. Toggle `` ` ``.
 
 ## Non-negotiable rules (from CLAUDE.md — do not break without the founder)
 
