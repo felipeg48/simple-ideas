@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/felipeg48/simple-ideas/internal/assets"
 	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/render"
@@ -27,12 +28,14 @@ type Server struct {
 	CSSPaths []string // user CSS files or directories (--css)
 	Theme    string   // --theme override; empty keeps each deck's theme: front matter
 	Conf     string   // --conf path; empty falls back to si.conf next to the deck
+	Terminal bool     // enable the play terminal drawer; set only on a loopback address
 	Interval time.Duration
 
 	dir     string
 	file    string // set when Root is a single deck
 	mu      sync.Mutex
 	clients map[chan struct{}]bool
+	term    *termHub
 }
 
 // New prepares a server for root.
@@ -51,6 +54,7 @@ func New(root string, css []string, theme, conf string) (*Server, error) {
 	} else {
 		s.dir, s.file = filepath.Dir(abs), abs
 	}
+	s.term = newTermHub(s.dir)
 	return s, nil
 }
 
@@ -58,6 +62,16 @@ func New(root string, css []string, theme, conf string) (*Server, error) {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/_si/events", s.events)
+	if s.Terminal {
+		// Play terminal: loopback only (see Server.Terminal). Embedded xterm.js
+		// assets are static; the shell endpoints run per tab.
+		mux.Handle("/_si/term/assets/", http.StripPrefix("/_si/term/assets/", http.FileServer(http.FS(assets.TermFS))))
+		mux.HandleFunc("/_si/term/api/new", s.term.newTab)
+		mux.HandleFunc("/_si/term/api/out", s.term.out)
+		mux.HandleFunc("/_si/term/api/in", s.term.in)
+		mux.HandleFunc("/_si/term/api/resize", s.term.resize)
+		mux.HandleFunc("/_si/term/api/close", s.term.close)
+	}
 	static := http.FileServer(http.Dir(s.dir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		p := path.Clean("/" + r.URL.Path)
@@ -98,7 +112,13 @@ func (s *Server) deck(w http.ResponseWriter, md string) {
 	for _, w := range cfg.Warnings {
 		log.Printf("si.conf: %s", w)
 	}
-	res := render.Deck(d, render.Options{LiveReload: true, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg})
+	// The terminal drawer shows only when the capability is on (loopback play)
+	// and the feature is not explicitly disabled in si.conf.
+	termOn := s.Terminal
+	if v, ok := cfg.Features["terminal"]; ok && !v {
+		termOn = false
+	}
+	res := render.Deck(d, render.Options{LiveReload: true, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn})
 	for _, p := range res.Problems {
 		log.Printf("si play: %s", p)
 	}
@@ -164,6 +184,14 @@ func (s *Server) Broadcast() {
 		case ch <- struct{}{}:
 		default:
 		}
+	}
+}
+
+// CloseTerminals tears down any open play-terminal shells. No-op unless the
+// terminal was enabled. Call on server shutdown so demo shells don't orphan.
+func (s *Server) CloseTerminals() {
+	if s.term != nil {
+		s.term.closeAll()
 	}
 }
 

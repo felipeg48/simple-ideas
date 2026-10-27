@@ -35,7 +35,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/serve"
 )
 
-const version = "0.5.4"
+const version = "0.6.0"
 
 // Exit codes.
 const (
@@ -396,6 +396,8 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 	fmt.Fprintf(stdout, "si play: serving %s at %s (live reload on; Ctrl+C stops)\n", src, url)
 	if ta, ok := ln.Addr().(*net.TCPAddr); ok {
 		if ta.IP.IsLoopback() {
+			srv.Terminal = true // play terminal: loopback only, never on a reachable address
+			fmt.Fprintf(stdout, "  terminal drawer: press ` (backtick) — runs local commands, loopback only\n")
 			fmt.Fprintf(stdout, "  to open on a phone on your network: si play %s --addr 0.0.0.0:%d\n", src, ta.Port)
 		} else if ip := lanIP(); ip != "" {
 			lan := fmt.Sprintf("http://%s:%d/", ip, ta.Port)
@@ -413,6 +415,7 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 	go func() {
 		<-ctx.Done()
 		close(stop)
+		srv.CloseTerminals()
 		sctx, c := context.WithTimeout(context.Background(), 2*time.Second)
 		defer c()
 		hs.Shutdown(sctx)

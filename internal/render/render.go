@@ -43,6 +43,10 @@ type Options struct {
 	Theme string
 	// Config is an optional si.conf: default theme, key remaps, feature toggles.
 	Config *config.Config
+	// Terminal enables the play terminal drawer in the page (SI_CONFIG.terminal).
+	// Set only by si play on a loopback address; always false for build/export,
+	// so a self-contained deck never loads the terminal runtime.
+	Terminal bool
 }
 
 // Result is a rendered deck.
@@ -451,7 +455,7 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 			timer = map[string]any{"time": t.Times, "unit": t.Unit, "face": t.Face, "animations": names, "animKinds": kinds}
 		}
 	}
-	cfg, _ := json.Marshal(map[string]any{"keys": keys, "features": feats, "timer": timer})
+	cfg, _ := json.Marshal(map[string]any{"keys": keys, "features": feats, "timer": timer, "terminal": opt.Terminal})
 	fmt.Fprintf(&b, "<script>window.SI_CONFIG=%s;</script>\n", cfg)
 	if len(dr.anims) > 0 {
 		var js []string

@@ -158,8 +158,14 @@ One inline SVG whose parts change state slide by slide:
 | `t` | break timer (configurable presets + animation layer) |
 | `a` | draw over the slide |
 | `d` / `f` / `?` | light-dark / full screen / help |
+| `` ` `` | terminal drawer — run local commands live (`si play` on a loopback address only) |
 
 Open on a phone: `si play --addr 0.0.0.0:7070` prints a LAN URL + QR.
+
+The **terminal drawer** (`` ` ``) slides up a tabbed, real shell for running
+commands mid-demo (`docker ps`, `cockroach sql`, …). It exists only under
+`si play` bound to a loopback address — never in a built deck, never on
+`--addr 0.0.0.0`. See `docs/terminal.md`.
 
 ---
 

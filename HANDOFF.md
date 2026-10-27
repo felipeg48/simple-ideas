@@ -5,19 +5,22 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state
 
-- **Latest release: v0.5.4.** `git describe --tags` on `main`. CI + release
-  workflows are green; every `v*` tag cross-compiles 6 binaries + `SHA256SUMS`.
+- **Latest release: v0.6.0** (version bumped in `cmd/si/main.go`; tag + push to
+  publish). CI + release workflows are green; every `v*` tag cross-compiles 6
+  binaries + `SHA256SUMS`.
 - Working tree should be clean on `main`. Tests/vet/fmt all green.
-- **Next up: v0.6.0 — the `si play` terminal drawer.** Decision is locked (full
-  xterm.js + PTY, multi-tab, play+loopback only). Full brief in
-  `docs/terminal.md`; summarised in `FEATURE.md` → "Planned — v0.6.0".
+- **v0.6.0 shipped the `si play` terminal drawer** (full xterm.js + PTY,
+  multi-tab, play+loopback only). Reference: `docs/terminal.md`; `FEATURE.md` →
+  "Shipped — v0.6.0". Toggle with `` ` ``. Next ideas: persist tab layout across
+  reloads; per-tab running indicator.
 
 ## Non-negotiable rules (from CLAUDE.md — do not break without the founder)
 
 1. **Fluid & responsive, never fixed.** No fixed canvas; `cqi`/`clamp()`; SVGs by
    `viewBox`; columns stack on narrow/portrait. `TestLayoutHasNoFixedCanvas` guards it.
 2. **Self-contained output.** One deck = one HTML file; only allowed network
-   resource is pinned Mermaid. (v0.6.0 terminal is a documented play-only exception.)
+   resource is pinned Mermaid. (v0.6.0 terminal is a documented play-only
+   exception — a built deck never loads it.)
 3. **Every directive documented in RULES.md with an example, used in `examples/`.**
 4. **Example decks carry content, not instructions.**
 5. **Themes change tokens/looks, not layout.** Every `--si-*` token + `.si-*`
@@ -25,8 +28,8 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
    fails otherwise. Add new tokens/hooks there when you add CSS.
 6. **Teleprompter stays a real teleprompter.**
 7. **Go stdlib + goldmark only.** `gofmt`, `go vet ./...`, `go test ./...` green
-   before every commit. (v0.6.0 will carve out a play-only exception for the
-   terminal — xterm.js + a PTY dep.)
+   before every commit. (v0.6.0 carves a play-only, loopback-only exception for
+   the terminal — `creack/pty` + bundled xterm.js; see CLAUDE.md rule #7.)
 
 ## How to work
 

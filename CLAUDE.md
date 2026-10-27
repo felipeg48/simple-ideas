@@ -38,6 +38,11 @@ what you chose.
    with pace, previews, synced over BroadcastChannel, works from `file://`.
 7. Go stdlib plus goldmark only. `gofmt`, `go vet ./...` and `go test ./...`
    green before every commit. Plain commit messages, no attribution trailers.
+   **Exception (v0.6.0, `si play` terminal only):** the presenter terminal
+   drawer adds `github.com/creack/pty` and bundles `xterm.js`. It is contained to
+   `si play` on a loopback address — a built deck never loads it — so rules #2 and
+   #7 hold everywhere except that one play-only, loopback-only subsystem. See
+   `docs/terminal.md`.
 
 ## Layout of the code
 
@@ -135,10 +140,12 @@ pass. The steps that matter:
 
 ## Roadmap ideas
 
-- **`si play` terminal drawer** (PINNED, see `docs/terminal.md`): a bottom→middle
-  HUD with multiple tabs to run local commands during demos (`docker ps`,
-  `cockroach start-single-node`, `cockroach sql`). Play-only + loopback-only.
-  Open decisions: vanilla vs xterm.js, PTY (dep) vs stdlib `os/exec`, transport.
+- **`si play` terminal drawer** (DONE, v0.6.0, see `docs/terminal.md`): a
+  bottom→middle HUD with multiple tabs to run local commands during demos
+  (`docker ps`, `cockroach start-single-node`, `cockroach sql`). Shipped as full
+  xterm.js + PTY (`creack/pty`), play-only + loopback-only. Transport: chunked-GET
+  output + POST input (no WebSocket dep). Toggle key: `` ` ``. Next: persist tab
+  layout across reloads; per-tab running indicator.
 - A `stage` fence that generates animated flow SVGs (Mermaid-like) is in
   (`docs/stage-diagrams.md`); next: step-driven reveal beyond highlight
   (show/hide, ok/alert per node), single-level fan-out polish.

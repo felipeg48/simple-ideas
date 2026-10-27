@@ -40,6 +40,18 @@ const LayerOrder = "@layer si.theme, si.user;\n"
 //go:embed web/anim
 var animFS embed.FS
 
+// termEmbed holds the play-terminal web assets: vendored xterm.js + its CSS,
+// the fit addon, and the drawer runtime term.js. Served by si play under
+// /_si/term/assets/. Play-only — a built, self-contained deck never references
+// these (see internal/serve/terminal.go for why this is a documented exception
+// to rules #2 and #7).
+//
+//go:embed web/term
+var termEmbed embed.FS
+
+// TermFS is web/term rooted so files serve as xterm.js, term.js, ... .
+var TermFS, _ = fs.Sub(termEmbed, "web/term")
+
 // Animation returns the code and kind ("js" or "svg") of a built-in timer
 // animation by name (file stem), or ok=false if there is no such built-in.
 func Animation(name string) (code, kind string, ok bool) {

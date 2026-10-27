@@ -1,66 +1,85 @@
-# Terminal drawer — design note (PINNED, not built yet)
+# Terminal drawer — `si play` presenter terminal (shipped, v0.6.0)
 
-A `si play` presenter terminal: a drawer HUD that slides up from the bottom to
-~mid-screen, for running **local** commands live during a demo. Decision on the
-exact implementation is **pinned** — this note captures the requirements so we
-don't lose them.
+A HUD drawer that slides up from the bottom of a `si play` deck to run **local**
+commands live during a demo, without leaving the slides. Press **`` ` ``**
+(backtick) to toggle it.
 
-## Requirements (from the founder)
+Built in v0.6.0. This note is the reference; the original brief is preserved in
+the git history of this file.
 
-- Run local shell commands during a talk without leaving the deck, e.g.
-  - `docker ps` — one-shot, prints and exits.
-  - `cockroach start-single-node --insecure` — **long-running** server; must keep
-    running and stream logs; must be stoppable (Ctrl-C / kill).
-  - `cockroach sql --insecure --host …` — **interactive REPL**; needs live stdin.
-- **Multiple tabs** per terminal — several concurrent sessions/processes (e.g.
-  tab 1 runs the node, tab 2 runs `cockroach sql`, tab 3 runs `docker ps`).
-- Local only for now. Nothing remote (yet).
-- "we are adding features to that terminal" — treat it as an extensible subsystem.
+## What it does
 
-## How execution works
+- A dark, monospace drawer (~55vh) over the current slide, with a **tab bar**:
+  multiple concurrent shells (tab 1 runs `cockroach start-single-node`, tab 2
+  runs `cockroach sql`, tab 3 runs `docker ps`). `+` opens a tab, `×` closes one,
+  `✕` hides the drawer.
+- Each tab is a **real shell** (`$SHELL`, falling back to `/bin/sh`) running under
+  a **PTY**, started in the deck's directory. Because it is a true PTY, Ctrl-C,
+  arrow keys, REPL prompts (`cockroach sql`), and full-screen apps all work — the
+  bytes travel straight through; `si` never parses commands.
 
-`si play` is a Go server, so it `fork+exec`s each command as a child process on
-the presenter's machine (`exec.Command(name, args…)`), wires stdin/stdout/stderr,
-and streams I/O to the drawer in the browser over localhost. A one-shot command
-captures output and returns; a long-running/interactive command keeps the child
-alive and streams. Each **tab** is its own tracked child process.
+![the terminal drawer, two tabs, a live shell](screenshots/terminal-drawer.png)
 
-This is inherently a **`si play`-only** feature: a built, self-contained `.html`
-(rule #2) has no server, so the terminal is inert/hidden there.
+## Why it is a documented exception to the project rules
 
-## Security (non-negotiable)
+It deliberately relaxes two non-negotiable rules **for this subsystem only**:
 
-- **Loopback only.** The exec endpoint is enabled only when the server is bound
-  to a loopback address; it is **disabled on `--addr 0.0.0.0`** (phone/QR mode),
-  so it can never become LAN remote-code-execution.
-- Likely also an opt-in feature flag (`feature.terminal`) and a dedicated key.
+- **Rule #7 (Go stdlib + goldmark only):** adds `github.com/creack/pty` and
+  bundles `xterm.js` + the fit addon (vendored under
+  `internal/assets/web/term/`).
+- **Rule #2 (self-contained output):** the drawer loads `xterm.js` from the
+  `si play` server.
 
-## Decision (founder, locked)
+Both are contained because the terminal is **`si play` only + loopback only**
+(see Security). A built, static `.html` has no server, so `SI_CONFIG.terminal`
+is `false`, `deck.js` never loads a byte of terminal code, and none of this
+ships in a deck file. The terminal CSS lives inside `term.js` (not in the themed
+`layout.css` / `theme.css`), so it stays outside the `--si-*` / `.si-*` styling
+contract — a terminal is always dark and monospace regardless of the deck theme.
 
-**Option 2: full interactive terminal — xterm.js front-end + a PTY-backed shell.**
-This deliberately **relaxes non-negotiable rules #7 (stdlib + goldmark only)** and
-**#2 (self-contained)** for this subsystem: it adds `xterm.js` (bundled) and a PTY
-Go dependency (e.g. `creack/pty`). Justified because the founder needs a *true*
-interactive shell for demos (`cockroach sql` prompt, `start-single-node` logs with
-Ctrl-C, full-screen apps). The terminal remains **`si play`-only + loopback-only**,
-so built decks stay self-contained and the capability never ships remotely.
-When built, update rule #7 in CLAUDE.md to carve out this play-only exception.
+## Security (non-negotiable, enforced)
 
-## Open decisions (to settle when we build)
+- **Loopback only.** `main.go` sets `Server.Terminal = true` only when the listen
+  address is loopback (`ta.IP.IsLoopback()`). On `--addr 0.0.0.0` (phone/QR mode)
+  or any reachable IP it is `false`, so the exec routes are **never registered**
+  and can never become LAN remote-code-execution. `TestTerminalDisabledByDefault`
+  guards this.
+- **Opt-out flag.** `feature.terminal: off` in `si.conf` hides the drawer even on
+  loopback. Default on.
+- Shells are killed on tab close and on server shutdown (`CloseTerminals`).
 
-1. ~~Front-end: vanilla vs xterm.js~~ → **xterm.js** (decided).
-2. ~~PTY: none vs PTY~~ → **PTY** (decided; e.g. `creack/pty`).
-3. **Transport:** Go stdlib has no WebSocket. Options: pull in a small WebSocket
-   dep (natural now that rule #7 is relaxed) vs SSE (output) + POST (input) vs
-   HTTP chunked streaming both ways. Multi-tab = one stream per tab.
-4. **Process lifecycle:** leave-running vs auto-kill on tab close / deck close;
-   SIGINT (Ctrl-C) handling; working-directory + env persistence per tab.
+## How it is wired (end to end)
 
-## Minimal viable first cut (if we go stdlib, no PTY)
+| Layer | File | What |
+|---|---|---|
+| PTY sessions | `internal/serve/terminal.go` | `termHub`: tab-id → `{pty, cmd}`; `newTab` starts a shell in a PTY; `out`/`in`/`resize`/`close` endpoints |
+| Routes (gated) | `internal/serve/serve.go` | registers `/_si/term/api/*` + static `/_si/term/assets/*` only when `s.Terminal` |
+| Capability | `cmd/si/main.go` | `srv.Terminal = ta.IP.IsLoopback()` after `net.Listen` |
+| Page flag | `internal/render/render.go` | `Options.Terminal` → `SI_CONFIG.terminal` (false for build/export) |
+| Config | `internal/config/config.go` | `keys.terminal` (`` ` ``) + `feature.terminal` |
+| Lazy hook | `internal/assets/web/deck.js` | on `` ` ``, lazy-loads the runtime, then `window.siTerm.toggle()` |
+| Drawer UI | `internal/assets/web/term/term.js` | tabbed xterm drawer; styles self-contained |
+| Vendored | `internal/assets/web/term/` | `xterm.js`, `xterm.css`, `addon-fit.js` |
 
-- `si play` tracks a map of tab-id → child process; `/_si/term/<tab>` streams
-  output, a POST writes a line to the child's stdin, a signal endpoint sends
-  SIGINT/kill. Working dir persists per tab.
-- Drawer UI in `deck.js`: tab bar (+ new tab, close tab), output pane, input line
-  with history; toggled by a key; only enabled when the server injects the
-  terminal-enabled flag (loopback play only).
+## Transport (the open decision, decided)
+
+Go stdlib has no WebSocket, and we did not add one. Output streams over a
+**chunked GET** (`/_si/term/api/out?id=`), read on the client with
+`fetch().body.getReader()` and fed to `term.write()` as raw bytes; input is a
+**POST** body per `onData` (`/_si/term/api/in?id=`); resize is a POST with
+`cols`/`rows`. One stream per tab. This keeps the new-dependency count at exactly
+one (`creack/pty`) plus the bundled xterm.
+
+## Process lifecycle (decided)
+
+- One PTY-backed `$SHELL` per tab; cwd = deck dir; env inherited (+ `TERM=
+  xterm-256color`).
+- Ctrl-C needs no special endpoint: xterm sends `0x03` as input → the PTY delivers
+  SIGINT to the foreground process naturally.
+- A tab's shell is killed on close; all shells are killed on `si play` shutdown.
+
+## Ideas not yet built
+
+- Persist/restore tab layout across reloads.
+- A visible "running" indicator per tab.
+- Remote (non-loopback) is intentionally out of scope and stays that way.

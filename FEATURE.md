@@ -79,16 +79,18 @@ deck (plus an index). Go stdlib + goldmark only; every deck is self-contained.
 - **Docs:** `si manual` renders the user manual (`--pdf` / `--slides`);
   `docs/reference/` holds the user manual + developer reference.
 
-## Planned — v0.6.0
+## Shipped — v0.6.0
 
 - **`si play` terminal drawer** (see `docs/terminal.md`): a bottom→middle HUD
   with **multiple tabs** to run **local** commands live during demos (`docker
-  ps`, `cockroach start-single-node`, `cockroach sql`).
-  - **Decided:** full interactive terminal — **xterm.js** front-end + a
-    **PTY-backed** shell (e.g. `creack/pty`). Deliberately relaxes rules #2/#7
-    for this subsystem (founder's call).
-  - **`si play`-only + loopback-only** (disabled on `--addr 0.0.0.0`, never LAN
-    RCE; built static decks have no server, so it's inert there).
-  - Open: transport (stdlib has no WebSocket), per-tab process lifecycle,
-    Ctrl-C/SIGINT, per-tab cwd/env. When built, carve the rule #7 exception into
-    CLAUDE.md.
+  ps`, `cockroach start-single-node`, `cockroach sql`). Toggle with `` ` ``.
+  - Full interactive terminal — **xterm.js** front-end + a **PTY-backed** shell
+    (`creack/pty`); one real `$SHELL` per tab, so Ctrl-C, REPLs and full-screen
+    apps work. Deliberately relaxes rules #2/#7 for this subsystem (founder's
+    call); carved into CLAUDE.md rule #7.
+  - **`si play`-only + loopback-only** — `Server.Terminal` is set only on a
+    loopback listen address, so the exec routes never exist on `--addr 0.0.0.0`;
+    built static decks have no server, so it is inert there. `feature.terminal:
+    off` opts out.
+  - Transport: chunked-GET output + POST input (no WebSocket dependency added).
+    Shells are reaped on tab close and on server shutdown.

@@ -25,6 +25,10 @@ self-contained HTML files you can mail, host or open from a USB stick.
 - **A real teleprompter:** notes in large type with auto-scroll, mirror mode,
   per-slide and total timers with pace, per-slide rehearsal timings, previews,
   synced with the audience window.
+- **Live terminal drawer** (`si play` only): press `` ` `` to slide up a tabbed,
+  real shell and run commands mid-demo (`docker ps`, `cockroach start-single-node`,
+  `cockroach sql`) without leaving the slides. Loopback-only and never in a built
+  deck — see [docs/terminal.md](docs/terminal.md).
 - **Present with ease:** jump to any slide with the `/` find palette (search
   titles and text, or type a number); a full-screen break timer (digital or
   analog) with an optional animation; and a pen to annotate the slide live.
@@ -127,7 +131,7 @@ NOTE: the token reaches payments and turns red.
 
 | Command | What it does |
 |---|---|
-| `si play <dir\|file.md> [--addr 127.0.0.1:7070] [--open] [--css path]...` | serve the decks, rendered from markdown on every request; live reload over server-sent events when a deck, an asset or a stylesheet changes; the URL hash keeps your slide. Use `--addr 0.0.0.0:7070` to open on a phone (prints a LAN URL + QR) |
+| `si play <dir\|file.md> [--addr 127.0.0.1:7070] [--open] [--css path]...` | serve the decks, rendered from markdown on every request; live reload over server-sent events when a deck, an asset or a stylesheet changes; the URL hash keeps your slide. Use `--addr 0.0.0.0:7070` to open on a phone (prints a LAN URL + QR). On a loopback address, press `` ` `` for a live terminal drawer |
 | `si [build] <dir\|file.md> [--output html/] [--css path]... [--no-inline-media] [--pdf] [--site text]` | write one self-contained HTML file per deck plus `index.html` (a landing page with a tile per deck); `--pdf` also renders `pdfs/<name>.pdf` per deck and adds a PDF download badge to each tile (needs headless Chrome); `--site text` (alias `--title`) sets the landing page's `<title>` and `<h1>` |
 | `si check <dir\|file.md>` | validate decks: title, directives, options, missing files, include cycles, malformed `stage` blocks, broken canvas SVGs |
 | `si new <name>` | scaffold `<name>/<name>.md` with assets, a module and a theme |
@@ -153,6 +157,9 @@ Exit codes: 0 ok, 1 deck problems or runtime error, 2 usage.
 
 Phone, 400×800: ![Two columns stacked on a phone](docs/screenshots/two-col-phone.png)
 ![Title, dark](docs/screenshots/title-phone-dark.png)
+
+The `si play` terminal drawer (loopback only), two tabs and a live shell:
+![The play terminal drawer](docs/screenshots/terminal-drawer.png)
 
 More in [docs/screenshots](docs/screenshots/).
 

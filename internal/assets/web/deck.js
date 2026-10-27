@@ -9,6 +9,8 @@
   /* si.conf (optional): remap command keys and turn features on/off, over the defaults */
   var cfg = window.SI_CONFIG || {};
   var cmd = { overview: 'o', presenter: 'p', draw: 'a', timer: 't', mode: 'd', fullscreen: 'f', find: '/', help: '?' };
+  var termEnabled = !!cfg.terminal; /* si play on a loopback address only; never in a built deck */
+  if (termEnabled) cmd.terminal = '`';
   if (cfg.keys) for (var _k in cfg.keys) if (cmd.hasOwnProperty(_k) && cfg.keys[_k]) cmd[_k] = cfg.keys[_k];
   var feat = { draw: true, timer: true, presenter: true, overview: true, find: true };
   if (cfg.features) for (var _f in cfg.features) if (feat.hasOwnProperty(_f)) feat[_f] = !!cfg.features[_f];
@@ -512,6 +514,26 @@
     syncPenUI();
   }
 
+  /* Play terminal drawer: lazy-load the runtime (xterm.js + term.js) on first
+   * toggle, so a page that never opens the terminal pays nothing for it, and a
+   * built deck (termEnabled false) never references it at all. */
+  var termLoaded = false;
+  function toggleTerminal() {
+    if (!termEnabled) return;
+    if (window.siTerm) { window.siTerm.toggle(); return; }
+    if (termLoaded) return; // load in flight
+    termLoaded = true;
+    var css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = '/_si/term/assets/xterm.css';
+    document.head.appendChild(css);
+    function add(src, next) { var s = document.createElement('script'); s.src = src; s.onload = next; document.head.appendChild(s); }
+    add('/_si/term/assets/xterm.js', function () {
+      add('/_si/term/assets/addon-fit.js', function () {
+        add('/_si/term/assets/term.js', function () { if (window.siTerm) window.siTerm.toggle(); });
+      });
+    });
+  }
+
   function runCmd(a) {
     if (a === 'overview') { if (feat.overview) overview(); }
     else if (a === 'presenter') { if (feat.presenter) openPresenter(); }
@@ -521,6 +543,7 @@
     else if (a === 'fullscreen') fullscreen();
     else if (a === 'find') { if (feat.find) findShow(); }
     else if (a === 'help') toggleHelp();
+    else if (a === 'terminal') toggleTerminal();
   }
   var actions = { next: forward, prev: backward, overview: function () { runCmd('overview'); }, draw: function () { runCmd('draw'); }, presenter: function () { runCmd('presenter'); }, find: function () { runCmd('find'); }, mode: toggleMode, help: function () { toggleHelp(); }, fullscreen: fullscreen };
   /* a disabled feature hides its toolbar button */
