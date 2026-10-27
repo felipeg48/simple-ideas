@@ -166,13 +166,67 @@
   });
 
   /* ---------- overview ---------- */
+  /* The overview lays slides out in one column per topic (the section a slide
+   * belongs to, data-topic). Arrow keys move a selection cursor; Enter opens it. */
+  var ovCols = [];   // columns: each an array of slide indices, in deck order
+  var ovPos = {};    // slide index -> [columnIndex, rowIndex]
+  var ovSel = 0;     // the keyboard-selected slide index while in overview
+  var ovHeads = [];  // the topic header elements (removed on close)
+
+  function buildOverview() {
+    ovCols = []; ovPos = {}; ovHeads = [];
+    var colByTopic = {};
+    slides.forEach(function (s, i) {
+      var t = s.getAttribute('data-topic') || '0';
+      var ci = colByTopic[t];
+      if (ci === undefined) { ci = ovCols.length; colByTopic[t] = ci; ovCols.push([]); }
+      var ri = ovCols[ci].length;
+      ovCols[ci].push(i);
+      ovPos[i] = [ci, ri];
+      s.style.gridColumn = (ci + 1);
+      s.style.gridRow = (ri + 2); // row 1 holds the topic header
+    });
+    deck.style.setProperty('--si-ov-cols', ovCols.length);
+    ovCols.forEach(function (col, ci) {
+      var first = slides[col[0]];
+      var label = first.classList.contains('si-section') ? first.getAttribute('data-title') : (data.title || 'Intro');
+      var h = document.createElement('div');
+      h.className = 'si-ov-head';
+      h.textContent = label || '';
+      h.style.gridColumn = (ci + 1);
+      h.style.gridRow = 1;
+      deck.appendChild(h);
+      ovHeads.push(h);
+    });
+  }
+  function clearOverview() {
+    slides.forEach(function (s) { s.style.removeProperty('grid-column'); s.style.removeProperty('grid-row'); s.classList.remove('si-sel'); });
+    ovHeads.forEach(function (h) { h.remove(); });
+    ovHeads = []; deck.style.removeProperty('--si-ov-cols');
+  }
+  function setSel(i) {
+    if (i == null || i < 0 || i >= slides.length) return;
+    slides[ovSel].classList.remove('si-sel');
+    ovSel = i;
+    slides[ovSel].classList.add('si-sel');
+    slides[ovSel].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+  function moveSel(dx, dy) {
+    var p = ovPos[ovSel]; if (!p) return;
+    var c = p[0], r = p[1];
+    if (dy) { r += dy; var col = ovCols[c]; if (r < 0) r = 0; if (r >= col.length) r = col.length - 1; setSel(col[r]); return; }
+    if (dx) { c += dx; if (c < 0) c = 0; if (c >= ovCols.length) c = ovCols.length - 1; var cc = ovCols[c]; if (r >= cc.length) r = cc.length - 1; setSel(cc[r]); }
+  }
   function overview(on) {
     if (on === undefined) on = !deck.classList.contains('si-overview');
     deck.classList.toggle('si-overview', on);
     if (on) {
       slides.forEach(function (s, j) { if (j !== cur) apply(s, maxStep(s)); });
-      slides[cur].scrollIntoView({ block: 'center' });
+      buildOverview();
+      ovSel = cur; slides[ovSel].classList.add('si-sel');
+      slides[ovSel].scrollIntoView({ block: 'center', inline: 'center' });
     } else {
+      clearOverview();
       slides.forEach(function (s) { var inner = s.querySelector('.si-inner'); if (inner) inner.style.removeProperty('--_fit'); });
       go(cur, step, true);
     }
@@ -182,7 +236,7 @@
     var s = e.target.closest('.si-slide');
     if (!s) return;
     var i = slides.indexOf(s);
-    deck.classList.remove('si-overview');
+    overview(false);
     go(i, 0, true);
   });
 
@@ -554,6 +608,17 @@
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     var tag = (document.activeElement && document.activeElement.tagName) || '';
     if (/INPUT|SELECT|TEXTAREA/.test(tag)) return;
+    if (deck.classList.contains('si-overview')) {
+      if (e.key === 'Escape' || e.key === cmd.overview) { e.preventDefault(); overview(false); return; }
+      if (e.key === 'Enter') { e.preventDefault(); var t = ovSel; overview(false); go(t, 0, true); return; }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); moveSel(-1, 0); return; }
+      if (e.key === 'ArrowRight') { e.preventDefault(); moveSel(1, 0); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); moveSel(0, -1); return; }
+      if (e.key === 'ArrowDown') { e.preventDefault(); moveSel(0, 1); return; }
+      if (e.key === 'Home') { e.preventDefault(); setSel(0); return; }
+      if (e.key === 'End') { e.preventDefault(); setSel(slides.length - 1); return; }
+      return; // swallow other keys while navigating the overview
+    }
     if (hud && hud.classList.contains('is-open')) {
       if (e.key === 'Escape' || e.key === cmd.timer) { e.preventDefault(); hudShow(false); return; }
       if (e.key === ' ') { e.preventDefault(); hudPause(); return; } // pause reveals the controls; resume hides them

@@ -105,12 +105,17 @@ img,svg,video{max-width:100%}
 @keyframes si-pulse{50%{stroke-opacity:.3}}
 @keyframes si-flow{to{stroke-dashoffset:-48}}
 
-/* overview grid (o): every slide becomes a tile; container units make the tiles reflow like the slides */
-.si-deck.si-overview{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,19rem),1fr));grid-auto-rows:max-content;gap:clamp(.6rem,1.5vw,1.4rem);
-  align-content:start;overflow-y:auto;padding:clamp(.6rem,2vw,1.6rem);padding-bottom:3.5rem}
+/* overview grid (o): one column per topic (section); the runtime sets --si-ov-cols
+ * and places each slide with grid-column/grid-row. Container units keep tiles fluid;
+ * many topics scroll horizontally rather than forcing a fixed width. */
+.si-deck.si-overview{display:grid;grid-template-columns:repeat(var(--si-ov-cols,1),minmax(8.5rem,1fr));grid-auto-rows:max-content;gap:clamp(.5rem,1.3vw,1.1rem);
+  align-content:start;overflow:auto;padding:clamp(.6rem,2vw,1.6rem);padding-bottom:3.5rem}
+.si-ov-head{grid-row:1;position:sticky;top:0;z-index:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font:600 clamp(.72rem,1vw,.95rem)/1.3 var(--si-font-body);color:var(--si-muted);background:var(--si-bg);padding:.15rem .25rem .4rem;border-bottom:2px solid var(--si-accent)}
 .si-overview .si-slide{position:relative;inset:auto;aspect-ratio:var(--_aspect,16/10);container-type:inline-size;--si-pad-y:5cqi;--si-pad-x:6cqi;visibility:visible;opacity:1;transform:none;transition:none;cursor:pointer;
   border:1px solid var(--si-line);border-radius:.6rem;background-color:var(--si-bg)}
-.si-overview .si-slide.si-current{outline:3px solid var(--si-accent);outline-offset:2px}
+.si-overview .si-slide.si-current{outline:2px dashed color-mix(in srgb,var(--si-accent) 55%,transparent);outline-offset:2px}
+.si-overview .si-slide.si-sel{outline:3px solid var(--si-accent);outline-offset:2px}
 .si-overview .si-inner{font-size:calc(var(--_u) * 1.7 * var(--si-scale));overflow:hidden;pointer-events:none}
 .si-overview .si-step{opacity:1;transform:none}
 

@@ -61,6 +61,7 @@ var Tokens = []Token{
 	{"--si-img-ratio", "image aspect-ratio box; set by the image directive ratio=", "auto"},
 	{"--si-img-fit", "image object-fit inside a ratio box; set by fit=", "cover"},
 	{"--si-img-position", "image object-position inside a ratio box; set by position=", "center"},
+	{"--si-ov-cols", "overview: number of topic columns, set by the runtime when the grid opens", ""},
 }
 
 // Hook is a stable selector user CSS may target.
@@ -75,10 +76,12 @@ var Hooks = []Hook{
 	{`:root[data-si-theme="studio"]`, "the deck theme from front matter (studio, paper, mono, crdb)"},
 	{`:root[data-si-mode="dark"]`, "explicit dark mode (d toggles); without the attribute prefers-color-scheme decides"},
 	{`.si-deck`, "the full-viewport container of all slides"},
-	{`.si-deck.si-overview`, "overview grid (o)"},
+	{`.si-deck.si-overview`, "overview grid (o): slides laid out in one column per topic"},
+	{`.si-ov-head`, "overview: a topic column header (the section title)"},
 	{`.si-deck[data-si-tx="fade"]`, "transition running: fade, slide, zoom, none or canvas (same SVG on both slides)"},
 	{`.si-slide`, "one slide; a size container, so cqi/cqb units refer to it"},
 	{`.si-slide.si-current`, "the slide on screen"},
+	{`.si-slide.si-sel`, "overview: the keyboard-selected tile (arrows move it, Enter opens it)"},
 	{`.si-slide.si-past`, "slides before the current one"},
 	{`.si-slide.si-future`, "slides after the current one"},
 	{`.si-slide.si-title`, "the title slide (first # H1)"},

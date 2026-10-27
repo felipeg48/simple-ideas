@@ -111,8 +111,12 @@ func Deck(d *deck.Deck, opt Options) Result {
 	res := Result{}
 	dr.resolveTheme()
 	dr.resolveAnim()
+	topic := 0
 	for i, s := range d.Slides {
-		sh, sc := dr.slide(s, i+1)
+		if s.Kind == deck.KindSection {
+			topic = s.Part // every slide carries its topic (section) number for the overview columns
+		}
+		sh, sc := dr.slide(s, i+1, topic)
 		slides.WriteString(sh)
 		res.Steps += sc.steps
 		res.Canvases += len(sc.canvases)
@@ -127,7 +131,7 @@ func Deck(d *deck.Deck, opt Options) Result {
 	return res
 }
 
-func (dr *deckRenderer) slide(s *deck.Slide, n int) (string, *slideCtx) {
+func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 	sc := &slideCtx{s: s}
 	body := dr.postprocess(dr.toHTML(s.Body, sc), s.Dir, sc)
 	// remember where this slide leaves each canvas, for relative states
@@ -149,6 +153,7 @@ func (dr *deckRenderer) slide(s *deck.Slide, n int) (string, *slideCtx) {
 	var b strings.Builder
 	fmt.Fprintf(&b, `<section class="%s" id="s%d" data-title="%s" data-layout="%s"`,
 		html.EscapeString(strings.Join(classes, " ")), n, html.EscapeString(plain(s.Title)), layout)
+	fmt.Fprintf(&b, ` data-topic="%d"`, topic)
 	if s.Transition != "" {
 		fmt.Fprintf(&b, ` data-transition="%s"`, s.Transition)
 	}

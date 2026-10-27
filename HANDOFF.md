@@ -5,14 +5,17 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state
 
-- **Latest release: v0.6.0** (version bumped in `cmd/si/main.go`; tag + push to
+- **Latest release: v0.6.1** (version bumped in `cmd/si/main.go`; tag + push to
   publish). CI + release workflows are green; every `v*` tag cross-compiles 6
   binaries + `SHA256SUMS`.
 - Working tree should be clean on `main`. Tests/vet/fmt all green.
+- **v0.6.1 shipped the topic-column Overview:** pressing `o` lays slides out in
+  one column per topic (the `<!-- include: -->` section a slide belongs to,
+  emitted as `data-topic`), each column headed by its section title; ← → move
+  across topics, ↑ ↓ within a column, Enter opens the selected slide. Framing
+  slides (title/agenda before the first section) form a leading "Intro" column.
 - **v0.6.0 shipped the `si play` terminal drawer** (full xterm.js + PTY,
-  multi-tab, play+loopback only). Reference: `docs/terminal.md`; `FEATURE.md` →
-  "Shipped — v0.6.0". Toggle with `` ` ``. Next ideas: persist tab layout across
-  reloads; per-tab running indicator.
+  multi-tab, play+loopback only). Reference: `docs/terminal.md`. Toggle `` ` ``.
 
 ## Non-negotiable rules (from CLAUDE.md — do not break without the founder)
 
@@ -70,6 +73,13 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Known minor issues / polish backlog
 
+- **`data-count` unbounded tween (found 2026-10-27, course migration).** The SVG
+  counter helper tweens proportionally to the value delta, so a large range
+  (e.g. `10,000,000 → 1`) never settles in a reasonable time — the number keeps
+  animating. Workaround authors used: per-state `data-show` numbers instead of
+  `data-count`. Fix candidate: cap the tween duration (ease by ratio/steps, not
+  by absolute delta) so any range settles in a bounded time. Lives in the
+  counter logic in `web/deck.js`. Low severity (workaroundable), real defect.
 - Very wide full-bleed canvases scroll horizontally at the 400px phone floor
   (matches the existing house decks — not a regression; candidate for a
   canvas-responsiveness pass).

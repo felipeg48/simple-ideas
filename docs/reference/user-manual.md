@@ -153,7 +153,7 @@ One inline SVG whose parts change state slide by slide:
 | Key | Action |
 |---|---|
 | → ← Space | next / previous step or slide |
-| `o` | overview grid |
+| `o` | overview — one column per topic (section); ← → across topics, ↑ ↓ within one, Enter opens the selected slide |
 | `p` | teleprompter (notes, timers, rehearsal pacing) |
 | `t` | break timer (configurable presets + animation layer) |
 | `a` | draw over the slide |

@@ -79,6 +79,16 @@ deck (plus an index). Go stdlib + goldmark only; every deck is self-contained.
 - **Docs:** `si manual` renders the user manual (`--pdf` / `--slides`);
   `docs/reference/` holds the user manual + developer reference.
 
+## Shipped — v0.6.1
+
+- **Topic-column Overview.** Pressing `o` now groups the overview into one column
+  per topic — the `<!-- include: -->` section each slide belongs to, emitted by
+  the renderer as `data-topic` (0 for the title/agenda framing, 1..N per section).
+  Each column is headed by its section title; framing slides form a leading
+  "Intro" column. Keyboard: ← → move across topic columns, ↑ ↓ within a column,
+  Enter opens the selected slide, Esc/`o` close; click-to-go still works. CSS
+  drives off `--si-ov-cols`; new hooks `.si-ov-head`, `.si-slide.si-sel`.
+
 ## Shipped — v0.6.0
 
 - **`si play` terminal drawer** (see `docs/terminal.md`): a bottom→middle HUD
