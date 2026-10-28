@@ -83,3 +83,38 @@ one (`creack/pty`) plus the bundled xterm.
 - Persist/restore tab layout across reloads.
 - A visible "running" indicator per tab.
 - Remote (non-loopback) is intentionally out of scope and stays that way.
+
+## Runbook drawer (shipped, v0.7.0)
+
+A right-hand drawer in the terminal HUD: a command cheat-sheet that types into the
+active shell. Opt in with front matter `runbook: <path>.json` on the deck.
+
+- **Source of truth.** The JSON shape matches the cockroach-engineering-tool VS
+  Code extension's `runbook.json` (`{ categories: [ { name, icon, entries: [ {
+  label, description, command, target } ] } ] }`), so an exported runbook drops in
+  unchanged. `command` is canonical; `sql` is accepted as an alias. `target`
+  (`sql` | `bash`, default `sql`) picks the highlighter.
+- **Highlighting is server-side.** `render` runs each command through the same
+  highlighter the code fences use and injects `window.SI_RUNBOOK` with both the
+  raw command (`cmd`, sent to the PTY) and pre-highlighted HTML (`html`, shown in
+  the drawer). No JS highlighter port. The `si-tk-*` token colours are restyled
+  dark inside `.si-rb` so the drawer stays legible regardless of the deck theme.
+- **Interaction.** A filter box; click an entry to *type* the command into the
+  active tab (via the existing `POST /in` input path), Shift/⌘-click to type **and**
+  run (append `\r`). The drawer defaults open when a runbook is present; the
+  open/closed state is persisted (`localStorage`).
+- **Containment.** `window.SI_RUNBOOK` is injected only when `opt.Terminal` is set
+  — i.e. `si play` on a loopback address. A built deck never carries it, so rules
+  #2/#7 hold for shipped HTML exactly as they do for the terminal. `si check`
+  still parses and validates the runbook path (it renders without `Terminal`), so a
+  bad path or malformed JSON is caught at check time.
+- **Code.** Parse + highlight: `internal/render/runbook.go`. Front-matter key:
+  `deck.Meta.Runbook`. Drawer UI + token CSS: `internal/assets/web/term/term.js`
+  (same file as the terminal, same styling-contract exemption).
+
+### Ideas not yet built (runbook)
+
+- Hot-reload the runbook file in `si play --dev` (today a reload picks up edits).
+- `{var}` placeholder substitution (the extension substitutes `{node1}`).
+- Markdown runbook authoring (`## Category` + titled ` ```sql ` fences) as an
+  alternative to JSON.

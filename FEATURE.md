@@ -35,6 +35,12 @@ deck (plus an index). Go stdlib + goldmark only; every deck is self-contained.
   (`Points:` talking points); manual scroll, per-slide + total timers with pace,
   per-slide rehearsal timings, previews, synced over BroadcastChannel; works from
   `file://`.
+- **Play terminal + runbook** (`si play`, loopback-only; never in a built deck):
+  a bottom drawer of real PTY shells (xterm.js), plus an optional **runbook**
+  right-drawer (`runbook: <file>.json` front matter) — a syntax-highlighted
+  command cheat-sheet; filter, click to type into the shell, Shift-click to run.
+  JSON shape matches the cockroach-engineering-tool VS Code extension. See
+  `docs/terminal.md`.
 - **Break timer HUD** (`t`): presets (`timer.time`/`timer.unit`), **digital or
   analog sport-clock face**, a background **animation layer** (built-ins
   `waves`/`orbit`/`bokeh`, custom via `timer.animation.path`, comma-list toggle,

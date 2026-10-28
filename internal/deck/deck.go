@@ -78,10 +78,11 @@ type Meta struct {
 	Watermark        string // faint text, or an image path, shown across every slide
 	WatermarkOpacity string // watermark opacity (a CSS number); default 0.06
 	LabsLabel        string // heading on a lab slide (default "Now, let's do a Lab!")
+	Runbook          string // path to a JSON runbook (command cheat-sheet); shown only in the `si play` terminal drawer
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -290,6 +291,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"accent": &m.Accent, "transition": &m.Transition, "aspect": &m.Aspect, "mermaid": &m.Mermaid, "lang": &m.Lang,
 		"background": &m.Background, "status": &m.Status, "version": &m.Version, "year": &m.Year, "copyright": &m.Copyright,
 		"footer": &m.Footer, "footer-position": &m.FooterPos, "watermark": &m.Watermark, "watermark-opacity": &m.WatermarkOpacity, "labs-label": &m.LabsLabel,
+		"runbook": &m.Runbook,
 	}[key]
 	if ptr == nil {
 		return false

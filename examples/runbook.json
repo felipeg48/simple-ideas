@@ -1,0 +1,21 @@
+{
+  "categories": [
+    {
+      "name": "si",
+      "icon": "play",
+      "entries": [
+        { "label": "Play this deck", "description": "Live server with reload", "command": "si play .", "target": "bash" },
+        { "label": "Build", "description": "Self-contained HTML + index", "command": "si build . -o dist", "target": "bash" },
+        { "label": "Check", "description": "Lint the deck for problems", "command": "si check .", "target": "bash" }
+      ]
+    },
+    {
+      "name": "git",
+      "icon": "git-branch",
+      "entries": [
+        { "label": "Status", "description": "Working tree state", "command": "git status --short --branch", "target": "bash" },
+        { "label": "Recent commits", "description": "Last ten, one line each", "command": "git log --oneline -10", "target": "bash" }
+      ]
+    }
+  ]
+}

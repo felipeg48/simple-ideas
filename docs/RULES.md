@@ -84,6 +84,7 @@ lang: en
 | `watermark` | text, or an image path | none | a faint layer behind every slide — literal text (e.g. `Draft`) is drawn large and angled; an image path is inlined once and centred |
 | `watermark-opacity` | number `0`–`1` | `0.06` | how visible the watermark is |
 | `labs-label` | text | `Now, let's do a Lab!` | the heading on every lab slide (see the `labs` directive) |
+| `runbook` | path to a `.json` file | none | a command cheat-sheet shown in the **`si play` terminal drawer only** (never in a built deck); see §14 |
 
 An included module's own front matter is ignored; the including deck decides.
 
@@ -581,6 +582,27 @@ references shared assets as `../images/...`.
 - **Open on a phone**: run `si play <dir> --addr 0.0.0.0:7070` to serve on your
   network; `si play` then prints a LAN URL and a QR code to scan. (The default
   address is loopback-only, so it prints the `--addr` hint instead.)
+
+- **Play terminal** (`` ` ``, backtick): a drawer of real shells on your machine
+  for live demos — play-only and loopback-only, never shipped in a built deck.
+  Full reference: `docs/terminal.md`.
+
+- **Runbook** (front matter `runbook: cockroach.json`): a command cheat-sheet in a
+  right drawer of the play terminal. The JSON is a list of categories, each with
+  entries (`label`, `description`, `command`, `target: sql|bash`):
+
+  ```json
+  { "categories": [ { "name": "Cluster Info", "entries": [
+      { "label": "Show Nodes", "description": "live nodes",
+        "command": "SELECT node_id, is_live FROM crdb_internal.gossip_nodes;", "target": "sql" } ] } ] }
+  ```
+
+  Each command is syntax-highlighted (by `target`) so you can read it at a glance;
+  there's a filter box, click types the command into the active shell, Shift-click
+  runs it. The shape matches the cockroach-engineering-tool VS Code extension's
+  `runbook.json`, so an exported runbook drops in unchanged. Like the terminal, it
+  appears only in `si play` on a loopback address — a built deck never loads it, so
+  rules #2/#7 still hold for shipped HTML. `si check` validates the path and JSON.
 
 ## 15. Styling: themes and your own CSS
 

@@ -174,6 +174,45 @@ func TestMissingFilesAreProblems(t *testing.T) {
 	}
 }
 
+func TestRunbook(t *testing.T) {
+	dir := t.TempDir()
+	rb := `{"categories":[{"name":"SQL","entries":[` +
+		`{"label":"Nodes","description":"list nodes","command":"SELECT node_id FROM crdb_internal.gossip_nodes;","target":"sql"},` +
+		`{"label":"Status","sql":"cockroach node status --insecure","target":"bash"}]}]}`
+	write := func(name, s string) {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(s), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("rb.json", rb)
+	write("d.md", "---\nrunbook: rb.json\n---\n# D\n\n---\n\n## A\n\nbody\n")
+	d, err := deck.Parse(filepath.Join(dir, "d.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// si play (Terminal) injects SI_RUNBOOK: highlighted html + the raw command
+	res := Deck(d, Options{Terminal: true})
+	if len(res.Problems) > 0 {
+		t.Fatalf("problems: %v", res.Problems)
+	}
+	page := string(res.HTML)
+	for _, want := range []string{"window.SI_RUNBOOK=", "si-tk-k", "crdb_internal.gossip_nodes", "cockroach node status"} {
+		if !strings.Contains(page, want) {
+			t.Errorf("play page lacks %q", want)
+		}
+	}
+	// a built deck (no Terminal) must NOT carry the runbook — stays self-contained
+	if b := string(Deck(d, Options{}).HTML); strings.Contains(b, "SI_RUNBOOK") {
+		t.Error("built deck must not contain the runbook")
+	}
+	// a missing runbook file is a problem (caught by si check, which never sets Terminal)
+	write("b.md", "---\nrunbook: nope.json\n---\n# D\n")
+	bd, _ := deck.Parse(filepath.Join(dir, "b.md"))
+	if r := Deck(bd, Options{}); len(r.Problems) == 0 {
+		t.Error("missing runbook file should be a problem")
+	}
+}
+
 func TestTopicsFollowSectionsAndModules(t *testing.T) {
 	dir := t.TempDir()
 	files := map[string]string{

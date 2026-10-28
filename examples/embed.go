@@ -6,7 +6,7 @@ import "embed"
 
 // FS holds the example decks, their assets and the example theme.
 //
-//go:embed *.md si.conf assets css night-shift
+//go:embed *.md *.json si.conf assets css night-shift
 var FS embed.FS
 
 // Main is the showcase deck that includes the others.

@@ -64,25 +64,26 @@ type Result struct {
 }
 
 type deckRenderer struct {
-	d         *deck.Deck
-	opt       Options
-	md        goldmark.Markdown
-	lastState map[string][]string
-	words     map[string]bool
-	files     map[string]string
-	svgN      int
-	stageN    int
-	cur       *slideCtx // the slide being rendered, for the stage fence's steps
-	mermaid   bool
-	themeName string      // resolved theme name (or "custom" for a CSS-file theme)
-	themeCSS  string      // the si.theme layer CSS for this deck
-	anims     []animEntry // resolved break-timer animations (empty if none)
-	problems  []deck.Problem
-	warnings  []deck.Problem
-	wmDone    bool   // watermark resolved once (deck-level)
-	wmKind    string // "" | "text" | "img"
-	wmText    string // watermark text
-	wmImg     string // watermark image as a data URI (inlined once)
+	d           *deck.Deck
+	opt         Options
+	md          goldmark.Markdown
+	lastState   map[string][]string
+	words       map[string]bool
+	files       map[string]string
+	svgN        int
+	stageN      int
+	cur         *slideCtx // the slide being rendered, for the stage fence's steps
+	mermaid     bool
+	themeName   string      // resolved theme name (or "custom" for a CSS-file theme)
+	themeCSS    string      // the si.theme layer CSS for this deck
+	anims       []animEntry // resolved break-timer animations (empty if none)
+	problems    []deck.Problem
+	warnings    []deck.Problem
+	wmDone      bool   // watermark resolved once (deck-level)
+	wmKind      string // "" | "text" | "img"
+	wmText      string // watermark text
+	wmImg       string // watermark image as a data URI (inlined once)
+	runbookJSON string // window.SI_RUNBOOK payload (play terminal drawer); "" if no runbook
 }
 
 // animEntry is one resolved break-timer animation: its name, kind ("js"/"svg")
@@ -119,6 +120,7 @@ func Deck(d *deck.Deck, opt Options) Result {
 	res := Result{}
 	dr.resolveTheme()
 	dr.resolveAnim()
+	dr.resolveRunbook()
 	topics := Topics(d)
 	for i, s := range d.Slides {
 		sh, sc := dr.slide(s, i+1, topics[i])
@@ -596,6 +598,11 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	}
 	cfg, _ := json.Marshal(map[string]any{"keys": keys, "features": feats, "timer": timer, "terminal": opt.Terminal})
 	fmt.Fprintf(&b, "<script>window.SI_CONFIG=%s;</script>\n", cfg)
+	// Runbook cheat-sheet: play-only + loopback-only, like the terminal it rides
+	// in. Never injected into a built deck (opt.Terminal is false for build).
+	if opt.Terminal && dr.runbookJSON != "" {
+		fmt.Fprintf(&b, "<script>window.SI_RUNBOOK=%s;</script>\n", strings.ReplaceAll(dr.runbookJSON, "</", `<\/`))
+	}
 	if len(dr.anims) > 0 {
 		var js []string
 		for _, a := range dr.anims {

@@ -9,6 +9,7 @@ aspect: 16:9
 footer: Northwind Logistics
 watermark: Confidential
 watermark-opacity: 0.05
+runbook: runbook.json
 ---
 
 # The Thursday Promise

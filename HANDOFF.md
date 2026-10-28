@@ -5,9 +5,18 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state
 
-- **Latest release: v0.6.5** (version bumped in `cmd/si/main.go`; tag + push to
+- **Latest release: v0.7.0** (version bumped in `cmd/si/main.go`; tag + push to
   publish). CI + release workflows are green.
 - Working tree should be clean on `main`. Tests/vet/fmt all green.
+- **v0.7.0 shipped the runbook drawer.** Front matter `runbook: <file>.json` → a
+  right drawer in the `si play` terminal: a syntax-highlighted command cheat-sheet.
+  JSON shape matches the cockroach-engineering-tool VS Code extension (`command`
+  canonical, `sql` alias, `target: sql|bash`). Parse+highlight server-side in
+  `internal/render/runbook.go` → `window.SI_RUNBOOK` (raw `cmd` + pre-highlighted
+  `html`), injected ONLY when `opt.Terminal` (play+loopback) so a built deck never
+  carries it. Drawer UI + dark `si-tk-*` token CSS in `web/term/term.js`. Click to
+  type into the active shell, Shift/⌘-click to run. `si check` validates the path.
+  See RULES.md §14 + `docs/terminal.md`.
 - **v0.6.5 shipped the two-tab presenter popup.** A new `Points:` block (parallel
   to `Notes:`, either order, neither swallows the other → `Slide.Points` →
   `<aside class="si-points" hidden>`) feeds a **Speaker Notes** tab alongside the
