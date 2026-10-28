@@ -13,7 +13,8 @@ deck (plus an index). Go stdlib + goldmark only; every deck is self-contained.
   `transition`, `aspect`, `background`, `mermaid`, `lang`, `status`, `version`,
   `year`, `copyright`.
 - **Slides & layouts:** `---` splits; layouts (`two-col`, `big-number`, `quote`,
-  …); **build steps**; speaker `Notes: (N min)`.
+  …); **build steps**; speaker `Notes: (N min)` (verbatim script) and `Points:`
+  (talking points).
 - **Includes:** `<!-- include: path -->` (split decks: thin main + `sections/`),
   cycle-checked.
 - **Persistent SVG canvas** across slides: state words + per-step ops; helpers
@@ -29,9 +30,11 @@ deck (plus an index). Go stdlib + goldmark only; every deck is self-contained.
 ## Presenting (`si play`)
 
 - **Live reload** over SSE (decks, assets, stylesheets); URL hash keeps the slide.
-- **Teleprompter / presenter window:** large notes, auto-scroll + speed, manual
-  scroll, mirror, per-slide + total timers with pace, per-slide rehearsal
-  timings, previews, synced over BroadcastChannel; works from `file://`.
+- **Teleprompter / presenter window:** two tabs — **Teleprompter** (verbatim
+  `Notes:` script, large type, auto-scroll + speed, mirror) and **Speaker Notes**
+  (`Points:` talking points); manual scroll, per-slide + total timers with pace,
+  per-slide rehearsal timings, previews, synced over BroadcastChannel; works from
+  `file://`.
 - **Break timer HUD** (`t`): presets (`timer.time`/`timer.unit`), **digital or
   analog sport-clock face**, a background **animation layer** (built-ins
   `waves`/`orbit`/`bokeh`, custom via `timer.animation.path`, comma-list toggle,

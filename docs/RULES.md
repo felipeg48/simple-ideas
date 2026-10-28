@@ -404,33 +404,44 @@ starter canvas plus a deck that drives it, and follow the step-by-step recipe in
 Notes: (1.5 min)
 The token reaches payments and turns red. Pause here.
 - Mention the thirty-second retry
+
+Points: What to cover, not a script
+- Payments goes red: the retry kicks in after 30s
+- This is the moment the audience should remember
 ```
 
-- A line starting with `Notes:` starts the slide's speaker notes; everything
-  after it, to the end of the slide, is notes (markdown).
-- `(N min)` on that first line is the slide's planned time; the deck total is
+- A line starting with `Notes:` starts the slide's **verbatim teleprompter
+  script** — what you read aloud, word for word; everything after it, to the end
+  of the slide, is notes (markdown).
+- A line starting with `Points:` starts the slide's **speaker-notes talking
+  points** — a short list to glance at if you'd rather talk than read. Both
+  blocks are optional and may appear in either order; neither swallows the other.
+- `(N min)` on the `Notes:` line is the slide's planned time; the deck total is
   the sum, shown in the index, the build summary and the teleprompter.
-- Notes are hidden on the slides.
+- Both are hidden on the slides.
 
 **Teleprompter (`p` or `Shift+S`).** A second window, synced with the
 audience window over `BroadcastChannel`; it works in `si play` and in the
-static HTML (`file://`), and either window drives both.
+static HTML (`file://`), and either window drives both. It has two tabs:
+**Teleprompter** (the verbatim `Notes:` script, with auto-scroll) and
+**Speaker Notes** (the `Points:` talking points).
 
 | In the teleprompter | |
 |---|---|
-| Notes | large type for reading at a distance; a guide line at reading height |
+| Tabs | `1` Teleprompter (script), `2` Speaker Notes (points); choice remembered per browser |
+| Notes | large type for reading at a distance; a guide line at reading height (teleprompter tab only) |
 | Auto-scroll | `a` on/off, `+` / `-` speed 1 to 10 (lines per ten seconds, follows the text size) |
-| Manual scroll | ↑ ↓, mouse wheel, trackpad; `r` back to the top |
-| Text size | `[` / `]` |
-| Mirror | `m` flips the notes for teleprompter glass |
-| Notes only | `x` hides the previews, the notes fill the window |
+| Manual scroll | ↑ ↓, mouse wheel, trackpad; `r` back to the top (scrolls whichever tab is showing) |
+| Text size | `[` / `]` (both tabs) |
+| Mirror | `m` flips the script for teleprompter glass |
+| Notes only | `x` hides the previews, the prompt fills the window |
 | Previews | the current slide (with its step state) and the next step or slide |
 | Clocks | time on this slide against its `(N min)` (amber when over, red at 1.5×), total against the deck plan, ahead/behind pace, wall clock |
 | Rehearsal | the time you spent on each slide is recorded per run; next to the slide clock it shows `last M:SS` — your previous run's time for this slide, to pace against |
 | Timer | `t` pause/resume, `0` reset (promotes this run to the `last` reference and starts fresh) |
 | Navigation | → ← Space PgDn PgUp Home End, buttons |
 
-Settings (size, speed, mirror, notes only) are remembered per browser.
+Settings (tab, size, speed, mirror, notes only) are remembered per browser.
 
 ## 12. Includes
 

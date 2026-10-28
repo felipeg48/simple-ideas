@@ -214,6 +214,9 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 	if s.Notes != "" || s.HasMinutes {
 		fmt.Fprintf(&b, `<aside class="si-notes" hidden>%s</aside>`+"\n", dr.postprocess(dr.toHTML(s.Notes, nil), s.Dir, sc))
 	}
+	if s.Points != "" {
+		fmt.Fprintf(&b, `<aside class="si-points" hidden>%s</aside>`+"\n", dr.postprocess(dr.toHTML(s.Points, nil), s.Dir, sc))
+	}
 	b.WriteString("</section>\n")
 	return b.String(), sc
 }

@@ -5,9 +5,16 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state
 
-- **Latest release: v0.6.3** (version bumped in `cmd/si/main.go`; tag + push to
+- **Latest release: v0.6.5** (version bumped in `cmd/si/main.go`; tag + push to
   publish). CI + release workflows are green.
 - Working tree should be clean on `main`. Tests/vet/fmt all green.
+- **v0.6.5 shipped the two-tab presenter popup.** A new `Points:` block (parallel
+  to `Notes:`, either order, neither swallows the other → `Slide.Points` →
+  `<aside class="si-points" hidden>`) feeds a **Speaker Notes** tab alongside the
+  verbatim **Teleprompter** tab. Keys `1`/`2` switch; choice persisted; auto-scroll
+  + reading-line are teleprompter-only; manual scroll/`r` follow the active tab.
+  `.si-points` is in `contract.go`. See RULES.md §11.
+- **v0.6.4 shipped the overview fix** (pulled from upstream).
 - **v0.6.3 shipped `si play --dev` hot reload + lab slides.** `--dev` morphs
   changed slides in place (no flash; keeps slide/step/overview; full-reload
   fallback on slide-count change; error overlay). `<!-- labs: [text](url), … -->`

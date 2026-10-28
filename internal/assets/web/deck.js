@@ -471,6 +471,7 @@
     c.removeAttribute('id');
     c.removeAttribute('aria-hidden');
     var nt = c.querySelector('.si-notes'); if (nt) nt.parentNode.removeChild(nt);
+    var pt = c.querySelector('.si-points'); if (pt) pt.parentNode.removeChild(pt);
     var inner = c.querySelector('.si-inner'); if (inner) inner.style.removeProperty('--_fit');
     if (k !== undefined) apply(c, k);
     return c.outerHTML;
@@ -481,10 +482,12 @@
     if (step < max) { nx = snapshot(s, step + 1); label = 'Next step ' + (step + 1) + '/' + max; }
     else if (cur + 1 < n) { nx = snapshot(slides[cur + 1], 0); label = 'Next: ' + (slides[cur + 1].getAttribute('data-title') || 'slide ' + (cur + 2)); }
     var notes = s.querySelector('.si-notes');
+    var points = s.querySelector('.si-points');
     try {
       chan.postMessage({
         type: 'state', i: cur, k: step, kmax: max, n: n, title: s.getAttribute('data-title') || '',
         minutes: s.getAttribute('data-minutes') || '', total: data.minutes, plan: data.plan, notes: notes ? notes.innerHTML : '',
+        points: points ? points.innerHTML : '',
         cur: snapshot(s), next: nx, label: label, dark: effectiveDark()
       });
     } catch (e) {}

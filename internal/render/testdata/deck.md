@@ -39,6 +39,9 @@ Step with state.
 Notes: (1 min)
 Canvas notes.
 
+Points: Canvas talking point.
+- second point
+
 ---
 
 ## Canvas again

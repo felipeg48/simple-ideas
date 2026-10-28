@@ -94,7 +94,8 @@ type Slide struct {
 	Kind       Kind
 	Title      string // heading text (inline markdown), may be empty on a content slide
 	Body       string // markdown below the heading, directives for the renderer included
-	Notes      string // markdown of the speaker notes
+	Notes      string // markdown of the verbatim teleprompter script
+	Points     string // markdown of the concise speaker-notes talking points
 	Minutes    float64
 	HasMinutes bool
 	Layout     string
@@ -162,6 +163,7 @@ var (
 	h1RE        = regexp.MustCompile(`^ {0,3}#\s+(.+?)\s*#*\s*$`)
 	h2RE        = regexp.MustCompile(`^ {0,3}##\s+(.+?)\s*#*\s*$`)
 	notesRE     = regexp.MustCompile(`^Notes:\s*(.*)$`)
+	pointsRE    = regexp.MustCompile(`^Points:\s*(.*)$`)
 	minutesRE   = regexp.MustCompile(`\((\d+(?:\.\d+)?)\s*min\)`)
 	directiveRE = regexp.MustCompile(`^\s*<!--\s*([a-z][a-z-]*)\s*(?::\s*(.*?))?\s*-->\s*$`)
 	metaRE      = regexp.MustCompile(`^([a-z][a-z-]*)\s*:\s*(.*?)\s*$`)
@@ -442,7 +444,7 @@ func trimBlank(c []srcLine) []srcLine {
 
 func (d *Deck) buildSlide(c []srcLine, first bool) *Slide {
 	s := &Slide{Kind: KindContent, File: c[0].file, Line: c[0].no, Dir: filepath.Dir(c[0].file)}
-	var body, notes []string
+	var body, notes, points []string
 	// directives may come before the heading
 	for len(c) > 0 {
 		t := c[0].text
@@ -474,11 +476,25 @@ func (d *Deck) buildSlide(c []srcLine, first bool) *Slide {
 			c = c[1:]
 		}
 	}
-	inNotes := false
+	// Notes: and Points: are trailing blocks in either order; once inside one,
+	// the other's label switches capture so neither swallows the other.
+	cur := "" // "", "notes", or "points"
 	var ft fenceTracker
 	for _, l := range c {
-		if inNotes {
-			notes = append(notes, l.text)
+		if cur != "" {
+			if m := notesRE.FindStringSubmatch(l.text); m != nil {
+				cur, notes = "notes", append(notes, m[1])
+				continue
+			}
+			if m := pointsRE.FindStringSubmatch(l.text); m != nil {
+				cur, points = "points", append(points, m[1])
+				continue
+			}
+			if cur == "notes" {
+				notes = append(notes, l.text)
+			} else {
+				points = append(points, l.text)
+			}
 			continue
 		}
 		if ft.inFence(l.text) {
@@ -486,8 +502,13 @@ func (d *Deck) buildSlide(c []srcLine, first bool) *Slide {
 			continue
 		}
 		if m := notesRE.FindStringSubmatch(l.text); m != nil {
-			inNotes = true
+			cur = "notes"
 			notes = append(notes, m[1])
+			continue
+		}
+		if m := pointsRE.FindStringSubmatch(l.text); m != nil {
+			cur = "points"
+			points = append(points, m[1])
 			continue
 		}
 		if name, val, ok := ParseDirective(l.text); ok {
@@ -508,6 +529,7 @@ func (d *Deck) buildSlide(c []srcLine, first bool) *Slide {
 	}
 	s.Body = strings.TrimSpace(strings.Join(body, "\n"))
 	s.Notes = strings.TrimSpace(strings.Join(notes, "\n"))
+	s.Points = strings.TrimSpace(strings.Join(points, "\n"))
 	return s
 }
 

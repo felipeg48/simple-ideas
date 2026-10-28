@@ -18,7 +18,18 @@ body{overflow:hidden;height:100%}
 .pv-notes p{margin:0 0 .75em}.pv-notes ul,.pv-notes ol{padding-left:1.2em;margin:0 0 .75em}.pv-notes li{margin:.25em 0}
 .pv-notes code{font-size:.85em}
 .pv-notes strong{color:var(--si-accent)}
+.pv-notes[hidden]{display:none}
+.pv-tabs{display:flex;gap:.3rem;margin-right:auto}
+.pv-tab{font:inherit;font-family:var(--si-font-mono);font-size:.78rem;color:var(--si-muted);background:none;border:1px solid transparent;border-radius:.4rem;padding:.2em .7em;cursor:pointer}
+.pv-tab:hover{color:var(--si-fg)}
+.pv-tab[aria-pressed="true"]{color:var(--si-on-accent);background:var(--si-accent)}
+.pv-points{flex:1 1 auto;overflow-y:auto;padding:1.2rem 1.4rem 10vh;font-size:calc(clamp(1.15rem,1.2vw + .5rem,2.4rem) * var(--pv-size));line-height:1.55}
+.pv-points[hidden]{display:none}
+.pv-points p{margin:0 0 .6em}
+.pv-points ul,.pv-points ol{padding-left:1.3em;margin:0 0 .6em}.pv-points li{margin:.45em 0}
+.pv-points code{font-size:.85em}.pv-points strong{color:var(--si-accent)}
 .pv-rehearse{color:var(--si-muted);font-variant-numeric:tabular-nums;opacity:.85}
+.pv-prompt.points::after{display:none}
 .pv-prompt::after{content:"";position:absolute;left:0;right:0;top:34%;height:0;border-top:2px dashed color-mix(in srgb,var(--si-accent) 45%,transparent);pointer-events:none}
 .pv.mirror .pv-notes{transform:scaleX(-1)}
 .pv-side{min-height:0;display:flex;flex-direction:column;gap:.5rem;overflow:auto}
@@ -52,7 +63,7 @@ body{overflow:hidden;height:100%}
       <span class="pace" id="pace"></span>
       <span>clock <strong id="clock"></strong></span>
     </span></div>
-  <div class="pv-prompt"><div class="pv-prompt-head"><span id="nmins"></span><span id="scrollstate"></span></div><div class="pv-notes" id="notes"></div></div>
+  <div class="pv-prompt" id="prompt"><div class="pv-prompt-head"><div class="pv-tabs"><button class="pv-tab" id="tab-tele" aria-pressed="true" title="Verbatim script (1)">Teleprompter</button><button class="pv-tab" id="tab-notes" aria-pressed="false" title="Talking points (2)">Speaker Notes</button></div><span id="nmins"></span><span id="scrollstate"></span></div><div class="pv-notes" id="notes"></div><div class="pv-points" id="points" hidden></div></div>
   <div class="pv-side">
     <div><div class="pv-label">Now</div><div class="pv-screen" id="cur"></div></div>
     <div><div class="pv-label" id="label">Next</div><div class="pv-screen" id="next"></div></div>
@@ -67,7 +78,7 @@ body{overflow:hidden;height:100%}
     <button id="only" aria-pressed="false" title="Notes only (x)">Notes only</button>
     <span class="sep"></span>
     <button id="timer" title="Pause or resume the timer (t)">Pause</button><button id="reset" title="Reset the timer (0)">Reset</button>
-    <span class="pv-keys">&larr; &rarr; space: navigate · &uarr; &darr;: scroll · a auto · +/- speed · [ ] size · m mirror · x notes only</span>
+    <span class="pv-keys">&larr; &rarr; space: navigate · 1/2 tabs · &uarr; &darr;: scroll · a auto · +/- speed · [ ] size · m mirror · x notes only</span>
   </div>
 </div>
 <script>
@@ -75,7 +86,7 @@ body{overflow:hidden;height:100%}
   'use strict';
   var D = __DATA__;
   var $ = function (id) { return document.getElementById(id); };
-  var pv = $('pv'), notes = $('notes');
+  var pv = $('pv'), notes = $('notes'), points = $('points'), prompt = $('prompt');
   document.documentElement.style.setProperty('--_aspect', D.aspect);
   var chan = new BroadcastChannel('si:' + D.name);
   function send(cmd) { chan.postMessage({ type: 'cmd', cmd: cmd }); }
@@ -93,6 +104,17 @@ body{overflow:hidden;height:100%}
     $('scrollstate').textContent = auto ? 'auto-scroll ' + speed : 'manual scroll';
     save('size', size); save('speed', speed); save('mirror', mirror); save('only', only);
   }
+  /* ---------- prompt tabs: teleprompter (verbatim) vs speaker notes (points) ---------- */
+  var tab = load('tab', 'tele'); // 'tele' or 'notes'
+  function showTab(t) {
+    tab = t; save('tab', tab);
+    var tele = tab === 'tele';
+    notes.hidden = !tele; points.hidden = tele;
+    prompt.classList.toggle('points', !tele);
+    $('tab-tele').setAttribute('aria-pressed', tele);
+    $('tab-notes').setAttribute('aria-pressed', !tele);
+  }
+  function activePane() { return tab === 'tele' ? notes : points; }
   /* auto-scroll: speed 1..10, in lines per ten seconds, so it follows the text size */
   var lastT = 0, carry = 0;
   function frame(t) {
@@ -156,7 +178,8 @@ body{overflow:hidden;height:100%}
       if (cur >= 0) { spent[cur] = (spent[cur] || 0) + (now() - slideStart); save('rehearse-' + D.name, spent); }
       cur = m.i; slideStart = now();
       notes.innerHTML = m.notes || '<p><em>No notes for this slide.</em></p>';
-      notes.scrollTop = 0; carry = 0;
+      points.innerHTML = m.points || '<p><em>No speaker notes for this slide.</em></p>';
+      notes.scrollTop = 0; points.scrollTop = 0; carry = 0;
     }
     tick();
   };
@@ -173,6 +196,8 @@ body{overflow:hidden;height:100%}
   $('only').onclick = function () { only = !only; settings(); };
   $('timer').onclick = toggleTimer;
   $('reset').onclick = resetTimer;
+  $('tab-tele').onclick = function () { showTab('tele'); };
+  $('tab-notes').onclick = function () { showTab('notes'); };
   Array.prototype.forEach.call(document.querySelectorAll('button'), function (b) { b.addEventListener('click', function () { b.blur(); }); });
   document.addEventListener('keydown', function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -180,8 +205,8 @@ body{overflow:hidden;height:100%}
       case 'ArrowRight': case 'PageDown': case 'Enter': case 'n': e.preventDefault(); send('next'); break;
       case ' ': e.preventDefault(); send(e.shiftKey ? 'prev' : 'next'); break;
       case 'ArrowLeft': case 'PageUp': case 'Backspace': case 'p': e.preventDefault(); send('prev'); break;
-      case 'ArrowDown': e.preventDefault(); notes.scrollTop += notes.clientHeight * 0.15; break;
-      case 'ArrowUp': e.preventDefault(); notes.scrollTop -= notes.clientHeight * 0.15; break;
+      case 'ArrowDown': e.preventDefault(); activePane().scrollTop += activePane().clientHeight * 0.15; break;
+      case 'ArrowUp': e.preventDefault(); activePane().scrollTop -= activePane().clientHeight * 0.15; break;
       case 'Home': e.preventDefault(); send('first'); break;
       case 'End': e.preventDefault(); send('last'); break;
       case 'a': auto = !auto; settings(); break;
@@ -191,12 +216,14 @@ body{overflow:hidden;height:100%}
       case '[': size = Math.max(0.6, +(size - 0.1).toFixed(2)); settings(); break;
       case 'm': mirror = !mirror; settings(); break;
       case 'x': only = !only; settings(); break;
-      case 'r': notes.scrollTop = 0; break;
+      case 'r': activePane().scrollTop = 0; break;
+      case '1': showTab('tele'); break;
+      case '2': showTab('notes'); break;
       case 't': toggleTimer(); break;
       case '0': resetTimer(); break;
     }
   });
-  settings(); tick();
+  settings(); showTab(tab); tick();
   send('hello');
 })();
 </script>

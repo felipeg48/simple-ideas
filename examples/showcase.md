@@ -31,7 +31,12 @@ Welcome. This talk follows a single parcel, order #4711, from the click on "buy"
 - Nobody owns the promise from end to end
 
 Notes: (1 min)
-Reveal one line at a time. The point of the last line: each team is green on its own dashboard, and the customer still waits. The promise lives between the teams, so we follow one order across all of them.
+The point of the last line: each team is green on its own dashboard, and the customer still waits. The promise lives between the teams, so we follow one order across all of them.
+
+Points: Talking points
+- Three teams, three hand-offs, three separate dashboards
+- Each hits its own target; one order in eleven is still late
+- No single owner for the end-to-end promise
 
 ---
 

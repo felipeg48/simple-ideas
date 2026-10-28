@@ -41,7 +41,11 @@ A subtitle under the title.
 - another point
 
 Notes: (1 min)
-Speaker notes for the teleprompter.
+Verbatim teleprompter script — what you read aloud.
+
+Points: Talking points
+- a point to glance at
+- another one
 ```
 
 - Front matter sets `title`, `theme`, `aspect`, `mode`, and more
@@ -58,7 +62,8 @@ Speaker notes for the teleprompter.
 | `---` | a slide break |
 | `- item` | a bullet list |
 | ` ```lang ` | a highlighted code block |
-| `Notes: (2 min)` | speaker notes + a per-slide time budget |
+| `Notes: (2 min)` | verbatim teleprompter script + a per-slide time budget |
+| `Points:` | speaker-notes talking points (the teleprompter's second tab) |
 | `<!-- layout: two-col -->` | a layout directive (see next) |
 
 Everything is in **`si rules`** (or RULES.md) with an example for each.
@@ -154,7 +159,7 @@ One inline SVG whose parts change state slide by slide:
 |---|---|
 | → ← Space | next / previous step or slide |
 | `o` | overview — one column per topic (section); ← → across topics, ↑ ↓ within one, Enter opens the selected slide |
-| `p` | teleprompter (notes, timers, rehearsal pacing) |
+| `p` | teleprompter — script + speaker-notes tabs, timers, rehearsal pacing |
 | `t` | break timer (configurable presets + animation layer) |
 | `a` | draw over the slide |
 | `d` / `f` / `?` | light-dark / full screen / help |
