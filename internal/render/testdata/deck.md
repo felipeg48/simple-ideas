@@ -85,4 +85,8 @@ the answer
 
 ---
 
+<!-- labs: [Create a Cluster](https://lab.example.com/one), [Scale Out](https://lab.example.com/two) -->
+
+---
+
 # The end

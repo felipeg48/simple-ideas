@@ -60,6 +60,13 @@ img,svg,video{max-width:100%}
 .si-footer[data-pos="top-right"]{right:var(--si-pad-x);top:calc(var(--si-pad-y) * .5);text-align:right}
 .si-footer[data-pos="top-left"]{left:var(--si-pad-x);top:calc(var(--si-pad-y) * .5)}
 .si-footer[data-pos="top-center"]{left:50%;transform:translateX(-50%);top:calc(var(--si-pad-y) * .5);text-align:center}
+/* lab slide (labs directive): a big centred beaker icon, the label as a heading, a button per lab */
+.si-lab-icon{color:var(--si-accent);width:clamp(3rem,13cqi,9rem);margin-bottom:.35em}
+.si-lab-icon svg{display:block;width:100%;height:auto}
+.si-lab-title{margin:0}
+.si-lab-links{display:flex;flex-wrap:wrap;gap:.6em;justify-content:center;margin-top:1.1em}
+.si-lab-link{display:inline-block;padding:.5em 1.15em;border-radius:var(--si-radius,.4em);background:var(--si-accent);color:var(--si-on-accent);text-decoration:none;font-weight:600;font-family:var(--si-font-body)}
+.si-lab-link:hover{filter:brightness(1.08)}
 
 /* images: a paragraph holding one image becomes a figure; the image directive sizes and places it */
 .si-image{margin:.5em auto;width:var(--si-img-width,fit-content);max-width:100%;display:flex;flex-direction:column;align-items:center;gap:.35em}

@@ -29,6 +29,7 @@ type Server struct {
 	Theme    string   // --theme override; empty keeps each deck's theme: front matter
 	Conf     string   // --conf path; empty falls back to si.conf next to the deck
 	Terminal bool     // enable the play terminal drawer; set only on a loopback address
+	Dev      bool     // --dev: in-place hot reload instead of full-page reload
 	Interval time.Duration
 
 	dir     string
@@ -118,7 +119,7 @@ func (s *Server) deck(w http.ResponseWriter, md string) {
 	if v, ok := cfg.Features["terminal"]; ok && !v {
 		termOn = false
 	}
-	res := render.Deck(d, render.Options{LiveReload: true, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn})
+	res := render.Deck(d, render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn})
 	for _, p := range res.Problems {
 		log.Printf("si play: %s", p)
 	}

@@ -79,6 +79,21 @@ deck (plus an index). Go stdlib + goldmark only; every deck is self-contained.
 - **Docs:** `si manual` renders the user manual (`--pdf` / `--slides`);
   `docs/reference/` holds the user manual + developer reference.
 
+## Shipped — v0.6.3
+
+- **`si play --dev` hot reload.** On save, instead of a full-page reload, the dev
+  client fetches the re-rendered deck and morphs the changed slides in place —
+  no white flash, and the current slide, step and overview are preserved. Falls
+  back to a full reload when the slide count changes, and shows an overlay when a
+  deck fails to render. (Plain `si play` still does the full-page live reload.)
+  deck.js exposes `SI.refresh()`; the client is `DevReloadJS` in render.
+- **Lab slides (`labs` directive).** `<!-- labs: [Create a Cluster](https://…),
+  [Scale out](https://…) -->` on a slide renders a centred beaker icon, a big
+  heading (`labs-label` front matter, default "Now, let's do a Lab!"), and one
+  button per lab opening its URL in a new tab. Bare URLs also work (default
+  label). New hooks `.si-lab`, `.si-lab-icon`, `.si-lab-title`, `.si-lab-links`,
+  `.si-lab-link`.
+
 ## Shipped — v0.6.2
 
 - **Footer** (front matter). `footer: <text>` puts small muted text in a corner of

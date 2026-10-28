@@ -808,5 +808,16 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fit(slides[cur]); });
   window.addEventListener('load', function () { renderMermaid(false); fit(slides[cur]); });
   fromHash(true);
-  window.SI = { go: go, next: forward, prev: backward, overview: overview, mode: toggleMode };
+  /* --dev hot reload: after the page's slides are morphed in place, re-apply the
+   * current slide (apply() reads the DOM live, so the new content shows) or
+   * rebuild the overview grid if it is open. */
+  function refresh() {
+    if (deck.classList.contains('si-overview')) {
+      clearOverview(); buildOverview();
+      if (slides[ovSel]) slides[ovSel].classList.add('si-sel');
+    } else {
+      go(cur, step, true);
+    }
+  }
+  window.SI = { go: go, next: forward, prev: backward, overview: overview, mode: toggleMode, refresh: refresh };
 })();

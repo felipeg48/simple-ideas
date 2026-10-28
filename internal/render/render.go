@@ -33,6 +33,10 @@ const MermaidURL = "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min
 type Options struct {
 	// LiveReload adds the si play reload client (EventSource on /_si/events).
 	LiveReload bool
+	// Dev upgrades the reload client to an in-place hot reload (si play --dev):
+	// it morphs the changed slides without a full-page refresh, preserving the
+	// current slide, step and overview, and shows a parse-error overlay.
+	Dev bool
 	// ShowProblems shows a banner listing the deck problems (si play).
 	ShowProblems bool
 	// UserCSS is extra CSS loaded in the si.user layer, after the theme.
@@ -154,6 +158,10 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 	if layout == "" {
 		layout = "default"
 	}
+	if len(s.Labs) > 0 {
+		classes = append(classes, "si-lab")
+		layout = "center"
+	}
 	var b strings.Builder
 	fmt.Fprintf(&b, `<section class="%s" id="s%d" data-title="%s" data-layout="%s"`,
 		html.EscapeString(strings.Join(classes, " ")), n, html.EscapeString(plain(s.Title)), layout)
@@ -176,8 +184,10 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 	if sc.cols {
 		bodyClass += " si-cols"
 	}
-	switch s.Kind {
-	case deck.KindTitle, deck.KindClosing:
+	switch {
+	case len(s.Labs) > 0:
+		b.WriteString(dr.labSlide(s))
+	case s.Kind == deck.KindTitle || s.Kind == deck.KindClosing:
 		fmt.Fprintf(&b, `<h1 class="si-heading">%s</h1>`+"\n", title)
 		if body != "" {
 			fmt.Fprintf(&b, `<div class="si-sub %s">%s</div>`+"\n", bodyClass, body)
@@ -190,7 +200,7 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 				fmt.Fprintf(&b, `<p class="si-colophon">%s</p>`+"\n", html.EscapeString(notice))
 			}
 		}
-	case deck.KindSection:
+	case s.Kind == deck.KindSection:
 		fmt.Fprintf(&b, `<p class="si-kicker">Part %d</p>`+"\n", s.Part)
 		fmt.Fprintf(&b, `<h1 class="si-heading">%s</h1>`+"\n", title)
 		if body != "" {
@@ -293,6 +303,35 @@ func footerPos(p string) string {
 		return "top-center"
 	}
 	return "bottom-right"
+}
+
+// labIconSVG is the beaker icon drawn on a lab slide.
+const labIconSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6L4.5 18.2A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.8L14 9V3"/><path d="M7 14.5h10"/></svg>`
+
+// labSlide renders a lab slide: a big centred beaker icon, the lab label as a
+// heading (like the course title), and one button per lab URL.
+func (dr *deckRenderer) labSlide(s *deck.Slide) string {
+	label := dr.d.Meta.LabsLabel
+	if label == "" {
+		label = "Now, let's do a Lab!"
+	}
+	var b strings.Builder
+	b.WriteString(`<div class="si-lab-icon" aria-hidden="true">` + labIconSVG + "</div>\n")
+	fmt.Fprintf(&b, `<h1 class="si-heading si-lab-title">%s</h1>`+"\n", html.EscapeString(label))
+	b.WriteString(`<div class="si-lab-links">` + "\n")
+	for i, u := range s.Labs {
+		name := u.Text
+		if name == "" {
+			if len(s.Labs) == 1 {
+				name = "Open the Lab"
+			} else {
+				name = fmt.Sprintf("Lab %d", i+1)
+			}
+		}
+		fmt.Fprintf(&b, `<a class="si-lab-link" href="%s" target="_blank" rel="noopener noreferrer">%s</a>`+"\n", html.EscapeString(u.URL), html.EscapeString(name))
+	}
+	b.WriteString("</div>\n")
+	return b.String()
 }
 
 // copyrightLine builds the title-slide colophon from the year and copyright
@@ -482,7 +521,7 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 		if d.Meta.WatermarkOpacity != "" {
 			decls = append(decls, "--si-wm-opacity:"+d.Meta.WatermarkOpacity)
 		}
-		fmt.Fprintf(&b, "<style>.si-deck{%s}</style>\n", strings.Join(decls, ";"))
+		fmt.Fprintf(&b, "<style id=\"si-wm\">.si-deck{%s}</style>\n", strings.Join(decls, ";"))
 	}
 	if css := UserCSS(opt.UserCSS); css != "" {
 		b.WriteString(`<style id="si-user">` + "\n" + css + "</style>\n")
@@ -559,7 +598,9 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	b.WriteString("<script>\nwindow.SI_PRESENTER = " + strings.ReplaceAll(string(presenter), "</", `<\/`) + ";\n")
 	b.WriteString(assets.DeckJS)
 	b.WriteString("</script>\n")
-	if opt.LiveReload {
+	if opt.Dev {
+		b.WriteString(DevReloadJS)
+	} else if opt.LiveReload {
 		b.WriteString(LiveReloadJS)
 	}
 	b.WriteString("</body>\n</html>\n")
@@ -619,6 +660,53 @@ const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 // LiveReloadJS reloads the page when si play reports a change; the URL hash
 // keeps the slide and step.
 const LiveReloadJS = `<script>(function(){if(!window.EventSource)return;var es=new EventSource('/_si/events');es.addEventListener('reload',function(){location.reload()});})();</script>` + "\n"
+
+// DevReloadJS is the si play --dev hot-reload client: on a change it fetches the
+// re-rendered deck and morphs the slides in place (when the slide count is
+// unchanged), so the current slide, step and overview are preserved with no
+// full-page flash. It falls back to a full reload when the structure changes,
+// and shows an overlay when the deck fails to render.
+const DevReloadJS = `<script>(function(){
+  if(!window.EventSource)return;
+  var es=new EventSource('/_si/events');
+  es.addEventListener('reload',hot);
+  function overlay(msg){
+    var o=document.getElementById('si-dev-error');
+    if(!msg){if(o)o.remove();return;}
+    if(!o){o=document.createElement('div');o.id='si-dev-error';document.body.appendChild(o);}
+    o.textContent=msg;
+  }
+  var NAV=/\bsi-(current|past|future|sel)\b/g;
+  function hot(){
+    fetch(location.href,{cache:'no-store'}).then(function(r){
+      return r.text().then(function(t){return {ok:r.ok,status:r.status,t:t};});
+    }).then(function(res){
+      if(!res.ok){overlay('si play '+res.status+'\n'+res.t.replace(/<[^>]*>/g,' ').slice(0,1500).trim());return;}
+      overlay(null);
+      var doc=new DOMParser().parseFromString(res.t,'text/html');
+      var nd=doc.querySelector('.si-deck'),od=document.querySelector('.si-deck');
+      if(!nd||!od){location.reload();return;}
+      var ns=nd.querySelectorAll('.si-slide'),os=od.querySelectorAll('.si-slide');
+      if(ns.length!==os.length){location.reload();return;}
+      ['si-css','si-user','si-wm','si-data'].forEach(function(id){
+        var a=document.getElementById(id),b=doc.getElementById(id);
+        if(b&&a)a.textContent=b.textContent;else if(b&&!a)document.head.appendChild(b.cloneNode(true));else if(a&&!b)a.remove();
+      });
+      for(var i=0;i<os.length;i++){
+        var a=os[i],b=ns[i];
+        if(a.innerHTML!==b.innerHTML)a.innerHTML=b.innerHTML;
+        var nav=(a.className.match(NAV)||[]).join(' ');
+        a.className=b.className+(nav?' '+nav:'');
+        ['data-title','data-layout','data-topic','data-transition','data-minutes','style'].forEach(function(at){
+          var v=b.getAttribute(at);if(v==null)a.removeAttribute(at);else a.setAttribute(at,v);
+        });
+      }
+      if(window.SI&&window.SI.refresh)window.SI.refresh();else location.reload();
+    }).catch(function(e){overlay('si play: '+((e&&e.message)||'reload failed'));});
+  }
+})();</script>
+<style>#si-dev-error{position:fixed;left:1rem;right:1rem;bottom:1rem;z-index:9999;max-height:60vh;overflow:auto;white-space:pre-wrap;background:#7f1d1d;color:#fff;padding:1rem 1.2rem;border-radius:.5rem;font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;box-shadow:0 10px 40px rgba(0,0,0,.45)}</style>
+` + "\n"
 
 // IndexEntry is one deck on the index page.
 type IndexEntry struct {

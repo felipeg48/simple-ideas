@@ -65,7 +65,7 @@ func TestPage(t *testing.T) {
 		"@layer si.theme, si.user;",
 		`--si-accent:#e4572e`,
 		`<style id="si-user">`, "@layer si.user{", `url("data:image/svg+xml;base64,`,
-		`"transition":"slide"`, `"plan":[0.5,0,1,0,0,0,0,0,0,0]`,
+		`"transition":"slide"`, `"plan":[0.5,0,1,0,0,0,0,0,0,0,0]`,
 		`.si-canvas[data-state~="on"] [data-show~="on"]{opacity:1}`,
 		`.si-canvas[data-state~="busy"] [data-flow~="busy"]`,
 		`.si-canvas[data-state~="on"] .si-packets[data-for~="on"]`,

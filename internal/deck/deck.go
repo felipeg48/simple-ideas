@@ -46,6 +46,7 @@ var Directives = map[string]string{
 	"transition": "slide", // slide transition
 	"background": "slide", // slide background
 	"footer":     "slide", // per-slide footer override (`off` hides it)
+	"labs":       "slide", // turn the slide into a lab slide (comma-separated lab URLs)
 	"class":      "slide", // extra classes on the slide
 	"svg":        "body",  // inline an animated SVG canvas
 	"step":       "body",  // reveal the next block as one step
@@ -76,10 +77,17 @@ type Meta struct {
 	FooterPos        string // footer corner: bottom-right (default), bottom-left, bottom-center, top-right, top-left, top-center
 	Watermark        string // faint text, or an image path, shown across every slide
 	WatermarkOpacity string // watermark opacity (a CSS number); default 0.06
+	LabsLabel        string // heading on a lab slide (default "Now, let's do a Lab!")
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label"}
+
+// Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
+type Lab struct {
+	Text string
+	URL  string
+}
 
 // Slide is one slide of a deck.
 type Slide struct {
@@ -93,6 +101,7 @@ type Slide struct {
 	Transition string
 	Background string
 	Footer     string // per-slide footer override: text, or "off" to hide; empty inherits the deck footer
+	Labs       []Lab  // lab links; a non-empty list turns the slide into a lab slide
 	Classes    []string
 	Part       int    // section slides: 1-based number of the section in the deck
 	Dir        string // directory of the source file: base for relative paths
@@ -158,6 +167,7 @@ var (
 	metaRE      = regexp.MustCompile(`^([a-z][a-z-]*)\s*:\s*(.*?)\s*$`)
 	colourRE    = regexp.MustCompile(`^(#[0-9a-fA-F]{3,8}|[a-zA-Z]+|(rgb|rgba|hsl|hsla|oklch|oklab|color-mix)\(.*\))$`)
 	imageExtRE  = regexp.MustCompile(`(?i)\.(png|jpe?g|gif|webp|svg|avif)$`)
+	labLinkRE   = regexp.MustCompile(`\[([^\]]+)\]\(\s*(https?://[^)\s]+)\s*\)`)
 )
 
 // ParseDirective reports whether line is a directive comment and returns its
@@ -277,7 +287,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"title": &m.Title, "author": &m.Author, "date": &m.Date, "theme": &m.Theme, "mode": &m.Mode,
 		"accent": &m.Accent, "transition": &m.Transition, "aspect": &m.Aspect, "mermaid": &m.Mermaid, "lang": &m.Lang,
 		"background": &m.Background, "status": &m.Status, "version": &m.Version, "year": &m.Year, "copyright": &m.Copyright,
-		"footer": &m.Footer, "footer-position": &m.FooterPos, "watermark": &m.Watermark, "watermark-opacity": &m.WatermarkOpacity,
+		"footer": &m.Footer, "footer-position": &m.FooterPos, "watermark": &m.Watermark, "watermark-opacity": &m.WatermarkOpacity, "labs-label": &m.LabsLabel,
 	}[key]
 	if ptr == nil {
 		return false
@@ -525,6 +535,27 @@ func (d *Deck) slideDirective(s *Slide, l srcLine, name, val string) bool {
 		s.Background = val
 	case "footer":
 		s.Footer = val
+	case "labs":
+		if m := labLinkRE.FindAllStringSubmatch(val, -1); len(m) > 0 {
+			for _, g := range m {
+				s.Labs = append(s.Labs, Lab{Text: strings.TrimSpace(g[1]), URL: g[2]})
+			}
+		} else {
+			for _, u := range strings.Split(val, ",") {
+				u = strings.TrimSpace(u)
+				if u == "" {
+					continue
+				}
+				if !strings.HasPrefix(u, "http://") && !strings.HasPrefix(u, "https://") {
+					d.problem(l.file, l.no, "labs: %q is not an http(s) URL or a [text](url) link", u)
+					continue
+				}
+				s.Labs = append(s.Labs, Lab{URL: u})
+			}
+		}
+		if len(s.Labs) == 0 {
+			d.problem(l.file, l.no, "labs needs at least one lab: <!-- labs: [text](https://…) -->")
+		}
 	case "class":
 		s.Classes = append(s.Classes, strings.Fields(val)...)
 	case "svg":

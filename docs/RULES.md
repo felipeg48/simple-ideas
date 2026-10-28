@@ -83,6 +83,7 @@ lang: en
 | `footer-position` | `bottom-right` (default), `bottom-left`, `bottom-center`, `top-right`, `top-left`, `top-center` (short: `br`, `bl`, `bc`, `tr`, `tl`, `tc`) | `bottom-right` | which corner the footer sits in |
 | `watermark` | text, or an image path | none | a faint layer behind every slide — literal text (e.g. `Draft`) is drawn large and angled; an image path is inlined once and centred |
 | `watermark-opacity` | number `0`–`1` | `0.06` | how visible the watermark is |
+| `labs-label` | text | `Now, let's do a Lab!` | the heading on every lab slide (see the `labs` directive) |
 
 An included module's own front matter is ignored; the including deck decides.
 
@@ -143,6 +144,8 @@ that is not a directive (`<!-- wobble -->`) is an error.
 | `column` | body | [Layouts](#5-layouts-and-columns) |
 | `transition: zoom` | slide | [Transitions](#6-transitions) |
 | `background: assets/city.jpg opacity=0.4` | slide | [Backgrounds](#7-backgrounds) |
+| `footer: off` | slide | overrides the deck `footer` on this slide (`off` hides it, e.g. the title) |
+| `labs: [Create a Cluster](https://…), [Scale out](https://…)` | slide | turns the slide into a lab slide: a centred beaker icon, the `labs-label` heading, and a button per lab (opens in a new tab). A bare URL works too and shows a default label. |
 | `class: dense dark-code` | slide | adds classes to the slide for your CSS |
 | `image: width=40% align=right` | next image | [Images](#8-images) |
 | `steps`, `step`, `steps: a b`, `step: a` | next block | [Build steps](#9-build-steps) |

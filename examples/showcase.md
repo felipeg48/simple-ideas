@@ -231,6 +231,12 @@ If you remember one slide, remember this one. The appendix carries the numbers f
 
 ---
 
+<!-- labs: [Open the demo workspace](https://example.com/demo) -->
+
+Notes: (1 min) Hands-on: open the sample workspace and send order #4711 through the two failure points yourself.
+
+---
+
 # Thank you
 
 Questions about order #4711, the retry rule or the returns desk are welcome.

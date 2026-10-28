@@ -35,7 +35,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/serve"
 )
 
-const version = "0.6.2"
+const version = "0.6.3"
 
 // Exit codes.
 const (
@@ -85,6 +85,7 @@ Flags (GNU style, before or after the path):
       --ai <command>    migrate: pipe the migration prompt to this agent command (e.g. "claude -p")
       --addr <host:port> play address (default 127.0.0.1:7070)
       --open            play: open the browser
+      --dev             play: hot reload — morph changed slides in place (keeps the current slide, step and overview)
       --no-inline-media build: copy images and videos next to the HTML instead of data URIs
       --pdf             build: also render each deck to pdfs/<name>.pdf and link it from the index tiles (needs headless Chrome)
       --export <what>   css-rules, rules, conf, example or themes
@@ -103,7 +104,7 @@ func (m *multi) Set(v string) error { *m = append(*m, v); return nil }
 type options struct {
 	output, addr, export, theme, conf, title, ai string
 	open, help, ver                              bool
-	noInline, pdf, slides                        bool
+	noInline, pdf, slides, dev                   bool
 	css                                          multi
 	args                                         []string
 }
@@ -120,6 +121,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.addr, "addr", "127.0.0.1:7070", "")
 	fl.StringVar(&o.export, "export", "", "")
 	fl.BoolVar(&o.open, "open", false, "")
+	fl.BoolVar(&o.dev, "dev", false, "")
 	fl.BoolVar(&o.noInline, "no-inline-media", false, "")
 	fl.BoolVar(&o.pdf, "pdf", false, "")
 	fl.BoolVar(&o.help, "help", false, "")
@@ -387,6 +389,7 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "si: %v\n", err)
 		return exitProblems
 	}
+	srv.Dev = o.dev
 	ln, err := net.Listen("tcp", o.addr)
 	if err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)

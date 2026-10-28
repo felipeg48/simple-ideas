@@ -5,16 +5,17 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state
 
-- **Latest release: v0.6.2** (version bumped in `cmd/si/main.go`; tag + push to
+- **Latest release: v0.6.3** (version bumped in `cmd/si/main.go`; tag + push to
   publish). CI + release workflows are green.
 - Working tree should be clean on `main`. Tests/vet/fmt all green.
-- **v0.6.2 shipped footer + watermark** (deck front matter). `footer:` /
-  `footer-position:` put muted text in a slide corner (per-slide `<!-- footer: off -->`
-  overrides); `watermark:` draws faint angled text or an inlined image behind every
-  slide, `watermark-opacity:` tunes it. Also fixed: front-matter keys may contain
-  hyphens (metaRE) — a hyphenated key used to reject the whole block.
-- **v0.6.1 shipped the topic-column Overview** (press `o`): one column per section,
-  arrow-select, Enter to open. Framing slides form a leading "Intro" column.
+- **v0.6.3 shipped `si play --dev` hot reload + lab slides.** `--dev` morphs
+  changed slides in place (no flash; keeps slide/step/overview; full-reload
+  fallback on slide-count change; error overlay). `<!-- labs: [text](url), … -->`
+  renders a lab slide (beaker icon + `labs-label` heading + a button per lab).
+- **v0.6.2 shipped footer + watermark** (front matter). Also fixed: front-matter
+  keys may contain hyphens (metaRE).
+- **v0.6.1 shipped the topic-column Overview** (`o`): one column per section,
+  arrow-select, Enter to open.
 - **v0.6.0 shipped the `si play` terminal drawer** (xterm.js + PTY, play+loopback
   only). Reference: `docs/terminal.md`. Toggle `` ` ``.
 

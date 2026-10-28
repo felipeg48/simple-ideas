@@ -240,6 +240,47 @@ func TestFooterPositionInvalid(t *testing.T) {
 	}
 }
 
+func TestLabsDirective(t *testing.T) {
+	dir := write(t, map[string]string{"d.md": "---\ntitle: T\nlabs-label: Hands on\n---\n\n# T\n\nhi\n\n---\n\n<!-- labs: [Create a Cluster](https://a.example/lab), [Scale Out](https://b.example/lab) -->\n"})
+	d, err := Parse(filepath.Join(dir, "d.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Problems) != 0 {
+		t.Fatalf("unexpected problems: %v", d.Problems)
+	}
+	if d.Meta.LabsLabel != "Hands on" {
+		t.Errorf("labs-label = %q", d.Meta.LabsLabel)
+	}
+	last := d.Slides[len(d.Slides)-1]
+	if len(last.Labs) != 2 || last.Labs[0].Text != "Create a Cluster" || last.Labs[0].URL != "https://a.example/lab" {
+		t.Errorf("labs = %+v", last.Labs)
+	}
+}
+
+func TestLabsBareURL(t *testing.T) {
+	dir := write(t, map[string]string{"d.md": "---\ntitle: T\n---\n\n# T\n\n<!-- labs: https://only.example/lab -->\n"})
+	d, _ := Parse(filepath.Join(dir, "d.md"))
+	last := d.Slides[len(d.Slides)-1]
+	if len(last.Labs) != 1 || last.Labs[0].URL != "https://only.example/lab" || last.Labs[0].Text != "" {
+		t.Errorf("labs = %+v, problems %v", last.Labs, d.Problems)
+	}
+}
+
+func TestLabsRejectsNonURL(t *testing.T) {
+	dir := write(t, map[string]string{"d.md": "---\ntitle: T\n---\n\n# T\n\n<!-- labs: not-a-url -->\n"})
+	d, _ := Parse(filepath.Join(dir, "d.md"))
+	found := false
+	for _, p := range d.Problems {
+		if strings.Contains(p.Msg, "labs") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected a labs problem, got %v", d.Problems)
+	}
+}
+
 func TestParseBackground(t *testing.T) {
 	tests := []struct {
 		in, kind, value, err string

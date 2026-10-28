@@ -172,7 +172,7 @@ commands mid-demo (`docker ps`, `cockroach sql`, …). It exists only under
 ## The CLI
 
 ```bash
-si play <dir>              # serve with live reload
+si play <dir>              # serve with live reload (--dev: in-place hot reload)
 si build <dir> --pdf       # self-contained HTML (+ PDF)
 si check <dir>             # validate; exit 1 on a problem
 si new <name>              # scaffold a deck
