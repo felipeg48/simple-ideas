@@ -117,6 +117,9 @@ deck (plus an index). Go stdlib + goldmark only; every deck is self-contained.
   "Intro" column. Keyboard: ← → move across topic columns, ↑ ↓ within a column,
   Enter opens the selected slide, Esc/`o` close; click-to-go still works. CSS
   drives off `--si-ov-cols`; new hooks `.si-ov-head`, `.si-slide.si-sel`.
+  An included module without its own `#` section slide is a
+  topic too (headed by its first slide's title), and a deck with no sections
+  or modules falls back to a plain row-by-row grid instead of one tall column.
 
 ## Shipped — v0.6.0
 

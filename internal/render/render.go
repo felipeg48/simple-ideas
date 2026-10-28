@@ -119,12 +119,9 @@ func Deck(d *deck.Deck, opt Options) Result {
 	res := Result{}
 	dr.resolveTheme()
 	dr.resolveAnim()
-	topic := 0
+	topics := Topics(d)
 	for i, s := range d.Slides {
-		if s.Kind == deck.KindSection {
-			topic = s.Part // every slide carries its topic (section) number for the overview columns
-		}
-		sh, sc := dr.slide(s, i+1, topic)
+		sh, sc := dr.slide(s, i+1, topics[i])
 		slides.WriteString(sh)
 		res.Steps += sc.steps
 		res.Canvases += len(sc.canvases)
@@ -247,6 +244,28 @@ func (dr *deckRenderer) postprocess(h, dir string, sc *slideCtx) string {
 }
 
 func plain(s string) string { return strings.TrimSpace(tagRE.ReplaceAllString(s, "")) }
+
+// Topics numbers the overview column of every slide: 0 for the framing slides
+// at the start of the deck (title, agenda), then a new topic at each section
+// slide or at each included file that has no section slide of its own, so a
+// deck split into `## …` modules still gets one column per module.
+func Topics(d *deck.Deck) []int {
+	out := make([]int, len(d.Slides))
+	topic, n, prevFile, prevSection := 0, 0, "", false
+	for i, s := range d.Slides {
+		switch {
+		case s.Kind == deck.KindSection:
+			n++
+			topic = n
+		case s.File != prevFile && s.File != d.Path && !prevSection:
+			n++ // an included module that starts without a section slide
+			topic = n
+		}
+		out[i] = topic
+		prevFile, prevSection = s.File, s.Kind == deck.KindSection
+	}
+	return out
+}
 
 // watermark returns the per-slide watermark element. The deck-level value is
 // resolved once (text vs inlined image); every slide reuses it so the image is

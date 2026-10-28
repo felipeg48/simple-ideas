@@ -2,6 +2,7 @@ package render
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -170,5 +171,33 @@ func TestMissingFilesAreProblems(t *testing.T) {
 	}
 	if !strings.Contains(all, "missing file: nope.png") || !strings.Contains(all, "missing file: gone.jpg") {
 		t.Errorf("problems = %q", all)
+	}
+}
+
+func TestTopicsFollowSectionsAndModules(t *testing.T) {
+	dir := t.TempDir()
+	files := map[string]string{
+		"d.md": "# D\n\n---\n\n## Agenda\n\n<!-- include: a.md -->\n<!-- include: b.md -->\n\n---\n\n# Part three\n\n---\n\n## In part three\n\n---\n\n# Thanks\n",
+		"a.md": "## A one\n\n---\n\n## A two\n",
+		"b.md": "# B section\n\n---\n\n## B one\n",
+	}
+	for name, md := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(md), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	d, err := deck.Parse(filepath.Join(dir, "d.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var titles []string
+	for _, s := range d.Slides {
+		titles = append(titles, s.Title)
+	}
+	// title, agenda | A one, A two (module without a section) | B section, B one |
+	// Part three, In part three, Thanks (the closing stays in the current column)
+	want := []int{0, 0, 1, 1, 2, 2, 3, 3, 3}
+	if got := Topics(d); fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("topics = %v, want %v for %q", got, want, titles)
 	}
 }

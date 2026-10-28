@@ -176,8 +176,14 @@
   function buildOverview() {
     ovCols = []; ovPos = {}; ovHeads = [];
     var colByTopic = {};
+    slides.forEach(function (s) { colByTopic[s.getAttribute('data-topic') || '0'] = true; });
+    // One topic (no sections, no modules): a plain grid, row by row, as wide as
+    // the window allows; each grid column is still a column for the arrow keys.
+    var flat = Object.keys(colByTopic).length === 1;
+    var perRow = flat ? Math.max(1, Math.floor(deck.clientWidth / (14 * parseFloat(getComputedStyle(root).fontSize)))) : 0;
+    colByTopic = {};
     slides.forEach(function (s, i) {
-      var t = s.getAttribute('data-topic') || '0';
+      var t = flat ? String(i % perRow) : (s.getAttribute('data-topic') || '0');
       var ci = colByTopic[t];
       if (ci === undefined) { ci = ovCols.length; colByTopic[t] = ci; ovCols.push([]); }
       var ri = ovCols[ci].length;
@@ -187,13 +193,16 @@
       s.style.gridRow = (ri + 2); // row 1 holds the topic header
     });
     deck.style.setProperty('--si-ov-cols', ovCols.length);
-    ovCols.forEach(function (col, ci) {
+    var heads = flat ? [[0, '1 / -1', data.title || '']] : ovCols.map(function (col, ci) {
       var first = slides[col[0]];
-      var label = first.classList.contains('si-section') ? first.getAttribute('data-title') : (data.title || 'Intro');
+      var label = first.getAttribute('data-topic') === '0' ? (data.title || 'Intro') : first.getAttribute('data-title');
+      return [ci, ci + 1, label];
+    });
+    heads.forEach(function (hd) {
       var h = document.createElement('div');
       h.className = 'si-ov-head';
-      h.textContent = label || '';
-      h.style.gridColumn = (ci + 1);
+      h.textContent = hd[2] || '';
+      h.style.gridColumn = hd[1];
       h.style.gridRow = 1;
       deck.appendChild(h);
       ovHeads.push(h);

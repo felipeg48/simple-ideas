@@ -519,7 +519,7 @@ references shared assets as `../images/...`.
 | → ↓ Space PgDn Enter | next step, then next slide |
 | ← ↑ Shift+Space PgUp | previous step or slide |
 | Home / End | first / last slide |
-| `o` | overview grid of every slide (click one to open it, Esc closes) |
+| `o` | overview of every slide: one column per section (`#` slide) or included module, headed by its title; a deck with neither gets a plain grid. ← → ↑ ↓ move, Enter or click opens, Esc closes |
 | `p` or `Shift+S` | teleprompter window |
 | `t` | break timer HUD: pick minutes, countdown to project during a break |
 | `/` | find a slide: search titles and text, or type a number to jump |
