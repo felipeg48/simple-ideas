@@ -35,7 +35,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/serve"
 )
 
-const version = "0.7.0"
+const version = "0.7.1"
 
 // Exit codes.
 const (
@@ -80,7 +80,7 @@ Flags (GNU style, before or after the path):
       --css <path>      user stylesheet file or directory; repeatable; loads after the theme
       --theme <name>    built-in theme: studio, paper, mono, crdb (aliases cockroachdb, cockroachlabs), or a path to a .css theme file; overrides theme: front matter
       --conf <path>     read si.conf (key remaps, feature toggles, default theme); default: si.conf next to the deck
-      --title <text>    build: title for the generated index.html — its <title> and <h1> (default: the source dir name)
+      --title <text>    build, play: title for the index page — its <title> and <h1> (default: the source dir name)
       --site <text>     alias for --title (reads as "the site/landing page title")
       --ai <command>    migrate: pipe the migration prompt to this agent command (e.g. "claude -p")
       --addr <host:port> play address (default 127.0.0.1:7070)
@@ -390,6 +390,7 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		return exitProblems
 	}
 	srv.Dev = o.dev
+	srv.Title = o.title
 	ln, err := net.Listen("tcp", o.addr)
 	if err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)

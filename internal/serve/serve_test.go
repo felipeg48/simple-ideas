@@ -100,3 +100,32 @@ func TestSingleFileRedirects(t *testing.T) {
 		t.Errorf("got %d %q", res.StatusCode, res.Header.Get("Location"))
 	}
 }
+
+func TestIndexTitle(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "talk.md"), []byte("# Talk\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s, err := New(dir, nil, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ts := httptest.NewServer(s.Handler())
+	defer ts.Close()
+	title := func() string {
+		res, err := http.Get(ts.URL + "/")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		b, _ := io.ReadAll(res.Body)
+		return string(b)
+	}
+	if got := title(); !strings.Contains(got, "<title>"+filepath.Base(dir)+"</title>") {
+		t.Errorf("default index title missing the directory name")
+	}
+	s.Title = "CACI Training" // si play --site
+	if got := title(); !strings.Contains(got, "<title>CACI Training</title>") || !strings.Contains(got, "CACI Training</h1>") {
+		t.Errorf("--site title not used on the play index")
+	}
+}

@@ -60,7 +60,7 @@ deck (plus an index). Go stdlib + goldmark only; every deck is self-contained.
 - **`si build`:** one self-contained HTML per deck + an `index.html` landing page
   with a **tile per deck**; **Tiles / List** view toggle (list is a table:
   Course · Status · Slides · Time · PDF).
-- **`--site "Title"`** (alias `--title`): the index `<title>` + `<h1>`; the index
+- **`--site "Title"`** (alias `--title`, `si build` and `si play`): the index `<title>` + `<h1>`; the index
   follows the decks' theme.
 - **`--pdf`:** renders `pdfs/<name>.pdf` per deck (headless Chrome) and adds a
   **PDF download badge** to each tile + a PDF column in list view.

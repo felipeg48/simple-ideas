@@ -30,6 +30,7 @@ type Server struct {
 	Conf     string   // --conf path; empty falls back to si.conf next to the deck
 	Terminal bool     // enable the play terminal drawer; set only on a loopback address
 	Dev      bool     // --dev: in-place hot reload instead of full-page reload
+	Title    string   // --title / --site: the index page title; empty uses the directory name
 	Interval time.Duration
 
 	dir     string
@@ -142,7 +143,11 @@ func (s *Server) index(w http.ResponseWriter) {
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
-	w.Write(render.Index(filepath.Base(s.dir), entries, render.Options{LiveReload: true, UserCSS: s.css()}))
+	title := s.Title
+	if title == "" {
+		title = filepath.Base(s.dir)
+	}
+	w.Write(render.Index(title, entries, render.Options{LiveReload: true, UserCSS: s.css()}))
 }
 
 // events is the server-sent events endpoint: one `reload` event per change.
