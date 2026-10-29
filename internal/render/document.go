@@ -23,14 +23,17 @@ func Document(d *deck.Deck, opt Options) Result {
 	dr := &deckRenderer{d: d, opt: opt, doc: true, lastState: map[string][]string{}, words: map[string]bool{}, files: map[string]string{}}
 	dr.md = dr.markdown()
 	dr.resolveTheme()
-	var body string
+	var body strings.Builder
 	var toc []tocEntry
-	if len(d.Slides) > 0 {
-		body, toc = dr.docBody(d.Slides[0])
+	sl, title := newSlugger(), html.UnescapeString(plain(dr.inline(d.Title())))
+	for _, s := range d.Slides { // one part per run of lines of one file
+		h, t := dr.docBody(s, sl, &title)
+		body.WriteString(h)
+		toc = append(toc, t...)
 	}
 	res := Result{}
 	dr.finish(&res)
-	res.HTML = dr.docPage(body, toc, res.Problems)
+	res.HTML = dr.docPage(body.String(), toc, res.Problems)
 	return res
 }
 
@@ -45,19 +48,32 @@ var (
 	docHeadRE = regexp.MustCompile(`(?s)<h([23])>(.*?)</h[23]>`)
 )
 
-// docBody renders the lab body: the leading H1 moves to the page header,
-// GitHub alerts become callouts, a paragraph holding one image a figure, h2/h3
-// get ids and anchors, and tables scroll inside their own box.
-func (dr *deckRenderer) docBody(s *deck.Slide) (string, []tocEntry) {
+// docBody renders one part of the lab body (paths relative to the part's
+// file): the first H1 equal to *title moves to the page header (title is then
+// cleared), GitHub alerts become callouts, a paragraph holding one image a
+// figure, h2/h3 get ids from sl (shared by all parts) and anchors, and tables
+// scroll inside their own box. Problems point at the line of the failing
+// reference.
+func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (string, []tocEntry) {
 	sc := &slideCtx{s: s}
+	np, nw := len(dr.problems), len(dr.warnings)
+	defer func() {
+		lines := strings.Split(s.Body, "\n")
+		for _, ps := range [][]deck.Problem{dr.problems[np:], dr.warnings[nw:]} {
+			for i := range ps {
+				ps[i].Line = s.Line + refLine(lines, ps[i].Msg)
+			}
+		}
+	}()
 	src := []byte(s.Body)
 	doc := dr.md.Parser().Parse(text.NewReader(src))
-	for c, first := doc.FirstChild(), true; c != nil; first = false {
+	for c := doc.FirstChild(); c != nil; {
 		next := c.NextSibling()
 		switch n := c.(type) {
 		case *ast.Heading:
-			if first && n.Level == 1 && (dr.d.Meta.Title == "" || strings.TrimSpace(textOf(n, src)) == plain(dr.d.Meta.Title)) {
+			if *title != "" && n.Level == 1 && strings.TrimSpace(textOf(n, src)) == strings.TrimSpace(*title) {
 				doc.RemoveChild(doc, n) // it is the title: the header shows it
+				*title = ""
 			}
 		case *ast.Blockquote:
 			if cl := callout(n, src); cl != nil {
@@ -79,6 +95,9 @@ func (dr *deckRenderer) docBody(s *deck.Slide) (string, []tocEntry) {
 		return ast.WalkContinue, nil
 	})
 	for _, t := range tables { // a markdown table scrolls inside its own box
+		if h, ok := t.FirstChild().(*east.TableHeader); ok && emptyRow(h) {
+			h.SetAttributeString("hidden", "") // `| | |` header of a pandoc-style key/value table
+		}
 		w := &divNode{class: "si-table-wrap"}
 		t.Parent().ReplaceChild(t.Parent(), t, w)
 		w.AppendChild(w, t)
@@ -89,7 +108,6 @@ func (dr *deckRenderer) docBody(s *deck.Slide) (string, []tocEntry) {
 	}
 	h := dr.postprocess(buf.String(), s.Dir, sc)
 	var toc []tocEntry
-	sl := newSlugger()
 	h = docHeadRE.ReplaceAllStringFunc(h, func(m string) string {
 		g := docHeadRE.FindStringSubmatch(m)
 		txt := plain(g[2])
@@ -98,6 +116,37 @@ func (dr *deckRenderer) docBody(s *deck.Slide) (string, []tocEntry) {
 		return fmt.Sprintf(`<h%s id="%s">%s<a class="si-anchor" href="#%s" aria-label="Link to this section">#</a></h%s>`, g[1], id, g[2], id, g[1])
 	})
 	return h, toc
+}
+
+// emptyRow reports whether every cell of a table row is empty.
+func emptyRow(row ast.Node) bool {
+	for c := row.FirstChild(); c != nil; c = c.NextSibling() {
+		if c.HasChildren() {
+			return false
+		}
+	}
+	return true
+}
+
+// refLine is the 0-based index of the first line of a part that holds the
+// file a problem message names ("missing file: x", "x is 3.1 MB, ..."); 0
+// when there is none.
+func refLine(lines []string, msg string) int {
+	var ref string
+	if r, ok := strings.CutPrefix(msg, "missing file: "); ok {
+		ref, _, _ = strings.Cut(r, " (")
+	} else if r, rest, ok := strings.Cut(msg, " is "); ok && strings.Contains(rest, " MB, inlined") {
+		ref = r
+	}
+	if ref == "" {
+		return 0
+	}
+	for i, l := range lines {
+		if strings.Contains(l, ref) {
+			return i
+		}
+	}
+	return 0
 }
 
 // calloutIcons are the 24×24 stroke icons of the five callout kinds.

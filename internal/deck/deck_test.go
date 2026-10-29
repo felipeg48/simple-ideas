@@ -1,6 +1,7 @@
 package deck
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -370,6 +371,7 @@ func TestLabType(t *testing.T) {
 		absent   []string // substrings it must not contain
 		problems []string
 		warnings []string
+		noWarn   []string
 	}{
 		{name: "no type is a deck", files: map[string]string{"d.md": "# D\n\n---\n\n## A\n"}, typ: "deck"},
 		{name: "type deck", files: map[string]string{"d.md": "---\ntype: deck\n---\n# D\n"}, typ: "deck"},
@@ -386,6 +388,14 @@ func TestLabType(t *testing.T) {
 		{name: "slide directives warn", lab: true, typ: "lab", title: "Lab",
 			files:    map[string]string{"d.md": "---\ntype: lab\n---\n<!-- layout: two-col -->\n# Lab\n\n<!-- steps -->\n- a\n\n```\n<!-- class: x -->\n```\n"},
 			warnings: []string{`"layout" has no effect in a lab document`, `"steps" has no effect in a lab document`}},
+		{name: "unknown directive warns in a lab", lab: true, typ: "lab", title: "Lab",
+			files:    map[string]string{"d.md": "---\ntype: lab\n---\n# Lab\n\n<!-- columns -->\ntext\n"},
+			warnings: []string{`unknown directive "columns"`}},
+		{name: "deck-only front matter warns in a lab", lab: true, typ: "lab", title: "Lab",
+			files: map[string]string{"d.md": "---\ntype: lab\naspect: 4:3\ntransition: zoom\nwatermark: X\nwatermark-opacity: 0.1\nlabs-label: L\nfooter: F\nfooter-position: tl\nauthor: A\n---\n# Lab\n"},
+			warnings: []string{`front matter "aspect" has no effect`, `front matter "transition" has no effect`, `front matter "watermark" has no effect`,
+				`front matter "watermark-opacity" has no effect`, `front matter "labs-label" has no effect`, `front matter "footer-position" has no effect`},
+			noWarn: []string{`"footer"`, `"author"`}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -414,28 +424,73 @@ func TestLabType(t *testing.T) {
 					t.Errorf("warnings %q lack %q", allW, w)
 				}
 			}
+			for _, w := range tc.noWarn {
+				if strings.Contains(allW, w) {
+					t.Errorf("warnings %q contain %q", allW, w)
+				}
+			}
 			if len(tc.problems) == 0 && len(msgs) > 0 {
 				t.Errorf("unexpected problems %q", all)
 			}
 			if !tc.lab {
 				return
 			}
-			if len(d.Slides) != 1 || d.Slides[0].Kind != KindDocument || d.Slides[0].Title != tc.title {
+			if len(d.Slides) == 0 || d.Slides[0].Title != tc.title {
 				t.Fatalf("slides = %+v", d.Slides)
 			}
+			var bodies []string
+			for _, s := range d.Slides {
+				if s.Kind != KindDocument {
+					t.Errorf("part kind %q", s.Kind)
+				}
+				bodies = append(bodies, s.Body)
+			}
+			body := strings.Join(bodies, "\n")
 			for _, w := range tc.body {
-				if !strings.Contains(d.Slides[0].Body, w) {
-					t.Errorf("body %q lacks %q", d.Slides[0].Body, w)
+				if !strings.Contains(body, w) {
+					t.Errorf("body %q lacks %q", body, w)
 				}
 			}
 			for _, w := range tc.absent {
-				if strings.Contains(d.Slides[0].Body, w) {
-					t.Errorf("body %q contains %q", d.Slides[0].Body, w)
+				if strings.Contains(body, w) {
+					t.Errorf("body %q contains %q", body, w)
 				}
 			}
 			if strings.Contains(allW, "class") {
 				t.Errorf("fenced directive warned: %q", all)
 			}
 		})
+	}
+}
+
+// TestLabParts: a lab is split into one part per run of lines of one file, so
+// every part resolves paths against its own file and keeps real line numbers.
+func TestLabParts(t *testing.T) {
+	dir := write(t, map[string]string{
+		"d.md":             "---\ntype: lab\n---\n# Lab\n\nintro\n<!-- include: sections/01-a.md -->\nafter\n",
+		"sections/01-a.md": "## A\n\n![pic](../images/x.svg)\n",
+	})
+	d, err := Parse(filepath.Join(dir, "d.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	type part struct {
+		file string
+		line int
+		dir  string
+	}
+	var got []part
+	for _, s := range d.Slides {
+		got = append(got, part{filepath.Base(s.File), s.Line, filepath.Base(s.Dir)})
+	}
+	want := []part{{"d.md", 4, filepath.Base(dir)}, {"01-a.md", 1, "sections"}, {"d.md", 7, filepath.Base(dir)}}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("parts = %v, want %v", got, want)
+	}
+	if d.Slides[0].Title != "Lab" || d.Slides[1].Title != "" {
+		t.Errorf("titles = %q, %q", d.Slides[0].Title, d.Slides[1].Title)
+	}
+	if !strings.HasPrefix(d.Slides[2].Body, "\nafter") {
+		t.Errorf("third part body %q", d.Slides[2].Body)
 	}
 }

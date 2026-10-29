@@ -53,6 +53,11 @@ plain text block
 | 1 | gateway | orders-in | 5s | 3 | edge team | gateway-overview | accepts and validates the order payload |
 | 2 | ledger | orders-ledger | 30s | 5 | payments team | ledger-latency | writes the order and reserves stock |
 
+| | |
+|---|---|
+| Duration | 30 min |
+| Level | Beginner |
+
 ![The pipeline](assets/pic.svg "Orders flow left to right")
 
 ---

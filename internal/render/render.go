@@ -855,9 +855,9 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 		} else {
 			// Two sibling links in a positioned wrapper: the card opens the deck, the
 			// badge downloads the PDF. (Nesting <a> in <a> is invalid HTML.)
-			fmt.Fprintf(&b, "<div class=\"si-card-wrap\"><a class=\"si-card\" href=\"%s\">%s</a>"+
+			fmt.Fprintf(&b, "<div class=\"si-card-wrap\"><a class=\"si-card\" data-kind=\"%s\" href=\"%s\">%s</a>"+
 				"<a class=\"si-card-pdf\" href=\"%s\" download title=\"Download the slides as PDF\">PDF</a></div>\n",
-				html.EscapeString(e.Href), inner, html.EscapeString(e.PDF))
+				kind, html.EscapeString(e.Href), inner, html.EscapeString(e.PDF))
 		}
 	}
 	b.WriteString("</div>\n")
@@ -894,11 +894,16 @@ func Entry(d *deck.Deck) IndexEntry {
 	if d.IsLab() {
 		e.Lab, e.Sections, e.Slides, e.Minutes = true, labSections(d), 0, 0
 	}
-	if len(d.Slides) > 0 {
-		for _, line := range strings.Split(d.Slides[0].Body, "\n") {
+	first := d.Slides
+	if !e.Lab && len(first) > 1 {
+		first = first[:1] // a deck's subtitle comes from its title slide; a lab's from its first text line
+	}
+outer:
+	for _, s := range first {
+		for _, line := range strings.Split(s.Body, "\n") {
 			if t := strings.TrimSpace(line); t != "" && !strings.HasPrefix(t, "<!--") && !(e.Lab && strings.HasPrefix(t, "#")) {
 				e.Subtitle = plain(t)
-				break
+				break outer
 			}
 		}
 	}

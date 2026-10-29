@@ -144,35 +144,51 @@ var Types = []string{"deck", "lab"}
 // IsLab reports whether the file is a lab document (`type: lab`).
 func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
 
-// buildLab makes the whole expanded body one document slide. `---` stays
-// text; slide directives are reported as having no effect.
+// buildLab splits the expanded body into document parts, one per run of
+// consecutive lines of one file, so each part resolves relative paths against
+// its own file and Line+offset is the real source line of every body line.
+// The renderer joins the parts into one page. `---` stays text; directives
+// are reported as having no effect. The first part carries the title.
 func (d *Deck) buildLab(lines []srcLine) {
 	lines = trimBlank(lines)
 	if len(lines) == 0 {
 		d.problem(d.Path, 0, "empty lab: start with a `# Title` line")
 		return
 	}
-	s := &Slide{Kind: KindDocument, File: lines[0].file, Line: lines[0].no, Dir: filepath.Dir(lines[0].file)}
-	text := make([]string, len(lines))
+	var s *Slide
+	var text []string
+	flush := func() {
+		if s != nil {
+			s.Body = strings.Join(text, "\n")
+			d.Slides = append(d.Slides, s)
+		}
+	}
+	title := ""
 	var ft fenceTracker
 	for i, l := range lines {
-		text[i] = l.text
+		if i == 0 || l.file != lines[i-1].file || l.no != lines[i-1].no+1 {
+			flush()
+			s, text = &Slide{Kind: KindDocument, File: l.file, Line: l.no, Dir: filepath.Dir(l.file)}, nil
+		}
+		text = append(text, l.text)
 		if ft.inFence(l.text) {
 			continue
 		}
 		if name, _, ok := ParseDirective(l.text); ok {
-			if _, known := Directives[name]; known {
-				d.Warnings = append(d.Warnings, Problem{File: rel(l.file), Line: l.no, Msg: fmt.Sprintf("%q has no effect in a lab document", name)})
+			msg := fmt.Sprintf("%q has no effect in a lab document", name)
+			if _, known := Directives[name]; !known {
+				msg = fmt.Sprintf("unknown directive %q", name)
 			}
-		} else if s.Title == "" && h1RE.MatchString(l.text) {
-			s.Title = h1RE.FindStringSubmatch(l.text)[1]
+			d.Warnings = append(d.Warnings, Problem{File: rel(l.file), Line: l.no, Msg: msg})
+		} else if title == "" && h1RE.MatchString(l.text) {
+			title = h1RE.FindStringSubmatch(l.text)[1]
 		}
 	}
+	flush()
 	if d.Meta.Title != "" {
-		s.Title = d.Meta.Title
+		title = d.Meta.Title
 	}
-	s.Body = strings.Join(text, "\n")
-	d.Slides = []*Slide{s}
+	d.Slides[0].Title = title
 }
 
 // Title is the deck title: front matter title, else the title slide.
@@ -309,6 +325,7 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 	if end < 0 {
 		return 0
 	}
+	keyLine := map[string]int{}
 	for i := 1; i < end; i++ {
 		t := strings.TrimSpace(lines[i])
 		if t == "" || strings.HasPrefix(t, "#") {
@@ -316,6 +333,7 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 		}
 		m := metaRE.FindStringSubmatch(t)
 		key, val := m[1], strings.Trim(m[2], `"'`)
+		keyLine[key] = i + 1
 		if !d.setMeta(key, val) {
 			d.problem(file, i+1, "unknown front matter key %q (known: %s)", key, strings.Join(MetaKeys, ", "))
 			continue
@@ -327,8 +345,18 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 			d.checkBackground(file, i+1, filepath.Dir(file), val)
 		}
 	}
+	if d.IsLab() {
+		for _, k := range LabIgnoredKeys {
+			if ln, ok := keyLine[k]; ok {
+				d.Warnings = append(d.Warnings, Problem{File: rel(file), Line: ln, Msg: fmt.Sprintf("front matter %q has no effect in a lab document", k)})
+			}
+		}
+	}
 	return end + 1
 }
+
+// LabIgnoredKeys are the front matter keys a lab page does not use.
+var LabIgnoredKeys = []string{"aspect", "transition", "background", "watermark", "watermark-opacity", "labs-label", "footer-position", "runbook"}
 
 func (d *Deck) setMeta(key, val string) bool {
 	m := &d.Meta

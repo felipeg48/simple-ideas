@@ -298,7 +298,7 @@ func TestLabGolden(t *testing.T) {
 		`<body class="si-doc">`, `<nav class="si-doc-toc"`, `<main class="si-doc-body"`,
 		`<div class="si-callout" data-kind="note">`, `data-kind="tip"`, `data-kind="important"`, `data-kind="warning"`, `data-kind="caution"`,
 		`<blockquote>`, `href="other.html#start"`, `id="read-it-back"`, `<button type="button" class="si-copy"`,
-		"<div class=\"si-table-wrap\">\n<table>", `src="data:image/svg+xml;base64,`, "<hr>",
+		"<div class=\"si-table-wrap\">\n<table>", `src="data:image/svg+xml;base64,`, "<hr>", `<thead hidden="">`,
 		`data-si-theme="studio"`, "@layer si.theme, si.user;", "© 2026 Harbor Labs",
 	} {
 		if !strings.Contains(page, want) {
@@ -378,5 +378,102 @@ func TestLabEdgeCases(t *testing.T) {
 	_, page = renderLab(t, write("s.md", "---\ntype: lab\ntitle: Same\n---\n# Same\n\ntext\n"), Options{})
 	if strings.Contains(page, "<h1>Same</h1>") {
 		t.Error("an H1 equal to the title moves to the header")
+	}
+}
+
+func writeFiles(t *testing.T, files map[string]string) string {
+	t.Helper()
+	dir := t.TempDir()
+	for name, body := range files {
+		p := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return dir
+}
+
+const tinySVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>`
+
+// An included module resolves its paths against its own file, and the TOC
+// and heading ids span every part.
+func TestLabIncludedModulePaths(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"lab.md":           "---\ntype: lab\n---\n# Lab\n\n## Intro\n\n<!-- include: sections/01-a.md -->\n\n## Intro\n",
+		"sections/01-a.md": "## Intro\n\n![pic](../images/x.svg)\n",
+		"images/x.svg":     tinySVG,
+	})
+	res, page := renderLab(t, filepath.Join(dir, "lab.md"), Options{})
+	if len(res.Problems) != 0 {
+		t.Errorf("problems: %v", res.Problems)
+	}
+	if strings.Contains(page, `src="../images/x.svg"`) || !strings.Contains(page, `src="data:image/svg+xml;base64,`) {
+		t.Error("the module's ../images/x.svg is not inlined")
+	}
+	for _, want := range []string{`<h2 id="intro">`, `<h2 id="intro-2">`, `<h2 id="intro-3">`, `<a href="#intro-3">Intro</a>`} {
+		if !strings.Contains(page, want) {
+			t.Errorf("lab page lacks %q", want)
+		}
+	}
+}
+
+// A render problem in a lab points at the file and line of the failing reference.
+func TestLabProblemLines(t *testing.T) {
+	filler := strings.Repeat("text\n\n", 98) // lines 6..201
+	dir := writeFiles(t, map[string]string{
+		"lab.md":     "---\ntype: lab\n---\n# Lab\n\n" + filler + "![gone](missing.png)\n\n<!-- include: parts/p.md -->\n",
+		"parts/p.md": "## P\n\nsome text\n\n![also gone](nope.svg)\n",
+	})
+	res, _ := renderLab(t, filepath.Join(dir, "lab.md"), Options{})
+	var got []string
+	for _, p := range res.Problems {
+		got = append(got, fmt.Sprintf("%s:%d: %s", filepath.Base(p.File), p.Line, p.Msg))
+	}
+	want := []string{"lab.md:202: missing file: missing.png", "p.md:5: missing file: nope.svg"}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("problems = %q, want %q", got, want)
+	}
+}
+
+// The H1 that matches the title (compared as plain text) moves to the header,
+// even when it is not the first block; later H1s stay.
+func TestLabTitleH1(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"a.md": "---\ntype: lab\ntitle: The **bold** `lab`\n---\n# The **bold** `lab`\n\ntext\n",
+		"b.md": "---\ntype: lab\ntitle: Same\n---\nintro\n\n# Same\n\ntext\n\n# Same\n",
+		"c.md": "---\ntype: lab\n---\nintro\n\n# Derived\n\ntext\n",
+	})
+	_, page := renderLab(t, filepath.Join(dir, "a.md"), Options{})
+	if strings.Count(page, "<strong>bold</strong>") != 1 || !strings.Contains(page, `<h1 class="si-doc-title">The <strong>bold</strong> <code>lab</code></h1>`) {
+		t.Error("a markdown-formatted H1 equal to the title moves to the header")
+	}
+	_, page = renderLab(t, filepath.Join(dir, "b.md"), Options{})
+	if strings.Count(page, "<h1>Same</h1>") != 1 {
+		t.Errorf("want the first matching H1 removed and the second kept, got %d", strings.Count(page, "<h1>Same</h1>"))
+	}
+	_, page = renderLab(t, filepath.Join(dir, "c.md"), Options{})
+	if strings.Contains(page, "<h1>Derived</h1>") || !strings.Contains(page, `<h1 class="si-doc-title">Derived</h1>`) {
+		t.Error("without a front matter title, the first H1 is the title and leaves the body")
+	}
+}
+
+// A table whose header row is all empty (pandoc metadata) hides its thead.
+func TestLabEmptyTableHeader(t *testing.T) {
+	dir := writeFiles(t, map[string]string{"l.md": "---\ntype: lab\n---\n# L\n\n| | |\n|---|---|\n| a | 1 |\n\n| k | v |\n|---|---|\n| a | 1 |\n"})
+	_, page := renderLab(t, filepath.Join(dir, "l.md"), Options{})
+	if strings.Count(page, `<thead hidden="">`) != 1 || strings.Count(page, "<thead>") != 1 {
+		t.Errorf("want one hidden and one visible thead:\n%s", page)
+	}
+}
+
+func TestIndexCardKind(t *testing.T) {
+	page := string(Index("Courses", []IndexEntry{{Href: "d.html", Title: "D", PDF: "pdfs/d.pdf"}, {Href: "l.html", Title: "L", Lab: true}}, Options{}))
+	for _, want := range []string{`<a class="si-card" data-kind="deck" href="d.html">`, `<a class="si-card" data-kind="lab" href="l.html">`} {
+		if !strings.Contains(page, want) {
+			t.Errorf("index lacks %q", want)
+		}
 	}
 }
