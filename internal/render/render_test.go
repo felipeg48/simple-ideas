@@ -298,7 +298,7 @@ func TestLabGolden(t *testing.T) {
 		`<body class="si-doc">`, `<nav class="si-doc-toc"`, `<main class="si-doc-body"`,
 		`<div class="si-callout" data-kind="note">`, `data-kind="tip"`, `data-kind="important"`, `data-kind="warning"`, `data-kind="caution"`,
 		`<blockquote>`, `href="other.html#start"`, `id="read-it-back"`, `<button type="button" class="si-copy"`,
-		`<div class="si-table-wrap"><table>`, `src="data:image/svg+xml;base64,`, "<hr>",
+		"<div class=\"si-table-wrap\">\n<table>", `src="data:image/svg+xml;base64,`, "<hr>",
 		`data-si-theme="studio"`, "@layer si.theme, si.user;", "© 2026 Harbor Labs",
 	} {
 		if !strings.Contains(page, want) {
@@ -322,7 +322,8 @@ func TestLabHeadingIDs(t *testing.T) {
 	}
 	s := newSlugger()
 	for _, tc := range [][2]string{{"Set up", "set-up"}, {"What's `new`?", "whats-new"}, {"set up", "set-up-2"}, {"Set up", "set-up-3"},
-		{"Ünïcode 2 go", "ünïcode-2-go"}, {"a_b-c", "a_b-c"}, {"!!!", "section"}} {
+		{"Ünïcode 2 go", "ünïcode-2-go"}, {"a_b-c", "a_b-c"}, {"!!!", "section"},
+		{"Clone 2", "clone-2"}, {"Clone", "clone"}, {"Clone", "clone-3"}} {
 		if got := s.slug(tc[0]); got != tc[1] {
 			t.Errorf("slug(%q) = %q, want %q", tc[0], got, tc[1])
 		}
@@ -346,5 +347,36 @@ func TestLabSelfContained(t *testing.T) {
 	_, page = renderLab(t, p, Options{LiveReload: true})
 	if !strings.Contains(page, `<script src="`+MermaidURL+`">`) || !strings.Contains(page, `<pre class="si-mermaid">`) || !strings.Contains(page, "/_si/events") {
 		t.Error("a lab with a mermaid fence loads the pinned Mermaid script; play adds live reload")
+	}
+}
+
+func TestLabEdgeCases(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, md string) string {
+		p := filepath.Join(dir, name)
+		if err := os.WriteFile(p, []byte(md), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	// a ## Content heading owns its id: the page template reserves none
+	_, page := renderLab(t, write("c.md", "---\ntype: lab\n---\n# C\n\n## Content\n\ntext\n"), Options{})
+	if strings.Count(page, `id="content"`) != 1 {
+		t.Errorf("id=\"content\" appears %d times, want 1", strings.Count(page, `id="content"`))
+	}
+	// a raw HTML table stays balanced; a markdown table is wrapped
+	_, page = renderLab(t, write("t.md", "---\ntype: lab\n---\n# T\n\n<table class=\"x\"><tr><td>raw</td></tr></table>\n\n| a | b |\n|---|---|\n| 1 | 2 |\n"), Options{})
+	body := regexp.MustCompile(`(?s)<main .*</main>`).FindString(page)
+	if strings.Count(body, "<div") != strings.Count(body, "</div>") || strings.Count(body, `class="si-table-wrap"`) != 1 {
+		t.Errorf("unbalanced or missing table wrap:\n%s", body)
+	}
+	// the first H1 moves to the header only when it is the title
+	_, page = renderLab(t, write("h.md", "---\ntype: lab\ntitle: Given\n---\n# Heading\n\ntext\n"), Options{})
+	if !strings.Contains(page, `<h1 class="si-doc-title">Given</h1>`) || !strings.Contains(page, "<h1>Heading</h1>") {
+		t.Error("an H1 that differs from the front matter title stays in the body")
+	}
+	_, page = renderLab(t, write("s.md", "---\ntype: lab\ntitle: Same\n---\n# Same\n\ntext\n"), Options{})
+	if strings.Contains(page, "<h1>Same</h1>") {
+		t.Error("an H1 equal to the title moves to the header")
 	}
 }

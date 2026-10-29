@@ -11,6 +11,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/assets"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/yuin/goldmark/ast"
+	east "github.com/yuin/goldmark/extension/ast"
 	"github.com/yuin/goldmark/text"
 )
 
@@ -55,8 +56,8 @@ func (dr *deckRenderer) docBody(s *deck.Slide) (string, []tocEntry) {
 		next := c.NextSibling()
 		switch n := c.(type) {
 		case *ast.Heading:
-			if first && n.Level == 1 {
-				doc.RemoveChild(doc, n)
+			if first && n.Level == 1 && (dr.d.Meta.Title == "" || strings.TrimSpace(textOf(n, src)) == plain(dr.d.Meta.Title)) {
+				doc.RemoveChild(doc, n) // it is the title: the header shows it
 			}
 		case *ast.Blockquote:
 			if cl := callout(n, src); cl != nil {
@@ -69,13 +70,24 @@ func (dr *deckRenderer) docBody(s *deck.Slide) (string, []tocEntry) {
 		}
 		c = next
 	}
+	var tables []ast.Node
+	_ = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if _, ok := n.(*east.Table); ok && entering {
+			tables = append(tables, n)
+			return ast.WalkSkipChildren, nil
+		}
+		return ast.WalkContinue, nil
+	})
+	for _, t := range tables { // a markdown table scrolls inside its own box
+		w := &divNode{class: "si-table-wrap"}
+		t.Parent().ReplaceChild(t.Parent(), t, w)
+		w.AppendChild(w, t)
+	}
 	var buf bytes.Buffer
 	if err := dr.md.Renderer().Render(&buf, src, doc); err != nil {
 		dr.problem(sc, "render: %v", err)
 	}
 	h := dr.postprocess(buf.String(), s.Dir, sc)
-	h = strings.ReplaceAll(h, "<table>", `<div class="si-table-wrap"><table>`)
-	h = strings.ReplaceAll(h, "</table>", "</table></div>")
 	var toc []tocEntry
 	sl := newSlugger()
 	h = docHeadRE.ReplaceAllStringFunc(h, func(m string) string {
@@ -137,7 +149,7 @@ func callout(bq *ast.Blockquote, src []byte) ast.Node {
 
 // slugger makes GitHub-style heading ids: lower case, spaces to hyphens,
 // punctuation dropped; a repeated slug gets -2, -3, ...
-type slugger map[string]int
+type slugger map[string]bool
 
 func newSlugger() slugger { return slugger{} }
 
@@ -155,11 +167,11 @@ func (s slugger) slug(t string) string {
 	if id == "" {
 		id = "section"
 	}
-	s[id]++
-	if n := s[id]; n > 1 {
-		id = fmt.Sprintf("%s-%d", id, n)
-		s[id]++
+	base := id
+	for n := 2; s[id]; n++ { // skip ids taken by an earlier heading, even a literal "clone-2"
+		id = fmt.Sprintf("%s-%d", base, n)
 	}
+	s[id] = true
 	return id
 }
 
@@ -191,7 +203,7 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 		}
 		b.WriteString("</ol></details></nav>\n")
 	}
-	b.WriteString("<main class=\"si-doc-body\" id=\"content\">\n" + body + "</main>\n</div>\n")
+	b.WriteString("<main class=\"si-doc-body\">\n" + body + "</main>\n</div>\n")
 	var foot []string
 	if c := copyrightLine(m.Year, m.Copyright); c != "" {
 		foot = append(foot, "<span>"+html.EscapeString(c)+"</span>")
