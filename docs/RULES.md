@@ -604,6 +604,20 @@ references shared assets as `../images/...`.
   appears only in `si play` on a loopback address — a built deck never loads it, so
   rules #2/#7 still hold for shipped HTML. `si check` validates the path and JSON.
 
+  A command may hold **placeholders**: `{{name}}` or `{{name:default}}` (name
+  `[A-Za-z_][A-Za-z0-9_-]*`, default any text without `}`). The drawer asks for a
+  value for each distinct name (first occurrence and its default win), then types
+  the command with every occurrence replaced; Esc cancels and types nothing.
+  Placeholders are highlighted in the command.
+
+  ```json
+  { "label": "Pods", "command": "kubectl -n {{ns:messaging}} get pods {{pod}}", "target": "bash" }
+  ```
+
+  Not placeholders, typed verbatim: `{{.Server.Version}}`, `{{json .}}`,
+  `${HOME}`, `{print $1}`, `{a: .b}`. The file may also carry a top-level `name`
+  (the drawer title) and `description`.
+
 ### Studio (`si --web`)
 
 `si --web [dir] [--addr 127.0.0.1:7070] [--no-open]` opens a browser editor for

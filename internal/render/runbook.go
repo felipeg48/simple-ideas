@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 )
 
 // A runbook is an optional command cheat-sheet shown in the `si play` terminal
@@ -19,7 +20,9 @@ import (
 // `target` ("sql" | "bash", default "sql") selects the syntax highlighter.
 
 type runbookFile struct {
-	Categories []runbookCategory `json:"categories"`
+	Name        string            `json:"name,omitempty"`
+	Description string            `json:"description,omitempty"` // accepted, unused by the drawer
+	Categories  []runbookCategory `json:"categories"`
 }
 
 type runbookCategory struct {
@@ -36,6 +39,26 @@ type runbookEntry struct {
 	Target      string `json:"target,omitempty"`  // "sql" | "bash"; default "sql"
 }
 
+// Placeholder is a `{{name}}` or `{{name:default}}` slot in a runbook command;
+// the drawer asks for a value before typing the command.
+type Placeholder struct{ Name, Default string }
+
+var placeholderRe = regexp.MustCompile(`\{\{([A-Za-z_][A-Za-z0-9_-]*)(?::([^}]*))?\}\}`)
+
+// Placeholders lists the distinct placeholders of cmd in document order; the
+// first occurrence (and its default) wins.
+func Placeholders(cmd string) []Placeholder {
+	var out []Placeholder
+	seen := map[string]bool{}
+	for _, m := range placeholderRe.FindAllStringSubmatch(cmd, -1) {
+		if !seen[m[1]] {
+			seen[m[1]] = true
+			out = append(out, Placeholder{m[1], m[2]})
+		}
+	}
+	return out
+}
+
 // runbookForPage parses a runbook JSON file and returns the JSON injected as
 // window.SI_RUNBOOK: the same categories, but each entry carries the raw command
 // (`cmd`, sent to the shell on click) plus pre-highlighted HTML (`html`, shown
@@ -47,12 +70,17 @@ func runbookForPage(raw []byte) (string, error) {
 	if err := json.Unmarshal(raw, &rf); err != nil {
 		return "", fmt.Errorf("runbook: invalid JSON: %w", err)
 	}
+	type outVar struct {
+		Name    string `json:"name"`
+		Default string `json:"default"`
+	}
 	type outEntry struct {
-		Label  string `json:"label"`
-		Desc   string `json:"desc,omitempty"`
-		Cmd    string `json:"cmd"`
-		HTML   string `json:"html"`
-		Target string `json:"target"`
+		Label  string   `json:"label"`
+		Desc   string   `json:"desc,omitempty"`
+		Cmd    string   `json:"cmd"`
+		HTML   string   `json:"html"`
+		Target string   `json:"target"`
+		Vars   []outVar `json:"vars,omitempty"`
 	}
 	type outCat struct {
 		Name    string     `json:"name"`
@@ -74,16 +102,24 @@ func runbookForPage(raw []byte) (string, error) {
 			if target == "" {
 				target = "sql"
 			}
+			var vars []outVar
+			for _, p := range Placeholders(cmd) {
+				vars = append(vars, outVar{p.Name, p.Default})
+			}
 			oc.Entries = append(oc.Entries, outEntry{
 				Label: e.Label, Desc: e.Description, Cmd: cmd,
-				HTML: highlight(cmd, target), Target: target,
+				HTML:   placeholderRe.ReplaceAllString(highlight(cmd, target), `<span class="si-rb-var">$0</span>`),
+				Target: target, Vars: vars,
 			})
 		}
 		if len(oc.Entries) > 0 {
 			cats = append(cats, oc)
 		}
 	}
-	b, err := json.Marshal(map[string]any{"categories": cats})
+	b, err := json.Marshal(struct {
+		Name       string   `json:"name,omitempty"`
+		Categories []outCat `json:"categories"`
+	}{rf.Name, cats})
 	if err != nil {
 		return "", err
 	}
