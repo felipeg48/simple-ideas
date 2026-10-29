@@ -222,7 +222,7 @@ func Parse(path string) (*Deck, error) {
 	if err != nil {
 		return nil, err
 	}
-	src := string(raw)
+	src := strings.TrimPrefix(string(raw), "\uFEFF") // a BOM would hide the front matter
 	if ext := strings.ToLower(filepath.Ext(abs)); ext == ".adoc" || ext == ".asciidoc" {
 		src = adocToMarkdown(src) // AsciiDoc decks feed the same Markdown pipeline
 	}

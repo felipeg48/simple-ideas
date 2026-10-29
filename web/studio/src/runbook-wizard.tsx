@@ -85,6 +85,8 @@ export function RunbookWizard(p: { tree: Node | null; decks: DeckInfo[]; dir: st
   const [err, setErr] = useState("");
   const [linkErrs, setLinkErrs] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const creating = useRef(false); // a fast double Enter must not fire two creates
+  const created = useRef(false); // the file is on disk: from now on only "open it" is left
   const box = useRef<HTMLDivElement>(null);
   const focusNext = useRef<string | null>(null);
 
@@ -109,7 +111,7 @@ export function RunbookWizard(p: { tree: Node | null; decks: DeckInfo[]; dir: st
     if (s === 0) {
       if (!name.trim()) out.push({ key: "name", msg: "Give the runbook a name." });
       const f = fname.trim();
-      if (!/^[^/\\]+\.json$/i.test(f) || f.startsWith(".")) out.push({ key: "file", msg: "The file name must end in .json and contain no slashes or leading dot." });
+      if (!/^\w[\w. -]*\.json$/i.test(f)) out.push({ key: "file", msg: "Use letters, digits, spaces, . _ and - in the file name, ending in .json." });
       else if (has(p.tree, path)) out.push({ key: "file", msg: EXISTS });
     }
     if (s === 1) {
@@ -136,16 +138,28 @@ export function RunbookWizard(p: { tree: Node | null; decks: DeckInfo[]; dir: st
   const go = (s: number) => { setTried(-1); setErr(""); setStep(s); };
   const next = () => {
     if (busy) return;
-    if (step === 3) { void create(); return; }
+    if (step === 3) { void (created.current ? finish() : create()); return; }
     if (problems(step).length) { setTried(step); return; }
     go(step + 1);
   };
 
+  // open the new file; a failure here leaves the dialog usable with a message
+  const finish = async () => {
+    setBusy(true);
+    try { await p.onCreated(path); p.onClose(); } catch (e) { setErr(`It could not be opened: ${(e as Error).message}`); setLinkErrs((l) => l ?? []); setBusy(false); }
+  };
+
   const create = async () => {
+    if (creating.current) return;
+    creating.current = true;
+    try { await createOnce(); } finally { creating.current = false; }
+  };
+  const createOnce = async () => {
     setBusy(true);
     setErr("");
     try {
       await api.create(path, false, json);
+      created.current = true;
     } catch (e) {
       setBusy(false);
       if (e instanceof ApiError && e.status === 409) { setFileErr(EXISTS); go(0); setTried(0); return; }
@@ -164,8 +178,7 @@ export function RunbookWizard(p: { tree: Node | null; decks: DeckInfo[]; dir: st
       }
     }
     if (fails.length) { setLinkErrs(fails); setBusy(false); return; }
-    await p.onCreated(path);
-    p.onClose();
+    await finish();
   };
 
   const setCat = (ci: number, f: (c: WCat) => WCat) => setCats((cs) => cs.map((c, i) => (i === ci ? f(c) : c)));
@@ -326,8 +339,10 @@ export function RunbookWizard(p: { tree: Node | null; decks: DeckInfo[]; dir: st
           {linkErrs ? (
             <div class="wiz-done">
               <p><Icon name="ok" class="ok" /><b>Created <code>{path}</code>.</b></p>
-              <p class="dialog-err" role="alert">Some decks were not linked:</p>
-              <ul class="wiz-errs">{linkErrs.map((m) => <li key={m}>{m}</li>)}</ul>
+              {linkErrs.length > 0 && <>
+                <p class="dialog-err" role="alert">Some decks were not linked:</p>
+                <ul class="wiz-errs">{linkErrs.map((m) => <li key={m}>{m}</li>)}</ul>
+              </>}
             </div>
           ) : stepBody[step]}
         </div>
@@ -339,7 +354,7 @@ export function RunbookWizard(p: { tree: Node | null; decks: DeckInfo[]; dir: st
         <footer class="wiz-foot">
           <span class="wiz-keys mute"><kbd>Enter</kbd> next · <kbd>Esc</kbd> cancel</span>
           {linkErrs ? (
-            <button type="button" class="btn btn-pri" onClick={async () => { await p.onCreated(path); p.onClose(); }}>Open runbook</button>
+            <button type="button" class="btn btn-pri" disabled={busy} onClick={() => void finish()}>Open runbook</button>
           ) : <>
             <button type="button" class="btn" onClick={p.onClose}>Cancel</button>
             {step > 0 && <button type="button" class="btn" disabled={busy} onClick={() => go(step - 1)}>Back</button>}

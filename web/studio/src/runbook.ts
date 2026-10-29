@@ -235,14 +235,41 @@ export function relPath(from: string, file: string): string {
   return [...a.slice(i).map(() => ".."), ...b.slice(i)].join("/");
 }
 
-/** linkRunbook sets `runbook: <rel>` in a deck's front matter, replacing an existing line or adding front matter. */
+const metaRE = /^([a-z][a-z-]*)\s*:\s*(.*?)\s*$/; // same as internal/deck metaRE
+
+/** metaValue is a front-matter value; anything but a plain path is quoted (si strips the quotes). */
+export const metaValue = (v: string) => (/^[\w./-]+$/.test(v) ? v : `"${v}"`);
+
+/**
+ * linkRunbook sets `runbook: <rel>` in a deck's front matter. Front matter is
+ * recognised exactly as internal/deck does: a `---` first line (after a BOM),
+ * then only blank, `#` or `key: value` lines up to a closing `---`. An existing
+ * runbook line is replaced, else one is added before the closing fence; with no
+ * front matter a new block is prepended. Every other byte stays as it was.
+ */
 export function linkRunbook(deck: string, rel: string): string {
-  const nl = deck.includes("\r\n") ? "\r\n" : "\n";
-  const lines = deck.split(nl);
-  const end = lines[0] === "---" ? lines.indexOf("---", 1) : -1;
-  if (end < 0) return `---${nl}runbook: ${rel}${nl}---${nl}${nl}` + deck;
-  const at = lines.slice(1, end).findIndex((l) => /^runbook\s*:/.test(l));
-  if (at >= 0) lines[at + 1] = `runbook: ${rel}`;
-  else lines.splice(end, 0, `runbook: ${rel}`);
-  return lines.join(nl);
+  const bom = deck.startsWith("\uFEFF") ? "\uFEFF" : "";
+  const lines = deck.slice(bom.length).split(/(?<=\n)/); // each line keeps its own ending
+  const body = (l: string) => l.replace(/\r?\n$/, "");
+  const eol = (l: string) => l.slice(body(l).length);
+  const line = `runbook: ${metaValue(rel)}`;
+  let end = -1;
+  if (lines.length >= 2 && body(lines[0]).trim() === "---") {
+    for (let i = 1; i < lines.length; i++) {
+      const t = body(lines[i]).trim();
+      if (t === "---") { end = i; break; }
+      if (t && !t.startsWith("#") && !metaRE.test(t)) break;
+    }
+  }
+  if (end < 0) {
+    const nl = eol(lines[0]) || "\n";
+    return bom + `---${nl}${line}${nl}---${nl}${nl}` + lines.join("");
+  }
+  let found = false;
+  for (let i = 1; i < end; i++) {
+    const t = body(lines[i]).trim();
+    if (!t.startsWith("#") && metaRE.exec(t)?.[1] === "runbook") { lines[i] = line + eol(lines[i]); found = true; }
+  }
+  if (!found) lines.splice(end, 0, line + eol(lines[0]));
+  return bom + lines.join("");
 }
