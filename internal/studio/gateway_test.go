@@ -93,3 +93,16 @@ func TestNewTokenIsRandom(t *testing.T) {
 		t.Fatalf("%q %q", a, b)
 	}
 }
+
+func TestGatewayAssetsBypassRejectsTraversal(t *testing.T) {
+	for _, p := range []string{
+		"/_si/studio/assets/../api/tree",
+		"/_si/studio/assets/%2e%2e/api/tree",
+		"/_si/studio/assets/%2E%2E/api/tree",
+		"/_si/studio/assets/./../api/tree",
+	} {
+		if w := do("GET", p, "127.0.0.1:7070", nil); w.Code != 401 {
+			t.Errorf("%s: got %d, want 401", p, w.Code)
+		}
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"net/http"
+	"path"
 	"strings"
 )
 
@@ -54,7 +55,8 @@ func (g *Gateway) Wrap(next http.Handler) http.Handler {
 			http.Error(w, "forbidden host", http.StatusForbidden)
 			return
 		}
-		if strings.HasPrefix(r.URL.Path, assetsPrefix) {
+		// unclean paths (../) never take the bypass: next might clean them
+		if strings.HasPrefix(r.URL.Path, assetsPrefix) && path.Clean(r.URL.Path) == r.URL.Path {
 			next.ServeHTTP(w, r)
 			return
 		}
