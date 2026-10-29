@@ -1,7 +1,7 @@
 BIN := bin/si
 INSTALL_DIR ?= $(HOME)/.bin
 
-.PHONY: build test install play-example examples check fmt clean studio-ui
+.PHONY: build test install play-example examples check fmt clean studio-ui studio-e2e
 
 build:
 	go build -o $(BIN) ./cmd/si
@@ -46,3 +46,6 @@ studio-ui:
 
 clean:
 	rm -rf bin out html
+
+studio-e2e: build
+	cd web/studio && npm run e2e

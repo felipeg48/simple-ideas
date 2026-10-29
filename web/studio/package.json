@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit && node build.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "node e2e/studio.e2e.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "6.20.4",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "esbuild": "0.28.2",
+    "playwright": "^1.49.1",
     "typescript": "7.0.2",
     "vitest": "5.0.5"
   }
