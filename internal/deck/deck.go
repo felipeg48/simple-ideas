@@ -426,9 +426,13 @@ func (d *Deck) expandIncludes(file string, lines []srcLine, stack []string) []sr
 		for i, t := range inc[start:] {
 			incLines = append(incLines, srcLine{target, start + i + 1, t})
 		}
-		out = append(out, srcLine{l.file, l.no, "---"})
+		sep := "---" // a module is its own run of slides
+		if d.IsLab() {
+			sep = "" // a lab is one document: a blank line, never an <hr> or a setext heading
+		}
+		out = append(out, srcLine{l.file, l.no, sep})
 		out = append(out, d.expandIncludes(target, incLines, append(stack, target))...)
-		out = append(out, srcLine{l.file, l.no, "---"})
+		out = append(out, srcLine{l.file, l.no, sep})
 	}
 	return out
 }

@@ -255,3 +255,96 @@ func TestLabDirectiveWarningReachesResult(t *testing.T) {
 		t.Errorf("problems=%v warnings=%v", res.Problems, res.Warnings)
 	}
 }
+
+var labBodyRE = regexp.MustCompile(`(?s)<body.*</footer>`)
+
+func renderLab(t *testing.T, path string, opt Options) (Result, string) {
+	t.Helper()
+	d, err := deck.Parse(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := Deck(d, opt) // dispatches to Document for type: lab
+	return res, string(res.HTML)
+}
+
+// TestLabGolden compares the page markup of testdata/lab.md (headings, callouts,
+// a wide table, a long command, an image, an include, a .md link) with
+// testdata/lab.golden.html. Run `go test ./internal/render -update` after an
+// intended change and review the diff.
+func TestLabGolden(t *testing.T) {
+	res, page := renderLab(t, filepath.Join("testdata", "lab.md"), Options{})
+	if len(res.Problems) > 0 {
+		t.Fatalf("problems: %v", res.Problems)
+	}
+	if res.Steps != 0 {
+		t.Errorf("steps = %d, want 0", res.Steps)
+	}
+	got := labBodyRE.FindString(page) + "\n"
+	golden := filepath.Join("testdata", "lab.golden.html")
+	if *update {
+		if err := os.WriteFile(golden, []byte(got), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want, err := os.ReadFile(golden)
+	if err != nil {
+		t.Fatalf("%v (run with -update to create it)", err)
+	}
+	if got != string(want) {
+		t.Fatalf("lab golden mismatch (run go test ./internal/render -update if intended)")
+	}
+	for _, want := range []string{
+		`<body class="si-doc">`, `<nav class="si-doc-toc"`, `<main class="si-doc-body"`,
+		`<div class="si-callout" data-kind="note">`, `data-kind="tip"`, `data-kind="important"`, `data-kind="warning"`, `data-kind="caution"`,
+		`<blockquote>`, `href="other.html#start"`, `id="read-it-back"`, `<button type="button" class="si-copy"`,
+		`<div class="si-table-wrap"><table>`, `src="data:image/svg+xml;base64,`, "<hr>",
+		`data-si-theme="studio"`, "@layer si.theme, si.user;", "© 2026 Harbor Labs",
+	} {
+		if !strings.Contains(page, want) {
+			t.Errorf("lab page lacks %q", want)
+		}
+	}
+	if strings.Contains(page, "[!NOTE]") || strings.Contains(page, "si-deck") || strings.Contains(page, "SI_PRESENTER") {
+		t.Error("callout markers and deck chrome must not reach a lab page")
+	}
+}
+
+func TestLabHeadingIDs(t *testing.T) {
+	_, page := renderLab(t, filepath.Join("testdata", "lab.md"), Options{})
+	for _, want := range []string{
+		`<h2 id="before-you-start">`, `<h2 id="set-up">`, `<h3 id="clone">`, `<h3 id="clone-2">`,
+		`<a href="#clone-2">Clone</a>`, `<a class="si-anchor" href="#set-up"`,
+	} {
+		if !strings.Contains(page, want) {
+			t.Errorf("lab page lacks %q", want)
+		}
+	}
+	s := newSlugger()
+	for _, tc := range [][2]string{{"Set up", "set-up"}, {"What's `new`?", "whats-new"}, {"set up", "set-up-2"}, {"Set up", "set-up-3"},
+		{"Ünïcode 2 go", "ünïcode-2-go"}, {"a_b-c", "a_b-c"}, {"!!!", "section"}} {
+		if got := s.slug(tc[0]); got != tc[1] {
+			t.Errorf("slug(%q) = %q, want %q", tc[0], got, tc[1])
+		}
+	}
+}
+
+func TestLabSelfContained(t *testing.T) {
+	resRE := regexp.MustCompile(`(?i)(src|href)="(https?:)?//|url\((["']?)(https?:)?//|@import`)
+	_, page := renderLab(t, filepath.Join("testdata", "lab.md"), Options{})
+	page = regexp.MustCompile(`<a [^>]*href="https?://[^"]*"`).ReplaceAllString(page, "") // links are navigation, not resources
+	if m := resRE.FindString(page); m != "" {
+		t.Errorf("lab page loads a network resource: %q", m)
+	}
+	if strings.Contains(page, "<script src=") {
+		t.Error("no mermaid fence, no mermaid script")
+	}
+	p := filepath.Join(t.TempDir(), "m.md")
+	if err := os.WriteFile(p, []byte("---\ntype: lab\n---\n# M\n\n```mermaid\ngraph LR\n a-->b\n```\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, page = renderLab(t, p, Options{LiveReload: true})
+	if !strings.Contains(page, `<script src="`+MermaidURL+`">`) || !strings.Contains(page, `<pre class="si-mermaid">`) || !strings.Contains(page, "/_si/events") {
+		t.Error("a lab with a mermaid fence loads the pinned Mermaid script; play adds live reload")
+	}
+}

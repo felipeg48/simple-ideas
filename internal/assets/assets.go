@@ -26,6 +26,18 @@ var ThemeLooksCSS string
 //go:embed web/deck.js
 var DeckJS string
 
+// DocCSS styles a lab document (type: lab): unlayered page mechanics plus
+// its looks in the si.theme layer, all reading the --si-* tokens.
+//
+//go:embed web/doc.css
+var DocCSS string
+
+// DocJS is the lab document runtime: copy buttons, d for light/dark, the
+// table of contents highlight, Mermaid.
+//
+//go:embed web/doc.js
+var DocJS string
+
 // PresenterHTML is the presenter window document; __CSS__, __TITLE__ and
 // __DATA__ are filled in by DeckJS when the window opens.
 //

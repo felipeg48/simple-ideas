@@ -84,6 +84,7 @@ type deckRenderer struct {
 	wmText      string // watermark text
 	wmImg       string // watermark image as a data URI (inlined once)
 	runbookJSON string // window.SI_RUNBOOK payload (play terminal drawer); "" if no runbook
+	doc         bool   // rendering a lab document (type: lab), not slides
 }
 
 // animEntry is one resolved break-timer animation: its name, kind ("js"/"svg")
@@ -114,6 +115,9 @@ func (dr *deckRenderer) warn(sc *slideCtx, format string, a ...any) {
 
 // Deck renders a parsed deck.
 func Deck(d *deck.Deck, opt Options) Result {
+	if d.IsLab() {
+		return Document(d, opt)
+	}
 	dr := &deckRenderer{d: d, opt: opt, lastState: map[string][]string{}, words: map[string]bool{}, files: map[string]string{}}
 	dr.md = dr.markdown()
 	var slides strings.Builder
@@ -128,14 +132,19 @@ func Deck(d *deck.Deck, opt Options) Result {
 		res.Steps += sc.steps
 		res.Canvases += len(sc.canvases)
 	}
-	res.Problems = append(append([]deck.Problem{}, d.Problems...), dr.problems...)
-	res.Warnings = append(append([]deck.Problem{}, d.Warnings...), dr.warnings...)
+	dr.finish(&res)
+	res.HTML = dr.page(slides.String(), res.Problems, opt)
+	return res
+}
+
+// finish collects the parser and render problems, warnings and media files.
+func (dr *deckRenderer) finish(res *Result) {
+	res.Problems = append(append([]deck.Problem{}, dr.d.Problems...), dr.problems...)
+	res.Warnings = append(append([]deck.Problem{}, dr.d.Warnings...), dr.warnings...)
 	for src, rel := range dr.files {
 		res.Media = append(res.Media, MediaFile{Src: src, Rel: rel})
 	}
 	sort.Slice(res.Media, func(i, j int) bool { return res.Media[i].Rel < res.Media[j].Rel })
-	res.HTML = dr.page(slides.String(), res.Problems, opt)
-	return res
 }
 
 func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
@@ -513,29 +522,12 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	if aspect == "" {
 		aspect = "16:9"
 	}
-	lang := m.Lang
-	if lang == "" {
-		lang = "en"
-	}
 	var b bytes.Buffer
-	modeAttr := ""
-	if m.Mode == "light" || m.Mode == "dark" {
-		modeAttr = ` data-si-mode="` + m.Mode + `"`
-	}
-	fmt.Fprintf(&b, "<!doctype html>\n<html lang=\"%s\" data-si-theme=\"%s\"%s>\n<head>\n", html.EscapeString(lang), dr.themeName, modeAttr)
-	b.WriteString(`<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="light dark">
-<meta name="generator" content="simple-ideas">
-<link rel="icon" href="data:,">
-`)
-	fmt.Fprintf(&b, "<title>%s</title>\n", html.EscapeString(plain(d.Title())))
+	modeAttr := dr.head(&b)
 	b.WriteString(`<style id="si-css">` + "\n" + assets.LayerOrder + assets.LayoutCSS + dr.themeCSS + assets.ThemeLooksCSS)
 	b.WriteString(dr.helperCSS())
 	fmt.Fprintf(&b, "@page{size:%s;margin:0}\n", pageSizes[aspect])
-	if m.Accent != "" {
-		fmt.Fprintf(&b, "@layer si.theme{:root,:root:not([data-si-mode]),:root[data-si-mode=\"dark\"]{--si-accent:%s}}\n", m.Accent)
-	}
+	b.WriteString(dr.accentCSS())
 	b.WriteString("</style>\n")
 	if dr.wmImg != "" || d.Meta.WatermarkOpacity != "" {
 		var decls []string
@@ -547,26 +539,14 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 		}
 		fmt.Fprintf(&b, "<style id=\"si-wm\">.si-deck{%s}</style>\n", strings.Join(decls, ";"))
 	}
-	if css := UserCSS(opt.UserCSS); css != "" {
-		b.WriteString(`<style id="si-user">` + "\n" + css + "</style>\n")
-	}
-	// restore the viewer's light/dark choice before first paint (a mode pinned in front matter wins)
-	if modeAttr == "" {
-		b.WriteString(`<script>try{var m=localStorage.getItem('si-mode');if(m)document.documentElement.setAttribute('data-si-mode',m)}catch(e){}</script>` + "\n")
-	}
+	dr.userAndMode(&b, modeAttr)
 	b.WriteString("</head>\n<body>\n")
 	ratio := strings.Replace(aspect, ":", "/", 1)
 	fmt.Fprintf(&b, "<main class=\"si-deck\" aria-label=\"%s\" style=\"--_aspect:%s\" data-si-tx=\"none\">\n", html.EscapeString(plain(d.Title())), ratio)
 	b.WriteString(slides)
 	b.WriteString("</main>\n")
 	b.WriteString(chromeHTML)
-	if opt.ShowProblems && len(problems) > 0 {
-		fmt.Fprintf(&b, "<aside class=\"si-problems\"><b>%d problem(s) in this deck</b><ul>", len(problems))
-		for _, p := range problems {
-			fmt.Fprintf(&b, "<li>%s</li>", html.EscapeString(p.String()))
-		}
-		b.WriteString("</ul></aside>\n")
-	}
+	dr.problemsBanner(&b, problems)
 	plan := make([]float64, len(d.Slides))
 	for i, s := range d.Slides {
 		plan[i] = s.Minutes
@@ -616,24 +596,90 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 			b.WriteString("<script>window.__siAnims={" + strings.Join(js, ",") + "};</script>\n")
 		}
 	}
-	if dr.mermaid {
-		src := MermaidURL
-		if m.Mermaid != "" {
-			src = m.Mermaid
-		}
-		fmt.Fprintf(&b, "<script src=\"%s\"></script>\n", html.EscapeString(src))
-	}
+	dr.mermaidScript(&b)
 	presenter, _ := json.Marshal(assets.PresenterHTML)
 	b.WriteString("<script>\nwindow.SI_PRESENTER = " + strings.ReplaceAll(string(presenter), "</", `<\/`) + ";\n")
 	b.WriteString(assets.DeckJS)
 	b.WriteString("</script>\n")
-	if opt.Dev {
-		b.WriteString(DevReloadJS)
-	} else if opt.LiveReload {
-		b.WriteString(LiveReloadJS)
-	}
+	dr.reload(&b)
 	b.WriteString("</body>\n</html>\n")
 	return b.Bytes()
+}
+
+// head writes the page start up to <title> (shared by decks and labs) and
+// returns the data-si-mode attribute pinned by front matter, if any.
+func (dr *deckRenderer) head(b *bytes.Buffer) string {
+	m := dr.d.Meta
+	lang := m.Lang
+	if lang == "" {
+		lang = "en"
+	}
+	modeAttr := ""
+	if m.Mode == "light" || m.Mode == "dark" {
+		modeAttr = ` data-si-mode="` + m.Mode + `"`
+	}
+	fmt.Fprintf(b, "<!doctype html>\n<html lang=\"%s\" data-si-theme=\"%s\"%s>\n<head>\n", html.EscapeString(lang), dr.themeName, modeAttr)
+	b.WriteString(`<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="generator" content="simple-ideas">
+<link rel="icon" href="data:,">
+`)
+	fmt.Fprintf(b, "<title>%s</title>\n", html.EscapeString(plain(dr.d.Title())))
+	return modeAttr
+}
+
+// accentCSS is the front matter accent override, or "".
+func (dr *deckRenderer) accentCSS() string {
+	if a := dr.d.Meta.Accent; a != "" {
+		return fmt.Sprintf("@layer si.theme{:root,:root:not([data-si-mode]),:root[data-si-mode=\"dark\"]{--si-accent:%s}}\n", a)
+	}
+	return ""
+}
+
+// userAndMode writes the --css user layer and the script that restores the
+// viewer's light/dark choice before first paint (a mode pinned in front
+// matter wins).
+func (dr *deckRenderer) userAndMode(b *bytes.Buffer, modeAttr string) {
+	if css := UserCSS(dr.opt.UserCSS); css != "" {
+		b.WriteString(`<style id="si-user">` + "\n" + css + "</style>\n")
+	}
+	if modeAttr == "" {
+		b.WriteString(`<script>try{var m=localStorage.getItem('si-mode');if(m)document.documentElement.setAttribute('data-si-mode',m)}catch(e){}</script>` + "\n")
+	}
+}
+
+// problemsBanner lists the problems on the page (si play).
+func (dr *deckRenderer) problemsBanner(b *bytes.Buffer, problems []deck.Problem) {
+	if !dr.opt.ShowProblems || len(problems) == 0 {
+		return
+	}
+	fmt.Fprintf(b, "<aside class=\"si-problems\"><b>%d problem(s) in this deck</b><ul>", len(problems))
+	for _, p := range problems {
+		fmt.Fprintf(b, "<li>%s</li>", html.EscapeString(p.String()))
+	}
+	b.WriteString("</ul></aside>\n")
+}
+
+// mermaidScript loads Mermaid when the page has a mermaid fence.
+func (dr *deckRenderer) mermaidScript(b *bytes.Buffer) {
+	if !dr.mermaid {
+		return
+	}
+	src := MermaidURL
+	if dr.d.Meta.Mermaid != "" {
+		src = dr.d.Meta.Mermaid
+	}
+	fmt.Fprintf(b, "<script src=\"%s\"></script>\n", html.EscapeString(src))
+}
+
+// reload adds the si play reload client (hot reload with --dev).
+func (dr *deckRenderer) reload(b *bytes.Buffer) {
+	if dr.opt.Dev {
+		b.WriteString(DevReloadJS)
+	} else if dr.opt.LiveReload {
+		b.WriteString(LiveReloadJS)
+	}
 }
 
 const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">

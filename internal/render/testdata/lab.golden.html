@@ -1,0 +1,95 @@
+<body class="si-doc">
+<header class="si-doc-head"><div class="si-doc-head-in">
+<h1 class="si-doc-title">Ship an order through the pipeline</h1>
+<p class="si-doc-meta"><span>Ada Lovelace</span><span>2026-10-30</span><span>v1.2</span></p>
+<button type="button" class="si-doc-mode" data-si-action="mode" title="Light / dark (d)" aria-label="Light / dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor"/></svg></button>
+</div></header>
+<div class="si-doc-layout">
+<nav class="si-doc-toc" aria-label="Contents"><details open><summary>On this page</summary>
+<ol>
+<li class="si-toc-h2"><a href="#before-you-start">Before you start</a></li>
+<li class="si-toc-h2"><a href="#set-up">Set up</a></li>
+<li class="si-toc-h3"><a href="#clone">Clone</a></li>
+<li class="si-toc-h3"><a href="#clone-2">Clone</a></li>
+<li class="si-toc-h2"><a href="#read-it-back">Read it back</a></li>
+</ol></details></nav>
+<main class="si-doc-body" id="content">
+<p>You will place an order, follow it through the queue and read it back. The
+next lab picks up from here: <a href="other.html#start">Replay the queue</a>.</p>
+<h2 id="before-you-start">Before you start<a class="si-anchor" href="#before-you-start" aria-label="Link to this section">#</a></h2>
+<div class="si-callout" data-kind="note">
+<p class="si-callout-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/></svg>Note</p>
+<p>You need a terminal and <strong>Go 1.22</strong> or later.</p>
+</div>
+<div class="si-callout" data-kind="tip">
+<p class="si-callout-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>Tip</p>
+<p>Keep a second terminal open for the logs.</p>
+</div>
+<div class="si-callout" data-kind="important">
+<p class="si-callout-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M12 8v3.5"/><path d="M12 14h.01"/></svg>Important</p>
+<p>Every command runs from the repository root.</p>
+</div>
+<div class="si-callout" data-kind="warning">
+<p class="si-callout-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>Warning</p>
+<p>The reset step drops the local database.</p>
+</div>
+<div class="si-callout" data-kind="caution">
+<p class="si-callout-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.2 3h7.6L21 8.2v7.6L15.8 21H8.2L3 15.8V8.2z"/><path d="M12 8v4.5"/><path d="M12 16h.01"/></svg>Caution</p>
+<p>Never point the lab at a production cluster.</p>
+</div>
+<blockquote>
+<p>Orders are only as reliable as the slowest hop.</p>
+</blockquote>
+<h2 id="set-up">Set up<a class="si-anchor" href="#set-up" aria-label="Link to this section">#</a></h2>
+<h3 id="clone">Clone<a class="si-anchor" href="#clone" aria-label="Link to this section">#</a></h3>
+<div class="si-codeblock"><div class="si-code-head"><span class="si-code-lang">bash</span><button type="button" class="si-copy" aria-label="Copy code">Copy</button></div><pre class="si-code" data-lang="bash"><code class="language-bash"><span class="si-tk-m">git</span> clone https://example.com/harbor/orders.git &amp;&amp; cd orders &amp;&amp; make bootstrap ENV=lab REGION=us-east-<span class="si-tk-n">1</span> WORKERS=<span class="si-tk-n">4</span> QUEUE=orders-lab RETRIES=<span class="si-tk-n">5</span> TIMEOUT=<span class="si-tk-n">30s</span> LOG_LEVEL=debug</code></pre>
+</div>
+<h3 id="clone-2">Clone<a class="si-anchor" href="#clone-2" aria-label="Link to this section">#</a></h3>
+<p>Clone the fixtures too.</p>
+<div class="si-codeblock"><div class="si-code-head"><span class="si-code-lang"></span><button type="button" class="si-copy" aria-label="Copy code">Copy</button></div><pre class="si-code"><code>plain text block</code></pre>
+</div>
+<div class="si-table-wrap"><table>
+<thead>
+<tr>
+<th>Hop</th>
+<th>Service</th>
+<th>Queue</th>
+<th>Timeout</th>
+<th>Retries</th>
+<th>Owner</th>
+<th>Dashboard</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>gateway</td>
+<td>orders-in</td>
+<td>5s</td>
+<td>3</td>
+<td>edge team</td>
+<td>gateway-overview</td>
+<td>accepts and validates the order payload</td>
+</tr>
+<tr>
+<td>2</td>
+<td>ledger</td>
+<td>orders-ledger</td>
+<td>30s</td>
+<td>5</td>
+<td>payments team</td>
+<td>ledger-latency</td>
+<td>writes the order and reserves stock</td>
+</tr>
+</tbody>
+</table></div>
+<figure class="si-image"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0IDMiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjMiIGZpbGw9IiMzNjU3ZDYiLz48L3N2Zz4K" alt="The pipeline"><figcaption class="si-caption">Orders flow left to right</figcaption></figure>
+<hr>
+<h2 id="read-it-back">Read it back<a class="si-anchor" href="#read-it-back" aria-label="Link to this section">#</a></h2>
+<p>Query the order you placed:</p>
+<div class="si-codeblock"><div class="si-code-head"><span class="si-code-lang">sql</span><button type="button" class="si-copy" aria-label="Copy code">Copy</button></div><pre class="si-code" data-lang="sql"><code class="language-sql"><span class="si-tk-k">SELECT</span> id, status <span class="si-tk-k">FROM</span> orders <span class="si-tk-k">WHERE</span> id = <span class="si-tk-n">42</span>;</code></pre>
+</div>
+</main>
+</div>
+<footer class="si-doc-foot"><span>© 2026 Harbor Labs</span><span>Harbor training</span></footer>

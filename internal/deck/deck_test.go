@@ -367,6 +367,7 @@ func TestLabType(t *testing.T) {
 		typ      string
 		title    string
 		body     []string // substrings the single document body must contain
+		absent   []string // substrings it must not contain
 		problems []string
 		warnings []string
 	}{
@@ -377,8 +378,9 @@ func TestLabType(t *testing.T) {
 			files: map[string]string{"d.md": "---\ntype: lab\n---\n# Lab\n\n## One\n\ntext\n\n---\n\n```yaml\n---\na: 1\n```\n"},
 			body:  []string{"# Lab", "\n---\n", "```yaml\n---\na: 1"}},
 		{name: "include expands", lab: true, typ: "lab", title: "Lab",
-			files: map[string]string{"d.md": "---\ntype: lab\n---\n# Lab\n\n<!-- include: p.md -->\n", "p.md": "## Part\n\nfrom part\n"},
-			body:  []string{"## Part", "from part"}},
+			files:  map[string]string{"d.md": "---\ntype: lab\n---\n# Lab\n\nintro\n<!-- include: p.md -->\nafter\n", "p.md": "## Part\n\nfrom part\n"},
+			body:   []string{"intro\n\n## Part", "from part\n\nafter"},
+			absent: []string{"---"}}, // a slide break would be an <hr> or a setext heading
 		{name: "front matter title wins", lab: true, typ: "lab", title: "Given",
 			files: map[string]string{"d.md": "---\ntype: lab\ntitle: Given\n---\n# Heading\n"}},
 		{name: "slide directives warn", lab: true, typ: "lab", title: "Lab",
@@ -424,6 +426,11 @@ func TestLabType(t *testing.T) {
 			for _, w := range tc.body {
 				if !strings.Contains(d.Slides[0].Body, w) {
 					t.Errorf("body %q lacks %q", d.Slides[0].Body, w)
+				}
+			}
+			for _, w := range tc.absent {
+				if strings.Contains(d.Slides[0].Body, w) {
+					t.Errorf("body %q contains %q", d.Slides[0].Body, w)
 				}
 			}
 			if strings.Contains(allW, "class") {
