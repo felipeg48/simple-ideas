@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -44,8 +45,12 @@ func TestResolveRejectsEscapes(t *testing.T) {
 
 func TestTreeKinds(t *testing.T) {
 	dir := t.TempDir()
-	for _, f := range []string{"talk.md", "sections/one.md", "img/p.png", "theme.css", "rb.json", ".git/x", "node_modules/y"} {
+	for _, f := range []string{"talk.md", "solo.md", "sections/one.md", "parts/two.md", "img/p.png", "theme.css", "rb.json", ".git/x", "node_modules/y"} {
 		write(t, dir, f)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "talk.md"),
+		[]byte("# T\n\n<!-- include: sections/one.md -->\n\n<!-- include: parts/two.md -->\n"), 0o644); err != nil {
+		t.Fatal(err)
 	}
 	w, _ := OpenWorkspace(dir)
 	root, err := w.Tree()
@@ -62,7 +67,7 @@ func TestTreeKinds(t *testing.T) {
 		}
 	}
 	walk(root)
-	for p, k := range map[string]string{"talk.md": "deck", "sections/one.md": "markdown", "img/p.png": "image",
+	for p, k := range map[string]string{"talk.md": "deck", "solo.md": "deck", "sections/one.md": "markdown", "parts/two.md": "markdown", "img/p.png": "image",
 		"theme.css": "css", "rb.json": "json", "sections": "dir"} {
 		if kinds[p] != k {
 			t.Errorf("%s kind = %q, want %q", p, kinds[p], k)
@@ -76,8 +81,7 @@ func TestTreeKinds(t *testing.T) {
 	for _, c := range root.Children {
 		order = append(order, c.Name)
 	}
-	if want := []string{"img", "sections", "rb.json", "talk.md", "theme.css"}; len(order) != len(want) ||
-		order[0] != want[0] || order[1] != want[1] || order[2] != want[2] || order[3] != want[3] || order[4] != want[4] {
+	if want := []string{"img", "parts", "sections", "rb.json", "solo.md", "talk.md", "theme.css"}; !slices.Equal(order, want) {
 		t.Errorf("order = %v, want %v", order, want)
 	}
 }

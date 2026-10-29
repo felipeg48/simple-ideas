@@ -91,23 +91,45 @@ var skipDirs = map[string]bool{"node_modules": true, "html": true, "slides": tru
 // Tree lists the workspace: dirs first, then files, each alphabetical.
 func (w *Workspace) Tree() (Node, error) {
 	root := Node{Name: filepath.Base(w.Root), Path: "", Kind: "dir"}
-	kids, err := w.walk(w.Root)
+	inc := map[string]bool{}
+	w.collectIncluded(w.Root, inc)
+	kids, err := w.walk(w.Root, inc)
 	root.Children = kids
 	return root, err
 }
 
-func (w *Workspace) walk(dir string) ([]Node, error) {
+// collectIncluded records every file some deck in dir (recursively) pulls in
+// with an include directive.
+func (w *Workspace) collectIncluded(dir string, inc map[string]bool) {
+	list, _ := deck.List(dir)
+	for _, f := range list {
+		d, err := deck.Parse(f)
+		if err != nil {
+			continue
+		}
+		for _, s := range d.Slides {
+			if s.File != "" && filepath.Clean(s.File) != filepath.Clean(d.Path) {
+				inc[filepath.Clean(s.File)] = true
+			}
+		}
+	}
+	entries, _ := os.ReadDir(dir)
+	for _, e := range entries {
+		if e.IsDir() && !strings.HasPrefix(e.Name(), ".") && !skipDirs[e.Name()] {
+			w.collectIncluded(filepath.Join(dir, e.Name()), inc)
+		}
+	}
+}
+
+func (w *Workspace) walk(dir string, inc map[string]bool) ([]Node, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
 	decks := map[string]bool{}
-	// Files under a "sections" dir are include modules, never decks.
-	if filepath.Base(dir) != "sections" {
-		list, _ := deck.List(dir)
-		for _, d := range list {
-			decks[filepath.Base(d)] = true
-		}
+	list, _ := deck.List(dir)
+	for _, d := range list {
+		decks[filepath.Base(d)] = !inc[filepath.Clean(d)] // included modules are not decks
 	}
 	var dirs, files []Node
 	for _, e := range entries {
@@ -121,7 +143,7 @@ func (w *Workspace) walk(dir string) ([]Node, error) {
 				continue
 			}
 			node.Kind = "dir"
-			if node.Children, err = w.walk(filepath.Join(dir, n)); err != nil {
+			if node.Children, err = w.walk(filepath.Join(dir, n), inc); err != nil {
 				return nil, err
 			}
 			dirs = append(dirs, node)
