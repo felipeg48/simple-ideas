@@ -240,3 +240,18 @@ func TestTopicsFollowSectionsAndModules(t *testing.T) {
 		t.Errorf("topics = %v, want %v for %q", got, want, titles)
 	}
 }
+
+func TestLabDirectiveWarningReachesResult(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "l.md")
+	if err := os.WriteFile(p, []byte("---\ntype: lab\n---\n# Lab\n\n<!-- layout: two-col -->\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	d, err := deck.Parse(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := Deck(d, Options{})
+	if len(res.Problems) != 0 || len(res.Warnings) != 1 || !strings.Contains(res.Warnings[0].Msg, "no effect in a lab document") {
+		t.Errorf("problems=%v warnings=%v", res.Problems, res.Warnings)
+	}
+}

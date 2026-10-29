@@ -368,6 +368,7 @@ func TestLabType(t *testing.T) {
 		title    string
 		body     []string // substrings the single document body must contain
 		problems []string
+		warnings []string
 	}{
 		{name: "no type is a deck", files: map[string]string{"d.md": "# D\n\n---\n\n## A\n"}, typ: "deck"},
 		{name: "type deck", files: map[string]string{"d.md": "---\ntype: deck\n---\n# D\n"}, typ: "deck"},
@@ -382,7 +383,7 @@ func TestLabType(t *testing.T) {
 			files: map[string]string{"d.md": "---\ntype: lab\ntitle: Given\n---\n# Heading\n"}},
 		{name: "slide directives warn", lab: true, typ: "lab", title: "Lab",
 			files:    map[string]string{"d.md": "---\ntype: lab\n---\n<!-- layout: two-col -->\n# Lab\n\n<!-- steps -->\n- a\n\n```\n<!-- class: x -->\n```\n"},
-			problems: []string{`"layout" has no effect in a lab document`, `"steps" has no effect in a lab document`}},
+			warnings: []string{`"layout" has no effect in a lab document`, `"steps" has no effect in a lab document`}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -393,14 +394,22 @@ func TestLabType(t *testing.T) {
 			if d.IsLab() != tc.lab || d.Meta.Type != tc.typ {
 				t.Errorf("IsLab=%v type=%q", d.IsLab(), d.Meta.Type)
 			}
-			var msgs []string
+			var msgs, warns []string
 			for _, p := range d.Problems {
 				msgs = append(msgs, p.Msg)
 			}
-			all := strings.Join(msgs, "\n")
+			for _, p := range d.Warnings {
+				warns = append(warns, p.Msg)
+			}
+			all, allW := strings.Join(msgs, "\n"), strings.Join(warns, "\n")
 			for _, w := range tc.problems {
 				if !strings.Contains(all, w) {
 					t.Errorf("problems %q lack %q", all, w)
+				}
+			}
+			for _, w := range tc.warnings {
+				if !strings.Contains(allW, w) {
+					t.Errorf("warnings %q lack %q", allW, w)
 				}
 			}
 			if len(tc.problems) == 0 && len(msgs) > 0 {
@@ -417,7 +426,7 @@ func TestLabType(t *testing.T) {
 					t.Errorf("body %q lacks %q", d.Slides[0].Body, w)
 				}
 			}
-			if strings.Contains(all, "class") {
+			if strings.Contains(allW, "class") {
 				t.Errorf("fenced directive warned: %q", all)
 			}
 		})

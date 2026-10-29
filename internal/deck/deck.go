@@ -135,6 +135,7 @@ type Deck struct {
 	Meta     Meta
 	Slides   []*Slide
 	Problems []Problem
+	Warnings []Problem // non-fatal (e.g. a slide directive in a lab)
 }
 
 // Types are the accepted values of the `type` front matter key.
@@ -161,7 +162,7 @@ func (d *Deck) buildLab(lines []srcLine) {
 		}
 		if name, _, ok := ParseDirective(l.text); ok {
 			if _, known := Directives[name]; known {
-				d.problem(l.file, l.no, "%q has no effect in a lab document", name)
+				d.Warnings = append(d.Warnings, Problem{File: rel(l.file), Line: l.no, Msg: fmt.Sprintf("%q has no effect in a lab document", name)})
 			}
 		} else if s.Title == "" && h1RE.MatchString(l.text) {
 			s.Title = h1RE.FindStringSubmatch(l.text)[1]

@@ -129,7 +129,7 @@ func Deck(d *deck.Deck, opt Options) Result {
 		res.Canvases += len(sc.canvases)
 	}
 	res.Problems = append(append([]deck.Problem{}, d.Problems...), dr.problems...)
-	res.Warnings = dr.warnings
+	res.Warnings = append(append([]deck.Problem{}, d.Warnings...), dr.warnings...)
 	for src, rel := range dr.files {
 		res.Media = append(res.Media, MediaFile{Src: src, Rel: rel})
 	}
