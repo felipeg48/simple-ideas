@@ -132,6 +132,7 @@ NOTE: the token reaches payments and turns red.
 | Command | What it does |
 |---|---|
 | `si play <dir\|file.md> [--addr 127.0.0.1:7070] [--open] [--css path]... [--site text]` | serve the decks, rendered from markdown on every request; live reload over server-sent events when a deck, an asset or a stylesheet changes; the URL hash keeps your slide. Use `--addr 0.0.0.0:7070` to open on a phone (prints a LAN URL + QR). On a loopback address, press `` ` `` for a live terminal drawer; `--site text` titles the index page, as in `si build` |
+| `si --web [dir] [--addr 127.0.0.1:7070] [--no-open]` | the Studio: edit decks in the browser with a live preview and the `si check` report; loopback only, opens a tokenised URL (see [docs/studio.md](docs/studio.md)) |
 | `si [build] <dir\|file.md> [--output html/] [--css path]... [--no-inline-media] [--pdf] [--site text]` | write one self-contained HTML file per deck plus `index.html` (a landing page with a tile per deck); `--pdf` also renders `pdfs/<name>.pdf` per deck and adds a PDF download badge to each tile (needs headless Chrome); `--site text` (alias `--title`) sets the landing page's `<title>` and `<h1>` |
 | `si check <dir\|file.md>` | validate decks: title, directives, options, missing files, include cycles, malformed `stage` blocks, broken canvas SVGs |
 | `si new <name>` | scaffold `<name>/<name>.md` with assets, a module and a theme |

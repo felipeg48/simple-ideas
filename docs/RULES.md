@@ -604,6 +604,17 @@ references shared assets as `../images/...`.
   appears only in `si play` on a loopback address — a built deck never loads it, so
   rules #2/#7 still hold for shipped HTML. `si check` validates the path and JSON.
 
+### Studio (`si --web`)
+
+`si --web [dir] [--addr 127.0.0.1:7070] [--no-open]` opens a browser editor for
+the decks in `dir`: file tree, markdown editor, live preview and the `si check`
+report. It listens on a loopback address only and is never part of a built deck.
+See `docs/studio.md`.
+
+```bash
+si --web examples --no-open
+```
+
 ## 15. Styling: themes and your own CSS
 
 - `theme:` picks a built-in theme (`studio`, `paper`, `mono`, `crdb`), each

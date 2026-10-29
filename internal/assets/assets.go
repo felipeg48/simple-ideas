@@ -76,3 +76,11 @@ func AnimationNames() []string {
 	sort.Strings(names)
 	return names
 }
+
+// studioEmbed holds the built Studio UI served by si --web.
+//
+//go:embed web/studio
+var studioEmbed embed.FS
+
+// StudioFS is web/studio rooted so files serve as index.html, assets/... .
+var StudioFS, _ = fs.Sub(studioEmbed, "web/studio")

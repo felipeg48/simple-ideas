@@ -4,6 +4,7 @@
 *.exe
 
 # build output
+/web/studio/node_modules/
 /out/
 /html/
 /si-example/
@@ -16,3 +17,4 @@
 
 # brainstorming mockups (local only)
 .superpowers/
+/web/studio/e2e/out/

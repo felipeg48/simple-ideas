@@ -43,6 +43,12 @@ what you chose.
    `si play` on a loopback address — a built deck never loads it — so rules #2 and
    #7 hold everywhere except that one play-only, loopback-only subsystem. See
    `docs/terminal.md`.
+   **Exception (v0.8.0, `si --web` Studio only):** the editor front-end vendors
+   Preact and CodeMirror 6, bundled by esbuild and committed under
+   `internal/assets/web/studio/assets/`; Node is needed only for `make studio-ui` /
+   `make studio-e2e`, never for go build/test. The Studio assets are served only
+   by `si --web` (loopback only), never in a built deck, so rule #2 holds too. The
+   Go module adds no dependencies. See `docs/studio.md`.
 
 ## Layout of the code
 
@@ -52,6 +58,8 @@ what you chose.
 | `internal/deck/` | parse a deck: front matter, includes (cycle check), `---` split, headings, `Notes: (N min)`, slide directives; `media.go` validates background and image options. No HTML. |
 | `internal/render/` | deck → HTML. `markdown.go`: goldmark + AST transform for body directives (steps, columns, svg, image figures) and fenced code; `svg.go`: canvas inlining, id prefixing, state resolution, helper-attribute CSS; `media.go`: data URIs / link / copy modes, backgrounds, figures; `highlight.go`: tiny highlighter; `css.go`: user CSS layer; `render.go`: page, index |
 | `internal/serve/` | `si play`: on-the-fly render, static files, SSE `/_si/events`, mtime-polling watcher (decks, assets, `--css` paths) |
+| `internal/studio/` | `si --web`: gateway (token, Host, Origin), confined workspace, file/deck/check/rules API, assembly with the `si play` server |
+| `web/studio/` | Studio front-end source (Preact + TS + CodeMirror 6, esbuild, vitest, Playwright e2e); bundle committed to `internal/assets/web/studio/assets/` via `make studio-ui` |
 | `internal/config/` | optional `si.conf` (flat `key: value`, stdlib): default theme, `keys.*` command remaps, `feature.*` on/off; injected into the deck as `window.SI_CONFIG`, read by `deck.js` |
 | `internal/assets/` | embedded web files (`web/layout.css` unlayered mechanics, `web/theme.css` looks, `web/deck.js` runtime, `web/presenter.html` teleprompter) and `contract.go` (tokens, hooks, theme values, starter CSS) |
 | `docs/docs.go` | embeds RULES.md + reference/user-manual.md for `si rules` / `si manual` (in `docs/` so go:embed can reach them; no `.go` at the repo root) |
