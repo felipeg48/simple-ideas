@@ -110,8 +110,12 @@ files; HTML renders of guides stay the workspace's own scripts. The
   delete and reorder (drag and drop) categories and entries, with a
   **Raw JSON** toggle for manual editing. Both views stay in sync; invalid JSON
   or a malformed entry is flagged inline and never silently dropped.
-- **Placeholders:** commands may contain placeholders `{name}` or
-  `{name:default}` (the VS Code extension's `{node1}` style). The editor
+- **Placeholders:** commands may contain placeholders `{{name}}` or
+  `{{name:default}}` (name: a letter or `_`, then letters, digits, `_`, `-`;
+  no spaces or dots, so docker/Go templates like `{{.Server.Version}}`,
+  shell `${HOME}`, awk `{print $1}` and jq `{a: .b}` are never mistaken for
+  placeholders). A runbook file may carry optional top-level `name` and
+  `description` metadata. The editor
   highlights them and offers insert helpers (pick a name, optional default,
   reuse names already used in the runbook). This needs a small `si` core change:
   when a drawer entry contains placeholders, the terminal drawer asks for the
