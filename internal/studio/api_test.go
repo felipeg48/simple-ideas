@@ -27,6 +27,15 @@ func TestDecksListsIncludedFiles(t *testing.T) {
 	}
 }
 
+func TestDecksReportRunbook(t *testing.T) {
+	f := newFx(t)
+	f.put("a.md", "---\nrunbook: labs/rb.json\n---\n\n# A\n")
+	r := f.doAny("GET", "decks")
+	if len(r) != 1 || r[0].(map[string]any)["runbook"] != "labs/rb.json" {
+		t.Fatalf("got %v", r)
+	}
+}
+
 func TestCheckReportsProblemsAndSlides(t *testing.T) {
 	f := deckFx(t)
 	code, m := f.do("GET", "check?deck=main.md", nil)

@@ -5,11 +5,15 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state
 
+- **v0.9.0 (branch `feat/studio-runbooks`, not tagged) added to Studio the
+  runbook generator, visual editor and `{{name:default}}` placeholders** (drawer
+  prompt, `docs/studio.md`, `docs/terminal.md`, RULES.md §14), plus BOM-tolerant
+  deck parsing.
 - **v0.8.0 (on branch `feat/studio-core-web`, not tagged) shipped Studio Write
   mode:** `si --web [dir]`, see `docs/studio.md`. Vendored Preact/CodeMirror
   bundle is committed; Node only for `make studio-ui`/`studio-e2e`.
-- **Next up: plan 2** (Write extras incl. the runbook generator/editor with
-  placeholders), per `docs/superpowers/specs/2026-10-28-si-studio-design.md`.
+- **Next up:** the deferred Studio lab preview (lab documents, `type: lab`),
+  then plan 2c: inspector, Storyboard, Cmd-K palette, Build/PDF; per `docs/superpowers/specs/2026-10-28-si-studio-design.md`.
 - **Latest tagged release: v0.7.0** (version bumped in `cmd/si/main.go`; tag + push to
   publish). CI + release workflows are green.
 - Working tree should be clean on `main`. Tests/vet/fmt all green.

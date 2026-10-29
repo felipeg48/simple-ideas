@@ -1,0 +1,1582 @@
+{
+  "categories": [
+    {
+      "name": "Preflight and images",
+      "entries": [
+        {
+          "label": "Tool versions",
+          "description": "Docker server version and architecture, Compose, kind, kubectl, helm (optional).",
+          "command": "docker version --format 'docker {{.Server.Version}} {{.Server.Arch}}'; docker compose version --short; kind version; kubectl version --client; helm version --short",
+          "target": "bash"
+        },
+        {
+          "label": "Docker resources",
+          "description": "CPUs and memory available to containers: 4 CPUs and 8 GB minimum, 12 GB for Lab 4.",
+          "command": "docker info --format '{{.NCPU}} CPUs, {{.MemTotal}} bytes of memory'",
+          "target": "bash"
+        },
+        {
+          "label": "Run the preflight check",
+          "description": "Tools, engine, free ports and Docker Hub access; every line should be PASS.",
+          "command": "bash ../labs/files/lab00/preflight.sh",
+          "target": "bash"
+        },
+        {
+          "label": "Pull the lab images",
+          "description": "Pulls the six pinned images; ends with done.",
+          "command": "bash ../labs/files/lab00/pull-images.sh",
+          "target": "bash"
+        },
+        {
+          "label": "Smoke test the RabbitMQ image",
+          "description": "Should print 4.3.7.",
+          "command": "docker run --rm rabbitmq:4.3.7-management rabbitmq-diagnostics --version",
+          "target": "bash"
+        },
+        {
+          "label": "Which lab images are present",
+          "description": "Lists the pinned images found locally (six expected).",
+          "command": "docker images --format '{{.Repository}}:{{.Tag}}' | grep -xE 'rabbitmq:(4\\.3\\.7|3\\.13\\.7)-management|pivotalrabbitmq/perf-test:2\\.25\\.0|prom/prometheus:v3\\.7\\.3|grafana/grafana:12\\.2\\.1|python:3\\.13-alpine'",
+          "target": "bash"
+        },
+        {
+          "label": "Who holds a port",
+          "description": "Shows the process listening on 15672 (change the port as needed).",
+          "command": "lsof -nP -iTCP:15672 -sTCP:LISTEN",
+          "target": "bash"
+        }
+      ],
+      "icon": "checklist"
+    },
+    {
+      "name": "Lab environments",
+      "entries": [
+        {
+          "label": "All lab containers",
+          "description": "Every caci- container with its status and ports.",
+          "command": "docker ps -a --filter name=caci- --format 'table {{.Names}}\\t{{.Status}}\\t{{.Ports}}'",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 1/2: start the single node",
+          "description": "One RabbitMQ 4.3.7 node, caci-rmq on caci-net; waits until healthy.",
+          "command": "docker compose -f ../labs/files/lab01/docker-compose.yml up -d --wait",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 1/2: status",
+          "description": "The caci-single project's container.",
+          "command": "docker compose -f ../labs/files/lab01/docker-compose.yml ps",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 1/2: stop",
+          "description": "⚠ Removes the node and its volume (all queues and messages).",
+          "command": "docker compose -f ../labs/files/lab01/docker-compose.yml down -v",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 3: start the three-node cluster",
+          "description": "caci-rmq1..3, cluster caci-lab, UIs on 15672–15674.",
+          "command": "docker compose -f ../labs/files/lab03/docker-compose.yml up -d --wait",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 5: start the cluster plus Prometheus and Grafana",
+          "description": "Adds caci-prometheus (9090) and caci-grafana (3000) to the Lab 3 cluster.",
+          "command": "docker compose -f ../labs/files/lab05/docker-compose.yml up -d --wait",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 6: start everything plus the DR site",
+          "description": "Adds caci-rmq-dr (UI 15675) to the Lab 5 stack.",
+          "command": "docker compose -f ../labs/files/lab06/docker-compose.yml up -d --wait",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 6: declare the order flow",
+          "description": "orders.events with orders.billing and orders.billing.dr-copy on the primary; prints primary topology ready.",
+          "command": "bash ../labs/files/lab06/setup-topology.sh",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 3/5/6: status",
+          "description": "Every container of the caci-lab Compose project.",
+          "command": "docker compose -p caci-lab ps --format 'table {{.Name}}\\t{{.Status}}'",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 3/5/6: stop",
+          "description": "⚠ Removes the cluster, DR site, Prometheus, Grafana and their volumes.",
+          "command": "docker compose -f ../labs/files/lab06/docker-compose.yml down -v --remove-orphans",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 7: start blue (3.13) and green (4.3)",
+          "description": "Six brokers on caci-l7-net; UIs blue 15701, green 15711.",
+          "command": "docker compose -f ../labs/files/lab07/docker-compose.yml up -d --wait",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 7: build the blue legacy estate",
+          "description": "Mirrored classic queues, a lazy queue, users boomi-a/b/c; prints blue legacy estate ready.",
+          "command": "bash ../labs/files/lab07/blue-setup.sh",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 7: status",
+          "description": "Brokers and stand-in processes of the caci-lab7 project.",
+          "command": "docker ps -a --filter name=caci-l7- --format 'table {{.Names}}\\t{{.Status}}'",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 7: stop",
+          "description": "⚠ Removes the stand-in processes, both clusters, their volumes and the exported definition files.",
+          "command": "docker rm -fv $(docker ps -aq --filter name=caci-l7-) >/dev/null 2>&1; docker compose -f ../labs/files/lab07/docker-compose.yml down -v --remove-orphans; rm -f ../labs/files/lab07/blue-definitions.json ../labs/files/lab07/green-definitions.json ../labs/files/lab07/blue-final-definitions.json",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 8: start the 4.3 broker",
+          "description": "caci-l8-rmq on caci-l8-net, UI 15681; can run beside any other lab.",
+          "command": "docker compose -f ../labs/files/lab08/docker-compose.yml up -d --wait",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 8: start the optional 3.13 broker",
+          "description": "caci-l8-rmq313, UI 15682 (profile v313, Step 8).",
+          "command": "docker compose -f ../labs/files/lab08/docker-compose.yml --profile v313 up -d --wait rmq313",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 8: declare boomi.orders",
+          "description": "The quorum queue the stand-in Molecule consumes.",
+          "command": "docker exec caci-l8-rmq rabbitmqadmin -u admin -p caci-lab declare queue --name boomi.orders --type quorum --durable true",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 8: stop",
+          "description": "⚠ Removes the stand-ins, both brokers and their volumes.",
+          "command": "for c in $(docker ps -a --format '{{.Names}}' --filter name=caci-l8- | grep -v -- '-rmq'); do docker rm -f \"$c\"; done; docker compose -f ../labs/files/lab08/docker-compose.yml --profile v313 down -v",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 4: create the kind cluster",
+          "description": "caci-k8s: one control plane, four workers labelled ahv-host-a/a/b/c.",
+          "command": "kind create cluster --config ../labs/files/lab04/kind-config.yaml",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 4: load images into kind",
+          "description": "Copies rabbitmq:4.3.7-management and perf-test:2.25.0 into the nodes (slow or filtered networks).",
+          "command": "bash ../labs/files/lab04/load-images.sh",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 4: install cert-manager",
+          "description": "v1.21.3, then waits for its deployments.",
+          "command": "kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.21.3/cert-manager.yaml && kubectl -n cert-manager wait --for=condition=Available deploy --all --timeout=300s",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 4: install the Cluster Operator",
+          "description": "v2.23.1 in rabbitmq-system.",
+          "command": "kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/v2.23.1/cluster-operator.yml && kubectl -n rabbitmq-system wait --for=condition=Available deploy --all --timeout=300s",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 4: install the Messaging Topology Operator",
+          "description": "v1.20.4 (needs cert-manager).",
+          "command": "kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/download/v1.20.4/messaging-topology-operator-with-certmanager.yaml && kubectl -n rabbitmq-system wait --for=condition=Available deploy --all --timeout=300s",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 4: deploy RabbitmqCluster caci-rabbit",
+          "description": "Namespace messaging, three pods spread over three AHV hosts.",
+          "command": "kubectl create namespace messaging; kubectl apply -f ../labs/files/lab04/rabbitmq-cluster.yaml",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 4: wait for the cluster",
+          "description": "condition met after 2–4 minutes.",
+          "command": "kubectl -n messaging wait --for=condition=AllReplicasReady rabbitmqcluster/caci-rabbit --timeout=600s",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 4: apply the PDB and the topology",
+          "description": "PodDisruptionBudget caci-rabbit, then vhost, exchange, queue, binding, policy, user and permission objects.",
+          "command": "kubectl apply -f ../labs/files/lab04/pdb.yaml -f ../labs/files/lab04/topology.yaml",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 4: delete the kind cluster",
+          "description": "⚠ Removes caci-k8s with every object and volume in it.",
+          "command": "kind delete cluster --name caci-k8s",
+          "target": "bash"
+        }
+      ],
+      "icon": "server-environment"
+    },
+    {
+      "name": "Node health",
+      "entries": [
+        {
+          "label": "Version and Erlang",
+          "description": "RabbitMQ 4.3.7 on Erlang/OTP 27.",
+          "command": "docker exec caci-rmq1 rabbitmq-diagnostics -q status | grep -E 'RabbitMQ version|Erlang configuration'",
+          "target": "bash"
+        },
+        {
+          "label": "Full node status",
+          "description": "Memory, alarms, listeners, file descriptors, disk limit, uptime.",
+          "command": "docker exec caci-rmq1 rabbitmq-diagnostics -q status",
+          "target": "bash"
+        },
+        {
+          "label": "Server version",
+          "description": "Just the version string of the running node.",
+          "command": "docker exec caci-rmq1 rabbitmq-diagnostics -q server_version",
+          "target": "bash"
+        },
+        {
+          "label": "Node is running",
+          "description": "fully booted and running; the readiness check.",
+          "command": "docker exec caci-rmq2 rabbitmq-diagnostics -q check_running",
+          "target": "bash"
+        },
+        {
+          "label": "All three nodes running",
+          "description": "check_running on every node of the Lab 3 cluster.",
+          "command": "for n in 1 2 3; do docker exec caci-rmq$n rabbitmq-diagnostics -q check_running; done",
+          "target": "bash"
+        },
+        {
+          "label": "Local alarms",
+          "description": "reported no local alarms; in 4.3.7 it passed even with a memory or disk alarm on the node: use check_alarms too.",
+          "command": "docker exec caci-rmq2 rabbitmq-diagnostics -q check_local_alarms",
+          "target": "bash"
+        },
+        {
+          "label": "Cluster-wide alarms check",
+          "description": "Fails if any node in the cluster has an alarm.",
+          "command": "docker exec caci-rmq1 rabbitmq-diagnostics -q check_alarms",
+          "target": "bash"
+        },
+        {
+          "label": "List alarms",
+          "description": "Memory or free disk alarms, local and cluster-wide.",
+          "command": "docker exec caci-rmq1 rabbitmq-diagnostics -q alarms",
+          "target": "bash"
+        },
+        {
+          "label": "Listener ports respond",
+          "description": "Connects to every listener (AMQP, HTTP, Prometheus); the Compose healthcheck of Lab 1.",
+          "command": "docker exec caci-rmq1 rabbitmq-diagnostics -q check_port_connectivity",
+          "target": "bash"
+        },
+        {
+          "label": "Listeners",
+          "description": "Which ports and protocols the node serves.",
+          "command": "docker exec caci-rmq1 rabbitmq-diagnostics -q listeners",
+          "target": "bash"
+        },
+        {
+          "label": "Memory breakdown",
+          "description": "Where memory goes: queues, connections, binaries, metadata (MB).",
+          "command": "docker exec caci-rmq1 rabbitmq-diagnostics -q memory_breakdown --unit mb | head -12",
+          "target": "bash"
+        },
+        {
+          "label": "Overview via the HTTP API",
+          "description": "rabbitmqadmin v2 summary: version, cluster, totals and rates (Lab 1 node).",
+          "command": "docker exec caci-rmq rabbitmqadmin -u admin -p caci-lab show overview",
+          "target": "bash"
+        },
+        {
+          "label": "Deprecated features in use",
+          "description": "Non-zero exit while a deprecated feature is used; on Lab 7 blue it lists classic_queue_mirroring.",
+          "command": "docker exec caci-l7-blue1 rabbitmq-diagnostics check_if_any_deprecated_features_are_used",
+          "target": "bash"
+        },
+        {
+          "label": "Alarm and memory log lines",
+          "description": "Last alarm/memory messages from rmq2's log (after an alarm drill).",
+          "command": "docker logs --since 10m caci-rmq2 2>&1 | grep -iE 'alarm|memory' | tail -5",
+          "target": "bash"
+        },
+        {
+          "label": "Deprecation warnings in the log",
+          "description": "management_metrics_collection is deprecated: Prometheus is the supported monitoring path.",
+          "command": "docker logs caci-rmq1 2>&1 | grep -i deprecated | head -3",
+          "target": "bash"
+        }
+      ],
+      "icon": "pulse"
+    },
+    {
+      "name": "Cluster and quorum queues",
+      "entries": [
+        {
+          "label": "Cluster status",
+          "description": "Cluster name, disk and running nodes, versions, maintenance status, alarms.",
+          "command": "docker exec caci-rmq1 rabbitmqctl cluster_status",
+          "target": "bash"
+        },
+        {
+          "label": "Running nodes",
+          "description": "Only the Running Nodes section; compare from both sides during a partition.",
+          "command": "docker exec caci-rmq1 rabbitmqctl cluster_status | sed -n '/Running Nodes/,/Versions/p'",
+          "target": "bash"
+        },
+        {
+          "label": "Maintenance status",
+          "description": "not under maintenance / marked for maintenance per node.",
+          "command": "docker exec caci-rmq1 rabbitmqctl cluster_status | sed -n '/Maintenance status/,/Alarms/p'",
+          "target": "bash"
+        },
+        {
+          "label": "Declare the quorum queue orders",
+          "description": "Lab 3's demo queue on the cluster.",
+          "command": "docker exec caci-rmq1 rabbitmqadmin -u admin -p caci-lab declare queue --name orders --type quorum --durable true",
+          "target": "bash"
+        },
+        {
+          "label": "Quorum status of orders",
+          "description": "One row per member: leader/follower, voter, log and commit index, term.",
+          "command": "docker exec caci-rmq2 rabbitmq-queues quorum_status orders",
+          "target": "bash"
+        },
+        {
+          "label": "Queues with leader, members, online",
+          "description": "A queue whose online list is shorter than members is missing a replica.",
+          "command": "docker exec caci-rmq1 rabbitmqctl -q list_queues name type leader members online messages",
+          "target": "bash"
+        },
+        {
+          "label": "Leaders per node",
+          "description": "How many quorum queue leaders each node holds.",
+          "command": "docker exec caci-rmq1 rabbitmqctl -q list_queues --no-table-headers leader | sort | uniq -c",
+          "target": "bash"
+        },
+        {
+          "label": "Is rmq2 quorum-critical?",
+          "description": "no queues/streams with minimum quorum means rmq2 can go down safely.",
+          "command": "docker exec caci-rmq2 rabbitmq-queues check_if_node_is_quorum_critical",
+          "target": "bash"
+        },
+        {
+          "label": "Rebalance quorum leaders",
+          "description": "Spreads leaders evenly after restarts.",
+          "command": "docker exec caci-rmq1 rabbitmq-queues rebalance quorum",
+          "target": "bash"
+        },
+        {
+          "label": "Grow quorum queues onto a node",
+          "description": "Adds a member on rmq3 to every quorum queue that lacks one (after a node replacement or scale-up).",
+          "command": "docker exec caci-rmq1 rabbitmq-queues grow rabbit@rmq3 all",
+          "target": "bash"
+        }
+      ],
+      "icon": "database"
+    },
+    {
+      "name": "Queues, exchanges, bindings, consumers, connections",
+      "entries": [
+        {
+          "label": "Declare the order exchanges",
+          "description": "orders.direct, orders.events (topic), orders.broadcast (fanout) in vhost integration.",
+          "command": "for x in orders.direct:direct orders.events:topic orders.broadcast:fanout; do docker exec caci-rmq rabbitmqadmin -u admin -p caci-lab declare exchange -V integration --name \"${x%%:*}\" --type \"${x#*:}\" --durable true; done",
+          "target": "bash"
+        },
+        {
+          "label": "Declare the order queues",
+          "description": "orders.billing, orders.shipping, orders.audit as quorum queues.",
+          "command": "for q in orders.billing orders.shipping orders.audit; do docker exec caci-rmq rabbitmqadmin -u admin -p caci-lab declare queue -V integration --name $q --type quorum --durable true; done",
+          "target": "bash"
+        },
+        {
+          "label": "Bind a queue",
+          "description": "orders.events → orders.audit with order.# (quote topic patterns).",
+          "command": "docker exec caci-rmq rabbitmqadmin -u admin -p caci-lab declare binding -V integration --source orders.events --destination-type queue --destination orders.audit --routing-key 'order.#'",
+          "target": "bash"
+        },
+        {
+          "label": "Queues in vhost integration",
+          "description": "Name, type, durability and depth.",
+          "command": "docker exec caci-rmq rabbitmqctl list_queues -q -p integration name type durable messages",
+          "target": "bash"
+        },
+        {
+          "label": "Exchanges in vhost integration",
+          "description": "Name and type, including the built-in amq.* exchanges.",
+          "command": "docker exec caci-rmq rabbitmqctl list_exchanges -q -p integration name type durable",
+          "target": "bash"
+        },
+        {
+          "label": "Bindings in vhost integration",
+          "description": "Source exchange, destination queue, routing key.",
+          "command": "docker exec caci-rmq rabbitmqctl list_bindings -q -p integration source_name destination_name routing_key",
+          "target": "bash"
+        },
+        {
+          "label": "Queue depth and consumers",
+          "description": "Ready, unacked and consumers per queue on the cluster.",
+          "command": "docker exec caci-rmq1 rabbitmqctl list_queues -q name type messages_ready messages_unacknowledged consumers",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 8 queue view",
+          "description": "Ready, unacked, consumers and consumer capacity (empty for quorum queues).",
+          "command": "docker exec caci-l8-rmq rabbitmqctl -q list_queues name type messages_ready messages_unacknowledged consumers consumer_capacity",
+          "target": "bash"
+        },
+        {
+          "label": "Broker rates for a queue",
+          "description": "Publish, deliver, ack and redeliver rates of boomi.orders (5-second average, HTTP API).",
+          "command": "curl -s -u admin:caci-lab 'http://localhost:15681/api/queues/%2F/boomi.orders' | grep -oE '\"(publish|deliver_get|ack|redeliver)_details\":\\{\"rate\":[0-9.]+' | sed -E 's/\"([a-z_]+)_details\":\\{\"rate\":/\\1 /' | tr '\\n' ' '; echo",
+          "target": "bash"
+        },
+        {
+          "label": "Consumers: prefetch and acks",
+          "description": "prefetch_count 0 means unlimited: a consumer may hoard the queue.",
+          "command": "docker exec caci-rmq rabbitmqctl list_consumers -q queue_name prefetch_count ack_required",
+          "target": "bash"
+        },
+        {
+          "label": "Consumers: single active consumer",
+          "description": "active and activity_status: one single_active, the rest waiting (Lab 8 boomi.sac).",
+          "command": "docker exec caci-l8-rmq rabbitmqctl -q list_consumers queue_name channel_pid prefetch_count active activity_status",
+          "target": "bash"
+        },
+        {
+          "label": "Connections and their state",
+          "description": "blocked = publishing during an alarm; blocking = will block on its next publish.",
+          "command": "docker exec caci-rmq1 rabbitmqctl list_connections -q name user state",
+          "target": "bash"
+        },
+        {
+          "label": "Connection states counted",
+          "description": "A quick view of running / blocked / blocking connections.",
+          "command": "docker exec caci-rmq1 rabbitmqctl list_connections -s state | sort | uniq -c",
+          "target": "bash"
+        },
+        {
+          "label": "Connections per node",
+          "description": "Which node holds the clients (pick a node to kill in Lab 6).",
+          "command": "docker exec caci-rmq1 rabbitmqctl list_connections -q --no-table-headers pid | sed -E 's/^<([^.]*)\\..*/\\1/' | sort | uniq -c",
+          "target": "bash"
+        },
+        {
+          "label": "Negotiated frame_max and channels",
+          "description": "frame_max 131072 is the default; lower values cost CPU on large messages.",
+          "command": "docker exec caci-rmq rabbitmqctl list_connections -q name user frame_max channels",
+          "target": "bash"
+        },
+        {
+          "label": "Channels",
+          "description": "Per channel: consumers, unacked messages, prefetch.",
+          "command": "docker exec caci-rmq1 rabbitmqctl list_channels -q connection number consumer_count messages_unacknowledged prefetch_count",
+          "target": "bash"
+        },
+        {
+          "label": "Delete a queue",
+          "description": "⚠ Deletes lab.batch and its messages (Lab 5 cleanup; change the name).",
+          "command": "docker exec caci-rmq1 rabbitmqctl delete_queue lab.batch",
+          "target": "bash"
+        }
+      ],
+      "icon": "list-tree"
+    },
+    {
+      "name": "Policies, vhosts, users, permissions, limits",
+      "entries": [
+        {
+          "label": "Create vhost integration",
+          "description": "Default queue type quorum (Lab 1).",
+          "command": "docker exec caci-rmq rabbitmqadmin -u admin -p caci-lab declare vhost --name integration --default-queue-type quorum --description \"Order integration\"",
+          "target": "bash"
+        },
+        {
+          "label": "Grant admin on integration",
+          "description": "Full configure/write/read for admin in the new vhost.",
+          "command": "docker exec caci-rmq rabbitmqadmin -u admin -p caci-lab declare permissions -V integration --username admin --configure '.*' --read '.*' --write '.*'",
+          "target": "bash"
+        },
+        {
+          "label": "List vhosts",
+          "description": "Name, default queue type, description.",
+          "command": "docker exec caci-rmq rabbitmqadmin -u admin -p caci-lab list vhosts",
+          "target": "bash"
+        },
+        {
+          "label": "Least-privilege user boomi-orders",
+          "description": "No tags: no management UI or API access.",
+          "command": "docker exec caci-rmq rabbitmqadmin -u admin -p caci-lab declare user --name boomi-orders --password 'Orders-Lab-2026' --tags ''",
+          "target": "bash"
+        },
+        {
+          "label": "Permissions for boomi-orders",
+          "description": "Configure nothing, write the two order exchanges, read billing and shipping.",
+          "command": "docker exec caci-rmq rabbitmqadmin -u admin -p caci-lab declare permissions -V integration --username boomi-orders --configure '^$' --write '^orders\\.(direct|events)$' --read '^orders\\.(billing|shipping)$'",
+          "target": "bash"
+        },
+        {
+          "label": "Users and permissions",
+          "description": "Users with tags, then every user's permissions in integration.",
+          "command": "docker exec caci-rmq rabbitmqctl list_users -q; docker exec caci-rmq rabbitmqctl list_permissions -q -p integration",
+          "target": "bash"
+        },
+        {
+          "label": "API refuses a user without tags",
+          "description": "Expect {\"error\":\"not_authorised\",\"reason\":\"Not management user\"}.",
+          "command": "curl -s -u boomi-orders:Orders-Lab-2026 http://localhost:15672/api/overview",
+          "target": "bash"
+        },
+        {
+          "label": "Alternate-exchange policy",
+          "description": "Unroutable messages from orders.direct go to orders.unrouted (create that exchange and queue first, Lab 1 Step 8).",
+          "command": "docker exec caci-rmq rabbitmqadmin -u admin -p caci-lab declare policy -V integration --name orders-ae --pattern '^orders\\.direct$' --apply-to exchanges --definition '{\"alternate-exchange\":\"orders.unrouted\"}'",
+          "target": "bash"
+        },
+        {
+          "label": "DLX and delivery-limit policy",
+          "description": "orders-dlx on the cluster: dead-letter to dlx after 5 failed deliveries.",
+          "command": "docker exec caci-rmq1 rabbitmqadmin -u admin -p caci-lab declare policy --name orders-dlx --pattern '^orders$' --apply-to quorum_queues --definition '{\"dead-letter-exchange\":\"dlx\",\"delivery-limit\":5}'",
+          "target": "bash"
+        },
+        {
+          "label": "Operator policy guardrails",
+          "description": "max-length 100000 and delivery-limit 10 on every queue; the lower value wins when both set one.",
+          "command": "docker exec caci-rmq1 rabbitmqadmin -u admin -p caci-lab declare operator_policy --name guardrails --pattern '.*' --apply-to queues --definition '{\"max-length\":100000,\"delivery-limit\":10}'",
+          "target": "bash"
+        },
+        {
+          "label": "List policies and operator policies",
+          "description": "Both kinds in vhost /.",
+          "command": "docker exec caci-rmq1 rabbitmqctl list_policies -q; docker exec caci-rmq1 rabbitmqctl list_operator_policies -q",
+          "target": "bash"
+        },
+        {
+          "label": "Effective policy per queue",
+          "description": "Policy, operator policy and the merged definition.",
+          "command": "docker exec caci-rmq1 rabbitmqctl list_queues -q name policy operator_policy effective_policy_definition",
+          "target": "bash"
+        },
+        {
+          "label": "Remove the guardrails operator policy",
+          "description": "Clears the Lab 3 operator policy.",
+          "command": "docker exec caci-rmq1 rabbitmqctl clear_operator_policy guardrails",
+          "target": "bash"
+        },
+        {
+          "label": "Limit connections on vhost /",
+          "description": "⚠ max-connections 20: further connections are refused (Lab 6 Scenario 6).",
+          "command": "docker exec caci-rmq1 rabbitmqctl set_vhost_limits -p / '{\"max-connections\": 20}'",
+          "target": "bash"
+        },
+        {
+          "label": "Show vhost limits",
+          "description": "Current limits of every vhost.",
+          "command": "docker exec caci-rmq1 rabbitmqctl list_vhost_limits --global",
+          "target": "bash"
+        },
+        {
+          "label": "Clear vhost limits",
+          "description": "Removes the connection limit on /.",
+          "command": "docker exec caci-rmq1 rabbitmqctl clear_vhost_limits -p /",
+          "target": "bash"
+        }
+      ],
+      "icon": "shield"
+    },
+    {
+      "name": "Messages",
+      "entries": [
+        {
+          "label": "Publish to an exchange",
+          "description": "orders.direct, key created (Lab 1); prints whether it was routed.",
+          "command": "docker exec caci-rmq rabbitmqadmin -u admin -p caci-lab publish message -V integration -e orders.direct -k created -m '{\"order\":4711}'",
+          "target": "bash"
+        },
+        {
+          "label": "Publish through the HTTP API",
+          "description": "curl publish to orders.events; expect {\"routed\":true}.",
+          "command": "curl -s -u admin:caci-lab -H 'content-type: application/json' -X POST http://localhost:15672/api/exchanges/integration/orders.events/publish -d '{\"properties\":{\"delivery_mode\":2,\"content_type\":\"application/json\"},\"routing_key\":\"order.us.created\",\"payload\":\"{\\\"order\\\":4713}\",\"payload_encoding\":\"string\"}'",
+          "target": "bash"
+        },
+        {
+          "label": "Publish five poison messages",
+          "description": "bad-1..5 to boomi.poison through the default exchange (Lab 8).",
+          "command": "for i in 1 2 3 4 5; do docker exec caci-l8-rmq rabbitmqadmin -u admin -p caci-lab publish message -k boomi.poison -m \"bad-$i\"; done",
+          "target": "bash"
+        },
+        {
+          "label": "Peek at a message",
+          "description": "Gets one and puts it back (ack_requeue_true): payload, redelivered, exchange, key.",
+          "command": "docker exec caci-rmq rabbitmqadmin -u admin -p caci-lab get messages -V integration -q orders.billing -c 1 -a ack_requeue_true",
+          "target": "bash"
+        },
+        {
+          "label": "Reject with requeue",
+          "description": "Each reject counts as a failed delivery toward delivery-limit (Lab 8 boomi.poison).",
+          "command": "docker exec caci-l8-rmq rabbitmqadmin -u admin -p caci-lab get messages -q boomi.poison -c 5 -a reject_requeue_true --table-style psql",
+          "target": "bash"
+        },
+        {
+          "label": "Take a message off the queue",
+          "description": "⚠ Gets one message and acknowledges it: it is removed.",
+          "command": "docker exec caci-rmq rabbitmqadmin -u admin -p caci-lab get messages -V integration -q orders.unrouted -c 1 -a ack_requeue_false",
+          "target": "bash"
+        },
+        {
+          "label": "Inspect the DLQ (x-death)",
+          "description": "One dead-lettered message, put back: look for x-death reason delivery_limit and x-delivery-count.",
+          "command": "docker exec caci-l8-rmq rabbitmqadmin -u admin -p caci-lab get messages -q boomi.dlq -c 1 -a ack_requeue_true --table-style psql | cut -c1-600",
+          "target": "bash"
+        },
+        {
+          "label": "DLQ headers via the HTTP API",
+          "description": "x-first-death-queue/-reason and x-delivery-count of one boomi.dlq message, requeued.",
+          "command": "curl -s -u admin:caci-lab -H 'content-type: application/json' -X POST 'http://localhost:15681/api/queues/%2F/boomi.dlq/get' -d '{\"count\":1,\"ackmode\":\"ack_requeue_true\",\"encoding\":\"auto\"}' | grep -oE '\"x-(death|delivery-count|first-death-queue|first-death-reason)\":(\\[[^]]*\\]|[^,]*)'",
+          "target": "bash"
+        },
+        {
+          "label": "Purge a queue (rabbitmqadmin)",
+          "description": "⚠ Deletes every ready message in orders.billing (Lab 6 DR drill).",
+          "command": "docker exec caci-rmq1 rabbitmqadmin -u admin -p caci-lab purge queue --name orders.billing",
+          "target": "bash"
+        },
+        {
+          "label": "Purge a queue (rabbitmqctl)",
+          "description": "⚠ Deletes every ready message in boomi.orders (Lab 8).",
+          "command": "docker exec caci-l8-rmq rabbitmqctl -q purge_queue boomi.orders",
+          "target": "bash"
+        },
+        {
+          "label": "3.13: declare boomi.poison",
+          "description": "Quorum queue on the Lab 8 3.13 broker via the HTTP API (its image has no rabbitmqadmin v2).",
+          "command": "curl -s -u admin:caci-lab -H 'content-type: application/json' -X PUT 'http://localhost:15682/api/queues/%2F/boomi.poison' -d '{\"durable\":true,\"arguments\":{\"x-queue-type\":\"quorum\"}}'",
+          "target": "bash"
+        },
+        {
+          "label": "3.13: publish three poison messages",
+          "description": "Expect three {\"routed\":true}.",
+          "command": "for i in 1 2 3; do curl -s -u admin:caci-lab -H 'content-type: application/json' -X POST 'http://localhost:15682/api/exchanges/%2F/amq.default/publish' -d \"{\\\"properties\\\":{},\\\"routing_key\\\":\\\"boomi.poison\\\",\\\"payload\\\":\\\"bad-$i\\\",\\\"payload_encoding\\\":\\\"string\\\"}\"; echo; done",
+          "target": "bash"
+        },
+        {
+          "label": "3.13: delivery count after a nack loop",
+          "description": "On 3.13 nacks count: x-delivery-count in the hundreds or thousands, and no default limit.",
+          "command": "curl -s -u admin:caci-lab -H 'content-type: application/json' -X POST 'http://localhost:15682/api/queues/%2F/boomi.poison/get' -d '{\"count\":3,\"ackmode\":\"reject_requeue_true\",\"encoding\":\"auto\"}' | grep -o '\"x-delivery-count\":[0-9]*' | head -1",
+          "target": "bash"
+        }
+      ],
+      "icon": "mail"
+    },
+    {
+      "name": "Maintenance",
+      "entries": [
+        {
+          "label": "Wait for quorum plus one",
+          "description": "Returns when every quorum queue on rmq2 has enough other members online (what the operator's preStop runs).",
+          "command": "docker exec caci-rmq2 rabbitmq-upgrade await_online_quorum_plus_one -t 120",
+          "target": "bash"
+        },
+        {
+          "label": "Drain rmq2",
+          "description": "⚠ Maintenance mode: moves rmq2's leaders away, closes its client connections, refuses new ones.",
+          "command": "docker exec caci-rmq2 rabbitmq-upgrade drain",
+          "target": "bash"
+        },
+        {
+          "label": "Revive rmq2",
+          "description": "Takes rmq2 out of maintenance mode without a restart.",
+          "command": "docker exec caci-rmq2 rabbitmq-upgrade revive",
+          "target": "bash"
+        },
+        {
+          "label": "Restart rmq2",
+          "description": "⚠ Restarts the container; a restart also resets maintenance mode.",
+          "command": "docker restart caci-rmq2",
+          "target": "bash"
+        },
+        {
+          "label": "Wait until rmq2 is running",
+          "description": "Polls check_running every 2 s, then prints up.",
+          "command": "until docker exec caci-rmq2 rabbitmq-diagnostics -q check_running >/dev/null 2>&1; do sleep 2; done; echo up",
+          "target": "bash"
+        },
+        {
+          "label": "Maintenance lines in the log",
+          "description": "Marked for maintenance, ready to shut down, resetting maintenance status.",
+          "command": "docker logs --since 5m caci-rmq2 2>&1 | grep -i maintenance",
+          "target": "bash"
+        },
+        {
+          "label": "Feature flags",
+          "description": "Name and state of every feature flag.",
+          "command": "docker exec caci-rmq1 rabbitmqctl -q list_feature_flags name state",
+          "target": "bash"
+        },
+        {
+          "label": "Feature flags not enabled (blue)",
+          "description": "Before an upgrade: only the experimental khepri_db may stay disabled on 3.13.",
+          "command": "docker exec caci-l7-blue1 rabbitmqctl -q list_feature_flags name state | grep -v enabled",
+          "target": "bash"
+        },
+        {
+          "label": "Enable all stable feature flags",
+          "description": "Required before upgrading to the next minor version.",
+          "command": "docker exec caci-rmq1 rabbitmqctl enable_feature_flag all",
+          "target": "bash"
+        },
+        {
+          "label": "Export definitions (Lab 1)",
+          "description": "Vhosts, users (hashed passwords), permissions, exchanges, queues, bindings, policies into lab01.",
+          "command": "docker exec caci-rmq rabbitmqadmin -u admin -p caci-lab definitions export --stdout > ../labs/files/lab01/integration-definitions.json && grep -o '\"name\":\"[^\"]*\"' ../labs/files/lab01/integration-definitions.json | sort -u",
+          "target": "bash"
+        },
+        {
+          "label": "Export definitions with rabbitmqctl",
+          "description": "Blue's complete topology to lab07/blue-definitions.json (Lab 7 Step 3).",
+          "command": "docker exec caci-l7-blue1 rabbitmqctl -q export_definitions - > ../labs/files/lab07/blue-definitions.json",
+          "target": "bash"
+        }
+      ],
+      "icon": "tools"
+    },
+    {
+      "name": "Resource alarms and failure injection",
+      "entries": [
+        {
+          "label": "Memory alarm on rmq2",
+          "description": "⚠ Watermark 50MB: blocks every publisher in the cluster.",
+          "command": "docker exec caci-rmq2 rabbitmqctl set_vm_memory_high_watermark absolute 50MB",
+          "target": "bash"
+        },
+        {
+          "label": "Restore the memory watermark",
+          "description": "Back to 0.6 of available memory; connections return to running.",
+          "command": "docker exec caci-rmq2 rabbitmqctl set_vm_memory_high_watermark 0.6",
+          "target": "bash"
+        },
+        {
+          "label": "Disk alarm on rmq1",
+          "description": "⚠ Free-disk limit 5000GB: the node thinks the disk is full and blocks publishers.",
+          "command": "docker exec caci-rmq1 rabbitmqctl set_disk_free_limit 5000GB",
+          "target": "bash"
+        },
+        {
+          "label": "Restore the disk limit",
+          "description": "Back to 1GB; the check runs every few seconds.",
+          "command": "docker exec caci-rmq1 rabbitmqctl set_disk_free_limit 1GB",
+          "target": "bash"
+        },
+        {
+          "label": "Stop the leader node",
+          "description": "⚠ Graceful stop of rmq1; a new leader is elected within seconds.",
+          "command": "docker stop caci-rmq1",
+          "target": "bash"
+        },
+        {
+          "label": "Stop a second node",
+          "description": "⚠ rmq3 too: one of three left, no majority, writes refused.",
+          "command": "docker stop caci-rmq3",
+          "target": "bash"
+        },
+        {
+          "label": "Publish without a majority",
+          "description": "Hangs about 30 s, then errors; the message may still be committed later (duplicate).",
+          "command": "time docker exec caci-rmq2 rabbitmqadmin -u admin -p caci-lab publish message -k orders -m during-outage",
+          "target": "bash"
+        },
+        {
+          "label": "Start the stopped nodes",
+          "description": "rmq1 and rmq3 rejoin; give them about 25 s.",
+          "command": "docker start caci-rmq1 caci-rmq3",
+          "target": "bash"
+        },
+        {
+          "label": "Crash a node",
+          "description": "⚠ docker kill (no clean shutdown) of rmq3.",
+          "command": "docker kill caci-rmq3",
+          "target": "bash"
+        },
+        {
+          "label": "Partition rmq3",
+          "description": "⚠ Disconnects rmq3 from caci-net while it keeps running: it becomes a minority.",
+          "command": "docker network disconnect caci-net caci-rmq3",
+          "target": "bash"
+        },
+        {
+          "label": "Heal the partition",
+          "description": "Reconnects rmq3 with its rmq3 and rabbitmq DNS aliases.",
+          "command": "docker network connect --alias rmq3 --alias rabbitmq caci-net caci-rmq3",
+          "target": "bash"
+        },
+        {
+          "label": "Running nodes as rmq3 sees them",
+          "description": "During a partition rmq3 lists only itself.",
+          "command": "docker exec caci-rmq3 rabbitmq-diagnostics -q cluster_status | sed -n '/Running Nodes/,/Versions/p'",
+          "target": "bash"
+        }
+      ],
+      "icon": "warning"
+    },
+    {
+      "name": "Load and consumers with PerfTest",
+      "entries": [
+        {
+          "label": "E1: fire and forget",
+          "description": "Classic queue, no confirms, auto-ack: fast and unsafe.",
+          "command": "docker run --rm --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --time 15 --metrics-format compact --queue lab.e1 --auto-delete true --producers 1 --consumers 1 --autoack 2>&1 | grep -E 'rate avg|latency min'",
+          "target": "bash"
+        },
+        {
+          "label": "E2: classic, confirms 100, manual acks",
+          "description": "The reliability contract on a classic queue, prefetch 100.",
+          "command": "docker run --rm --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --time 15 --metrics-format compact --queue lab.e2 --auto-delete true --producers 1 --consumers 1 --confirm 100 --qos 100 2>&1 | grep -E 'rate avg|latency min'",
+          "target": "bash"
+        },
+        {
+          "label": "E3: quorum, confirms 100",
+          "description": "Replication and fsync: about half of E2.",
+          "command": "docker run --rm --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --time 15 --metrics-format compact --queue lab.e3 --quorum-queue --producers 1 --consumers 1 --confirm 100 --qos 100 2>&1 | grep -E 'rate avg|latency min'",
+          "target": "bash"
+        },
+        {
+          "label": "E4: quorum, confirm 1",
+          "description": "Waiting for each confirm: a small fraction of E3.",
+          "command": "docker run --rm --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --time 15 --metrics-format compact --queue lab.e4 --quorum-queue --producers 1 --consumers 1 --confirm 1 --qos 100 2>&1 | grep -E 'rate avg|latency min'",
+          "target": "bash"
+        },
+        {
+          "label": "E5: prefetch 1",
+          "description": "Receive rate collapses: one round trip per message.",
+          "command": "docker run --rm --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --time 15 --metrics-format compact --queue lab.e5 --quorum-queue --producers 1 --consumers 1 --confirm 100 --qos 1 2>&1 | grep -E 'rate avg|latency min'",
+          "target": "bash"
+        },
+        {
+          "label": "E6: prefetch 50",
+          "description": "Compare the receiving rate with E5.",
+          "command": "docker run --rm --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --time 15 --metrics-format compact --queue lab.e6 --quorum-queue --producers 1 --consumers 1 --confirm 100 --qos 50 2>&1 | grep -E 'rate avg|latency min'",
+          "target": "bash"
+        },
+        {
+          "label": "E7: 1 KB messages",
+          "description": "Message size baseline.",
+          "command": "docker run --rm --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --time 15 --metrics-format compact --queue lab.e7 --quorum-queue --producers 1 --consumers 1 --confirm 100 --qos 100 --size 1000 2>&1 | grep -E 'rate avg|latency min'",
+          "target": "bash"
+        },
+        {
+          "label": "E8: 100 KB messages",
+          "description": "More bytes per second, far fewer messages.",
+          "command": "docker run --rm --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --time 15 --metrics-format compact --queue lab.e8 --quorum-queue --producers 1 --consumers 1 --confirm 100 --qos 100 --size 100000 2>&1 | grep -E 'rate avg|latency min'",
+          "target": "bash"
+        },
+        {
+          "label": "E9: one slow consumer",
+          "description": "600 msg/s in, one consumer at 5 ms per message: the queue grows (Little's Law).",
+          "command": "docker run --rm --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --queue lab.e9 --quorum-queue --producers 1 --consumers 1 --rate 600 --confirm 100 --qos 10 --consumer-latency 5000 --time 20 --metrics-format compact 2>&1 | grep 'rate avg'",
+          "target": "bash"
+        },
+        {
+          "label": "E10: six slow consumers",
+          "description": "Same work per message, six consumers keep up.",
+          "command": "docker run --rm --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --queue lab.e10 --quorum-queue --producers 1 --consumers 6 --rate 600 --confirm 100 --qos 10 --consumer-latency 5000 --time 20 --metrics-format compact 2>&1 | grep 'rate avg'",
+          "target": "bash"
+        },
+        {
+          "label": "Background clients to inspect",
+          "description": "caci-pt-bg: 1 producer, 2 consumers for 25 s; inspect connections and consumers meanwhile.",
+          "command": "docker run -d --rm --name caci-pt-bg --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --queue lab.bg --producers 1 --consumers 2 --rate 100 --time 25",
+          "target": "bash"
+        },
+        {
+          "label": "Publish as boomi-orders",
+          "description": "100 messages over AMQP as the least-privilege user; a sending rate line means allowed.",
+          "command": "docker run --rm --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri 'amqp://boomi-orders:Orders-Lab-2026@rmq/integration' --exchange orders.direct --type direct --routing-key created --predeclared --skip-binding-queues --queue orders.billing --producers 1 --consumers 0 --pmessages 100 --metrics-format compact 2>&1 | grep 'sending rate'",
+          "target": "bash"
+        },
+        {
+          "label": "boomi-orders may not declare",
+          "description": "Expect reply-code=403 ACCESS_REFUSED (configure '^$').",
+          "command": "docker run --rm --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri 'amqp://boomi-orders:Orders-Lab-2026@rmq/integration' --queue my.own.queue --producers 1 --consumers 0 --pmessages 1 2>&1 | grep -o 'reply-code=403, reply-text=[^,]*' | head -1",
+          "target": "bash"
+        },
+        {
+          "label": "Poison loop with basic.nack (Lab 2)",
+          "description": "Since 4.3 nack-requeue does not count toward delivery-limit: thousands/s for 5 messages.",
+          "command": "docker run --rm --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --queue lab.poison --predeclared --producers 0 --consumers 1 --nack --time 8 --metrics-format compact 2>&1 | grep 'receiving rate'",
+          "target": "bash"
+        },
+        {
+          "label": "Load 5000 messages into orders",
+          "description": "Lab 3 cluster: then compare commit indexes in quorum_status.",
+          "command": "docker run --rm --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq1 --queue orders --predeclared --producers 1 --consumers 0 --pmessages 5000 --confirm 100 --metrics-format compact 2>&1 | grep 'sending rate'",
+          "target": "bash"
+        },
+        {
+          "label": "Backlog with no consumers (Lab 5)",
+          "description": "caci-backlog: 300 msg/s to lab.backlog for 10 min; fires the backlog and no-consumer alerts.",
+          "command": "docker run -d --rm --name caci-backlog --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq1 --queue lab.backlog --quorum-queue --producers 1 --consumers 0 --rate 300 --confirm 100 --confirm-timeout 600 --time 600 --metrics-format compact",
+          "target": "bash"
+        },
+        {
+          "label": "Four backlogs: expected batch",
+          "description": "caci-l5-batch-sub/-pub: 12,000 messages at once, two healthy consumers work through them.",
+          "command": "docker run -d --name caci-l5-batch-sub --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq1 --metrics-format compact --queue lab.batch --quorum-queue --producers 0 --consumers 2 --qos 10 --consumer-latency 10000; docker run -d --name caci-l5-batch-pub --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq1 --metrics-format compact --queue lab.batch --quorum-queue --producers 1 --consumers 0 --rate 2000 --pmessages 12000 --confirm 100",
+          "target": "bash"
+        },
+        {
+          "label": "Four backlogs: missing consumer",
+          "description": "caci-l5-nocons: 50 msg/s and nobody consuming.",
+          "command": "docker run -d --name caci-l5-nocons --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq1 --metrics-format compact --queue lab.nocons --quorum-queue --producers 1 --consumers 0 --rate 50 --confirm 50",
+          "target": "bash"
+        },
+        {
+          "label": "Four backlogs: slow downstream",
+          "description": "caci-l5-slow: 100 msg/s, two consumers at 100 ms per message.",
+          "command": "docker run -d --name caci-l5-slow --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq1 --metrics-format compact --queue lab.slow --quorum-queue --producers 1 --consumers 2 --qos 10 --rate 100 --consumer-latency 100000 --confirm 50",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 6 steady traffic",
+          "description": "(Re)starts caci-traffic: 300 msg/s through orders.events into orders.billing, via the shared name rabbitmq.",
+          "command": "docker rm -f caci-traffic >/dev/null 2>&1; docker run -d --name caci-traffic --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rabbitmq --exchange orders.events --type topic --routing-key order.us.created --predeclared --skip-binding-queues --queue orders.billing --producers 1 --consumers 1 --rate 300 --confirm 50 --qos 50 --time 1800 --metrics-format compact",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 6 traffic, last 20 seconds",
+          "description": "Sent, confirmed, received per second; gaps show what clients saw.",
+          "command": "docker logs --tail 20 caci-traffic 2>&1 | grep 'msg/s' | grep -v 'rate avg' | awk '{print $2, \"sent\", $3, \"confirmed\", $5, \"received\", $9}'",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 6 poison consumer",
+          "description": "caci-poison: nack-requeue loop on orders.poison for 5 min; fires RabbitMQRedeliveryLoop.",
+          "command": "docker run -d --rm --name caci-poison --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rabbitmq --queue orders.poison --predeclared --producers 0 --consumers 1 --nack --time 300 --metrics-format compact",
+          "target": "bash"
+        },
+        {
+          "label": "Connection storm",
+          "description": "30 connections against a limit of 20: expect connection limit (20) is reached.",
+          "command": "docker run --rm --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rabbitmq --queue lab.storm --producers 30 --consumers 0 --rate 1 --time 5 2>&1 | grep -o 'reply-text=[^,]*' | sort | uniq -c",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 8 feed 200 msg/s",
+          "description": "caci-l8-feed: a stand-in Boomi Send process, persistent messages with confirms.",
+          "command": "docker run -d --name caci-l8-feed --network caci-l8-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --queue boomi.orders --predeclared --producers 1 --consumers 0 --rate 200 --confirm 50 --flag persistent --metrics-format compact",
+          "target": "bash"
+        },
+        {
+          "label": "Molecule: 3 nodes × 2 consumers, 20 ms",
+          "description": "caci-l8-node1..3, prefetch 10: 6 consumers, unacked ceiling 60, keeps up.",
+          "command": "for i in 1 2 3; do docker run -d --name caci-l8-node$i --network caci-l8-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --queue boomi.orders --predeclared --producers 0 --consumers 2 --qos 10 --consumer-latency 20000 --metrics-format compact; done",
+          "target": "bash"
+        },
+        {
+          "label": "Molecule with a slow downstream",
+          "description": "3 × 2 consumers at 100 ms: unacked pinned at 60, ready climbs.",
+          "command": "for i in 1 2 3; do docker run -d --name caci-l8-node$i --network caci-l8-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --queue boomi.orders --predeclared --producers 0 --consumers 2 --qos 10 --consumer-latency 100000 --metrics-format compact; done",
+          "target": "bash"
+        },
+        {
+          "label": "Development Atom: 1 node × 2 consumers",
+          "description": "Same settings on one runtime: 2 consumers, ceiling 20, a backlog.",
+          "command": "docker run -d --name caci-l8-node1 --network caci-l8-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --queue boomi.orders --predeclared --producers 0 --consumers 2 --qos 10 --consumer-latency 20000 --metrics-format compact",
+          "target": "bash"
+        },
+        {
+          "label": "Stop the Lab 8 listeners",
+          "description": "⚠ Removes caci-l8-node1..3; their unacked messages return to the queue.",
+          "command": "docker rm -f caci-l8-node1 caci-l8-node2 caci-l8-node3",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 8 nack consumer",
+          "description": "caci-l8-nacker: deliver = redeliver, ack = 0 on boomi.poison.",
+          "command": "docker run -d --name caci-l8-nacker --network caci-l8-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --queue boomi.poison --predeclared --producers 0 --consumers 1 --nack --metrics-format compact",
+          "target": "bash"
+        },
+        {
+          "label": "Single active consumer: queue and clients",
+          "description": "boomi.sac with x-single-active-consumer, a 50 msg/s feed and 3 × 1 consumers (stop other Lab 8 stand-ins first).",
+          "command": "docker exec caci-l8-rmq rabbitmqadmin -u admin -p caci-lab declare queue --name boomi.sac --type quorum --durable true --arguments '{\"x-single-active-consumer\":true}'; docker run -d --name caci-l8-feed --network caci-l8-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --queue boomi.sac --predeclared --producers 1 --consumers 0 --rate 50 --confirm 50 --flag persistent --metrics-format compact; for i in 1 2 3; do docker run -d --name caci-l8-node$i --network caci-l8-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq --queue boomi.sac --predeclared --producers 0 --consumers 1 --qos 10 --consumer-latency 5000 --metrics-format compact; done",
+          "target": "bash"
+        },
+        {
+          "label": "Last lines of a Lab 8 stand-in",
+          "description": "One-second rates printed by caci-l8-node1 (change the name).",
+          "command": "docker logs --tail 3 caci-l8-node1 2>&1",
+          "target": "bash"
+        },
+        {
+          "label": "Stop all Lab 8 stand-ins",
+          "description": "⚠ Removes feed, listeners and nacker; the brokers stay.",
+          "command": "for c in $(docker ps -a --format '{{.Names}}' --filter name=caci-l8- | grep -v -- '-rmq'); do docker rm -f \"$c\"; done",
+          "target": "bash"
+        },
+        {
+          "label": "3.13: nack loop",
+          "description": "On 3.13 every nack counts toward x-delivery-count.",
+          "command": "docker run --rm --network caci-l8-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmq313 --queue boomi.poison --predeclared --producers 0 --consumers 1 --nack --time 8 --metrics-format compact 2>&1 | grep 'receiving rate'",
+          "target": "bash"
+        }
+      ],
+      "icon": "dashboard"
+    },
+    {
+      "name": "Shovels, DR and blue-green",
+      "entries": [
+        {
+          "label": "Park poison messages",
+          "description": "One-off shovel orders.poison → orders.parking that deletes itself when the queue is empty (Lab 6).",
+          "command": "docker exec caci-rmq1 rabbitmqctl set_parameter shovel park-poison '{\"src-protocol\":\"amqp091\",\"src-uri\":\"amqp://admin:caci-lab@rmq1\",\"src-queue\":\"orders.poison\",\"dest-protocol\":\"amqp091\",\"dest-uri\":\"amqp://admin:caci-lab@rmq1\",\"dest-queue\":\"orders.parking\",\"src-delete-after\":\"queue-length\",\"ack-mode\":\"on-confirm\"}'",
+          "target": "bash"
+        },
+        {
+          "label": "Runtime parameters",
+          "description": "Shovels (and other parameters) defined on the node; a finished one-off shovel is gone.",
+          "command": "docker exec caci-rmq1 rabbitmqctl list_parameters",
+          "target": "bash"
+        },
+        {
+          "label": "Export definitions for DR",
+          "description": "Everything except runtime parameters (no shovel copy) to lab06/primary-definitions.json.",
+          "command": "docker exec caci-rmq1 rabbitmqadmin -u admin -p caci-lab definitions export --stdout -t exclude_runtime_parameters > ../labs/files/lab06/primary-definitions.json",
+          "target": "bash"
+        },
+        {
+          "label": "Import definitions at the DR site",
+          "description": "Copies the file into caci-rmq-dr and imports it.",
+          "command": "docker cp ../labs/files/lab06/primary-definitions.json caci-rmq-dr:/tmp/primary-definitions.json && docker exec caci-rmq-dr rabbitmqadmin -u admin -p caci-lab definitions import --file /tmp/primary-definitions.json",
+          "target": "bash"
+        },
+        {
+          "label": "DR site queues",
+          "description": "Name, type and depth at caci-rmq-dr.",
+          "command": "docker exec caci-rmq-dr rabbitmqctl list_queues -q name type messages",
+          "target": "bash"
+        },
+        {
+          "label": "Start the shovel to DR",
+          "description": "orders-to-dr from shovel-to-dr.json: dr-copy on the primary → orders.billing at DR, on-confirm.",
+          "command": "docker exec caci-rmq1 rabbitmqctl set_parameter shovel orders-to-dr \"$(cat ../labs/files/lab06/shovel-to-dr.json)\"",
+          "target": "bash"
+        },
+        {
+          "label": "Shovel status",
+          "description": "Name, type, state (running/starting/terminated), source and destination (passwords hidden).",
+          "command": "docker exec caci-rmq1 rabbitmqctl shovel_status -q",
+          "target": "bash"
+        },
+        {
+          "label": "Replication lag (RPO)",
+          "description": "Primary dr-copy depth (not yet at DR) and the DR orders.billing depth.",
+          "command": "docker exec caci-rmq1 rabbitmqctl list_queues -q name messages | grep dr-copy; docker exec caci-rmq-dr rabbitmqctl list_queues -q name messages | grep -v dr-copy | grep billing",
+          "target": "bash"
+        },
+        {
+          "label": "Delete the shovel to DR",
+          "description": "⚠ Stops replication to the DR site.",
+          "command": "docker exec caci-rmq1 rabbitmqctl clear_parameter shovel orders-to-dr",
+          "target": "bash"
+        },
+        {
+          "label": "DR drill: purge the DR queue",
+          "description": "⚠ Empties orders.billing at the DR site before the drill.",
+          "command": "docker exec caci-rmq-dr rabbitmqadmin -u admin -p caci-lab purge queue --name orders.billing",
+          "target": "bash"
+        },
+        {
+          "label": "DR drill: producer only",
+          "description": "caci-producer: 500 msg/s into orders.events, no consumer at the primary.",
+          "command": "docker run -d --name caci-producer --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rabbitmq --exchange orders.events --type topic --routing-key order.us.created --predeclared --skip-binding-queues --queue orders.billing --producers 1 --consumers 0 --rate 500 --confirm 50 --metrics-format compact",
+          "target": "bash"
+        },
+        {
+          "label": "DR drill: lose the primary site",
+          "description": "⚠ Kills all three primary nodes and the producer at once.",
+          "command": "docker kill caci-rmq1 caci-rmq2 caci-rmq3; docker rm -f caci-producer",
+          "target": "bash"
+        },
+        {
+          "label": "DR drill: consume at the DR site",
+          "description": "Two consumers drain orders.billing at caci-rmq-dr for 15 s.",
+          "command": "docker run --rm --network caci-net pivotalrabbitmq/perf-test:2.25.0 --uri amqp://admin:caci-lab@rmqdr --queue orders.billing --predeclared --producers 0 --consumers 2 --qos 100 --time 15 --metrics-format compact 2>&1 | grep 'receiving rate'",
+          "target": "bash"
+        },
+        {
+          "label": "DR drill: bring the primary back",
+          "description": "Starts rmq1..3 of the caci-lab project; the shovel resumes (and ships duplicates).",
+          "command": "docker compose -f ../labs/files/lab03/docker-compose.yml start rmq1 rmq2 rmq3",
+          "target": "bash"
+        },
+        {
+          "label": "Replay the DLQ (Lab 8)",
+          "description": "Self-deleting shovel boomi.dlq → boomi.orders, after the cause is fixed.",
+          "command": "docker exec caci-l8-rmq rabbitmqctl -q set_parameter shovel dlq-replay '{\"src-protocol\":\"amqp091\",\"src-uri\":\"amqp://\",\"src-queue\":\"boomi.dlq\",\"src-delete-after\":\"queue-length\",\"dest-protocol\":\"amqp091\",\"dest-uri\":\"amqp://\",\"dest-queue\":\"boomi.orders\"}'",
+          "target": "bash"
+        },
+        {
+          "label": "Blue and green queues side by side",
+          "description": "Depth and consumers of vhost integration on both Lab 7 clusters.",
+          "command": "echo '== blue (3.13)'; docker exec caci-l7-blue1 rabbitmqctl -q list_queues -p integration name type messages_ready messages_unacknowledged consumers; echo '== green (4.3)'; docker exec caci-l7-green1 rabbitmqctl -q list_queues -p integration name type messages_ready messages_unacknowledged consumers",
+          "target": "bash"
+        },
+        {
+          "label": "Blue: flow A consumer",
+          "description": "caci-l7-a-sub-blue: boomi-a on orders.billing, prefetch 50, all three blue nodes.",
+          "command": "docker run -d --name caci-l7-a-sub-blue --network caci-l7-net pivotalrabbitmq/perf-test:2.25.0 --uris amqp://boomi-a:caci-lab@blue1/integration,amqp://boomi-a:caci-lab@blue2/integration,amqp://boomi-a:caci-lab@blue3/integration --queue orders.billing --predeclared --exchange orders.events --skip-binding-queues --metrics-format compact --producers 0 --consumers 1 --qos 50",
+          "target": "bash"
+        },
+        {
+          "label": "Blue: flow A producer",
+          "description": "caci-l7-a-pub-blue: 50 msg/s, key order.billing, confirms, persistent.",
+          "command": "docker run -d --name caci-l7-a-pub-blue --network caci-l7-net pivotalrabbitmq/perf-test:2.25.0 --uris amqp://boomi-a:caci-lab@blue1/integration,amqp://boomi-a:caci-lab@blue2/integration,amqp://boomi-a:caci-lab@blue3/integration --queue orders.billing --predeclared --exchange orders.events --skip-binding-queues --metrics-format compact --producers 1 --consumers 0 --routing-key order.billing --rate 50 --confirm 10 --flag persistent",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 7 stand-in rates",
+          "description": "Last 3 one-second lines of caci-l7-a-pub-blue: sent, confirmed, nacked (change the name).",
+          "command": "docker logs --tail 3 caci-l7-a-pub-blue 2>&1",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 7 running stand-ins",
+          "description": "Which pub/sub/v2/shadow processes run, on which cluster.",
+          "command": "docker ps --filter name=caci-l7- --format '{{.Names}}' | grep -E -- '-(pub|sub|v2|shadow)-' | sort",
+          "target": "bash"
+        },
+        {
+          "label": "Freeze flow A on blue",
+          "description": "⚠ Stops the consumer, waits 10 s for a backlog, stops the producer.",
+          "command": "docker rm -f caci-l7-a-sub-blue; sleep 10; docker rm -f caci-l7-a-pub-blue",
+          "target": "bash"
+        },
+        {
+          "label": "Import blue's definitions as they are",
+          "description": "Refused on 4.3: ha-mode/ha-sync-mode are not recognised policy settings (partial import).",
+          "command": "docker exec -i caci-l7-green1 rabbitmqctl import_definitions < ../labs/files/lab07/blue-definitions.json",
+          "target": "bash"
+        },
+        {
+          "label": "Convert blue's definitions",
+          "description": "Drops mirroring and lazy mode, makes quorum queues, adds DLX and AE (Python in a container).",
+          "command": "docker run --rm --user \"$(id -u):$(id -g)\" -v \"$(cd ../labs/files/lab07 && pwd)\":/w -w /w python:3.13-alpine python convert-definitions.py blue-definitions.json green-definitions.json",
+          "target": "bash"
+        },
+        {
+          "label": "Import the converted definitions",
+          "description": "Asynchronous import into green.",
+          "command": "docker exec -i caci-l7-green1 rabbitmqctl import_definitions < ../labs/files/lab07/green-definitions.json",
+          "target": "bash"
+        },
+        {
+          "label": "Move flow A's backlog to green",
+          "description": "Shovel move-a on green, on-confirm, deletes itself after the current queue length.",
+          "command": "docker exec caci-l7-green1 rabbitmqctl -q set_parameter -p integration shovel move-a \"$(cat ../labs/files/lab07/move-a.json)\"",
+          "target": "bash"
+        },
+        {
+          "label": "Green: flow A producer and consumer",
+          "description": "Resumes flow A on green: producer first, then consumer.",
+          "command": "docker run -d --name caci-l7-a-pub-green --network caci-l7-net pivotalrabbitmq/perf-test:2.25.0 --uris amqp://boomi-a:caci-lab@green1/integration,amqp://boomi-a:caci-lab@green2/integration,amqp://boomi-a:caci-lab@green3/integration --queue orders.billing --predeclared --exchange orders.events --skip-binding-queues --metrics-format compact --producers 1 --consumers 0 --routing-key order.billing --rate 50 --confirm 10 --flag persistent; docker run -d --name caci-l7-a-sub-green --network caci-l7-net pivotalrabbitmq/perf-test:2.25.0 --uris amqp://boomi-a:caci-lab@green1/integration,amqp://boomi-a:caci-lab@green2/integration,amqp://boomi-a:caci-lab@green3/integration --queue orders.billing --predeclared --exchange orders.events --skip-binding-queues --metrics-format compact --producers 0 --consumers 1 --qos 50",
+          "target": "bash"
+        },
+        {
+          "label": "Capacity cap on green",
+          "description": "⚠ Operator policy orders-cap: max-length 200 on orders.shipping (the failing wave).",
+          "command": "docker exec caci-l7-green1 rabbitmqctl -q set_operator_policy -p integration orders-cap '^orders\\.shipping$' '{\"max-length\":200}' --apply-to queues",
+          "target": "bash"
+        },
+        {
+          "label": "Bridge flow B live",
+          "description": "Shovel move-b on green (src-delete-after never) while clients switch.",
+          "command": "docker exec caci-l7-green1 rabbitmqctl -q set_parameter -p integration shovel move-b \"$(cat ../labs/files/lab07/move-b.json)\"",
+          "target": "bash"
+        },
+        {
+          "label": "Green shovel status",
+          "description": "name, state and forwarded count of the bridges.",
+          "command": "docker exec caci-l7-green1 rabbitmqctl -q shovel_status | cut -f1,4,16",
+          "target": "bash"
+        },
+        {
+          "label": "Remove the flow B bridge",
+          "description": "Clears move-b once blue's queue is empty.",
+          "command": "docker exec caci-l7-green1 rabbitmqctl -q clear_parameter -p integration shovel move-b",
+          "target": "bash"
+        },
+        {
+          "label": "Roll back stranded messages",
+          "description": "Shovels green's orders.shipping and orders.dlq back to blue (both self-deleting).",
+          "command": "docker exec caci-l7-green1 rabbitmqctl -q set_parameter -p integration shovel back-shipping \"$(cat ../labs/files/lab07/back-shipping.json)\"; docker exec caci-l7-green1 rabbitmqctl -q set_parameter -p integration shovel back-dlq \"$(cat ../labs/files/lab07/back-dlq.json)\"",
+          "target": "bash"
+        },
+        {
+          "label": "Remove the capacity cap",
+          "description": "Clears operator policy orders-cap on green.",
+          "command": "docker exec caci-l7-green1 rabbitmqctl -q clear_operator_policy -p integration orders-cap",
+          "target": "bash"
+        },
+        {
+          "label": "Blue connections",
+          "description": "User and peer of every client still on blue: should be none before retiring it.",
+          "command": "docker exec caci-l7-blue1 rabbitmqctl -q list_connections user peer_host",
+          "target": "bash"
+        },
+        {
+          "label": "Fence blue",
+          "description": "⚠ max-connections 0 on blue's integration vhost: every stray client is refused.",
+          "command": "docker exec caci-l7-blue1 rabbitmqctl -q set_vhost_limits -p integration '{\"max-connections\": 0}'",
+          "target": "bash"
+        }
+      ],
+      "icon": "sync"
+    },
+    {
+      "name": "Observability",
+      "entries": [
+        {
+          "label": "Lab URLs",
+          "description": "Where to point the browser.",
+          "command": "echo 'Grafana http://localhost:3000 (anonymous viewer; admin/caci-lab) | Prometheus http://localhost:9090/targets and /alerts | RabbitMQ UI http://localhost:15672 (admin/caci-lab)'",
+          "target": "bash"
+        },
+        {
+          "label": "Key node metrics",
+          "description": "Identity, alarms, unreachable peers, fds, disk and memory limit from rmq1's /metrics.",
+          "command": "curl -s localhost:15692/metrics | grep -E '^rabbitmq_(identity_info|alarms|unreachable|process_open_fds|disk_space_available_bytes|resident_memory_limit_bytes)'",
+          "target": "bash"
+        },
+        {
+          "label": "Per-object metrics",
+          "description": "One series per queue (expensive with thousands of queues).",
+          "command": "curl -s localhost:15692/metrics/per-object | grep '^rabbitmq_queue_messages_ready' | head",
+          "target": "bash"
+        },
+        {
+          "label": "Detailed metrics, chosen families",
+          "description": "Only queue_coarse_metrics and queue_consumer_count, as the alert rules scrape them.",
+          "command": "curl -s 'localhost:15692/metrics/detailed?family=queue_coarse_metrics&family=queue_consumer_count' | grep -E '^rabbitmq_detailed_queue_(messages_ready|consumers)' | head",
+          "target": "bash"
+        },
+        {
+          "label": "Prometheus targets",
+          "description": "Health of the six scrape targets (two jobs × three nodes).",
+          "command": "curl -s localhost:9090/api/v1/targets | grep -oE '\"scrapeUrl\":\"[^\"]*\"|\"health\":\"[a-z]*\"' | paste - - | sed 's/\"scrapeUrl\"://; s/\"health\"://'",
+          "target": "bash"
+        },
+        {
+          "label": "Alert rules loaded",
+          "description": "The RabbitMQ rule names (14 expected).",
+          "command": "curl -s localhost:9090/api/v1/rules | grep -oE '\"name\":\"RabbitMQ[A-Za-z]*\"' | sort -u",
+          "target": "bash"
+        },
+        {
+          "label": "Active alerts",
+          "description": "Pending and firing alerts with their labels.",
+          "command": "curl -s localhost:9090/api/v1/alerts | grep -o '\"alertname\":\"[^\"]*\",\"[^}]*' | cut -c1-120",
+          "target": "bash"
+        },
+        {
+          "label": "Firing alerts counted",
+          "description": "ALERTS{alertstate=\"firing\"} by alert name.",
+          "command": "curl -s localhost:9090/api/v1/query --data-urlencode 'query=ALERTS{alertstate=\"firing\"}' | grep -o '\"alertname\":\"[^\"]*\"' | sort | uniq -c",
+          "target": "bash"
+        },
+        {
+          "label": "PromQL: nodes up",
+          "description": "up{job=\"rabbitmq\"} per instance: 1 up, 0 down.",
+          "command": "curl -s localhost:9090/api/v1/query --data-urlencode 'query=up{job=\"rabbitmq\"}' | grep -oE '\"instance\":\"[^\"]*\"|\"value\":\\[[^]]*\\]' | paste - -",
+          "target": "bash"
+        },
+        {
+          "label": "PromQL: ready messages per queue",
+          "description": "max by (queue) of rabbitmq_detailed_queue_messages_ready (leader's value).",
+          "command": "curl -s localhost:9090/api/v1/query --data-urlencode 'query=max by (queue) (rabbitmq_detailed_queue_messages_ready)' | grep -oE '\"queue\":\"[^\"]*\"\\},\"value\":\\[[^]]*\\]'",
+          "target": "bash"
+        },
+        {
+          "label": "PromQL: backlog trend",
+          "description": "deriv over 1 m of lab.* queues: positive = growing, negative = draining.",
+          "command": "curl -s localhost:9090/api/v1/query --data-urlencode 'query=max by (queue) (deriv(rabbitmq_detailed_queue_messages_ready{queue=~\"lab\\\\..*\"}[1m]))' | grep -oE '\"queue\":\"[^\"]*\"\\},\"value\":\\[[^]]*\\]'",
+          "target": "bash"
+        },
+        {
+          "label": "PromQL: memory headroom",
+          "description": "Resident memory as a fraction of the memory limit, per node.",
+          "command": "curl -s localhost:9090/api/v1/query --data-urlencode 'query=rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes' | grep -oE '\"instance\":\"[^\"]*\"|\"value\":\\[[^]]*\\]' | paste - -",
+          "target": "bash"
+        },
+        {
+          "label": "Reload Prometheus rules",
+          "description": "After editing prometheus/rabbitmq-alerts.yml (lifecycle API is enabled).",
+          "command": "curl -s -X POST localhost:9090/-/reload && echo reloaded",
+          "target": "bash"
+        },
+        {
+          "label": "Grafana health and dashboards",
+          "description": "API health, then the provisioned dashboard titles.",
+          "command": "curl -s localhost:3000/api/health; echo; curl -s -u admin:caci-lab 'localhost:3000/api/search?type=dash-db' | grep -oE '\"title\":\"[^\"]*\"'",
+          "target": "bash"
+        }
+      ],
+      "icon": "graph"
+    },
+    {
+      "name": "Kubernetes and the Cluster Operator",
+      "entries": [
+        {
+          "label": "Nodes and AHV zones",
+          "description": "Five nodes; workers carry topology.kubernetes.io/zone.",
+          "command": "kubectl get nodes -L topology.kubernetes.io/zone",
+          "target": "bash"
+        },
+        {
+          "label": "RabbitMQ CRDs",
+          "description": "Cluster Operator and Topology Operator resource types.",
+          "command": "kubectl get crd | grep rabbitmq.com",
+          "target": "bash"
+        },
+        {
+          "label": "Operators running",
+          "description": "cert-manager and rabbitmq-system deployments.",
+          "command": "kubectl get deploy -n cert-manager; kubectl get deploy -n rabbitmq-system",
+          "target": "bash"
+        },
+        {
+          "label": "Cluster, pods and services",
+          "description": "RabbitmqCluster, StatefulSet, pods with nodes, Services and PVCs.",
+          "command": "kubectl -n messaging get rabbitmqclusters,statefulset,pods,svc,pvc -o wide",
+          "target": "bash"
+        },
+        {
+          "label": "Pod placement by AHV host",
+          "description": "Pod, status, Kubernetes node and zone.",
+          "command": "bash ../labs/files/lab04/show-placement.sh messaging",
+          "target": "bash"
+        },
+        {
+          "label": "Cluster status inside a pod",
+          "description": "Running nodes as rabbit@caci-rabbit-server-N.caci-rabbit-nodes.messaging.",
+          "command": "kubectl -n messaging exec caci-rabbit-server-0 -c rabbitmq -- rabbitmqctl cluster_status | sed -n '/Running Nodes/,/Versions/p'",
+          "target": "bash"
+        },
+        {
+          "label": "Operator-generated configuration",
+          "description": "conf.d files and the operator defaults (peer discovery, disk limit).",
+          "command": "kubectl -n messaging exec caci-rabbit-server-0 -c rabbitmq -- sh -c 'ls /etc/rabbitmq/conf.d/; cat /etc/rabbitmq/conf.d/10-operatorDefaults.conf /etc/rabbitmq/conf.d/90-userDefinedConfiguration.conf'",
+          "target": "bash"
+        },
+        {
+          "label": "Memory watermark from the pod limit",
+          "description": "The log line computed from total_memory_available_override_value.",
+          "command": "kubectl -n messaging logs caci-rabbit-server-0 -c rabbitmq | grep 'Memory high watermark set'",
+          "target": "bash"
+        },
+        {
+          "label": "preStop hook and grace period",
+          "description": "await_online_quorum_plus_one + drain, and terminationGracePeriodSeconds 604800.",
+          "command": "kubectl -n messaging get sts caci-rabbit-server -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command[2]}{\"\\n\"}{.spec.template.spec.terminationGracePeriodSeconds}{\"\\n\"}'",
+          "target": "bash"
+        },
+        {
+          "label": "PodDisruptionBudget",
+          "description": "MAX UNAVAILABLE 1; ALLOWED DISRUPTIONS 1 when all pods are ready.",
+          "command": "kubectl -n messaging get pdb caci-rabbit",
+          "target": "bash"
+        },
+        {
+          "label": "Topology objects",
+          "description": "Every Topology Operator object with its Ready condition (use full resource names).",
+          "command": "kubectl -n messaging get vhosts.rabbitmq.com,exchanges.rabbitmq.com,queues.rabbitmq.com,bindings.rabbitmq.com,policies.rabbitmq.com,users.rabbitmq.com,permissions.rabbitmq.com -o 'custom-columns=KIND:.kind,NAME:.metadata.name,READY:.status.conditions[0].status'",
+          "target": "bash"
+        },
+        {
+          "label": "Why a topology object is not ready",
+          "description": "Events and status of Queue orders-billing.",
+          "command": "kubectl -n messaging describe queues.rabbitmq.com orders-billing",
+          "target": "bash"
+        },
+        {
+          "label": "Queues on the broker",
+          "description": "orders.billing quorum with policy orders-limits, plus leader and online members.",
+          "command": "kubectl -n messaging exec caci-rabbit-server-0 -c rabbitmq -- rabbitmqctl -q list_queues -p integration name type policy leader members online",
+          "target": "bash"
+        },
+        {
+          "label": "Default user credentials",
+          "description": "Username and password the operator generated, for the UI.",
+          "command": "kubectl -n messaging get secret caci-rabbit-default-user -o jsonpath='{.data.username}' | base64 -d; echo; kubectl -n messaging get secret caci-rabbit-default-user -o jsonpath='{.data.password}' | base64 -d; echo",
+          "target": "bash"
+        },
+        {
+          "label": "Port-forward the UI",
+          "description": "http://localhost:15680; stop with Ctrl+C.",
+          "command": "kubectl -n messaging port-forward svc/caci-rabbit 15680:15672",
+          "target": "bash"
+        },
+        {
+          "label": "Traffic as boomi-orders",
+          "description": "One-shot PerfTest pod through Service caci-rabbit: about 500 msg/s for 20 s.",
+          "command": "kubectl -n messaging run caci-perf --rm -i --restart=Never --image=pivotalrabbitmq/perf-test:2.25.0 -- --uri \"amqp://boomi-orders:Orders-Lab-2026@caci-rabbit.messaging.svc:5672/integration\" --exchange orders.events --type topic --routing-key order.us.created --predeclared --skip-binding-queues --queue orders.billing --producers 1 --consumers 1 --qos 50 --confirm 100 --rate 500 --time 20 --metrics-format compact 2>&1 | grep 'rate avg'",
+          "target": "bash"
+        },
+        {
+          "label": "Health checks inside a pod",
+          "description": "Local alarms and quorum-critical check on caci-rabbit-server-0 before a drain.",
+          "command": "kubectl -n messaging exec caci-rabbit-server-0 -c rabbitmq -- rabbitmq-diagnostics -q check_local_alarms && kubectl -n messaging exec caci-rabbit-server-0 -c rabbitmq -- rabbitmq-queues check_if_node_is_quorum_critical",
+          "target": "bash"
+        },
+        {
+          "label": "Lose a pod",
+          "description": "⚠ Deletes caci-rabbit-server-1; it returns with the same name, node and PVC.",
+          "command": "kubectl -n messaging delete pod caci-rabbit-server-1 --wait=false",
+          "target": "bash"
+        },
+        {
+          "label": "Watch pods",
+          "description": "Terminating, Init, Running 0/1, 1/1; stop with Ctrl+C.",
+          "command": "kubectl -n messaging get pods -o wide -w",
+          "target": "bash"
+        },
+        {
+          "label": "Volumes pinned to nodes",
+          "description": "Each kind PV is a directory on one node, so its pod comes back there.",
+          "command": "kubectl get pv -o custom-columns='PV:.metadata.name,CLAIM:.spec.claimRef.name,NODE:.spec.nodeAffinity.required.nodeSelectorTerms[0].matchExpressions[0].values[0]'",
+          "target": "bash"
+        },
+        {
+          "label": "Export NODE (server-0's node)",
+          "description": "Sets $NODE in this shell for the cordon, drain and uncordon entries.",
+          "command": "export NODE=$(kubectl -n messaging get pod caci-rabbit-server-0 -o jsonpath='{.spec.nodeName}'); echo $NODE",
+          "target": "bash"
+        },
+        {
+          "label": "Cordon and drain $NODE",
+          "description": "⚠ Evicts caci-rabbit-server-0 (its preStop hook drains RabbitMQ); needs NODE exported.",
+          "command": "kubectl cordon $NODE && kubectl drain $NODE --ignore-daemonsets --delete-emptydir-data --timeout=600s",
+          "target": "bash"
+        },
+        {
+          "label": "Export NODE2 and try a second drain",
+          "description": "⚠ Sets $NODE2 (server-1's node) and drains it: the PDB refuses until the 30 s timeout.",
+          "command": "export NODE2=$(kubectl -n messaging get pod caci-rabbit-server-1 -o jsonpath='{.spec.nodeName}'); kubectl drain $NODE2 --ignore-daemonsets --delete-emptydir-data --timeout=30s",
+          "target": "bash"
+        },
+        {
+          "label": "Uncordon both nodes",
+          "description": "Releases $NODE2 and $NODE, then waits for server-0 to be ready.",
+          "command": "kubectl uncordon $NODE2 $NODE && kubectl -n messaging wait --for=condition=Ready pod/caci-rabbit-server-0 --timeout=300s",
+          "target": "bash"
+        },
+        {
+          "label": "Rebalance inside the cluster",
+          "description": "Spreads quorum leaders after pods come back.",
+          "command": "kubectl -n messaging exec caci-rabbit-server-0 -c rabbitmq -- rabbitmq-queues rebalance quorum",
+          "target": "bash"
+        },
+        {
+          "label": "Background load for a rolling restart",
+          "description": "caci-load pod: 200 msg/s for 400 s through Service caci-rabbit.",
+          "command": "kubectl -n messaging run caci-load --restart=Never --image=pivotalrabbitmq/perf-test:2.25.0 -- --uri \"amqp://boomi-orders:Orders-Lab-2026@caci-rabbit.messaging.svc:5672/integration\" --exchange orders.events --type topic --routing-key order.us.created --predeclared --skip-binding-queues --queue orders.billing --producers 1 --consumers 1 --qos 50 --confirm 100 --rate 200 --time 400 --metrics-format compact",
+          "target": "bash"
+        },
+        {
+          "label": "Rolling restart",
+          "description": "⚠ Restarts every RabbitMQ pod, highest ordinal first, one at a time.",
+          "command": "kubectl -n messaging rollout restart statefulset caci-rabbit-server && kubectl -n messaging rollout status statefulset caci-rabbit-server --timeout=900s",
+          "target": "bash"
+        },
+        {
+          "label": "Seconds where traffic dipped",
+          "description": "caci-load lines below 150 msg/s sent, then removes the pod.",
+          "command": "kubectl -n messaging logs caci-load | grep 'msg/s' | awk '$3+0 < 150 {print $2, \"sent\", $3, \"received\", $9}'; kubectl -n messaging delete pod caci-load",
+          "target": "bash"
+        },
+        {
+          "label": "Cluster Operator logs",
+          "description": "Last reconcile messages of rabbitmq-cluster-operator.",
+          "command": "kubectl -n rabbitmq-system logs deploy/rabbitmq-cluster-operator --tail=20",
+          "target": "bash"
+        },
+        {
+          "label": "Topology Operator logs",
+          "description": "Last messages of messaging-topology-operator.",
+          "command": "kubectl -n rabbitmq-system logs deploy/messaging-topology-operator --tail=20",
+          "target": "bash"
+        },
+        {
+          "label": "Placement demo",
+          "description": "Naive (per node) vs host-aware (per AHV host) pause Deployments.",
+          "command": "kubectl create namespace placement-demo; kubectl apply -f ../labs/files/lab04/placement-demo.yaml; sleep 15; bash ../labs/files/lab04/show-placement.sh placement-demo",
+          "target": "bash"
+        },
+        {
+          "label": "Ask host-aware for a fourth pod",
+          "description": "Three AHV hosts, four replicas: one pod stays Pending; prints the FailedScheduling reason.",
+          "command": "kubectl -n placement-demo scale deploy host-aware --replicas=4; sleep 8; kubectl -n placement-demo get events --field-selector reason=FailedScheduling -o jsonpath='{.items[-1].message}{\"\\n\"}'",
+          "target": "bash"
+        },
+        {
+          "label": "Remove the placement demo",
+          "description": "⚠ Deletes namespace placement-demo.",
+          "command": "kubectl delete namespace placement-demo",
+          "target": "bash"
+        }
+      ],
+      "icon": "cloud"
+    },
+    {
+      "name": "Cleanup",
+      "entries": [
+        {
+          "label": "Remove leftover stand-ins",
+          "description": "⚠ Deletes PerfTest stand-ins from Labs 2, 5, 6, 7, 8 (brokers stay).",
+          "command": "for c in $(docker ps -a --format '{{.Names}}' | grep -E '^caci-(pt-bg|backlog|l5-|traffic|producer|poison|l7-[abc]-|l8-(feed|node|nacker))'); do docker rm -f \"$c\"; done",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 1/2 cleanup",
+          "description": "⚠ Removes the single node, its volume and the exported definitions.",
+          "command": "docker rm -f caci-pt-bg 2>/dev/null; docker compose -f ../labs/files/lab01/docker-compose.yml down -v; rm -f ../labs/files/lab01/integration-definitions.json",
+          "target": "bash"
+        },
+        {
+          "label": "Lab 3/5/6 cleanup",
+          "description": "⚠ Removes cluster, DR site, Prometheus, Grafana, volumes and exported definitions.",
+          "command": "docker rm -f caci-backlog caci-l5-batch-sub caci-l5-batch-pub caci-l5-nocons caci-l5-slow caci-traffic caci-producer caci-poison 2>/dev/null; docker compose -f ../labs/files/lab06/docker-compose.yml down -v --remove-orphans; rm -f ../labs/files/lab06/primary-definitions.json",
+          "target": "bash"
+        },
+        {
+          "label": "Remove the kind network",
+          "description": "After deleting caci-k8s: kind leaves its kind network behind.",
+          "command": "docker network rm kind",
+          "target": "bash"
+        },
+        {
+          "label": "Remove caci- containers and volumes",
+          "description": "⚠ Every caci- container (not the kind nodes) with its anonymous volumes.",
+          "command": "for c in $(docker ps -a --format '{{.Names}}' --filter name=caci- | grep -v '^caci-k8s-'); do docker rm -fv \"$c\"; done",
+          "target": "bash"
+        },
+        {
+          "label": "Remove caci- networks and volumes",
+          "description": "⚠ Leftover caci-net, caci-l7-net, caci-l8-net and any caci- named volume.",
+          "command": "for n in $(docker network ls -q --filter name=caci-); do docker network rm \"$n\"; done; for v in $(docker volume ls -q --filter name=caci-); do docker volume rm \"$v\"; done",
+          "target": "bash"
+        },
+        {
+          "label": "Verify nothing is left",
+          "description": "No caci- containers, networks or volumes, and no caci-k8s kind cluster.",
+          "command": "docker ps -a --filter name=caci- --format '{{.Names}}'; docker network ls --filter name=caci- --format '{{.Name}}'; docker volume ls --filter name=caci- --format '{{.Name}}'; kind get clusters",
+          "target": "bash"
+        }
+      ],
+      "icon": "trash"
+    }
+  ]
+}

@@ -42,7 +42,7 @@ deck (plus an index). Go stdlib + goldmark only; every deck is self-contained.
   JSON shape matches the cockroach-engineering-tool VS Code extension. See
   `docs/terminal.md`.
 - **Studio** (`si --web`, loopback-only; never in a built deck): a browser editor
-  (Write mode) with a file tree, CodeMirror markdown editor, live preview and the
+  (Write mode, runbook editor/generator) with a file tree, CodeMirror markdown editor, live preview and the
   `si check` problems panel. Token-to-cookie auth, Host/Origin checks, workspace-
   confined atomic file API with etag conflicts. See `docs/studio.md`.
 - **Break timer HUD** (`t`): presets (`timer.time`/`timer.unit`), **digital or
@@ -92,8 +92,16 @@ deck (plus an index). Go stdlib + goldmark only; every deck is self-contained.
 - **Docs:** `si manual` renders the user manual (`--pdf` / `--slides`);
   `docs/reference/` holds the user manual + developer reference.
 
-## Unreleased
+## Shipped — v0.9.0
 
+- **Runbook placeholders:** `{{name}}` / `{{name:default}}` in runbook commands;
+  the drawer asks for values in an inline form (session-remembered), Esc types
+  nothing; optional top-level `name` (drawer title) and `description`.
+- **Studio runbook editor:** per-file Visual / JSON toggle; lossless model
+  (unknown keys and key order kept, minimal diffs); add/edit/duplicate/delete,
+  drag and keyboard reorder, Insert placeholder, inline validation.
+- **Studio New runbook wizard:** builds a runbook, optionally links decks via
+  `runbook:` front matter, never overwrites.
 - **Lab documents (`type: lab`).** A markdown file with `type: lab` renders as a
   single guide page (title header, sticky table of contents that collapses on
   narrow screens, GitHub alert callouts, copy buttons, scrolling tables and
@@ -101,6 +109,8 @@ deck (plus an index). Go stdlib + goldmark only; every deck is self-contained.
   badge and a section count; `si check` reports a bad `type` and warns about
   slide directives in a lab; Studio shows a lab icon. See RULES.md section 18
   and `examples/order-lab.md`.
+- Decks with a UTF-8 BOM now parse (front matter was hidden by it).
+- Docs: `docs/studio.md`, `docs/terminal.md`, RULES.md §14.
 
 ## Shipped — v0.6.3
 

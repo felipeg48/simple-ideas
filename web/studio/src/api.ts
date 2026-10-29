@@ -3,7 +3,7 @@
 export type Kind = "dir" | "deck" | "lab" | "markdown" | "svg" | "css" | "json" | "image" | "other";
 export interface Node { name: string; path: string; kind: Kind; children?: Node[] }
 export interface FileData { path: string; content: string; etag: string }
-export interface DeckInfo { path: string; title: string; files: string[] }
+export interface DeckInfo { path: string; title: string; files: string[]; runbook?: string }
 export interface Problem { file: string; line: number; msg: string }
 export interface Slide { index: number; file: string; line: number; title: string; topic: number; minutes: number }
 export interface Check { problems: Problem[]; slides: Slide[]; minutes: number; steps: number; canvases: number }

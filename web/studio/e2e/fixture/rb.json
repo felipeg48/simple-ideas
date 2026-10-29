@@ -1,0 +1,11 @@
+{
+  "name": "E2E Runbook",
+  "categories": [
+    {
+      "name": "Basics",
+      "entries": [
+        { "label": "Greet", "command": "echo hello-{{who:world}}", "target": "bash" }
+      ]
+    }
+  ]
+}

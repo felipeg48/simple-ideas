@@ -3,8 +3,11 @@ package render
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 )
 
 // A runbook is an optional command cheat-sheet shown in the `si play` terminal
@@ -19,7 +22,9 @@ import (
 // `target` ("sql" | "bash", default "sql") selects the syntax highlighter.
 
 type runbookFile struct {
-	Categories []runbookCategory `json:"categories"`
+	Name        string            `json:"name,omitempty"`
+	Description string            `json:"description,omitempty"` // accepted, unused by the drawer
+	Categories  []runbookCategory `json:"categories"`
 }
 
 type runbookCategory struct {
@@ -36,6 +41,53 @@ type runbookEntry struct {
 	Target      string `json:"target,omitempty"`  // "sql" | "bash"; default "sql"
 }
 
+// Placeholder is a `{{name}}` or `{{name:default}}` slot in a runbook command;
+// the drawer asks for a value before typing the command.
+type Placeholder struct{ Name, Default string }
+
+var placeholderRe = regexp.MustCompile(`\{\{([A-Za-z_][A-Za-z0-9_-]*)(?::([^}]*))?\}\}`)
+
+// templateWords are Go-template keywords that fit the placeholder syntax
+// (`{{end}}`, `{{else}}`) but belong to a go-template/--format argument; a
+// match with one of these names is left as plain text (same rule in
+// web/studio/src/runbook.ts and term.js).
+var templateWords = map[string]bool{"end": true, "else": true, "break": true, "continue": true, "nil": true, "true": true, "false": true}
+
+// Placeholders lists the distinct placeholders of cmd in document order; the
+// first occurrence (and its default) wins.
+func Placeholders(cmd string) []Placeholder {
+	var out []Placeholder
+	seen := map[string]bool{}
+	for _, m := range placeholderRe.FindAllStringSubmatch(cmd, -1) {
+		if !seen[m[1]] && !templateWords[m[1]] {
+			seen[m[1]] = true
+			out = append(out, Placeholder{m[1], m[2]})
+		}
+	}
+	return out
+}
+
+// highlightWithVars highlights cmd with each placeholder occurrence swapped for
+// a private-use sentinel (no letters, digits, quotes or comment characters, so
+// no token rule can split it), then swaps the sentinels for si-rb-var spans.
+// The spans therefore always nest properly inside the token spans.
+func highlightWithVars(cmd, target string) string {
+	var toks []string
+	masked := placeholderRe.ReplaceAllStringFunc(cmd, func(m string) string {
+		if templateWords[placeholderRe.FindStringSubmatch(m)[1]] {
+			return m
+		}
+		toks = append(toks, m)
+		return "\uE000" + string(rune(0xE100+len(toks)-1)) + "\uE001"
+	})
+	out := highlight(masked, target)
+	for i, t := range toks {
+		out = strings.Replace(out, "\uE000"+string(rune(0xE100+i))+"\uE001",
+			`<span class="si-rb-var">`+html.EscapeString(t)+`</span>`, 1)
+	}
+	return out
+}
+
 // runbookForPage parses a runbook JSON file and returns the JSON injected as
 // window.SI_RUNBOOK: the same categories, but each entry carries the raw command
 // (`cmd`, sent to the shell on click) plus pre-highlighted HTML (`html`, shown
@@ -47,12 +99,17 @@ func runbookForPage(raw []byte) (string, error) {
 	if err := json.Unmarshal(raw, &rf); err != nil {
 		return "", fmt.Errorf("runbook: invalid JSON: %w", err)
 	}
+	type outVar struct {
+		Name    string `json:"name"`
+		Default string `json:"default"`
+	}
 	type outEntry struct {
-		Label  string `json:"label"`
-		Desc   string `json:"desc,omitempty"`
-		Cmd    string `json:"cmd"`
-		HTML   string `json:"html"`
-		Target string `json:"target"`
+		Label  string   `json:"label"`
+		Desc   string   `json:"desc,omitempty"`
+		Cmd    string   `json:"cmd"`
+		HTML   string   `json:"html"`
+		Target string   `json:"target"`
+		Vars   []outVar `json:"vars,omitempty"`
 	}
 	type outCat struct {
 		Name    string     `json:"name"`
@@ -74,16 +131,24 @@ func runbookForPage(raw []byte) (string, error) {
 			if target == "" {
 				target = "sql"
 			}
+			var vars []outVar
+			for _, p := range Placeholders(cmd) {
+				vars = append(vars, outVar{p.Name, p.Default})
+			}
 			oc.Entries = append(oc.Entries, outEntry{
 				Label: e.Label, Desc: e.Description, Cmd: cmd,
-				HTML: highlight(cmd, target), Target: target,
+				HTML:   highlightWithVars(cmd, target),
+				Target: target, Vars: vars,
 			})
 		}
 		if len(oc.Entries) > 0 {
 			cats = append(cats, oc)
 		}
 	}
-	b, err := json.Marshal(map[string]any{"categories": cats})
+	b, err := json.Marshal(struct {
+		Name       string   `json:"name,omitempty"`
+		Categories []outCat `json:"categories"`
+	}{rf.Name, cats})
 	if err != nil {
 		return "", err
 	}

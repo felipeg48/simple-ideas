@@ -13,6 +13,8 @@ type deckInfo struct {
 	Path  string   `json:"path"`
 	Title string   `json:"title"`
 	Files []string `json:"files"`
+	// Runbook is the deck's `runbook:` front-matter value, as written.
+	Runbook string `json:"runbook,omitempty"`
 }
 
 // sourceFiles lists the deck's own file first, then each included file in
@@ -53,7 +55,7 @@ func (a *api) decks(w http.ResponseWriter, r *http.Request) {
 				continue // included modules are not decks
 			}
 			if d, err := deck.Parse(f); err == nil {
-				out = append(out, deckInfo{a.rel(d.Path), d.Title(), a.sourceFiles(d)})
+				out = append(out, deckInfo{a.rel(d.Path), d.Title(), a.sourceFiles(d), d.Meta.Runbook})
 			}
 		}
 		entries, _ := os.ReadDir(dir)

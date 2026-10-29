@@ -494,3 +494,16 @@ func TestLabParts(t *testing.T) {
 		t.Errorf("third part body %q", d.Slides[2].Body)
 	}
 }
+
+// Studio's generator writes `runbook:` lines; a BOM before the front matter
+// and a quoted value (paths with spaces or #) must both parse.
+func TestFrontMatterBOMAndQuotedRunbook(t *testing.T) {
+	dir := write(t, map[string]string{"d.md": "\uFEFF--- \ntitle: T\n  runbook :  \"labs/x #1.json\"\n---\n\n# T\n"})
+	d, err := Parse(filepath.Join(dir, "d.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.Meta.Title != "T" || d.Meta.Runbook != "labs/x #1.json" {
+		t.Errorf("meta = %+v", d.Meta)
+	}
+}
