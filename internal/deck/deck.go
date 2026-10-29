@@ -24,6 +24,8 @@ const (
 	KindSection Kind = "section"
 	KindClosing Kind = "closing"
 	KindContent Kind = "content"
+	// KindDocument is the single slide of a `type: lab` file: the whole body.
+	KindDocument Kind = "document"
 )
 
 // Layouts and transitions accepted by the per-slide directives.
@@ -57,6 +59,7 @@ var Directives = map[string]string{
 
 // Meta is the deck-level front matter.
 type Meta struct {
+	Type       string // deck (default) | lab
 	Title      string
 	Author     string
 	Date       string
@@ -82,7 +85,7 @@ type Meta struct {
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "type"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -132,6 +135,43 @@ type Deck struct {
 	Meta     Meta
 	Slides   []*Slide
 	Problems []Problem
+}
+
+// Types are the accepted values of the `type` front matter key.
+var Types = []string{"deck", "lab"}
+
+// IsLab reports whether the file is a lab document (`type: lab`).
+func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
+
+// buildLab makes the whole expanded body one document slide. `---` stays
+// text; slide directives are reported as having no effect.
+func (d *Deck) buildLab(lines []srcLine) {
+	lines = trimBlank(lines)
+	if len(lines) == 0 {
+		d.problem(d.Path, 0, "empty lab: start with a `# Title` line")
+		return
+	}
+	s := &Slide{Kind: KindDocument, File: lines[0].file, Line: lines[0].no, Dir: filepath.Dir(lines[0].file)}
+	text := make([]string, len(lines))
+	var ft fenceTracker
+	for i, l := range lines {
+		text[i] = l.text
+		if ft.inFence(l.text) {
+			continue
+		}
+		if name, _, ok := ParseDirective(l.text); ok {
+			if _, known := Directives[name]; known {
+				d.problem(l.file, l.no, "%q has no effect in a lab document", name)
+			}
+		} else if s.Title == "" && h1RE.MatchString(l.text) {
+			s.Title = h1RE.FindStringSubmatch(l.text)[1]
+		}
+	}
+	if d.Meta.Title != "" {
+		s.Title = d.Meta.Title
+	}
+	s.Body = strings.Join(text, "\n")
+	d.Slides = []*Slide{s}
 }
 
 // Title is the deck title: front matter title, else the title slide.
@@ -227,6 +267,7 @@ func Parse(path string) (*Deck, error) {
 		src = adocToMarkdown(src) // AsciiDoc decks feed the same Markdown pipeline
 	}
 	d := &Deck{Path: abs, Name: strings.TrimSuffix(filepath.Base(abs), filepath.Ext(abs))}
+	d.Meta.Type = "deck"
 	lines := splitLines(src)
 	start := d.frontMatter(abs, lines)
 	var out []srcLine
@@ -234,7 +275,11 @@ func Parse(path string) (*Deck, error) {
 		out = append(out, srcLine{abs, start + i + 1, t})
 	}
 	out = d.expandIncludes(abs, out, []string{abs})
-	d.buildSlides(out)
+	if d.IsLab() {
+		d.buildLab(out)
+	} else {
+		d.buildSlides(out)
+	}
 	return d, nil
 }
 
@@ -291,7 +336,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"accent": &m.Accent, "transition": &m.Transition, "aspect": &m.Aspect, "mermaid": &m.Mermaid, "lang": &m.Lang,
 		"background": &m.Background, "status": &m.Status, "version": &m.Version, "year": &m.Year, "copyright": &m.Copyright,
 		"footer": &m.Footer, "footer-position": &m.FooterPos, "watermark": &m.Watermark, "watermark-opacity": &m.WatermarkOpacity, "labs-label": &m.LabsLabel,
-		"runbook": &m.Runbook,
+		"runbook": &m.Runbook, "type": &m.Type,
 	}[key]
 	if ptr == nil {
 		return false
@@ -308,6 +353,8 @@ func validateMeta(key, val string) string {
 			return "" // a theme CSS file path or URL; resolved at render time
 		}
 		return oneOf("theme", val, Themes)
+	case "type":
+		return oneOf("type", val, Types)
 	case "mode":
 		return oneOf("mode", val, Modes)
 	case "transition":

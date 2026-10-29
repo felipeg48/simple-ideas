@@ -358,3 +358,68 @@ func TestList(t *testing.T) {
 		t.Errorf("List = %s", got)
 	}
 }
+
+func TestLabType(t *testing.T) {
+	tests := []struct {
+		name     string
+		files    map[string]string
+		lab      bool
+		typ      string
+		title    string
+		body     []string // substrings the single document body must contain
+		problems []string
+	}{
+		{name: "no type is a deck", files: map[string]string{"d.md": "# D\n\n---\n\n## A\n"}, typ: "deck"},
+		{name: "type deck", files: map[string]string{"d.md": "---\ntype: deck\n---\n# D\n"}, typ: "deck"},
+		{name: "bad type", files: map[string]string{"d.md": "---\ntype: book\n---\n# D\n"}, typ: "book", problems: []string{`unknown type "book"`}},
+		{name: "lab keeps hr and fenced ---", lab: true, typ: "lab", title: "Lab",
+			files: map[string]string{"d.md": "---\ntype: lab\n---\n# Lab\n\n## One\n\ntext\n\n---\n\n```yaml\n---\na: 1\n```\n"},
+			body:  []string{"# Lab", "\n---\n", "```yaml\n---\na: 1"}},
+		{name: "include expands", lab: true, typ: "lab", title: "Lab",
+			files: map[string]string{"d.md": "---\ntype: lab\n---\n# Lab\n\n<!-- include: p.md -->\n", "p.md": "## Part\n\nfrom part\n"},
+			body:  []string{"## Part", "from part"}},
+		{name: "front matter title wins", lab: true, typ: "lab", title: "Given",
+			files: map[string]string{"d.md": "---\ntype: lab\ntitle: Given\n---\n# Heading\n"}},
+		{name: "slide directives warn", lab: true, typ: "lab", title: "Lab",
+			files:    map[string]string{"d.md": "---\ntype: lab\n---\n<!-- layout: two-col -->\n# Lab\n\n<!-- steps -->\n- a\n\n```\n<!-- class: x -->\n```\n"},
+			problems: []string{`"layout" has no effect in a lab document`, `"steps" has no effect in a lab document`}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			d, err := Parse(filepath.Join(write(t, tc.files), "d.md"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if d.IsLab() != tc.lab || d.Meta.Type != tc.typ {
+				t.Errorf("IsLab=%v type=%q", d.IsLab(), d.Meta.Type)
+			}
+			var msgs []string
+			for _, p := range d.Problems {
+				msgs = append(msgs, p.Msg)
+			}
+			all := strings.Join(msgs, "\n")
+			for _, w := range tc.problems {
+				if !strings.Contains(all, w) {
+					t.Errorf("problems %q lack %q", all, w)
+				}
+			}
+			if len(tc.problems) == 0 && len(msgs) > 0 {
+				t.Errorf("unexpected problems %q", all)
+			}
+			if !tc.lab {
+				return
+			}
+			if len(d.Slides) != 1 || d.Slides[0].Kind != KindDocument || d.Slides[0].Title != tc.title {
+				t.Fatalf("slides = %+v", d.Slides)
+			}
+			for _, w := range tc.body {
+				if !strings.Contains(d.Slides[0].Body, w) {
+					t.Errorf("body %q lacks %q", d.Slides[0].Body, w)
+				}
+			}
+			if strings.Contains(all, "class") {
+				t.Errorf("fenced directive warned: %q", all)
+			}
+		})
+	}
+}
