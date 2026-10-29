@@ -734,27 +734,44 @@ title: Trace an Order Through the Hand-offs
 ## Step 1: read the timeline
 ```
 
-- The `# H1` is the page title (it is dropped from the body when it matches
-  the title). `##` and `###` headings get stable GitHub-style ids and anchor
-  links, and fill the table of contents. The contents sit beside the text on
-  wide screens and collapse above it under about 900 px.
+- The `# H1` is the page title: the first `# H1` whose text equals the title
+  (compared as plain text, so `**bold**` or `` `code` `` in either still
+  matches) is dropped from the body; any other H1 stays. `##` and `###`
+  headings get stable GitHub-style ids and anchor links, and fill the table of
+  contents. The contents sit beside the text on wide screens and collapse
+  above it under about 900 px.
 - A `---` line inside a lab is a horizontal rule, never a slide break.
 - **Callouts** use GitHub alert syntax: `> [!NOTE]`, `> [!TIP]`,
-  `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`. Each becomes a callout with
-  an icon and a title. Callouts are recognised at the top level only (not
-  inside lists or other quotes); any other blockquote stays a quote.
+  `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`. These five are the only
+  kinds (there is no separate checkpoint kind; use `[!IMPORTANT]` or
+  `[!TIP]`). Each becomes a callout with an icon and a title. Callouts are
+  recognised at the top level only (not inside lists or other quotes); any
+  other blockquote stays a quote.
 - Code blocks keep the highlighter, a language label and a copy button. Code
   and markdown tables scroll sideways inside their own box; the page never
-  does. Raw HTML tables are not wrapped.
+  does. Raw HTML tables are not wrapped. A table whose header row is all
+  empty (`| | |`, as pandoc metadata tables have) shows no header.
 - Images become figures, links to other `.md` files become `.html`, and the
   theme, `mode:`, `accent:`, `--theme` and `--css` apply as they do for a deck
   (the `d` key toggles dark mode). The print stylesheet prints the whole guide.
 - An include (`<!-- include: parts/setup.md -->`) pastes the file in place
   without a slide break. Keep included parts in a subfolder: `si build` builds
-  every top-level `.md` of a folder as its own deck or lab.
-- Slide and body directives (`layout`, `steps`, `svg`, `notes`, and so on) have
-  no effect in a lab. Each one is reported by `si check` as a warning and
-  otherwise ignored; an unknown directive is still an error.
+  every top-level `.md` of a folder (except `README.md`, which is never built)
+  as its own deck or lab. A split lab keeps paths relative to each module, as
+  a split deck does: `sections/01-setup.md` writes `![x](../images/x.svg)`,
+  and problems point at the module's own file and line.
+- Slide and body directives (`layout`, `steps`, `svg`, and so on) have no
+  effect in a lab. Each one is reported by `si check` as a warning and
+  otherwise ignored; an unknown directive (`<!-- columns -->`) is also only a
+  warning in a lab (in a deck it is an error). A `Notes:` line is not special
+  in a lab: it renders as ordinary text.
+- Deck-only front matter keys (`aspect`, `transition`, `background`,
+  `watermark`, `watermark-opacity`, `labs-label`, `footer-position`,
+  `runbook`) have no effect in a lab; `si check` warns about each. `footer`,
+  `year` and `copyright` fill the page footer; `author`, `date` and `version`
+  the byline.
+- A lab is one page: it has no prev/next navigation to other labs. Link them
+  with ordinary links (`[Next lab](lab-02.md)` becomes `lab-02.html`).
 - `si build` writes one HTML file per lab and lists it in `index.html` with a
   `LAB` badge and its section count instead of slides and time. A slides PDF
   (`--pdf`) is not made for labs; print the page instead.
