@@ -793,6 +793,8 @@ type IndexEntry struct {
 	PDF      string // optional relative href to a slides PDF (pdfs/<name>.pdf); empty = no badge
 	Status   string // optional status badge (e.g. beta, preview, new)
 	Version  string // optional version badge (e.g. v1.2.0)
+	Lab      bool   // a `type: lab` document: shown as "N sections", no slides/time
+	Sections int    // lab: number of h2 sections
 }
 
 // Index renders the deck index page.
@@ -820,6 +822,9 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 
 	badges := func(e IndexEntry) string {
 		var s string
+		if e.Lab {
+			s += "<span class=\"si-badge\" data-status=\"lab\">LAB</span>"
+		}
 		if e.Status != "" {
 			s += fmt.Sprintf("<span class=\"si-badge\" data-status=\"%s\">%s</span>", html.EscapeString(strings.ToLower(e.Status)), html.EscapeString(strings.ToUpper(e.Status)))
 		}
@@ -839,10 +844,14 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 		if bg != "" {
 			bg = "<div class=\"si-badges\">" + bg + "</div>"
 		}
-		inner := fmt.Sprintf("<b>%s</b><span>%s</span>%s<small>%d slides%s</small>",
-			html.EscapeString(e.Title), html.EscapeString(e.Subtitle), bg, e.Slides, mins)
+		size, kind := fmt.Sprintf("%d slides%s", e.Slides, mins), "deck"
+		if e.Lab {
+			size, kind = fmt.Sprintf("%d sections", e.Sections), "lab"
+		}
+		inner := fmt.Sprintf("<b>%s</b><span>%s</span>%s<small>%s</small>",
+			html.EscapeString(e.Title), html.EscapeString(e.Subtitle), bg, size)
 		if e.PDF == "" {
-			fmt.Fprintf(&b, "<a class=\"si-card\" href=\"%s\">%s</a>\n", html.EscapeString(e.Href), inner)
+			fmt.Fprintf(&b, "<a class=\"si-card\" data-kind=\"%s\" href=\"%s\">%s</a>\n", kind, html.EscapeString(e.Href), inner)
 		} else {
 			// Two sibling links in a positioned wrapper: the card opens the deck, the
 			// badge downloads the PDF. (Nesting <a> in <a> is invalid HTML.)
@@ -863,8 +872,12 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 		if e.PDF != "" {
 			pdf = fmt.Sprintf("<a href=\"%s\" download>PDF</a>", html.EscapeString(e.PDF))
 		}
-		fmt.Fprintf(&b, "<tr><td><a href=\"%s\">%s</a></td><td>%s</td><td>%d</td><td>%s</td><td>%s</td></tr>\n",
-			html.EscapeString(e.Href), html.EscapeString(e.Title), badges(e), e.Slides, t, pdf)
+		n := fmt.Sprint(e.Slides)
+		if e.Lab {
+			n, t = fmt.Sprintf("%d sections", e.Sections), ""
+		}
+		fmt.Fprintf(&b, "<tr><td><a href=\"%s\">%s</a></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n",
+			html.EscapeString(e.Href), html.EscapeString(e.Title), badges(e), n, t, pdf)
 	}
 	b.WriteString("</tbody></table>\n</main>\n")
 	b.WriteString(`<script>(function(){var m=document.querySelector('.si-index');if(!m)return;var btns=m.querySelectorAll('.si-view button');function set(v){m.setAttribute('data-view',v);btns.forEach(function(x){x.setAttribute('aria-pressed',x.getAttribute('data-view')===v?'true':'false')});try{localStorage.setItem('si-index-view',v)}catch(e){}}var saved;try{saved=localStorage.getItem('si-index-view')}catch(e){}set(saved==='list'?'list':'tiles');btns.forEach(function(b){b.addEventListener('click',function(){set(b.getAttribute('data-view'))})})})();</script>` + "\n")
@@ -878,13 +891,32 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 // Entry builds an index entry for a parsed deck.
 func Entry(d *deck.Deck) IndexEntry {
 	e := IndexEntry{Href: d.Name + ".html", Title: plain(d.Title()), Slides: len(d.Slides), Minutes: d.Minutes(), Status: d.Meta.Status, Version: d.Meta.Version}
+	if d.IsLab() {
+		e.Lab, e.Sections, e.Slides, e.Minutes = true, labSections(d), 0, 0
+	}
 	if len(d.Slides) > 0 {
 		for _, line := range strings.Split(d.Slides[0].Body, "\n") {
-			if t := strings.TrimSpace(line); t != "" && !strings.HasPrefix(t, "<!--") {
+			if t := strings.TrimSpace(line); t != "" && !strings.HasPrefix(t, "<!--") && !(e.Lab && strings.HasPrefix(t, "#")) {
 				e.Subtitle = plain(t)
 				break
 			}
 		}
 	}
 	return e
+}
+
+// labSections counts a lab's h2 headings, ignoring fenced code.
+func labSections(d *deck.Deck) int {
+	n, fence := 0, false
+	for _, s := range d.Slides {
+		for _, line := range strings.Split(s.Body, "\n") {
+			switch {
+			case strings.HasPrefix(line, "```") || strings.HasPrefix(line, "~~~"):
+				fence = !fence
+			case !fence && strings.HasPrefix(line, "## "):
+				n++
+			}
+		}
+	}
+	return n
 }

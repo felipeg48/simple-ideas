@@ -33,6 +33,7 @@ this file; `examples/showcase.md` uses every rule in a real talk.
 15. [Styling: themes and your own CSS](#15-styling-themes-and-your-own-css)
 16. [Configuring keys and features (si.conf)](#16-configuring-keys-and-features-siconf)
 17. [What si check reports](#17-what-si-check-reports)
+18. [Lab documents](#18-lab-documents)
 
 ## 1. Decks and files
 
@@ -84,6 +85,7 @@ lang: en
 | `watermark` | text, or an image path | none | a faint layer behind every slide — literal text (e.g. `Draft`) is drawn large and angled; an image path is inlined once and centred |
 | `watermark-opacity` | number `0`–`1` | `0.06` | how visible the watermark is |
 | `labs-label` | text | `Now, let's do a Lab!` | the heading on every lab slide (see the `labs` directive) |
+| `type` | `deck`, `lab` | `deck` | `lab` renders the file as a readable guide page instead of slides; see [Lab documents](#18-lab-documents). Anything else is a `si check` problem |
 | `runbook` | path to a `.json` file | none | a command cheat-sheet shown in the **`si play` terminal drawer only** (never in a built deck); see §14 |
 
 An included module's own front matter is ignored; the including deck decides.
@@ -704,8 +706,59 @@ value is a warning printed to the terminal, never a failed build.
 - a `steps:` list with more state tokens than items
 - an `image` directive not followed by a paragraph holding one image
 - a second `# H1` inside a slide
+- a `type` that is not `deck` or `lab`
 - a malformed `stage` block (unknown node, impossible `dot`/`flow` route, bad `dir`)
 - an authored canvas SVG with a `<` inside its `<style>`, or with no `viewBox`
   and no `width`+`height` to derive one
 
-Warnings (exit 0): inlined files above 2 MB.
+Warnings (exit 0): inlined files above 2 MB; slide or body directives in a lab.
+
+## 18. Lab documents
+
+`type: lab` in the front matter turns the file into one readable guide page,
+for hands-on material that people follow at their own pace: a header with the
+title and byline, a table of contents beside the text, the guide, and a footer.
+There are no slides, steps, canvases or teleprompter.
+
+```markdown
+---
+type: lab
+title: Trace an Order Through the Hand-offs
+---
+
+# Trace an Order Through the Hand-offs
+
+> [!NOTE]
+> Everything here is read-only until the last step.
+
+## Step 1: read the timeline
+```
+
+- The `# H1` is the page title (it is dropped from the body when it matches
+  the title). `##` and `###` headings get stable GitHub-style ids and anchor
+  links, and fill the table of contents. The contents sit beside the text on
+  wide screens and collapse above it under about 900 px.
+- A `---` line inside a lab is a horizontal rule, never a slide break.
+- **Callouts** use GitHub alert syntax: `> [!NOTE]`, `> [!TIP]`,
+  `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`. Each becomes a callout with
+  an icon and a title. Callouts are recognised at the top level only (not
+  inside lists or other quotes); any other blockquote stays a quote.
+- Code blocks keep the highlighter, a language label and a copy button. Code
+  and markdown tables scroll sideways inside their own box; the page never
+  does. Raw HTML tables are not wrapped.
+- Images become figures, links to other `.md` files become `.html`, and the
+  theme, `mode:`, `accent:`, `--theme` and `--css` apply as they do for a deck
+  (the `d` key toggles dark mode). The print stylesheet prints the whole guide.
+- An include (`<!-- include: parts/setup.md -->`) pastes the file in place
+  without a slide break. Keep included parts in a subfolder: `si build` builds
+  every top-level `.md` of a folder as its own deck or lab.
+- Slide and body directives (`layout`, `steps`, `svg`, `notes`, and so on) have
+  no effect in a lab. Each one is reported by `si check` as a warning and
+  otherwise ignored; an unknown directive is still an error.
+- `si build` writes one HTML file per lab and lists it in `index.html` with a
+  `LAB` badge and its section count instead of slides and time. A slides PDF
+  (`--pdf`) is not made for labs; print the page instead.
+- In Studio, labs show a lab icon in the tree and open in the preview like
+  decks.
+
+The showcase has one: `examples/order-lab.md`.

@@ -107,3 +107,42 @@ func TestWebFlagParses(t *testing.T) {
 		t.Fatalf("%v %+v", err, o)
 	}
 }
+
+const labMD = "---\ntype: lab\ntitle: Quorum Lab\n---\n\n# Quorum Lab\n\n## One\n\ntext\n\n```\n## not a section\n```\n\n## Two\n\n> [!NOTE]\n> hi\n"
+
+func TestBuildWritesLab(t *testing.T) {
+	dir, out := t.TempDir(), t.TempDir()
+	os.WriteFile(filepath.Join(dir, "talk.md"), []byte("# Talk\n\nhello\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "lab.md"), []byte(labMD), 0o644)
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"build", "-o", out, dir}, &stdout, &stderr); code != 0 {
+		t.Fatalf("exit %d: %s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "lab  2 sections") {
+		t.Errorf("summary lacks lab line:\n%s", stdout.String())
+	}
+	idx, err := os.ReadFile(filepath.Join(out, "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"lab.html", "talk.html", `data-kind="lab"`, "2 sections"} {
+		if !strings.Contains(string(idx), want) {
+			t.Errorf("index lacks %q", want)
+		}
+	}
+}
+
+func TestCheckLab(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "lab.md"), []byte(labMD+"\n![x](missing.png)\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "bad.md"), []byte("---\ntype: wiki\n---\n# B\n"), 0o644)
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"check", dir}, &stdout, &stderr); code != exitProblems {
+		t.Fatalf("exit %d", code)
+	}
+	for _, want := range []string{"lab.md:", "missing file: missing.png", "type"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Errorf("check lacks %q:\n%s", want, stderr.String())
+		}
+	}
+}

@@ -1,6 +1,6 @@
 // Typed client for the Studio backend (/_si/studio/api/), same origin, cookie auth.
 
-export type Kind = "dir" | "deck" | "markdown" | "svg" | "css" | "json" | "image" | "other";
+export type Kind = "dir" | "deck" | "lab" | "markdown" | "svg" | "css" | "json" | "image" | "other";
 export interface Node { name: string; path: string; kind: Kind; children?: Node[] }
 export interface FileData { path: string; content: string; etag: string }
 export interface DeckInfo { path: string; title: string; files: string[] }
