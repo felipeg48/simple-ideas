@@ -17,13 +17,19 @@ import { ApiError, api, type Kind, type Problem, type Rules } from "./api";
 import { createAutosave } from "./autosave";
 import { clear, restore, stash } from "./buffers";
 import { siMarkdown } from "./si-lang";
+import { under } from "./tabs";
 
-export interface DocStatus { dirty: boolean; saving: boolean; conflict: boolean; error?: string }
+export interface DocStatus { dirty: boolean; saving: boolean; conflict: boolean; deleted: boolean; error?: string }
+
+/** unsaved: the doc holds text that is not on disk (or may not be). */
+export const unsaved = (s?: DocStatus) => !!s && (s.dirty || s.conflict || s.deleted || !!s.error);
 
 /** EditorCtl lets the app save or forget documents (a dropped doc keeps any stashed buffer). */
 export interface EditorCtl {
   flush(): Promise<void>;
   drop(path: string): void;
+  /** unsaved lists open docs at or under path whose text is not safely on disk. */
+  unsaved(path: string): string[];
 }
 
 interface Doc {
@@ -34,6 +40,7 @@ interface Doc {
   banner?: string;
   conflict?: { etag: string; content: string };
   error?: string;
+  deleted?: boolean; // the file vanished from disk while it held unsaved text
   saving: boolean;
   chain: Promise<void>;
   auto: ReturnType<typeof createAutosave>;
@@ -127,6 +134,8 @@ interface Props {
   problems: Problem[];
   reload: number;
   reveal: { path: string; line: number; n: number } | null;
+  missing: Set<string>;
+  onDiscard(path: string): void;
   ctl: { current: EditorCtl | null };
   onCursor(line: number, col: number): void;
   onStatus(path: string, s: DocStatus): void;
@@ -145,10 +154,10 @@ export function Editor(p: Props) {
 
   const text = (d: Doc) => (cur.current === d.path && view.current ? view.current.state.doc.toString() : d.state.doc.toString());
   const status = (d: Doc) =>
-    props.current.onStatus(d.path, { dirty: text(d) !== d.saved, saving: d.saving, conflict: !!d.conflict, error: d.error });
+    props.current.onStatus(d.path, { dirty: text(d) !== d.saved, saving: d.saving, conflict: !!d.conflict, deleted: !!d.deleted, error: d.error });
 
   async function save(d: Doc) {
-    if (d.conflict || !docs.current.has(d.path)) return;
+    if (d.conflict || d.deleted || !docs.current.has(d.path)) return;
     const body = text(d);
     if (body === d.saved) { clear(d.path); return status(d); }
     d.saving = true;
@@ -162,6 +171,7 @@ export function Editor(p: Props) {
     } catch (e) {
       if (e instanceof ApiError && e.status === 409 && e.body?.etag !== undefined)
         d.conflict = { etag: e.body.etag, content: e.body.content ?? "" };
+      else if (e instanceof ApiError && e.status === 404) d.deleted = true; // never recreate silently
       else d.error = message(e);
     }
     d.saving = false;
@@ -268,7 +278,12 @@ export function Editor(p: Props) {
     p.ctl.current = {
       async flush() { await Promise.all([...docs.current.values()].map((d) => d.auto.flush().then(() => d.chain))); },
       drop(path) {
-        for (const k of [...docs.current.keys()]) if (k === path || k.startsWith(path + "/")) docs.current.delete(k);
+        for (const k of [...docs.current.keys()]) if (under(k, path)) docs.current.delete(k);
+      },
+      unsaved(path) {
+        return [...docs.current.values()]
+          .filter((d) => under(d.path, path) && (text(d) !== d.saved || d.conflict || d.deleted || d.error))
+          .map((d) => d.path);
       },
     };
     return () => { document.removeEventListener("visibilitychange", onHide); v.destroy(); };
@@ -284,6 +299,15 @@ export function Editor(p: Props) {
   }, [p.path]);
 
   useEffect(applyDiagnostics, [p.problems, p.path]);
+
+  // files gone from disk while holding unsaved text: say so instead of saving
+  useEffect(() => {
+    for (const d of docs.current.values()) {
+      const gone = p.missing.has(d.path);
+      if (gone !== !!d.deleted) { d.deleted = gone; status(d); }
+    }
+    rerender();
+  }, [p.missing]);
 
   useEffect(() => {
     const d = p.path && docs.current.get(p.path);
@@ -310,13 +334,20 @@ export function Editor(p: Props) {
           <button class="btn" onClick={() => { const c = d.conflict!; d.conflict = undefined; replace(d, c.content, c.etag); rerender(); }}>Use disk version</button>
         </div>
       )}
+      {d?.deleted && (
+        <div class="banner banner-err" role="alert">
+          <span><b>Deleted on disk.</b> Your text is only in Studio now.</span>
+          <button class="btn btn-pri" onClick={() => { d.deleted = false; d.etag = ""; void (d.chain = d.chain.then(() => save(d))); rerender(); }}>Save it again</button>
+          <button class="btn" onClick={() => p.onDiscard(d.path)}>Discard</button>
+        </div>
+      )}
       {d?.banner && !d.conflict && (
         <div class="banner banner-info" role="status">
           <span>{d.banner}</span>
           <button class="btn" onClick={() => { d.banner = undefined; rerender(); }}>Dismiss</button>
         </div>
       )}
-      {d?.error && !d.conflict && (
+      {d?.error && !d.conflict && !d.deleted && (
         <div class="banner banner-err" role="alert">
           <span>Not saved: {d.error}</span>
           <button class="btn" onClick={() => { d.error = undefined; void (d.chain = d.chain.then(() => save(d))); }}>Retry</button>

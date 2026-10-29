@@ -4,12 +4,13 @@ import type { JSX } from "preact";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { ApiError, api, type Check, type DeckInfo, type Kind, type Node, type Problem, type Rules, deckURL } from "./api";
 import { clear } from "./buffers";
-import { type DocStatus, Editor, type EditorCtl } from "./editor";
+import { type DocStatus, Editor, type EditorCtl, unsaved } from "./editor";
 import { Icon, type IconName, Navigator } from "./navigator";
 import { Preview } from "./preview";
 import { Problems } from "./problems";
 import { slideForCursor } from "./slidemap";
 import { StatusBar } from "./statusbar";
+import { survivingTabs, under } from "./tabs";
 import { type ThemeMode, applyTheme, storedTheme } from "./theme";
 
 type CheckResult = Check | { error: string };
@@ -102,6 +103,7 @@ export function App() {
   const [deckPath, setDeckPath] = useState<string | null>(null);
   const [theme, setTheme] = useState<ThemeMode>(storedTheme);
   const [offline, setOffline] = useState(false);
+  const [missing, setMissing] = useState<Set<string>>(() => new Set());
   const [layout, setLayout] = useState(() => load("si-studio-layout", { nav: 248, prev: 0.5 }));
   const panes = useRef<HTMLDivElement>(null);
   const ctl = useRef<EditorCtl | null>(null);
@@ -145,14 +147,16 @@ export function App() {
   useEffect(() => persist("si-studio-tabs", { tabs, active }), [tabs, active]);
   useEffect(() => persist("si-studio-layout", layout), [layout]);
 
-  // drop restored tabs whose files are gone
+  // tabs whose files are gone close, unless they hold unsaved text: those stay, marked deleted
   useEffect(() => {
     if (!tree) return;
-    const gone = tabs.filter((t) => !nodes.has(t));
-    if (gone.length) {
-      setTabs((ts) => ts.filter((t) => nodes.has(t)));
-      if (active && !nodes.has(active)) setActive(null);
+    const keep = new Set(Object.entries(status).filter(([, s]) => unsaved(s)).map(([p]) => p));
+    const r = survivingTabs(tabs, (p) => nodes.has(p), keep);
+    if (r.tabs.length !== tabs.length) {
+      setTabs(r.tabs);
+      if (active && !r.tabs.includes(active)) setActive(r.tabs[0] ?? null);
     }
+    setMissing((m) => (m.size === r.missing.length && r.missing.every((p) => m.has(p)) ? m : new Set(r.missing)));
   }, [tree]);
 
   // the preview follows the deck that owns the open file
@@ -184,7 +188,7 @@ export function App() {
     }
     return { problems, errors };
   }, [checks]);
-  const dirty = useMemo(() => new Set(Object.entries(status).filter(([, s]) => s.dirty || s.conflict).map(([p]) => p)), [status]);
+  const dirty = useMemo(() => new Set(Object.entries(status).filter(([, s]) => unsaved(s)).map(([p]) => p)), [status]);
 
   const open = (path: string, line?: number) => {
     setTabs((ts) => (ts.includes(path) ? ts : [...ts, path]));
@@ -201,6 +205,17 @@ export function App() {
     });
     setStatus(({ [path]: _, ...s }) => s);
   };
+  const discard = (path: string) => {
+    ctl.current?.drop(path);
+    clear(path);
+    setTabs((ts) => {
+      const rest = ts.filter((t) => t !== path);
+      if (active === path) setActive(rest[0] ?? null);
+      return rest;
+    });
+    setStatus(({ [path]: _, ...s }) => s);
+    setMissing((m) => { const n = new Set(m); n.delete(path); return n; });
+  };
   const onStatus = useCallback((path: string, s: DocStatus) => setStatus((m) => ({ ...m, [path]: s })), []);
   const onCursor = useCallback((line: number, col: number) => setCursor({ line, col }), []);
 
@@ -211,9 +226,13 @@ export function App() {
   };
   const onRename = async (from: string, to: string) => {
     await ctl.current?.flush();
+    // a doc that still differs from disk would lose its text in the move: make the user settle it first
+    const blocked = ctl.current?.unsaved(from) ?? [];
+    if (blocked.length)
+      throw new Error(`${blocked.map(baseName).join(", ")} has changes that are not on disk yet (conflict, deleted or failed save). Resolve them in the editor first.`);
     try { await api.rename(from, to); } catch (e) { throw new Error(why(e, "rename")); }
     ctl.current?.drop(from);
-    const move = (t: string) => (t === from ? to : t.startsWith(from + "/") ? to + t.slice(from.length) : t);
+    const move = (t: string) => (under(t, from) ? to + t.slice(from.length) : t);
     setTabs((ts) => ts.map(move));
     setActive((a) => (a ? move(a) : a));
     await refresh();
@@ -222,7 +241,7 @@ export function App() {
     try { await api.remove(path); } catch (e) { throw new Error(why(e, "delete")); }
     ctl.current?.drop(path);
     clear(path);
-    const keep = (t: string) => t !== path && !t.startsWith(path + "/");
+    const keep = (t: string) => !under(t, path);
     setTabs((ts) => ts.filter(keep));
     setActive((a) => (a && keep(a) ? a : null));
     await refresh();
@@ -277,7 +296,8 @@ export function App() {
                 {tabs.map((t) => {
                   const st = status[t];
                   return (
-                    <div class={"tab" + (t === active ? " on" : "")} key={t} title={t}
+                    <div class={"tab" + (t === active ? " on" : "") + (missing.has(t) ? " gone" : "")} key={t}
+                      title={missing.has(t) ? t + " (deleted on disk)" : t}
                       onAuxClick={(e) => e.button === 1 && void closeTab(t)}>
                       <button role="tab" aria-selected={t === active} class="tab-main" onClick={() => setActive(t)}>
                         <Icon name={kindOf(t)} class={"k-" + kindOf(t)} />{baseName(t)}
@@ -291,7 +311,7 @@ export function App() {
               <div class="ed-body">
                 {ready && (
                   <Editor path={textPath} kind={textPath ? kindOf(textPath) : "other"} rules={rules} problems={problems}
-                    reload={reload} reveal={reveal} ctl={ctl} onCursor={onCursor} onStatus={onStatus} />
+                    reload={reload} reveal={reveal} missing={missing} onDiscard={discard} ctl={ctl} onCursor={onCursor} onStatus={onStatus} />
                 )}
                 {isImage && active && (
                   <div class="imgview">

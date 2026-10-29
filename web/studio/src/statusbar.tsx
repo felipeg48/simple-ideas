@@ -11,7 +11,7 @@ export function StatusBar(p: {
   decks: number; problems: number; check: Check | null; cursor: { line: number; col: number } | null;
   kind: string | null; doc: DocStatus | null; slide: number | null; onProblems(): void;
 }) {
-  const save = !p.doc ? "" : p.doc.conflict ? "Conflict" : p.doc.error ? "Not saved" : p.doc.saving ? "Saving…" : p.doc.dirty ? "Edited" : "Saved";
+  const save = !p.doc ? "" : p.doc.deleted ? "Deleted on disk" : p.doc.conflict ? "Conflict" : p.doc.error ? "Not saved" : p.doc.saving ? "Saving…" : p.doc.dirty ? "Edited" : "Saved";
   return (
     <footer class="foot" aria-label="Status">
       <button class={"foot-check" + (p.problems ? " bad" : "")} onClick={p.onProblems} title="Show problems">

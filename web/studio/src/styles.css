@@ -216,6 +216,7 @@ code, kbd { font-family: var(--mono); font-size: .92em; }
 .tab { display: flex; align-items: center; border-right: 1px solid var(--line); color: var(--mute); font-size: 12px; flex: none; position: relative; }
 .tab:hover { color: var(--ink-2); }
 .tab.on { background: var(--ed-bg); color: var(--ink); box-shadow: inset 0 2px 0 var(--accent); }
+.tab.gone .tab-main { text-decoration: line-through; text-decoration-color: var(--red); }
 .tab.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: var(--ed-bg); }
 .tab-main { display: flex; align-items: center; gap: 7px; height: 100%; padding: 0 4px 0 13px; }
 .tab-main .ico { width: 14px; height: 14px; }
@@ -312,7 +313,7 @@ button.prob:hover { background: var(--hover); }
 .foot-save { display: inline-flex; align-items: center; gap: 6px; }
 .foot-save i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 .s-edited i, .s-saving i { background: var(--accent); }
-.s-conflict i, .s-notsaved i { background: var(--red); }
+.s-conflict i, .s-notsaved i, .s-deletedondisk i { background: var(--red); }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 @media (max-width: 1100px) {
