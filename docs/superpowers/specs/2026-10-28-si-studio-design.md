@@ -100,6 +100,24 @@ files with the runbook shape). They are edited as ordinary Markdown/JSON
 files; HTML renders of guides stay the workspace's own scripts. The
 "verified" badge in the mockups is decoration and is not in v1.
 
+### Runbooks: generator and editor (decided)
+
+- **Generator:** "New runbook" asks for the runbook's name and description,
+  then guides the author through categories and entries (label, description,
+  command, target `bash` or `sql`), producing a runbook JSON file in the
+  v0.7 format.
+- **Editor:** a visual editor for any runbook JSON: add, edit, duplicate,
+  delete and reorder (drag and drop) categories and entries, with a
+  **Raw JSON** toggle for manual editing. Both views stay in sync; invalid JSON
+  or a malformed entry is flagged inline and never silently dropped.
+- **Placeholders:** commands may contain placeholders `{name}` or
+  `{name:default}` (the VS Code extension's `{node1}` style). The editor
+  highlights them and offers insert helpers (pick a name, optional default,
+  reuse names already used in the runbook). This needs a small `si` core change:
+  when a drawer entry contains placeholders, the terminal drawer asks for the
+  values (prefilled with defaults, remembered for the session) before typing
+  or running the command. Documented in RULES.md like any runbook rule.
+
 ### Creating things
 
 From the navigator and ⌘K: new workspace (from `si new` scaffolds), new deck,
