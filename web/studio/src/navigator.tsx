@@ -172,7 +172,7 @@ export function Navigator(p: Props) {
     );
   };
   const newRunbook = (dir: string) => setDialog(
-    <RunbookWizard tree={p.tree} decks={p.decks} dir={dir} onClose={close} onCreated={p.onRunbook} />,
+    <RunbookWizard tree={p.tree} decks={p.decks} dirty={p.dirty} dir={dir} onClose={close} onCreated={p.onRunbook} />,
   );
   const remove = (n: Node) => setDialog(
     <Dialog title={`Delete ${n.name}?`} okLabel="Delete" danger onClose={close}

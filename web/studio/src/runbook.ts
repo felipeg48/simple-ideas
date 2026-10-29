@@ -22,6 +22,9 @@ function split(o: Record<string, unknown>, known: Record<string, (v: unknown) =>
 const str = (v: unknown) => typeof v === "string";
 const tgt = (v: unknown) => v === "bash" || v === "sql";
 
+/** EMPTY_RB is what an empty file means to the Visual view: a runbook with no categories. */
+export const EMPTY_RB = '{ "categories": [] }';
+
 export function isRunbookText(text: string): boolean {
   try {
     const v = JSON.parse(text);
@@ -78,8 +81,40 @@ function errPos(text: string, msg: string): { line: number; col: number } {
   if (lc) return { line: +lc[1], col: +lc[2] };
   const p = /position (\d+)/.exec(msg);
   const pos = p ? +p[1] : scanErr(text);
+  return lineCol(text, pos);
+}
+
+function lineCol(text: string, pos: number): { line: number; col: number } {
   const before = text.slice(0, pos);
   return { line: before.split("\n").length, col: pos - (before.lastIndexOf("\n") + 1) + 1 };
+}
+
+/** jsonPos is where the value at path (keys and indexes) starts in text; 1:1 when it cannot be found. */
+export function jsonPos(text: string, path: (string | number)[]): { line: number; col: number } {
+  let i = 0;
+  const ws = () => { while (/[ \t\r\n]/.test(text[i] ?? "")) i++; };
+  const str = (): string => { const a = i++; while (i < text.length && text[i] !== '"') i += text[i] === "\\" ? 2 : 1; return JSON.parse(text.slice(a, ++i)); };
+  const val = (d: number, on: boolean): void => {
+    ws();
+    if (on && d === path.length) throw i;
+    const c = text[i];
+    if (c === "{" || c === "[") {
+      i++;
+      for (let k = 0; ; k++) {
+        ws();
+        if (text[i] === "}" || text[i] === "]") { i++; return; }
+        if (k > 0) { if (text[i++] !== ",") throw -1; ws(); }
+        if (c === "{") { const key = str(); ws(); if (text[i++] !== ":") throw -1; val(d + 1, on && key === path[d]); }
+        else val(d + 1, on && k === path[d]);
+      }
+    }
+    if (c === '"') { str(); return; }
+    const m = /^[^\s,\]}]+/.exec(text.slice(i));
+    if (!m) throw -1;
+    i += m[0].length;
+  };
+  try { val(0, true); } catch (e) { if (typeof e === "number" && e >= 0) return lineCol(text, e); }
+  return { line: 1, col: 1 };
 }
 
 export function parseRunbook(text: string): ParseResult {
@@ -243,14 +278,18 @@ const metaRE = /^([a-z][a-z-]*)\s*:\s*(.*?)\s*$/; // same as internal/deck metaR
 /** metaValue is a front-matter value; anything but a plain path is quoted (si strips the quotes). */
 export const metaValue = (v: string) => (/^[\w./-]+$/.test(v) ? v : `"${v}"`);
 
+export const isAdoc = (path: string) => /\.adoc$/i.test(path);
+
 /**
  * linkRunbook sets `runbook: <rel>` in a deck's front matter. Front matter is
  * recognised exactly as internal/deck does: a `---` first line (after a BOM),
  * then only blank, `#` or `key: value` lines up to a closing `---`. An existing
  * runbook line is replaced, else one is added before the closing fence; with no
  * front matter a new block is prepended. Every other byte stays as it was.
+ * An AsciiDoc deck (path ending .adoc) has no front matter: it throws.
  */
-export function linkRunbook(deck: string, rel: string): string {
+export function linkRunbook(deck: string, rel: string, path = ""): string {
+  if (isAdoc(path)) throw new Error("AsciiDoc decks are linked by hand: add :runbook: to the header");
   const bom = deck.startsWith("\uFEFF") ? "\uFEFF" : "";
   const lines = deck.slice(bom.length).split(/(?<=\n)/); // each line keeps its own ending
   const body = (l: string) => l.replace(/\r?\n$/, "");

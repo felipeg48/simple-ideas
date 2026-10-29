@@ -7,13 +7,13 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { ApiError, api, type DeckInfo, type Node } from "./api";
 import { CommandField } from "./placeholder-input";
 import { Icon } from "./navigator";
-import { type Runbook, linkRunbook, placeholderMatches, placeholders, relPath, serializeRunbook, slugify, validate } from "./runbook";
+import { type Runbook, isAdoc, linkRunbook, placeholderMatches, placeholders, relPath, serializeRunbook, slugify, validate } from "./runbook";
 
 type Target = "" | "bash" | "sql";
 interface WEntry { label: string; description: string; command: string; target: Target }
 interface WCat { name: string; entries: WEntry[] }
 
-const blankEntry = (target: Target = ""): WEntry => ({ label: "", description: "", command: "", target });
+const blankEntry = (target: Target = "bash"): WEntry => ({ label: "", description: "", command: "", target });
 const isBlank = (e: WEntry) => !e.label.trim() && !e.description.trim() && !e.command.trim();
 const join = (dir: string, name: string) => (dir ? dir + "/" + name : name);
 const EXISTS = "A file with this name already exists";
@@ -71,7 +71,7 @@ function highlightJson(text: string): (string | JSX.Element)[] {
   return out;
 }
 
-export function RunbookWizard(p: { tree: Node | null; decks: DeckInfo[]; dir: string; onClose(): void; onCreated(path: string): Promise<void> }) {
+export function RunbookWizard(p: { tree: Node | null; decks: DeckInfo[]; dir: string; dirty?: Set<string>; onClose(): void; onCreated(path: string): Promise<void> }) {
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
@@ -85,6 +85,7 @@ export function RunbookWizard(p: { tree: Node | null; decks: DeckInfo[]; dir: st
   const [err, setErr] = useState("");
   const [linkErrs, setLinkErrs] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [asking, setAsking] = useState(false); // "discard what you typed?" shown in the footer
   const creating = useRef(false); // a fast double Enter must not fire two creates
   const created = useRef(false); // the file is on disk: from now on only "open it" is left
   const box = useRef<HTMLDivElement>(null);
@@ -97,6 +98,9 @@ export function RunbookWizard(p: { tree: Node | null; decks: DeckInfo[]; dir: st
   const json = useMemo(() => serializeRunbook(rb), [rb]);
   const names = useMemo(() => [...new Set(cats.flatMap((c) => c.entries.flatMap((e) => placeholders(e.command).map((x) => x.name))))], [cats]);
   const count = rb.categories.reduce((n, c) => n + c.entries.length, 0);
+  // why a deck cannot be linked from here ("" = it can)
+  const blocked = (d: string) => isAdoc(d) ? "adoc" : p.dirty?.has(d) ? "dirty" : "";
+  const linked = [...links].filter((d) => !blocked(d));
 
   // focus: a freshly added row, else the first field of the step
   useEffect(() => {
@@ -168,10 +172,10 @@ export function RunbookWizard(p: { tree: Node | null; decks: DeckInfo[]; dir: st
     }
     // link the chosen decks: read, edit the front matter, write back only if nobody changed it meanwhile
     const fails: string[] = [];
-    for (const d of links) {
+    for (const d of linked) {
       try {
         const f = await api.read(d);
-        const text = linkRunbook(f.content, relPath(d, path));
+        const text = linkRunbook(f.content, relPath(d, path), d);
         if (text !== f.content) await api.write(d, text, f.etag);
       } catch (e) {
         fails.push(e instanceof ApiError && e.status === 409 ? `${d} changed on disk while linking, so it was left alone.` : `${d}: ${e instanceof Error ? e.message : String(e)}`);
@@ -193,11 +197,21 @@ export function RunbookWizard(p: { tree: Node | null; decks: DeckInfo[]; dir: st
     setCats((cs) => [...cs, { name: "", entries: [blankEntry()] }]);
   };
 
+  // cancelling after something was typed asks first (inline, in the footer); a second Esc keeps editing
+  const entered = !!(name.trim() || desc.trim() || fileEdited || links.size || cats.some((c) => c.name.trim() || c.entries.some((e) => !isBlank(e))));
+  const cancel = () => { if (entered && !created.current) setAsking(true); else p.onClose(); };
+  const asked = useRef(false);
+  useEffect(() => {
+    if (asking) asked.current = true;
+    else if (!asked.current) return;
+    box.current?.querySelector<HTMLElement>(asking ? ".wiz-ask .btn" : ".wiz-body input, .wiz-body select, .wiz-body textarea")?.focus();
+  }, [asking]);
+
   const onKey = (e: KeyboardEvent) => {
     const t = e.target as HTMLElement;
     if (t.closest(".ph-pop")) return; // the placeholder popover handles its own keys
-    if (e.key === "Escape") { e.preventDefault(); p.onClose(); return; }
-    if (e.key !== "Enter" || e.shiftKey || e.altKey) return;
+    if (e.key === "Escape") { e.preventDefault(); asking ? setAsking(false) : cancel(); return; }
+    if (asking || e.key !== "Enter" || e.shiftKey || e.altKey) return;
     const mod = e.metaKey || e.ctrlKey;
     if (mod || (t.tagName === "INPUT" && !e.isComposing)) { e.preventDefault(); next(); }
   };
@@ -260,7 +274,7 @@ export function RunbookWizard(p: { tree: Node | null; decks: DeckInfo[]; dir: st
                 <label class="wiz-f">
                   <span class="rb-flabel">Target</span>
                   <select class="field plain" aria-label="Target" value={e.target} onChange={(ev) => setEntry(ci, ei, { target: ev.currentTarget.value as Target })}>
-                    <option value="">default (bash)</option>
+                    <option value="">default (sql)</option>
                     <option value="bash">bash</option>
                     <option value="sql">sql</option>
                   </select>
@@ -291,18 +305,25 @@ export function RunbookWizard(p: { tree: Node | null; decks: DeckInfo[]; dir: st
       <p class="dialog-body">Decks that use this runbook open it in the presenter's command drawer. Checked decks get <code>runbook:</code> in their front matter (an existing <code>runbook:</code> line is replaced).</p>
       {p.decks.length === 0 ? <p class="wiz-empty mute">No decks in this workspace yet. You can link one later with a <code>runbook:</code> line.</p> : (
         <ul class="wiz-decks">
-          {p.decks.map((d) => (
-            <li key={d.path}>
-              <label class={"wiz-deck" + (links.has(d.path) ? " on" : "")}>
-                <input type="checkbox" aria-label={`Link ${d.path}`} checked={links.has(d.path)}
-                  onChange={(e) => { const on = e.currentTarget.checked; setLinks((s) => { const n = new Set(s); on ? n.add(d.path) : n.delete(d.path); return n; }); }} />
-                <Icon name="deck" class="k-deck" />
-                <span class="t">{d.title || d.path}</span>
-                <span class="p">{d.path}</span>
-                {links.has(d.path) && <code class="wiz-fm">runbook: {relPath(d.path, path)}</code>}
-              </label>
-            </li>
-          ))}
+          {p.decks.map((d) => {
+            const why = blocked(d.path), on = !why && links.has(d.path);
+            return (
+              <li key={d.path}>
+                <label class={"wiz-deck" + (on ? " on" : "") + (why ? " off" : "")}>
+                  <input type="checkbox" aria-label={`Link ${d.path}`} checked={on} disabled={!!why}
+                    onChange={(e) => { const c = e.currentTarget.checked; setLinks((s) => { const n = new Set(s); c ? n.add(d.path) : n.delete(d.path); return n; }); }} />
+                  <Icon name="deck" class="k-deck" />
+                  <span class="t">{d.title || d.path}</span>
+                  <span class="p">{d.path}</span>
+                  {why === "adoc" && <span class="wiz-fm mute">AsciiDoc: add <code>:runbook: &lt;path&gt;</code> to the header by hand</span>}
+                  {why === "dirty" && <span class="wiz-fm mute">Unsaved edits in the editor: save first</span>}
+                  {!why && (on
+                    ? <code class="wiz-fm">runbook: {d.runbook ? <>{d.runbook} → {relPath(d.path, path)}</> : relPath(d.path, path)}</code>
+                    : d.runbook && <code class="wiz-fm mute">runbook: {d.runbook}</code>)}
+                </label>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>,
@@ -313,7 +334,7 @@ export function RunbookWizard(p: { tree: Node | null; decks: DeckInfo[]; dir: st
         <span><Icon name="json" class="k-json" /><code>{path}</code></span>
         <span>{rb.categories.length} {rb.categories.length === 1 ? "category" : "categories"} · {count} {count === 1 ? "command" : "commands"}</span>
         {names.length > 0 && <span class="wiz-phs">{names.map((n) => <span class="ph-name" key={n}>{n}</span>)}</span>}
-        {links.size > 0 && <span>Links {[...links].join(", ")}</span>}
+        {linked.length > 0 && <span>Links {linked.join(", ")}</span>}
       </div>
       <pre class="wiz-json" aria-label="Runbook JSON" tabIndex={0}>{highlightJson(json)}</pre>
       <p class="mute wiz-after">The file opens in the Visual view; switch to <b>JSON</b> there to edit it by hand.</p>
@@ -355,8 +376,14 @@ export function RunbookWizard(p: { tree: Node | null; decks: DeckInfo[]; dir: st
           <span class="wiz-keys mute"><kbd>Enter</kbd> next · <kbd>Esc</kbd> cancel</span>
           {linkErrs ? (
             <button type="button" class="btn btn-pri" disabled={busy} onClick={() => void finish()}>Open runbook</button>
+          ) : asking ? (
+            <span class="wiz-ask" role="alert">
+              Discard this runbook?
+              <button type="button" class="btn" onClick={() => setAsking(false)}>Keep editing</button>
+              <button type="button" class="btn btn-danger" onClick={p.onClose}>Discard</button>
+            </span>
           ) : <>
-            <button type="button" class="btn" onClick={p.onClose}>Cancel</button>
+            <button type="button" class="btn" onClick={cancel}>Cancel</button>
             {step > 0 && <button type="button" class="btn" disabled={busy} onClick={() => go(step - 1)}>Back</button>}
             <button type="button" class={"btn btn-pri" + (step === 3 ? " wiz-create" : "")} disabled={busy} onClick={next}>
               {step === 3 ? (busy ? "Creating…" : "Create") : "Next"}

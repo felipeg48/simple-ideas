@@ -202,6 +202,14 @@ const tests = {
     await sleep(600);
     if (await page.$(".si-rb-form")) throw new Error("form open after Esc");
     if ((await term()).includes("nope")) throw new Error("Esc typed something");
+    await page.click(".si-rb-item");
+    await page.waitForSelector(".si-rb-form input");
+    await page.fill(".si-rb-form input", "nada");
+    await page.focus(".si-rb-form button:has-text('Cancel')");
+    await page.keyboard.press("Enter");
+    await sleep(600);
+    if (await page.$(".si-rb-form")) throw new Error("form open after Enter on Cancel");
+    if ((await term()).includes("nada")) throw new Error("Enter on Cancel typed something");
     await ctx.close();
   },
   async "runbook visual edit is a minimal diff"() {
@@ -312,7 +320,7 @@ const tests = {
     await page.waitForSelector(".wiz .wiz-json");
     await page.click(".wiz button:has-text('Create')");
     await page.waitForSelector(".rb-view", { timeout: 5000 });
-    const want = JSON.stringify({ name: "Lab ops", categories: [{ name: "Health", entries: [{ label: "Alarms", command: "rabbitmq-diagnostics check_alarms -n {{node:rabbit@rmq1}}" }] }] }, null, 2) + "\n";
+    const want = JSON.stringify({ name: "Lab ops", categories: [{ name: "Health", entries: [{ label: "Alarms", command: "rabbitmq-diagnostics check_alarms -n {{node:rabbit@rmq1}}", target: "bash" }] }] }, null, 2) + "\n";
     if (readFileSync(LABOPS, "utf8") !== want) throw new Error("bad runbook: " + readFileSync(LABOPS, "utf8"));
     if (!readFileSync(TALK, "utf8").startsWith("---\ntitle: E2E Talk\nrunbook: lab-ops.json\n---\n")) throw new Error("deck not linked: " + readFileSync(TALK, "utf8"));
     if ((await page.textContent(".rb-mode button.on")) !== "Visual") throw new Error("not in the Visual view");
@@ -337,6 +345,42 @@ const tests = {
     if (!(await page.$(".wiz input[aria-label='Runbook name']"))) throw new Error("409 did not return to step 1");
     if (readFileSync(join(root, "race.json"), "utf8") !== "mine\n") throw new Error("409 overwrote the file");
     rmSync(join(root, "race.json"));
+    await ctx.close();
+  },
+  async "visual toggle follows the text"() {
+    writeFileSync(join(root, "plain.json"), '{"a": 1}\n');
+    const { ctx, page } = await open("dark");
+    await page.waitForSelector('.row-main[title="plain.json"]');
+    await openFile(page, "plain.json");
+    await page.waitForSelector(".cm-content");
+    if (await page.$(".rb-mode")) throw new Error("toggle on a plain JSON file");
+    await setText(page, '{ "categories": [] }\n');
+    await page.waitForSelector(".rb-mode", { timeout: 3000 });
+    if (await page.$(".rb-view")) throw new Error("switched to Visual while typing");
+    await page.click(".rb-mode button:has-text('Visual')");
+    await page.waitForSelector(".rb-view");
+    await ctx.close();
+    rmSync(join(root, "plain.json"));
+  },
+  async "wizard Esc asks before discarding"() {
+    const { ctx, page } = await open("dark");
+    await openFile(page, "sections/one.md");
+    await page.click("button[aria-label='New runbook']");
+    await page.waitForSelector(".wiz input[aria-label='Runbook name']:focus");
+    await page.keyboard.press("Escape"); // nothing typed: closes at once
+    await sleep(300);
+    if (await page.$(".wiz")) throw new Error("empty wizard did not close on Esc");
+    await page.click("button[aria-label='New runbook']");
+    await page.fill(".wiz input[aria-label='Runbook name']", "Keep me");
+    await page.keyboard.press("Escape");
+    await page.waitForSelector(".wiz-ask", { timeout: 2000 });
+    await page.keyboard.press("Escape"); // second Esc keeps editing
+    await sleep(300);
+    if (await page.$(".wiz-ask") || (await page.inputValue(".wiz input[aria-label='Runbook name']")) !== "Keep me") throw new Error("Esc did not keep editing");
+    await page.keyboard.press("Escape");
+    await page.click(".wiz-ask button:has-text('Discard')");
+    await sleep(300);
+    if (await page.$(".wiz")) throw new Error("Discard did not close");
     await ctx.close();
   },
   async screenshots() {
@@ -364,6 +408,7 @@ const tests = {
       await page.screenshot({ path: join(out, `runbook-pop-${theme}.png`) });
       await ctx.close();
     }
+    writeFileSync(join(root, "notes.adoc"), "= Notes\n\n== One\n\nText.\n");
     for (const theme of ["dark", "light"]) {
       const { ctx, page } = await open(theme);
       await openFile(page, "sections/one.md");
@@ -389,11 +434,17 @@ const tests = {
       await page.fill(".wiz .wiz-entry >> nth=1 >> textarea[aria-label='Command']", "rabbitmqctl -n {{node}} list_queues name messages");
       await page.click(".wiz button:has-text('Next')");
       await page.check(".wiz input[aria-label='Link talk.md']");
+      await page.check(".wiz input[aria-label='Link rbdeck.md']");
+      if (!(await page.isDisabled(".wiz input[aria-label='Link notes.adoc']"))) throw new Error("AsciiDoc deck can be linked");
       await shot("3-link");
       await page.click(".wiz button:has-text('Next')");
       await shot("4-review");
+      await page.keyboard.press("Escape");
+      await page.waitForSelector(".wiz-ask");
+      await shot("5-discard");
       await ctx.close();
     }
+    rmSync(join(root, "notes.adoc"));
   },
 };
 

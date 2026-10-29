@@ -20,7 +20,7 @@ import { clear, restore, scoped, stash } from "./buffers";
 import { eolOf, toLF, withEol } from "./eol";
 import { Icon } from "./navigator";
 import { RunbookEditor } from "./runbook-editor";
-import { isRunbookText, parseRunbook, serializeRunbook, type Runbook } from "./runbook";
+import { EMPTY_RB, isRunbookText, parseRunbook, serializeRunbook, type Runbook } from "./runbook";
 import { siMarkdown } from "./si-lang";
 import { under } from "./tabs";
 
@@ -61,6 +61,10 @@ const rbView = (path: string): "visual" | "json" => {
   try { return localStorage.getItem(viewKey(path)) === "json" ? "json" : "visual"; } catch { return "visual"; }
 };
 export const setRbView = (path: string, v: "visual" | "json") => { try { localStorage.setItem(viewKey(path), v); } catch { /* best effort */ } };
+// a file that becomes a runbook while you type (or starts empty) keeps the JSON view until you pick Visual
+const keepJson = (path: string) => { try { if (localStorage.getItem(viewKey(path)) === null) setRbView(path, "json"); } catch { /* best effort */ } };
+// the Visual toggle is offered for runbook-shaped JSON and for an empty file
+const rbEligible = (text: string) => !text.trim() || isRunbookText(text);
 
 const highlight = HighlightStyle.define([
   { tag: t.heading, color: "var(--syn-heading)", fontWeight: "700" },
@@ -213,7 +217,8 @@ export function Editor(p: Props) {
   }
 
   function makeDoc(path: string, kind: Kind, content: string, etag: string): Doc {
-    const d = { path, etag, saved: content, eol: "\n", saving: false, chain: Promise.resolve(), runbook: kind === "json" && isRunbookText(content) } as Doc;
+    const d = { path, etag, saved: content, eol: "\n", saving: false, chain: Promise.resolve(), runbook: kind === "json" && rbEligible(content) } as Doc;
+    if (d.runbook && !content.trim()) keepJson(path);
     d.auto = createAutosave(() => (d.chain = d.chain.then(() => save(d))), 700);
     const onUpdate = EditorView.updateListener.of((u) => {
       if (u.docChanged && !u.transactions.some((tr) => tr.annotation(remote))) {
@@ -223,6 +228,7 @@ export function Editor(p: Props) {
         d.auto.touch();
         status(d);
       }
+      if (u.docChanged && kind === "json" && !d.runbook && rbEligible(u.state.doc.toString())) { keepJson(path); d.runbook = true; } // availability follows the text
       if (u.docChanged && d.runbook && cur.current === path) rerender(); // the Visual view follows the text
       if (u.selectionSet || u.docChanged) {
         const h = u.state.selection.main.head, l = u.state.doc.lineAt(h);
@@ -348,7 +354,7 @@ export function Editor(p: Props) {
     const v = view.current;
     if (!v) return;
     const old = v.state.doc.toString();
-    const r = parseRunbook(old);
+    const r = parseRunbook(old.trim() ? old : EMPTY_RB);
     if (!r.ok) return; // never rewrite text the model cannot read
     const next = serializeRunbook(f(r.rb));
     if (next === old) return;

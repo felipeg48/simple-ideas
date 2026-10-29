@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import caci from "./fixtures/caci-runbook.json?raw";
-import { ops, parseRunbook, serializeRunbook, isRunbookText, validate, type Runbook } from "../src/runbook";
+import { jsonPos, ops, parseRunbook, serializeRunbook, isRunbookText, validate, type Runbook } from "../src/runbook";
 
 
 const ok = (t: string): Runbook => {
@@ -118,5 +118,18 @@ describe("runbook", () => {
     const t = '{"categories":[],"__proto__":{"a":1}}';
     expect(JSON.parse(serializeRunbook(ok(t)))).toEqual(JSON.parse(t));
     expect(serializeRunbook(ok(t))).toContain('"__proto__"');
+  });
+});
+
+describe("jsonPos", () => {
+  const t = '{\n  "categories": [\n    { "name": "a", "entries": [1, {"x": "}"}] },\n    "bad"\n  ]\n}\n';
+  it("finds the value at a path", () => {
+    expect(jsonPos(t, ["categories", 1])).toEqual({ line: 4, col: 5 });
+    expect(jsonPos(t, ["categories", 0, "entries", 1])).toEqual({ line: 3, col: 35 });
+    expect(jsonPos(t, ["categories", 0, "entries", 0])).toEqual({ line: 3, col: 32 });
+  });
+  it("falls back to 1:1", () => {
+    expect(jsonPos(t, ["nope"])).toEqual({ line: 1, col: 1 });
+    expect(jsonPos("{oops", ["a"])).toEqual({ line: 1, col: 1 });
   });
 });

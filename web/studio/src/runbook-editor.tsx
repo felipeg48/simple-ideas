@@ -3,7 +3,7 @@
 // as one CodeMirror transaction (so undo, autosave, conflicts and stash all apply).
 import type { JSX } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { type RbCategory, type RbEntry, type Runbook, ops, parseRunbook, placeholderMatches, placeholders, serializeRunbook, validate } from "./runbook";
+import { EMPTY_RB, type RbCategory, type RbEntry, type Runbook, jsonPos, ops, parseRunbook, placeholderMatches, placeholders, serializeRunbook, validate } from "./runbook";
 import { CommandField } from "./placeholder-input";
 import { Dialog, Icon } from "./navigator";
 
@@ -15,6 +15,7 @@ type Edit = (f: (rb: Runbook) => Runbook, typing?: boolean) => void;
 interface Props { text: string; edit: Edit; toJson(line: number, col: number): void; undo(redo: boolean): void }
 
 const readOnlyCat = (c: RbCategory) => c.raw !== undefined || "entries" in c.extra;
+const lowerHalf = (ev: DragEvent) => { const r = (ev.currentTarget as HTMLElement).getBoundingClientRect(); return ev.clientY > r.top + r.height / 2; };
 const under = (path: string, base: string) => path === base || path.startsWith(base + ".");
 
 /** chips renders a command with its {{placeholders}} as chips. */
@@ -35,7 +36,7 @@ export function chips(cmd: string): (string | JSX.Element)[] {
 }
 
 export function RunbookEditor(p: Props) {
-  const parsed = useMemo(() => parseRunbook(p.text), [p.text]);
+  const parsed = useMemo(() => parseRunbook(p.text.trim() ? p.text : EMPTY_RB), [p.text]);
   if (!parsed.ok) {
     const msg = parsed.error.replace(/ in JSON at position \d+.*$/s, "").replace(/^JSON\.parse: /, "");
     return (
@@ -83,10 +84,12 @@ function Visual(p: { rb: Runbook; text: string; edit: Edit; toJson(line: number,
   const [focusNew, setFocusNew] = useState<string | null>(null);
   const drag = useRef<[number, number] | null>(null);
   const [dropAt, setDropAt] = useState<string | null>(null);
+  const catDrag = useRef<number | null>(null);
 
   const issues = useMemo(() => validate(rb), [rb]);
   const names = useMemo(() => [...new Set(rb.categories.flatMap((c) => c.entries.flatMap((e) => placeholders(e.command).map((x) => x.name))))].sort(), [rb]);
-  const reformats = useMemo(() => serializeRunbook(rb) !== p.text, [rb, p.text]);
+  const at = (path: (string | number)[]) => { const q = jsonPos(p.text, path); p.toJson(q.line, q.col); };
+  const reformats = useMemo(() => !!p.text.trim() && serializeRunbook(rb) !== p.text, [rb, p.text]);
   const rootIssues = issues.filter((i) => !i.path.startsWith("categories["));
 
   const needle = q.trim().toLowerCase();
@@ -129,6 +132,22 @@ function Visual(p: { rb: Runbook; text: string; edit: Edit; toJson(line: number,
     if (from[0] === ci && from[1] === to) return;
     structural((r) => ops.moveEntry(r, from, [ci, to]));
     setOpen((s) => new Set(s).add(ci));
+  };
+  // categories drag by their grip; a drop lands before or after the category under the pointer
+  const catDrop = (ci: number, after: boolean) => {
+    const from = catDrag.current;
+    catDrag.current = null;
+    setDropAt(null);
+    if (from === null || locked) return;
+    let to = ci + (after ? 1 : 0);
+    if (from < to) to--;
+    if (from === to) return;
+    structural((r) => ops.moveCategory(r, from, to));
+    setOpen((s) => {
+      const order = rb.categories.map((_, i) => i);
+      order.splice(to, 0, order.splice(from, 1)[0]);
+      return new Set(order.flatMap((old, i) => (s.has(old) ? [i] : [])));
+    });
   };
   const addEntry = (ci: number) => {
     const c = rb.categories[ci];
@@ -197,11 +216,18 @@ function Visual(p: { rb: Runbook; text: string; edit: Edit; toJson(line: number,
           const label = c.raw !== undefined ? `category ${ci + 1}` : c.name || "Untitled category";
           const catIssues = issues.filter((i) => under(i.path, `categories[${ci}]`) && !i.path.includes(".entries["));
           return (
-            <section class={"rb-cat" + (ro ? " ro" : "")} key={ci} aria-label={label}>
+            <section class={"rb-cat" + (ro ? " ro" : "") + (dropAt === `cat:${ci}:b` ? " drop-before" : dropAt === `cat:${ci}:a` ? " drop-after" : "")} key={ci} aria-label={label}
+              onDragOver={(e) => { if (catDrag.current !== null && !locked) { e.preventDefault(); setDropAt(`cat:${ci}:${lowerHalf(e) ? "a" : "b"}`); } }}
+              onDrop={(e) => { if (catDrag.current !== null) { e.preventDefault(); catDrop(ci, lowerHalf(e)); } }}>
               <div class={"rb-cat-head" + (dropAt === `${ci}:end` ? " drop-end" : "")}
-                onDragOver={(e) => { if (drag.current && !ro && !locked) { e.preventDefault(); setDropAt(`${ci}:end`); } }}
+                onDragOver={(e) => { if (drag.current && !ro && !locked) { e.preventDefault(); e.stopPropagation(); setDropAt(`${ci}:end`); } }}
                 onDragLeave={() => setDropAt(null)}
                 onDrop={(e) => { e.preventDefault(); drop(ci, c.entries.length - 1, true); }}>
+                <span class={"rb-grip" + (locked ? " locked" : "")} draggable={!locked} title={locked ? "Clear the filter to reorder" : "Drag to reorder"} aria-hidden="true"
+                  onDragStart={(ev) => { ev.dataTransfer?.setData("text/plain", label); if (ev.dataTransfer) ev.dataTransfer.effectAllowed = "move"; catDrag.current = ci; }}
+                  onDragEnd={() => { catDrag.current = null; setDropAt(null); }}>
+                  <Icon name="grip" />
+                </span>
                 <button class="rb-chev" aria-expanded={isOpen} aria-label={(isOpen ? "Collapse " : "Expand ") + label} onClick={() => toggle(ci)} disabled={ro}>
                   <Icon name="chevron" class={"chev" + (isOpen && !ro ? " open" : "")} />
                 </button>
@@ -234,7 +260,7 @@ function Visual(p: { rb: Runbook; text: string; edit: Edit; toJson(line: number,
               {ro && (
                 <div class="rb-ro">
                   This category is not in the shape the visual editor understands, so it is shown read-only.
-                  <button class="btn" onClick={() => p.toJson(1, 1)}>Fix this in the JSON view</button>
+                  <button class="btn" onClick={() => at(["categories", ci])}>Fix this in the JSON view</button>
                 </div>
               )}
               {isOpen && !ro && (
@@ -252,9 +278,10 @@ function Visual(p: { rb: Runbook; text: string; edit: Edit; toJson(line: number,
                         onDelete={() => confirm(`Delete “${e.label || "Untitled entry"}”?`, "⌘Z brings it back.", () => structural((r) => ops.deleteEntry(r, ci, ei)))}
                         onDragStart={() => { drag.current = [ci, ei]; }}
                         onDragEnd={() => { drag.current = null; setDropAt(null); }}
+                        dragging={() => drag.current !== null}
                         onDragOver={(after) => setDropAt(`${ci}:${ei}:${after ? "a" : "b"}`)}
                         onDrop={(after) => drop(ci, ei, after)}
-                        toJson={() => p.toJson(1, 1)} />
+                        toJson={() => at(["categories", ci, "entries", ei])} />
                     ))}
                   </ul>
                   {!needle && (
@@ -276,16 +303,15 @@ function Visual(p: { rb: Runbook; text: string; edit: Edit; toJson(line: number,
 interface RowProps {
   e: RbEntry; ci: number; ei: number; last: boolean; locked: boolean; names: string[]; issues: { path: string; msg: string }[]; editing: boolean; drop: "before" | "after" | null;
   onEdit(): void; onPatch(p: Partial<RbEntry>): void; onTarget(t?: "bash" | "sql"): void; onDuplicate(): void; onMove(d: -1 | 1): void; onDelete(): void;
-  onDragStart(): void; onDragEnd(): void; onDragOver(after: boolean): void; onDrop(after: boolean): void; toJson(): void;
+  onDragStart(): void; onDragEnd(): void; dragging(): boolean; onDragOver(after: boolean): void; onDrop(after: boolean): void; toJson(): void;
 }
 
 function Row(p: RowProps) {
   const { e } = p;
   const label = e.label || "Untitled entry";
-  const lower = (ev: DragEvent) => { const r = (ev.currentTarget as HTMLElement).getBoundingClientRect(); return ev.clientY > r.top + r.height / 2; };
   const dnd = {
-    onDragOver: (ev: DragEvent) => { if (p.locked) return; ev.preventDefault(); p.onDragOver(lower(ev)); },
-    onDrop: (ev: DragEvent) => { ev.preventDefault(); p.onDrop(lower(ev)); },
+    onDragOver: (ev: DragEvent) => { if (p.locked || !p.dragging()) return; ev.preventDefault(); ev.stopPropagation(); p.onDragOver(lowerHalf(ev)); },
+    onDrop: (ev: DragEvent) => { if (!p.dragging()) return; ev.preventDefault(); ev.stopPropagation(); p.onDrop(lowerHalf(ev)); },
   };
   if (e.raw !== undefined) {
     return (
@@ -315,7 +341,7 @@ function Row(p: RowProps) {
           <div class="rb-line">
             <span class={"rb-label" + (e.label ? "" : " empty")}>{e.label}</span>
             {!e.label && <span class="rb-label-ph">Untitled entry</span>}
-            <span class={"rb-target t-" + (target || "none")} title={target ? `target: ${target}` : "no target: highlighted as bash"}>{target || "bash"}</span>
+            <span class={"rb-target t-" + (target || "none")} title={target ? `target: ${target}` : "no target: highlighted as sql"}>{target || "sql"}</span>
           </div>
           {e.description && <p class="rb-desc">{e.description}</p>}
           {e.command ? <code class="rb-cmd">{chips(e.command)}</code> : <code class="rb-cmd empty">no command yet</code>}
@@ -342,7 +368,7 @@ function Row(p: RowProps) {
               <span class="rb-flabel">Target</span>
               <select class="field" aria-label="Target" value={target}
                 onChange={(ev) => { const v = ev.currentTarget.value; if (v === "bash" || v === "sql" || v === "") p.onTarget(v || undefined); }}>
-                <option value="">default (bash)</option>
+                <option value="">default (sql)</option>
                 <option value="bash">bash</option>
                 <option value="sql">sql</option>
                 {target && target !== "bash" && target !== "sql" && <option value={target}>{target} (unknown)</option>}

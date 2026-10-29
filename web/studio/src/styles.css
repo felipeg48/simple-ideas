@@ -225,6 +225,7 @@ code, kbd { font-family: var(--mono); font-size: .92em; }
 .wiz-body { flex: 1; min-height: 0; overflow: auto; padding: 16px 18px 18px; }
 .wiz-foot { flex: none; display: flex; align-items: center; gap: 8px; padding: 11px 18px; border-top: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 60%, var(--pop)); }
 .wiz-keys { margin-right: auto; font-size: 11.5px; }
+.wiz-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-weight: 600; }
 .wiz-keys kbd { padding: 0 4px; border-radius: 4px; border: 1px solid var(--line-2); font-size: 10.5px; }
 .wiz .field.plain { font-family: var(--sans); font-size: 13px; }
 .wiz select.field { padding: 0 8px; }
@@ -258,6 +259,9 @@ code, kbd { font-family: var(--mono); font-size: .92em; }
 .wiz-deck .t { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wiz-deck .p { font: 11px var(--mono); color: var(--mute); }
 .wiz-deck .wiz-fm { grid-column: 3 / -1; font-size: 11px; color: var(--accent-ink); }
+.wiz-deck .wiz-fm.mute { color: var(--mute); }
+.wiz-deck.off { cursor: default; opacity: .75; }
+.wiz-deck.off:hover { background: none; }
 .wiz-empty { padding: 18px; text-align: center; border: 1px dashed var(--line-2); border-radius: 9px; }
 .wiz-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin-bottom: 10px; font-size: 12px; color: var(--ink-2); }
 .wiz-sum > span { display: inline-flex; align-items: center; gap: 6px; }
@@ -432,6 +436,9 @@ button.link { color: var(--blue); text-decoration: underline; text-underline-off
 .rb-cat.ro { border-style: dashed; }
 .rb-cat-head { display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 6px; }
 .rb-cat-head.drop-end { box-shadow: inset 0 -2px 0 var(--accent); }
+.rb-cat.drop-before { box-shadow: 0 -2px 0 var(--accent); }
+.rb-cat.drop-after { box-shadow: 0 2px 0 var(--accent); }
+.rb-cat-head:hover > .rb-grip { opacity: 1; }
 .rb-chev { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 6px; color: var(--mute); flex: none; }
 .rb-chev:hover:not(:disabled) { background: var(--hover); color: var(--ink); }
 .rb-chev:disabled { cursor: default; opacity: .4; }

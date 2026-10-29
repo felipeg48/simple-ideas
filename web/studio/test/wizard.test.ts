@@ -24,6 +24,11 @@ describe("generator helpers", () => {
     expect(linkRunbook("# T\n\n---\n\n# U\n", "r.json")).toBe("---\nrunbook: r.json\n---\n\n# T\n\n---\n\n# U\n");
   });
 
+  it("linkRunbook refuses AsciiDoc decks", () => {
+    expect(() => linkRunbook("= T\n", "r.json", "talks/t.adoc")).toThrow(/AsciiDoc/);
+    expect(linkRunbook("# T\n", "r.json", "talks/t.md")).toBe("---\nrunbook: r.json\n---\n\n# T\n");
+  });
+
   it("linkRunbook reads front matter exactly like the Go parser", () => {
     // a leading slide separator with slide content is not front matter: prepend, slide 1 untouched
     const sep = "---\n# Slide 1\ntext\n---\n# Slide 2\n";

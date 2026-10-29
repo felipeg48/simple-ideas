@@ -237,7 +237,8 @@
     f.addEventListener('keydown', function (ev) {
       ev.stopPropagation();
       if (ev.key === 'Escape') { ev.preventDefault(); closeForm(); if (active >= 0 && tabs[active]) tabs[active].term.focus(); }
-      else if (ev.key === 'Enter') { ev.preventDefault(); go(ev.shiftKey || ev.metaKey || ev.ctrlKey); }
+      // Enter submits from a field only; on a button it does that button's own click
+      else if (ev.key === 'Enter' && ev.target.tagName === 'INPUT') { ev.preventDefault(); go(ev.shiftKey || ev.metaKey || ev.ctrlKey); }
     });
     upd();
     rbPanel.insertBefore(f, rbPanel.querySelector('.si-rb-list'));
