@@ -13,3 +13,6 @@
 .idea/
 .vscode/
 .claude/
+
+# brainstorming mockups (local only)
+.superpowers/
