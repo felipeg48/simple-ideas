@@ -16,6 +16,7 @@ import { tags as t } from "@lezer/highlight";
 import { ApiError, api, type Kind, type Problem, type Rules } from "./api";
 import { createAutosave } from "./autosave";
 import { clear, restore, stash } from "./buffers";
+import { eolOf, toLF, withEol } from "./eol";
 import { siMarkdown } from "./si-lang";
 import { under } from "./tabs";
 
@@ -36,7 +37,8 @@ interface Doc {
   path: string;
   state: EditorState;
   etag: string;
-  saved: string; // text known to be on disk
+  saved: string; // text known to be on disk, with LF line endings like the editor
+  eol: string; // the file's own line ending, re-applied on save
   banner?: string;
   conflict?: { etag: string; content: string };
   error?: string;
@@ -163,7 +165,7 @@ export function Editor(p: Props) {
     d.saving = true;
     status(d);
     try {
-      const r = await api.write(d.path, body, d.etag);
+      const r = await api.write(d.path, withEol(body, d.eol), d.etag);
       d.etag = r.etag;
       d.saved = body;
       d.error = undefined;
@@ -180,8 +182,10 @@ export function Editor(p: Props) {
   }
 
   /** replace puts disk content into a doc without marking it dirty. */
-  function replace(d: Doc, content: string, etag: string) {
+  function replace(d: Doc, disk: string, etag: string) {
+    const content = toLF(disk);
     d.etag = etag;
+    d.eol = eolOf(disk);
     d.saved = content;
     const st = cur.current === d.path && view.current ? view.current.state : d.state;
     if (st.doc.toString() !== content) {
@@ -196,7 +200,7 @@ export function Editor(p: Props) {
   }
 
   function makeDoc(path: string, kind: Kind, content: string, etag: string): Doc {
-    const d = { path, etag, saved: content, saving: false, chain: Promise.resolve() } as Doc;
+    const d = { path, etag, saved: content, eol: "\n", saving: false, chain: Promise.resolve() } as Doc;
     d.auto = createAutosave(() => (d.chain = d.chain.then(() => save(d))), 700);
     const onUpdate = EditorView.updateListener.of((u) => {
       if (u.docChanged && !u.transactions.some((tr) => tr.annotation(remote))) {
@@ -217,9 +221,10 @@ export function Editor(p: Props) {
 
   async function refresh(d: Doc) {
     if (d.conflict || text(d) !== d.saved) return;
+    const etag = d.etag; // a save landing during the read makes this read stale
     try {
       const f = await api.read(d.path);
-      if (f.etag !== d.etag && text(d) === d.saved) replace(d, f.content, f.etag);
+      if (d.etag === etag && f.etag !== d.etag && text(d) === d.saved) replace(d, f.content, f.etag);
     } catch { /* a deleted file is reported by the tree; keep the buffer */ }
   }
 
@@ -239,11 +244,13 @@ export function Editor(p: Props) {
       failed.current.delete(path);
       const st = restore(path);
       let banner: string | undefined;
-      let content = f.content;
-      if (st && st.text !== f.content) { content = st.text; banner = "Unsaved changes restored"; }
+      const disk = toLF(f.content);
+      let content = disk;
+      if (st && st.text !== disk) { content = st.text; banner = "Unsaved changes restored"; }
       else if (st) clear(path);
       d = makeDoc(path, kind, content, f.etag);
-      d.saved = f.content;
+      d.saved = disk;
+      d.eol = eolOf(f.content);
       if (banner) { d.etag = st!.etag; d.banner = banner; d.auto.touch(); }
       docs.current.set(path, d);
     } catch (e) {

@@ -3,9 +3,9 @@
 import type { JSX } from "preact";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { ApiError, api, type Check, type DeckInfo, type Kind, type Node, type Problem, type Rules, deckURL } from "./api";
-import { clear } from "./buffers";
+import { clear, scoped } from "./buffers";
 import { type DocStatus, Editor, type EditorCtl, unsaved } from "./editor";
-import { Icon, type IconName, Navigator } from "./navigator";
+import { Dialog, Icon, type IconName, Navigator } from "./navigator";
 import { Preview } from "./preview";
 import { Problems } from "./problems";
 import { slideForCursor } from "./slidemap";
@@ -45,7 +45,8 @@ function persist(key: string, v: unknown) {
 const why = (e: unknown, what: "create" | "rename" | "delete") => {
   if (e instanceof ApiError) {
     if (e.status === 409) return what === "delete" ? "The folder is not empty." : "Something with that name already exists.";
-    if (e.status === 403) return "Names starting with a dot are not allowed.";
+    if (e.status === 403) return e.message === "hidden path" ? "Names starting with a dot are not allowed." : e.message;
+    if (e.status === 422) return "si cannot parse it: " + e.message;
     if (e.status === 404) return "It no longer exists.";
     return e.message;
   }
@@ -92,7 +93,7 @@ export function App() {
   const [rules, setRules] = useState<Rules | null>(null);
   const [ready, setReady] = useState(false);
   const [checks, setChecks] = useState<Record<string, CheckResult>>({});
-  const saved = useMemo(() => load("si-studio-tabs", { tabs: [] as string[], active: null as string | null }), []);
+  const saved = useMemo(() => load(scoped("si-studio-tabs"), { tabs: [] as string[], active: null as string | null }), []);
   const [tabs, setTabs] = useState<string[]>(saved.tabs);
   const [active, setActive] = useState<string | null>(saved.active);
   const [status, setStatus] = useState<Record<string, DocStatus>>({});
@@ -105,6 +106,7 @@ export function App() {
   const [offline, setOffline] = useState(false);
   const [missing, setMissing] = useState<Set<string>>(() => new Set());
   const [layout, setLayout] = useState(() => load("si-studio-layout", { nav: 248, prev: 0.5 }));
+  const [dialog, setDialog] = useState<JSX.Element | null>(null);
   const panes = useRef<HTMLDivElement>(null);
   const ctl = useRef<EditorCtl | null>(null);
 
@@ -144,7 +146,7 @@ export function App() {
     return () => { clearTimeout(t); es.close(); };
   }, []);
 
-  useEffect(() => persist("si-studio-tabs", { tabs, active }), [tabs, active]);
+  useEffect(() => persist(scoped("si-studio-tabs"), { tabs, active }), [tabs, active]);
   useEffect(() => persist("si-studio-layout", layout), [layout]);
 
   // tabs whose files are gone close, unless they hold unsaved text: those stay, marked deleted
@@ -197,6 +199,15 @@ export function App() {
   };
   const closeTab = async (path: string) => {
     await ctl.current?.flush();
+    // text that did not reach disk (conflict, deleted, failed save) would be lost: ask first
+    if (ctl.current?.unsaved(path).includes(path)) {
+      setDialog(
+        <Dialog title={`Close ${baseName(path)}?`} okLabel="Close without saving" danger onClose={() => setDialog(null)}
+          body="Its text is not on disk (a conflict, a deleted file or a failed save). Closing the tab throws it away."
+          ok={async () => discard(path)} />,
+      );
+      return;
+    }
     ctl.current?.drop(path);
     setTabs((ts) => {
       const i = ts.indexOf(path), rest = ts.filter((t) => t !== path);
@@ -338,6 +349,7 @@ export function App() {
       <StatusBar decks={decks.length} problems={problems.length + errors.length} check={check}
         cursor={textPath ? cursor : null} kind={activeKind} doc={active ? status[active] ?? null : null} slide={slide}
         onProblems={() => setProblemsOpen((o) => !o)} />
+      {dialog}
     </div>
   );
 }
