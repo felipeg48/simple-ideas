@@ -4,6 +4,7 @@
 *.exe
 
 # build output
+/web/studio/node_modules/
 /out/
 /html/
 /si-example/

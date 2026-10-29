@@ -1,7 +1,7 @@
 BIN := bin/si
 INSTALL_DIR ?= $(HOME)/.bin
 
-.PHONY: build test install play-example examples check fmt clean
+.PHONY: build test install play-example examples check fmt clean studio-ui
 
 build:
 	go build -o $(BIN) ./cmd/si
@@ -39,6 +39,10 @@ check: build
 
 fmt:
 	gofmt -w .
+
+# rebuild the embedded Studio UI (needs Node; the built bundle is committed)
+studio-ui:
+	cd web/studio && npm ci && npm test && npm run build
 
 clean:
 	rm -rf bin out html
