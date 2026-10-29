@@ -34,7 +34,6 @@ describe("runbook", () => {
     const s = serializeRunbook(rb);
     expect(JSON.parse(s)).toEqual(JSON.parse(t));
     expect(serializeRunbook(ok(s))).toBe(s);
-    if (s !== t) console.log("caci fixture not byte-canonical");
   });
   it("parseReportsLineAndColumn", () => {
     const r = parseRunbook('{\n  "categories": [\n    ,\n  ]\n}');
@@ -74,8 +73,27 @@ describe("runbook", () => {
   it("validateFlags", () => {
     const rb = ok('{"categories":[{"name":"A","entries":[{"label":"","command":" ","target":"x"}]},{"name":"A","entries":[]}]}');
     const paths = validate(rb).map((v) => v.path);
-    expect(paths).toEqual(["categories[0].entries[0].label", "categories[0].entries[0].command", "categories[1].name"]);
-    rb.categories[0].entries[0].target = "x" as any;
-    expect(validate(rb).map((v) => v.path)).toContain("categories[0].entries[0].target");
+    expect(paths).toEqual(["categories[0].entries[0].target", "categories[0].entries[0].label", "categories[0].entries[0].command", "categories[1].name"]);
+  });
+  it("absent keys and non-objects round trip byte-identical", () => {
+    for (const v of [{ categories: [{ entries: [{ command: "x" }] }] }, { categories: [{ name: "a" }] }, { categories: [{ name: "a", entries: [5, null, "s"] }, 7] }]) {
+      const t = JSON.stringify(v, null, 2) + "\n";
+      expect(serializeRunbook(ok(t))).toBe(t);
+    }
+    const v = validate(ok('{"categories":[{"name":"a","entries":[5]},7]}'));
+    expect(v.map((x) => x.path)).toEqual(["categories[0].entries[0]", "categories[1]"]);
+  });
+  it("wrong-typed known keys keep canonical slot and are flagged", () => {
+    const t = JSON.stringify({ description: 5, name: "n", categories: [{ icon: 1, name: "a", entries: [{ x: 1, target: "powershell", command: "c", label: "l", description: false }] }], z: 1 }, null, 2) + "\n";
+    const out = JSON.parse(serializeRunbook(ok(t)));
+    expect(Object.keys(out)).toEqual(["name", "description", "categories", "z"]);
+    expect(Object.keys(out.categories[0])).toEqual(["name", "icon", "entries"]);
+    expect(Object.keys(out.categories[0].entries[0])).toEqual(["label", "description", "command", "target", "x"]);
+    expect(validate(ok(t)).map((x) => x.path)).toEqual(["description", "categories[0].icon", "categories[0].entries[0].description", "categories[0].entries[0].target"]);
+  });
+  it("__proto__ key survives", () => {
+    const t = '{"categories":[],"__proto__":{"a":1}}';
+    expect(JSON.parse(serializeRunbook(ok(t)))).toEqual(JSON.parse(t));
+    expect(serializeRunbook(ok(t))).toContain('"__proto__"');
   });
 });

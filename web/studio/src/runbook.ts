@@ -1,6 +1,6 @@
 // Pure runbook model: lossless parse/serialize, edit ops, placeholders.
-export interface RbEntry { label: string; description?: string; command: string; target?: "bash" | "sql"; extra: Record<string, unknown> }
-export interface RbCategory { name: string; icon?: string; entries: RbEntry[]; extra: Record<string, unknown> }
+export interface RbEntry { label: string; description?: string; command: string; target?: "bash" | "sql"; extra: Record<string, unknown>; missing?: string[]; raw?: unknown }
+export interface RbCategory { name: string; icon?: string; entries: RbEntry[]; extra: Record<string, unknown>; missing?: string[]; raw?: unknown }
 export interface Runbook { name?: string; description?: string; categories: RbCategory[]; extra: Record<string, unknown> }
 export type ParseResult = { ok: true; rb: Runbook } | { ok: false; error: string; line: number; col: number };
 
@@ -10,9 +10,10 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object
 function split(o: Record<string, unknown>, known: Record<string, (v: unknown) => boolean>) {
   const got: Record<string, any> = {};
   const extra: Record<string, unknown> = {};
+  const set = (t: object, k: string, v: unknown) => Object.defineProperty(t, k, { value: v, enumerable: true, writable: true, configurable: true });
   for (const [k, v] of Object.entries(o)) {
-    if (known[k]?.(v)) got[k] = v;
-    else extra[k] = v;
+    if (Object.prototype.hasOwnProperty.call(known, k) && known[k](v)) set(got, k, v);
+    else set(extra, k, v);
   }
   return { got, extra };
 }
@@ -90,14 +91,18 @@ export function parseRunbook(text: string): ParseResult {
   if (!isObj(v) || !Array.isArray(v.categories))
     return { ok: false, error: 'not a runbook: expected a JSON object with a "categories" array', line: 1, col: 1 };
   const { got, extra } = split(v, { name: str, description: str, categories: Array.isArray });
+  const miss = (o: Record<string, unknown>, ks: string[]) => ks.filter((k) => !(k in o));
   const categories = (got.categories as unknown[]).map((c): RbCategory => {
-    const o = isObj(c) ? c : {};
-    const g = split(o, { name: str, icon: str, entries: Array.isArray });
+    if (!isObj(c)) return { name: "", entries: [], extra: {}, raw: c };
+    const g = split(c, { name: str, icon: str, entries: Array.isArray });
     const entries = ((g.got.entries as unknown[]) ?? []).map((e): RbEntry => {
-      const x = split(isObj(e) ? e : {}, { label: str, description: str, command: str, target: tgt });
-      return { label: x.got.label ?? "", command: x.got.command ?? "", ...(x.got.description !== undefined && { description: x.got.description }), ...(x.got.target && { target: x.got.target }), extra: x.extra };
+      if (!isObj(e)) return { label: "", command: "", extra: {}, raw: e };
+      const x = split(e, { label: str, description: str, command: str, target: tgt });
+      const missing = miss(e, ["label", "command"]);
+      return { label: x.got.label ?? "", command: x.got.command ?? "", ...(x.got.description !== undefined && { description: x.got.description }), ...(x.got.target && { target: x.got.target }), extra: x.extra, ...(missing.length && { missing }) };
     });
-    return { name: g.got.name ?? "", ...(g.got.icon !== undefined && { icon: g.got.icon }), entries, extra: g.extra };
+    const missing = miss(c, ["name", "entries"]);
+    return { name: g.got.name ?? "", ...(g.got.icon !== undefined && { icon: g.got.icon }), entries, extra: g.extra, ...(missing.length && { missing }) };
   });
   const rb: Runbook = { categories, extra };
   if (got.name !== undefined) rb.name = got.name;
@@ -105,23 +110,25 @@ export function parseRunbook(text: string): ParseResult {
   return { ok: true, rb };
 }
 
+// canonical slot order; a typed value wins, else a raw wrong-typed one kept in extra, else nothing
+function emit(keys: string[], typed: Record<string, unknown>, extra: Record<string, unknown>, missing: string[] = []): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of keys) {
+    const t = typed[k];
+    const blank = t === "" || (Array.isArray(t) && t.length === 0);
+    if (t !== undefined && !(blank && (missing.includes(k) || k in extra))) out[k] = t;
+    else if (k in extra) out[k] = extra[k];
+  }
+  for (const k of Object.keys(extra)) if (!keys.includes(k)) Object.defineProperty(out, k, { value: extra[k], enumerable: true, writable: true, configurable: true });
+  return out;
+}
+
 export function serializeRunbook(rb: Runbook): string {
-  const o: Record<string, unknown> = {};
-  if (rb.name !== undefined) o.name = rb.name;
-  if (rb.description !== undefined) o.description = rb.description;
-  o.categories = rb.categories.map((c) => {
-    const k: Record<string, unknown> = { name: c.name };
-    if (c.icon !== undefined) k.icon = c.icon;
-    k.entries = c.entries.map((e) => {
-      const x: Record<string, unknown> = { label: e.label };
-      if (e.description !== undefined) x.description = e.description;
-      x.command = e.command;
-      if (e.target !== undefined) x.target = e.target;
-      return { ...x, ...e.extra };
-    });
-    return { ...k, ...c.extra };
+  const cats = rb.categories.map((c) => {
+    if (c.raw !== undefined) return c.raw;
+    return emit(["name", "icon", "entries"], { name: c.name, icon: c.icon, entries: c.entries.map((e) => (e.raw !== undefined ? e.raw : emit(["label", "description", "command", "target"], e as unknown as Record<string, unknown>, e.extra, e.missing))) }, c.extra, c.missing);
   });
-  return JSON.stringify({ ...o, ...rb.extra }, null, 2) + "\n";
+  return JSON.stringify(emit(["name", "description", "categories"], { name: rb.name, description: rb.description, categories: cats }, rb.extra), null, 2) + "\n";
 }
 
 const placeholderRe = /\{\{([A-Za-z_][A-Za-z0-9_-]*)(?::([^}]*))?\}\}/g;
@@ -176,12 +183,18 @@ export const ops = {
 
 export function validate(rb: Runbook): { path: string; msg: string }[] {
   const out: { path: string; msg: string }[] = [];
+  for (const k of ["name", "description"]) if (k in rb.extra) out.push({ path: k, msg: `wrong type for ${k}` });
   const seen = new Map<string, number>();
   rb.categories.forEach((c, ci) => {
+    if (c.raw !== undefined) { out.push({ path: `categories[${ci}]`, msg: "category is not an object" }); return; }
+    for (const k of ["name", "icon", "entries"]) if (k in c.extra) out.push({ path: `categories[${ci}].${k}`, msg: `wrong type for ${k}` });
     if (seen.has(c.name)) out.push({ path: `categories[${ci}].name`, msg: `duplicate category name "${c.name}"` });
     seen.set(c.name, ci);
     c.entries.forEach((e, ei) => {
       const p = `categories[${ci}].entries[${ei}]`;
+      if (e.raw !== undefined) { out.push({ path: p, msg: "entry is not an object" }); return; }
+      for (const k of ["description", "target"]) if (k in e.extra) out.push({ path: `${p}.${k}`, msg: k === "target" ? `unknown target ${JSON.stringify(e.extra[k])}` : `wrong type for ${k}` });
+      for (const k of ["label", "command"]) if (k in e.extra) out.push({ path: `${p}.${k}`, msg: `wrong type for ${k}` });
       if (!e.label.trim()) out.push({ path: `${p}.label`, msg: "empty label" });
       if (!e.command.trim()) out.push({ path: `${p}.command`, msg: "empty command" });
       if (e.target !== undefined && e.target !== "bash" && e.target !== "sql") out.push({ path: `${p}.target`, msg: `unknown target "${e.target}"` });
