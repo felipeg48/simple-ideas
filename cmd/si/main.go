@@ -33,6 +33,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/render"
 	"github.com/felipeg48/simple-ideas/internal/serve"
+	"github.com/felipeg48/simple-ideas/internal/studio"
 )
 
 const version = "0.7.1"
@@ -49,6 +50,7 @@ const usage = `si: markdown in, animated fluid HTML slide decks out
 Usage:
   si play <dir|file.md> [--addr 127.0.0.1:7070] [--open] [--css <dir|file.css>]...
         serve the decks, rendered from markdown on every request, live reload on change
+  si --web [dir] [--addr 127.0.0.1:7070] [--no-open]   the Studio: edit, preview and check decks in the browser (loopback only)
   si [build] <dir|file.md> [--output html/] [--css <dir|file.css>]... [--no-inline-media] [--pdf]
         write one self-contained HTML file per deck plus index.html
         --pdf also renders each deck to pdfs/<name>.pdf and adds a PDF badge to the index tiles
@@ -104,7 +106,7 @@ func (m *multi) Set(v string) error { *m = append(*m, v); return nil }
 type options struct {
 	output, addr, export, theme, conf, title, ai string
 	open, help, ver                              bool
-	noInline, pdf, slides, dev                   bool
+	noInline, pdf, slides, dev, web, noOpen      bool
 	css                                          multi
 	args                                         []string
 }
@@ -122,6 +124,8 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.export, "export", "", "")
 	fl.BoolVar(&o.open, "open", false, "")
 	fl.BoolVar(&o.dev, "dev", false, "")
+	fl.BoolVar(&o.web, "web", false, "")
+	fl.BoolVar(&o.noOpen, "no-open", false, "")
 	fl.BoolVar(&o.noInline, "no-inline-media", false, "")
 	fl.BoolVar(&o.pdf, "pdf", false, "")
 	fl.BoolVar(&o.help, "help", false, "")
@@ -165,6 +169,16 @@ func run(argv []string, stdout, stderr io.Writer) int {
 	if o.ver {
 		fmt.Fprintln(stdout, "si", version)
 		return exitOK
+	}
+	if o.web && !o.help {
+		if len(o.args) > 1 {
+			return usageErr(stderr, "--web takes at most one [dir]")
+		}
+		dir := "."
+		if len(o.args) == 1 {
+			dir = o.args[0]
+		}
+		return web(dir, o, stdout, stderr)
 	}
 	if o.help || (len(o.args) == 0 && o.export == "") {
 		fmt.Fprint(stdout, usage)
@@ -425,6 +439,52 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		hs.Shutdown(sctx)
 	}()
 	if o.open {
+		openBrowser(url)
+	}
+	if err := hs.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		fmt.Fprintf(stderr, "si: %v\n", err)
+		return exitProblems
+	}
+	return exitOK
+}
+
+func web(dir string, o *options, stdout, stderr io.Writer) int {
+	if _, err := render.LoadCSS(o.css); err != nil {
+		fmt.Fprintf(stderr, "si: %v\n", err)
+		return exitUsage
+	}
+	ln, err := net.Listen("tcp", o.addr)
+	if err != nil {
+		fmt.Fprintf(stderr, "si: %v\n", err)
+		return exitProblems
+	}
+	defer ln.Close()
+	if ta, ok := ln.Addr().(*net.TCPAddr); !ok || !ta.IP.IsLoopback() {
+		fmt.Fprintln(stderr, "si: si --web is loopback-only in this version")
+		return exitUsage
+	}
+	tok := studio.NewToken()
+	st, err := studio.New(dir, studio.Options{CSS: o.css, Theme: o.theme, Conf: o.conf, Title: o.title, Token: tok, Addr: ln.Addr().String()})
+	if err != nil {
+		fmt.Fprintf(stderr, "si: %v\n", err)
+		return exitProblems
+	}
+	url := "http://" + ln.Addr().String() + "/?token=" + tok
+	fmt.Fprintf(stdout, "si --web: Studio for %s at %s (Ctrl+C stops)\n", dir, url)
+	stop := make(chan struct{})
+	go st.Watch(stop)
+	hs := &http.Server{Handler: st.Handler(), ReadHeaderTimeout: 10 * time.Second}
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+	go func() {
+		<-ctx.Done()
+		close(stop)
+		st.Close()
+		sctx, c := context.WithTimeout(context.Background(), 2*time.Second)
+		defer c()
+		hs.Shutdown(sctx)
+	}()
+	if !o.noOpen {
 		openBrowser(url)
 	}
 	if err := hs.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {

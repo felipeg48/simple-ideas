@@ -93,3 +93,17 @@ func TestUsageErrors(t *testing.T) {
 		}
 	}
 }
+
+func TestWebRefusesNonLoopback(t *testing.T) {
+	var out, errb bytes.Buffer
+	if code := run([]string{"--web", "--addr", "0.0.0.0:0", "--no-open", "."}, &out, &errb); code != 2 || !strings.Contains(errb.String(), "loopback-only") {
+		t.Fatalf("code %d: %s", code, errb.String())
+	}
+}
+
+func TestWebFlagParses(t *testing.T) {
+	o, err := parseArgs([]string{"--web", "decks"}, os.Stderr)
+	if err != nil || !o.web || strings.Join(o.args, " ") != "decks" {
+		t.Fatalf("%v %+v", err, o)
+	}
+}
