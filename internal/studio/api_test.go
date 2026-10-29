@@ -1,6 +1,7 @@
 package studio
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/felipeg48/simple-ideas/internal/deck"
@@ -70,5 +71,18 @@ func TestRulesMatchDeckPackage(t *testing.T) {
 	}
 	if len(m["transitions"].([]any)) != len(deck.Transitions) || len(m["metaKeys"].([]any)) != len(deck.MetaKeys) {
 		t.Fatal("transitions/metaKeys")
+	}
+}
+
+func TestCheckFilesAreWorkspaceRelativeFromParentCwd(t *testing.T) {
+	f := deckFx(t)
+	t.Chdir(filepath.Dir(f.root))
+	_, m := f.do("GET", "check?deck=main.md", nil)
+	p := m["problems"].([]any)[0].(map[string]any)
+	if p["file"] != "sections/a.md" {
+		t.Fatalf("problem file: %v", p["file"])
+	}
+	if s := m["slides"].([]any)[1].(map[string]any); s["file"] != "sections/a.md" {
+		t.Fatalf("slide file: %v", s["file"])
 	}
 }

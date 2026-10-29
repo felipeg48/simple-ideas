@@ -34,8 +34,9 @@ func (a *api) sourceFiles(d *deck.Deck) []string {
 
 // rel makes a parser-reported path workspace-relative.
 func (a *api) rel(p string) string {
-	if filepath.IsAbs(p) {
-		return a.ws.Rel(p)
+	// deck.rel yields cwd-relative paths; resolve against cwd, then trim the root.
+	if abs, err := filepath.Abs(p); err == nil {
+		return a.ws.Rel(abs)
 	}
 	return filepath.ToSlash(p)
 }
