@@ -3,6 +3,7 @@
 import type { ComponentChildren, JSX } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { DeckInfo, Kind, Node } from "./api";
+import { RunbookWizard } from "./runbook-wizard";
 
 const paths: Record<string, JSX.Element> = {
   dir: <path d="M2.5 4.5a1 1 0 0 1 1-1h3l1.5 1.5h4.5a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1z" />,
@@ -15,6 +16,7 @@ const paths: Record<string, JSX.Element> = {
   other: <path d="M4 2.5h5l3 3v8H4zM9 2.5v3h3" />,
   chevron: <path d="m6 4 4 4-4 4" />,
   plusFile: <><path d="M4 2.5h5l3 3v8H4z" /><path d="M8 7.5v4M6 9.5h4" /></>,
+  plusRunbook: <><rect x="1.5" y="3" width="9.5" height="8.5" rx="1.4" /><path d="m3.8 5.8 1.7 1.4-1.7 1.4M6.8 9h2" /><path d="M13 9.5v4.5M10.75 11.75h4.5" /></>,
   plusDir: <><path d="M2.5 4.5a1 1 0 0 1 1-1h3l1.5 1.5h4.5a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1z" /><path d="M8 7v4M6 9h4" /></>,
   more: <><circle cx="4" cy="8" r=".9" /><circle cx="8" cy="8" r=".9" /><circle cx="12" cy="8" r=".9" /></>,
   sun: <><circle cx="8" cy="8" r="2.8" /><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1" /></>,
@@ -132,6 +134,7 @@ interface Props {
   onCreate(path: string, dir: boolean): Promise<void>;
   onRename(from: string, to: string): Promise<void>;
   onDelete(path: string, dir: boolean): Promise<void>;
+  onRunbook(path: string): Promise<void>;
 }
 
 export function Navigator(p: Props) {
@@ -168,6 +171,9 @@ export function Navigator(p: Props) {
         ok={async (to) => { if (to && to !== n.path) await p.onRename(n.path, to); }} />,
     );
   };
+  const newRunbook = (dir: string) => setDialog(
+    <RunbookWizard tree={p.tree} decks={p.decks} dir={dir} onClose={close} onCreated={p.onRunbook} />,
+  );
   const remove = (n: Node) => setDialog(
     <Dialog title={`Delete ${n.name}?`} okLabel="Delete" danger onClose={close}
       body={n.kind === "dir" ? "Only empty folders can be deleted." : "The file is removed from disk. This cannot be undone."}
@@ -217,6 +223,7 @@ export function Navigator(p: Props) {
         <span class="grp">Workspace</span>
         <button class="icon-btn" aria-label="New file" title="New file" onClick={() => create("", false)}><Icon name="plusFile" /></button>
         <button class="icon-btn" aria-label="New folder" title="New folder" onClick={() => create("", true)}><Icon name="plusDir" /></button>
+        <button class="icon-btn" aria-label="New runbook" title="New runbook" onClick={() => newRunbook(p.active ? parentOf(p.active) : "")}><Icon name="plusRunbook" /></button>
       </div>
       <div class="nav-scroll" onContextMenu={(e) => p.tree && openMenu(e, p.tree)}>
         {!p.tree ? <div class="nav-empty">Loading…</div>
@@ -227,6 +234,7 @@ export function Navigator(p: Props) {
         <Menu x={menu.x} y={menu.y} onClose={() => setMenu(null)} items={[
           { label: "New file…", run: () => create(target(menu.node), false) },
           { label: "New folder…", run: () => create(target(menu.node), true) },
+          { label: "New runbook…", run: () => newRunbook(target(menu.node)) },
           ...(menu.node.path ? [
             { label: "Rename…", run: () => rename(menu.node) },
             { label: "Delete…", danger: true, run: () => remove(menu.node) },

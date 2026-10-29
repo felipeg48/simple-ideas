@@ -60,7 +60,10 @@ const frameUrl = async (page) => (await frameOf(page)).url();
 const frameText = async (page) => (await frameOf(page)).evaluate(() => document.body.textContent);
 const RB = join(root, "labs/runbook.json");
 const RB_ORIGINAL = readFileSync(RB, "utf8");
-const reset = () => { writeFileSync(ONE, ORIGINAL); writeFileSync(RB, RB_ORIGINAL); };
+const TALK = join(root, "talk.md");
+const TALK_ORIGINAL = readFileSync(TALK, "utf8");
+const LABOPS = join(root, "lab-ops.json");
+const reset = () => { writeFileSync(ONE, ORIGINAL); writeFileSync(RB, RB_ORIGINAL); writeFileSync(TALK, TALK_ORIGINAL); rmSync(LABOPS, { force: true }); };
 async function openRunbook(page) {
   await openFile(page, "labs/runbook.json");
   await page.waitForSelector(".rb-view .rb-entry");
@@ -288,6 +291,54 @@ const tests = {
     await until(() => readFileSync(RB, "utf8").includes('"command": "bash ../labs/files/lab00/preflight.sh --ns {{ns:messaging}}"'), 5000, "token saved");
     await ctx.close();
   },
+  async "generator creates and links a runbook"() {
+    const { ctx, page } = await open("dark");
+    await page.click("button[aria-label='New runbook']");
+    await page.fill(".wiz input[aria-label='Runbook name']", "Lab ops");
+    if ((await page.inputValue(".wiz input[aria-label='File name']")) !== "lab-ops.json") throw new Error("file name not derived from the name");
+    await page.keyboard.press("Enter");
+    await page.fill(".wiz input[aria-label='Category name']", "Health");
+    await page.fill(".wiz input[aria-label='Label']", "Alarms");
+    await page.focus(".wiz textarea[aria-label='Command']");
+    await page.keyboard.insertText("rabbitmq-diagnostics check_alarms -n ");
+    await page.click(".wiz button:has-text('Insert placeholder')");
+    await page.fill(".ph-pop input[aria-label='Placeholder name']", "node");
+    await page.fill(".ph-pop input[aria-label='Default value']", "rabbit@rmq1");
+    await page.keyboard.press("Enter");
+    await until(async () => (await page.inputValue(".wiz textarea[aria-label='Command']")).endsWith("{{node:rabbit@rmq1}}"), 3000, "placeholder inserted");
+    await page.click(".wiz button:has-text('Next')");
+    await page.check(".wiz input[aria-label='Link talk.md']");
+    await page.click(".wiz button:has-text('Next')");
+    await page.waitForSelector(".wiz .wiz-json");
+    await page.click(".wiz button:has-text('Create')");
+    await page.waitForSelector(".rb-view", { timeout: 5000 });
+    const want = JSON.stringify({ name: "Lab ops", categories: [{ name: "Health", entries: [{ label: "Alarms", command: "rabbitmq-diagnostics check_alarms -n {{node:rabbit@rmq1}}" }] }] }, null, 2) + "\n";
+    if (readFileSync(LABOPS, "utf8") !== want) throw new Error("bad runbook: " + readFileSync(LABOPS, "utf8"));
+    if (!readFileSync(TALK, "utf8").startsWith("---\ntitle: E2E Talk\nrunbook: lab-ops.json\n---\n")) throw new Error("deck not linked: " + readFileSync(TALK, "utf8"));
+    if ((await page.textContent(".rb-mode button.on")) !== "Visual") throw new Error("not in the Visual view");
+    if ((await page.textContent(".tab.on .tab-main")) !== "lab-ops.json") throw new Error("new file is not the active tab");
+    await page.click("button[aria-label='New runbook']");
+    await page.fill(".wiz input[aria-label='Runbook name']", "Lab ops");
+    await page.keyboard.press("Enter");
+    await page.waitForSelector(".wiz :text('A file with this name already exists')", { timeout: 3000 });
+    if (!(await page.$(".wiz input[aria-label='Runbook name']"))) throw new Error("left step 1");
+    if (readFileSync(LABOPS, "utf8") !== want) throw new Error("existing file overwritten");
+    // the file appears on disk while the wizard is open: Create gets a 409 and goes back to step 1
+    await page.fill(".wiz input[aria-label='File name']", "race.json");
+    await page.keyboard.press("Enter");
+    await page.fill(".wiz input[aria-label='Category name']", "C");
+    await page.fill(".wiz input[aria-label='Label']", "L");
+    await page.fill(".wiz textarea[aria-label='Command']", "true");
+    await page.click(".wiz button:has-text('Next')");
+    await page.click(".wiz button:has-text('Next')");
+    writeFileSync(join(root, "race.json"), "mine\n");
+    await page.click(".wiz button:has-text('Create')");
+    await page.waitForSelector(".wiz :text('A file with this name already exists')", { timeout: 3000 });
+    if (!(await page.$(".wiz input[aria-label='Runbook name']"))) throw new Error("409 did not return to step 1");
+    if (readFileSync(join(root, "race.json"), "utf8") !== "mine\n") throw new Error("409 overwrote the file");
+    rmSync(join(root, "race.json"));
+    await ctx.close();
+  },
   async screenshots() {
     for (const theme of ["dark", "light"]) for (const [w, h] of [[1440, 900], [1280, 800]]) {
       const { ctx, page } = await open(theme, { width: w, height: h });
@@ -313,11 +364,42 @@ const tests = {
       await page.screenshot({ path: join(out, `runbook-pop-${theme}.png`) });
       await ctx.close();
     }
+    for (const theme of ["dark", "light"]) {
+      const { ctx, page } = await open(theme);
+      await openFile(page, "sections/one.md");
+      const shot = async (n) => { await sleep(250); await page.screenshot({ path: join(out, `wizard-${n}-${theme}.png`) }); };
+      await page.click("button[aria-label='New runbook']");
+      await page.click(".wiz button:has-text('Next')");
+      await shot("1-errors");
+      await page.fill(".wiz input[aria-label='Runbook name']", "Lab ops");
+      await page.fill(".wiz input[aria-label='Description']", "Checks for the three-node RabbitMQ lab");
+      await shot("1-runbook");
+      await page.keyboard.press("Enter");
+      await page.fill(".wiz input[aria-label='Category name']", "Health");
+      await page.fill(".wiz input[aria-label='Label']", "Alarms");
+      await page.fill(".wiz input[aria-label='Entry description']", "Memory and disk alarms on one node");
+      await page.fill(".wiz textarea[aria-label='Command']", "rabbitmq-diagnostics check_alarms -n {{node:rabbit@rmq1}}");
+      await page.click(".wiz button:has-text('Add another')");
+      await page.fill(".wiz .wiz-entry >> nth=1 >> input[aria-label='Label']", "Queues");
+      await page.click(".wiz .wiz-entry >> nth=1 >> button:has-text('Insert placeholder')");
+      await shot("2-commands");
+      await page.keyboard.press("Escape");
+      await page.click(".wiz button:has-text('Next')");
+      await shot("2-errors");
+      await page.fill(".wiz .wiz-entry >> nth=1 >> textarea[aria-label='Command']", "rabbitmqctl -n {{node}} list_queues name messages");
+      await page.click(".wiz button:has-text('Next')");
+      await page.check(".wiz input[aria-label='Link talk.md']");
+      await shot("3-link");
+      await page.click(".wiz button:has-text('Next')");
+      await shot("4-review");
+      await ctx.close();
+    }
   },
 };
 
 let failed = 0;
 for (const [name, fn] of Object.entries(tests)) {
+  if (process.env.ONLY && !name.includes(process.env.ONLY)) continue; // ONLY=generator npm run e2e
   reset();
   try { await fn(); console.log("ok   " + name); }
   catch (e) { failed++; console.log("FAIL " + name + "\n     " + String(e.message).split("\n")[0]); }

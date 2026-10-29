@@ -220,3 +220,29 @@ export function validate(rb: Runbook): { path: string; msg: string }[] {
   });
   return out;
 }
+
+// --- generator helpers ---
+
+/** slugify turns a runbook name into a file-name stem: "Lab ops" → "lab-ops". */
+export const slugify = (s: string) =>
+  s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+/** relPath is the path of `file` as seen from the folder of `from` (both workspace-relative). */
+export function relPath(from: string, file: string): string {
+  const a = from.split("/").slice(0, -1), b = file.split("/");
+  let i = 0;
+  while (i < a.length && i < b.length - 1 && a[i] === b[i]) i++;
+  return [...a.slice(i).map(() => ".."), ...b.slice(i)].join("/");
+}
+
+/** linkRunbook sets `runbook: <rel>` in a deck's front matter, replacing an existing line or adding front matter. */
+export function linkRunbook(deck: string, rel: string): string {
+  const nl = deck.includes("\r\n") ? "\r\n" : "\n";
+  const lines = deck.split(nl);
+  const end = lines[0] === "---" ? lines.indexOf("---", 1) : -1;
+  if (end < 0) return `---${nl}runbook: ${rel}${nl}---${nl}${nl}` + deck;
+  const at = lines.slice(1, end).findIndex((l) => /^runbook\s*:/.test(l));
+  if (at >= 0) lines[at + 1] = `runbook: ${rel}`;
+  else lines.splice(end, 0, `runbook: ${rel}`);
+  return lines.join(nl);
+}

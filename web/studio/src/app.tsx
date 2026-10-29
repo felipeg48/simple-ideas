@@ -4,7 +4,7 @@ import type { JSX } from "preact";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { ApiError, api, type Check, type DeckInfo, type Kind, type Node, type Problem, type Rules, deckURL } from "./api";
 import { clear, scoped } from "./buffers";
-import { type DocStatus, Editor, type EditorCtl, unsaved } from "./editor";
+import { type DocStatus, Editor, type EditorCtl, setRbView, unsaved } from "./editor";
 import { Dialog, Icon, type IconName, Navigator } from "./navigator";
 import { Preview } from "./preview";
 import { Problems } from "./problems";
@@ -235,6 +235,12 @@ export function App() {
     await refresh();
     if (!dir) open(path);
   };
+  // a runbook made by the generator opens in the Visual view
+  const onRunbook = async (path: string) => {
+    setRbView(path, "visual");
+    await refresh();
+    open(path);
+  };
   const onRename = async (from: string, to: string) => {
     await ctl.current?.flush();
     // a doc that still differs from disk would lose its text in the move: make the user settle it first
@@ -298,7 +304,7 @@ export function App() {
 
       <div class="body" style={{ gridTemplateColumns: cols }}>
         <Navigator tree={tree} decks={decks} active={active} dirty={dirty} onOpen={(n) => open(n.path)}
-          onCreate={onCreate} onRename={onRename} onDelete={onDelete} />
+          onCreate={onCreate} onRename={onRename} onDelete={onDelete} onRunbook={onRunbook} />
         <Split label="Resize navigator" onMove={(dx) => setLayout((l) => ({ ...l, nav: Math.min(480, Math.max(180, l.nav + dx)) }))} />
         <div class={"work" + (problemsOpen ? " with-problems" : "")}>
           <div class="panes" ref={panes} style={{ gridTemplateColumns: paneCols }}>

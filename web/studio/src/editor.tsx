@@ -60,7 +60,7 @@ const viewKey = (path: string) => scoped("si-studio-rbview:" + path);
 const rbView = (path: string): "visual" | "json" => {
   try { return localStorage.getItem(viewKey(path)) === "json" ? "json" : "visual"; } catch { return "visual"; }
 };
-const setRbView = (path: string, v: "visual" | "json") => { try { localStorage.setItem(viewKey(path), v); } catch { /* best effort */ } };
+export const setRbView = (path: string, v: "visual" | "json") => { try { localStorage.setItem(viewKey(path), v); } catch { /* best effort */ } };
 
 const highlight = HighlightStyle.define([
   { tag: t.heading, color: "var(--syn-heading)", fontWeight: "700" },
