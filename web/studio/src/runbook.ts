@@ -1,7 +1,9 @@
 // Pure runbook model: lossless parse/serialize, edit ops, placeholders.
-export interface RbEntry { label: string; description?: string; command: string; target?: "bash" | "sql"; extra: Record<string, unknown>; missing?: string[]; raw?: unknown }
-export interface RbCategory { name: string; icon?: string; entries: RbEntry[]; extra: Record<string, unknown>; missing?: string[]; raw?: unknown }
-export interface Runbook { name?: string; description?: string; categories: RbCategory[]; extra: Record<string, unknown> }
+// order: the object's keys as they were in the file; serialization keeps it so an edit
+// only touches the edited value (objects created in Studio get the canonical order)
+export interface RbEntry { label: string; description?: string; command: string; target?: "bash" | "sql"; extra: Record<string, unknown>; missing?: string[]; raw?: unknown; order?: string[] }
+export interface RbCategory { name: string; icon?: string; entries: RbEntry[]; extra: Record<string, unknown>; missing?: string[]; raw?: unknown; order?: string[] }
+export interface Runbook { name?: string; description?: string; categories: RbCategory[]; extra: Record<string, unknown>; order?: string[] }
 export type ParseResult = { ok: true; rb: Runbook } | { ok: false; error: string; line: number; col: number };
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -99,19 +101,19 @@ export function parseRunbook(text: string): ParseResult {
       if (!isObj(e)) return { label: "", command: "", extra: {}, raw: e };
       const x = split(e, { label: str, description: str, command: str, target: tgt });
       const missing = miss(e, ["label", "command"]);
-      return { label: x.got.label ?? "", command: x.got.command ?? "", ...(x.got.description !== undefined && { description: x.got.description }), ...(x.got.target && { target: x.got.target }), extra: x.extra, ...(missing.length && { missing }) };
+      return { label: x.got.label ?? "", command: x.got.command ?? "", ...(x.got.description !== undefined && { description: x.got.description }), ...(x.got.target && { target: x.got.target }), extra: x.extra, ...(missing.length && { missing }), order: Object.keys(e) };
     });
     const missing = miss(c, ["name", "entries"]);
-    return { name: g.got.name ?? "", ...(g.got.icon !== undefined && { icon: g.got.icon }), entries, extra: g.extra, ...(missing.length && { missing }) };
+    return { name: g.got.name ?? "", ...(g.got.icon !== undefined && { icon: g.got.icon }), entries, extra: g.extra, ...(missing.length && { missing }), order: Object.keys(c) };
   });
-  const rb: Runbook = { categories, extra };
+  const rb: Runbook = { categories, extra, order: Object.keys(v) };
   if (got.name !== undefined) rb.name = got.name;
   if (got.description !== undefined) rb.description = got.description;
   return { ok: true, rb };
 }
 
 // canonical slot order; a typed value wins, else a raw wrong-typed one kept in extra, else nothing
-function emit(keys: string[], typed: Record<string, unknown>, extra: Record<string, unknown>, missing: string[] = []): Record<string, unknown> {
+function emit(keys: string[], typed: Record<string, unknown>, extra: Record<string, unknown>, missing: string[] = [], order?: string[]): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const k of keys) {
     const t = typed[k];
@@ -119,19 +121,31 @@ function emit(keys: string[], typed: Record<string, unknown>, extra: Record<stri
     if (t !== undefined && !(blank && (missing.includes(k) || k in extra))) out[k] = t;
     else if (k in extra) out[k] = extra[k];
   }
-  for (const k of Object.keys(extra)) if (!keys.includes(k)) Object.defineProperty(out, k, { value: extra[k], enumerable: true, writable: true, configurable: true });
-  return out;
+  for (const k of Object.keys(extra)) if (!keys.includes(k)) def(out, k, extra[k]);
+  if (!order) return out;
+  // original key order; a key new to this object goes after its nearest canonical predecessor
+  const list = order.filter((k) => Object.prototype.hasOwnProperty.call(out, k));
+  for (const k of Object.keys(out)) {
+    if (list.includes(k)) continue;
+    let at = 0;
+    list.forEach((x, j) => { const r = keys.indexOf(x); if (r >= 0 && r < keys.indexOf(k)) at = j + 1; });
+    list.splice(at, 0, k);
+  }
+  const res: Record<string, unknown> = {};
+  for (const k of list) def(res, k, out[k]);
+  return res;
 }
+const def = (o: object, k: string, v: unknown) => Object.defineProperty(o, k, { value: v, enumerable: true, writable: true, configurable: true });
 
 export function serializeRunbook(rb: Runbook): string {
   const cats = rb.categories.map((c) => {
     if (c.raw !== undefined) return c.raw;
-    return emit(["name", "icon", "entries"], { name: c.name, icon: c.icon, entries: c.entries.map((e) => (e.raw !== undefined ? e.raw : emit(["label", "description", "command", "target"], e as unknown as Record<string, unknown>, e.extra, e.missing))) }, c.extra, c.missing);
+    return emit(["name", "icon", "entries"], { name: c.name, icon: c.icon, entries: c.entries.map((e) => (e.raw !== undefined ? e.raw : emit(["label", "description", "command", "target"], e as unknown as Record<string, unknown>, e.extra, e.missing, e.order))) }, c.extra, c.missing, c.order);
   });
-  return JSON.stringify(emit(["name", "description", "categories"], { name: rb.name, description: rb.description, categories: cats }, rb.extra), null, 2) + "\n";
+  return JSON.stringify(emit(["name", "description", "categories"], { name: rb.name, description: rb.description, categories: cats }, rb.extra, [], rb.order), null, 2) + "\n";
 }
 
-const placeholderRe = /\{\{([A-Za-z_][A-Za-z0-9_-]*)(?::([^}]*))?\}\}/g;
+export const placeholderRe = /\{\{([A-Za-z_][A-Za-z0-9_-]*)(?::([^}]*))?\}\}/g;
 
 // distinct names in document order; first default wins (same as Go)
 export function placeholders(cmd: string): { name: string; def: string }[] {

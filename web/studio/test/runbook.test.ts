@@ -15,9 +15,10 @@ const sample = JSON.stringify({
 describe("runbook", () => {
   it("roundTripPreservesUnknownKeys", () => {
     const out = JSON.parse(serializeRunbook(ok(sample)));
-    expect(Object.keys(out)).toEqual(["name", "categories", "x"]);
-    expect(Object.keys(out.categories[0])).toEqual(["name", "entries", "z"]);
-    expect(Object.keys(out.categories[0].entries[0])).toEqual(["label", "command", "target", "w"]);
+    // existing objects keep the file's key order, so a visual edit is a minimal diff
+    expect(Object.keys(out)).toEqual(["x", "categories", "name"]);
+    expect(Object.keys(out.categories[0])).toEqual(["name", "z", "entries"]);
+    expect(Object.keys(out.categories[0].entries[0])).toEqual(["command", "label", "w", "target"]);
     expect(out.categories[0].z).toEqual([1]);
   });
   it("serializeIsCanonical", () => {
@@ -25,6 +26,20 @@ describe("runbook", () => {
     expect(s.endsWith("}\n")).toBe(true);
     expect(s).toContain('\n  "name": "R"');
     expect(serializeRunbook(ok(s))).toBe(s);
+  });
+  it("caci fixture round trips byte-identical (icon after entries stays there)", () => {
+    expect(serializeRunbook(ok(caci))).toBe(caci);
+  });
+  it("a key new to an existing object goes after its canonical predecessor; new objects are canonical", () => {
+    const t = '{\n  "categories": [\n    {\n      "entries": [\n        {\n          "command": "c",\n          "label": "l"\n        }\n      ],\n      "name": "A"\n    }\n  ]\n}\n';
+    let rb = ops.updateEntry(ok(t), 0, 0, { description: "d", target: "sql" });
+    rb = ops.addEntry(rb, 0, { label: "n", command: "x", target: "bash" });
+    rb = { ...rb, categories: rb.categories.map((c) => ({ ...c, icon: "tools" })) };
+    const out = JSON.parse(serializeRunbook(rb));
+    expect(Object.keys(out.categories[0])).toEqual(["entries", "name", "icon"]);
+    expect(Object.keys(out.categories[0].entries[0])).toEqual(["command", "label", "description", "target"]);
+    expect(Object.keys(out.categories[0].entries[1])).toEqual(["label", "command", "target"]);
+    expect(Object.keys(JSON.parse(serializeRunbook(ops.addCategory(rb, "B"))).categories[1])).toEqual(["name", "entries"]);
   });
   it("caci fixture round trips", () => {
     const t = caci;
@@ -83,12 +98,12 @@ describe("runbook", () => {
     const v = validate(ok('{"categories":[{"name":"a","entries":[5]},7]}'));
     expect(v.map((x) => x.path)).toEqual(["categories[0].entries[0]", "categories[1]"]);
   });
-  it("wrong-typed known keys keep canonical slot and are flagged", () => {
+  it("wrong-typed known keys keep their original slot and are flagged", () => {
     const t = JSON.stringify({ description: 5, name: "n", categories: [{ icon: 1, name: "a", entries: [{ x: 1, target: "powershell", command: "c", label: "l", description: false }] }], z: 1 }, null, 2) + "\n";
     const out = JSON.parse(serializeRunbook(ok(t)));
-    expect(Object.keys(out)).toEqual(["name", "description", "categories", "z"]);
-    expect(Object.keys(out.categories[0])).toEqual(["name", "icon", "entries"]);
-    expect(Object.keys(out.categories[0].entries[0])).toEqual(["label", "description", "command", "target", "x"]);
+    expect(Object.keys(out)).toEqual(["description", "name", "categories", "z"]);
+    expect(Object.keys(out.categories[0])).toEqual(["icon", "name", "entries"]);
+    expect(Object.keys(out.categories[0].entries[0])).toEqual(["x", "target", "command", "label", "description"]);
     expect(validate(ok(t)).map((x) => x.path)).toEqual(["description", "categories[0].icon", "categories[0].entries[0].description", "categories[0].entries[0].target"]);
   });
   it("__proto__ key survives", () => {
