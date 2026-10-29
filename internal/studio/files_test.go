@@ -206,3 +206,15 @@ func TestTreeRoute(t *testing.T) {
 		t.Fatalf("tree: %d %v", code, m)
 	}
 }
+
+// doAny is do for endpoints answering a JSON array.
+func (f *fx) doAny(method, url string) []any {
+	f.t.Helper()
+	rec := httptest.NewRecorder()
+	f.mux.ServeHTTP(rec, httptest.NewRequest(method, "/_si/studio/api/"+url, nil))
+	var v []any
+	if err := json.Unmarshal(rec.Body.Bytes(), &v); err != nil {
+		f.t.Fatalf("%v: %s", err, rec.Body)
+	}
+	return v
+}

@@ -33,6 +33,9 @@ func (a *api) routes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE "+apiPrefix+"file", a.deleteFile)
 	mux.HandleFunc("POST "+apiPrefix+"create", a.create)
 	mux.HandleFunc("POST "+apiPrefix+"rename", a.rename)
+	mux.HandleFunc("GET "+apiPrefix+"decks", a.decks)
+	mux.HandleFunc("GET "+apiPrefix+"check", a.check)
+	mux.HandleFunc("GET "+apiPrefix+"rules", a.rules)
 }
 
 func etagOf(b []byte) string {
