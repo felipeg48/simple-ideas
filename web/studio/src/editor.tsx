@@ -10,7 +10,8 @@ import {
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { HighlightStyle, bracketMatching, indentOnInput, syntaxHighlighting } from "@codemirror/language";
 import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } from "@codemirror/autocomplete";
-import { type Diagnostic, lintGutter, lintKeymap, setDiagnostics } from "@codemirror/lint";
+import { type Diagnostic, lintGutter, lintKeymap, linter, setDiagnostics } from "@codemirror/lint";
+import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
 import { tags as t } from "@lezer/highlight";
 import { ApiError, api, type Kind, type Problem, type Rules } from "./api";
@@ -59,7 +60,7 @@ const highlight = HighlightStyle.define([
   { tag: t.comment, color: "var(--syn-comment)" },
   { tag: [t.quote], color: "var(--syn-quote)", fontStyle: "italic" },
   { tag: [t.processingInstruction, t.contentSeparator, t.meta], color: "var(--syn-punct)" },
-  { tag: [t.number, t.atom, t.bool], color: "var(--syn-number)" },
+  { tag: [t.number, t.atom, t.bool, t.null], color: "var(--syn-number)" },
   { tag: [t.keyword, t.tagName], color: "var(--syn-keyword)" },
   { tag: [t.attributeName, t.propertyName], color: "var(--syn-attr)" },
 ]);
@@ -113,8 +114,9 @@ function extensions(kind: Kind, rules: Rules | null, onUpdate: Extension): Exten
     EditorState.allowMultipleSelections.of(true), indentOnInput(), bracketMatching(), closeBrackets(),
     rectangularSelection(), crosshairCursor(), highlightActiveLine(), highlightSelectionMatches(),
     autocompletion({ icons: false }), lintGutter(), syntaxHighlighting(highlight), theme,
-    md ? EditorView.lineWrapping : [],
+    md || kind === "json" ? EditorView.lineWrapping : [],
     md && rules ? siMarkdown(rules) : [],
+    kind === "json" ? [json(), linter(jsonParseLinter())] : [],
     keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...searchKeymap, ...historyKeymap,
       ...completionKeymap, ...lintKeymap, indentWithTab]),
     onUpdate,
