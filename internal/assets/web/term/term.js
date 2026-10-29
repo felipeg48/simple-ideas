@@ -60,6 +60,18 @@
     '.si-rb-desc{font-family:ui-sans-serif,system-ui,sans-serif;font-size:11px;color:#7f8bab;margin:1px 0 3px}' +
     '.si-rb-cmd{font-size:12px;white-space:pre-wrap;word-break:break-word;color:#c7d0e0;' +
     'background:#11151f;border-radius:5px;padding:4px 6px}' +
+    '.si-rb-title{padding:6px 10px 0;font:600 12px ui-sans-serif,system-ui,sans-serif;color:#9aa7c0}' +
+    '.si-rb-var{background:#2a2410;color:#ffd080;border-radius:3px;padding:0 3px}' +
+    '.si-rb-form{flex:0 0 auto;padding:8px 10px;border-bottom:1px solid #1d2536;background:#11151f;' +
+    'font-family:ui-sans-serif,system-ui,sans-serif;font-size:12px;color:#c8d0e0}' +
+    '.si-rb-form label{display:block;margin:4px 0 2px;color:#9aa7c0}' +
+    '.si-rb-form input{width:100%;box-sizing:border-box;background:#0b0e14;color:#e6e6e6;' +
+    'border:1px solid #2a3550;border-radius:4px;padding:4px 6px;font:12px ui-monospace,Menlo,monospace}' +
+    '.si-rb-form input:focus{outline:none;border-color:#7dd3fc}' +
+    '.si-rb-form .si-rb-fcmd{margin:6px 0;font:11px ui-monospace,Menlo,monospace;color:#7d8aa5;word-break:break-word}' +
+    '.si-rb-form button{background:#1b2436;color:#e6e6e6;border:1px solid #2a3550;border-radius:4px;' +
+    'padding:3px 10px;margin-right:6px;font-size:12px;cursor:pointer}' +
+    '.si-rb-form button.pri{background:#7dd3fc;color:#0b0e14;border-color:#7dd3fc}' +
     '.si-rb-hint{font-size:11px;color:#5b6680;padding:6px 10px}' +
     /* highlighter tokens, scoped dark for the drawer (deck theme must not leak in) */
     '.si-rb-cmd .si-tk-k{color:#7dd3fc}.si-rb-cmd .si-tk-s{color:#a5e075}' +
@@ -183,6 +195,54 @@
     fetch(API + 'in?id=' + t.id, { method: 'POST', body: text }).catch(function () {});
     t.term.focus();
   }
+  var RB_VAR = /\{\{([A-Za-z_][A-Za-z0-9_-]*)(?::([^}]*))?\}\}/g; // same as Go
+  function rbSaved() { try { return JSON.parse(sessionStorage.getItem('si-rb-vars') || '{}') || {}; } catch (e) { return {}; } }
+  function rbFill(cmd, vals) {
+    return cmd.replace(RB_VAR, function (m, n) { return Object.prototype.hasOwnProperty.call(vals, n) ? vals[n] : m; });
+  }
+  var rbForm = null;
+  function closeForm() { if (rbForm) { rbForm.remove(); rbForm = null; } }
+  function openForm(e, ref) {
+    closeForm();
+    var saved = rbSaved(), f = document.createElement('div');
+    f.className = 'si-rb-form';
+    var inputs = [];
+    e.vars.forEach(function (v) {
+      var l = document.createElement('label'), i = document.createElement('input');
+      l.textContent = v.name; i.type = 'text'; i.spellcheck = false;
+      i.value = Object.prototype.hasOwnProperty.call(saved, v.name) ? saved[v.name] : (v.default || '');
+      l.appendChild(i); f.appendChild(l); inputs.push([v.name, i]);
+    });
+    var pv = document.createElement('div'); pv.className = 'si-rb-fcmd'; f.appendChild(pv);
+    function vals() { var o = {}; inputs.forEach(function (p) { o[p[0]] = p[1].value; }); return o; }
+    function upd() { pv.textContent = rbFill(e.cmd, vals()); }
+    function go(run) {
+      var o = vals(), all = rbSaved();
+      for (var k in o) all[k] = o[k];
+      try { sessionStorage.setItem('si-rb-vars', JSON.stringify(all)); } catch (x) {}
+      sendToShell(rbFill(e.cmd, o) + (run ? '\r' : ''));
+      closeForm();
+    }
+    function btn(txt, cls, fn) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = txt;
+      if (cls) b.className = cls; b.addEventListener('click', fn); return b;
+    }
+    var row = document.createElement('div');
+    row.appendChild(btn('Type', 'pri', function () { go(false); }));
+    row.appendChild(btn('Run', '', function () { go(true); }));
+    row.appendChild(btn('Cancel', '', closeForm));
+    f.appendChild(row);
+    f.addEventListener('input', upd);
+    f.addEventListener('keydown', function (ev) {
+      ev.stopPropagation();
+      if (ev.key === 'Escape') { ev.preventDefault(); closeForm(); if (active >= 0 && tabs[active]) tabs[active].term.focus(); }
+      else if (ev.key === 'Enter') { ev.preventDefault(); go(ev.shiftKey || ev.metaKey || ev.ctrlKey); }
+    });
+    upd();
+    rbPanel.insertBefore(f, rbPanel.querySelector('.si-rb-list'));
+    rbForm = f;
+    inputs[0][1].focus(); inputs[0][1].select();
+  }
   function buildRunbook() {
     if (!hasRunbook) return;
     rbPanel = document.createElement('div');
@@ -219,6 +279,7 @@
         if (e.desc) it.querySelector('.si-rb-desc').textContent = e.desc;
         it._hay = ((e.label || '') + ' ' + (e.desc || '') + ' ' + (e.cmd || '')).toLowerCase();
         it.addEventListener('click', function (ev) {
+          if (e.vars && e.vars.length) { openForm(e, it); return; }
           sendToShell(e.cmd + (ev.shiftKey || ev.metaKey || ev.ctrlKey ? '\r' : ''));
           it.classList.add('flash'); setTimeout(function () { it.classList.remove('flash'); }, 220);
         });
@@ -239,6 +300,11 @@
       });
     });
 
+    if (window.SI_RUNBOOK.name) {
+      var ttl = document.createElement('div');
+      ttl.className = 'si-rb-title'; ttl.textContent = window.SI_RUNBOOK.name;
+      rbPanel.appendChild(ttl);
+    }
     rbPanel.appendChild(head); rbPanel.appendChild(list); rbPanel.appendChild(hint);
     root.querySelector('.si-term-body').appendChild(rbPanel);
   }

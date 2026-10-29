@@ -168,6 +168,32 @@ const tests = {
     if (await page.locator(".cm-content").isVisible()) throw new Error("editor visible for image");
     await ctx.close();
   },
+  async "drawer asks for placeholders"() {
+    const { ctx, page } = await open("dark");
+    await page.goto(new URL("/rbdeck.html", url).href);
+    await page.waitForSelector(".si-deck, .si-slide, body");
+    await page.keyboard.press("`");
+    await page.waitForSelector(".si-rb.is-open .si-rb-item", { timeout: 8000 });
+    const term = () => page.evaluate(() => document.querySelector(".si-term-main").innerText);
+    await sleep(1500); // shell start
+    await page.click(".si-rb-item");
+    await page.waitForSelector(".si-rb-form input");
+    if ((await page.inputValue(".si-rb-form input")) !== "world") throw new Error("default not prefilled");
+    await page.screenshot({ path: join(out, "drawer-form-dark.png") });
+    await page.fill(".si-rb-form input", "si");
+    await page.click(".si-rb-form button:has-text('Run')");
+    await until(async () => (await term()).includes("hello-si"), 6000, "output hello-si");
+    if (await page.$(".si-rb-form")) throw new Error("form still open");
+    await page.click(".si-rb-item");
+    await page.waitForSelector(".si-rb-form input");
+    if ((await page.inputValue(".si-rb-form input")) !== "si") throw new Error("last value not remembered");
+    await page.fill(".si-rb-form input", "nope");
+    await page.keyboard.press("Escape");
+    await sleep(600);
+    if (await page.$(".si-rb-form")) throw new Error("form open after Esc");
+    if ((await term()).includes("nope")) throw new Error("Esc typed something");
+    await ctx.close();
+  },
   async screenshots() {
     for (const theme of ["dark", "light"]) for (const [w, h] of [[1440, 900], [1280, 800]]) {
       const { ctx, page } = await open(theme, { width: w, height: h });
