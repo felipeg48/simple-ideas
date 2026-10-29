@@ -28,6 +28,15 @@ const paths: Record<string, JSX.Element> = {
   ok: <><circle cx="8" cy="8" r="5.5" /><path d="m5.5 8 1.8 1.8L10.8 6" /></>,
   external: <path d="M9 2.5h4.5V7M13.5 2.5 8 8M11.5 9.5v3.5h-9v-9H6" />,
   close: <path d="m4.5 4.5 7 7M11.5 4.5l-7 7" />,
+  copy: <><rect x="5.5" y="5.5" width="8" height="8" rx="1.3" /><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2" /></>,
+  trash: <path d="M3 4.5h10M6.5 4.5v-2h3v2M4.5 4.5l.6 8.2a1 1 0 0 0 1 .8h3.8a1 1 0 0 0 1-.8l.6-8.2M6.8 7v4M9.2 7v4" />,
+  up: <path d="M8 13V3.5M4 7.5l4-4 4 4" />,
+  down: <path d="M8 3v9.5M4 8.5l4 4 4-4" />,
+  grip: <><circle cx="6" cy="4" r=".8" /><circle cx="10" cy="4" r=".8" /><circle cx="6" cy="8" r=".8" /><circle cx="10" cy="8" r=".8" /><circle cx="6" cy="12" r=".8" /><circle cx="10" cy="12" r=".8" /></>,
+  search: <><circle cx="7" cy="7" r="4" /><path d="m10 10 3.5 3.5" /></>,
+  plus: <path d="M8 3v10M3 8h10" />,
+  braces: <path d="M5.5 3c-1.5 0-1.5 1-1.5 2.5S3 7.5 2.5 8c.5.5 1.5 1 1.5 2.5S4 13 5.5 13M10.5 3c1.5 0 1.5 1 1.5 2.5s1 2 1.5 2.5c-.5.5-1.5 1-1.5 2.5s0 2.5-1.5 2.5" />,
+  terminal: <><rect x="2" y="3" width="12" height="10" rx="1.5" /><path d="m4.5 6.5 2 1.5-2 1.5M8 10h3.5" /></>,
 };
 
 export type IconName = keyof typeof paths | Kind;

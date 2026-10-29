@@ -7,7 +7,7 @@ import {
   EditorView, crosshairCursor, drawSelection, dropCursor, highlightActiveLine, highlightActiveLineGutter,
   highlightSpecialChars, keymap, lineNumbers, rectangularSelection,
 } from "@codemirror/view";
-import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
+import { defaultKeymap, history, historyKeymap, indentWithTab, redo, undo } from "@codemirror/commands";
 import { HighlightStyle, bracketMatching, indentOnInput, syntaxHighlighting } from "@codemirror/language";
 import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } from "@codemirror/autocomplete";
 import { type Diagnostic, lintGutter, lintKeymap, linter, setDiagnostics } from "@codemirror/lint";
@@ -16,8 +16,11 @@ import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
 import { tags as t } from "@lezer/highlight";
 import { ApiError, api, type Kind, type Problem, type Rules } from "./api";
 import { createAutosave } from "./autosave";
-import { clear, restore, stash } from "./buffers";
+import { clear, restore, scoped, stash } from "./buffers";
 import { eolOf, toLF, withEol } from "./eol";
+import { Icon } from "./navigator";
+import { RunbookEditor } from "./runbook-editor";
+import { isRunbookText, parseRunbook, serializeRunbook, type Runbook } from "./runbook";
 import { siMarkdown } from "./si-lang";
 import { under } from "./tabs";
 
@@ -45,11 +48,19 @@ interface Doc {
   error?: string;
   deleted?: boolean; // the file vanished from disk while it held unsaved text
   saving: boolean;
+  runbook?: boolean; // a runbook JSON file: offers the Visual view
   chain: Promise<void>;
   auto: ReturnType<typeof createAutosave>;
 }
 
 const remote = Annotation.define<boolean>();
+
+// the Visual / JSON choice is remembered per runbook file
+const viewKey = (path: string) => scoped("si-studio-rbview:" + path);
+const rbView = (path: string): "visual" | "json" => {
+  try { return localStorage.getItem(viewKey(path)) === "json" ? "json" : "visual"; } catch { return "visual"; }
+};
+const setRbView = (path: string, v: "visual" | "json") => { try { localStorage.setItem(viewKey(path), v); } catch { /* best effort */ } };
 
 const highlight = HighlightStyle.define([
   { tag: t.heading, color: "var(--syn-heading)", fontWeight: "700" },
@@ -202,7 +213,7 @@ export function Editor(p: Props) {
   }
 
   function makeDoc(path: string, kind: Kind, content: string, etag: string): Doc {
-    const d = { path, etag, saved: content, eol: "\n", saving: false, chain: Promise.resolve() } as Doc;
+    const d = { path, etag, saved: content, eol: "\n", saving: false, chain: Promise.resolve(), runbook: kind === "json" && isRunbookText(content) } as Doc;
     d.auto = createAutosave(() => (d.chain = d.chain.then(() => save(d))), 700);
     const onUpdate = EditorView.updateListener.of((u) => {
       if (u.docChanged && !u.transactions.some((tr) => tr.annotation(remote))) {
@@ -212,6 +223,7 @@ export function Editor(p: Props) {
         d.auto.touch();
         status(d);
       }
+      if (u.docChanged && d.runbook && cur.current === path) rerender(); // the Visual view follows the text
       if (u.selectionSet || u.docChanged) {
         const h = u.state.selection.main.head, l = u.state.doc.lineAt(h);
         props.current.onCursor(l.number, h - l.from + 1);
@@ -331,7 +343,41 @@ export function Editor(p: Props) {
     v.focus();
   }, [p.reveal, docs.current.has(p.reveal?.path ?? "")]);
 
+  /** editRunbook applies a visual edit to the current text as one transaction (the only write path). */
+  function editRunbook(f: (rb: Runbook) => Runbook) {
+    const v = view.current;
+    if (!v) return;
+    const old = v.state.doc.toString();
+    const r = parseRunbook(old);
+    if (!r.ok) return; // never rewrite text the model cannot read
+    const next = serializeRunbook(f(r.rb));
+    if (next === old) return;
+    // send only the changed span: same result as replacing the doc, but undo groups typing and keeps the cursor
+    let a = 0, b = 0;
+    while (a < old.length && a < next.length && old[a] === next[a]) a++;
+    while (b < old.length - a && b < next.length - a && old[old.length - 1 - b] === next[next.length - 1 - b]) b++;
+    v.dispatch({ changes: { from: a, to: old.length - b, insert: next.slice(a, next.length - b) }, userEvent: "input.visual" });
+  }
+
+  function showJson(path: string, line?: number, col = 1) {
+    setRbView(path, "json");
+    rerender();
+    requestAnimationFrame(() => {
+      const v = view.current;
+      if (!v || cur.current !== path) return;
+      v.requestMeasure();
+      if (line !== undefined) {
+        const l = v.state.doc.line(Math.min(Math.max(line, 1), v.state.doc.lines));
+        const pos = Math.min(l.from + Math.max(col - 1, 0), l.to);
+        v.dispatch({ selection: { anchor: pos }, effects: EditorView.scrollIntoView(pos, { y: "center" }) });
+      }
+      v.focus();
+    });
+  }
+
   const d = p.path ? docs.current.get(p.path) : undefined;
+  const isRb = !!d?.runbook && p.kind === "json";
+  const visual = isRb && rbView(d!.path) === "visual";
   const err = p.path ? failed.current.get(p.path) : undefined;
   const loading = p.path && !d && !err;
   return (
@@ -364,7 +410,20 @@ export function Editor(p: Props) {
       )}
       {err && <div class="ed-msg"><div class="ed-msg-card"><b>Cannot open {p.path}</b><p>{err}</p></div></div>}
       {loading && <div class="ed-msg"><div class="spinner" aria-label="Loading" /></div>}
-      <div class="ed-cm" ref={host} hidden={!d} />
+      {isRb && (
+        <div class="rb-bar">
+          <span class="rb-kind"><Icon name="terminal" />Runbook</span>
+          <div class="seg rb-mode" role="group" aria-label="Runbook view">
+            <button class={visual ? "on" : ""} aria-pressed={visual} onClick={() => { setRbView(d!.path, "visual"); rerender(); }}>Visual</button>
+            <button class={visual ? "" : "on"} aria-pressed={!visual} onClick={() => showJson(d!.path)}>JSON</button>
+          </div>
+        </div>
+      )}
+      {visual && (
+        <RunbookEditor text={text(d!)} edit={editRunbook} toJson={(l, c) => showJson(d!.path, l, c)}
+          undo={(r) => view.current && (r ? redo : undo)(view.current)} />
+      )}
+      <div class="ed-cm" ref={host} hidden={!d || visual} />
     </div>
   );
 }

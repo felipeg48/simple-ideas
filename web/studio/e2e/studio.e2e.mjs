@@ -58,7 +58,14 @@ async function setText(page, text) {
 const frameOf = async (page) => (await page.$("iframe")).contentFrame();
 const frameUrl = async (page) => (await frameOf(page)).url();
 const frameText = async (page) => (await frameOf(page)).evaluate(() => document.body.textContent);
-const reset = () => writeFileSync(ONE, ORIGINAL);
+const RB = join(root, "labs/runbook.json");
+const RB_ORIGINAL = readFileSync(RB, "utf8");
+const reset = () => { writeFileSync(ONE, ORIGINAL); writeFileSync(RB, RB_ORIGINAL); };
+async function openRunbook(page) {
+  await openFile(page, "labs/runbook.json");
+  await page.waitForSelector(".rb-view .rb-entry");
+}
+const labels = (page) => page.$$eval(".rb-cat:first-of-type .rb-entry .rb-label", (ns) => ns.map((n) => n.textContent));
 
 const tests = {
   async "edit updates preview"() {
@@ -194,6 +201,66 @@ const tests = {
     if ((await term()).includes("nope")) throw new Error("Esc typed something");
     await ctx.close();
   },
+  async "runbook visual edit is a minimal diff"() {
+    const { ctx, page } = await open("dark");
+    await openRunbook(page);
+    await page.click("button[aria-label='Edit Tool versions']");
+    await page.fill(".rb-form input[aria-label='Label']", "Tool versions (all)");
+    await until(() => readFileSync(RB, "utf8") !== RB_ORIGINAL, 5000, "edit saved");
+    const a = RB_ORIGINAL.split("\n"), b = readFileSync(RB, "utf8").split("\n");
+    const diff = a.map((l, i) => (l === b[i] ? null : [l, b[i]])).filter(Boolean);
+    if (a.length !== b.length || diff.length !== 1 || !diff[0][1].includes('"label": "Tool versions (all)"'))
+      throw new Error("not a one-line diff: " + JSON.stringify(diff.slice(0, 3)));
+    await ctx.close();
+  },
+  async "runbook duplicate delete and reorder"() {
+    const { ctx, page } = await open("dark");
+    await openRunbook(page);
+    await page.click("button[aria-label='Duplicate Docker resources']");
+    await until(async () => { const l = await labels(page); return l[l.indexOf("Docker resources") + 1] === "Docker resources (copy)"; }, 3000, "copy below");
+    await page.focus("button[aria-label='Move Docker resources (copy) up']");
+    await page.keyboard.press("Enter");
+    await until(async () => { const l = await labels(page); return l[l.indexOf("Docker resources (copy)") + 1] === "Docker resources"; }, 3000, "copy moved up");
+    await page.click("button[aria-label='Delete Docker resources (copy)']");
+    await page.click(".dialog button:has-text('Delete')");
+    await until(() => readFileSync(RB, "utf8") === RB_ORIGINAL, 5000, "file back to the original");
+    await ctx.close();
+  },
+  async "runbook invalid json disables visual"() {
+    const { ctx, page } = await open("dark");
+    await openRunbook(page);
+    await page.click(".rb-mode button:has-text('JSON')");
+    await page.waitForSelector(".cm-content");
+    const broken = RB_ORIGINAL.replace('"label": "Tool versions",', '"label": "Tool versions"');
+    await setText(page, broken);
+    await until(() => readFileSync(RB, "utf8") === broken, 5000, "broken text saved");
+    await page.click(".rb-mode button:has-text('Visual')");
+    const msg = await (await page.waitForSelector(".rb-error", { timeout: 3000 })).textContent();
+    if (!/Fix the JSON to use the visual editor/.test(msg) || !/line 8, column \d+/.test(msg)) throw new Error("bad message: " + msg);
+    await page.screenshot({ path: join(out, "runbook-invalid-dark.png") });
+    await sleep(2000);
+    if (readFileSync(RB, "utf8") !== broken) throw new Error("visual view rewrote broken JSON");
+    await page.click(".rb-error button");
+    await until(async () => (await page.textContent(".cm-activeLine")).includes('"description"'), 3000, "cursor at the error");
+    await ctx.close();
+  },
+  async "runbook insert placeholder"() {
+    const { ctx, page } = await open("dark");
+    await openRunbook(page);
+    await page.click("button[aria-label='Edit Run the preflight check']");
+    await page.focus(".rb-form textarea[aria-label='Command']");
+    await page.keyboard.press("ControlOrMeta+End");
+    await page.keyboard.insertText(" --ns ");
+    await page.click(".rb-form button:has-text('Insert placeholder')");
+    await page.fill(".ph-pop input[aria-label='Placeholder name']", "ns");
+    await page.fill(".ph-pop input[aria-label='Default value']", "messaging");
+    if ((await page.textContent(".ph-pop .ph-preview")) !== "{{ns:messaging}}") throw new Error("bad preview");
+    await page.screenshot({ path: join(out, "runbook-placeholder-dark.png") });
+    await page.click(".ph-pop button:has-text('Insert')");
+    await page.waitForSelector(".rb-entry .rb-ph:has-text('ns')", { timeout: 3000 });
+    await until(() => readFileSync(RB, "utf8").includes('"command": "bash ../labs/files/lab00/preflight.sh --ns {{ns:messaging}}"'), 5000, "token saved");
+    await ctx.close();
+  },
   async screenshots() {
     for (const theme of ["dark", "light"]) for (const [w, h] of [[1440, 900], [1280, 800]]) {
       const { ctx, page } = await open(theme, { width: w, height: h });
@@ -201,6 +268,22 @@ const tests = {
       await page.waitForSelector(".cm-content");
       await sleep(1500);
       await page.screenshot({ path: join(out, `${theme}-${w}x${h}.png`) });
+      await ctx.close();
+    }
+    for (const theme of ["dark", "light"]) {
+      const { ctx, page } = await open(theme);
+      await openRunbook(page);
+      await page.click(".rb-tools button:has-text('Collapse all')");
+      await page.click("button[aria-label='Expand Preflight and images']");
+      await page.hover(".rb-entry:nth-child(3)");
+      await sleep(300);
+      await page.screenshot({ path: join(out, `runbook-overview-${theme}.png`) });
+      await page.click("button[aria-label='Edit Docker resources']");
+      await sleep(400);
+      await page.screenshot({ path: join(out, `runbook-${theme}.png`) });
+      await page.click(".rb-form button:has-text('Insert placeholder')");
+      await sleep(300);
+      await page.screenshot({ path: join(out, `runbook-pop-${theme}.png`) });
       await ctx.close();
     }
   },
