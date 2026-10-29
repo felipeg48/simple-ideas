@@ -192,10 +192,15 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 	if sc.cols {
 		bodyClass += " si-cols"
 	}
+	eyebrow := ""
+	if s.Eyebrow != "" {
+		eyebrow = `<p class="si-kicker">` + html.EscapeString(s.Eyebrow) + "</p>\n"
+	}
 	switch {
 	case len(s.Labs) > 0:
 		b.WriteString(dr.labSlide(s))
 	case s.Kind == deck.KindTitle || s.Kind == deck.KindClosing:
+		b.WriteString(eyebrow)
 		fmt.Fprintf(&b, `<h1 class="si-heading">%s</h1>`+"\n", title)
 		if body != "" {
 			fmt.Fprintf(&b, `<div class="si-sub %s">%s</div>`+"\n", bodyClass, body)
@@ -209,14 +214,21 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 			}
 		}
 	case s.Kind == deck.KindSection:
-		fmt.Fprintf(&b, `<p class="si-kicker">Part %d</p>`+"\n", s.Part)
+		if eyebrow == "" {
+			eyebrow = fmt.Sprintf(`<p class="si-kicker">Part %d</p>`+"\n", s.Part)
+		}
+		b.WriteString(eyebrow)
 		fmt.Fprintf(&b, `<h1 class="si-heading">%s</h1>`+"\n", title)
 		if body != "" {
 			fmt.Fprintf(&b, `<div class="si-sub %s">%s</div>`+"\n", bodyClass, body)
 		}
 	default:
-		if s.Title != "" {
-			fmt.Fprintf(&b, `<header class="si-head"><h2 class="si-heading">%s</h2></header>`+"\n", title)
+		if s.Title != "" || eyebrow != "" {
+			h := ""
+			if s.Title != "" {
+				h = `<h2 class="si-heading">` + title + `</h2>`
+			}
+			fmt.Fprintf(&b, `<header class="si-head">%s%s</header>`+"\n", strings.TrimSuffix(eyebrow, "\n"), h)
 		}
 		fmt.Fprintf(&b, `<div class="%s">%s</div>`+"\n", bodyClass, body)
 	}
@@ -430,7 +442,7 @@ func (dr *deckRenderer) resolveOneAnim(name, dir string) {
 // in .css is a user theme file (resolved relative to cwd, then the deck dir); an
 // http(s):// value is fetched at build time and cached. Either way its contents
 // become the si.theme layer (the built HTML stays self-contained — the fetch is
-// build-time only). A read/fetch error is a deck problem and falls back to studio.
+// build-time only; a file theme's relative url()s are inlined like --css files). A read/fetch error is a deck problem and falls back to studio.
 func (dr *deckRenderer) resolveTheme() {
 	theme := dr.opt.Theme
 	if theme == "" {
@@ -466,7 +478,7 @@ func (dr *deckRenderer) resolveTheme() {
 			return
 		}
 		dr.themeName = "custom"
-		dr.themeCSS = "@layer si.theme{\n" + string(raw) + "\n}\n"
+		dr.themeCSS = "@layer si.theme{\n" + inlineURLs(filepath.Dir(p), string(raw)) + "\n}\n"
 		return
 	}
 	dr.themeName = assets.CanonicalTheme(theme)

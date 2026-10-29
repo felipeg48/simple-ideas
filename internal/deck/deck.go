@@ -50,6 +50,7 @@ var Directives = map[string]string{
 	"footer":     "slide", // per-slide footer override (`off` hides it)
 	"labs":       "slide", // turn the slide into a lab slide (comma-separated lab URLs)
 	"class":      "slide", // extra classes on the slide
+	"eyebrow":    "slide", // small context label above the slide heading
 	"svg":        "body",  // inline an animated SVG canvas
 	"step":       "body",  // reveal the next block as one step
 	"steps":      "body",  // reveal the next list item by item
@@ -108,6 +109,7 @@ type Slide struct {
 	Footer     string // per-slide footer override: text, or "off" to hide; empty inherits the deck footer
 	Labs       []Lab  // lab links; a non-empty list turns the slide into a lab slide
 	Classes    []string
+	Eyebrow    string // small context label above the heading; not part of the title
 	Part       int    // section slides: 1-based number of the section in the deck
 	Dir        string // directory of the source file: base for relative paths
 	File       string // source file
@@ -662,6 +664,8 @@ func (d *Deck) slideDirective(s *Slide, l srcLine, name, val string) bool {
 		}
 	case "class":
 		s.Classes = append(s.Classes, strings.Fields(val)...)
+	case "eyebrow":
+		s.Eyebrow = val
 	case "svg":
 		f := strings.Fields(val)
 		if len(f) == 0 || !strings.HasSuffix(strings.ToLower(f[0]), ".svg") {

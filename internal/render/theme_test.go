@@ -43,6 +43,28 @@ func TestCSSFileTheme(t *testing.T) {
 	}
 }
 
+// A file theme's relative url()s are inlined against the theme's own directory,
+// so fonts and logos next to it keep the deck self-contained.
+func TestCSSFileThemeInlinesURLs(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "css", "fonts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "css", "fonts", "u.woff2"), []byte("wOF2"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	css := `@font-face{font-family:U;src:url("fonts/u.woff2") format("woff2")} a{background:url(https://x.test/p.png)} b{background:url(missing.png)}`
+	if err := os.WriteFile(filepath.Join(dir, "css", "brand.css"), []byte(css), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	h := string(renderMD(t, dir, "---\ntitle: t\ntheme: css/brand.css\n---\n# Hi\n").HTML)
+	for _, want := range []string{`url("data:font/woff2;base64,d09GMg==")`, `url(https://x.test/p.png)`, `url(missing.png)`} {
+		if !strings.Contains(h, want) {
+			t.Errorf("missing %s", want)
+		}
+	}
+}
+
 func TestCSSFileThemeMissing(t *testing.T) {
 	dir := t.TempDir()
 	res := renderMD(t, dir, "---\ntitle: t\ntheme: nope.css\n---\n# Hi\n")

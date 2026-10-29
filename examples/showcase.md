@@ -23,6 +23,7 @@ Welcome. This talk follows a single parcel, order #4711, from the click on "buy"
 
 ---
 
+<!-- eyebrow: Order #4711 · the promise -->
 ## One promise, five hand-offs
 
 <!-- steps -->

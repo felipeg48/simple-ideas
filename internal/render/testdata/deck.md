@@ -53,6 +53,7 @@ Points: Canvas talking point.
 <!-- layout: two-col -->
 <!-- background: #101820 -->
 <!-- class: extra -->
+<!-- eyebrow: Layouts & more -->
 ## Columns
 
 Left.

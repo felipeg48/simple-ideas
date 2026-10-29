@@ -166,7 +166,7 @@ func TestParse(t *testing.T) {
 
 func TestSlideDirectivesAndNotes(t *testing.T) {
 	dir := write(t, map[string]string{"d.md": "---\ntheme: paper\naccent: \"#e4572e\"\ntransition: zoom\naspect: 4:3\n---\n# Deck\n\n---\n\n" +
-		"<!-- layout: two-col -->\n<!-- transition: slide -->\n<!-- class: wide dark -->\n<!-- background: #112233 -->\n## Slide\n\nbody\n\n<!-- column -->\n\nmore\n\nNotes: (1.5 min) say this\n- and this\n\nPoints: talk about X\n- and Y\n"})
+		"<!-- layout: two-col -->\n<!-- transition: slide -->\n<!-- class: wide dark -->\n<!-- eyebrow: Context · Q3 -->\n<!-- background: #112233 -->\n## Slide\n\nbody\n\n<!-- column -->\n\nmore\n\nNotes: (1.5 min) say this\n- and this\n\nPoints: talk about X\n- and Y\n"})
 	d, err := Parse(filepath.Join(dir, "d.md"))
 	if err != nil || len(d.Problems) > 0 {
 		t.Fatalf("parse: %v %v", err, d.Problems)
@@ -175,7 +175,7 @@ func TestSlideDirectivesAndNotes(t *testing.T) {
 		t.Errorf("meta = %+v", d.Meta)
 	}
 	s := d.Slides[1]
-	if s.Layout != "two-col" || s.Transition != "slide" || s.Background != "#112233" || strings.Join(s.Classes, ",") != "wide,dark" {
+	if s.Layout != "two-col" || s.Transition != "slide" || s.Background != "#112233" || strings.Join(s.Classes, ",") != "wide,dark" || s.Eyebrow != "Context · Q3" {
 		t.Errorf("directives = %+v", s)
 	}
 	if s.Title != "Slide" {

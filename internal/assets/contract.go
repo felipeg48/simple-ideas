@@ -115,7 +115,7 @@ var Hooks = []Hook{
 	{`.si-inner`, "padding box of a slide; holds the fluid font size"},
 	{`.si-head`, "header of a content slide"},
 	{`.si-heading`, "the slide heading (h1 or h2)"},
-	{`.si-kicker`, "small label above a section heading (Part 2)"},
+	{`.si-kicker`, "small label above a heading: the section \"Part 2\" kicker or a slide's `eyebrow:`"},
 	{`.si-sub`, "subtitle block of title, section and closing slides"},
 	{`.si-byline`, "author and date line of the title slide"},
 	{`.si-colophon`, "copyright line on the title slide (© year copyright front matter)"},

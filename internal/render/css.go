@@ -25,21 +25,25 @@ func UserCSS(sheets []Stylesheet) string {
 	var b strings.Builder
 	b.WriteString("@layer si.user{\n")
 	for _, s := range sheets {
-		dir := filepath.Dir(s.Path)
-		text := cssURLRE.ReplaceAllStringFunc(s.Text, func(u string) string {
-			m := cssURLRE.FindStringSubmatch(u)
-			if isExternal(m[2]) || strings.HasPrefix(m[2], "#") {
-				return u
-			}
-			if uri, ok := dataURI(filepath.Join(dir, filepath.FromSlash(cleanSrc(m[2])))); ok {
-				return `url("` + uri + `")`
-			}
-			return u
-		})
-		fmt.Fprintf(&b, "/* %s */\n%s\n", filepath.Base(s.Path), text)
+		fmt.Fprintf(&b, "/* %s */\n%s\n", filepath.Base(s.Path), inlineURLs(filepath.Dir(s.Path), s.Text))
 	}
 	b.WriteString("}\n")
 	return b.String()
+}
+
+// inlineURLs replaces relative url() references in css (resolved against dir)
+// with data URIs; external, #fragment and missing references stay as written.
+func inlineURLs(dir, css string) string {
+	return cssURLRE.ReplaceAllStringFunc(css, func(u string) string {
+		m := cssURLRE.FindStringSubmatch(u)
+		if isExternal(m[2]) || strings.HasPrefix(m[2], "#") {
+			return u
+		}
+		if uri, ok := dataURI(filepath.Join(dir, filepath.FromSlash(cleanSrc(m[2])))); ok {
+			return `url("` + uri + `")`
+		}
+		return u
+	})
 }
 
 // LoadCSS reads user stylesheets: files as given, directories as their *.css
