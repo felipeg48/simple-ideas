@@ -2,6 +2,8 @@ package render
 
 import (
 	"encoding/json"
+	"encoding/xml"
+	"io"
 	"reflect"
 	"strings"
 	"testing"
@@ -73,5 +75,33 @@ func TestRunbookAcceptsMetadata(t *testing.T) {
 	js, err = runbookForPage([]byte(`{"categories":[{"name":"c","entries":[{"label":"a","command":"ls"}]}]}`))
 	if err != nil || strings.Contains(js, `"name":"N"`) {
 		t.Errorf("no metadata: %v %s", err, js)
+	}
+}
+
+func TestRunbookVarsNestProperly(t *testing.T) {
+	cases := []struct{ target, cmd string }{
+		{"sql", `SELECT '{{a:x' || '}}'`},
+		{"sql", `a = '{{v:it''s}}'`},
+		{"bash", `echo "{{a:x" y}}"`},
+		{"sql", "-- {{x:foo\n}}"},
+		{"sql", "/* {{a:x */ SELECT 1 }} */"},
+		{"sql", "SELECT {{select}}"},
+		{"bash", "ls {{if}} {{a:<b>&}}"},
+	}
+	for _, c := range cases {
+		h := highlightWithVars(c.cmd, c.target)
+		d := xml.NewDecoder(strings.NewReader("<r>" + strings.NewReplacer("&nbsp;", " ").Replace(h) + "</r>"))
+		d.Strict = true
+		for {
+			if _, err := d.Token(); err != nil {
+				if err != io.EOF {
+					t.Errorf("%s %q: bad markup: %v\n%s", c.target, c.cmd, err, h)
+				}
+				break
+			}
+		}
+		if want := len(placeholderRe.FindAllString(c.cmd, -1)); strings.Count(h, `class="si-rb-var"`) != want {
+			t.Errorf("%s %q: want %d wrapped: %s", c.target, c.cmd, want, h)
+		}
 	}
 }

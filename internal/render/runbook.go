@@ -3,9 +3,11 @@ package render
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 // A runbook is an optional command cheat-sheet shown in the `si play` terminal
@@ -59,6 +61,24 @@ func Placeholders(cmd string) []Placeholder {
 	return out
 }
 
+// highlightWithVars highlights cmd with each placeholder occurrence swapped for
+// a private-use sentinel (no letters, digits, quotes or comment characters, so
+// no token rule can split it), then swaps the sentinels for si-rb-var spans.
+// The spans therefore always nest properly inside the token spans.
+func highlightWithVars(cmd, target string) string {
+	var toks []string
+	masked := placeholderRe.ReplaceAllStringFunc(cmd, func(m string) string {
+		toks = append(toks, m)
+		return "\uE000" + string(rune(0xE100+len(toks)-1)) + "\uE001"
+	})
+	out := highlight(masked, target)
+	for i, t := range toks {
+		out = strings.Replace(out, "\uE000"+string(rune(0xE100+i))+"\uE001",
+			`<span class="si-rb-var">`+html.EscapeString(t)+`</span>`, 1)
+	}
+	return out
+}
+
 // runbookForPage parses a runbook JSON file and returns the JSON injected as
 // window.SI_RUNBOOK: the same categories, but each entry carries the raw command
 // (`cmd`, sent to the shell on click) plus pre-highlighted HTML (`html`, shown
@@ -108,7 +128,7 @@ func runbookForPage(raw []byte) (string, error) {
 			}
 			oc.Entries = append(oc.Entries, outEntry{
 				Label: e.Label, Desc: e.Description, Cmd: cmd,
-				HTML:   placeholderRe.ReplaceAllString(highlight(cmd, target), `<span class="si-rb-var">$0</span>`),
+				HTML:   highlightWithVars(cmd, target),
 				Target: target, Vars: vars,
 			})
 		}
