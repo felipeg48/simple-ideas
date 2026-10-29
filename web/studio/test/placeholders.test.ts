@@ -8,8 +8,11 @@ describe("placeholders (vectors shared with Go)", () => {
       { name: "pod", def: "" },
     ]);
   });
+  it("first occurrence and its default win", () => {
+    expect(placeholders("{{a}} {{a:x}}")).toEqual([{ name: "a", def: "" }]);
+  });
   it("ignores templates and shell", () => {
-    for (const c of ["docker inspect -f '{{.Server.Version}}' x", "docker inspect {{json .}}", "echo ${HOME}", "awk '{print $1}'", "jq '{a: .b}'"])
+    for (const c of ["docker inspect -f '{{.Server.Version}}' x", "docker inspect {{json .}}", "echo ${HOME}", "awk '{print $1}'", "jq '{a: .b}'", "{{end}}", "{{else}}", "kubectl get pods -o go-template='{{range .items}}{{.metadata.name}}{{end}}'", "docker ps --format '{{if .Ports}}x{{else}}-{{end}}'"])
       expect(placeholders(c)).toEqual([]);
   });
   it("insertPlaceholder puts cursor after token", () => {

@@ -615,7 +615,8 @@ references shared assets as `../images/...`.
   ```
 
   Not placeholders, typed verbatim: `{{.Server.Version}}`, `{{json .}}`,
-  `${HOME}`, `{print $1}`, `{a: .b}`. The file may also carry a top-level `name`
+  `${HOME}`, `{print $1}`, `{a: .b}`, and the Go-template keywords `{{end}}`,
+  `{{else}}`, `{{break}}`, `{{continue}}`, `{{nil}}`, `{{true}}`, `{{false}}`. The file may also carry a top-level `name`
   (the drawer title) and `description`.
 
 ### Studio (`si --web`)

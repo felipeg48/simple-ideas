@@ -17,6 +17,14 @@ func TestPlaceholdersParse(t *testing.T) {
 	}
 }
 
+func TestPlaceholdersFirstDefaultWins(t *testing.T) {
+	got := Placeholders("{{a}} {{a:x}}")
+	want := []Placeholder{{"a", ""}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
 func TestPlaceholdersIgnoreTemplatesAndShell(t *testing.T) {
 	for _, c := range []string{
 		"docker inspect -f '{{.Server.Version}}' x",
@@ -24,6 +32,10 @@ func TestPlaceholdersIgnoreTemplatesAndShell(t *testing.T) {
 		"echo ${HOME}",
 		"awk '{print $1}'",
 		"jq '{a: .b}'",
+		"{{end}}",
+		"{{else}}",
+		"kubectl get pods -o go-template='{{range .items}}{{.metadata.name}}{{end}}'",
+		"docker ps --format '{{if .Ports}}x{{else}}-{{end}}'",
 	} {
 		if got := Placeholders(c); len(got) != 0 {
 			t.Errorf("%q: got %v, want none", c, got)
@@ -87,6 +99,7 @@ func TestRunbookVarsNestProperly(t *testing.T) {
 		{"sql", "/* {{a:x */ SELECT 1 }} */"},
 		{"sql", "SELECT {{select}}"},
 		{"bash", "ls {{if}} {{a:<b>&}}"},
+		{"bash", "ls {{x}} '{{range .}}{{end}}'"},
 	}
 	for _, c := range cases {
 		h := highlightWithVars(c.cmd, c.target)
@@ -100,7 +113,7 @@ func TestRunbookVarsNestProperly(t *testing.T) {
 				break
 			}
 		}
-		if want := len(placeholderRe.FindAllString(c.cmd, -1)); strings.Count(h, `class="si-rb-var"`) != want {
+		if want := len(Placeholders(c.cmd)); strings.Count(h, `class="si-rb-var"`) != want {
 			t.Errorf("%s %q: want %d wrapped: %s", c.target, c.cmd, want, h)
 		}
 	}

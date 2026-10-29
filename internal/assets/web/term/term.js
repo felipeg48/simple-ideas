@@ -196,9 +196,10 @@
     t.term.focus();
   }
   var RB_VAR = /\{\{([A-Za-z_][A-Za-z0-9_-]*)(?::([^}]*))?\}\}/g; // same as Go
+  var RB_TPL = { end: 1, else: 1, break: 1, continue: 1, nil: 1, true: 1, false: 1 }; // Go-template keywords, not placeholders (same as Go)
   function rbSaved() { try { return JSON.parse(sessionStorage.getItem('si-rb-vars') || '{}') || {}; } catch (e) { return {}; } }
   function rbFill(cmd, vals) {
-    return cmd.replace(RB_VAR, function (m, n) { return Object.prototype.hasOwnProperty.call(vals, n) ? vals[n] : m; });
+    return cmd.replace(RB_VAR, function (m, n) { return !RB_TPL[n] && Object.prototype.hasOwnProperty.call(vals, n) ? vals[n] : m; });
   }
   var rbForm = null;
   function closeForm() { if (rbForm) { rbForm.remove(); rbForm = null; } }

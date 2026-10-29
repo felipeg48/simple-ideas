@@ -3,7 +3,7 @@
 // as one CodeMirror transaction (so undo, autosave, conflicts and stash all apply).
 import type { JSX } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { type RbCategory, type RbEntry, type Runbook, ops, parseRunbook, placeholderRe, placeholders, serializeRunbook, validate } from "./runbook";
+import { type RbCategory, type RbEntry, type Runbook, ops, parseRunbook, placeholderMatches, placeholders, serializeRunbook, validate } from "./runbook";
 import { CommandField } from "./placeholder-input";
 import { Dialog, Icon } from "./navigator";
 
@@ -21,7 +21,7 @@ const under = (path: string, base: string) => path === base || path.startsWith(b
 export function chips(cmd: string): (string | JSX.Element)[] {
   const out: (string | JSX.Element)[] = [];
   let i = 0;
-  for (const m of cmd.matchAll(new RegExp(placeholderRe.source, "g"))) {
+  for (const m of placeholderMatches(cmd)) {
     if (m.index! > i) out.push(cmd.slice(i, m.index));
     out.push(
       <span class="rb-ph" key={m.index} title={m[0]}>

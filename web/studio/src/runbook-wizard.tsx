@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { ApiError, api, type DeckInfo, type Node } from "./api";
 import { CommandField } from "./placeholder-input";
 import { Icon } from "./navigator";
-import { type Runbook, linkRunbook, placeholderRe, placeholders, relPath, serializeRunbook, slugify, validate } from "./runbook";
+import { type Runbook, linkRunbook, placeholderMatches, placeholders, relPath, serializeRunbook, slugify, validate } from "./runbook";
 
 type Target = "" | "bash" | "sql";
 interface WEntry { label: string; description: string; command: string; target: Target }
@@ -58,7 +58,7 @@ function highlightJson(text: string): (string | JSX.Element)[] {
     else if (m[1]) {
       const parts: (string | JSX.Element)[] = [];
       let j = 0;
-      for (const p of m[1].matchAll(new RegExp(placeholderRe.source, "g"))) {
+      for (const p of placeholderMatches(m[1])) {
         parts.push(m[1].slice(j, p.index), <span class="j-ph" key={p.index}>{p[0]}</span>);
         j = p.index! + p[0].length;
       }

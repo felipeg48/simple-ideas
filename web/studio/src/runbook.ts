@@ -145,16 +145,19 @@ export function serializeRunbook(rb: Runbook): string {
   return JSON.stringify(emit(["name", "description", "categories"], { name: rb.name, description: rb.description, categories: cats }, rb.extra, [], rb.order), null, 2) + "\n";
 }
 
-export const placeholderRe = /\{\{([A-Za-z_][A-Za-z0-9_-]*)(?::([^}]*))?\}\}/g;
+const placeholderRe = /\{\{([A-Za-z_][A-Za-z0-9_-]*)(?::([^}]*))?\}\}/g;
+// Go-template keywords fit the syntax ({{end}}, {{else}}) but are not placeholders (same as Go)
+const templateWords = new Set(["end", "else", "break", "continue", "nil", "true", "false"]);
 
-// distinct names in document order; first default wins (same as Go)
+/** placeholderMatches yields the placeholder matches of s, skipping Go-template keywords. */
+export function placeholderMatches(s: string): RegExpExecArray[] {
+  return [...s.matchAll(placeholderRe)].filter((m) => !templateWords.has(m[1])) as RegExpExecArray[];
+}
+
+// distinct names in document order; first occurrence and its default win (same as Go)
 export function placeholders(cmd: string): { name: string; def: string }[] {
   const out: { name: string; def: string }[] = [];
-  for (const m of cmd.matchAll(placeholderRe)) {
-    const i = out.findIndex((p) => p.name === m[1]);
-    if (i < 0) out.push({ name: m[1], def: m[2] ?? "" });
-    else if (!out[i].def && m[2]) out[i].def = m[2];
-  }
+  for (const m of placeholderMatches(cmd)) if (!out.some((p) => p.name === m[1])) out.push({ name: m[1], def: m[2] ?? "" });
   return out;
 }
 

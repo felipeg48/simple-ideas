@@ -47,13 +47,19 @@ type Placeholder struct{ Name, Default string }
 
 var placeholderRe = regexp.MustCompile(`\{\{([A-Za-z_][A-Za-z0-9_-]*)(?::([^}]*))?\}\}`)
 
+// templateWords are Go-template keywords that fit the placeholder syntax
+// (`{{end}}`, `{{else}}`) but belong to a go-template/--format argument; a
+// match with one of these names is left as plain text (same rule in
+// web/studio/src/runbook.ts and term.js).
+var templateWords = map[string]bool{"end": true, "else": true, "break": true, "continue": true, "nil": true, "true": true, "false": true}
+
 // Placeholders lists the distinct placeholders of cmd in document order; the
 // first occurrence (and its default) wins.
 func Placeholders(cmd string) []Placeholder {
 	var out []Placeholder
 	seen := map[string]bool{}
 	for _, m := range placeholderRe.FindAllStringSubmatch(cmd, -1) {
-		if !seen[m[1]] {
+		if !seen[m[1]] && !templateWords[m[1]] {
 			seen[m[1]] = true
 			out = append(out, Placeholder{m[1], m[2]})
 		}
@@ -68,6 +74,9 @@ func Placeholders(cmd string) []Placeholder {
 func highlightWithVars(cmd, target string) string {
 	var toks []string
 	masked := placeholderRe.ReplaceAllStringFunc(cmd, func(m string) string {
+		if templateWords[placeholderRe.FindStringSubmatch(m)[1]] {
+			return m
+		}
 		toks = append(toks, m)
 		return "\uE000" + string(rune(0xE100+len(toks)-1)) + "\uE001"
 	})
