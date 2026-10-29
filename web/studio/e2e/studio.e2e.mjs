@@ -226,6 +226,33 @@ const tests = {
     await until(() => readFileSync(RB, "utf8") === RB_ORIGINAL, 5000, "file back to the original");
     await ctx.close();
   },
+  async "runbook filter locks reordering"() {
+    const { ctx, page } = await open("dark");
+    await openRunbook(page);
+    await page.fill("input[aria-label='Filter entries']", "docker info");
+    await page.waitForSelector(".rb-entry .rb-label:has-text('Docker resources')");
+    for (const sel of ["Move Docker resources up", "Move Docker resources down", "Move Preflight and images down"])
+      if (!(await page.isDisabled(`button[aria-label='${sel}']`))) throw new Error(sel + " enabled while filtering");
+    if ((await page.getAttribute(".rb-entry .rb-grip", "draggable")) !== "false") throw new Error("drag enabled while filtering");
+    await page.fill("input[aria-label='Filter entries']", "");
+    if (await page.isDisabled("button[aria-label='Move Docker resources up']")) throw new Error("move still disabled after clearing the filter");
+    if (readFileSync(RB, "utf8") !== RB_ORIGINAL) throw new Error("filtering changed the file");
+    await ctx.close();
+  },
+  async "runbook keyboard category move and undo"() {
+    const { ctx, page } = await open("dark");
+    await openRunbook(page);
+    const cats = () => JSON.parse(readFileSync(RB, "utf8")).categories.map((c) => c.name);
+    const focused = () => page.evaluate(() => document.activeElement?.getAttribute("aria-label"));
+    await page.focus("button[aria-label='Move Preflight and images down']");
+    await page.keyboard.press("Enter");
+    await until(async () => (await focused()) === "Move Preflight and images down", 3000, "focus follows the category");
+    await page.keyboard.press("Enter");
+    await until(() => cats()[2] === "Preflight and images", 5000, "moved down twice");
+    await page.keyboard.press("ControlOrMeta+z");
+    await until(() => cats()[1] === "Preflight and images", 5000, "undo in the visual view");
+    await ctx.close();
+  },
   async "runbook invalid json disables visual"() {
     const { ctx, page } = await open("dark");
     await openRunbook(page);

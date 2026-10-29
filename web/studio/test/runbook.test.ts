@@ -85,6 +85,14 @@ describe("runbook", () => {
     expect(x.categories[1].entries.map((e) => e.label)).toEqual(["l"]);
     expect(JSON.stringify(rb)).toBe(snap);
   });
+  it("setTarget clears a wrong-typed target too", () => {
+    const rb = ok('{"categories":[{"name":"A","entries":[{"label":"l","command":"c","target":"powershell","x":1}]}]}');
+    const cleared = JSON.parse(serializeRunbook(ops.setTarget(rb, 0, 0, undefined)));
+    expect(cleared.categories[0].entries[0]).toEqual({ label: "l", command: "c", x: 1 });
+    const sql = JSON.parse(serializeRunbook(ops.setTarget(rb, 0, 0, "sql")));
+    expect(Object.keys(sql.categories[0].entries[0])).toEqual(["label", "command", "target", "x"]);
+    expect(sql.categories[0].entries[0].target).toBe("sql");
+  });
   it("validateFlags", () => {
     const rb = ok('{"categories":[{"name":"A","entries":[{"label":"","command":" ","target":"x"}]},{"name":"A","entries":[]}]}');
     const paths = validate(rb).map((v) => v.path);

@@ -344,7 +344,7 @@ export function Editor(p: Props) {
   }, [p.reveal, docs.current.has(p.reveal?.path ?? "")]);
 
   /** editRunbook applies a visual edit to the current text as one transaction (the only write path). */
-  function editRunbook(f: (rb: Runbook) => Runbook) {
+  function editRunbook(f: (rb: Runbook) => Runbook, typing = false) {
     const v = view.current;
     if (!v) return;
     const old = v.state.doc.toString();
@@ -356,7 +356,8 @@ export function Editor(p: Props) {
     let a = 0, b = 0;
     while (a < old.length && a < next.length && old[a] === next[a]) a++;
     while (b < old.length - a && b < next.length - a && old[old.length - 1 - b] === next[next.length - 1 - b]) b++;
-    v.dispatch({ changes: { from: a, to: old.length - b, insert: next.slice(a, next.length - b) }, userEvent: "input.visual" });
+    v.dispatch({ changes: { from: a, to: old.length - b, insert: next.slice(a, next.length - b) }, userEvent: typing ? "input.type.visual" : "input.visual" });
+    // input.type.* joins adjacent keystrokes into one undo step; structural edits stay separate steps
   }
 
   function showJson(path: string, line?: number, col = 1) {

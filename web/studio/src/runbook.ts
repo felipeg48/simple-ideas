@@ -168,6 +168,7 @@ const ins = <T>(a: T[], i: number | undefined, v: T) => { const b = [...a]; b.sp
 const del = <T>(a: T[], i: number) => a.filter((_, j) => j !== i);
 const mv = <T>(a: T[], from: number, to: number) => { const b = [...a]; const [x] = b.splice(from, 1); b.splice(clamp(to, b.length), 0, x); return b; };
 const setCat = (rb: Runbook, ci: number, f: (c: RbCategory) => RbCategory): Runbook => ({ ...rb, categories: rb.categories.map((c, i) => (i === ci ? f(c) : c)) });
+const omit = (o: Record<string, unknown>, k: string) => { const r: Record<string, unknown> = {}; for (const [x, v] of Object.entries(o)) if (x !== k) def(r, x, v); return r; };
 const copyEntry = (e: RbEntry): RbEntry => ({ ...e, label: e.label + " (copy)", extra: structuredClone(e.extra) });
 
 export const ops = {
@@ -183,6 +184,9 @@ export const ops = {
     setCat(rb, ci, (c) => ({ ...c, entries: ins(c.entries, at, { extra: {}, ...e }) })),
   updateEntry: (rb: Runbook, ci: number, ei: number, patch: Partial<RbEntry>): Runbook =>
     setCat(rb, ci, (c) => ({ ...c, entries: c.entries.map((e, i) => (i === ei ? { ...e, ...patch } : e)) })),
+  // setTarget also drops a wrong-typed target kept in extra, so clearing really clears
+  setTarget: (rb: Runbook, ci: number, ei: number, target?: "bash" | "sql"): Runbook =>
+    setCat(rb, ci, (c) => ({ ...c, entries: c.entries.map((e, i) => (i === ei ? { ...e, target, extra: omit(e.extra, "target") } : e)) })),
   deleteEntry: (rb: Runbook, ci: number, ei: number): Runbook => setCat(rb, ci, (c) => ({ ...c, entries: del(c.entries, ei) })),
   duplicateEntry: (rb: Runbook, ci: number, ei: number): Runbook => setCat(rb, ci, (c) => ({ ...c, entries: ins(c.entries, ei + 1, copyEntry(c.entries[ei])) })),
   moveEntry: (rb: Runbook, from: [number, number], to: [number, number]): Runbook => {

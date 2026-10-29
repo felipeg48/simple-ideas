@@ -11,7 +11,7 @@ import { Dialog, Icon } from "./navigator";
 const ICONS = ["checklist", "cloud", "dashboard", "database", "graph", "list-tree", "mail", "pulse", "server-environment", "shield", "sync", "tools", "trash", "warning"];
 const FOLD_OVER = 40; // more entries than this: categories start collapsed
 
-type Edit = (f: (rb: Runbook) => Runbook) => void;
+type Edit = (f: (rb: Runbook) => Runbook, typing?: boolean) => void;
 interface Props { text: string; edit: Edit; toJson(line: number, col: number): void; undo(redo: boolean): void }
 
 const readOnlyCat = (c: RbCategory) => c.raw !== undefined || "entries" in c.extra;
@@ -35,7 +35,6 @@ export function chips(cmd: string): (string | JSX.Element)[] {
 }
 
 export function RunbookEditor(p: Props) {
-  useUndoKeys(p.undo);
   const parsed = useMemo(() => parseRunbook(p.text), [p.text]);
   if (!parsed.ok) {
     const msg = parsed.error.replace(/ in JSON at position \d+.*$/s, "").replace(/^JSON\.parse: /, "");
@@ -52,28 +51,30 @@ export function RunbookEditor(p: Props) {
       </div></div>
     );
   }
-  return <Visual rb={parsed.rb} text={p.text} edit={p.edit} toJson={p.toJson} />;
+  return <Visual rb={parsed.rb} text={p.text} edit={p.edit} toJson={p.toJson} undo={p.undo} />;
 }
 
-/** useUndoKeys sends ⌘Z / ⇧⌘Z (Ctrl on other systems) outside text fields to the document history. */
-function useUndoKeys(undo: (redo: boolean) => void) {
-  const fn = useRef(undo);
-  fn.current = undo;
-  useEffect(() => {
-    const on = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.key.toLowerCase() !== "z") return;
-      const t = e.target as HTMLElement;
-      if (t.closest?.("input, textarea, select, .cm-editor, .dialog")) return;
-      e.preventDefault();
-      fn.current(e.shiftKey);
-    };
-    document.addEventListener("keydown", on);
-    return () => document.removeEventListener("keydown", on);
-  }, []);
+/** undoKey sends ⌘Z / ⇧⌘Z (Ctrl elsewhere) pressed inside the view, outside text fields, to the document history. */
+function undoKey(e: KeyboardEvent, undo: (redo: boolean) => void) {
+  if (!(e.metaKey || e.ctrlKey) || e.altKey || e.key.toLowerCase() !== "z") return;
+  if ((e.target as HTMLElement).closest?.("input, textarea, select, .dialog")) return;
+  e.preventDefault();
+  undo(e.shiftKey);
 }
 
-function Visual(p: { rb: Runbook; text: string; edit: Edit; toJson(line: number, col: number): void }) {
+/** refocus puts focus on a move button after its row or category moved (the other direction if that end is reached). */
+function refocus(key: string, alt: string) {
+  requestAnimationFrame(() => {
+    const b = document.querySelector<HTMLButtonElement>(`[data-mv="${key}"]`);
+    const c = document.querySelector<HTMLButtonElement>(`[data-mv="${alt}"]`);
+    (b && !b.disabled ? b : c)?.focus();
+  });
+}
+
+function Visual(p: { rb: Runbook; text: string; edit: Edit; toJson(line: number, col: number): void; undo(redo: boolean): void }) {
   const { rb, edit } = p;
+  const type = (f: (rb: Runbook) => Runbook) => edit(f, true);
+  const root = useRef<HTMLDivElement>(null);
   const total = rb.categories.reduce((n, c) => n + c.entries.length, 0);
   const [open, setOpen] = useState<Set<number>>(() => new Set(total > FOLD_OVER ? [0] : rb.categories.map((_, i) => i)));
   const [editing, setEditing] = useState<string | null>(null); // "ci:ei"
@@ -95,22 +96,31 @@ function Visual(p: { rb: Runbook; text: string; edit: Edit; toJson(line: number,
   const structural = (f: (rb: Runbook) => Runbook) => { setEditing(null); edit(f); };
 
   const confirm = (title: string, body: string, run: () => void) =>
-    setDialog(<Dialog title={title} body={body} okLabel="Delete" danger onClose={() => setDialog(null)} ok={async () => run()} />);
+    setDialog(<Dialog title={title} body={body} okLabel="Delete" danger ok={async () => run()} onClose={() => {
+      setDialog(null);
+      // keep focus in the view so ⌘Z still reaches the runbook history
+      requestAnimationFrame(() => { if (root.current && !root.current.contains(document.activeElement)) root.current.focus(); });
+    }} />);
 
-  const moveEntry = (ci: number, ei: number, d: -1 | 1, label: string) => {
+  // reordering is off while filtering: a neighbour in the file may be hidden, and the move would be invisible
+  const locked = q.trim() !== "";
+  const dir = (d: -1 | 1) => (d < 0 ? "up" : "down");
+  const moveEntry = (ci: number, ei: number, d: -1 | 1) => {
     const to = ei + d;
-    if (to < 0 || to >= rb.categories[ci].entries.length) return;
+    if (locked || to < 0 || to >= rb.categories[ci].entries.length) return;
     structural((r) => ops.moveEntry(r, [ci, ei], [ci, to]));
-    requestAnimationFrame(() => document.querySelector<HTMLElement>(`button[aria-label="${CSS.escape(`Move ${label} ${d < 0 ? "up" : "down"}`)}"]`)?.focus());
+    refocus(`${ci}:${to}:${dir(d)}`, `${ci}:${to}:${dir(-d as -1 | 1)}`);
   };
   const moveCat = (ci: number, d: -1 | 1) => {
     const to = ci + d;
-    if (to < 0 || to >= rb.categories.length) return;
+    if (locked || to < 0 || to >= rb.categories.length) return;
     structural((r) => ops.moveCategory(r, ci, to));
     swapOpen(ci, to);
+    refocus(`cat:${to}:${dir(d)}`, `cat:${to}:${dir(-d as -1 | 1)}`);
   };
   const drop = (ci: number, ei: number, after: boolean) => {
     const from = drag.current;
+    if (locked) { drag.current = null; setDropAt(null); return; }
     drag.current = null;
     setDropAt(null);
     if (!from) return;
@@ -148,13 +158,16 @@ function Visual(p: { rb: Runbook; text: string; edit: Edit; toJson(line: number,
   const matches = shown.reduce((n, s) => n + s.entries.length, 0);
 
   return (
-    <div class="rb-view" onKeyDown={(e) => { if (e.key === "Escape" && editing && !(e.target as Element).closest(".ph-pop")) setEditing(null); }}>
+    <div class="rb-view" ref={root} tabIndex={-1} onKeyDown={(e) => {
+      if (e.key === "Escape" && editing && !(e.target as Element).closest(".ph-pop")) setEditing(null);
+      undoKey(e, p.undo);
+    }}>
       <div class="rb-inner">
         <header class="rb-head">
           <input class="rb-title" aria-label="Runbook name" placeholder="Untitled runbook" value={rb.name ?? ""} spellcheck={false}
-            onInput={(e) => { const v = e.currentTarget.value; edit((r) => ({ ...r, name: v || undefined })); }} />
+            onInput={(e) => { const v = e.currentTarget.value; type((r) => ({ ...r, name: v || undefined })); }} />
           <input class="rb-sub" aria-label="Runbook description" placeholder="Add a description" value={rb.description ?? ""}
-            onInput={(e) => { const v = e.currentTarget.value; edit((r) => ({ ...r, description: v || undefined })); }} />
+            onInput={(e) => { const v = e.currentTarget.value; type((r) => ({ ...r, description: v || undefined })); }} />
           <div class="rb-meta">
             <span>{rb.categories.length} {rb.categories.length === 1 ? "category" : "categories"}</span>
             <span>{total} {total === 1 ? "entry" : "entries"}</span>
@@ -186,7 +199,7 @@ function Visual(p: { rb: Runbook; text: string; edit: Edit; toJson(line: number,
           return (
             <section class={"rb-cat" + (ro ? " ro" : "")} key={ci} aria-label={label}>
               <div class={"rb-cat-head" + (dropAt === `${ci}:end` ? " drop-end" : "")}
-                onDragOver={(e) => { if (drag.current && !ro) { e.preventDefault(); setDropAt(`${ci}:end`); } }}
+                onDragOver={(e) => { if (drag.current && !ro && !locked) { e.preventDefault(); setDropAt(`${ci}:end`); } }}
                 onDragLeave={() => setDropAt(null)}
                 onDrop={(e) => { e.preventDefault(); drop(ci, c.entries.length - 1, true); }}>
                 <button class="rb-chev" aria-expanded={isOpen} aria-label={(isOpen ? "Collapse " : "Expand ") + label} onClick={() => toggle(ci)} disabled={ro}>
@@ -202,13 +215,13 @@ function Visual(p: { rb: Runbook; text: string; edit: Edit; toJson(line: number,
                       {(c.icon && !ICONS.includes(c.icon) ? [c.icon, ...ICONS] : ICONS).map((n) => <option value={n} key={n}>{n}</option>)}
                     </select>
                     <input class="rb-cat-name" aria-label="Category name" value={c.name} placeholder="Untitled category" spellcheck={false} data-focus={`cat:${ci}`}
-                      onInput={(e) => { const v = e.currentTarget.value; edit((r) => ops.renameCategory(r, ci, v)); }} />
+                      onInput={(e) => { const v = e.currentTarget.value; type((r) => ops.renameCategory(r, ci, v)); }} />
                   </>
                 )}
                 <span class="rb-count" title={`${c.entries.length} entries`}>{c.entries.length}</span>
                 <span class="rb-acts">
-                  <button class="icon-btn" aria-label={`Move ${label} up`} title="Move up" disabled={ci === 0} onClick={() => moveCat(ci, -1)}><Icon name="up" /></button>
-                  <button class="icon-btn" aria-label={`Move ${label} down`} title="Move down" disabled={ci === rb.categories.length - 1} onClick={() => moveCat(ci, 1)}><Icon name="down" /></button>
+                  <button class="icon-btn" aria-label={`Move ${label} up`} title={locked ? "Clear the filter to reorder" : "Move up"} data-mv={`cat:${ci}:up`} disabled={locked || ci === 0} onClick={() => moveCat(ci, -1)}><Icon name="up" /></button>
+                  <button class="icon-btn" aria-label={`Move ${label} down`} title={locked ? "Clear the filter to reorder" : "Move down"} data-mv={`cat:${ci}:down`} disabled={locked || ci === rb.categories.length - 1} onClick={() => moveCat(ci, 1)}><Icon name="down" /></button>
                   {!ro && <button class="icon-btn" aria-label={`Duplicate ${label}`} title="Duplicate" onClick={() => { structural((r) => ops.duplicateCategory(r, ci)); }}><Icon name="copy" /></button>}
                   <button class="icon-btn danger" aria-label={`Delete ${label}`} title="Delete"
                     onClick={() => confirm(`Delete “${label}”?`, c.entries.length ? `Its ${c.entries.length} ${c.entries.length === 1 ? "entry goes" : "entries go"} too. ⌘Z brings it back.` : "⌘Z brings it back.",
@@ -228,13 +241,14 @@ function Visual(p: { rb: Runbook; text: string; edit: Edit; toJson(line: number,
                 <>
                   <ul class="rb-entries">
                     {entries.map(({ e, ei }) => (
-                      <Row key={ei} e={e} ci={ci} ei={ei} last={ei === c.entries.length - 1} names={names}
+                      <Row key={ei} e={e} ci={ci} ei={ei} last={ei === c.entries.length - 1} names={names} locked={locked}
                         issues={issues.filter((i) => under(i.path, `categories[${ci}].entries[${ei}]`))}
                         editing={editing === `${ci}:${ei}`} drop={dropAt === `${ci}:${ei}:a` ? "after" : dropAt === `${ci}:${ei}:b` ? "before" : null}
                         onEdit={() => setEditing(editing === `${ci}:${ei}` ? null : `${ci}:${ei}`)}
-                        onPatch={(patch) => edit((r) => ops.updateEntry(r, ci, ei, patch))}
+                        onPatch={(patch) => type((r) => ops.updateEntry(r, ci, ei, patch))}
+                        onTarget={(t) => edit((r) => ops.setTarget(r, ci, ei, t))}
                         onDuplicate={() => structural((r) => ops.duplicateEntry(r, ci, ei))}
-                        onMove={(d) => moveEntry(ci, ei, d, e.label)}
+                        onMove={(d) => moveEntry(ci, ei, d)}
                         onDelete={() => confirm(`Delete “${e.label || "Untitled entry"}”?`, "⌘Z brings it back.", () => structural((r) => ops.deleteEntry(r, ci, ei)))}
                         onDragStart={() => { drag.current = [ci, ei]; }}
                         onDragEnd={() => { drag.current = null; setDropAt(null); }}
@@ -260,8 +274,8 @@ function Visual(p: { rb: Runbook; text: string; edit: Edit; toJson(line: number,
 }
 
 interface RowProps {
-  e: RbEntry; ci: number; ei: number; last: boolean; names: string[]; issues: { path: string; msg: string }[]; editing: boolean; drop: "before" | "after" | null;
-  onEdit(): void; onPatch(p: Partial<RbEntry>): void; onDuplicate(): void; onMove(d: -1 | 1): void; onDelete(): void;
+  e: RbEntry; ci: number; ei: number; last: boolean; locked: boolean; names: string[]; issues: { path: string; msg: string }[]; editing: boolean; drop: "before" | "after" | null;
+  onEdit(): void; onPatch(p: Partial<RbEntry>): void; onTarget(t?: "bash" | "sql"): void; onDuplicate(): void; onMove(d: -1 | 1): void; onDelete(): void;
   onDragStart(): void; onDragEnd(): void; onDragOver(after: boolean): void; onDrop(after: boolean): void; toJson(): void;
 }
 
@@ -270,7 +284,7 @@ function Row(p: RowProps) {
   const label = e.label || "Untitled entry";
   const lower = (ev: DragEvent) => { const r = (ev.currentTarget as HTMLElement).getBoundingClientRect(); return ev.clientY > r.top + r.height / 2; };
   const dnd = {
-    onDragOver: (ev: DragEvent) => { ev.preventDefault(); p.onDragOver(lower(ev)); },
+    onDragOver: (ev: DragEvent) => { if (p.locked) return; ev.preventDefault(); p.onDragOver(lower(ev)); },
     onDrop: (ev: DragEvent) => { ev.preventDefault(); p.onDrop(lower(ev)); },
   };
   if (e.raw !== undefined) {
@@ -292,7 +306,7 @@ function Row(p: RowProps) {
   return (
     <>
       <li class={"rb-entry" + (p.editing ? " editing" : "") + (p.drop ? " drop-" + p.drop : "")} {...dnd}>
-        <span class="rb-grip" draggable title="Drag to reorder" aria-hidden="true"
+        <span class={"rb-grip" + (p.locked ? " locked" : "")} draggable={!p.locked} title={p.locked ? "Clear the filter to reorder" : "Drag to reorder"} aria-hidden="true"
           onDragStart={(ev) => { ev.dataTransfer?.setData("text/plain", label); if (ev.dataTransfer) ev.dataTransfer.effectAllowed = "move"; p.onDragStart(); }}
           onDragEnd={p.onDragEnd}>
           <Icon name="grip" />
@@ -310,8 +324,8 @@ function Row(p: RowProps) {
         <span class="rb-acts">
           <button class={"icon-btn" + (p.editing ? " on" : "")} aria-label={`Edit ${label}`} aria-expanded={p.editing} title="Edit" onClick={p.onEdit}><Icon name="pen" /></button>
           <button class="icon-btn" aria-label={`Duplicate ${label}`} title="Duplicate" onClick={p.onDuplicate}><Icon name="copy" /></button>
-          <button class="icon-btn" aria-label={`Move ${label} up`} title="Move up" disabled={p.ei === 0} onClick={() => p.onMove(-1)}><Icon name="up" /></button>
-          <button class="icon-btn" aria-label={`Move ${label} down`} title="Move down" disabled={p.last} onClick={() => p.onMove(1)}><Icon name="down" /></button>
+          <button class="icon-btn" aria-label={`Move ${label} up`} title={p.locked ? "Clear the filter to reorder" : "Move up"} data-mv={`${p.ci}:${p.ei}:up`} disabled={p.locked || p.ei === 0} onClick={() => p.onMove(-1)}><Icon name="up" /></button>
+          <button class="icon-btn" aria-label={`Move ${label} down`} title={p.locked ? "Clear the filter to reorder" : "Move down"} data-mv={`${p.ci}:${p.ei}:down`} disabled={p.locked || p.last} onClick={() => p.onMove(1)}><Icon name="down" /></button>
           <button class="icon-btn danger" aria-label={`Delete ${label}`} title="Delete" onClick={p.onDelete}><Icon name="trash" /></button>
         </span>
       </li>
@@ -327,7 +341,7 @@ function Row(p: RowProps) {
             <label class="rb-f">
               <span class="rb-flabel">Target</span>
               <select class="field" aria-label="Target" value={target}
-                onChange={(ev) => { const v = ev.currentTarget.value; if (v === "bash" || v === "sql" || v === "") p.onPatch({ target: (v || undefined) as RbEntry["target"] }); }}>
+                onChange={(ev) => { const v = ev.currentTarget.value; if (v === "bash" || v === "sql" || v === "") p.onTarget(v || undefined); }}>
                 <option value="">default (bash)</option>
                 <option value="bash">bash</option>
                 <option value="sql">sql</option>
