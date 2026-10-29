@@ -13,7 +13,7 @@ test:
 
 install: build
 	@mkdir -p "$(INSTALL_DIR)"
-	@cp "$(BIN)" "$(INSTALL_DIR)/si"
+	@rm -f "$(INSTALL_DIR)/si" && cp "$(BIN)" "$(INSTALL_DIR)/si" # new inode: macOS kills a binary overwritten in place
 	@echo "installed $(INSTALL_DIR)/si"
 	@case ":$$PATH:" in \
 	  *":$(INSTALL_DIR):"*) echo "$(INSTALL_DIR) is already on your PATH";; \
