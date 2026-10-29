@@ -1,9 +1,9 @@
-# Studio — `si --web` browser editor (shipped, v0.8.0)
+# Studio — `si --web` browser editor (shipped, v0.9.0)
 
 `si --web [dir]` opens a browser editor for a folder of decks: a file tree, a
 CodeMirror markdown editor, a live slide preview (the same `si play` renderer,
 in an iframe) and a `si check` problems panel. This release is **Write mode**
-only; the design is in `docs/superpowers/specs/2026-10-28-si-studio-design.md`.
+plus the runbook editor and generator (below); the design is in `docs/superpowers/specs/2026-10-28-si-studio-design.md`.
 
 ```bash
 si --web examples                 # opens http://127.0.0.1:7070/?token=... in your browser
@@ -73,6 +73,52 @@ Both exceptions are contained because Studio is loopback only (see Security).
 | Bundle | `internal/assets/web/studio/` | `index.html` plus the committed `assets/app.js`, `assets/app.css` |
 | Front-end | `web/studio/` | Preact + TypeScript + CodeMirror 6 source, esbuild (`build.mjs`), vitest, Playwright e2e |
 
+## Runbooks
+
+A runbook is the JSON command cheat-sheet a deck shows in the `si play`
+terminal drawer (`runbook: <file>.json` in front matter; see `docs/terminal.md`).
+Studio edits and generates them. The file format is unchanged
+(`{ "categories": [ { "name", "icon"?, "entries": [ { "label", "description"?,
+"command", "target"? } ] } ] }`), plus optional top-level `name` and
+`description`. Existing runbooks open unchanged.
+
+### Placeholders
+
+A command may contain `{{name}}` or `{{name:default}}` (name
+`[A-Za-z_][A-Za-z0-9_-]*`, default any text without `}`). The drawer asks for
+the values in an inline form before typing the command: each field is
+prefilled with the value used earlier this browser session, else the default.
+Enter types the command, Shift/Cmd/Ctrl+Enter types and runs it, Esc cancels and
+types nothing. Values are kept in `sessionStorage` (`si-rb-vars`). Anything
+else with braces (`{{.Names}}`, `${HOME}`, `{print $1}`) is typed verbatim.
+The drawer title comes from the runbook `name`.
+
+### Visual editor
+
+Open a runbook `.json` file in Studio: each file has a **Visual / JSON**
+toggle. Visual lists categories and entries; you can add, edit, duplicate and
+delete them (delete asks to confirm), reorder by drag or with the move up/down
+buttons (reorder is locked while the filter box is in use), and use **Insert
+placeholder** while editing a command. Fields are validated inline.
+
+- **Lossless.** Unknown keys at any level are kept; keys stay in their original
+  order and absent keys stay absent. Objects created in Studio use the
+  canonical key order. The file is written with a 2-space indent and a trailing
+  newline, so editing one entry changes only that entry in the diff.
+- **Same save path.** Visual edits change the editor document, so they use the
+  normal autosave, etag conflict banner and local stash.
+- **Broken input.** If the text is not valid JSON, Visual refuses with the
+  parse error (line, column) and never rewrites the text. Parts of the file
+  that do not have the runbook shape are shown read-only.
+
+### New runbook wizard
+
+**New runbook** walks through name and description, location and file name,
+the commands (with placeholder help), optional deck links, a review and
+create. Deck links add or replace `runbook:` in each chosen deck's front matter
+using si's own front-matter rules. The wizard never overwrites: if the target
+file exists it says so and stops.
+
 ## Rebuilding the UI
 
 ```bash
@@ -87,6 +133,6 @@ Commit the regenerated bundle with the source change.
 
 - Desktop-only layout; it is not responsive to phone widths.
 - The bundle is about 661 KB (`app.js`).
-- Rehearse, Present, Lab, the inspector, the storyboard, the command palette
-  (Cmd-K) and the runbook editor/generator arrive in later plans.
+- Rehearse, Present, Lab, the inspector, the storyboard and the command palette
+  (Cmd-K) arrive in later plans.
 - `make studio-e2e` needs `npx playwright install chromium` once.

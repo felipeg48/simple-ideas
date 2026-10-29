@@ -112,9 +112,19 @@ active shell. Opt in with front matter `runbook: <path>.json` on the deck.
   `deck.Meta.Runbook`. Drawer UI + token CSS: `internal/assets/web/term/term.js`
   (same file as the terminal, same styling-contract exemption).
 
+### Placeholders (v0.9.0)
+
+A command may hold `{{name}}` or `{{name:default}}`. Clicking the entry opens an
+inline form in the drawer with one field per distinct name, prefilled with the
+value used earlier this session (`sessionStorage` key `si-rb-vars`), else the
+default. Enter types the command, Shift/Cmd/Ctrl+Enter types and runs, Esc
+cancels and types nothing. Placeholders show highlighted in the entry; other
+braces (`{{.Names}}`, `${HOME}`) are typed verbatim. A top-level `name` in the
+runbook is the drawer title. Studio can edit and generate runbooks (see
+`docs/studio.md`).
+
 ### Ideas not yet built (runbook)
 
 - Hot-reload the runbook file in `si play --dev` (today a reload picks up edits).
-- `{var}` placeholder substitution (the extension substitutes `{node1}`).
 - Markdown runbook authoring (`## Category` + titled ` ```sql ` fences) as an
   alternative to JSON.
