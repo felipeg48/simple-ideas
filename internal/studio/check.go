@@ -37,7 +37,9 @@ func (a *api) check(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	res := render.Deck(d, render.Options{ShowProblems: true})
+	// MediaLink: a check only needs problems and counts; inlining would
+	// base64-encode every image of every deck on each save
+	res := render.Deck(d, render.Options{ShowProblems: true, Media: render.MediaLink})
 	problems := []problemJSON{}
 	for _, p := range res.Problems {
 		problems = append(problems, problemJSON{a.rel(p.File), p.Line, p.Msg})

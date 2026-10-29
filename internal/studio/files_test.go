@@ -218,3 +218,13 @@ func (f *fx) doAny(method, url string) []any {
 	}
 	return v
 }
+
+// JSON would replace an invalid byte past the sniff window with U+FFFD while
+// the etag hashes the raw bytes; the next save would corrupt the file.
+func TestReadRefusesInvalidUTF8AfterSniffWindow(t *testing.T) {
+	f := newFx(t)
+	f.put("late.md", strings.Repeat("a", sniffLen+100)+"\xff tail")
+	if code, _ := f.do("GET", "file?path=late.md", nil); code != 415 {
+		t.Fatalf("got %d, want 415", code)
+	}
+}

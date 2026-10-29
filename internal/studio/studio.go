@@ -1,6 +1,10 @@
 package studio
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"io/fs"
 	"net"
 	"net/http"
 
@@ -35,8 +39,18 @@ func New(dir string, opt Options) (*Studio, error) {
 	mux := http.NewServeMux()
 	(&api{ws: ws}).routes(mux)
 	mux.Handle(assetsPrefix, http.StripPrefix("/_si/studio/", http.FileServerFS(assets.StudioFS)))
+	index, err := fs.ReadFile(assets.StudioFS, "index.html")
+	if err != nil {
+		return nil, err
+	}
+	// data-ws scopes the UI's localStorage keys (tabs, unsaved buffers) to
+	// this folder, so two workspaces served from the same origin never mix
+	sum := sha256.Sum256([]byte(ws.Root))
+	index = bytes.Replace(index, []byte(`<div id="app">`),
+		[]byte(`<div id="app" data-ws="`+hex.EncodeToString(sum[:6])+`">`), 1)
 	mux.HandleFunc("/_si/studio/{$}", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFileFS(w, r, assets.StudioFS, "index.html")
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write(index)
 	})
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/_si/studio/", http.StatusFound)
@@ -45,7 +59,8 @@ func New(dir string, opt Options) (*Studio, error) {
 
 	hosts := []string{opt.Addr}
 	if _, port, err := net.SplitHostPort(opt.Addr); err == nil {
-		hosts = []string{"127.0.0.1:" + port, "localhost:" + port}
+		// the listen address itself too, so --addr [::1]:PORT works
+		hosts = []string{"127.0.0.1:" + port, "localhost:" + port, opt.Addr}
 	}
 	return &Studio{srv: srv, h: NewGateway(opt.Token, hosts).Wrap(mux)}, nil
 }

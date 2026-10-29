@@ -116,12 +116,10 @@ func (a *api) readFile(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	head := b[:min(len(b), sniffLen)]
-	// a multibyte rune cut at the sniff boundary is not invalid text
-	for i := 0; i < 3 && len(head) < len(b) && !utf8.Valid(head); i++ {
-		head = b[:len(head)+1]
-	}
-	if bytes.IndexByte(head, 0) >= 0 || !utf8.Valid(head) {
+	// the whole file must be UTF-8: JSON would turn a later invalid byte
+	// into U+FFFD while the etag still hashes the raw bytes, and the next
+	// save would silently corrupt the file
+	if bytes.IndexByte(b[:min(len(b), sniffLen)], 0) >= 0 || !utf8.Valid(b) {
 		fail(w, http.StatusUnsupportedMediaType, "binary")
 		return
 	}
@@ -181,6 +179,10 @@ func writeAtomic(abs string, b []byte, mode os.FileMode) error {
 	}
 	defer os.Remove(tmp.Name()) // no-op after a successful rename
 	if _, err := tmp.Write(b); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
 		tmp.Close()
 		return err
 	}

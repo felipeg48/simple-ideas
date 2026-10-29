@@ -86,7 +86,7 @@ type Node struct {
 	Children []Node `json:"children,omitempty"`
 }
 
-var skipDirs = map[string]bool{"node_modules": true, "html": true, "slides": true}
+var skipDirs = map[string]bool{"node_modules": true, "html": true}
 
 // Tree lists the workspace: dirs first, then files, each alphabetical.
 func (w *Workspace) Tree() (Node, error) {

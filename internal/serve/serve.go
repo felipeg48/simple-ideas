@@ -68,11 +68,13 @@ func (s *Server) Handler() http.Handler {
 		// Play terminal: loopback only (see Server.Terminal). Embedded xterm.js
 		// assets are static; the shell endpoints run per tab.
 		mux.Handle("/_si/term/assets/", http.StripPrefix("/_si/term/assets/", http.FileServer(http.FS(assets.TermFS))))
-		mux.HandleFunc("/_si/term/api/new", s.term.newTab)
-		mux.HandleFunc("/_si/term/api/out", s.term.out)
-		mux.HandleFunc("/_si/term/api/in", s.term.in)
-		mux.HandleFunc("/_si/term/api/resize", s.term.resize)
-		mux.HandleFunc("/_si/term/api/close", s.term.close)
+		// Method-restricted: a GET (link, <img>, navigation) never starts or
+		// drives a shell; only the drawer's fetch POSTs do. out is the stream.
+		mux.HandleFunc("POST /_si/term/api/new", s.term.newTab)
+		mux.HandleFunc("GET /_si/term/api/out", s.term.out)
+		mux.HandleFunc("POST /_si/term/api/in", s.term.in)
+		mux.HandleFunc("POST /_si/term/api/resize", s.term.resize)
+		mux.HandleFunc("POST /_si/term/api/close", s.term.close)
 	}
 	static := http.FileServer(http.Dir(s.dir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

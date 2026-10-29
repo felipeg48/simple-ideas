@@ -45,7 +45,7 @@ func TestResolveRejectsEscapes(t *testing.T) {
 
 func TestTreeKinds(t *testing.T) {
 	dir := t.TempDir()
-	for _, f := range []string{"talk.md", "solo.md", "sections/one.md", "parts/two.md", "img/p.png", "theme.css", "rb.json", ".git/x", "node_modules/y"} {
+	for _, f := range []string{"talk.md", "solo.md", "sections/one.md", "parts/two.md", "img/p.png", "theme.css", "rb.json", ".git/x", "node_modules/y", "html/z.html", "slides/s.md"} {
 		write(t, dir, f)
 	}
 	if err := os.WriteFile(filepath.Join(dir, "talk.md"),
@@ -68,12 +68,12 @@ func TestTreeKinds(t *testing.T) {
 	}
 	walk(root)
 	for p, k := range map[string]string{"talk.md": "deck", "solo.md": "deck", "sections/one.md": "markdown", "parts/two.md": "markdown", "img/p.png": "image",
-		"theme.css": "css", "rb.json": "json", "sections": "dir"} {
+		"theme.css": "css", "rb.json": "json", "sections": "dir", "slides": "dir", "slides/s.md": "deck"} {
 		if kinds[p] != k {
 			t.Errorf("%s kind = %q, want %q", p, kinds[p], k)
 		}
 	}
-	for _, p := range []string{".git", ".git/x", "node_modules", "node_modules/y"} {
+	for _, p := range []string{".git", ".git/x", "node_modules", "node_modules/y", "html", "html/z.html"} {
 		if _, ok := kinds[p]; ok {
 			t.Errorf("%s should be skipped", p)
 		}
@@ -81,7 +81,7 @@ func TestTreeKinds(t *testing.T) {
 	for _, c := range root.Children {
 		order = append(order, c.Name)
 	}
-	if want := []string{"img", "parts", "sections", "rb.json", "solo.md", "talk.md", "theme.css"}; !slices.Equal(order, want) {
+	if want := []string{"img", "parts", "sections", "slides", "rb.json", "solo.md", "talk.md", "theme.css"}; !slices.Equal(order, want) {
 		t.Errorf("order = %v, want %v", order, want)
 	}
 }

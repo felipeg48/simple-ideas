@@ -7,28 +7,43 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/hex"
+	"net"
 	"net/http"
 	"path"
 	"strings"
 )
 
-// CookieName is the session cookie set after a successful token login.
-const CookieName = "si_studio"
+// cookieName is the session cookie set after a successful token login. It
+// carries the port: cookies are scoped by host, not port, so two Studios on
+// 127.0.0.1 would otherwise overwrite each other's session. The value is
+// still sent to every server on 127.0.0.1 (see docs/studio.md, Security).
+func cookieName(port string) string { return "si_studio_" + port }
 
 const assetsPrefix = "/_si/studio/assets/"
 
 // Gateway guards a handler with a Host allowlist, a launch token exchanged
 // for an HttpOnly cookie, and an Origin check on state-changing requests.
 type Gateway struct {
-	token string
-	hosts map[string]bool
+	token, cookie string
+	hosts         map[string]bool
 }
 
-// NewGateway allows requests whose Host is one of hosts (host:port).
+// NewGateway allows requests whose Host is one of hosts (host:port); the
+// cookie name takes the port of the first host. An empty token would let
+// anyone in, so it panics.
 func NewGateway(token string, hosts []string) *Gateway {
+	if token == "" {
+		panic("studio: empty gateway token")
+	}
 	g := &Gateway{token: token, hosts: map[string]bool{}}
 	for _, h := range hosts {
 		g.hosts[h] = true
+		if _, port, err := net.SplitHostPort(h); err == nil && g.cookie == "" {
+			g.cookie = cookieName(port)
+		}
+	}
+	if g.cookie == "" {
+		g.cookie = cookieName("")
 	}
 	return g
 }
@@ -61,7 +76,7 @@ func (g *Gateway) Wrap(next http.Handler) http.Handler {
 			return
 		}
 		if t := r.URL.Query().Get("token"); t != "" && g.equal(t) {
-			http.SetCookie(w, &http.Cookie{Name: CookieName, Value: g.token, Path: "/",
+			http.SetCookie(w, &http.Cookie{Name: g.cookie, Value: g.token, Path: "/",
 				HttpOnly: true, SameSite: http.SameSiteStrictMode})
 			q := r.URL.Query()
 			q.Del("token")
@@ -70,7 +85,7 @@ func (g *Gateway) Wrap(next http.Handler) http.Handler {
 			http.Redirect(w, r, u.RequestURI(), http.StatusSeeOther)
 			return
 		}
-		if c, err := r.Cookie(CookieName); err != nil || !g.equal(c.Value) {
+		if c, err := r.Cookie(g.cookie); err != nil || !g.equal(c.Value) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}

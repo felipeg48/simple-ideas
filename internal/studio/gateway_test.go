@@ -26,7 +26,7 @@ func do(method, target, host string, mod func(*http.Request)) *httptest.Response
 }
 
 func withCookie(v string) func(*http.Request) {
-	return func(r *http.Request) { r.AddCookie(&http.Cookie{Name: CookieName, Value: v}) }
+	return func(r *http.Request) { r.AddCookie(&http.Cookie{Name: "si_studio_7070", Value: v}) }
 }
 
 func TestGatewayRejectsForeignHost(t *testing.T) {
@@ -41,7 +41,7 @@ func TestGatewayLoginSetsCookieAndRedirects(t *testing.T) {
 		t.Fatalf("got %d to %q", w.Code, w.Header().Get("Location"))
 	}
 	c := w.Header().Get("Set-Cookie")
-	for _, want := range []string{CookieName + "=" + tok, "HttpOnly", "SameSite=Strict", "Path=/"} {
+	for _, want := range []string{"si_studio_7070=" + tok, "HttpOnly", "SameSite=Strict", "Path=/"} {
 		if !strings.Contains(c, want) {
 			t.Errorf("cookie %q lacks %q", c, want)
 		}
@@ -105,4 +105,34 @@ func TestGatewayAssetsBypassRejectsTraversal(t *testing.T) {
 			t.Errorf("%s: got %d, want 401", p, w.Code)
 		}
 	}
+}
+
+func TestGatewayCookieIsPerPort(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	a := NewGateway(tok, []string{"127.0.0.1:7071"}).Wrap(next)
+	r := httptest.NewRequest("GET", "/?token="+tok, nil)
+	r.Host = "127.0.0.1:7071"
+	w := httptest.NewRecorder()
+	a.ServeHTTP(w, r)
+	if c := w.Header().Get("Set-Cookie"); !strings.HasPrefix(c, "si_studio_7071=") {
+		t.Fatalf("cookie %q, want si_studio_7071", c)
+	}
+	// the cookie of the Studio on 7070 does not open the one on 7071
+	r = httptest.NewRequest("GET", "/x", nil)
+	r.Host = "127.0.0.1:7071"
+	r.AddCookie(&http.Cookie{Name: "si_studio_7070", Value: tok})
+	w = httptest.NewRecorder()
+	a.ServeHTTP(w, r)
+	if w.Code != 401 {
+		t.Fatalf("other port's cookie: %d, want 401", w.Code)
+	}
+}
+
+func TestNewGatewayRefusesEmptyToken(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("no panic on empty token")
+		}
+	}()
+	NewGateway("", []string{"127.0.0.1:7070"})
 }

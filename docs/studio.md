@@ -33,10 +33,19 @@ Both exceptions are contained because Studio is loopback only (see Security).
   and a shell terminal, so a reachable address would be remote code execution.
 - **Token to cookie.** Each launch generates a random token. The opened URL
   carries it once; the gateway swaps it for an `HttpOnly`, `SameSite=Strict`
-  cookie named `si_studio` and every other request needs that cookie.
-- **Host allowlist.** Only `127.0.0.1:PORT` and `localhost:PORT` are accepted,
-  which blocks DNS rebinding.
-- **Origin check** on every non-GET request.
+  cookie named `si_studio_PORT` and every other request needs that cookie. The
+  port in the name keeps two Studios on different ports from overwriting each
+  other's session. Cookies are scoped by host, not port, so the browser still
+  sends the cookie value to every server on `127.0.0.1`; do not run untrusted
+  local servers next to Studio.
+- **Host allowlist.** Only `127.0.0.1:PORT`, `localhost:PORT` and the listen
+  address itself (for example `[::1]:PORT`) are accepted, which blocks DNS
+  rebinding.
+- **Origin check.** A non-GET/HEAD request carrying a foreign `Origin` is
+  rejected.
+- **Terminal methods.** The shell endpoints accept only the drawer's methods
+  (`POST` for new, in, resize and close; `GET` only for the output stream), so
+  a link or image in a deck cannot start or drive a shell.
 - **Public surface:** only `/_si/studio/assets/*` (clean paths) is reachable
   without the cookie.
 - **File API confinement.** Paths that escape the workspace (symlinks included)
@@ -45,6 +54,10 @@ Both exceptions are contained because Studio is loopback only (see Security).
 - **Etag conflicts never overwrite.** `PUT` carries the etag the editor loaded;
   if the file changed on disk the server answers with a conflict and writes
   nothing.
+- **Trusted folders only.** Studio and the preview run the folder's HTML and
+  JavaScript with your shell's rights (si renders raw HTML in markdown), on the
+  same origin as the editor API. Only open folders you trust. Moving the
+  preview to a separate origin is planned.
 
 ## How it is wired
 
@@ -73,7 +86,7 @@ Commit the regenerated bundle with the source change.
 ## Known limits
 
 - Desktop-only layout; it is not responsive to phone widths.
-- The bundle is about 643 KB (`app.js`).
+- The bundle is about 661 KB (`app.js`).
 - Rehearse, Present, Lab, the inspector, the storyboard, the command palette
   (Cmd-K) and the runbook editor/generator arrive in later plans.
 - `make studio-e2e` needs `npx playwright install chromium` once.
