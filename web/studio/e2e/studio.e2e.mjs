@@ -127,6 +127,40 @@ const tests = {
     await page.screenshot({ path: join(out, "problems.png") });
     await ctx.close();
   },
+  async "crlf file opens clean and saves crlf"() {
+    const crlf = ORIGINAL.replace(/\r?\n/g, "\r\n");
+    writeFileSync(ONE, crlf);
+    const { ctx, page } = await open("dark");
+    await openFile(page, "sections/one.md");
+    await page.waitForSelector(".cm-content");
+    await sleep(1500); // past the autosave delay: a dirty doc would have been written by now
+    if (await page.$(".tab-x.dirty")) throw new Error("CRLF file opened dirty");
+    if (readFileSync(ONE, "utf8") !== crlf) throw new Error("opening rewrote the file");
+    await page.click(".cm-line:has-text('Second point')");
+    await page.keyboard.press("End");
+    await page.keyboard.insertText(" edited");
+    await until(() => readFileSync(ONE, "utf8").includes("Second point edited"), 5000, "edit saved");
+    const disk = readFileSync(ONE, "utf8");
+    if (/[^\r]\n/.test(disk) || disk !== crlf.replace("Second point", "Second point edited"))
+      throw new Error("save changed line endings: " + JSON.stringify(disk.slice(0, 80)));
+    await ctx.close();
+  },
+  async "closing a tab with unsaved text asks first"() {
+    const { ctx, page } = await open("dark");
+    await openFile(page, "sections/one.md");
+    await page.waitForSelector(".cm-content");
+    await page.route("**/_si/studio/api/file*", (r) => (r.request().method() === "PUT" ? r.abort() : r.continue()));
+    await setText(page, "## Never saved\n");
+    await page.waitForSelector(".banner-err:has-text('Not saved')", { timeout: 6000 });
+    await page.click(".tab-x");
+    await page.waitForSelector(".dialog:has-text('Close one.md?')", { timeout: 3000 });
+    await page.click(".dialog button:has-text('Cancel')");
+    if (!(await page.$(".tab"))) throw new Error("tab closed despite Cancel");
+    await page.click(".tab-x");
+    await page.click(".dialog button:has-text('Close without saving')");
+    await until(async () => !(await page.$(".tab")), 3000, "tab closed");
+    await ctx.close();
+  },
   async "image opens as image"() {
     const { ctx, page } = await open("dark");
     await openFile(page, "img/p.png");
