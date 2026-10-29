@@ -117,6 +117,10 @@ func (r *nodeRenderer) fence(
 		}
 		return ast.WalkSkipChildren, nil
 	}
+	if r.dr.doc { // a lab: a header bar with the language and a copy button
+		fmt.Fprintf(w, `<div class="si-codeblock"><div class="si-code-head"><span class="si-code-lang">%s</span><button type="button" class="si-copy" aria-label="Copy code">Copy</button></div>`, html.EscapeString(lang))
+		defer w.WriteString("</div>\n")
+	}
 	if lang != "" {
 		fmt.Fprintf(w, `<pre class="si-code" data-lang="%s"><code class="language-%s">`, html.EscapeString(lang), html.EscapeString(lang))
 	} else {

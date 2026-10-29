@@ -240,3 +240,240 @@ func TestTopicsFollowSectionsAndModules(t *testing.T) {
 		t.Errorf("topics = %v, want %v for %q", got, want, titles)
 	}
 }
+
+func TestLabDirectiveWarningReachesResult(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "l.md")
+	if err := os.WriteFile(p, []byte("---\ntype: lab\n---\n# Lab\n\n<!-- layout: two-col -->\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	d, err := deck.Parse(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := Deck(d, Options{})
+	if len(res.Problems) != 0 || len(res.Warnings) != 1 || !strings.Contains(res.Warnings[0].Msg, "no effect in a lab document") {
+		t.Errorf("problems=%v warnings=%v", res.Problems, res.Warnings)
+	}
+}
+
+var labBodyRE = regexp.MustCompile(`(?s)<body.*</footer>`)
+
+func renderLab(t *testing.T, path string, opt Options) (Result, string) {
+	t.Helper()
+	d, err := deck.Parse(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := Deck(d, opt) // dispatches to Document for type: lab
+	return res, string(res.HTML)
+}
+
+// TestLabGolden compares the page markup of testdata/lab.md (headings, callouts,
+// a wide table, a long command, an image, an include, a .md link) with
+// testdata/lab.golden.html. Run `go test ./internal/render -update` after an
+// intended change and review the diff.
+func TestLabGolden(t *testing.T) {
+	res, page := renderLab(t, filepath.Join("testdata", "lab.md"), Options{})
+	if len(res.Problems) > 0 {
+		t.Fatalf("problems: %v", res.Problems)
+	}
+	if res.Steps != 0 {
+		t.Errorf("steps = %d, want 0", res.Steps)
+	}
+	got := labBodyRE.FindString(page) + "\n"
+	golden := filepath.Join("testdata", "lab.golden.html")
+	if *update {
+		if err := os.WriteFile(golden, []byte(got), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want, err := os.ReadFile(golden)
+	if err != nil {
+		t.Fatalf("%v (run with -update to create it)", err)
+	}
+	if got != string(want) {
+		t.Fatalf("lab golden mismatch (run go test ./internal/render -update if intended)")
+	}
+	for _, want := range []string{
+		`<body class="si-doc">`, `<nav class="si-doc-toc"`, `<main class="si-doc-body"`,
+		`<div class="si-callout" data-kind="note">`, `data-kind="tip"`, `data-kind="important"`, `data-kind="warning"`, `data-kind="caution"`,
+		`<blockquote>`, `href="other.html#start"`, `id="read-it-back"`, `<button type="button" class="si-copy"`,
+		"<div class=\"si-table-wrap\">\n<table>", `src="data:image/svg+xml;base64,`, "<hr>", `<thead hidden="">`,
+		`data-si-theme="studio"`, "@layer si.theme, si.user;", "© 2026 Harbor Labs",
+	} {
+		if !strings.Contains(page, want) {
+			t.Errorf("lab page lacks %q", want)
+		}
+	}
+	if strings.Contains(page, "[!NOTE]") || strings.Contains(page, "si-deck") || strings.Contains(page, "SI_PRESENTER") {
+		t.Error("callout markers and deck chrome must not reach a lab page")
+	}
+}
+
+func TestLabHeadingIDs(t *testing.T) {
+	_, page := renderLab(t, filepath.Join("testdata", "lab.md"), Options{})
+	for _, want := range []string{
+		`<h2 id="before-you-start">`, `<h2 id="set-up">`, `<h3 id="clone">`, `<h3 id="clone-2">`,
+		`<a href="#clone-2">Clone</a>`, `<a class="si-anchor" href="#set-up"`,
+	} {
+		if !strings.Contains(page, want) {
+			t.Errorf("lab page lacks %q", want)
+		}
+	}
+	s := newSlugger()
+	for _, tc := range [][2]string{{"Set up", "set-up"}, {"What's `new`?", "whats-new"}, {"set up", "set-up-2"}, {"Set up", "set-up-3"},
+		{"Ünïcode 2 go", "ünïcode-2-go"}, {"a_b-c", "a_b-c"}, {"!!!", "section"},
+		{"Clone 2", "clone-2"}, {"Clone", "clone"}, {"Clone", "clone-3"}} {
+		if got := s.slug(tc[0]); got != tc[1] {
+			t.Errorf("slug(%q) = %q, want %q", tc[0], got, tc[1])
+		}
+	}
+}
+
+func TestLabSelfContained(t *testing.T) {
+	resRE := regexp.MustCompile(`(?i)(src|href)="(https?:)?//|url\((["']?)(https?:)?//|@import`)
+	_, page := renderLab(t, filepath.Join("testdata", "lab.md"), Options{})
+	page = regexp.MustCompile(`<a [^>]*href="https?://[^"]*"`).ReplaceAllString(page, "") // links are navigation, not resources
+	if m := resRE.FindString(page); m != "" {
+		t.Errorf("lab page loads a network resource: %q", m)
+	}
+	if strings.Contains(page, "<script src=") {
+		t.Error("no mermaid fence, no mermaid script")
+	}
+	p := filepath.Join(t.TempDir(), "m.md")
+	if err := os.WriteFile(p, []byte("---\ntype: lab\n---\n# M\n\n```mermaid\ngraph LR\n a-->b\n```\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, page = renderLab(t, p, Options{LiveReload: true})
+	if !strings.Contains(page, `<script src="`+MermaidURL+`">`) || !strings.Contains(page, `<pre class="si-mermaid">`) || !strings.Contains(page, "/_si/events") {
+		t.Error("a lab with a mermaid fence loads the pinned Mermaid script; play adds live reload")
+	}
+}
+
+func TestLabEdgeCases(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, md string) string {
+		p := filepath.Join(dir, name)
+		if err := os.WriteFile(p, []byte(md), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	// a ## Content heading owns its id: the page template reserves none
+	_, page := renderLab(t, write("c.md", "---\ntype: lab\n---\n# C\n\n## Content\n\ntext\n"), Options{})
+	if strings.Count(page, `id="content"`) != 1 {
+		t.Errorf("id=\"content\" appears %d times, want 1", strings.Count(page, `id="content"`))
+	}
+	// a raw HTML table stays balanced; a markdown table is wrapped
+	_, page = renderLab(t, write("t.md", "---\ntype: lab\n---\n# T\n\n<table class=\"x\"><tr><td>raw</td></tr></table>\n\n| a | b |\n|---|---|\n| 1 | 2 |\n"), Options{})
+	body := regexp.MustCompile(`(?s)<main .*</main>`).FindString(page)
+	if strings.Count(body, "<div") != strings.Count(body, "</div>") || strings.Count(body, `class="si-table-wrap"`) != 1 {
+		t.Errorf("unbalanced or missing table wrap:\n%s", body)
+	}
+	// the first H1 moves to the header only when it is the title
+	_, page = renderLab(t, write("h.md", "---\ntype: lab\ntitle: Given\n---\n# Heading\n\ntext\n"), Options{})
+	if !strings.Contains(page, `<h1 class="si-doc-title">Given</h1>`) || !strings.Contains(page, "<h1>Heading</h1>") {
+		t.Error("an H1 that differs from the front matter title stays in the body")
+	}
+	_, page = renderLab(t, write("s.md", "---\ntype: lab\ntitle: Same\n---\n# Same\n\ntext\n"), Options{})
+	if strings.Contains(page, "<h1>Same</h1>") {
+		t.Error("an H1 equal to the title moves to the header")
+	}
+}
+
+func writeFiles(t *testing.T, files map[string]string) string {
+	t.Helper()
+	dir := t.TempDir()
+	for name, body := range files {
+		p := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return dir
+}
+
+const tinySVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>`
+
+// An included module resolves its paths against its own file, and the TOC
+// and heading ids span every part.
+func TestLabIncludedModulePaths(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"lab.md":           "---\ntype: lab\n---\n# Lab\n\n## Intro\n\n<!-- include: sections/01-a.md -->\n\n## Intro\n",
+		"sections/01-a.md": "## Intro\n\n![pic](../images/x.svg)\n",
+		"images/x.svg":     tinySVG,
+	})
+	res, page := renderLab(t, filepath.Join(dir, "lab.md"), Options{})
+	if len(res.Problems) != 0 {
+		t.Errorf("problems: %v", res.Problems)
+	}
+	if strings.Contains(page, `src="../images/x.svg"`) || !strings.Contains(page, `src="data:image/svg+xml;base64,`) {
+		t.Error("the module's ../images/x.svg is not inlined")
+	}
+	for _, want := range []string{`<h2 id="intro">`, `<h2 id="intro-2">`, `<h2 id="intro-3">`, `<a href="#intro-3">Intro</a>`} {
+		if !strings.Contains(page, want) {
+			t.Errorf("lab page lacks %q", want)
+		}
+	}
+}
+
+// A render problem in a lab points at the file and line of the failing reference.
+func TestLabProblemLines(t *testing.T) {
+	filler := strings.Repeat("text\n\n", 98) // lines 6..201
+	dir := writeFiles(t, map[string]string{
+		"lab.md":     "---\ntype: lab\n---\n# Lab\n\n" + filler + "![gone](missing.png)\n\n<!-- include: parts/p.md -->\n",
+		"parts/p.md": "## P\n\nsome text\n\n![also gone](nope.svg)\n",
+	})
+	res, _ := renderLab(t, filepath.Join(dir, "lab.md"), Options{})
+	var got []string
+	for _, p := range res.Problems {
+		got = append(got, fmt.Sprintf("%s:%d: %s", filepath.Base(p.File), p.Line, p.Msg))
+	}
+	want := []string{"lab.md:202: missing file: missing.png", "p.md:5: missing file: nope.svg"}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("problems = %q, want %q", got, want)
+	}
+}
+
+// The H1 that matches the title (compared as plain text) moves to the header,
+// even when it is not the first block; later H1s stay.
+func TestLabTitleH1(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"a.md": "---\ntype: lab\ntitle: The **bold** `lab`\n---\n# The **bold** `lab`\n\ntext\n",
+		"b.md": "---\ntype: lab\ntitle: Same\n---\nintro\n\n# Same\n\ntext\n\n# Same\n",
+		"c.md": "---\ntype: lab\n---\nintro\n\n# Derived\n\ntext\n",
+	})
+	_, page := renderLab(t, filepath.Join(dir, "a.md"), Options{})
+	if strings.Count(page, "<strong>bold</strong>") != 1 || !strings.Contains(page, `<h1 class="si-doc-title">The <strong>bold</strong> <code>lab</code></h1>`) {
+		t.Error("a markdown-formatted H1 equal to the title moves to the header")
+	}
+	_, page = renderLab(t, filepath.Join(dir, "b.md"), Options{})
+	if strings.Count(page, "<h1>Same</h1>") != 1 {
+		t.Errorf("want the first matching H1 removed and the second kept, got %d", strings.Count(page, "<h1>Same</h1>"))
+	}
+	_, page = renderLab(t, filepath.Join(dir, "c.md"), Options{})
+	if strings.Contains(page, "<h1>Derived</h1>") || !strings.Contains(page, `<h1 class="si-doc-title">Derived</h1>`) {
+		t.Error("without a front matter title, the first H1 is the title and leaves the body")
+	}
+}
+
+// A table whose header row is all empty (pandoc metadata) hides its thead.
+func TestLabEmptyTableHeader(t *testing.T) {
+	dir := writeFiles(t, map[string]string{"l.md": "---\ntype: lab\n---\n# L\n\n| | |\n|---|---|\n| a | 1 |\n\n| k | v |\n|---|---|\n| a | 1 |\n"})
+	_, page := renderLab(t, filepath.Join(dir, "l.md"), Options{})
+	if strings.Count(page, `<thead hidden="">`) != 1 || strings.Count(page, "<thead>") != 1 {
+		t.Errorf("want one hidden and one visible thead:\n%s", page)
+	}
+}
+
+func TestIndexCardKind(t *testing.T) {
+	page := string(Index("Courses", []IndexEntry{{Href: "d.html", Title: "D", PDF: "pdfs/d.pdf"}, {Href: "l.html", Title: "L", Lab: true}}, Options{}))
+	for _, want := range []string{`<a class="si-card" data-kind="deck" href="d.html">`, `<a class="si-card" data-kind="lab" href="l.html">`} {
+		if !strings.Contains(page, want) {
+			t.Errorf("index lacks %q", want)
+		}
+	}
+}

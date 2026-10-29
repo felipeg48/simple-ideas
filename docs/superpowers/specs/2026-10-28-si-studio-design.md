@@ -127,13 +127,16 @@ files; HTML renders of guides stay the workspace's own scripts. The
 A Markdown file with front matter `type: lab` is a **document**, not a slide
 deck. si renders it as one scrolling, readable page: full width, a table of
 contents sidebar, tables and code blocks that scroll horizontally instead of
-clipping, callouts (checkpoint, warning, tip), light/dark, self-contained.
+clipping, callouts (the five GitHub alerts: note, tip, important, warning,
+caution; no separate checkpoint kind), light/dark, self-contained.
 `si build` writes it as an HTML guide (replacing the CACI course's pandoc
 script), `si check` validates it (missing files, broken links), the index
 shows a `lab` badge, and Studio's navigator shows a lab icon and previews it
 full width (the cursor scrolls the page to the section being edited).
 Without the marker nothing changes. `type` (`deck` default, `lab`) is a new
-front-matter rule documented in RULES.md.
+front-matter rule documented in RULES.md. A lab has no prev/next navigation
+(labs link to each other with ordinary links); `README.md` is never built; a
+split lab keeps paths relative to each included module, as a split deck does.
 
 ### Creating things
 

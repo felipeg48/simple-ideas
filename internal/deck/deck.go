@@ -24,6 +24,8 @@ const (
 	KindSection Kind = "section"
 	KindClosing Kind = "closing"
 	KindContent Kind = "content"
+	// KindDocument is the single slide of a `type: lab` file: the whole body.
+	KindDocument Kind = "document"
 )
 
 // Layouts and transitions accepted by the per-slide directives.
@@ -57,6 +59,7 @@ var Directives = map[string]string{
 
 // Meta is the deck-level front matter.
 type Meta struct {
+	Type       string // deck (default) | lab
 	Title      string
 	Author     string
 	Date       string
@@ -82,7 +85,7 @@ type Meta struct {
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "type"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -132,6 +135,60 @@ type Deck struct {
 	Meta     Meta
 	Slides   []*Slide
 	Problems []Problem
+	Warnings []Problem // non-fatal (e.g. a slide directive in a lab)
+}
+
+// Types are the accepted values of the `type` front matter key.
+var Types = []string{"deck", "lab"}
+
+// IsLab reports whether the file is a lab document (`type: lab`).
+func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
+
+// buildLab splits the expanded body into document parts, one per run of
+// consecutive lines of one file, so each part resolves relative paths against
+// its own file and Line+offset is the real source line of every body line.
+// The renderer joins the parts into one page. `---` stays text; directives
+// are reported as having no effect. The first part carries the title.
+func (d *Deck) buildLab(lines []srcLine) {
+	lines = trimBlank(lines)
+	if len(lines) == 0 {
+		d.problem(d.Path, 0, "empty lab: start with a `# Title` line")
+		return
+	}
+	var s *Slide
+	var text []string
+	flush := func() {
+		if s != nil {
+			s.Body = strings.Join(text, "\n")
+			d.Slides = append(d.Slides, s)
+		}
+	}
+	title := ""
+	var ft fenceTracker
+	for i, l := range lines {
+		if i == 0 || l.file != lines[i-1].file || l.no != lines[i-1].no+1 {
+			flush()
+			s, text = &Slide{Kind: KindDocument, File: l.file, Line: l.no, Dir: filepath.Dir(l.file)}, nil
+		}
+		text = append(text, l.text)
+		if ft.inFence(l.text) {
+			continue
+		}
+		if name, _, ok := ParseDirective(l.text); ok {
+			msg := fmt.Sprintf("%q has no effect in a lab document", name)
+			if _, known := Directives[name]; !known {
+				msg = fmt.Sprintf("unknown directive %q", name)
+			}
+			d.Warnings = append(d.Warnings, Problem{File: rel(l.file), Line: l.no, Msg: msg})
+		} else if title == "" && h1RE.MatchString(l.text) {
+			title = h1RE.FindStringSubmatch(l.text)[1]
+		}
+	}
+	flush()
+	if d.Meta.Title != "" {
+		title = d.Meta.Title
+	}
+	d.Slides[0].Title = title
 }
 
 // Title is the deck title: front matter title, else the title slide.
@@ -227,6 +284,7 @@ func Parse(path string) (*Deck, error) {
 		src = adocToMarkdown(src) // AsciiDoc decks feed the same Markdown pipeline
 	}
 	d := &Deck{Path: abs, Name: strings.TrimSuffix(filepath.Base(abs), filepath.Ext(abs))}
+	d.Meta.Type = "deck"
 	lines := splitLines(src)
 	start := d.frontMatter(abs, lines)
 	var out []srcLine
@@ -234,7 +292,11 @@ func Parse(path string) (*Deck, error) {
 		out = append(out, srcLine{abs, start + i + 1, t})
 	}
 	out = d.expandIncludes(abs, out, []string{abs})
-	d.buildSlides(out)
+	if d.IsLab() {
+		d.buildLab(out)
+	} else {
+		d.buildSlides(out)
+	}
 	return d, nil
 }
 
@@ -263,6 +325,7 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 	if end < 0 {
 		return 0
 	}
+	keyLine := map[string]int{}
 	for i := 1; i < end; i++ {
 		t := strings.TrimSpace(lines[i])
 		if t == "" || strings.HasPrefix(t, "#") {
@@ -270,6 +333,7 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 		}
 		m := metaRE.FindStringSubmatch(t)
 		key, val := m[1], strings.Trim(m[2], `"'`)
+		keyLine[key] = i + 1
 		if !d.setMeta(key, val) {
 			d.problem(file, i+1, "unknown front matter key %q (known: %s)", key, strings.Join(MetaKeys, ", "))
 			continue
@@ -281,8 +345,18 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 			d.checkBackground(file, i+1, filepath.Dir(file), val)
 		}
 	}
+	if d.IsLab() {
+		for _, k := range LabIgnoredKeys {
+			if ln, ok := keyLine[k]; ok {
+				d.Warnings = append(d.Warnings, Problem{File: rel(file), Line: ln, Msg: fmt.Sprintf("front matter %q has no effect in a lab document", k)})
+			}
+		}
+	}
 	return end + 1
 }
+
+// LabIgnoredKeys are the front matter keys a lab page does not use.
+var LabIgnoredKeys = []string{"aspect", "transition", "background", "watermark", "watermark-opacity", "labs-label", "footer-position", "runbook"}
 
 func (d *Deck) setMeta(key, val string) bool {
 	m := &d.Meta
@@ -291,7 +365,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"accent": &m.Accent, "transition": &m.Transition, "aspect": &m.Aspect, "mermaid": &m.Mermaid, "lang": &m.Lang,
 		"background": &m.Background, "status": &m.Status, "version": &m.Version, "year": &m.Year, "copyright": &m.Copyright,
 		"footer": &m.Footer, "footer-position": &m.FooterPos, "watermark": &m.Watermark, "watermark-opacity": &m.WatermarkOpacity, "labs-label": &m.LabsLabel,
-		"runbook": &m.Runbook,
+		"runbook": &m.Runbook, "type": &m.Type,
 	}[key]
 	if ptr == nil {
 		return false
@@ -308,6 +382,8 @@ func validateMeta(key, val string) string {
 			return "" // a theme CSS file path or URL; resolved at render time
 		}
 		return oneOf("theme", val, Themes)
+	case "type":
+		return oneOf("type", val, Types)
 	case "mode":
 		return oneOf("mode", val, Modes)
 	case "transition":
@@ -378,9 +454,13 @@ func (d *Deck) expandIncludes(file string, lines []srcLine, stack []string) []sr
 		for i, t := range inc[start:] {
 			incLines = append(incLines, srcLine{target, start + i + 1, t})
 		}
-		out = append(out, srcLine{l.file, l.no, "---"})
+		sep := "---" // a module is its own run of slides
+		if d.IsLab() {
+			sep = "" // a lab is one document: a blank line, never an <hr> or a setext heading
+		}
+		out = append(out, srcLine{l.file, l.no, sep})
 		out = append(out, d.expandIncludes(target, incLines, append(stack, target))...)
-		out = append(out, srcLine{l.file, l.no, "---"})
+		out = append(out, srcLine{l.file, l.no, sep})
 	}
 	return out
 }

@@ -325,9 +325,13 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			continue
 		}
 		entry := render.Entry(d)
-		fmt.Fprintf(stdout, "  %-28s %3d slides  %5s min  %3d steps  %2d canvases  %4d KB\n",
-			d.Name+".html", len(d.Slides), strconv.FormatFloat(d.Minutes(), 'f', -1, 64), res.Steps, res.Canvases, len(res.HTML)/1024)
-		if chrome != "" {
+		if d.IsLab() {
+			fmt.Fprintf(stdout, "  %-28s lab  %d sections  %4d KB\n", d.Name+".html", entry.Sections, len(res.HTML)/1024)
+		} else {
+			fmt.Fprintf(stdout, "  %-28s %3d slides  %5s min  %3d steps  %2d canvases  %4d KB\n",
+				d.Name+".html", len(d.Slides), strconv.FormatFloat(d.Minutes(), 'f', -1, 64), res.Steps, res.Canvases, len(res.HTML)/1024)
+		}
+		if chrome != "" && !d.IsLab() { // the slides PDF does not apply to a lab (print it from the browser)
 			rel := filepath.Join("pdfs", d.Name+".pdf") // a pdfs/ folder beside the decks; linked from the index tiles
 			pdf := filepath.Join(out, rel)
 			if err := os.MkdirAll(filepath.Dir(pdf), 0o755); err != nil {

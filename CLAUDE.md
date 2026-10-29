@@ -61,7 +61,7 @@ what you chose.
 | `internal/studio/` | `si --web`: gateway (token, Host, Origin), confined workspace, file/deck/check/rules API, assembly with the `si play` server |
 | `web/studio/` | Studio front-end source (Preact + TS + CodeMirror 6, esbuild, vitest, Playwright e2e); bundle committed to `internal/assets/web/studio/assets/` via `make studio-ui` |
 | `internal/config/` | optional `si.conf` (flat `key: value`, stdlib): default theme, `keys.*` command remaps, `feature.*` on/off; injected into the deck as `window.SI_CONFIG`, read by `deck.js` |
-| `internal/assets/` | embedded web files (`web/layout.css` unlayered mechanics, `web/theme.css` looks, `web/deck.js` runtime, `web/presenter.html` teleprompter) and `contract.go` (tokens, hooks, theme values, starter CSS) |
+| `internal/assets/` | embedded web files (`web/layout.css` unlayered mechanics, `web/theme.css` looks, `web/deck.js` runtime, `web/doc.css` + `web/doc.js` lab documents (`type: lab`), `web/presenter.html` teleprompter) and `contract.go` (tokens, hooks, theme values, starter CSS) |
 | `docs/docs.go` | embeds RULES.md + reference/user-manual.md for `si rules` / `si manual` (in `docs/` so go:embed can reach them; no `.go` at the repo root) |
 | `examples/` | showcase deck, included appendix, `assets/journey.svg` canvas, media, `css/harbor.css` theme; embedded for `si new` and `--export example` |
 | `docs/screenshots/` | headless screenshots referenced by the README |

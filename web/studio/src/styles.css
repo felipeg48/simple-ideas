@@ -186,6 +186,7 @@ code, kbd { font-family: var(--mono); font-size: .92em; }
 .row-more:hover { background: var(--hover); color: var(--ink); }
 .k-dir { color: var(--blue); }
 .k-deck { color: var(--accent); }
+.k-lab { color: var(--green); }
 .k-markdown { color: var(--ink-2); }
 .k-svg { color: var(--green); }
 .k-css { color: var(--violet); }

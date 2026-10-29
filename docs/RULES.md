@@ -33,6 +33,7 @@ this file; `examples/showcase.md` uses every rule in a real talk.
 15. [Styling: themes and your own CSS](#15-styling-themes-and-your-own-css)
 16. [Configuring keys and features (si.conf)](#16-configuring-keys-and-features-siconf)
 17. [What si check reports](#17-what-si-check-reports)
+18. [Lab documents](#18-lab-documents)
 
 ## 1. Decks and files
 
@@ -84,6 +85,7 @@ lang: en
 | `watermark` | text, or an image path | none | a faint layer behind every slide — literal text (e.g. `Draft`) is drawn large and angled; an image path is inlined once and centred |
 | `watermark-opacity` | number `0`–`1` | `0.06` | how visible the watermark is |
 | `labs-label` | text | `Now, let's do a Lab!` | the heading on every lab slide (see the `labs` directive) |
+| `type` | `deck`, `lab` | `deck` | `lab` renders the file as a readable guide page instead of slides; see [Lab documents](#18-lab-documents). Anything else is a `si check` problem |
 | `runbook` | path to a `.json` file | none | a command cheat-sheet shown in the **`si play` terminal drawer only** (never in a built deck); see §14 |
 
 An included module's own front matter is ignored; the including deck decides.
@@ -704,8 +706,76 @@ value is a warning printed to the terminal, never a failed build.
 - a `steps:` list with more state tokens than items
 - an `image` directive not followed by a paragraph holding one image
 - a second `# H1` inside a slide
+- a `type` that is not `deck` or `lab`
 - a malformed `stage` block (unknown node, impossible `dot`/`flow` route, bad `dir`)
 - an authored canvas SVG with a `<` inside its `<style>`, or with no `viewBox`
   and no `width`+`height` to derive one
 
-Warnings (exit 0): inlined files above 2 MB.
+Warnings (exit 0): inlined files above 2 MB; slide or body directives in a lab.
+
+## 18. Lab documents
+
+`type: lab` in the front matter turns the file into one readable guide page,
+for hands-on material that people follow at their own pace: a header with the
+title and byline, a table of contents beside the text, the guide, and a footer.
+There are no slides, steps, canvases or teleprompter.
+
+```markdown
+---
+type: lab
+title: Trace an Order Through the Hand-offs
+---
+
+# Trace an Order Through the Hand-offs
+
+> [!NOTE]
+> Everything here is read-only until the last step.
+
+## Step 1: read the timeline
+```
+
+- The `# H1` is the page title: the first `# H1` whose text equals the title
+  (compared as plain text, so `**bold**` or `` `code` `` in either still
+  matches) is dropped from the body; any other H1 stays. `##` and `###`
+  headings get stable GitHub-style ids and anchor links, and fill the table of
+  contents. The contents sit beside the text on wide screens and collapse
+  above it under about 900 px.
+- A `---` line inside a lab is a horizontal rule, never a slide break.
+- **Callouts** use GitHub alert syntax: `> [!NOTE]`, `> [!TIP]`,
+  `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`. These five are the only
+  kinds (there is no separate checkpoint kind; use `[!IMPORTANT]` or
+  `[!TIP]`). Each becomes a callout with an icon and a title. Callouts are
+  recognised at the top level only (not inside lists or other quotes); any
+  other blockquote stays a quote.
+- Code blocks keep the highlighter, a language label and a copy button. Code
+  and markdown tables scroll sideways inside their own box; the page never
+  does. Raw HTML tables are not wrapped. A table whose header row is all
+  empty (`| | |`, as pandoc metadata tables have) shows no header.
+- Images become figures, links to other `.md` files become `.html`, and the
+  theme, `mode:`, `accent:`, `--theme` and `--css` apply as they do for a deck
+  (the `d` key toggles dark mode). The print stylesheet prints the whole guide.
+- An include (`<!-- include: parts/setup.md -->`) pastes the file in place
+  without a slide break. Keep included parts in a subfolder: `si build` builds
+  every top-level `.md` of a folder (except `README.md`, which is never built)
+  as its own deck or lab. A split lab keeps paths relative to each module, as
+  a split deck does: `sections/01-setup.md` writes `![x](../images/x.svg)`,
+  and problems point at the module's own file and line.
+- Slide and body directives (`layout`, `steps`, `svg`, and so on) have no
+  effect in a lab. Each one is reported by `si check` as a warning and
+  otherwise ignored; an unknown directive (`<!-- columns -->`) is also only a
+  warning in a lab (in a deck it is an error). A `Notes:` line is not special
+  in a lab: it renders as ordinary text.
+- Deck-only front matter keys (`aspect`, `transition`, `background`,
+  `watermark`, `watermark-opacity`, `labs-label`, `footer-position`,
+  `runbook`) have no effect in a lab; `si check` warns about each. `footer`,
+  `year` and `copyright` fill the page footer; `author`, `date` and `version`
+  the byline.
+- A lab is one page: it has no prev/next navigation to other labs. Link them
+  with ordinary links (`[Next lab](lab-02.md)` becomes `lab-02.html`).
+- `si build` writes one HTML file per lab and lists it in `index.html` with a
+  `LAB` badge and its section count instead of slides and time. A slides PDF
+  (`--pdf`) is not made for labs; print the page instead.
+- In Studio, labs show a lab icon in the tree and open in the preview like
+  decks.
+
+The showcase has one: `examples/order-lab.md`.

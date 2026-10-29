@@ -85,3 +85,21 @@ func TestTreeKinds(t *testing.T) {
 		t.Errorf("order = %v, want %v", order, want)
 	}
 }
+
+func TestTreeKindLab(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "lab.md"), []byte("---\ntype: lab\n---\n# L\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "talk.md"), []byte("# T\n"), 0o644)
+	w, _ := OpenWorkspace(dir)
+	root, err := w.Tree()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]string{}
+	for _, c := range root.Children {
+		got[c.Name] = c.Kind
+	}
+	if got["lab.md"] != "lab" || got["talk.md"] != "deck" {
+		t.Errorf("kinds = %v", got)
+	}
+}

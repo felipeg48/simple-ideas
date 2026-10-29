@@ -108,7 +108,7 @@ const theme = EditorView.theme({
 });
 
 function extensions(kind: Kind, rules: Rules | null, onUpdate: Extension): Extension {
-  const md = kind === "deck" || kind === "markdown";
+  const md = kind === "deck" || kind === "lab" || kind === "markdown";
   return [
     lineNumbers(), highlightActiveLineGutter(), highlightSpecialChars(), history(), drawSelection(), dropCursor(),
     EditorState.allowMultipleSelections.of(true), indentOnInput(), bracketMatching(), closeBrackets(),

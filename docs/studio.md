@@ -83,6 +83,11 @@ npx playwright install chromium   # once, before the first studio-e2e
 
 Commit the regenerated bundle with the source change.
 
+## Lab documents
+
+A file with `type: lab` shows a lab icon in the tree and previews as the guide
+page. Saving re-renders it like a deck.
+
 ## Known limits
 
 - Desktop-only layout; it is not responsive to phone widths.

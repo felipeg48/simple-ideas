@@ -150,6 +150,11 @@ func (w *Workspace) walk(dir string, inc map[string]bool) ([]Node, error) {
 			continue
 		}
 		node.Kind = fileKind(n, decks[n])
+		if node.Kind == "deck" {
+			if d, err := deck.Parse(filepath.Join(dir, n)); err == nil && d.IsLab() {
+				node.Kind = "lab"
+			}
+		}
 		files = append(files, node)
 	}
 	byName := func(s []Node) { sort.Slice(s, func(i, j int) bool { return s[i].Name < s[j].Name }) }

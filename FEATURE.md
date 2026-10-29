@@ -92,6 +92,16 @@ deck (plus an index). Go stdlib + goldmark only; every deck is self-contained.
 - **Docs:** `si manual` renders the user manual (`--pdf` / `--slides`);
   `docs/reference/` holds the user manual + developer reference.
 
+## Unreleased
+
+- **Lab documents (`type: lab`).** A markdown file with `type: lab` renders as a
+  single guide page (title header, sticky table of contents that collapses on
+  narrow screens, GitHub alert callouts, copy buttons, scrolling tables and
+  code, light/dark, print). `si build` lists labs in the index with a `LAB`
+  badge and a section count; `si check` reports a bad `type` and warns about
+  slide directives in a lab; Studio shows a lab icon. See RULES.md section 18
+  and `examples/order-lab.md`.
+
 ## Shipped — v0.6.3
 
 - **`si play --dev` hot reload.** On save, instead of a full-page reload, the dev

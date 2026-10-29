@@ -11,7 +11,7 @@ import (
 // window) uses an --si-* property or a .si-* class that the exported contract
 // (Tokens, Hooks) does not list, so `si --export css-rules` cannot drift.
 func TestContractCoversBuiltinCSS(t *testing.T) {
-	css := LayoutCSS + ThemeLooksCSS + PresenterHTML
+	css := LayoutCSS + ThemeLooksCSS + DocCSS + PresenterHTML
 	for name := range Themes {
 		css += ThemeCSS(name)
 	}
@@ -29,7 +29,7 @@ func TestContractCoversBuiltinCSS(t *testing.T) {
 		hooks += h.Selector + "\n"
 	}
 	classRE := regexp.MustCompile(`\.si-[a-z0-9-]+`)
-	for _, m := range unique(classRE.FindAllString(LayoutCSS+ThemeLooksCSS, -1)) {
+	for _, m := range unique(classRE.FindAllString(LayoutCSS+ThemeLooksCSS+DocCSS, -1)) {
 		if !regexp.MustCompile(regexp.QuoteMeta(m) + `\b`).MatchString(hooks) {
 			t.Errorf("built-in CSS uses %s, which is not in assets.Hooks", m)
 		}
@@ -68,7 +68,7 @@ func TestThemesDefineEveryColour(t *testing.T) {
 func TestLayoutHasNoFixedCanvas(t *testing.T) {
 	// the fluid rule: no fixed slide canvas scaled by a transform
 	for _, bad := range []string{"1280px", "1920px", "720px", "1080px", "scale(var("} {
-		if strings.Contains(LayoutCSS, bad) {
+		if strings.Contains(LayoutCSS+DocCSS, bad) {
 			t.Errorf("layout CSS contains %q: slides must reflow, never scale a fixed canvas", bad)
 		}
 	}

@@ -3,7 +3,7 @@ import type { DocStatus } from "./editor";
 import { Icon } from "./navigator";
 
 const kindLabel: Record<string, string> = {
-  deck: "si deck", markdown: "Markdown", svg: "SVG", css: "CSS", json: "JSON", image: "Image", other: "Text",
+  deck: "si deck", lab: "si lab", markdown: "Markdown", svg: "SVG", css: "CSS", json: "JSON", image: "Image", other: "Text",
 };
 const fmt = (m: number) => (Math.round(m * 10) / 10).toString();
 
