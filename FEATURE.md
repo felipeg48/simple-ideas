@@ -92,6 +92,19 @@ deck (plus an index). Go stdlib + goldmark only; every deck is self-contained.
 - **Docs:** `si manual` renders the user manual (`--pdf` / `--slides`);
   `docs/reference/` holds the user manual + developer reference.
 
+## Shipped — v0.9.1
+
+- **`theme: acemq`:** built-in AceMQ brand theme (Urbanist / Mona Sans and the logo embedded, highlighter
+  titles, background rhythm, cards, timeline, steps, callouts, dark `on-ink` slides); lab documents too.
+  RULES.md §15 "acemq theme extras".
+- **`<!-- eyebrow: … -->`:** a small context label above a slide heading, not part of the slide title.
+- **CSS-file themes** inline their relative `url()`s (fonts, images) like `--css` files.
+- **Stage labels** shrink to stay inside their node with any theme font.
+- **`--si-figure-max`:** figure height cap token; an overflowing slide shrinks figures before type.
+- **Lab documents:** key/value tables wrap, clean byline separators, wide tables and code use the
+  whole column, Previous/Next links between labs built from one folder.
+- `make install` replaces the binary instead of overwriting it (macOS killed in-place overwrites).
+
 ## Shipped — v0.9.0
 
 - **Runbook placeholders:** `{{name}}` / `{{name:default}}` in runbook commands;
