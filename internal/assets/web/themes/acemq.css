@@ -145,6 +145,9 @@ html .si-footer::before { content: ""; display: inline-block; width: .5em; heigh
   height: clamp(.85rem, 1.6cqi, 3.6rem); aspect-ratio: 1729 / 473;
   background: var(--si-brand-logo) left center / contain no-repeat; filter: var(--ace-logo-filter);
 }
+/* a slide that shows the .lockup (cover, closing) already carries the logo:
+   drop the footer one, keep the footer text */
+.si-slide:has(.lockup)::after { content: none; }
 /* keep the body clear of the footer band (the inner padding is unlayered) */
 html .si-slide:has(> .si-footer) .si-inner { padding-bottom: max(calc(var(--si-pad-y) + 2.6cqi + .9rem), 4.2rem) !important; }
 

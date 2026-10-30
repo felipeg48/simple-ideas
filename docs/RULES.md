@@ -693,7 +693,9 @@ si --web examples --no-open
   `url(...)` to swap it.
 - **Cover and closing**: the title slide is left-aligned. Optional blocks:
   `.lockup` (`<span class="lk-logo">` draws the brand logo, `<img>`,
-  `.lk-x` divider, `.lk-name` wordmark), `.pill` with `.pill-mark`,
+  `.lk-x` divider, `.lk-name` wordmark; a slide with a `.lockup` drops the
+  footer logo so the logo shows once, and keeps the footer text), `.pill`
+  with `.pill-mark`,
   `.cover-sub`, `.lead`, `.contact` (a row of `.tag`s).
 - **Slide classes** (`<!-- class: ... -->`): `on-ink` (a dark slide in light
   mode; use once or twice), `dense` (smaller table), `us-2` … `us-6` (tint
