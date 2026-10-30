@@ -477,3 +477,36 @@ func TestIndexCardKind(t *testing.T) {
 		}
 	}
 }
+
+func TestAcemqThemeSelfContained(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "a.md")
+	if err := os.WriteFile(p, []byte("---\ntheme: acemq\nfooter: Source\n---\n# T\n\n---\n\n<!-- eyebrow: Context -->\n## Claim, <span class=\"hl\">payoff.</span>\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	d, err := deck.Parse(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := Deck(d, Options{})
+	page := string(res.HTML)
+	if len(res.Problems) > 0 {
+		t.Errorf("problems: %v", res.Problems)
+	}
+	resRE := regexp.MustCompile(`(?i)(src|href)="(https?:)?//|url\((["']?)(https?:)?//|@import`)
+	if m := resRE.FindString(page); m != "" {
+		t.Errorf("acemq deck loads a network resource: %q", m)
+	}
+	for _, want := range []string{`data-si-theme="acemq"`, `url("data:font/woff2;base64,`, `--si-brand-logo:url("data:image/png;base64,`, `class="si-kicker"`} {
+		if !strings.Contains(strings.ReplaceAll(page, "--si-brand-logo: ", "--si-brand-logo:"), want) {
+			t.Errorf("acemq page lacks %q", want)
+		}
+	}
+	// lab documents carry the theme too
+	if err := os.WriteFile(p, []byte("---\ntype: lab\ntheme: acemq\n---\n# L\n\n## A\n\ntext\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, lab := renderLab(t, p, Options{})
+	if !strings.Contains(lab, `url("data:font/woff2;base64,`) {
+		t.Error("an acemq lab embeds the fonts")
+	}
+}

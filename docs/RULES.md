@@ -635,9 +635,11 @@ si --web examples --no-open
 
 ## 15. Styling: themes and your own CSS
 
-- `theme:` picks a built-in theme (`studio`, `paper`, `mono`, `crdb`), each
-  with a light and a dark palette. `crdb` is the CockroachDB University brand
-  (cream / ink / purple; aliases `cockroachdb`, `cockroachlabs`).
+- `theme:` picks a built-in theme (`studio`, `paper`, `mono`, `crdb`,
+  `acemq`), each with a light and a dark palette. `crdb` is the CockroachDB
+  University brand (cream / ink / purple; aliases `cockroachdb`,
+  `cockroachlabs`). `acemq` is the AceMQ brand (orange / teal / ink, Urbanist
+  and Mona Sans embedded) with extra components, below.
 - `theme:` (or `--theme`) can instead be a path ending in `.css`: the file's
   contents become the `si.theme` layer, so you ship a whole palette from one
   file. Define the `--si-*` tokens (see `si --export css-rules`); resolved
@@ -672,6 +674,55 @@ si --web examples --no-open
 :root[data-si-mode="dark"] { --si-bg: #0b1a28; --si-fg: #f1ece2; }
 .si-step.is-latest { color: var(--si-accent-2); }
 ```
+
+### acemq theme extras
+
+`theme: acemq` adds more than tokens. Only decks using it carry the extras
+(fonts and logo inlined, about 145 KB):
+
+- **Background rhythm**, automatic: odd slides are plain with a faint grid and
+  an orange glow at the top, even slides are flat `--si-surface-2`.
+- **Eyebrow**: `<!-- eyebrow: Context -->` renders as an orange uppercase label
+  with a dash. **Highlighter**: `<span class="hl">` in a heading draws an
+  orange band that sweeps in. Use one per slide.
+- **Footer**: the `footer:` text gets an orange dot, and the AceMQ logo is
+  drawn at the bottom left of every slide that has a footer. Set
+  `:root { --si-brand-logo: none; }` (in `--css`) to hide the logo, or
+  `url(...)` to swap it.
+- **Cover and closing**: the title slide is left-aligned. Optional blocks:
+  `.lockup` (`<span class="lk-logo">` draws the brand logo, `<img>`,
+  `.lk-x` divider, `.lk-name` wordmark), `.pill` with `.pill-mark`,
+  `.cover-sub`, `.lead`, `.contact` (a row of `.tag`s).
+- **Slide classes** (`<!-- class: ... -->`): `on-ink` (a dark slide in light
+  mode; use once or twice), `dense` (smaller table), `us-2` … `us-6` (tint
+  table column N orange: "our" column), `us-row` (tint the first body row),
+  `vs` (red marker on the second column's `###`).
+- **Components** (raw HTML): `.cards` (`c2`, `c4`) of `.card` (`hi` the one
+  recommended card, `orange`, `teal`/`ok`, `crit`) with `h4`, `p`, `.big`
+  (`<em>` unit in orange) and `.tag` (`orange`, `teal`, `crit`); `.tl` of
+  `.ev` incidents (`.when`, `.what`, `.impact`); `.steps` of `.st` (`.num`,
+  `h4`, `p`); `.callout` (`warn`) under a table or grid; verdict marks
+  `.y`, `.n`, `.p`, `.u` in table cells.
+- Code blocks are a dark terminal in both modes; tables are cards; motion
+  (rise, pop, highlighter) is off under reduced motion and in print.
+
+```markdown
+<!-- eyebrow: Two paths -->
+<!-- class: us-3 -->
+<!-- footer: Source: AceMQ docs -->
+## Same workload, <span class="hl">half the nodes.</span>
+
+| | Today | AceMQ |
+|---|---|---|
+| Nodes | 6 | <span class="y">3</span> |
+
+<div class="cards c2">
+<div class="card hi"><span class="tag">Recommended</span><h4>AceMQ</h4><p>Quorum by default.</p></div>
+<div class="card crit"><span class="tag">Today</span><h4>Mirrored</h4><p>Split brain on a lost AZ.</p></div>
+</div>
+```
+
+Lab documents (`type: lab`) under `acemq` get the fonts and palette.
 
 ## 16. Configuring keys and features (si.conf)
 

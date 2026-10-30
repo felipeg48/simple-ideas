@@ -29,7 +29,7 @@ func TestContractCoversBuiltinCSS(t *testing.T) {
 		hooks += h.Selector + "\n"
 	}
 	classRE := regexp.MustCompile(`\.si-[a-z0-9-]+`)
-	for _, m := range unique(classRE.FindAllString(LayoutCSS+ThemeLooksCSS+DocCSS, -1)) {
+	for _, m := range unique(classRE.FindAllString(css, -1)) {
 		if !regexp.MustCompile(regexp.QuoteMeta(m) + `\b`).MatchString(hooks) {
 			t.Errorf("built-in CSS uses %s, which is not in assets.Hooks", m)
 		}
@@ -99,5 +99,18 @@ func TestThemeNames(t *testing.T) {
 		if _, ok := Themes[n]; !ok {
 			t.Errorf("%q not a built-in theme", n)
 		}
+	}
+}
+
+func TestAcemqThemeEmbedsAssets(t *testing.T) {
+	css := ThemeCSS("acemq")
+	if strings.Count(css, `url("data:font/woff2;base64,`) != 2 || !strings.Contains(css, `url("data:image/png;base64,`) {
+		t.Error("acemq embeds both fonts and the logo as data URIs")
+	}
+	if regexp.MustCompile(`https?://`).MatchString(css) || strings.Contains(css, `url("acemq/`) {
+		t.Error("acemq theme CSS must not reference anything outside the deck")
+	}
+	if strings.Contains(ThemeCSS("studio"), "@font-face") {
+		t.Error("only acemq decks carry the acemq extras")
 	}
 }

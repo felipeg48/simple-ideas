@@ -1,7 +1,11 @@
 package assets
 
 import (
+	"embed"
+	"encoding/base64"
 	"fmt"
+	"path"
+	"regexp"
 	"sort"
 	"strings"
 )
@@ -64,6 +68,7 @@ var Tokens = []Token{
 	{"--si-ov-cols", "overview: number of topic columns, set by the runtime when the grid opens", ""},
 	{"--si-wm-opacity", "watermark opacity (watermark-opacity front matter)", "0.06"},
 	{"--si-wm-img", "watermark image, inlined as a data URI (set from the watermark front matter)", ""},
+	{"--si-brand-logo", "brand logo drawn beside the footer and in .lockup .lk-logo (acemq theme; none hides it)", "none"},
 }
 
 // Hook is a stable selector user CSS may target.
@@ -75,7 +80,7 @@ type Hook struct {
 // Hooks lists every stable `.si-*` class and attribute hook. A test fails if
 // the built-in CSS uses a `.si-*` class that is not listed here.
 var Hooks = []Hook{
-	{`:root[data-si-theme="studio"]`, "the deck theme from front matter (studio, paper, mono, crdb)"},
+	{`:root[data-si-theme="studio"]`, "the deck theme from front matter (studio, paper, mono, crdb, acemq)"},
 	{`:root[data-si-mode="dark"]`, "explicit dark mode (d toggles); without the attribute prefers-color-scheme decides"},
 	{`.si-deck`, "the full-viewport container of all slides"},
 	{`.si-deck.si-overview`, "overview grid (o): slides laid out in one column per topic"},
@@ -208,6 +213,9 @@ const (
 	// system fallback so decks stay self-contained (no bundled font file).
 	crdbSans = `"Geist", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
 	crdbMono = `"Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace`
+	// AceMQ brand fonts: embedded by web/themes/acemq.css (latin subsets).
+	aceBody    = `"Mona Sans", "Helvetica Neue", "Segoe UI", system-ui, sans-serif`
+	aceHeading = `"Urbanist", "Mona Sans", "Helvetica Neue", system-ui, sans-serif`
 )
 
 // layoutDefaults are mode-independent defaults shared by every theme.
@@ -295,6 +303,27 @@ var Themes = map[string]Theme{
 			"--si-shadow": "0 .6em 1.8em rgb(0 0 0 / .45)",
 		},
 	},
+	// AceMQ brand (orange / teal / ink). Its components, background rhythm,
+	// footer logo, motion and fonts live in web/themes/acemq.css.
+	"acemq": {
+		Base: map[string]string{"--si-font-body": aceBody, "--si-font-heading": aceHeading,
+			"--si-font-mono":      `ui-monospace, "SF Mono", Menlo, Consolas, monospace`,
+			"--si-heading-weight": "800", "--si-heading-tracking": "-.032em", "--si-h2-size": "2.2em", "--si-gap": "1.1em",
+			"--si-pad-x": "max(1.1rem, 5.7cqi)", "--si-pad-y": "max(1rem, 7.5cqb)", "--si-measure": "68ch",
+			"--si-transition-duration": ".5s", "--si-step-duration": ".5s"},
+		Light: map[string]string{
+			"--si-bg": "#ffffff", "--si-fg": "#121316", "--si-muted": "#5f6670", "--si-surface": "#ffffff",
+			"--si-surface-2": "#f6f6f7", "--si-line": "#e9ebee", "--si-accent": "#ff6600", "--si-accent-2": "#236b61",
+			"--si-on-accent": "#ffffff", "--si-ok": "#236b61", "--si-warn": "#8a5a00", "--si-crit": "#c2363b",
+			"--si-shadow": "0 .05em .1em rgb(18 19 22 / .04), 0 .4em 1.2em rgb(18 19 22 / .06), inset 0 1px 0 rgb(255 255 255 / .9)",
+		},
+		Dark: map[string]string{
+			"--si-bg": "#121316", "--si-fg": "#f4f5f6", "--si-muted": "#b3b8c0", "--si-surface": "#1c1e23",
+			"--si-surface-2": "#17191d", "--si-line": "rgb(255 255 255 / .12)", "--si-accent": "#ff6600", "--si-accent-2": "#8fd5cc",
+			"--si-on-accent": "#ffffff", "--si-ok": "#8fd5cc", "--si-warn": "#f2b33d", "--si-crit": "#ff7b7f",
+			"--si-shadow": "0 .4em 1.4em rgb(0 0 0 / .35), inset 0 1px 0 rgb(255 255 255 / .05)",
+		},
+	},
 }
 
 func decls(maps ...map[string]string) string {
@@ -357,8 +386,37 @@ func ThemeCSS(name string) string {
 	fmt.Fprintf(&b, ":root{%scolor-scheme:light}\n", light)
 	fmt.Fprintf(&b, "@media (prefers-color-scheme: dark){:root:not([data-si-mode]){%scolor-scheme:dark}}\n", dark)
 	fmt.Fprintf(&b, ":root[data-si-mode=\"dark\"]{%scolor-scheme:dark}\n", dark)
+	b.WriteString(themeExtra(name))
 	b.WriteString("}\n")
 	return b.String()
+}
+
+// themesFS holds per-theme extra stylesheets (web/themes/<name>.css) and their
+// assets (web/themes/<name>/...).
+//
+//go:embed web/themes
+var themesFS embed.FS
+
+var themeURLRE = regexp.MustCompile(`url\("([a-z0-9-]+/[a-z0-9.-]+)"\)`)
+
+var themeMIME = map[string]string{".woff2": "font/woff2", ".png": "image/png", ".svg": "image/svg+xml"}
+
+// themeExtra returns a theme's extra stylesheet (empty for token-only themes)
+// with its url("<name>/<file>") references inlined as data URIs, so only decks
+// using that theme carry its fonts and images.
+func themeExtra(name string) string {
+	css, err := themesFS.ReadFile("web/themes/" + name + ".css")
+	if err != nil {
+		return ""
+	}
+	return themeURLRE.ReplaceAllStringFunc(string(css), func(u string) string {
+		p := themeURLRE.FindStringSubmatch(u)[1]
+		raw, err := themesFS.ReadFile("web/themes/" + p)
+		if err != nil {
+			return u
+		}
+		return `url("data:` + themeMIME[path.Ext(p)] + ";base64," + base64.StdEncoding.EncodeToString(raw) + `")`
+	})
 }
 
 // StarterCSS is the commented stylesheet written by `si --export css-rules`.

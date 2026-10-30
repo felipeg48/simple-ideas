@@ -146,7 +146,7 @@ One inline SVG whose parts change state slide by slide:
 
 ## Themes
 
-- Four built-ins: `studio`, `paper`, `mono`, `crdb`
+- Five built-ins: `studio`, `paper`, `mono`, `crdb`, `acemq` (brand components, embedded fonts)
 - `theme: my.css` loads a CSS token file; `theme: https://…/x.css` fetches one
 - `si --export themes` writes a gallery; `si --export css-rules` a starter stylesheet
 - Your own CSS layers in `si.user` after the theme — tokens are `--si-*`

@@ -80,7 +80,7 @@ Usage:
 Flags (GNU style, before or after the path):
   -o, --output <path>   output directory (build) or file (export)
       --css <path>      user stylesheet file or directory; repeatable; loads after the theme
-      --theme <name>    built-in theme: studio, paper, mono, crdb (aliases cockroachdb, cockroachlabs), or a path to a .css theme file; overrides theme: front matter
+      --theme <name>    built-in theme: studio, paper, mono, crdb (aliases cockroachdb, cockroachlabs), acemq, or a path to a .css theme file; overrides theme: front matter
       --conf <path>     read si.conf (key remaps, feature toggles, default theme); default: si.conf next to the deck
       --title <text>    build, play: title for the index page — its <title> and <h1> (default: the source dir name)
       --site <text>     alias for --title (reads as "the site/landing page title")

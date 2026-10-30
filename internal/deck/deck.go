@@ -32,7 +32,7 @@ const (
 var (
 	Layouts     = []string{"default", "center", "two-col", "split", "quote", "big-number", "image"}
 	Transitions = []string{"fade", "slide", "zoom", "none"}
-	Themes      = []string{"studio", "paper", "mono", "crdb", "cockroachdb", "cockroachlabs"}
+	Themes      = []string{"studio", "paper", "mono", "crdb", "cockroachdb", "cockroachlabs", "acemq"}
 	// FooterPositions are the accepted footer-position values (long form plus short aliases).
 	FooterPositions = []string{"bottom-right", "bottom-left", "bottom-center", "top-right", "top-left", "top-center", "br", "bl", "bc", "tr", "tl", "tc"}
 	Modes           = []string{"auto", "light", "dark"}
