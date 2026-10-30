@@ -397,7 +397,7 @@ func genStage(body string, seq int) (svg string, stepOps []string, err error) {
 	}
 	for i, nd := range g.nodes {
 		fmt.Fprintf(&b, `<rect class="node n%d" x="%d" y="%d" width="%d" height="%d" rx="14"/>`, i, g.tlx[i], g.tly[i], sBoxW, sBoxH)
-		fmt.Fprintf(&b, `<text class="lbl l%d" x="%d" y="%d">%s</text>`, i, g.cx[i], g.cy[i], html.EscapeString(nd.label))
+		fmt.Fprintf(&b, `<text class="lbl l%d" x="%d" y="%d"%s>%s</text>`, i, g.cx[i], g.cy[i], labelFit(nd.label), html.EscapeString(nd.label))
 	}
 	for _, e := range g.edges { // edge labels on top, with a halo for legibility
 		if e.label != "" {
@@ -416,7 +416,7 @@ func genStage(body string, seq int) (svg string, stepOps []string, err error) {
 const stageStyle = `<style>` +
 	`.si-stage{font-family:var(--si-font-body,system-ui,sans-serif)}` +
 	`.si-stage .node{fill:var(--si-surface,#fff);stroke:var(--si-line,#d9d6ce);stroke-width:2.5;transition:stroke .35s ease,stroke-width .35s ease,opacity .35s ease}` +
-	`.si-stage .lbl{fill:var(--si-fg,#16171b);font-size:22px;font-weight:700;text-anchor:middle;dominant-baseline:central;transition:fill .35s ease,opacity .35s ease}` +
+	`.si-stage .lbl{fill:var(--si-fg,#16171b);font-size:calc(22px * var(--_lk,1));font-weight:700;text-anchor:middle;dominant-baseline:central;transition:fill .35s ease,opacity .35s ease}` +
 	`.si-stage .edge{stroke:var(--si-muted,#6b7280);stroke-width:2.5;fill:none}` +
 	`.si-stage .head{fill:var(--si-muted,#6b7280)}` +
 	`.si-stage .elbl{fill:var(--si-fg,#16171b);font-size:15px;font-weight:600;text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke:var(--si-bg,#fff);stroke-width:4px}` +
@@ -427,6 +427,35 @@ const stageKeyframes = `@keyframes si-stage-move{from{offset-distance:0%}to{offs
 	`@keyframes si-stage-flow{to{stroke-dashoffset:-18}}` +
 	`@keyframes si-stage-pulse{0%,100%{stroke-width:4}50%{stroke-width:7}}` +
 	`@media (prefers-reduced-motion:reduce){.si-stage .dot{animation:none;offset-distance:50%}.si-stage .flow{animation:none}.si-stage .node{animation:none}}`
+
+// labelFit shrinks a long node label so it never overflows its box, whatever
+// the theme font: it returns a style setting the --_lk font-size factor, or ""
+// when the label fits at full size. The width estimate is the larger of a
+// per-glyph proportional estimate (bold sans/serif) and a monospace one.
+// ponytail: estimated, not measured — a much wider custom font can still
+// overflow; measure in the runtime if that ever matters.
+func labelFit(label string) string {
+	const inner = sBoxW - 24 // 12 px clear on each side
+	prop, n := 0.0, 0
+	for _, r := range label {
+		n++
+		switch {
+		case strings.ContainsRune("MWmw@%", r):
+			prop += 1.02
+		case strings.ContainsRune("ijlrtfI.,:;'!|() ", r):
+			prop += 0.36
+		case r >= 'A' && r <= 'Z':
+			prop += 0.74
+		default:
+			prop += 0.62
+		}
+	}
+	w := math.Max(prop, 0.61*float64(n)) * 22
+	if w <= inner {
+		return ""
+	}
+	return fmt.Sprintf(` style="--_lk:%.2f"`, inner/w)
+}
 
 func rnd(f float64) int { return int(math.Round(f)) }
 

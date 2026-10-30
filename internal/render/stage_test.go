@@ -153,3 +153,14 @@ func vbTall(svg string) bool {
 	h, _ := strconv.Atoi(f[1])
 	return h > w
 }
+
+func TestGenStageLongLabelShrinks(t *testing.T) {
+	svg, _, err := genStage("A[Ok] --> B[Matching queue]", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// only the long label gets a font-size factor; the short one stays at 22px
+	if strings.Count(svg, `style="--_lk:`) != 1 || !strings.Contains(svg, `var(--_lk,1)`) {
+		t.Errorf("a long label must get a font-size factor:\n%s", svg)
+	}
+}

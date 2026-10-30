@@ -28,7 +28,8 @@ Rules of the grammar:
 - **Nodes** are discovered from edges in first-seen order. Write a node alone on
   a line to place it without an edge yet.
 - **`A[Label]`** gives node `A` a display label; later references can stay bare
-  (`A`). Keep labels short — they do not wrap.
+  (`A`). Keep labels short — they do not wrap; a long one is set smaller so
+  it stays inside its box whatever the theme font.
 - **`A --> B --> C`** chains; **`A -->|text| B`** puts `text` on the arrow.
 - **`dot A..B [dur]`** and **`flow A..B [dur]`** animate the shortest route from
   `A` to `B`. A bare number means seconds (`2` → `2s`); default `1.6s`.
