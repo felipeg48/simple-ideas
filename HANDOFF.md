@@ -3,46 +3,44 @@
 Read this, then `FEATURE.md`, then `CLAUDE.md`. This is a Go CLI (`si`) that turns
 Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
-## Current state
+## Current state (2026-10-30)
 
-- **v0.9.0 (branch `feat/studio-runbooks`, not tagged) added to Studio the
-  runbook generator, visual editor and `{{name:default}}` placeholders** (drawer
-  prompt, `docs/studio.md`, `docs/terminal.md`, RULES.md §14), plus BOM-tolerant
-  deck parsing.
-- **v0.8.0 (on branch `feat/studio-core-web`, not tagged) shipped Studio Write
-  mode:** `si --web [dir]`, see `docs/studio.md`. Vendored Preact/CodeMirror
-  bundle is committed; Node only for `make studio-ui`/`studio-e2e`.
-- **Next up:** the deferred Studio lab preview (lab documents, `type: lab`),
-  then plan 2c: inspector, Storyboard, Cmd-K palette, Build/PDF; per `docs/superpowers/specs/2026-10-28-si-studio-design.md`.
-- **Latest tagged release: v0.7.0** (version bumped in `cmd/si/main.go`; tag + push to
-  publish). CI + release workflows are green.
-- Working tree should be clean on `main`. Tests/vet/fmt all green.
-- **v0.7.0 shipped the runbook drawer.** Front matter `runbook: <file>.json` → a
-  right drawer in the `si play` terminal: a syntax-highlighted command cheat-sheet.
-  JSON shape matches the cockroach-engineering-tool VS Code extension (`command`
-  canonical, `sql` alias, `target: sql|bash`). Parse+highlight server-side in
-  `internal/render/runbook.go` → `window.SI_RUNBOOK` (raw `cmd` + pre-highlighted
-  `html`), injected ONLY when `opt.Terminal` (play+loopback) so a built deck never
-  carries it. Drawer UI + dark `si-tk-*` token CSS in `web/term/term.js`. Click to
-  type into the active shell, Shift/⌘-click to run. `si check` validates the path.
-  See RULES.md §14 + `docs/terminal.md`.
-- **v0.6.5 shipped the two-tab presenter popup.** A new `Points:` block (parallel
-  to `Notes:`, either order, neither swallows the other → `Slide.Points` →
-  `<aside class="si-points" hidden>`) feeds a **Speaker Notes** tab alongside the
-  verbatim **Teleprompter** tab. Keys `1`/`2` switch; choice persisted; auto-scroll
-  + reading-line are teleprompter-only; manual scroll/`r` follow the active tab.
-  `.si-points` is in `contract.go`. See RULES.md §11.
-- **v0.6.4 shipped the overview fix** (pulled from upstream).
-- **v0.6.3 shipped `si play --dev` hot reload + lab slides.** `--dev` morphs
-  changed slides in place (no flash; keeps slide/step/overview; full-reload
-  fallback on slide-count change; error overlay). `<!-- labs: [text](url), … -->`
-  renders a lab slide (beaker icon + `labs-label` heading + a button per lab).
-- **v0.6.2 shipped footer + watermark** (front matter). Also fixed: front-matter
-  keys may contain hyphens (metaRE).
-- **v0.6.1 shipped the topic-column Overview** (`o`): one column per section,
-  arrow-select, Enter to open.
-- **v0.6.0 shipped the `si play` terminal drawer** (xterm.js + PTY, play+loopback
-  only). Reference: `docs/terminal.md`. Toggle `` ` ``.
+- **Latest release: v0.9.1** (tagged, published by the release workflow; founder's
+  `~/.bin/si` is 0.9.1 via `si selfupdate`). `main` == `origin/main`, tests green.
+  CI + release workflows are green. v0.8.0 was never tagged (its Studio work ships in v0.9.x).
+- **v0.9.1:** built-in **`theme: acemq`** (AceMQ brand: Urbanist/Mona Sans + logo
+  embedded from `internal/assets/web/themes/acemq/`, extra CSS in
+  `internal/assets/web/themes/acemq.css`, emitted only for that theme by `ThemeCSS`;
+  component classes `.hl .cards .card .tag .tl .steps .callout on-ink us-N` documented
+  in RULES.md §15 "acemq theme extras"; `--si-brand-logo` hides/swaps the logo);
+  **`<!-- eyebrow: … -->`** slide directive (`.si-kicker` above the heading, not in
+  the title); CSS-file themes inline relative `url()`s (`inlineURLs` in
+  `internal/render/css.go`); stage labels shrink to fit (`labelFit`); `--si-figure-max`
+  token and `fit()` shrinks figures before type; lab docs: key/value tables wrap,
+  byline `·` split, wide tables/code use the column, Previous/Next pager between labs
+  built from one folder (`.si-doc-pager`); `make install` does rm+cp (macOS kills
+  in-place binary overwrites — that is what killed `si selfupdate` once).
+- **v0.9.0:** Studio runbook generator + visual JSON editor + `{{name}}` /
+  `{{name:default}}` placeholders (Go-template words `end else break continue nil
+  true false` are excluded; `{{.X}}` never matches); **lab documents** (`type: lab`,
+  `render.Document`, `doc.css`/`doc.js`, RULES.md §18; `si build` lists labs with a
+  LAB badge); Studio `si --web` (v0.8.0 work: Preact + CodeMirror bundle committed in
+  `internal/assets/web/studio/assets/`, rebuild with `make studio-ui`, e2e with
+  `make studio-e2e`). Spec: `docs/superpowers/specs/2026-10-28-si-studio-design.md`;
+  plans 1/2a/2b in `docs/superpowers/plans/` are done and merged.
+- **Next up (Studio, toward v1.0.0):** Studio lab preview full width + cursor
+  scroll to section (deferred from plan 2b); plan 2c (inspector, Storyboard, ⌘K,
+  Build/PDF jobs); plan 3 (Rehearse/Present/Lab modes); plan 4 macOS Wails app;
+  plan 5 Windows/Linux + ConPTY. Order agreed: web + macOS first. Open source
+  (Apache 2.0), no code signing.
+- **Open polish from v0.9.1:** acemq extras ≈148 KB per deck (an SVG logo would
+  shrink it); generic class names (`.card`, `.tag`, `.y/.n`) may collide with user
+  CSS; lab pager follows file names (`overview.md` sorts after `lab-08`); no way to
+  exclude a top-level `.md` from `si build` except `_` prefix / front matter.
+- Older: v0.7.x runbook drawer (`runbook:` JSON → `si play` terminal drawer,
+  RULES.md §14, `docs/terminal.md`); v0.6.5 Points/teleprompter tabs; v0.6.3
+  `--dev` hot reload + lab slides; v0.6.2 footer/watermark; v0.6.1 topic overview;
+  v0.6.0 terminal drawer (play + loopback only).
 
 ## Non-negotiable rules (from CLAUDE.md — do not break without the founder)
 
@@ -97,6 +95,25 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
   of an existing migrated course, replaces every raster with native SVG/stage/code,
   adds MORE animations than the source, runs `si check` on its own deck, and does
   NOT touch `index.html`/other courses/the repo. The lead does the central build.
+
+## Founder decks outside this repo (built with si 0.9.1)
+
+- **CACI RabbitMQ course** `~/Downloads/CACI/` (5 sessions + ref decks A/B, labs
+  0–8, handouts, instructor demos). `theme: acemq`, footer `CACI/AceMQ 2026`,
+  eyebrows + highlighter titles; labs/handouts are `type: lab`. Builds:
+  `si build decks --output slides --site "CACI Training" --pdf`,
+  `si build labs --output labs/html --site "CACI Training · Labs"`,
+  `si build handouts --output handouts --site "CACI Training · Session outputs"`.
+  Runbook source of truth: `labs/runbook.md` → `python3 labs/runbook-to-json.py`
+  → `labs/runbook.json` (founder does not use Studio for CACI). Backups:
+  `_backup-2026-10-29-pre-v0.9/`, `_backup-2026-10-30-pre-acemq-theme/`.
+- **PagoNxt pitch** `~/Downloads/PagoNxtAceMQBroker/` (original, untouched) and
+  `~/Downloads/PagoNxtAceMQBrokerV2/` (approved restyle per `STYLE-GUIDE.md`,
+  `theme: acemq`; "Trestle" never on slides → "AceMQ Enterprise Distribution for
+  RabbitMQ" / "AceMQ Distribution"). Build:
+  `si build md/ --output html/ --site "AceMQ for PagoNxt" --pdf && cp html/pdfs/pagonxt-acemq.pdf PagoNxt-AceMQ-V2.pdf`.
+  Open question to the founder: the "Free trial today" slide vs the guide's
+  no-free-offer rule.
 
 ## Known minor issues / polish backlog
 
