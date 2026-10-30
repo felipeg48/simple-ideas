@@ -1,7 +1,8 @@
 ---
 type: lab
 title: Trace an Order Through the Hand-offs
-author: Ada Lindqvist, Operations
+author: Ada Lindqvist · Operations
+date: Northwind Logistics · hands-on lab
 theme: studio
 accent: "#3657d6"
 ---
@@ -11,6 +12,12 @@ accent: "#3657d6"
 A hands-on companion to [The Thursday Promise](showcase.md). You will follow
 order #4711 from checkout to a doorstep, find the hand-off that eats the
 slack, and fix it.
+
+| | |
+|---|---|
+| **Time** | 25 minutes |
+| **Order** | #4711: promised Thursday, delivered Friday |
+| **Endpoint** | `https://tracking.northwind.example/v2/orders/{id}/events` |
 
 > [!NOTE]
 > You need read access to the tracking API and a shell with `curl` and `jq`.

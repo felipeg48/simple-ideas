@@ -51,7 +51,13 @@ type Options struct {
 	// Set only by si play on a loopback address; always false for build/export,
 	// so a self-contained deck never loads the terminal runtime.
 	Terminal bool
+	// Prev and Next link a lab to its neighbours built from the same
+	// directory (si build); empty Href means no link.
+	Prev, Next DocLink
 }
+
+// DocLink is a link to another lab page.
+type DocLink struct{ Href, Title string }
 
 // Result is a rendered deck.
 type Result struct {

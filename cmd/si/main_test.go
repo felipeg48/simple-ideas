@@ -132,6 +132,38 @@ func TestBuildWritesLab(t *testing.T) {
 	}
 }
 
+func TestBuildLinksLabs(t *testing.T) {
+	dir, out := t.TempDir(), t.TempDir()
+	os.WriteFile(filepath.Join(dir, "talk.md"), []byte("# Talk\n\nhello\n"), 0o644)
+	for _, n := range []string{"lab-1", "lab-2", "lab-3"} {
+		os.WriteFile(filepath.Join(dir, n+".md"), []byte("---\ntype: lab\ntitle: T "+n+"\n---\n\n## One\n"), 0o644)
+	}
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"build", "-o", out, dir}, &stdout, &stderr); code != 0 {
+		t.Fatalf("exit %d: %s", code, stderr.String())
+	}
+	read := func(n string) string { b, _ := os.ReadFile(filepath.Join(out, n)); return string(b) }
+	first, mid, last := read("lab-1.html"), read("lab-2.html"), read("lab-3.html")
+	if strings.Contains(first, `rel="prev" href`) || !strings.Contains(first, `rel="next" href="lab-2.html"`) {
+		t.Error("first lab: want only a next link to lab-2")
+	}
+	if !strings.Contains(mid, `rel="prev" href="lab-1.html"`) || !strings.Contains(mid, `rel="next" href="lab-3.html"`) || !strings.Contains(mid, "T lab-3") {
+		t.Error("middle lab: want prev lab-1 and next lab-3 with its title")
+	}
+	if strings.Contains(last, `rel="next" href`) || strings.Contains(read("talk.html"), `class="si-doc-pager"`) {
+		t.Error("last lab has no next link; decks get no pager")
+	}
+	// one lab alone: no pager
+	one, out1 := t.TempDir(), t.TempDir()
+	os.WriteFile(filepath.Join(one, "lab.md"), []byte(labMD), 0o644)
+	if code := run([]string{"build", "-o", out1, one}, &stdout, &stderr); code != 0 {
+		t.Fatal(stderr.String())
+	}
+	if b, _ := os.ReadFile(filepath.Join(out1, "lab.html")); strings.Contains(string(b), `class="si-doc-pager"`) {
+		t.Error("a single lab must not get a pager")
+	}
+}
+
 func TestCheckLab(t *testing.T) {
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, "lab.md"), []byte(labMD+"\n![x](missing.png)\n"), 0o644)

@@ -469,6 +469,14 @@ func TestLabEmptyTableHeader(t *testing.T) {
 	}
 }
 
+func TestLabBylineItems(t *testing.T) {
+	dir := writeFiles(t, map[string]string{"l.md": "---\ntype: lab\nauthor: Ann · Harbor\ndate: Course · day 1\n---\n# L\n"})
+	_, page := renderLab(t, filepath.Join(dir, "l.md"), Options{})
+	if !strings.Contains(page, `<p class="si-doc-meta"><span>Ann</span><span>Harbor</span><span>Course</span><span>day 1</span></p>`) {
+		t.Errorf("byline: want one span per · item:\n%s", page)
+	}
+}
+
 func TestIndexCardKind(t *testing.T) {
 	page := string(Index("Courses", []IndexEntry{{Href: "d.html", Title: "D", PDF: "pdfs/d.pdf"}, {Href: "l.html", Title: "L", Lab: true}}, Options{}))
 	for _, want := range []string{`<a class="si-card" data-kind="deck" href="d.html">`, `<a class="si-card" data-kind="lab" href="l.html">`} {

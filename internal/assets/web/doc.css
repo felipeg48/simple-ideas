@@ -11,24 +11,35 @@ html{font-size:clamp(100%,.85rem + .3vw,150%);-webkit-text-size-adjust:100%;scro
 .si-doc-layout{display:grid;grid-template-columns:minmax(11rem,15rem) minmax(0,1fr);gap:clamp(2rem,5vw,4.5rem);align-items:start}
 .si-doc-layout:not(:has(.si-doc-toc)){grid-template-columns:minmax(0,1fr)}
 .si-doc-toc{position:sticky;top:1.5rem;max-height:calc(100dvh - 3rem);overflow:auto;overscroll-behavior:contain}
-.si-doc-body{min-width:0;max-width:78ch}
+/* the prose keeps a readable measure; wide tables and code may use the whole
+ * column before they scroll (registered so 78ch resolves in the body font) */
+@property --_measure{syntax:"<length>";inherits:true;initial-value:0px}
+.si-doc-body{min-width:0;--_measure:78ch}
 .si-doc-body img,.si-doc-body svg,.si-doc-body video{max-width:100%;height:auto}
 .si-table-wrap,.si-doc-body pre{overflow-x:auto;max-width:100%}
 .si-doc-body .si-image{margin:1.6em auto;display:flex;flex-direction:column;align-items:center;gap:.5em}
 .si-doc-body .si-image>img{display:block;max-height:min(70vh,36rem);object-fit:contain}
 .si-table-wrap table{width:max-content;min-width:100%}
 .si-table-wrap td{max-width:40ch}
+/* a key/value table (empty header) fits the page: its cells wrap instead */
+.si-table-wrap:has(>table>thead[hidden]) table{width:100%}
+.si-table-wrap:has(>table>thead[hidden]) td+td{overflow-wrap:anywhere}
+@media (width >= 56rem){
+  .si-doc-body>:not(.si-table-wrap,.si-codeblock){max-width:var(--_measure)}
+  .si-doc-body>:is(.si-table-wrap,.si-codeblock){width:max-content;min-width:min(100%,var(--_measure));max-width:100%}
+  .si-doc-body>.si-image{margin-inline:0}
+  .si-doc-body>.si-table-wrap:has(>table>thead[hidden]){width:auto;min-width:0;max-width:var(--_measure)}
+}
 .si-anchor{margin-left:.35em}
 .si-problems{position:fixed;top:0;left:0;right:0;z-index:30;max-height:40vh;overflow:auto;margin:0;padding:.7rem 1rem;font:.875rem/1.4 var(--si-font-mono);color:#fff;background:#b42318}
 .si-problems ul{margin:.3rem 0 0;padding-left:1.2rem}
 @media (width < 56rem){
   .si-doc-layout{grid-template-columns:minmax(0,1fr);gap:1.5rem}
   .si-doc-toc{position:static;max-height:none;overflow:visible}
-  .si-doc-body{max-width:none}
 }
 @media print{
   html{font-size:11pt}
-  .si-doc-toc,.si-doc-mode,.si-copy,.si-anchor,.si-problems{display:none!important}
+  .si-doc-toc,.si-doc-mode,.si-copy,.si-anchor,.si-problems,.si-doc-pager{display:none!important}
   .si-doc-layout{display:block;width:auto}
   .si-doc-head-in,.si-doc-foot{width:auto}
   .si-doc-body{max-width:none}
@@ -52,7 +63,11 @@ html{font-size:clamp(100%,.85rem + .3vw,150%);-webkit-text-size-adjust:100%;scro
 .si-doc-title{margin:0;font-family:var(--si-font-heading);font-weight:var(--si-heading-weight);letter-spacing:var(--si-heading-tracking);
   text-transform:var(--si-heading-case);font-size:clamp(1.9rem,1.3rem + 2.6vw,3.3rem);line-height:1.1;text-wrap:balance;max-width:24ch}
 .si-doc-meta{display:flex;flex-wrap:wrap;gap:.3rem 1.4rem;margin:1rem 0 0;font-family:var(--si-font-mono);font-size:.8rem;letter-spacing:.03em;color:var(--si-muted)}
-.si-doc-meta span+span::before{content:"";display:inline-block;width:.3em;height:.3em;margin:0 .9rem .18em -.95rem;border-radius:50%;background:var(--si-line)}
+/* every item draws its dot in the gap before it; the dot of an item that
+ * starts a line falls left of the box and is clipped, so no line starts or
+ * ends with a lone separator */
+.si-doc-meta{overflow:hidden}
+.si-doc-meta span::before{content:"";display:inline-block;width:.3em;height:.3em;margin:0 .9rem .18em -.95rem;border-radius:50%;background:var(--si-line)}
 .si-doc-mode{top:clamp(2rem,6vw,4.5rem);display:grid;place-items:center;width:2.3rem;height:2.3rem;padding:.5rem;cursor:pointer;
   color:var(--si-muted);background:var(--si-surface);border:1px solid var(--si-line);border-radius:50%}
 .si-doc-mode:hover{color:var(--si-fg);border-color:var(--si-muted)}
@@ -129,6 +144,15 @@ pre.si-mermaid{margin:1.6em 0;text-align:center;font-family:var(--si-font-mono);
 .si-callout>:last-child{margin-bottom:0}
 .si-callout-title{display:flex;align-items:center;gap:.5em;margin:0 0 .35em!important;font-weight:650;font-size:.92em;color:var(--_c)}
 .si-callout-title svg{width:1.2em;height:1.2em;flex:none}
+
+/* prev / next lab */
+.si-doc-pager{display:flex;flex-wrap:wrap;gap:1rem;margin-top:clamp(2.5rem,6vw,4rem)}
+.si-doc-pager a{flex:1 1 14rem;display:flex;flex-direction:column;gap:.2em;padding:.9em 1.1em;border:1px solid var(--si-line);border-radius:var(--si-radius);
+  background:var(--si-surface);color:var(--si-fg);text-decoration:none;line-height:1.35}
+.si-doc-pager a:hover{border-color:var(--si-accent)}
+.si-doc-pager a[rel="next"]{text-align:right;margin-left:auto}
+.si-doc-pager small{font:600 .7rem/1.4 var(--si-font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--si-accent)}
+.si-doc-pager span{font-weight:600}
 
 /* footer */
 .si-doc-foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.5rem 2rem;margin-block:clamp(3rem,8vw,6rem) 0;padding-block:1.6rem 2.4rem;

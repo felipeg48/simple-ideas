@@ -826,10 +826,21 @@ title: Trace an Order Through the Hand-offs
   `[!TIP]`). Each becomes a callout with an icon and a title. Callouts are
   recognised at the top level only (not inside lists or other quotes); any
   other blockquote stays a quote.
-- Code blocks keep the highlighter, a language label and a copy button. Code
-  and markdown tables scroll sideways inside their own box; the page never
-  does. Raw HTML tables are not wrapped. A table whose header row is all
-  empty (`| | |`, as pandoc metadata tables have) shows no header.
+- Code blocks keep the highlighter, a language label and a copy button. The
+  prose keeps a readable measure (78ch); on a wide screen a code block or a
+  markdown table that needs more room grows to the whole text column, and
+  only beyond that scrolls sideways inside its own box; the page never does.
+  Raw HTML tables are not wrapped. A table whose header row is all empty
+  (`| | |`, as pandoc metadata tables have) shows no header and is a
+  key/value table: it stays at the prose measure and its value cells wrap
+  (long words and `code` break) so it fits a phone without scrolling.
+
+  ```markdown
+  | | |
+  |---|---|
+  | **Time** | 30 minutes |
+  | **Folder** | `labs/files/lab01` |
+  ```
 - Images become figures, links to other `.md` files become `.html`, and the
   theme, `mode:`, `accent:`, `--theme` and `--css` apply as they do for a deck
   (the `d` key toggles dark mode). The print stylesheet prints the whole guide.
@@ -848,9 +859,15 @@ title: Trace an Order Through the Hand-offs
   `watermark`, `watermark-opacity`, `labs-label`, `footer-position`,
   `runbook`) have no effect in a lab; `si check` warns about each. `footer`,
   `year` and `copyright` fill the page footer; `author`, `date` and `version`
-  the byline.
-- A lab is one page: it has no prev/next navigation to other labs. Link them
-  with ordinary links (`[Next lab](lab-02.md)` becomes `lab-02.html`).
+  the byline. A ` · ` inside one of them splits it into separate byline items
+  (`date: Harbor Labs · day 1` is two), and the dots between items are drawn
+  so that a wrapped line never starts or ends with a lone separator.
+- When `si build` builds a folder with more than one lab, each lab page ends
+  with **Previous / Next** links to its neighbours in file-name order
+  (`lab-01.md`, `lab-02.md`, … — number the files to set the order); decks in
+  the same folder are skipped. A single lab, `si build file.md` and `si play`
+  show no such links. Other links are ordinary links (`[Lab 2](lab-02.md)`
+  becomes `lab-02.html`).
 - `si build` writes one HTML file per lab and lists it in `index.html` with a
   `LAB` badge and its section count instead of slides and time. A slides PDF
   (`--pdf`) is not made for labs; print the page instead.

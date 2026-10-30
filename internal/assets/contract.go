@@ -168,6 +168,7 @@ var Hooks = []Hook{
 	{`.si-toc-h2`, "lab: a table of contents entry for an h2; the current one has aria-current"},
 	{`.si-toc-h3`, "lab: a table of contents entry for an h3 (indented)"},
 	{`.si-doc-body`, "lab: the guide itself (readable measure)"},
+	{`.si-doc-pager`, "lab: previous / next lab links at the end of the guide (si build of a folder with several labs)"},
 	{`.si-doc-foot`, "lab: the footer (copyright and footer front matter)"},
 	{`.si-anchor`, "lab: the # link after an h2 or h3"},
 	{`.si-callout[data-kind]`, "lab: a callout from a GitHub alert: note, tip, important, warning, caution"},

@@ -224,6 +224,25 @@ func (s slugger) slug(t string) string {
 	return id
 }
 
+// pager links the previous and next lab of the same build (Options.Prev/Next).
+func (dr *deckRenderer) pager() string {
+	if dr.opt.Prev.Href == "" && dr.opt.Next.Href == "" {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("<nav class=\"si-doc-pager\" aria-label=\"Other labs\">")
+	for _, l := range []struct {
+		DocLink
+		rel, label string
+	}{{dr.opt.Prev, "prev", "Previous"}, {dr.opt.Next, "next", "Next"}} {
+		if l.Href != "" {
+			fmt.Fprintf(&b, `<a rel="%s" href="%s"><small>%s</small><span>%s</span></a>`, l.rel, html.EscapeString(l.Href), l.label, html.EscapeString(l.Title))
+		}
+	}
+	b.WriteString("</nav>\n")
+	return b.String()
+}
+
 const modeIconSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor"/></svg>`
 
 func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Problem) []byte {
@@ -236,8 +255,10 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	fmt.Fprintf(&b, "<h1 class=\"si-doc-title\">%s</h1>\n", dr.inline(d.Title()))
 	var meta []string
 	for _, v := range []string{m.Author, m.Date, m.Version} {
-		if v = strings.TrimSpace(v); v != "" {
-			meta = append(meta, "<span>"+html.EscapeString(v)+"</span>")
+		for _, part := range strings.Split(v, "·") { // "A · B" is two items: CSS draws the separators
+			if part = strings.TrimSpace(part); part != "" {
+				meta = append(meta, "<span>"+html.EscapeString(part)+"</span>")
+			}
 		}
 	}
 	if len(meta) > 0 {
@@ -252,7 +273,7 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 		}
 		b.WriteString("</ol></details></nav>\n")
 	}
-	b.WriteString("<main class=\"si-doc-body\">\n" + body + "</main>\n</div>\n")
+	b.WriteString("<main class=\"si-doc-body\">\n" + body + dr.pager() + "</main>\n</div>\n")
 	var foot []string
 	if c := copyrightLine(m.Year, m.Copyright); c != "" {
 		foot = append(foot, "<span>"+html.EscapeString(c)+"</span>")

@@ -290,11 +290,22 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	var entries []render.IndexEntry
 	indexTheme := o.theme // the index page follows --theme; else the first deck's theme
-	for _, f := range files {
+	decks := make([]*deck.Deck, len(files))
+	var labs []int // labs in name order, linked prev/next
+	for i, f := range files {
 		d, err := deck.Parse(f)
 		if err != nil {
 			fmt.Fprintf(stderr, "si: %v\n", err)
 			failed = true
+			continue
+		}
+		decks[i] = d
+		if d.IsLab() {
+			labs = append(labs, i)
+		}
+	}
+	for i, d := range decks {
+		if d == nil {
 			continue
 		}
 		if indexTheme == "" && d.Meta.Theme != "" {
@@ -304,7 +315,18 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 		if o.noInline {
 			mode = render.MediaCopy
 		}
-		res := render.Deck(d, render.Options{UserCSS: css, Media: mode, Theme: o.theme, Config: cfg})
+		ro := render.Options{UserCSS: css, Media: mode, Theme: o.theme, Config: cfg}
+		for k, j := range labs {
+			if j == i {
+				if k > 0 {
+					ro.Prev = render.DocLink{Href: decks[labs[k-1]].Name + ".html", Title: decks[labs[k-1]].Title()}
+				}
+				if k < len(labs)-1 {
+					ro.Next = render.DocLink{Href: decks[labs[k+1]].Name + ".html", Title: decks[labs[k+1]].Title()}
+				}
+			}
+		}
+		res := render.Deck(d, ro)
 		for _, p := range res.Problems {
 			fmt.Fprintf(stderr, "  error: %s\n", p)
 			failed = true
