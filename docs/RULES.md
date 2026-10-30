@@ -578,8 +578,16 @@ references shared assets as `../images/...`.
   reload in `si play` stays on your slide.
 - A progress bar and a slide counter (with the step) sit at the bottom; the
   controls appear when the mouse moves.
-- When a slide is too tall for the window the fluid type shrinks a little,
-  then the slide scrolls; nothing is cut off.
+- When a slide is too tall for the window its canvases, diagrams and images
+  shrink first (down to about 60 %) so a figure plus bullets clears the
+  footer, then the fluid type shrinks a little, then the slide scrolls;
+  nothing is cut off. The figure cap itself is the `--si-figure-max` token
+  (default `60cqb`; the `center` layout adds `6cqb`, columns `14cqb`), so a
+  theme with a taller footer band can lower it for every slide:
+
+  ```css
+  :root { --si-figure-max: 52cqb; }
+  ```
 - **Print** (browser print, or print to PDF): one slide per page at the deck
   `aspect`, every step revealed, canvases in their final state. `si build --pdf`
   writes a `<name>.pdf` next to each deck using headless Chrome (needs Chrome or

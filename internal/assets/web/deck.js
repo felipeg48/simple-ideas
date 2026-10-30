@@ -89,13 +89,22 @@
     return f.length === 1 ? f[0].getAttribute('data-src') : '';
   }
 
-  /* ---------- fit: shrink the fluid type a little when a slide overflows, then scroll ---------- */
+  /* ---------- fit: when a slide overflows, shrink its figures (canvas, image,
+   * diagram) to the room left, then the fluid type a little, then scroll ---------- */
   function fit(s) {
     var inner = s && s.querySelector('.si-inner');
     if (!inner || deck.classList.contains('si-overview')) return;
-    var f = 1;
+    var f = 1, g = 1;
     inner.style.setProperty('--_fit', '1');
-    for (var t = 0; t < 8 && inner.scrollHeight > inner.clientHeight + 1 && f > 0.62; t++) {
+    inner.style.setProperty('--_figfit', '1');
+    var over = function () { return inner.scrollHeight > inner.clientHeight + 1; };
+    if (inner.querySelector('.si-figure>svg,.si-image>img,.si-mermaid svg')) {
+      for (var u = 0; u < 8 && over() && g > 0.62; u++) {
+        g -= 0.05;
+        inner.style.setProperty('--_figfit', g.toFixed(2));
+      }
+    }
+    for (var t = 0; t < 8 && over() && f > 0.62; t++) {
       f -= 0.05;
       inner.style.setProperty('--_fit', f.toFixed(2));
     }
@@ -236,7 +245,7 @@
       slides[ovSel].scrollIntoView({ block: 'center', inline: 'center' });
     } else {
       clearOverview();
-      slides.forEach(function (s) { var inner = s.querySelector('.si-inner'); if (inner) inner.style.removeProperty('--_fit'); });
+      slides.forEach(function (s) { var inner = s.querySelector('.si-inner'); if (inner) { inner.style.removeProperty('--_fit'); inner.style.removeProperty('--_figfit'); } });
       go(cur, step, true);
     }
   }
@@ -472,7 +481,7 @@
     c.removeAttribute('aria-hidden');
     var nt = c.querySelector('.si-notes'); if (nt) nt.parentNode.removeChild(nt);
     var pt = c.querySelector('.si-points'); if (pt) pt.parentNode.removeChild(pt);
-    var inner = c.querySelector('.si-inner'); if (inner) inner.style.removeProperty('--_fit');
+    var inner = c.querySelector('.si-inner'); if (inner) { inner.style.removeProperty('--_fit'); inner.style.removeProperty('--_figfit'); }
     if (k !== undefined) apply(c, k);
     return c.outerHTML;
   }

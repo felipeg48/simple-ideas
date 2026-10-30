@@ -70,13 +70,13 @@ img,svg,video{max-width:100%}
 
 /* images: a paragraph holding one image becomes a figure; the image directive sizes and places it */
 .si-image{margin:.5em auto;width:var(--si-img-width,fit-content);max-width:100%;display:flex;flex-direction:column;align-items:center;gap:.35em}
-.si-image>img{display:block;width:auto;max-width:100%;height:auto;max-height:58cqb}
+.si-image>img{display:block;width:auto;max-width:100%;height:auto;max-height:calc((var(--si-figure-max,60cqb) - 2cqb) * var(--_figfit,1))}
 .si-image[style*="--si-img-width"]>img{width:100%;max-height:none}
 .si-image[data-ratio]>img{width:100%;max-height:none;aspect-ratio:var(--si-img-ratio);object-fit:var(--si-img-fit,cover);object-position:var(--si-img-position,center)}
 .si-image[data-align="left"]{float:left;width:var(--si-img-width,42%);margin:.2em var(--si-gap) .6em 0}
 .si-image[data-align="right"]{float:right;width:var(--si-img-width,42%);margin:.2em 0 .6em var(--si-gap)}
 .si-image[data-align="center"]{margin-inline:auto}
-.si-body.si-cols .si-image>img{max-height:74cqb}
+.si-body.si-cols .si-image>img{max-height:calc((var(--si-figure-max,60cqb) + 14cqb) * var(--_figfit,1))}
 /* image layout: the first image fills the slide, the words sit on it */
 .si-slide[data-layout="image"] .si-image{position:absolute;inset:0;z-index:0;margin:0;width:auto;max-width:none;display:block;float:none}
 .si-slide[data-layout="image"] .si-image>img{width:100%;height:100%;max-height:none;object-fit:cover;border-radius:0;box-shadow:none}
@@ -106,10 +106,13 @@ img,svg,video{max-width:100%}
 
 /* SVG canvases scale with their viewBox */
 .si-figure{margin:.5em 0;display:flex;justify-content:center;min-height:0;min-width:0}
-.si-figure>svg{display:block;width:100%;height:auto;max-height:60cqb}
-.si-slide[data-layout="center"] .si-figure>svg{max-height:66cqb}
-.si-body.si-cols .si-figure>svg{max-height:74cqb}
-.si-mermaid svg{width:100%;max-width:100%!important;height:auto;max-height:60cqb}
+/* figure caps follow --si-figure-max (the theme's room for a canvas under a
+ * heading); the runtime lowers --_figfit before it shrinks the type when a
+ * slide overflows, so a canvas plus bullets never runs into the footer */
+.si-figure>svg{display:block;width:100%;height:auto;max-height:calc(var(--si-figure-max,60cqb) * var(--_figfit,1))}
+.si-slide[data-layout="center"] .si-figure>svg{max-height:calc((var(--si-figure-max,60cqb) + 6cqb) * var(--_figfit,1))}
+.si-body.si-cols .si-figure>svg{max-height:calc((var(--si-figure-max,60cqb) + 14cqb) * var(--_figfit,1))}
+.si-mermaid svg{width:100%;max-width:100%!important;height:auto;max-height:calc(var(--si-figure-max,60cqb) * var(--_figfit,1))}
 
 /* build steps */
 .si-step{opacity:0;transform:translateY(.35em);transition:opacity var(--si-step-duration) ease,transform var(--si-step-duration) ease}
