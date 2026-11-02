@@ -24,6 +24,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	docs "github.com/felipeg48/simple-ideas/docs"
@@ -70,6 +71,8 @@ Usage:
         replace the running si; needs write access to si's install directory
   si rules
         print the markdown rules (RULES.md)
+  si theme list
+        list the built-in themes (name, display name, aliases) for --theme / theme:
   si --export css-rules|rules|conf|example|themes [--output <path>]
         css-rules: starter stylesheet with every --si-* token and .si-* hook
         rules:     RULES.md
@@ -80,7 +83,7 @@ Usage:
 Flags (GNU style, before or after the path):
   -o, --output <path>   output directory (build) or file (export)
       --css <path>      user stylesheet file or directory; repeatable; loads after the theme
-      --theme <name>    built-in theme: studio, paper, mono, crdb (aliases cockroachdb, cockroachlabs), acemq, or a path to a .css theme file; overrides theme: front matter
+      --theme <name>    built-in theme (si theme list: studio, paper, mono, crdb, acemq, acemq-pro; "AceMQ Pro" works too), a .css theme file or an https:// URL; overrides theme: front matter
       --conf <path>     read si.conf (key remaps, feature toggles, default theme); default: si.conf next to the deck
       --title <text>    build, play: title for the index page — its <title> and <h1> (default: the source dir name)
       --site <text>     alias for --title (reads as "the site/landing page title")
@@ -170,6 +173,16 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, "si", version)
 		return exitOK
 	}
+	if o.theme != "" {
+		lower := strings.ToLower(o.theme)
+		if !strings.HasSuffix(lower, ".css") && !strings.HasPrefix(lower, "http://") && !strings.HasPrefix(lower, "https://") {
+			name := assets.CanonicalTheme(o.theme)
+			if _, ok := assets.Themes[name]; !ok {
+				return usageErr(stderr, fmt.Sprintf("unknown theme %q (see: si theme list)", o.theme))
+			}
+			o.theme = name
+		}
+	}
 	if o.web && !o.help {
 		if len(o.args) > 1 {
 			return usageErr(stderr, "--web takes at most one [dir]")
@@ -200,6 +213,12 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		return exitOK
 	case "rules":
 		fmt.Fprint(stdout, docs.Rules)
+		return exitOK
+	case "theme", "themes":
+		if len(rest) > 1 || (len(rest) == 1 && rest[0] != "list") {
+			return usageErr(stderr, "theme takes one subcommand: list")
+		}
+		listThemes(stdout)
 		return exitOK
 	case "play":
 		if len(rest) != 1 {
@@ -692,6 +711,24 @@ func writeExamples(dir, mainName string) error {
 	})
 }
 
+// listThemes prints the built-in themes: the name to pass to --theme or
+// theme:, its display name (also accepted, quoted), aliases and a summary.
+func listThemes(w io.Writer) {
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(tw, "NAME\tLABEL\tALIASES\tABOUT")
+	for _, n := range assets.ThemeNames() {
+		th := assets.Themes[n]
+		al := strings.Join(assets.ThemeAliases(n), ", ")
+		if al == "" {
+			al = "-"
+		}
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", n, th.Label, al, th.About)
+	}
+	tw.Flush()
+	fmt.Fprintln(w, "\nUse: si build --theme acemq-pro decks/   (or --theme \"AceMQ Pro\", or theme: in front matter)")
+	fmt.Fprintln(w, "A path to a .css file or an https:// URL also works as a theme.")
+}
+
 // writeThemeGallery writes one sample deck per built-in theme into dir, so that
 // `si play dir` (or `si build dir`) shows a gallery: the same content rendered in
 // every theme, linked from index.html. dir must not exist or be empty.
@@ -703,7 +740,10 @@ func writeThemeGallery(dir string) error {
 		return err
 	}
 	for _, name := range assets.ThemeNames() {
-		md := strings.ReplaceAll(themeSample, "THEME", name)
+		md := assets.ThemeSample(name)
+		if md == "" {
+			md = strings.ReplaceAll(themeSample, "THEME", name)
+		}
 		if err := os.WriteFile(filepath.Join(dir, name+".md"), []byte(md), 0o644); err != nil {
 			return err
 		}

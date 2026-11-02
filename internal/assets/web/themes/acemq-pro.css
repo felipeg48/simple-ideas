@@ -1,0 +1,204 @@
+/* acemq-pro: AceMQ Pro, the full AceMQ deck-system catalogue.
+ *
+ * ThemeCSS emits web/themes/acemq.css first (palette, background rhythm,
+ * type, footer, cards, tags, steps, timeline, tables, cover, motion, fonts),
+ * then this file, both inside @layer si.theme and only for theme: acemq-pro.
+ * This file adds the layouts of the AceMQ deck style guide as raw-HTML
+ * components. Everything is in em / cqi and reflows: grids use auto-fit and
+ * collapse to one column on narrow or portrait slides.
+ *
+ * It uses only the --ace-* palette that acemq.css defines, so on-ink slides
+ * and dark mode follow automatically.
+ */
+
+/* the verdict bar is ink in light mode, a raised surface in dark */
+:root { --ace-verdict: #121316; }
+:root[data-si-mode="dark"], .on-ink { --ace-verdict: #2a2d34; }
+@media (prefers-color-scheme: dark) { :root:not([data-si-mode]) { --ace-verdict: #2a2d34; } }
+
+/* ---------- small parts ---------- */
+
+/* icon chip: a rounded square holding an inline <svg> or a short glyph */
+.icon-chip { display: inline-grid; place-items: center; width: 2.3em; height: 2.3em; border-radius: .7em; flex: none;
+  background: var(--ace-orange-fill); color: var(--ace-orange-text); font: 800 1em/1 var(--si-font-heading); }
+.icon-chip svg { width: 55%; height: 55%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.icon-chip--sm { width: 1.8em; height: 1.8em; border-radius: .55em; font-size: .85em; }
+.icon-chip--teal { background: var(--ace-teal-fill); color: var(--ace-teal-text); }
+.icon-chip--ink { background: #121316; color: #ffffff; }
+.on-ink .icon-chip--ink { background: #ffffff; color: #121316; }
+
+/* buttons: orange pill CTA and its ghost */
+.btn { display: inline-flex; align-items: center; gap: .5em; padding: .65em 1.3em; border-radius: 99em; font: 700 .82em/1 var(--si-font-body);
+  background: var(--ace-orange); color: #ffffff; border: 2px solid var(--ace-orange); text-decoration: none; box-shadow: 0 .4em 1.2em rgb(255 102 0 / .25); }
+.btn--ghost { background: transparent; color: var(--ace-orange-text); box-shadow: none; }
+html .si-slide a.btn { color: #ffffff; text-decoration: none; }
+html .si-slide a.btn--ghost { color: var(--ace-orange-text); }
+
+/* a top accent bar, shared by the pro cards below */
+:is(.hc, .ic, .opt, .fc, .bk, .pc2)::after { content: ""; position: absolute; top: -1px; left: 1.1em; right: 1.1em; height: .2em;
+  border-radius: 0 0 .2em .2em; background: var(--ace-stroke-strong); }
+:is(.hc, .ic, .opt, .fc, .bk, .pc2) { position: relative; background: var(--ace-card-bg); border: 1px solid var(--ace-stroke);
+  border-radius: 1em; box-shadow: var(--ace-sh-2); padding: 1em 1.05em .95em; line-height: 1.32; }
+:is(.hc, .opt, .fc, .bk, .pc2).hi { border: 2px solid var(--ace-orange); box-shadow: var(--ace-sh-4), 0 0 0 .3em rgb(255 102 0 / .08); }
+:is(.hc, .opt, .fc, .bk, .pc2):is(.hi, .orange)::after { background: var(--ace-orange); }
+:is(.hc, .opt, .fc, .bk, .pc2):is(.teal, .ok)::after { background: var(--ace-teal); }
+:is(.hc, .opt, .fc, .bk, .pc2, .ic) h4 { margin: .15em 0 .3em; font: 800 1.08em/1.12 var(--si-font-heading); letter-spacing: -.02em; color: var(--ace-text); }
+html .si-body :is(.hc, .ic, .opt, .fc, .bk, .pc2) p { margin: 0; font-size: .84em; color: var(--ace-text-2); }
+:is(.hc, .ic, .opt, .fc, .pc2) .tag { margin-bottom: .45em; }
+:is(.opt, .pc2).hi .tag { background: var(--ace-orange-fill); color: var(--ace-orange-text); border-color: transparent; }
+
+/* ---------- what we heard: 3×2 fact grid ---------- */
+.heard { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14em), 1fr)); gap: .8em; width: 100%; }
+.hc .k { display: block; font: 600 .66em/1.2 var(--si-font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--ace-orange-text); margin-bottom: .35em; }
+.hc .big { display: block; font: 800 2em/1 var(--si-font-heading); letter-spacing: -.035em; font-variant-numeric: tabular-nums; color: var(--ace-text); margin: .05em 0 .2em; }
+.hc .big em { font-style: normal; color: var(--ace-orange); }
+
+/* ---------- incidents with a shared root cause ---------- */
+.inc { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11em), 1fr)); gap: .75em; width: 100%; }
+.ic::after { background: var(--ace-danger); }
+.ic .when { display: inline-block; font: 600 .62em/1 var(--si-font-body); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ace-danger-text); background: var(--ace-danger-fill); padding: .45em .8em; border-radius: 99em; margin-bottom: .45em; }
+.verdict { display: block; width: 100%; max-width: none; margin-top: .8em; padding: .8em 1.1em; border-radius: 1em;
+  background: var(--ace-verdict); border: 1px solid var(--ace-stroke); font: 700 .95em/1.3 var(--si-font-heading); letter-spacing: -.01em; box-shadow: var(--ace-sh-4); }
+html .si-body .verdict { color: #f4f5f6; max-width: none; }
+.verdict::before { content: ""; display: inline-block; width: .6em; height: .6em; margin-right: .8em; vertical-align: .05em; border-radius: 50%; background: var(--ace-orange); box-shadow: 0 0 0 .3em rgb(255 102 0 / .25); }
+html .si-body .verdict :is(b, strong) { color: #ff8a3d; }
+
+/* ---------- argument + diagram card ---------- */
+.split2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 1.4em; align-items: center; width: 100%; }
+.blist { list-style: none; margin: 0; padding: 0; display: grid; gap: .55em; }
+html .si-body .blist li { position: relative; margin: 0; padding-left: 1.5em; line-height: 1.38; }
+.blist li::before { content: ""; position: absolute; left: 0; top: .42em; width: .62em; height: .62em; border-radius: .2em; background: var(--ace-orange); transform: rotate(45deg) scale(.8); }
+.blist li.ok::before { background: var(--ace-teal); }
+.blist li.crit::before { background: var(--ace-danger); }
+.split2 .zones { grid-template-columns: repeat(auto-fit, minmax(min(100%, 8em), 1fr)); }
+.topo { position: relative; background: var(--ace-card-bg); border: 1px solid var(--ace-stroke); border-radius: 1.1em; box-shadow: var(--ace-sh-2); padding: 1.1em; min-width: 0; }
+.topo svg { display: block; width: 100%; height: auto; }
+.topo .cap { display: block; margin-top: .6em; font-size: .7em; color: var(--ace-text-3); }
+
+/* ---------- before / after zones built from grid cells ---------- */
+.zones { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12em), 1fr)); gap: .8em; width: 100%; }
+.zg { background: var(--ace-bg-alt); border: 1px dashed var(--ace-stroke-strong); border-radius: 1em; padding: .7em; }
+.si-slide:nth-of-type(even) .zg { background: var(--ace-card-bg); }
+.zg > .zl { display: block; font: 600 .62em/1.2 var(--si-font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--ace-text-3); margin-bottom: .55em; }
+.zg > .zc { display: flex; align-items: center; gap: .5em; margin-top: .4em; padding: .55em .7em; border-radius: .7em; background: var(--ace-card-bg);
+  border: 1px solid var(--ace-stroke); box-shadow: var(--ace-sh-2); font: 700 .78em/1.2 var(--si-font-body); color: var(--ace-text); }
+.si-slide:nth-of-type(even) .zg > .zc { background: var(--ace-bg-alt); }
+.zc::before { content: ""; flex: none; width: .6em; height: .6em; border-radius: 50%; background: var(--ace-stroke-strong); }
+.zc.ok::before { background: var(--ace-teal); }
+.zc.us::before, .zc.hot::before { background: var(--ace-orange); }
+.zc.down { color: var(--ace-danger-text); background: var(--ace-danger-fill) !important; border-color: transparent; text-decoration: line-through; text-decoration-thickness: .08em; }
+.zc.down::before { background: var(--ace-danger); }
+.zc.hot { border-color: var(--ace-orange); }
+
+/* ---------- options A–D, one recommended ---------- */
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11em), 1fr)); gap: .8em; width: 100%; align-items: stretch; }
+.opt .ol { display: inline-grid; place-items: center; width: 1.9em; height: 1.9em; border-radius: .6em; margin-bottom: .55em;
+  font: 800 .95em/1 var(--si-font-heading); background: var(--ace-bg-alt); color: var(--ace-text-2); border: 1px solid var(--ace-stroke); }
+.opt.hi .ol { background: var(--ace-orange); color: #ffffff; border-color: var(--ace-orange); }
+.opt .ol + .tag { margin-left: .4em; vertical-align: .55em; }
+.opt dl, .pc2 dl { margin: .7em 0 0; display: grid; gap: .3em; font-size: .74em; }
+.opt dl > div, .pc2 dl > div { display: flex; justify-content: space-between; gap: .8em; padding-top: .35em; border-top: 1px solid var(--ace-stroke); }
+.opt dt, .pc2 dt { color: var(--ace-text-3); }
+.opt dd, .pc2 dd { margin: 0; font-weight: 600; color: var(--ace-text); text-align: right; }
+
+/* ---------- comparison table written as HTML: .tbl, .us cells ---------- */
+html .si-body table.tbl :is(th, td).us { background: var(--ace-orange-tint); }
+html .si-body table.tbl th.us { color: var(--ace-orange-text); box-shadow: inset 0 .2em 0 var(--ace-orange); }
+
+/* ---------- fact rows: big number left, why right ---------- */
+.facts { display: grid; gap: .55em; width: 100%; }
+.fr { display: grid; grid-template-columns: minmax(5.5em, .32fr) 1fr; gap: 1.1em; align-items: center; padding: .6em 0; border-top: 1px solid var(--ace-stroke); }
+.fr:first-child { border-top: 0; }
+.fr .fn { font: 800 2.2em/1 var(--si-font-heading); letter-spacing: -.04em; font-variant-numeric: tabular-nums; color: var(--ace-text); }
+.fr .fn em { font-style: normal; color: var(--ace-orange); font-size: .55em; letter-spacing: -.02em; margin-left: .08em; }
+.fr h4 { margin: 0 0 .15em; font: 800 1em/1.15 var(--si-font-heading); letter-spacing: -.02em; }
+html .si-body .fr p { margin: 0; font-size: .82em; color: var(--ace-text-2); }
+
+/* ---------- 3×2 feature grid ---------- */
+.feat { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13em), 1fr)); gap: .8em; width: 100%; }
+.fc .icon-chip { margin-bottom: .55em; }
+
+/* ---------- benchmark bars + KPI cards ----------
+   each .brow sets --w (0–100%); .brow.us is the AceMQ row (orange) */
+.bench { display: grid; gap: .55em; width: 100%; }
+.brow { display: grid; grid-template-columns: minmax(6em, .28fr) 1fr auto; gap: .8em; align-items: center; font-size: .82em; }
+.brow .bl { font-weight: 600; color: var(--ace-text); }
+.brow .bar { height: 1.05em; border-radius: 99em; background: var(--ace-bg-alt); overflow: hidden; }
+.si-slide:nth-of-type(even) .brow .bar { background: var(--ace-card-bg); }
+.brow .bar::before { content: ""; display: block; height: 100%; width: var(--w, 50%); border-radius: inherit; background: var(--ace-stroke-strong); transform-origin: left; }
+.brow.us .bar::before { background: linear-gradient(90deg, #ff8a3d, var(--ace-orange)); }
+.brow .bv { font: 800 1.05em/1 var(--si-font-heading); font-variant-numeric: tabular-nums; color: var(--ace-text-2); }
+.brow.us .bv { color: var(--ace-orange-text); }
+.bks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9em), 1fr)); gap: .7em; width: 100%; margin-top: .9em; }
+.bk .big { display: block; font: 800 1.9em/1 var(--si-font-heading); letter-spacing: -.035em; font-variant-numeric: tabular-nums; color: var(--ace-text); margin-bottom: .2em; }
+.bk .big em { font-style: normal; color: var(--ace-orange); }
+
+/* ---------- process flow: nodes on a line that draws in ---------- */
+.flowline { position: relative; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 7.5em), 1fr)); gap: .8em; width: 100%; padding-top: .3em; }
+.flowline::before { content: ""; position: absolute; top: 1.05em; left: .6em; right: .6em; height: .14em; border-radius: .1em;
+  background: linear-gradient(90deg, var(--ace-orange), var(--ace-teal)); transform-origin: left; }
+.flowline .fs { position: relative; }
+.flowline .fs::before { content: ""; position: relative; z-index: 1; display: block; width: 1.05em; height: 1.05em; margin: .25em 0 0 .1em; border-radius: 50%;
+  background: var(--ace-card-bg); border: .22em solid var(--ace-orange); box-sizing: border-box; }
+.flowline .fs:last-child::before { border-color: var(--ace-teal); }
+.flowline .fs.hot::before { animation: ace-pulse 1.6s ease-out 3 1s; }
+.flowline h4 { margin: .6em 0 .2em; font: 800 .95em/1.15 var(--si-font-heading); letter-spacing: -.02em; }
+html .si-body .flowline p { margin: 0; font-size: .74em; color: var(--ace-text-2); }
+.mnotes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14em), 1fr)); gap: .7em; width: 100%; margin-top: 1em; }
+.mnotes > * { margin: 0; padding: .6em .85em; border-left: .2em solid var(--ace-teal); background: var(--ace-card-bg); border-radius: 0 .7em .7em 0; font-size: .74em; color: var(--ace-text-2); box-shadow: var(--ace-sh-2); }
+.mnotes > .warn { border-left-color: var(--ace-danger); }
+@container (width < 46rem) or (aspect-ratio < 4/5) { .flowline::before { display: none; } }
+
+/* ---------- trial vs PoC plan cards + a terminal snippet ---------- */
+.poc { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17em), 1fr)); gap: .9em; width: 100%; align-items: stretch; }
+.term2 { margin-top: .8em; padding: .8em 1em; border-radius: .8em; background: #121316; color: #e9ebee; border: 1px solid #2a2d33;
+  font: 500 .68em/1.5 var(--si-font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.term2 .c { color: #8f959e; }
+.term2 .k { color: #ff8a3d; }
+.term2 .ok { color: #8fd5cc; }
+
+/* ---------- cover floaters: three tilted tiles that drift ---------- */
+.floaters { position: absolute; z-index: 0; top: 12%; right: var(--si-pad-x); width: 30cqi; height: 70%; pointer-events: none; }
+.floaters .fl { position: absolute; display: grid; place-items: center; width: 11cqi; aspect-ratio: 1; border-radius: 1.4cqi;
+  background: var(--ace-card-bg); border: 1px solid var(--ace-stroke); box-shadow: var(--ace-sh-4); rotate: var(--r, -6deg);
+  font: 800 2.2cqi/1 var(--si-font-heading); color: var(--ace-text); }
+.floaters .fl img, .floaters .fl svg { width: 58%; height: auto; max-height: 58%; object-fit: contain; }
+.floaters .fl:nth-child(1) { top: 0; right: 4cqi; --r: 7deg; --bd: 0s; }
+.floaters .fl:nth-child(2) { top: 32%; right: 17cqi; --r: -8deg; --bd: -2.3s; }
+.floaters .fl:nth-child(3) { top: 62%; right: 2cqi; --r: 4deg; --bd: -4.6s; }
+.si-current .floaters .fl { animation: ace-pop .9s var(--ace-ease) both, ace-float 7s ease-in-out infinite; animation-delay: .4s, var(--bd, 0s); }
+@keyframes ace-float { 50% { translate: 0 -1.2cqb; } }
+@container (width < 46rem) or (aspect-ratio < 1/1) { .floaters { display: none; } }
+html :is(.si-title, .si-closing) .si-inner > :not(.floaters) { position: relative; z-index: 1; }
+html :is(.si-title, .si-closing):has(.floaters) .si-inner > :not(.floaters) { max-width: 58cqi; }
+@container (width < 46rem) or (aspect-ratio < 1/1) { html :is(.si-title, .si-closing):has(.floaters) .si-inner > :not(.floaters) { max-width: none; } }
+
+/* ---------- motion utilities (raw HTML; style="--i:N" staggers) ----------
+   .r rise, .f fade, .pop pop (the guide's `.p`; here .p stays the
+   "partial" verdict mark), .pulse orange ring ×3, .grow-x draws from the left */
+@keyframes ace-fade { from { opacity: 0; } }
+@keyframes ace-pulse { 0% { box-shadow: 0 0 0 0 rgb(255 102 0 / .5); } 100% { box-shadow: 0 0 0 .9em rgb(255 102 0 / 0); } }
+.si-current .r { animation: ace-rise 1s var(--ace-ease) both; animation-delay: calc(var(--i, 0) * 110ms + 120ms); }
+.si-current .f { animation: ace-fade 1.2s ease both; animation-delay: calc(var(--i, 0) * 110ms + 120ms); }
+.si-current .pop { animation: ace-pop .8s var(--ace-ease) both; animation-delay: calc(var(--i, 0) * 60ms + 300ms); }
+.si-current .pulse { animation: ace-pulse 1.6s ease-out 3 1s; }
+.si-current .grow-x, .si-current .flowline::before, .si-current .brow .bar::before { animation: ace-grow-x 1.2s var(--ace-ease) .5s both; }
+.si-current :is(.heard > .hc, .inc > .ic, .opts > .opt, .feat > .fc, .bks > .bk, .poc > .pc2, .flowline > .fs, .zones > .zg) {
+  animation: ace-pop .8s var(--ace-ease) both; animation-delay: calc(var(--ace-p, 0) * 60ms + 300ms); }
+:is(.heard, .inc, .opts, .feat, .bks, .poc, .flowline, .zones) > :nth-child(2) { --ace-p: 1; }
+:is(.heard, .inc, .opts, .feat, .bks, .poc, .flowline, .zones) > :nth-child(3) { --ace-p: 2; }
+:is(.heard, .inc, .opts, .feat, .bks, .poc, .flowline, .zones) > :nth-child(4) { --ace-p: 3; }
+:is(.heard, .inc, .opts, .feat, .bks, .poc, .flowline, .zones) > :nth-child(5) { --ace-p: 4; }
+:is(.heard, .inc, .opts, .feat, .bks, .poc, .flowline, .zones) > :nth-child(n+6) { --ace-p: 5; }
+
+/* ---------- narrow and portrait slides: stack ---------- */
+@container (width < 46rem) or (aspect-ratio < 4/5) {
+  .split2 { grid-template-columns: minmax(0, 1fr); }
+  .heard, .feat { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55em; }
+  :is(.hc, .fc) { padding: .7em .75em; }
+  .fr { grid-template-columns: minmax(0, 1fr); gap: .2em; }
+  .brow { grid-template-columns: minmax(0, 1fr) auto; }
+  .brow .bar { grid-column: 1 / -1; grid-row: 2; }
+}
+@media (prefers-reduced-motion: reduce) { .floaters .fl { animation: none !important; } }

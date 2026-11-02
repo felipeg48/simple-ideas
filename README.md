@@ -141,7 +141,8 @@ NOTE: the token reaches payments and turns red.
 | `si manual [--slides] [--pdf] [--out dir]` | render the built-in user manual as self-contained HTML (and PDF with `--pdf`) |
 | `si selfupdate` | download the latest release for your OS/arch (checksum-verified) and replace the running `si` |
 | `si rules` | print RULES.md |
-| `si --theme <name\|file.css\|url>` | override the theme: a built-in (`studio`, `paper`, `mono`, `crdb`), a CSS file, or an `https://` URL |
+| `si --theme <name\|file.css\|url>` | override the theme: a built-in (`si theme list`: `studio`, `paper`, `mono`, `crdb`, `acemq`, `acemq-pro`; `"AceMQ Pro"` works too), a CSS file, or an `https://` URL |
+| `si theme list` | list the built-in themes: name, display name, aliases, summary |
 | `si --export css-rules\|rules\|conf\|example\|themes [--output path]` | starter stylesheet · RULES.md · starter `si.conf` · the showcase decks · a sample deck per theme (a gallery) |
 
 Flags are GNU style and go before or after the path:

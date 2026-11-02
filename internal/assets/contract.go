@@ -81,7 +81,7 @@ type Hook struct {
 // Hooks lists every stable `.si-*` class and attribute hook. A test fails if
 // the built-in CSS uses a `.si-*` class that is not listed here.
 var Hooks = []Hook{
-	{`:root[data-si-theme="studio"]`, "the deck theme from front matter (studio, paper, mono, crdb, acemq)"},
+	{`:root[data-si-theme="studio"]`, "the deck theme from front matter (studio, paper, mono, crdb, acemq, acemq-pro)"},
 	{`:root[data-si-mode="dark"]`, "explicit dark mode (d toggles); without the attribute prefers-color-scheme decides"},
 	{`.si-deck`, "the full-viewport container of all slides"},
 	{`.si-deck.si-overview`, "overview grid (o): slides laid out in one column per topic"},
@@ -201,10 +201,16 @@ var Hooks = []Hook{
 }
 
 // Theme holds the token values of one theme. Base values apply in both modes.
+// Label and About describe it for `si theme list`; Extras names the
+// web/themes/<extra>.css stylesheets emitted after the tokens, in order (nil
+// means the theme's own web/themes/<name>.css, if any).
 type Theme struct {
-	Base  map[string]string
-	Light map[string]string
-	Dark  map[string]string
+	Label  string
+	About  string
+	Extras []string
+	Base   map[string]string
+	Light  map[string]string
+	Dark   map[string]string
 }
 
 const (
@@ -243,6 +249,7 @@ var layoutDefaults = map[string]string{
 // Themes are the built-in themes. studio is the default.
 var Themes = map[string]Theme{
 	"studio": {
+		Label: "Studio", About: "the default: neutral ink on warm paper, blue accent",
 		Base: map[string]string{"--si-font-body": sansStack, "--si-font-heading": sansStack, "--si-font-mono": monoStack},
 		Light: map[string]string{
 			"--si-bg": "#f6f5f1", "--si-fg": "#16171b", "--si-muted": "#5d626c", "--si-surface": "#ffffff",
@@ -258,6 +265,7 @@ var Themes = map[string]Theme{
 		},
 	},
 	"paper": {
+		Label: "Paper", About: "serif type on cream, rust accent",
 		Base: map[string]string{"--si-font-body": serifStack, "--si-font-heading": serifStack, "--si-font-mono": monoStack,
 			"--si-heading-weight": "700", "--si-heading-tracking": "-0.01em"},
 		Light: map[string]string{
@@ -274,6 +282,7 @@ var Themes = map[string]Theme{
 		},
 	},
 	"mono": {
+		Label: "Mono", About: "monospace everything, green accent, flat",
 		Base: map[string]string{"--si-font-body": monoStack, "--si-font-heading": monoStack, "--si-font-mono": monoStack,
 			"--si-heading-weight": "700", "--si-heading-tracking": "0", "--si-radius": ".2em", "--si-scale": ".94"},
 		Light: map[string]string{
@@ -292,6 +301,7 @@ var Themes = map[string]Theme{
 	// CockroachDB University brand (aliases cockroachdb, cockroachlabs).
 	// Light values are the brand's own cream/ink/purple; dark is derived.
 	"crdb": {
+		Label: "CockroachDB University", About: "cream / ink / purple, Geist type",
 		Base: map[string]string{"--si-font-body": crdbSans, "--si-font-heading": crdbSans, "--si-font-mono": crdbMono},
 		Light: map[string]string{
 			"--si-bg": "#f2f1ee", "--si-fg": "#101913", "--si-muted": "#6d6d6d", "--si-surface": "#ffffff",
@@ -309,6 +319,7 @@ var Themes = map[string]Theme{
 	// AceMQ brand (orange / teal / ink). Its components, background rhythm,
 	// footer logo, motion and fonts live in web/themes/acemq.css.
 	"acemq": {
+		Label: "AceMQ", About: "orange / teal / ink, Urbanist + Mona Sans, cards, tags, steps, timeline, highlighter",
 		Base: map[string]string{"--si-font-body": aceBody, "--si-font-heading": aceHeading,
 			"--si-font-mono":      `ui-monospace, "SF Mono", Menlo, Consolas, monospace`,
 			"--si-heading-weight": "800", "--si-heading-tracking": "-.032em", "--si-h2-size": "2.2em", "--si-gap": "1.1em",
@@ -348,16 +359,48 @@ func decls(maps ...map[string]string) string {
 	return b.String()
 }
 
-// themeAliases map alternate spellings to a built-in theme name.
-var themeAliases = map[string]string{"cockroachdb": "crdb", "cockroachlabs": "crdb"}
+// AceMQ Pro: the acemq tokens and extras plus the full layout catalogue of
+// the AceMQ deck style guide (web/themes/acemq-pro.css).
+func init() {
+	pro := Themes["acemq"]
+	pro.Label = "AceMQ Pro"
+	pro.About = "AceMQ plus the full deck-system catalogue: options, fact rows, benchmarks, flows, zones, verdicts, cover floaters"
+	pro.Extras = []string{"acemq", "acemq-pro"}
+	Themes["acemq-pro"] = pro
+}
 
-// CanonicalTheme resolves a theme alias (e.g. "cockroachlabs") to its built-in
-// name; unknown names pass through unchanged.
+// themeAliases map alternate spellings to a built-in theme name.
+var themeAliases = map[string]string{"cockroachdb": "crdb", "cockroachlabs": "crdb", "acemqpro": "acemq-pro"}
+
+// themeSepRE matches the runs of spaces and underscores a theme name may be
+// written with ("AceMQ Pro", "acemq_pro").
+var themeSepRE = regexp.MustCompile(`[\s_]+`)
+
+// CanonicalTheme resolves a theme name as a user may type it ("AceMQ Pro",
+// "acemq_pro", "cockroachlabs") to its built-in name: lower case, spaces and
+// underscores become "-", then aliases apply. Names that are no built-in theme
+// pass through unchanged.
 func CanonicalTheme(name string) string {
-	if a, ok := themeAliases[name]; ok {
+	n := themeSepRE.ReplaceAllString(strings.ToLower(strings.TrimSpace(name)), "-")
+	if a, ok := themeAliases[n]; ok {
 		return a
 	}
+	if _, ok := Themes[n]; ok {
+		return n
+	}
 	return name
+}
+
+// ThemeAliases returns the aliases of a built-in theme, sorted.
+func ThemeAliases(name string) []string {
+	var out []string
+	for a, n := range themeAliases {
+		if n == name {
+			out = append(out, a)
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 // ThemeNames returns the built-in theme names in a stable gallery order
@@ -389,7 +432,13 @@ func ThemeCSS(name string) string {
 	fmt.Fprintf(&b, ":root{%scolor-scheme:light}\n", light)
 	fmt.Fprintf(&b, "@media (prefers-color-scheme: dark){:root:not([data-si-mode]){%scolor-scheme:dark}}\n", dark)
 	fmt.Fprintf(&b, ":root[data-si-mode=\"dark\"]{%scolor-scheme:dark}\n", dark)
-	b.WriteString(themeExtra(name))
+	extras := th.Extras
+	if extras == nil {
+		extras = []string{name}
+	}
+	for _, x := range extras {
+		b.WriteString(themeExtra(x))
+	}
 	b.WriteString("}\n")
 	return b.String()
 }
@@ -420,6 +469,16 @@ func themeExtra(name string) string {
 		}
 		return `url("data:` + themeMIME[path.Ext(p)] + ";base64," + base64.StdEncoding.EncodeToString(raw) + `")`
 	})
+}
+
+// ThemeSample returns a theme's own gallery deck (web/themes/<name>.sample.md),
+// written by `si --export themes` in place of the generic sample; "" if none.
+func ThemeSample(name string) string {
+	md, err := themesFS.ReadFile("web/themes/" + name + ".sample.md")
+	if err != nil {
+		return ""
+	}
+	return string(md)
 }
 
 // StarterCSS is the commented stylesheet written by `si --export css-rules`.

@@ -178,3 +178,30 @@ func TestCheckLab(t *testing.T) {
 		}
 	}
 }
+
+func TestThemeList(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"theme", "list"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("theme list: %d %s", code, stderr.String())
+	}
+	for _, want := range []string{"acemq-pro", "AceMQ Pro", "cockroachlabs", "studio"} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Errorf("theme list lacks %q", want)
+		}
+	}
+	stdout.Reset()
+	stderr.Reset()
+	if code := run([]string{"--theme", "nope", "build", "."}, &stdout, &stderr); code != exitUsage || !strings.Contains(stderr.String(), "si theme list") {
+		t.Errorf("unknown --theme: code %d, %s", code, stderr.String())
+	}
+	dir, out := t.TempDir(), t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "d.md"), []byte("# D\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if code := run([]string{"build", "--theme", "AceMQ Pro", "-o", out, dir}, &stdout, &stderr); code != 0 {
+		t.Fatalf("build --theme \"AceMQ Pro\": %d %s", code, stderr.String())
+	}
+	if html, _ := os.ReadFile(filepath.Join(out, "d.html")); !strings.Contains(string(html), `data-si-theme="acemq-pro"`) {
+		t.Error("--theme \"AceMQ Pro\" does not render acemq-pro")
+	}
+}

@@ -114,3 +114,29 @@ func TestAcemqThemeEmbedsAssets(t *testing.T) {
 		t.Error("only acemq decks carry the acemq extras")
 	}
 }
+
+func TestCanonicalTheme(t *testing.T) {
+	for in, want := range map[string]string{
+		"AceMQ Pro": "acemq-pro", "acemq_pro": "acemq-pro", "acemqpro": "acemq-pro", " ACEMQ ": "acemq",
+		"CockroachLabs": "crdb", "studio": "studio", "neon": "neon",
+	} {
+		if got := CanonicalTheme(in); got != want {
+			t.Errorf("CanonicalTheme(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestAcemqProCarriesBothExtras(t *testing.T) {
+	css := ThemeCSS("AceMQ Pro")
+	for _, want := range []string{".lockup", ".opts", ".bench", ".verdict", `url("data:font/woff2;base64,`} {
+		if !strings.Contains(css, want) {
+			t.Errorf("acemq-pro CSS lacks %q", want)
+		}
+	}
+	if strings.Contains(ThemeCSS("acemq"), ".opts") {
+		t.Error("the pro catalogue must not leak into acemq")
+	}
+	if ThemeSample("acemq-pro") == "" || ThemeSample("studio") != "" {
+		t.Error("only acemq-pro ships its own gallery sample")
+	}
+}

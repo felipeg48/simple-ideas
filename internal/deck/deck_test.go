@@ -84,6 +84,12 @@ func TestParse(t *testing.T) {
 			titles: "Deck|Module|Inside|After",
 		},
 		{
+			name:   "theme by display name",
+			files:  map[string]string{"d.md": "---\ntheme: AceMQ Pro\n---\n# Deck\n"},
+			kinds:  "t",
+			titles: "Deck",
+		},
+		{
 			name: "include cycle refused",
 			files: map[string]string{
 				"d.md": "# Deck\n\n<!-- include: a.md -->\n",

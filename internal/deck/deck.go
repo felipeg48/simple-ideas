@@ -11,6 +11,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/felipeg48/simple-ideas/internal/assets"
 )
 
 // Kind is the role of a slide in the deck.
@@ -32,7 +34,6 @@ const (
 var (
 	Layouts     = []string{"default", "center", "two-col", "split", "quote", "big-number", "image"}
 	Transitions = []string{"fade", "slide", "zoom", "none"}
-	Themes      = []string{"studio", "paper", "mono", "crdb", "cockroachdb", "cockroachlabs", "acemq"}
 	// FooterPositions are the accepted footer-position values (long form plus short aliases).
 	FooterPositions = []string{"bottom-right", "bottom-left", "bottom-center", "top-right", "top-left", "top-center", "br", "bl", "bc", "tr", "tl", "tc"}
 	Modes           = []string{"auto", "light", "dark"}
@@ -64,7 +65,7 @@ type Meta struct {
 	Title      string
 	Author     string
 	Date       string
-	Theme      string // studio | paper | mono | crdb (aliases: cockroachdb, cockroachlabs)
+	Theme      string // a built-in theme (si theme list), a .css path or a URL
 	Mode       string // auto | light | dark
 	Accent     string // CSS colour
 	Transition string // default slide transition
@@ -383,7 +384,10 @@ func validateMeta(key, val string) string {
 		if strings.HasSuffix(lower, ".css") || strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") {
 			return "" // a theme CSS file path or URL; resolved at render time
 		}
-		return oneOf("theme", val, Themes)
+		if _, ok := assets.Themes[assets.CanonicalTheme(val)]; ok {
+			return "" // a built-in theme as typed: "acemq-pro", "AceMQ Pro", an alias
+		}
+		return oneOf("theme", val, assets.ThemeNames())
 	case "type":
 		return oneOf("type", val, Types)
 	case "mode":

@@ -33,7 +33,7 @@ const Default = `# si.conf — every value shown is the built-in default.
 # Keep only the lines you change; anything omitted uses the default.
 # Flat key: value (same style as deck front matter), not YAML.
 
-theme: studio          # studio | paper | mono | crdb (aliases cockroachdb, cockroachlabs)
+theme: studio          # a built-in theme (si theme list), a .css path or a URL
 
 keys.overview:   o
 keys.presenter:  p

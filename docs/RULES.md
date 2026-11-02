@@ -646,10 +646,14 @@ si --web examples --no-open
 ## 15. Styling: themes and your own CSS
 
 - `theme:` picks a built-in theme (`studio`, `paper`, `mono`, `crdb`,
-  `acemq`), each with a light and a dark palette. `crdb` is the CockroachDB
+  `acemq`, `acemq-pro`), each with a light and a dark palette. `si theme list`
+  prints them with their display names and aliases. Names are matched loosely:
+  case is ignored and spaces or underscores count as `-`, so `theme: AceMQ Pro`
+  and `--theme "AceMQ Pro"` mean `acemq-pro`. An unknown `--theme` is an error. `crdb` is the CockroachDB
   University brand (cream / ink / purple; aliases `cockroachdb`,
   `cockroachlabs`). `acemq` is the AceMQ brand (orange / teal / ink, Urbanist
-  and Mona Sans embedded) with extra components, below.
+  and Mona Sans embedded) with extra components, below. `acemq-pro` (AceMQ
+  Pro) is `acemq` plus the rest of the AceMQ deck style guide's layouts.
 - `theme:` (or `--theme`) can instead be a path ending in `.css`: the file's
   contents become the `si.theme` layer, so you ship a whole palette from one
   file. Define the `--si-*` tokens (see `si --export css-rules`); resolved
@@ -735,6 +739,46 @@ si --web examples --no-open
 ```
 
 Lab documents (`type: lab`) under `acemq` get the fonts and palette.
+
+### acemq-pro theme extras (AceMQ Pro)
+
+`theme: acemq-pro` is everything in `acemq` (above) plus the layout catalogue
+of the AceMQ deck style guide, as raw-HTML components. All of them reflow:
+grids use auto-fit and stack on narrow or portrait slides, and each pops in
+with a stagger on the active slide. `si --export themes` writes a full
+AceMQ Pro sample deck that uses every one.
+
+| Component | Markup | Use for |
+|---|---|---|
+| Fact grid | `.heard` of `.hc` (`.k` label, `.big` with `<em>` unit, `p`; `hi`) | "What we heard" |
+| Incidents + verdict | `.inc` of `.ic` (`.when`, `h4`, `p`), then `<p class="verdict">` (`<b>` in orange) | outages with one root cause |
+| Argument + visual | `.split2` with `.blist` (`li.ok`, `li.crit`) and `.topo` (a card for an SVG, `.cap`) or `.zones` | a claim next to a diagram |
+| Zones | `.zones` of `.zg` (`.zl` label, `.zc` cells: `ok`, `us`, `hot`, `down`) | before / after topology |
+| Options | `.opts` of `.opt` (`.ol` letter, `.tag`, `h4`, `p`, `dl` of `<div><dt><dd>`; `hi`) | options A–D, one recommended |
+| HTML table | `table.tbl` with `.us` cells | a matrix with "our" column |
+| Fact rows | `.facts` of `.fr` (`.fn` number with `<em>` unit, then a `div` with `h4`, `p`) | big number, then why |
+| Feature grid | `.feat` of `.fc` (`.icon-chip`, `h4`, `p`) | product capabilities |
+| Benchmark | `.bench` of `.brow` (`style="--w:84%"`; `us` row orange; `.bl`, `.bar`, `.bv`), then `.bks` of `.bk` (`.big`, `p`; `hi`) | measured results |
+| Flow | `.flowline` of `.fs` (`h4`, `p`; `hot` pulses), then `.mnotes` (`p`, `p.warn`) | migration, process |
+| Plans | `.poc` of `.pc2` (`.tag`, `h4`, `p`, `dl`; `hi`) with a `.term2` terminal (`.c` comment, `.k` prompt, `.ok` output) | trial vs PoC |
+| Cover floaters | `.floaters` of three `.fl` (text, `<img>` or `<svg>`) on the title slide | tilted tiles that drift; hidden on narrow slides |
+| Parts | `.icon-chip` (`--sm`, `--teal`, `--ink`; holds an inline `<svg>` or a glyph), `.btn`, `.btn--ghost` | icons, a call to action |
+| Motion | `.r` rise, `.f` fade, `.pop` pop, `.pulse` ring ×3, `.grow-x` draw in; `style="--i:N"` staggers | hand-placed raw HTML |
+
+`.pop` is the guide's `.p`: in si `.p` stays the "partial" verdict mark.
+There is no icon font (a deck stays self-contained), so icon chips take an
+inline SVG.
+
+```markdown
+<!-- eyebrow: Options -->
+## Four ways forward, <span class="hl">one we recommend.</span>
+
+<div class="opts">
+<div class="opt"><span class="ol">A</span><span class="tag">Today</span><h4>Keep as is</h4><p>Hand-run clusters.</p></div>
+<div class="opt hi"><span class="ol">B</span><span class="tag">Recommended</span><h4>AceMQ Broker</h4><p>Quorum by default.</p><dl><div><dt>Lost zone</dt><dd>Alert</dd></div></dl></div>
+</div>
+<p class="verdict">Both keep your clients. <b>Only B removes the outage.</b></p>
+```
 
 ## 16. Configuring keys and features (si.conf)
 
