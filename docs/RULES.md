@@ -406,19 +406,24 @@ starter canvas plus a deck that drives it, and follow the step-by-step recipe in
 
 ```markdown
 Notes: (1.5 min)
-The token reaches payments and turns red. Pause here.
-- Mention the thirty-second retry
+The token reaches payments and turns red: the bank declined the card.
+Thirty seconds later one retry goes through, and the order is paid.
 
 Points: What to cover, not a script
 - Payments goes red: the retry kicks in after 30s
-- This is the moment the audience should remember
+- Pause after the red tile; this is the moment to remember
 ```
 
 - A line starting with `Notes:` starts the slide's **verbatim teleprompter
-  script** — what you read aloud, word for word; everything after it, to the end
-  of the slide, is notes (markdown).
+  script**: the words the speaker says to the audience, word for word, about
+  what is on the slide. Write it as speech, never as instructions to the
+  speaker: no "pause here", "mention X", "tell them", "press next", "this slide
+  shows". Everything after it, to the end of the slide (or a `Points:` line),
+  is the script (markdown).
 - A line starting with `Points:` starts the slide's **speaker-notes talking
-  points** — a short list to glance at if you'd rather talk than read. Both
+  points**: the main points of the topic as short bullets, to glance at if
+  you'd rather talk than read. Reminders for the speaker (pace, emphasis,
+  likely questions, what to skip) belong here, not in `Notes:`. Both
   blocks are optional and may appear in either order; neither swallows the other.
 - `(N min)` on the `Notes:` line is the slide's planned time; the deck total is
   the sum, shown in the index, the build summary and the teleprompter.

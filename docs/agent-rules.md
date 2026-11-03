@@ -1,0 +1,126 @@
+# Writing slide decks with si
+
+This project writes talks as markdown and turns them into animated, fluid HTML
+slide decks with `si` (simple-ideas). These instructions are for the AI agent
+that writes or edits the decks. The full, authoritative format is printed by
+`si rules`; read it before your first edit and whenever a directive is unclear.
+
+## Commands
+
+```bash
+si rules                        # the complete markdown format (RULES.md)
+si check <dir|file.md>          # validate; fix every problem before you finish
+si play <dir|file.md> --open    # live preview with reload (http://127.0.0.1:7070/)
+si build <dir> -o html/         # one self-contained HTML file per deck + index.html
+si build <dir> -o html/ --pdf   # also a PDF per deck (needs headless Chrome)
+si theme list                   # built-in themes for theme: / --theme
+si new <name>                   # a scaffold deck that uses every rule
+si --export example             # the showcase decks, to copy patterns from
+si play talk.md --remote        # teleprompter / draw pad on a tablet (keyed LAN port)
+```
+
+## A deck
+
+```markdown
+---
+title: The promise we print at checkout
+author: Ada Lovelace
+theme: studio
+---
+
+# The promise we print at checkout
+
+Following one parcel, order #4711.
+
+Notes: (0.5 min)
+Welcome. This talk follows a single parcel from the click on "buy" to a
+doorstep, and the two moments it nearly broke the promise: delivered by Thursday.
+
+---
+
+## Three teams, one promise
+
+- Warehouse, payments and courier each hit their own target
+- One order in eleven is still late
+
+Notes: (1 min)
+Each team is green on its own dashboard, and the customer still waits. The
+promise lives between the teams, so today we follow one order across all of them.
+
+Points: Talking points
+- Three hand-offs, three dashboards, no end-to-end owner
+- One order in eleven late: the number to remember
+```
+
+- `---` on its own line separates slides; front matter comes first.
+- `# H1` makes a title or section slide; `## H2` starts a content slide.
+- Directives are HTML comments on their own line: `<!-- layout: two-col -->`,
+  `<!-- column -->`, `<!-- steps -->`, `<!-- svg: assets/flow.svg words -->`,
+  `<!-- background: … -->`, `<!-- class: … -->`, `<!-- eyebrow: … -->`,
+  `<!-- footer: off -->`, `<!-- include: sections/01-intro.md -->`. An unknown
+  directive is an error in `si check`; `si rules` lists them all.
+- A long talk is a thin main deck plus one file per section under
+  `sections/`, pulled in with `<!-- include: -->`.
+
+## Teleprompter vs Speaker Notes: the most important rule
+
+Every slide can carry two blocks. They are different things.
+
+**`Notes:` is the teleprompter.** It is what the speaker says to the public,
+word for word, about what is on the slide. The speaker reads it aloud from the
+teleprompter, so write it exactly as it will be spoken: full sentences, in the
+speaker's voice, addressed to the audience.
+
+- Never put instructions to the speaker in `Notes:`. No "pause here",
+  "mention the retry", "tell them about…", "explain that…", "press next",
+  "click to reveal", "skip this in a short slot", "read slowly".
+- Never describe the slide or the tool: no "this slide shows…", "on the left
+  you can see the layout…", "the canvas stays on screen", "on a phone the
+  columns stack".
+- Talk about the content itself. Bad: `Mention that the retry fixed most
+  declines.` Good: `One retry thirty seconds later fixed most of the declines.`
+- `(N min)` after `Notes:` is the slide's planned time: `Notes: (1.5 min)`.
+  Give every slide one; the deck total is their sum.
+
+**`Points:` is the Speaker Notes tab.** It holds the main points of the
+topic, as short bullets the speaker glances at to talk freely instead of
+reading. Reminders meant only for the speaker (pace, emphasis, what to skip,
+likely questions and their answers) go here, never in `Notes:`.
+
+```markdown
+Notes: (1.5 min)
+The token reaches payments and turns red: the bank declined the card.
+Thirty seconds later one retry goes through, and the order is paid.
+
+Points: Payment retry
+- Declined at 21:03, paid at 21:05: one idempotent retry
+- Most night-time declines are timeouts, not fraud
+- Pause after the red tile
+```
+
+Both blocks are hidden on the slides and run to the end of the slide (or to
+the other block's line).
+
+## Slide content
+
+- Slides carry content, never instructions: no "press the arrow", "this slide
+  demonstrates the two-column layout". A deck is a real talk.
+- One idea per slide; a claim as the heading beats a topic label. No wall of
+  text: prefer a layout (`two-col`, `big-number`, `quote`), an inline SVG
+  diagram coloured with `--si-*` tokens, a `stage` flow, or a short code block.
+- Keep it fluid: image sizes in `%`, `em` or `cqi` (never `px`); SVGs need a
+  `viewBox`. The layout reflows from a phone to 4K by itself.
+- A deck is self-contained: local images, fonts and media are inlined at
+  build time. Do not link external scripts, fonts or images.
+- Do not edit the generated HTML; change the markdown and rebuild.
+
+## Before you finish
+
+1. `si check <dir>` reports no problems.
+2. Look at the result: `si build` and screenshot a few slides headless
+   (`chrome --headless=new --screenshot=out.png --window-size=1440,900
+   file://…/deck.html#3`), at a wide and a narrow size. A deck that passes
+   `si check` can still look wrong.
+3. Read the `Notes:` of every slide you touched aloud in your head: if a line
+   tells the speaker what to do instead of saying something to the audience,
+   rewrite it, or move it to `Points:`.

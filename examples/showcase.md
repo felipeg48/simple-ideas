@@ -33,7 +33,7 @@ Welcome. This talk follows a single parcel, order #4711, from the click on "buy"
 - Nobody owns the promise from end to end
 
 Notes: (1 min)
-The point of the last line: each team is green on its own dashboard, and the customer still waits. The promise lives between the teams, so we follow one order across all of them.
+Look at that last line: each team is green on its own dashboard, and the customer still waits. The promise lives between the teams, so today we follow one order across all of them.
 
 Points: Talking points
 - Three teams, three hand-offs, three separate dashboards
@@ -64,7 +64,10 @@ The same five stations the canvas uses next, drawn flat. The dot is the order mo
 - Five stations, one order, three tiles the customer sees on the tracking page
 
 Notes: (1 min)
-This canvas stays on screen for the next slides. The stations never move; they light up, fail and recover. The order token at the left is #4711, placed at 21:03 on a Monday. The tiles at the bottom are exactly what the customer sees.
+Here are the five stations. They never move; they light up, fail and recover. The token on the left is order #4711, placed at 21:03 on a Monday. The tiles at the bottom are exactly what the customer sees.
+
+Points: Canvas
+- This picture stays for the next three slides; only its state changes
 
 ---
 
@@ -76,7 +79,7 @@ This canvas stays on screen for the next slides. The stations never move; they l
 - 21:05: an automatic retry thirty seconds later goes through
 
 Notes: (1.5 min)
-The token reaches payments and turns red: the bank's fraud check declined the card. Step one shows the customer the honest status. Step two is the fix we shipped last quarter: one idempotent retry after thirty seconds. Most declines at night are timeouts, not fraud. Watch the tile change from "payment failed" to "paid".
+The token reaches payments and turns red: the bank's fraud check declined the card. First, the customer sees the honest status. Then the fix we shipped last quarter: one idempotent retry after thirty seconds. Most declines at night are timeouts, not fraud. And the tile goes from "payment failed" to "paid".
 
 ---
 
@@ -99,7 +102,10 @@ The queue bar under the warehouse fills up and the promised tile turns to "Frida
 <!-- step: delivered -->
 
 Notes: (1 min)
-Route seven, Wednesday morning. Packets flow from the warehouse to the courier, the van appears. Press once more for Thursday 14:32: delivered to Mrs. Okafor's door, the last tile turns green.
+Route seven, Wednesday morning. Packets flow from the warehouse to the courier, and the van sets off. Thursday, 14:32: delivered to Mrs. Okafor's door, and the last tile turns green.
+
+Points: Delivery
+- One more step reveals the delivery; let the green tile land
 
 ---
 
@@ -161,7 +167,10 @@ The code is short on purpose. The idempotency key is the order id, so the bank t
 of Thursday promises kept in the first month, up from 91%.
 
 Notes: (0.5 min)
-Let the number sit for a moment. From roughly one late order in eleven to about one in eighty.
+Ninety-eight point seven percent. We went from roughly one late order in eleven to about one in eighty.
+
+Points: The number
+- Say the number, then pause before the comparison
 
 ---
 
@@ -172,7 +181,10 @@ Let the number sit for a moment. From roughly one late order in eleven to about 
 Route 7 courier log, Thursday 14:32
 
 Notes: (0.5 min)
-Read the quote slowly. This is what success looks like from the outside: nothing to notice.
+The customer never saw the declined card or the queue. She saw Thursday. This is what success looks like from the outside: nothing to notice.
+
+Points: Quote
+- Read it slowly; it is the emotional end of the story
 
 ---
 
@@ -186,7 +198,7 @@ Read the quote slowly. This is what success looks like from the outside: nothing
 - The packing table moved next to the loading door
 
 Notes: (1 min)
-The floor plan explains why the second picker drains the queue so fast: two pickers walking towards each other halve the walk for every order. On a phone the plan moves above the text.
+The floor plan explains why the second picker drains the queue so fast: two pickers walking towards each other halve the walk for every order.
 
 ---
 
@@ -199,7 +211,10 @@ The floor plan explains why the second picker drains the queue so fast: two pick
 The first vans leave while the city is still asleep.
 
 Notes: (0.5 min)
-A breath between the numbers. Route seven leaves at 05:40, so a parcel packed by 07:10 on Tuesday is on Wednesday's first wave.
+Route seven leaves at 05:40, while the city is still asleep. A parcel packed by 07:10 on Tuesday rides Wednesday's first wave.
+
+Points: Breather
+- A quiet slide between the numbers; keep it short
 
 ---
 
@@ -212,7 +227,7 @@ A breath between the numbers. Route seven leaves at 05:40, so a parcel packed by
 - Thursday promises ride on Wednesday's first wave
 
 Notes: (0.5 min)
-The video background loops quietly; with reduced motion turned on the poster frame stays still.
+Forty-two routes leave between half past five and seven, each van with about a hundred and twenty parcels. Every Thursday promise rides on Wednesday's first wave.
 
 ---
 
@@ -249,4 +264,8 @@ Notes: (1 min) Hands-on: open the sample workspace and send order #4711 through 
 Questions about order #4711, the retry rule or the returns desk are welcome.
 
 Notes: (2 min)
-Open the floor. Likely questions: why only one retry (fraud teams asked for it), and who pays for the lent picker (operations, from the late-delivery budget it saves).
+Thank you. I am happy to take questions: about order #4711, the retry rule or the returns desk.
+
+Points: Likely questions
+- Why only one retry: the fraud team asked for it
+- Who pays for the lent picker: operations, from the late-delivery budget it saves

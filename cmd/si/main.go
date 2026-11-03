@@ -39,7 +39,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/studio"
 )
 
-const version = "0.9.1"
+const version = "0.9.2"
 
 // Exit codes.
 const (
@@ -75,12 +75,14 @@ Usage:
         print the markdown rules (RULES.md)
   si theme list
         list the built-in themes (name, display name, aliases) for --theme / theme:
-  si --export css-rules|rules|conf|example|themes [--output <path>]
+  si --export css-rules|rules|conf|example|themes|agent-rules [--output <path>]
         css-rules: starter stylesheet with every --si-* token and .si-* hook
         rules:     RULES.md
         conf:      a starter si.conf with the default keys and features
         example:   the showcase decks (default output: ./si-example)
         themes:    one sample deck per built-in theme (default: ./si-themes)
+        agent-rules: CLAUDE.md + AGENTS.md telling a coding agent how to write si decks
+                   (default: the current dir; -o - prints it; never overwrites)
 
 Flags (GNU style, before or after the path):
   -o, --output <path>   output directory (build) or file (export)
@@ -97,7 +99,7 @@ Flags (GNU style, before or after the path):
       --dev             play: hot reload — morph changed slides in place (keeps the current slide, step and overview)
       --no-inline-media build: copy images and videos next to the HTML instead of data URIs
       --pdf             build: also render each deck to pdfs/<name>.pdf and link it from the index tiles (needs headless Chrome)
-      --export <what>   css-rules, rules, conf, example or themes
+      --export <what>   css-rules, rules, conf, example, themes or agent-rules
   -h, --help            this help
       --version         print the version
 
@@ -764,6 +766,22 @@ func export(o *options, stdout, stderr io.Writer) int {
 		}
 		fmt.Fprintf(stdout, "si: wrote the showcase decks to %s; try: si play %s\n", out, out)
 		return exitOK
+	case "agent-rules":
+		if o.output == "-" {
+			fmt.Fprint(stdout, agentRules())
+			return exitOK
+		}
+		dir := o.output
+		if dir == "" {
+			dir = "."
+		}
+		wrote, err := writeAgentRules(dir)
+		if err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitProblems
+		}
+		fmt.Fprintf(stdout, "si: wrote %s (for Claude Code and other coding agents)\n", strings.Join(wrote, " and "))
+		return exitOK
 	case "themes":
 		out := o.output
 		if out == "" {
@@ -776,7 +794,36 @@ func export(o *options, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "si: wrote %d theme sample decks to %s; try: si play %s\n", len(assets.ThemeNames()), out, out)
 		return exitOK
 	}
-	return usageErr(stderr, fmt.Sprintf("unknown --export %q (css-rules, rules, conf, example, themes)", o.export))
+	return usageErr(stderr, fmt.Sprintf("unknown --export %q (css-rules, rules, conf, example, themes, agent-rules)", o.export))
+}
+
+// agentRules is the agent guide, stamped with the si version that wrote it.
+func agentRules() string {
+	return "<!-- written by si " + version + " (si --export agent-rules); regenerate after upgrading si -->\n\n" + docs.AgentRules
+}
+
+// writeAgentRules writes CLAUDE.md (Claude Code) and AGENTS.md (Codex, Cursor
+// and other agents) into dir. It refuses to overwrite either: a project's
+// existing agent file is the author's, so they merge by hand (or use -o -).
+func writeAgentRules(dir string) ([]string, error) {
+	names := []string{"CLAUDE.md", "AGENTS.md"}
+	for _, n := range names {
+		if _, err := os.Stat(filepath.Join(dir, n)); err == nil {
+			return nil, fmt.Errorf("%s already exists; merge by hand from `si --export agent-rules -o -`, or pick another --output dir", filepath.Join(dir, n))
+		}
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return nil, err
+	}
+	var wrote []string
+	for _, n := range names {
+		p := filepath.Join(dir, n)
+		if err := os.WriteFile(p, []byte(agentRules()), 0o644); err != nil {
+			return wrote, err
+		}
+		wrote = append(wrote, p)
+	}
+	return wrote, nil
 }
 
 func scaffold(name string, stdout, stderr io.Writer) int {
@@ -871,7 +918,8 @@ The same sample deck, rendered in every built-in theme.
 - **Bold**, *italic*, and ` + "`inline code`" + `
 - The accent colours bullets, links and the rule under headings
 
-Notes: Press d to flip light/dark and see both palettes.
+Points: Try it
+- Press d to flip light/dark and see both palettes
 
 ---
 

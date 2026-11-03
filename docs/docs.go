@@ -11,6 +11,12 @@ import _ "embed"
 //go:embed RULES.md
 var Rules string
 
+// AgentRules is the CLAUDE.md / AGENTS.md written by `si --export
+// agent-rules`: how an AI agent should write and check si decks.
+//
+//go:embed agent-rules.md
+var AgentRules string
+
 // Manual is the user-manual deck, rendered by `si manual`.
 //
 //go:embed reference/user-manual.md

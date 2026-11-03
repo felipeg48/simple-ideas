@@ -41,7 +41,7 @@ A subtitle under the title.
 - another point
 
 Notes: (1 min)
-Verbatim teleprompter script — what you read aloud.
+Order #4711 left the warehouse at 05:40 and reached the door on Thursday.
 
 Points: Talking points
 - a point to glance at

@@ -207,6 +207,27 @@ func TestThemeList(t *testing.T) {
 	}
 }
 
+func TestExportAgentRules(t *testing.T) {
+	dir := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"--export", "agent-rules", "-o", dir}, &stdout, &stderr); code != 0 {
+		t.Fatalf("export: %d %s", code, stderr.String())
+	}
+	for _, n := range []string{"CLAUDE.md", "AGENTS.md"} {
+		b, err := os.ReadFile(filepath.Join(dir, n))
+		if err != nil || !strings.Contains(string(b), "Teleprompter vs Speaker Notes") || !strings.Contains(string(b), "si "+version) {
+			t.Errorf("%s: missing or without the teleprompter rule (%v)", n, err)
+		}
+	}
+	if code := run([]string{"--export", "agent-rules", "-o", dir}, &stdout, &stderr); code != exitProblems {
+		t.Error("an existing CLAUDE.md must not be overwritten")
+	}
+	stdout.Reset()
+	if code := run([]string{"--export", "agent-rules", "-o", "-"}, &stdout, &stderr); code != 0 || !strings.Contains(stdout.String(), "Points:") {
+		t.Error("-o - prints the guide")
+	}
+}
+
 func TestRemoteFlag(t *testing.T) {
 	o, err := parseArgs([]string{"play", "--remote", "d.md"}, io.Discard)
 	if err != nil || strings.Join(o.remote.roles, ",") != "tp,draw" || len(o.args) != 2 {

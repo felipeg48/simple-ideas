@@ -27,21 +27,30 @@ what you chose.
 4. **Example decks carry content, never instructions.** No slide says "press
    the arrow" or "this slide shows the two-col layout"; the showcase is a real
    talk (an order's journey) that happens to use every rule.
-5. **Themes change tokens and looks, never layout mechanics.** Layout rules
+5. **`Notes:` is the teleprompter, `Points:` the speaker notes.** `Notes:` is
+   what the speaker says to the public, verbatim, about what is on the slide:
+   spoken sentences, never instructions to the speaker ("pause here", "mention
+   X", "tell them", "press next", "this slide shows", "on a phone it stacks").
+   `Points:` is the main points of the topic as short bullets, plus reminders
+   for the speaker (pace, emphasis, what to skip, likely questions). Applies to
+   every deck we write or ship (examples, scaffolds, samples, migrations) and is
+   in the agent guide `docs/agent-rules.md`, exported by `si --export
+   agent-rules` as CLAUDE.md + AGENTS.md; keep the two in step.
+6. **Themes change tokens and looks, never layout mechanics.** Layout rules
    live unlayered in `layout.css`; looks live in `@layer si.theme`; user CSS
    in `@layer si.user`. Every `--si-*` property and `.si-*` class used by the
    built-in CSS is listed in `internal/assets/contract.go`
    (`TestContractCoversBuiltinCSS` fails otherwise), so
    `si --export css-rules` cannot drift.
-6. **The teleprompter stays a real teleprompter:** large notes, auto-scroll
+7. **The teleprompter stays a real teleprompter:** large notes, auto-scroll
    with adjustable speed, manual scroll, mirror, per-slide and total timers
    with pace, previews, synced over BroadcastChannel, works from `file://`.
-7. Go stdlib plus goldmark only. `gofmt`, `go vet ./...` and `go test ./...`
+8. Go stdlib plus goldmark only. `gofmt`, `go vet ./...` and `go test ./...`
    green before every commit. Plain commit messages, no attribution trailers.
    **Exception (v0.6.0, `si play` terminal only):** the presenter terminal
    drawer adds `github.com/creack/pty` and bundles `xterm.js`. It is contained to
    `si play` on a loopback address — a built deck never loads it — so rules #2 and
-   #7 hold everywhere except that one play-only, loopback-only subsystem. See
+   #8 hold everywhere except that one play-only, loopback-only subsystem. See
    `docs/terminal.md`.
    **Exception (v0.8.0, `si --web` Studio only):** the editor front-end vendors
    Preact and CodeMirror 6, bundled by esbuild and committed under
@@ -62,7 +71,7 @@ what you chose.
 | `web/studio/` | Studio front-end source (Preact + TS + CodeMirror 6, esbuild, vitest, Playwright e2e); bundle committed to `internal/assets/web/studio/assets/` via `make studio-ui` |
 | `internal/config/` | optional `si.conf` (flat `key: value`, stdlib): default theme, `keys.*` command remaps, `feature.*` on/off; injected into the deck as `window.SI_CONFIG`, read by `deck.js` |
 | `internal/assets/` | embedded web files (`web/layout.css` unlayered mechanics, `web/theme.css` looks, `web/deck.js` runtime, `web/doc.css` + `web/doc.js` lab documents (`type: lab`), `web/presenter.html` teleprompter) and `contract.go` (tokens, hooks, theme values, starter CSS) |
-| `docs/docs.go` | embeds RULES.md + reference/user-manual.md for `si rules` / `si manual` (in `docs/` so go:embed can reach them; no `.go` at the repo root) |
+| `docs/docs.go` | embeds RULES.md + reference/user-manual.md + agent-rules.md for `si rules` / `si manual` / `si --export agent-rules` (in `docs/` so go:embed can reach them; no `.go` at the repo root) |
 | `examples/` | showcase deck, included appendix, `assets/journey.svg` canvas, media, `css/harbor.css` theme; embedded for `si new` and `--export example` |
 | `docs/screenshots/` | headless screenshots referenced by the README |
 

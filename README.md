@@ -143,7 +143,7 @@ NOTE: the token reaches payments and turns red.
 | `si rules` | print RULES.md |
 | `si --theme <name\|file.css\|url>` | override the theme: a built-in (`si theme list`: `studio`, `paper`, `mono`, `crdb`, `acemq`, `acemq-pro`; `"AceMQ Pro"` works too), a CSS file, or an `https://` URL |
 | `si theme list` | list the built-in themes: name, display name, aliases, summary |
-| `si --export css-rules\|rules\|conf\|example\|themes [--output path]` | starter stylesheet · RULES.md · starter `si.conf` · the showcase decks · a sample deck per theme (a gallery) |
+| `si --export css-rules\|rules\|conf\|example\|themes\|agent-rules [--output path]` | starter stylesheet · RULES.md · starter `si.conf` · the showcase decks · a sample deck per theme (a gallery) · `CLAUDE.md` + `AGENTS.md` for a deck project, so a coding agent writes decks the si way (teleprompter `Notes:` as spoken script, `Points:` as talking points; never overwrites, `-o -` prints) |
 
 Flags are GNU style and go before or after the path:
 `si --css css/ --output html/ md/` and `si md/ -o html/` both work.

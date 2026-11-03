@@ -8,7 +8,10 @@ background: linear-gradient(160deg, #f6f5f1 0%, #e9eefb 100%)
 Where the time goes, and what each change bought.
 
 Notes: (0.5 min)
-Three slides of evidence. Skip them in a short slot; they are here for the questions.
+Three slides of evidence: where an order spends its time, what each change bought, and the route at both ends of the morning.
+
+Points: Appendix
+- Optional: skip in a short slot, keep for the questions
 
 ---
 
@@ -56,4 +59,4 @@ The big win is paid to picked: the lent picker. Packed to van barely moves becau
 ![Route 7 at dusk, right](assets/dusk.jpg "Residential side")
 
 Notes: (0.5 min)
-Same morning, two ends of the route. On a narrow screen the two pictures stack.
+Same morning, two ends of the route.

@@ -37,11 +37,18 @@ Then do the editorial pass:
    inline stage flow diagram, a hand-authored <!-- svg: --> canvas coloured with
    --si-* tokens, or a highlighted code block. No slide should be a wall of text.
    Add as many diagrams/animations as genuinely help.
-4. Ship a SPLIT deck: a thin main deck (front matter, title, agenda, one
+4. Speaker notes: ` + "`Notes:`" + ` is the TELEPROMPTER, the words the speaker says to the
+   audience, verbatim, about what is on the slide; never instructions to the speaker
+   ("pause here", "mention X", "tell them", "press next", "this slide shows").
+   ` + "`Points:`" + ` holds the main points of the topic as short bullets, plus any
+   reminders for the speaker (pace, emphasis, likely questions). Give every slide
+   ` + "`Notes: (N min)`" + `. Source speaker notes are usually reminders: turn them into
+   spoken script for Notes and bullets for Points.
+5. Ship a SPLIT deck: a thin main deck (front matter, title, agenda, one
    <!-- include: sections/NN-*.md --> per section, closing) plus one file per section
    under sections/, with images/anim/ (animated canvases) and images/diagrams/
    (static diagrams). Section files reference assets as ../images/....
-5. Verify: ` + "`si check`" + ` must pass with zero problems, then screenshot slides with
+6. Verify: ` + "`si check`" + ` must pass with zero problems, then screenshot slides with
    headless Chrome and LOOK — a check-passing SVG can still be visually wrong. Fix
    and re-shoot.
 

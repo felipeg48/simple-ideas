@@ -3,11 +3,30 @@
 Read this, then `FEATURE.md`, then `CLAUDE.md`. This is a Go CLI (`si`) that turns
 Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
-## Current state (2026-10-30)
+## Current state (2026-11-03)
 
-- **Latest release: v0.9.1** (tagged, published by the release workflow; founder's
-  `~/.bin/si` is 0.9.1 via `si selfupdate`). `main` == `origin/main`, tests green.
-  CI + release workflows are green. v0.8.0 was never tagged (its Studio work ships in v0.9.x).
+- **Latest release: v0.9.2** (tagged; the release workflow publishes it).
+- **v0.9.2:**
+  - **`theme: acemq-pro`** ("AceMQ Pro"): the acemq tokens + `acemq.css` +
+    `internal/assets/web/themes/acemq-pro.css`, the full AceMQ deck style-guide
+    catalogue (`.heard`, `.inc`+`.verdict`, `.split2`/`.blist`/`.topo`, `.zones`,
+    `.opts`, `table.tbl`, `.facts`, `.feat`, `.bench`/`.bks`, `.flowline`/`.mnotes`,
+    `.poc`/`.term2`, `.floaters`, `.icon-chip`, `.btn`, motion `.r .f .pop .pulse
+    .grow-x`). `Theme.Extras` chains extra stylesheets; `acemq-pro.sample.md` is
+    its gallery deck (`si --export themes`). RULES.md §15.
+  - **`si theme list`**; theme names match loosely (`CanonicalTheme`: case,
+    spaces/underscores → `-`, aliases), so `--theme "AceMQ Pro"` works; an
+    unknown `--theme` is a usage error.
+  - **`si play --remote[=tp,draw]`** (`--remote-addr`, default 0.0.0.0:play+1):
+    keyed LAN listener (`?k=` → HttpOnly cookie) for a tablet: `tp` teleprompter
+    and `draw` pen pad, synced by a relay (`internal/serve/remote.go`, SSE + POST,
+    last state replayed). Transport `render.RelayJS` is injected only under
+    `--remote`; built decks contain none of it. `docs/remote.md`, RULES.md §11.
+  - **`si --export agent-rules`**: writes `CLAUDE.md` + `AGENTS.md` from
+    `docs/agent-rules.md` (never overwrites; `-o -` prints).
+  - **Teleprompter rule** (CLAUDE.md rule #5): `Notes:` = what the speaker says
+    to the audience, verbatim, no stage directions; `Points:` = main points +
+    speaker reminders. Examples, scaffolds, samples and the migrate prompt follow it.
 - **v0.9.1:** built-in **`theme: acemq`** (AceMQ brand: Urbanist/Mona Sans + logo
   embedded from `internal/assets/web/themes/acemq/`, extra CSS in
   `internal/assets/web/themes/acemq.css`, emitted only for that theme by `ThemeCSS`;
@@ -57,7 +76,7 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 6. **Teleprompter stays a real teleprompter.**
 7. **Go stdlib + goldmark only.** `gofmt`, `go vet ./...`, `go test ./...` green
    before every commit. (v0.6.0 carves a play-only, loopback-only exception for
-   the terminal — `creack/pty` + bundled xterm.js; see CLAUDE.md rule #7.)
+   the terminal — `creack/pty` + bundled xterm.js; see CLAUDE.md rule #8.)
 
 ## How to work
 

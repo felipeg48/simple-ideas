@@ -64,11 +64,14 @@ Edit ` + "`CANVAS.svg`" + `, save, and this reloads under ` + "`si play`" + `.
 - It advances to **stage B**
 - It reaches **stage C** — done
 
-Notes: The whole animation lives in CANVAS.svg. The ` + "`steps`" + ` line sets the
-canvas state (s1 then s2 then s3); the SVG's own CSS transition slides the
-token, ` + "`data-ok`" + ` turns stage C green, and ` + "`data-show`" + ` reveals the check.
-Add parts, add state words, drive them from the steps line. Full recipe:
-docs/authoring-canvases.md (or run ` + "`si rules`" + ` and read section 10).
+Notes: The token starts at stage A, moves on to stage B, and reaches stage C:
+done.
+
+Points: How the canvas works
+- The whole animation lives in CANVAS.svg
+- The ` + "`steps`" + ` line sets the canvas state: s1, then s2, then s3
+- The SVG's own CSS transition slides the token; ` + "`data-ok`" + ` turns stage C green, ` + "`data-show`" + ` reveals the check
+- Full recipe: docs/authoring-canvases.md (or ` + "`si rules`" + `, section 10)
 `
 
 func scaffoldCanvas(name string, stdout, stderr io.Writer) int {
