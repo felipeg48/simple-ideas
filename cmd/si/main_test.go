@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -203,5 +204,19 @@ func TestThemeList(t *testing.T) {
 	}
 	if html, _ := os.ReadFile(filepath.Join(out, "d.html")); !strings.Contains(string(html), `data-si-theme="acemq-pro"`) {
 		t.Error("--theme \"AceMQ Pro\" does not render acemq-pro")
+	}
+}
+
+func TestRemoteFlag(t *testing.T) {
+	o, err := parseArgs([]string{"play", "--remote", "d.md"}, io.Discard)
+	if err != nil || strings.Join(o.remote.roles, ",") != "tp,draw" || len(o.args) != 2 {
+		t.Fatalf("--remote: %v %v %v", err, o.remote.roles, o.args)
+	}
+	o, err = parseArgs([]string{"play", "d.md", "--remote=draw", "--remote-addr", "127.0.0.1:0"}, io.Discard)
+	if err != nil || strings.Join(o.remote.roles, ",") != "draw" || o.remoteAddr != "127.0.0.1:0" {
+		t.Fatalf("--remote=draw: %v %v", err, o.remote.roles)
+	}
+	if _, err := parseArgs([]string{"play", "d.md", "--remote=nope"}, io.Discard); err == nil {
+		t.Error("an unknown role should fail")
 	}
 }

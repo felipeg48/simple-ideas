@@ -51,6 +51,10 @@ type Options struct {
 	// Set only by si play on a loopback address; always false for build/export,
 	// so a self-contained deck never loads the terminal runtime.
 	Terminal bool
+	// Remote joins the page to the `si play --remote` relay (SI_CONFIG.remote):
+	// presenter state, commands and ink also travel over /_si/remote/*.
+	// Play only; a built deck keeps BroadcastChannel alone.
+	Remote bool
 	// Prev and Next link a lab to its neighbours built from the same
 	// directory (si build); empty Href means no link.
 	Prev, Next DocLink
@@ -594,8 +598,11 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 			timer = map[string]any{"time": t.Times, "unit": t.Unit, "face": t.Face, "animations": names, "animKinds": kinds}
 		}
 	}
-	cfg, _ := json.Marshal(map[string]any{"keys": keys, "features": feats, "timer": timer, "terminal": opt.Terminal})
+	cfg, _ := json.Marshal(map[string]any{"keys": keys, "features": feats, "timer": timer, "terminal": opt.Terminal, "remote": opt.Remote})
 	fmt.Fprintf(&b, "<script>window.SI_CONFIG=%s;</script>\n", cfg)
+	if opt.Remote {
+		b.WriteString(RelayJS)
+	}
 	// Runbook cheat-sheet: play-only + loopback-only, like the terminal it rides
 	// in. Never injected into a built deck (opt.Terminal is false for build).
 	if opt.Terminal && dr.runbookJSON != "" {
@@ -749,6 +756,14 @@ const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <span class="si-draw-sep" aria-hidden="true"></span><button type="button" data-si-draw="erase" title="Eraser (e)">Erase</button><button type="button" data-si-draw="undo" title="Undo (z)">Undo</button><button type="button" data-si-draw="clear" title="Clear all (x)">Clear</button><button type="button" data-si-draw="done" title="Done (Esc)">Done</button>
 </div>
 `
+
+// RelayJS defines window.SI_RELAY(), the `si play --remote` transport: a
+// BroadcastChannel-shaped object ({postMessage, onmessage}) over the relay
+// (POST /_si/remote/send, SSE /_si/remote/events). Play only, like
+// LiveReloadJS; deck.js copies the tag into the remote teleprompter page.
+const RelayJS = `<script id="si-relay">window.SI_RELAY=function(){var id=Math.random().toString(36).slice(2),c={onmessage:null};` +
+	`var es=new EventSource('/_si/remote/events?c='+id);es.onmessage=function(e){try{if(c.onmessage)c.onmessage({data:JSON.parse(e.data)})}catch(x){}};` +
+	`c.postMessage=function(m){fetch('/_si/remote/send?c='+id,{method:'POST',body:JSON.stringify(m),keepalive:true}).catch(function(){})};return c};</script>` + "\n"
 
 // LiveReloadJS reloads the page when si play reports a change; the URL hash
 // keeps the slide and step.

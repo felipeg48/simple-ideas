@@ -447,6 +447,35 @@ static HTML (`file://`), and either window drives both. It has two tabs:
 
 Settings (tab, size, speed, mirror, notes only) are remembered per browser.
 
+**On another device (`si play --remote`).** Put the teleprompter on an iPad
+(or any tablet or phone) and project from the laptop. `--remote` opens a
+second listener on your network, next to the loopback one, and prints one
+keyed URL and QR code per role:
+
+```bash
+si play talk.md --remote                    # both roles
+si play talk.md --remote=tp                 # teleprompter only
+si play talk.md --remote --remote-addr 0.0.0.0:9000
+```
+
+| Role | On the device | Drives the deck |
+|---|---|---|
+| `tp` | the teleprompter above: script, tabs, auto-scroll, clocks, previews, mirror | Prev / Next, keys |
+| `draw` | the current slide with the pen always on (Apple Pencil pressure works); Prev / Next in the pen bar | the strokes appear on the projected slide live; Prev / Next |
+
+- The deck on the laptop stays on `127.0.0.1`, so the terminal drawer keeps
+  working. The remote listener (default: every interface, the play port + 1)
+  serves the decks, their files and the sync, never the terminal.
+- Pages sync through the server (server-sent events and small POSTs), the
+  deck stays the source of truth, and a device that connects late jumps to
+  the current slide. Ink is shared both ways in slide coordinates and clears
+  when the slide changes, like the local pen (`a`).
+- The URL carries a random per-run key; the first visit stores it as a
+  cookie, and anything without it gets 403. It is plain HTTP: use it on a
+  network you trust.
+- With a folder of decks the QR code opens a picker (deck × role).
+- Play only: a built deck never contains any of it. See `docs/remote.md`.
+
 ## 12. Includes
 
 ```markdown

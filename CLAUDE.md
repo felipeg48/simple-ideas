@@ -148,6 +148,10 @@ pass. The steps that matter:
 
 ## Roadmap ideas
 
+- **`si play --remote`** (DONE, see `docs/remote.md`): a keyed second
+  listener for a tablet: `tp` (teleprompter) and `draw` (pen pad) roles, synced
+  through a server relay (SSE + POST); the transport is injected only in play.
+  Next: a phone `clicker` role; HTTPS or a pairing code for untrusted networks.
 - **`si play` terminal drawer** (DONE, v0.6.0, see `docs/terminal.md`): a
   bottom→middle HUD with multiple tabs to run local commands during demos
   (`docker ps`, `cockroach start-single-node`, `cockroach sql`). Shipped as full

@@ -30,6 +30,7 @@ type Server struct {
 	Conf     string   // --conf path; empty falls back to si.conf next to the deck
 	Terminal bool     // enable the play terminal drawer; set only on a loopback address
 	Dev      bool     // --dev: in-place hot reload instead of full-page reload
+	Remote   bool     // --remote: decks join the relay (see remote.go)
 	Title    string   // --title / --site: the index page title; empty uses the directory name
 	Interval time.Duration
 
@@ -38,6 +39,7 @@ type Server struct {
 	mu      sync.Mutex
 	clients map[chan struct{}]bool
 	term    *termHub
+	relay   *relay
 }
 
 // New prepares a server for root.
@@ -57,6 +59,7 @@ func New(root string, css []string, theme, conf string) (*Server, error) {
 		s.dir, s.file = filepath.Dir(abs), abs
 	}
 	s.term = newTermHub(s.dir)
+	s.relay = newRelay()
 	return s, nil
 }
 
@@ -64,6 +67,10 @@ func New(root string, css []string, theme, conf string) (*Server, error) {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/_si/events", s.events)
+	if s.Remote {
+		mux.HandleFunc("GET /_si/remote/events", s.relay.events)
+		mux.HandleFunc("POST /_si/remote/send", s.relay.send)
+	}
 	if s.Terminal {
 		// Play terminal: loopback only (see Server.Terminal). Embedded xterm.js
 		// assets are static; the shell endpoints run per tab.
@@ -90,7 +97,7 @@ func (s *Server) Handler() http.Handler {
 				static.ServeHTTP(w, r)
 				return
 			}
-			s.deck(w, md)
+			s.deck(w, md, s.Terminal)
 		default:
 			static.ServeHTTP(w, r)
 		}
@@ -106,7 +113,8 @@ func (s *Server) css() []render.Stylesheet {
 	return sheets
 }
 
-func (s *Server) deck(w http.ResponseWriter, md string) {
+// deck renders one deck; term turns the terminal drawer on (loopback only).
+func (s *Server) deck(w http.ResponseWriter, md string, term bool) {
 	d, err := deck.Parse(md)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -118,11 +126,11 @@ func (s *Server) deck(w http.ResponseWriter, md string) {
 	}
 	// The terminal drawer shows only when the capability is on (loopback play)
 	// and the feature is not explicitly disabled in si.conf.
-	termOn := s.Terminal
+	termOn := term
 	if v, ok := cfg.Features["terminal"]; ok && !v {
 		termOn = false
 	}
-	res := render.Deck(d, render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn})
+	res := render.Deck(d, render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Remote: s.Remote})
 	for _, p := range res.Problems {
 		log.Printf("si play: %s", p)
 	}

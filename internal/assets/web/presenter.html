@@ -88,8 +88,9 @@ body{overflow:hidden;height:100%}
   var $ = function (id) { return document.getElementById(id); };
   var pv = $('pv'), notes = $('notes'), points = $('points'), prompt = $('prompt');
   document.documentElement.style.setProperty('--_aspect', D.aspect);
-  var chan = new BroadcastChannel('si:' + D.name);
-  function send(cmd) { chan.postMessage({ type: 'cmd', cmd: cmd }); }
+  /* same-browser window: BroadcastChannel; remote device (si play --remote): the relay */
+  var chan = D.relay && window.SI_RELAY ? window.SI_RELAY() : new BroadcastChannel('si:' + D.name);
+  function send(cmd) { chan.postMessage({ type: 'cmd', cmd: cmd, name: D.name, mid: Math.random().toString(36).slice(2) }); }
   function load(k, d) { try { var v = localStorage.getItem('si-prompter-' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }
   function save(k, v) { try { localStorage.setItem('si-prompter-' + k, JSON.stringify(v)); } catch (e) {} }
 
@@ -163,7 +164,7 @@ body{overflow:hidden;height:100%}
   /* ---------- sync with the audience window ---------- */
   chan.onmessage = function (e) {
     var m = e.data || {};
-    if (m.type !== 'state') return;
+    if (m.type !== 'state' || (m.name && m.name !== D.name)) return;
     plan = m.plan || plan; total = m.total || 0;
     document.documentElement.setAttribute('data-si-mode', m.dark ? 'dark' : 'light');
     $('title').textContent = m.title || D.title;

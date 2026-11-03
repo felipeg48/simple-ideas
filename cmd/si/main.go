@@ -10,6 +10,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
@@ -49,7 +51,7 @@ const (
 const usage = `si: markdown in, animated fluid HTML slide decks out
 
 Usage:
-  si play <dir|file.md> [--addr 127.0.0.1:7070] [--open] [--css <dir|file.css>]...
+  si play <dir|file.md> [--addr 127.0.0.1:7070] [--open] [--css <dir|file.css>]... [--remote[=tp,draw]]
         serve the decks, rendered from markdown on every request, live reload on change
   si --web [dir] [--addr 127.0.0.1:7070] [--no-open]   the Studio: edit, preview and check decks in the browser (loopback only)
   si [build] <dir|file.md> [--output html/] [--css <dir|file.css>]... [--no-inline-media] [--pdf]
@@ -89,6 +91,8 @@ Flags (GNU style, before or after the path):
       --site <text>     alias for --title (reads as "the site/landing page title")
       --ai <command>    migrate: pipe the migration prompt to this agent command (e.g. "claude -p")
       --addr <host:port> play address (default 127.0.0.1:7070)
+      --remote[=tp,draw] play: a second, keyed listener for a tablet or phone on your network: tp = teleprompter, draw = draw pad (default: both)
+      --remote-addr <host:port> play: the --remote address (default 0.0.0.0, the play port + 1)
       --open            play: open the browser
       --dev             play: hot reload — morph changed slides in place (keeps the current slide, step and overview)
       --no-inline-media build: copy images and videos next to the HTML instead of data URIs
@@ -101,6 +105,30 @@ Example:
   si --css css/ --output html/ md/
 `
 
+// remoteFlag is --remote (every role) or --remote=tp,draw (only these).
+type remoteFlag struct{ roles []string }
+
+func (r *remoteFlag) IsBoolFlag() bool { return true }
+func (r *remoteFlag) String() string   { return strings.Join(r.roles, ",") }
+func (r *remoteFlag) Set(v string) error {
+	if v == "true" {
+		r.roles = append([]string(nil), serve.RemoteRoles...)
+		return nil
+	}
+	r.roles = nil
+	if v == "false" {
+		return nil
+	}
+	for _, w := range strings.Split(v, ",") {
+		w = strings.TrimSpace(w)
+		if _, ok := serve.RemoteRoleNames[w]; !ok {
+			return fmt.Errorf("unknown --remote role %q (use %s)", w, strings.Join(serve.RemoteRoles, ", "))
+		}
+		r.roles = append(r.roles, w)
+	}
+	return nil
+}
+
 type multi []string
 
 func (m *multi) String() string     { return strings.Join(*m, ",") }
@@ -108,6 +136,8 @@ func (m *multi) Set(v string) error { *m = append(*m, v); return nil }
 
 type options struct {
 	output, addr, export, theme, conf, title, ai string
+	remoteAddr                                   string
+	remote                                       remoteFlag
 	open, help, ver                              bool
 	noInline, pdf, slides, dev, web, noOpen      bool
 	css                                          multi
@@ -124,6 +154,8 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.output, "out", "", "")
 	fl.StringVar(&o.output, "o", "", "")
 	fl.StringVar(&o.addr, "addr", "127.0.0.1:7070", "")
+	fl.Var(&o.remote, "remote", "")
+	fl.StringVar(&o.remoteAddr, "remote-addr", "", "")
 	fl.StringVar(&o.export, "export", "", "")
 	fl.BoolVar(&o.open, "open", false, "")
 	fl.BoolVar(&o.dev, "dev", false, "")
@@ -222,6 +254,9 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		return exitOK
 	case "play":
 		if len(rest) != 1 {
+			if len(o.remote.roles) > 0 {
+				return usageErr(stderr, "play needs one <dir|file.md> (pick remote roles with --remote=tp,draw, no space)")
+			}
 			return usageErr(stderr, "play needs one <dir|file.md>")
 		}
 		return play(rest[0], o, stdout, stderr)
@@ -450,10 +485,20 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	srv.Dev = o.dev
 	srv.Title = o.title
+	srv.Remote = len(o.remote.roles) > 0
 	ln, err := net.Listen("tcp", o.addr)
 	if err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
 		return exitProblems
+	}
+	var remote *http.Server
+	if srv.Remote {
+		rs, code := startRemote(srv, ln.Addr(), o, stdout, stderr)
+		if rs == nil {
+			ln.Close()
+			return code
+		}
+		remote = rs
 	}
 	url := "http://" + ln.Addr().String() + "/"
 	fmt.Fprintf(stdout, "si play: serving %s at %s (live reload on; Ctrl+C stops)\n", src, url)
@@ -481,6 +526,9 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		srv.CloseTerminals()
 		sctx, c := context.WithTimeout(context.Background(), 2*time.Second)
 		defer c()
+		if remote != nil {
+			remote.Shutdown(sctx)
+		}
 		hs.Shutdown(sctx)
 	}()
 	if o.open {
@@ -491,6 +539,64 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		return exitProblems
 	}
 	return exitOK
+}
+
+// startRemote opens the --remote listener (default: every interface, the play
+// port + 1), prints one URL + QR code per role and serves it in the
+// background. It returns nil and an exit code on failure.
+func startRemote(srv *serve.Server, main net.Addr, o *options, stdout, stderr io.Writer) (*http.Server, int) {
+	addr := o.remoteAddr
+	if addr == "" {
+		port := 0
+		if ta, ok := main.(*net.TCPAddr); ok && ta.Port > 0 {
+			port = ta.Port + 1
+		}
+		addr = fmt.Sprintf("0.0.0.0:%d", port)
+	}
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		fmt.Fprintf(stderr, "si: --remote: %v (pick another with --remote-addr)\n", err)
+		return nil, exitProblems
+	}
+	var raw [16]byte
+	if _, err := rand.Read(raw[:]); err != nil {
+		fmt.Fprintf(stderr, "si: --remote: %v\n", err)
+		return nil, exitProblems
+	}
+	key := hex.EncodeToString(raw[:])
+	host := lanIP()
+	ta, _ := ln.Addr().(*net.TCPAddr)
+	if ta != nil && !ta.IP.IsUnspecified() {
+		host = ta.IP.String()
+	}
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	base := fmt.Sprintf("http://%s/", net.JoinHostPort(host, strconv.Itoa(ta.Port)))
+	fmt.Fprintf(stdout, "  remote (same network, keyed link; plain HTTP, so use a trusted network):\n")
+	decks := srv.RemoteDecks()
+	if len(decks) == 1 {
+		for _, r := range o.remote.roles {
+			u := fmt.Sprintf("%s%s?role=%s&k=%s", base, strings.TrimPrefix(decks[0], "/"), r, key)
+			fmt.Fprintf(stdout, "  %s: %s\n", serve.RemoteRoleNames[r], u)
+			if qr, err := qrString(u); err == nil {
+				fmt.Fprint(stdout, qr)
+			}
+		}
+	} else {
+		u := base + "?k=" + key
+		fmt.Fprintf(stdout, "  pick a deck and a role (%s): %s\n", strings.Join(o.remote.roles, ", "), u)
+		if qr, err := qrString(u); err == nil {
+			fmt.Fprint(stdout, qr)
+		}
+	}
+	rs := &http.Server{Handler: srv.RemoteHandler(key, o.remote.roles), ReadHeaderTimeout: 10 * time.Second}
+	go func() {
+		if err := rs.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			fmt.Fprintf(stderr, "si: --remote: %v\n", err)
+		}
+	}()
+	return rs, exitOK
 }
 
 func web(dir string, o *options, stdout, stderr io.Writer) int {

@@ -11,6 +11,10 @@
   var cmd = { overview: 'o', presenter: 'p', draw: 'a', timer: 't', mode: 'd', fullscreen: 'f', find: '/', help: '?' };
   var termEnabled = !!cfg.terminal; /* si play on a loopback address only; never in a built deck */
   if (termEnabled) cmd.terminal = '`';
+  /* si play --remote: this page joins the relay; ?role=tp turns it into the
+     teleprompter, ?role=draw into a draw pad that follows the deck */
+  var remoteOn = !!cfg.remote;
+  var role = remoteOn ? ((/[?&]role=(tp|draw)(?:&|$)/.exec(location.search) || [])[1] || '') : '';
   if (cfg.keys) for (var _k in cfg.keys) if (cmd.hasOwnProperty(_k) && cfg.keys[_k]) cmd[_k] = cfg.keys[_k];
   var feat = { draw: true, timer: true, presenter: true, overview: true, find: true };
   if (cfg.features) for (var _f in cfg.features) if (feat.hasOwnProperty(_f)) feat[_f] = !!cfg.features[_f];
@@ -148,10 +152,12 @@
     update();
   }
   function forward() {
+    if (role === 'draw') { post({ type: 'cmd', cmd: 'next' }); return; }
     if (step < maxStep(slides[cur])) go(cur, step + 1);
     else if (cur < n - 1) go(cur + 1, 0);
   }
   function backward() {
+    if (role === 'draw') { post({ type: 'cmd', cmd: 'prev' }); return; }
     if (step > 0) go(cur, step - 1);
     else if (cur > 0) go(cur - 1, 'end');
   }
@@ -470,9 +476,15 @@
     find.addEventListener('click', function (e) { if (e.target === find) findShow(false); });
   }
 
-  /* ---------- presenter view (p): a second window synced over BroadcastChannel ---------- */
-  var chan = null;
-  try { if ('BroadcastChannel' in window) chan = new BroadcastChannel('si:' + data.name); } catch (e) { chan = null; }
+  /* ---------- presenter view (p): a second window synced over BroadcastChannel,
+     and with si play --remote also over the relay (other devices) ---------- */
+  var chans = [];
+  try { if ('BroadcastChannel' in window && role !== 'tp') chans.push(new BroadcastChannel('si:' + data.name)); } catch (e) {}
+  /* window.SI_RELAY is injected by si play --remote only (never in a built deck) */
+  if (remoteOn && role !== 'tp' && window.SI_RELAY) chans.push(window.SI_RELAY());
+  /* a page on the same origin hears a message twice (BroadcastChannel and relay): mid dedupes */
+  var seen = [];
+  function post(m) { m.name = data.name; m.mid = Math.random().toString(36).slice(2); chans.forEach(function (c) { try { c.postMessage(m); } catch (e) {} }); }
   function snapshot(s, k) {
     var c = s.cloneNode(true);
     c.classList.remove('si-past', 'si-future');
@@ -486,40 +498,53 @@
     return c.outerHTML;
   }
   function announce() {
-    if (!chan || cur < 0) return;
+    if (!chans.length || cur < 0 || role) return; /* only the deck itself speaks for the deck */
     var s = slides[cur], max = maxStep(s), nx = null, label = 'End of deck';
     if (step < max) { nx = snapshot(s, step + 1); label = 'Next step ' + (step + 1) + '/' + max; }
     else if (cur + 1 < n) { nx = snapshot(slides[cur + 1], 0); label = 'Next: ' + (slides[cur + 1].getAttribute('data-title') || 'slide ' + (cur + 2)); }
     var notes = s.querySelector('.si-notes');
     var points = s.querySelector('.si-points');
-    try {
-      chan.postMessage({
+    post({
         type: 'state', i: cur, k: step, kmax: max, n: n, title: s.getAttribute('data-title') || '',
         minutes: s.getAttribute('data-minutes') || '', total: data.minutes, plan: data.plan, notes: notes ? notes.innerHTML : '',
         points: points ? points.innerHTML : '',
         cur: snapshot(s), next: nx, label: label, dark: effectiveDark()
-      });
-    } catch (e) {}
+    });
   }
-  if (chan) chan.onmessage = function (e) {
+  function onMsg(e) {
     var m = e.data || {};
-    if (m.type !== 'cmd') return;
+    if (m.name && m.name !== data.name) return;
+    if (m.mid) { if (seen.indexOf(m.mid) >= 0) return; seen.push(m.mid); if (seen.length > 64) seen.shift(); }
+    if (m.type === 'ink' || m.type === 'erase' || m.type === 'clear') { inkIn(m); return; }
+    if (m.type === 'state' && role === 'draw') { if (m.i !== cur || m.k !== step) go(m.i, m.k); return; }
+    if (m.type !== 'cmd' || role) return;
     if (m.cmd === 'next') forward();
     else if (m.cmd === 'prev') backward();
     else if (m.cmd === 'first') go(0, 0);
     else if (m.cmd === 'last') go(n - 1, 'end');
     else if (m.cmd === 'hello') announce();
-  };
+  }
+  chans.forEach(function (c) { c.onmessage = onMsg; });
+  function presenterDoc(relay) {
+    var css = Array.prototype.map.call(document.querySelectorAll('style'), function (s) { return s.textContent; }).join('\n');
+    var rl = relay && document.getElementById('si-relay');
+    return window.SI_PRESENTER
+      .split('</head>').join((rl ? rl.outerHTML : '') + '</head>')
+      .split('__CSS__').join(css)
+      .split('__TITLE__').join(data.title.replace(/[<&]/g, ''))
+      .split('__DATA__').join(JSON.stringify({ name: data.name, title: data.title, aspect: data.aspect, relay: relay }).replace(/</g, '\\u003c'));
+  }
   function openPresenter() {
     var w = window.open('', 'si-presenter-' + data.name, 'width=1200,height=760');
     if (!w) return;
-    var css = Array.prototype.map.call(document.querySelectorAll('style'), function (s) { return s.textContent; }).join('\n');
-    var doc = window.SI_PRESENTER
-      .split('__CSS__').join(css)
-      .split('__TITLE__').join(data.title.replace(/[<&]/g, ''))
-      .split('__DATA__').join(JSON.stringify({ name: data.name, title: data.title, aspect: data.aspect }).replace(/</g, '\\u003c'));
-    w.document.open(); w.document.write(doc); w.document.close();
+    w.document.open(); w.document.write(presenterDoc(false)); w.document.close();
     setTimeout(announce, 150);
+  }
+  /* remote teleprompter: this page becomes the presenter view, synced over the relay */
+  if (role === 'tp') {
+    var becomeTp = function () { var doc = presenterDoc(true); document.open(); document.write(doc); document.close(); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', becomeTp); else setTimeout(becomeTp, 0);
+    return;
   }
 
   /* ---------- keys, touch, controls ---------- */
@@ -541,8 +566,37 @@
     draw.setAttribute('aria-hidden', on ? 'false' : 'true');
     syncPenUI();
   }
-  function clearStrokes() { if (draw) while (draw.firstChild) draw.removeChild(draw.firstChild); }
-  function undoStroke() { if (draw && draw.lastChild) draw.removeChild(draw.lastChild); }
+  function clearStrokes(share) { if (draw) while (draw.firstChild) draw.removeChild(draw.firstChild); if (share) post({ type: 'clear', i: cur }); }
+  function undoStroke() { if (draw && draw.lastChild) dropStroke(draw.lastChild); }
+  function dropStroke(el) { draw.removeChild(el); if (el.id) post({ type: 'erase', i: cur, id: el.id }); }
+  /* shared ink: points travel in 0..1 slide coordinates (and the width as a
+     fraction of the slide width), batched every 40 ms while a stroke grows */
+  var inkSeq = 0, inkBuf = [], inkTimer = 0, inkW = 0;
+  function slideBox() { return slides[cur].getBoundingClientRect(); }
+  function inkPush(x, y) {
+    if (!chans.length || !curPath) return;
+    var r = slideBox(); inkBuf.push([+((x - r.left) / r.width).toFixed(4), +((y - r.top) / r.height).toFixed(4)]);
+    if (!inkTimer) inkTimer = setTimeout(inkFlush, 40);
+  }
+  function inkFlush() {
+    inkTimer = 0;
+    if (!inkBuf.length || !curPath) { inkBuf = []; return; }
+    post({ type: 'ink', i: cur, id: curPath.id, c: curPath.style.stroke, w: +(inkW / slideBox().width).toFixed(5), p: inkBuf });
+    inkBuf = [];
+  }
+  function inkIn(m) {
+    if (!draw || m.i !== cur) return;
+    if (m.type === 'clear') { clearStrokes(); return; }
+    var el = m.id && document.getElementById(m.id);
+    if (m.type === 'erase') { if (el && el.parentNode === draw) draw.removeChild(el); return; }
+    var r = slideBox(), d = '';
+    (m.p || []).forEach(function (pt) { var x = r.left + pt[0] * r.width, y = r.top + pt[1] * r.height; d += (d || el ? ' L ' : 'M ') + x.toFixed(1) + ' ' + y.toFixed(1); });
+    if (!el) {
+      el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      el.id = m.id; el.style.stroke = m.c; el.setAttribute('stroke-width', Math.max(1, m.w * r.width).toFixed(1));
+      el.setAttribute('d', d); draw.appendChild(el);
+    } else el.setAttribute('d', el.getAttribute('d') + d);
+  }
   function cycleColor() { penColor = penColors[(penColors.indexOf(penColor) + 1) % penColors.length]; erasing = false; syncPenUI(); }
   function toggleEraser() { erasing = !erasing; syncPenUI(); }
   function syncPenUI() {
@@ -556,20 +610,22 @@
     e.preventDefault(); drawing = true;
     if (erasing) { eraseAt(e); return; }
     curPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    curPath.id = 'si-ink-' + Math.random().toString(36).slice(2, 7) + (++inkSeq);
     curPath.setAttribute('d', 'M ' + e.clientX + ' ' + e.clientY);
     // inline style (not a presentation attribute) so the CSS var() resolves
     curPath.style.stroke = penColor;
     var w = (e.pointerType === 'pen' && e.pressure) ? penSize * (0.5 + e.pressure) : penSize;
     curPath.setAttribute('stroke-width', w.toFixed(1));
     draw.appendChild(curPath);
+    inkW = w; inkPush(e.clientX, e.clientY);
   }
   function dMove(e) {
     if (!drawMode || !drawing) return;
     if (erasing) { eraseAt(e); return; }
-    if (curPath) curPath.setAttribute('d', curPath.getAttribute('d') + ' L ' + e.clientX + ' ' + e.clientY);
+    if (curPath) { curPath.setAttribute('d', curPath.getAttribute('d') + ' L ' + e.clientX + ' ' + e.clientY); inkPush(e.clientX, e.clientY); }
   }
-  function dEnd() { drawing = false; curPath = null; }
-  function eraseAt(e) { var el = document.elementFromPoint(e.clientX, e.clientY); if (el && el.parentNode === draw) draw.removeChild(el); }
+  function dEnd() { if (curPath) { clearTimeout(inkTimer); inkFlush(); } drawing = false; curPath = null; }
+  function eraseAt(e) { var el = document.elementFromPoint(e.clientX, e.clientY); if (el && el.parentNode === draw) dropStroke(el); }
   if (draw) {
     draw.addEventListener('pointerdown', dStart);
     window.addEventListener('pointermove', dMove);
@@ -582,7 +638,7 @@
     each(drawBar.querySelectorAll('[data-si-draw]'), function (b) {
       b.addEventListener('click', function () {
         var a = b.getAttribute('data-si-draw');
-        if (a === 'erase') toggleEraser(); else if (a === 'undo') undoStroke(); else if (a === 'clear') clearStrokes(); else if (a === 'done') toggleDraw(false);
+        if (a === 'erase') toggleEraser(); else if (a === 'undo') undoStroke(); else if (a === 'clear') clearStrokes(true); else if (a === 'done') toggleDraw(false);
         b.blur();
       });
     });
@@ -652,7 +708,7 @@
       if (e.key === 'c') { e.preventDefault(); cycleColor(); return; }
       if (e.key === 'e') { e.preventDefault(); toggleEraser(); return; }
       if (e.key === 'z') { e.preventDefault(); undoStroke(); return; }
-      if (e.key === 'x') { e.preventDefault(); clearStrokes(); return; }
+      if (e.key === 'x') { e.preventDefault(); clearStrokes(true); return; }
     }
     switch (e.key) {
       case 'ArrowRight': case 'ArrowDown': case 'PageDown': case 'Enter': case 'j': case 'n':
@@ -721,6 +777,7 @@
   var tx0 = 0, ty0 = 0, t0 = 0;
   document.addEventListener('touchstart', function (e) { var t = e.changedTouches[0]; tx0 = t.clientX; ty0 = t.clientY; t0 = Date.now(); }, { passive: true });
   document.addEventListener('touchend', function (e) {
+    if (drawMode) return; /* a stroke is not a swipe */
     if (hud && hud.classList.contains('is-open')) return;
     if (deck.classList.contains('si-overview')) return;
     var t = e.changedTouches[0], dx = t.clientX - tx0, dy = t.clientY - ty0;
@@ -829,6 +886,18 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fit(slides[cur]); });
   window.addEventListener('load', function () { renderMermaid(false); fit(slides[cur]); });
   fromHash(true);
+  /* remote draw pad: the pen is always on; prev/next buttons drive the deck */
+  if (role === 'draw' && draw) {
+    toggleDraw(true);
+    if (drawBar) {
+      var done = drawBar.querySelector('[data-si-draw="done"]'); if (done) done.style.display = 'none';
+      [['prev', '\u2039 Prev', backward], ['next', 'Next \u203a', forward]].forEach(function (b) {
+        var el = document.createElement('button'); el.type = 'button'; el.textContent = b[1]; el.setAttribute('data-si-remote', b[0]); el.style.whiteSpace = 'nowrap';
+        el.addEventListener('click', function () { b[2](); el.blur(); }); drawBar.appendChild(el);
+      });
+    }
+    post({ type: 'cmd', cmd: 'hello' });
+  }
   /* --dev hot reload: after the page's slides are morphed in place, re-apply the
    * current slide (apply() reads the DOM live, so the new content shows) or
    * rebuild the overview grid if it is open. */
