@@ -102,12 +102,16 @@ active shell. Opt in with front matter `runbook: <path>.json` on the deck.
 - **Interaction.** A filter box; each entry has **Copy** and **Run** buttons
   (clicking the entry is Copy, Shift/⌘-click Run). Copy puts the command at the
   prompt of the active tab (via the existing `POST /in` input path) and on the
-  clipboard; Run also sends `\r`. `sendToShell` waits until the tab's output has
-  been quiet for 250 ms (max 5 s), so a command clicked while a tall prompt is
-  still drawing lands on the prompt line instead of being echoed above it (before
-  v0.9.3 such a command was typed but not visible at the prompt). When the shell turned bracketed paste on
-  (`term.modes.bracketedPasteMode`: zsh, bash 5.1+), the text goes in as
-  `ESC[200~…ESC[201~`, so multi-line commands show whole and run only on Enter. The drawer defaults open when a runbook is present; the
+  clipboard; Run also sends `\r`. The ready signal is bracketed-paste mode
+  (`term.modes.bracketedPasteMode`), which zsh and bash 5.1+ turn on when the
+  prompt is ready to edit: the text then goes in as `ESC[200~…ESC[201~`, so it
+  shows whole (multi-line included) and runs only on Enter. If the tab has been
+  ready before and the mode is off, a command is running and the text is typed
+  into it. While the shell is still starting (a heavy `.zshrc` can print nothing
+  for several seconds) the button shows "Waiting…" for up to 20 s; after 15 s a
+  shell that never enables the mode (sh, macOS bash 3.2) gets plain keystrokes
+  once quiet. (Before v0.9.3 a click during startup was echoed above the prompt
+  and a multi-line command ran line by line.) The drawer defaults open when a runbook is present; the
   open/closed state is persisted (`localStorage`).
 - **Containment.** `window.SI_RUNBOOK` is injected only when `opt.Terminal` is set
   — i.e. `si play` on a loopback address. A built deck never carries it, so rules

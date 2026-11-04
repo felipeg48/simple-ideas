@@ -177,7 +177,7 @@
     term.loadAddon(fit);
     term.open(pane);
 
-    var t = { id: null, term: term, fit: fit, pane: pane, tabEl: tabEl };
+    var t = { id: null, term: term, fit: fit, pane: pane, tabEl: tabEl, born: Date.now() };
     tabs.push(t);
     var idx = tabs.length - 1;
     select(idx);
@@ -221,31 +221,40 @@
 
   /* ---------- runbook drawer: a command cheat-sheet that types into the shell ---------- */
   var rbPanel = null;
-  /* Put a command at the prompt (run: also press Enter). It waits until the
-     shell has drawn its prompt (output quiet for 250 ms; a tall prompt takes a
-     moment), so the text lands on the prompt line instead of being echoed above
-     it. When the shell has bracketed paste on (zsh, bash 5.1+), it is sent as a
-     paste: shown whole, multi-line included, and run only on Enter. Copy also
-     puts it on the clipboard. */
-  function sendToShell(text, run) {
+  /* Put a command at the prompt (run: also press Enter); Copy also puts it on
+     the clipboard. The ready signal is bracketed-paste mode: zsh and bash 5.1+
+     turn it on when the prompt is ready to edit (and off while a command runs),
+     so the text goes in as a paste, shown whole (multi-line included) and run
+     only on Enter. Typing earlier (while .zshrc loads) would echo it above the
+     prompt and run a multi-line block line by line; a heavy .zshrc can take
+     several seconds and print nothing meanwhile. So: prompt ready → paste now;
+     the tab was ready before but a command runs now → type into that command;
+     still starting → wait (up to 20 s; after 15 s a shell that never turns
+     bracketed paste on, like sh or macOS bash 3.2, gets plain keystrokes once
+     quiet). done() runs when the text has been sent. */
+  function sendToShell(text, run, done) {
     text = String(text).replace(/\n+$/, '');
     if (!run && navigator.clipboard) navigator.clipboard.writeText(text).catch(function () {});
     var t = tabs[active];
     if (!t) return;
     var start = Date.now();
     (function wait() {
-      var quiet = t.id && t.lastOut && Date.now() - t.lastOut > 250;
-      if (!quiet && Date.now() - start < 5000) { setTimeout(wait, 60); return; }
+      var bp = !!(t.term.modes && t.term.modes.bracketedPasteMode), now = Date.now();
+      if (bp) t.everBP = true;
+      var quiet = function (ms) { return t.lastOut && now - t.lastOut > ms; };
+      var ready = t.id && (bp ? quiet(80) : t.everBP || (now - t.born > 15000 && quiet(250)));
+      if (!ready && now - start < 20000) { setTimeout(wait, 60); return; }
       if (!t.id) return; // the shell never started
-      var bp = t.term.modes && t.term.modes.bracketedPasteMode;
       var body = (bp ? '\x1b[200~' + text + '\x1b[201~' : text) + (run ? '\r' : '');
       fetch(API + 'in?id=' + t.id, { method: 'POST', body: body }).catch(function () {});
+      if (done) done();
     })();
     t.term.focus();
   }
   function flash(b, label) {
-    var old = b.textContent; b.textContent = label; b.classList.add('done');
-    setTimeout(function () { b.textContent = old; b.classList.remove('done'); }, 900);
+    if (!b._label) b._label = b.textContent;
+    b.textContent = label; b.classList.add('done');
+    clearTimeout(b._t); b._t = setTimeout(function () { b.textContent = b._label; b.classList.remove('done'); }, 900);
   }
   function actButtons(cls, getText, before) {
     var box = document.createElement('div'); box.className = cls;
@@ -256,7 +265,9 @@
       b.addEventListener('click', function (ev) {
         ev.stopPropagation();
         if (before && before(a[1])) return;
-        sendToShell(getText(), a[1]); flash(b, a[1] ? 'Sent' : 'Copied'); b.blur();
+        if (!b._label) b._label = b.textContent;
+        b.textContent = 'Waiting…';
+        sendToShell(getText(), a[1], function () { flash(b, a[1] ? 'Sent' : 'Copied'); }); b.blur();
       });
       box.appendChild(b);
     });
