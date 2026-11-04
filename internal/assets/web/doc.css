@@ -44,6 +44,12 @@ html{font-size:clamp(100%,.85rem + .3vw,150%);-webkit-text-size-adjust:100%;scro
   .si-doc-head-in,.si-doc-foot{width:auto}
   .si-doc-body{max-width:none}
   .si-table-wrap,.si-doc-body pre{overflow:visible}
+  /* paper does not scroll: a wide table fits the page width and its cells wrap */
+  .si-doc-body>:is(.si-table-wrap,.si-codeblock){width:auto;min-width:0;max-width:100%}
+  .si-table-wrap table{width:100%;min-width:0;font-size:.82em}
+  .si-table-wrap td{max-width:none}
+  .si-table-wrap :is(th,td){white-space:normal;overflow-wrap:break-word;hyphens:auto;padding:.45em .6em}
+  .si-table-wrap :is(th,td) code{overflow-wrap:anywhere}
   .si-doc-body pre{white-space:pre-wrap;overflow-wrap:anywhere}
   .si-codeblock,.si-callout,.si-image,tr{break-inside:avoid}
   .si-doc-body h2,.si-doc-body h3{break-after:avoid}
