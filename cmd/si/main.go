@@ -39,7 +39,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/studio"
 )
 
-const version = "0.9.2"
+const version = "0.9.3"
 
 // Exit codes.
 const (
@@ -360,6 +360,8 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			labs = append(labs, i)
 		}
 	}
+	// find (/) offers the other pages of this build, plus .html already in out
+	pages := render.Pages(decks, true, chrome != "", out, cfg)
 	for i, d := range decks {
 		if d == nil {
 			continue
@@ -371,7 +373,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 		if o.noInline {
 			mode = render.MediaCopy
 		}
-		ro := render.Options{UserCSS: css, Media: mode, Theme: o.theme, Config: cfg}
+		ro := render.Options{UserCSS: css, Media: mode, Theme: o.theme, Config: cfg, Pages: pages}
 		for k, j := range labs {
 			if j == i {
 				if k > 0 {

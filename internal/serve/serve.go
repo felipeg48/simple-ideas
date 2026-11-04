@@ -130,13 +130,30 @@ func (s *Server) deck(w http.ResponseWriter, md string, term bool) {
 	if v, ok := cfg.Features["terminal"]; ok && !v {
 		termOn = false
 	}
-	res := render.Deck(d, render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Remote: s.Remote})
+	res := render.Deck(d, render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Remote: s.Remote, Pages: s.pages(cfg)})
 	for _, p := range res.Problems {
 		log.Printf("si play: %s", p)
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Write(res.HTML)
+}
+
+// pages is the find (/) page list for the served folder, read per request so
+// a new deck or .html file shows up after a reload.
+// ponytail: parses every deck per request; fine for a folder of talks.
+func (s *Server) pages(cfg *config.Config) []render.Page {
+	files := []string{s.file}
+	if s.file == "" {
+		files, _ = deck.List(s.dir)
+	}
+	var decks []*deck.Deck
+	for _, f := range files {
+		if d, err := deck.Parse(f); err == nil {
+			decks = append(decks, d)
+		}
+	}
+	return render.Pages(decks, s.file == "", false, s.dir, cfg)
 }
 
 func (s *Server) index(w http.ResponseWriter) {

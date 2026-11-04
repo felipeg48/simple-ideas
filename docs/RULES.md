@@ -600,6 +600,13 @@ references shared assets as `../images/...`.
   matched snippet, ranked title-matches first; `↑`/`↓` move the selection and
   `Enter` (or a click) jumps. Type a **number** to go straight to that slide
   (e.g. `/12` → slide 12). `Esc` closes. Disable with `feature.find: off`.
+  Below the slides it also lists the **other pages** of the folder, matched
+  loosely (the letters in order, not necessarily together: `idx` or `inde`
+  finds `index.html`, `lab3` finds `lab-03-quorum.html`): the index, the other
+  decks and labs, their PDFs (`--pdf`), any other `.html` already in the
+  output folder, and the `links.*` of `si.conf`. `Enter` opens the page.
+  `si build` writes the list into each deck (names and titles only, so it works
+  from `file://`); `si play` reads the folder on every request.
 
 - **Draw** (`a`): a transient pen over the current slide, for circling or
   underlining as you talk. Drag to draw (mouse, touch, or pen — pen pressure
@@ -825,6 +832,7 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `theme: <name>` | default theme when a deck sets no `theme:` and there is no `--theme` |
 | `keys.<action>: <key>` | remap a command key |
 | `feature.<name>: off` | turn a feature off (its key stops working and its toolbar button is hidden) |
+| `links.<label>: <url>` | a page outside the build that find (`/`) offers, e.g. `links.Team wiki: https://wiki.example.com`; relative paths work too |
 | `timer.time: 10,15,30` | break-timer presets (default `5,10,15,20,30,45,60`) |
 | `timer.unit: seconds` | preset unit: `minutes` (default) or `seconds` |
 | `timer.face: analog` | countdown face: `digital` (default) or `analog` (sport-clock dial) |

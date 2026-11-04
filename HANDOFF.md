@@ -5,7 +5,11 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-03)
 
-- **Latest release: v0.9.2** (tagged; the release workflow publishes it).
+- **Latest release: v0.9.3** (tagged; the release workflow publishes it).
+- **v0.9.3:** find (`/`) also searches the other pages of the folder, fuzzily
+  (`idx` → index.html): `render.Pages` (index, decks, labs, PDFs, other `.html`
+  in the output dir, si.conf `links.<label>: <url>`) → `SI_CONFIG.pages`;
+  `si build` bakes it in (works from `file://`), `si play` reads it per request.
 - **v0.9.2:**
   - **`theme: acemq-pro`** ("AceMQ Pro"): the acemq tokens + `acemq.css` +
     `internal/assets/web/themes/acemq-pro.css`, the full AceMQ deck style-guide

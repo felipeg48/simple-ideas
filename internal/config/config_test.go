@@ -78,3 +78,13 @@ func TestParseTimer(t *testing.T) {
 		t.Errorf("expected 1 warning for bad unit, got %v", c2.Warnings)
 	}
 }
+
+func TestLinks(t *testing.T) {
+	c := Parse(strings.NewReader("links.Team wiki: https://wiki.example.com/x#top\nlinks.Setup: ../setup/index.html\nlinks.: nothing\n"))
+	if len(c.Links) != 2 || c.Links[0] != (Link{"Team wiki", "https://wiki.example.com/x#top"}) || c.Links[1].URL != "../setup/index.html" {
+		t.Errorf("links: %+v", c.Links)
+	}
+	if len(c.Warnings) != 1 {
+		t.Errorf("an empty label warns: %v", c.Warnings)
+	}
+}

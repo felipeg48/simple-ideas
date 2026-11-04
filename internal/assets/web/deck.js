@@ -423,7 +423,38 @@
       if (inB >= 0) hits.push({ i: j, pri: 1, snip: snippet(body, inB, q.length) });
     }
     hits.sort(function (a, b) { return a.pri - b.pri || a.i - b.i; });
-    findResults = hits.slice(0, 12);
+    findResults = hits.slice(0, 12).concat(pageHits(ql));
+  }
+  /* other pages of the build (SI_CONFIG.pages: index, decks, labs, PDFs, other
+     .html, si.conf links), matched fuzzily: "idx" and "inde" find index.html */
+  var pages = (cfg.pages || []).filter(function (p) { return p.href !== data.name + '.html'; });
+  function fuzzy(q, s) {
+    var t = s.toLowerCase(), at = [], score = 0, last = -1;
+    for (var i = 0, j = 0; i < q.length; i++) {
+      if (q.charAt(i) === ' ') continue;
+      j = t.indexOf(q.charAt(i), last + 1);
+      if (j < 0) return null;
+      score += 1 + (j === last + 1 ? 2 : 0) + (j === 0 || /[^a-z0-9]/.test(t.charAt(j - 1)) ? 3 : 0) - Math.min(2, (j - last - 1) * 0.1);
+      at.push(j); last = j;
+    }
+    return { score: score, at: at };
+  }
+  function marked(s, at) {
+    var out = '';
+    for (var i = 0; i < s.length; i++) out += at.indexOf(i) >= 0 ? '<mark>' + escHTML(s.charAt(i)) + '</mark>' : escHTML(s.charAt(i));
+    return out;
+  }
+  function pageHits(ql) {
+    var hits = [];
+    pages.forEach(function (p) {
+      var name = p.href.replace(/^.*\//, '').replace(/\.html$/, '');
+      var a = fuzzy(ql, p.title), b = fuzzy(ql, name);
+      if (!a && !b) return;
+      var byName = b && (!a || b.score > a.score);
+      hits.push({ page: p, score: byName ? b.score : a.score, title: byName ? escHTML(p.title) : marked(p.title, a.at), href: byName ? marked(p.href, b.at.map(function (k) { return k + p.href.length - p.href.replace(/^.*\//, '').length; })) : escHTML(p.href) });
+    });
+    hits.sort(function (x, y) { return y.score - x.score; });
+    return hits.slice(0, 6);
   }
   function findRender() {
     if (!findList) return;
@@ -431,11 +462,16 @@
     findList.innerHTML = '';
     findResults.forEach(function (r, idx) {
       var li = document.createElement('li');
-      li.setAttribute('data-i', r.i);
       li.setAttribute('aria-selected', idx === findSel ? 'true' : 'false');
-      var extra = r.jump ? '<small>go to slide ' + r.jump + '</small>' : (r.snip ? '<small>' + r.snip + '</small>' : '');
-      li.innerHTML = '<b>' + (r.i + 1) + '</b> <span>' + escHTML(slideTitle(r.i)) + '</span> ' + extra;
-      li.addEventListener('click', function () { findGo(r.i); });
+      if (r.page) {
+        li.setAttribute('data-page', r.page.kind);
+        li.innerHTML = '<b>\u2197</b> <span>' + r.title + '</span> <small>' + r.page.kind + ' \u00b7 ' + r.href + '</small>';
+      } else {
+        li.setAttribute('data-i', r.i);
+        var extra = r.jump ? '<small>go to slide ' + r.jump + '</small>' : (r.snip ? '<small>' + r.snip + '</small>' : '');
+        li.innerHTML = '<b>' + (r.i + 1) + '</b> <span>' + escHTML(slideTitle(r.i)) + '</span> ' + extra;
+      }
+      li.addEventListener('click', function () { findPick(r); });
       li.addEventListener('mousemove', function () { if (findSel !== idx) { findSel = idx; markSel(); } });
       findList.appendChild(li);
     });
@@ -452,6 +488,7 @@
     markSel();
   }
   function findGo(i) { findShow(false); go(i, 0); }
+  function findPick(r) { if (r.page) { findShow(false); location.href = r.page.href; } else findGo(r.i); }
   function findShow(on) {
     if (!find || !feat.find) return;
     if (on === undefined) on = !find.classList.contains('is-open');
@@ -471,7 +508,7 @@
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); findShow(false); }
       else if (e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); findMove(1); }
       else if (e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); findMove(-1); }
-      else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); if (findResults.length) findGo(findResults[findSel].i); }
+      else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); if (findResults.length) findPick(findResults[findSel]); }
     });
     find.addEventListener('click', function (e) { if (e.target === find) findShow(false); });
   }

@@ -52,6 +52,11 @@ feature.overview:  on
 feature.find:      on
 feature.terminal:  on   # si play loopback only; always off in a built deck and on --addr 0.0.0.0
 
+# extra pages for find (/): it already offers index.html, the other decks, labs
+# and PDFs of the build; add pages outside it (relative paths or URLs)
+# links.Team wiki: https://wiki.example.com/rabbitmq
+# links.Lab setup: ../setup/index.html
+
 # break timer (t): presets, unit, a background animation layer, and the face
 # timer.time: 5,10,15,20,30,45,60   # preset durations shown in the HUD
 # timer.unit: minutes               # minutes (default) or seconds
@@ -67,8 +72,12 @@ type Config struct {
 	Keys     map[string]string // action -> key
 	Features map[string]bool   // feature -> enabled
 	Timer    TimerConfig       // break-timer presets, unit and animation
+	Links    []Link            // links.<label>: <url>, searchable from find (/), in file order
 	Warnings []string          // unknown keys / bad values, for the caller to report
 }
+
+// Link is one links.<label>: <url> line: a page outside the build that find (/) offers.
+type Link struct{ Label, URL string }
 
 // TimerConfig holds the break-timer settings (timer.* keys).
 type TimerConfig struct {
@@ -184,6 +193,12 @@ func Parse(r io.Reader) *Config {
 				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: timer.face wants digital/analog, got %q", ln, v))
 			} else {
 				c.Timer.Face = v
+			}
+		case strings.HasPrefix(k, "links."):
+			if label := strings.TrimSpace(strings.TrimPrefix(k, "links.")); label == "" || v == "" {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: links.<label>: <url> needs a label and a URL", ln))
+			} else {
+				c.Links = append(c.Links, Link{Label: label, URL: v})
 			}
 		case strings.HasPrefix(k, "keys."):
 			c.setKey(strings.TrimPrefix(k, "keys."), v, ln)
