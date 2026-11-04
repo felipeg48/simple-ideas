@@ -99,9 +99,15 @@ active shell. Opt in with front matter `runbook: <path>.json` on the deck.
   raw command (`cmd`, sent to the PTY) and pre-highlighted HTML (`html`, shown in
   the drawer). No JS highlighter port. The `si-tk-*` token colours are restyled
   dark inside `.si-rb` so the drawer stays legible regardless of the deck theme.
-- **Interaction.** A filter box; click an entry to *type* the command into the
-  active tab (via the existing `POST /in` input path), Shift/⌘-click to type **and**
-  run (append `\r`). The drawer defaults open when a runbook is present; the
+- **Interaction.** A filter box; each entry has **Copy** and **Run** buttons
+  (clicking the entry is Copy, Shift/⌘-click Run). Copy puts the command at the
+  prompt of the active tab (via the existing `POST /in` input path) and on the
+  clipboard; Run also sends `\r`. `sendToShell` waits until the tab's output has
+  been quiet for 250 ms (max 5 s), so a command clicked while a tall prompt is
+  still drawing lands on the prompt line instead of being echoed above it (before
+  v0.9.3 such a command was typed but not visible at the prompt). When the shell turned bracketed paste on
+  (`term.modes.bracketedPasteMode`: zsh, bash 5.1+), the text goes in as
+  `ESC[200~…ESC[201~`, so multi-line commands show whole and run only on Enter. The drawer defaults open when a runbook is present; the
   open/closed state is persisted (`localStorage`).
 - **Containment.** `window.SI_RUNBOOK` is injected only when `opt.Terminal` is set
   — i.e. `si play` on a loopback address. A built deck never carries it, so rules
@@ -112,12 +118,26 @@ active shell. Opt in with front matter `runbook: <path>.json` on the deck.
   `deck.Meta.Runbook`. Drawer UI + token CSS: `internal/assets/web/term/term.js`
   (same file as the terminal, same styling-contract exemption).
 
+### Demos (v0.9.3)
+
+Front matter `demos: ../demos/, extra.md` (files or folders, relative to the
+deck; a folder gives its `*.md` except `README.md`, `index.md`, `_*`). `render`
+(`internal/render/demos.go`) converts each script with goldmark (GFM, raw HTML
+allowed: it is the presenter's own file, shown on loopback), highlights every
+fence with the deck highlighter and marks shell-type fences (`bash sh shell zsh
+console sql powershell ps1 pwsh fish`) `si-dm-run`; it injects
+`window.SI_DEMOS = [{title, file, html}]` only with `opt.Terminal`. In the drawer
+(`term.js`) a `▶ Demos` button opens the panel (exclusive with the runbook): a
+`<select>` of titles, the script as a dark document, and Copy / Run on every
+`si-dm-run` block (the text sent is the block's `textContent`). The pick and the
+open state persist (`localStorage` `si-demo-pick`, `si-demos-open`).
+
 ### Placeholders (v0.9.0)
 
 A command may hold `{{name}}` or `{{name:default}}`. Clicking the entry opens an
 inline form in the drawer with one field per distinct name, prefilled with the
 value used earlier this session (`sessionStorage` key `si-rb-vars`), else the
-default. Enter types the command, Shift/Cmd/Ctrl+Enter types and runs, Esc
+default. Enter (or Copy) puts the command at the prompt, Shift/Cmd/Ctrl+Enter (or Run) also runs it, Esc
 cancels and types nothing. Placeholders show highlighted in the entry; other
 braces (`{{.Names}}`, `${HOME}`) are typed verbatim. A top-level `name` in the
 runbook is the drawer title. Studio can edit and generate runbooks (see

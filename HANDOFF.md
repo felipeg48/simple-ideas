@@ -10,6 +10,12 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
   (`idx` → index.html): `render.Pages` (index, decks, labs, PDFs, other `.html`
   in the output dir, si.conf `links.<label>: <url>`) → `SI_CONFIG.pages`;
   `si build` bakes it in (works from `file://`), `si play` reads it per request.
+  Terminal drawer: runbook entries get **Copy** (prompt + clipboard, not run) and
+  **Run**; `sendToShell` waits for the prompt (output quiet 250 ms) and uses
+  bracketed paste when the shell enabled it (fixes "clicked command not visible").
+  New front matter **`demos: ../demos/`**: markdown demo scripts in a `▶ Demos`
+  panel (drop-down + the whole script, Copy/Run on shell blocks),
+  `internal/render/demos.go` → `window.SI_DEMOS`, play + loopback only.
 - **v0.9.2:**
   - **`theme: acemq-pro`** ("AceMQ Pro"): the acemq tokens + `acemq.css` +
     `internal/assets/web/themes/acemq-pro.css`, the full AceMQ deck style-guide

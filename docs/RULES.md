@@ -87,6 +87,7 @@ lang: en
 | `labs-label` | text | `Now, let's do a Lab!` | the heading on every lab slide (see the `labs` directive) |
 | `type` | `deck`, `lab` | `deck` | `lab` renders the file as a readable guide page instead of slides; see [Lab documents](#18-lab-documents). Anything else is a `si check` problem |
 | `runbook` | path to a `.json` file | none | a command cheat-sheet shown in the **`si play` terminal drawer only** (never in a built deck); see §14 |
+| `demos` | markdown files or folders, comma-separated | none | demo scripts shown in the **`si play` terminal drawer only**, with Copy / Run on every shell block; see §14 |
 
 An included module's own front matter is ignored; the including deck decides.
 
@@ -652,17 +653,40 @@ references shared assets as `../images/...`.
   ```
 
   Each command is syntax-highlighted (by `target`) so you can read it at a glance;
-  there's a filter box, click types the command into the active shell, Shift-click
-  runs it. The shape matches the cockroach-engineering-tool VS Code extension's
+  there's a filter box. Every entry has **Copy** (puts the command at the shell
+  prompt without running it, and on the clipboard) and **Run** (the same, then
+  Enter); clicking the entry itself is Copy, Shift-click Run. A command waits
+  until the shell has drawn its prompt, and is sent as a paste where the shell
+  supports it (zsh, bash 5.1+), so a multi-line command shows whole and runs only
+  on Enter. The shape matches the cockroach-engineering-tool VS Code extension's
   `runbook.json`, so an exported runbook drops in unchanged. Like the terminal, it
   appears only in `si play` on a loopback address — a built deck never loads it, so
   rules #2/#7 still hold for shipped HTML. `si check` validates the path and JSON.
 
   A command may hold **placeholders**: `{{name}}` or `{{name:default}}` (name
   `[A-Za-z_][A-Za-z0-9_-]*`, default any text without `}`). The drawer asks for a
-  value for each distinct name (first occurrence and its default win), then types
-  the command with every occurrence replaced; Esc cancels and types nothing.
+  value for each distinct name (first occurrence and its default win), then Copy
+  or Run the command with every occurrence replaced; Esc cancels and types nothing.
   Placeholders are highlighted in the command.
+
+- **Demos** (front matter `demos: ../demos/`): demo scripts, plain markdown, in a
+  second side panel of the play terminal (`▶ Demos`, one panel open at a time).
+  A drop-down lists the demos by their `# ` title (else the file name); the panel
+  shows the whole script (headings, prose, tables, `>` quotes) and every
+  ```` ```bash ```` / `sh` / `shell` / `zsh` / `console` / `sql` / `powershell`
+  block gets **Copy** and **Run**, as in the runbook. Blocks in any other
+  language (```` ```text ```` for expected output) stay plain. The value is a
+  comma-separated list of `.md` files or folders, relative to the deck; a folder
+  gives its `*.md` except `README.md`, `index.md` and `_`-prefixed files. Like
+  the runbook: play and loopback only, never in a built deck; `si check`
+  reports a missing path. The last demo picked is remembered.
+
+  ```markdown
+  ---
+  title: Session 1
+  demos: ../demos/
+  ---
+  ```
 
   ```json
   { "label": "Pods", "command": "kubectl -n {{ns:messaging}} get pods {{pod}}", "target": "bash" }

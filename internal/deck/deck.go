@@ -84,10 +84,11 @@ type Meta struct {
 	WatermarkOpacity string // watermark opacity (a CSS number); default 0.06
 	LabsLabel        string // heading on a lab slide (default "Now, let's do a Lab!")
 	Runbook          string // path to a JSON runbook (command cheat-sheet); shown only in the `si play` terminal drawer
+	Demos            string // demo scripts (markdown files or folders, comma-separated) for the `si play` terminal drawer
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "type"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -359,7 +360,7 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 }
 
 // LabIgnoredKeys are the front matter keys a lab page does not use.
-var LabIgnoredKeys = []string{"aspect", "transition", "background", "watermark", "watermark-opacity", "labs-label", "footer-position", "runbook"}
+var LabIgnoredKeys = []string{"aspect", "transition", "background", "watermark", "watermark-opacity", "labs-label", "footer-position", "runbook", "demos"}
 
 func (d *Deck) setMeta(key, val string) bool {
 	m := &d.Meta
@@ -368,7 +369,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"accent": &m.Accent, "transition": &m.Transition, "aspect": &m.Aspect, "mermaid": &m.Mermaid, "lang": &m.Lang,
 		"background": &m.Background, "status": &m.Status, "version": &m.Version, "year": &m.Year, "copyright": &m.Copyright,
 		"footer": &m.Footer, "footer-position": &m.FooterPos, "watermark": &m.Watermark, "watermark-opacity": &m.WatermarkOpacity, "labs-label": &m.LabsLabel,
-		"runbook": &m.Runbook, "type": &m.Type,
+		"runbook": &m.Runbook, "demos": &m.Demos, "type": &m.Type,
 	}[key]
 	if ptr == nil {
 		return false

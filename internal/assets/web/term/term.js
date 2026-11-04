@@ -53,7 +53,36 @@
     '.si-rb-list{flex:1 1 auto;overflow:auto;padding:4px 0}' +
     '.si-rb-cat{font-size:11px;letter-spacing:.08em;text-transform:uppercase;' +
     'color:#7f8bab;padding:10px 10px 4px}' +
-    '.si-rb-item{padding:6px 10px;cursor:pointer;border-left:2px solid transparent}' +
+    '.si-rb-item{position:relative;padding:6px 10px;cursor:pointer;border-left:2px solid transparent}' +
+    '.si-rb-acts{float:right;display:flex;gap:4px;margin-left:6px}' +
+    '.si-rb-acts button,.si-dm-acts button{background:#1b2436;color:#c8d0e0;border:1px solid #2a3550;border-radius:4px;' +
+    'padding:1px 8px;font:600 11px ui-sans-serif,system-ui,sans-serif;cursor:pointer}' +
+    '.si-rb-acts button:hover,.si-dm-acts button:hover{border-color:#7dd3fc;color:#fff}' +
+    '.si-rb-acts button.run,.si-dm-acts button.run{background:#14532d;border-color:#1f7a44;color:#d9fbe5}' +
+    '.si-rb-acts button.done,.si-dm-acts button.done{background:#1b3a2a;border-color:#3fb47a;color:#d9fbe5}' +
+    /* demos panel: a drop-down of demo scripts, the chosen one as a document */
+    '.si-dm{flex:0 0 min(620px,50%);display:none;flex-direction:column;min-height:0;' +
+    'background:#0d1017;border-left:1px solid #1d2536}' +
+    '.si-dm.is-open{display:flex}' +
+    '.si-dm-head{flex:0 0 auto;display:flex;gap:6px;padding:6px 8px;border-bottom:1px solid #1d2536}' +
+    '.si-dm-pick{flex:1 1 auto;min-width:0;background:#11151f;color:#e6e6e6;border:1px solid #1d2536;' +
+    'border-radius:6px;padding:5px 8px;font:13px ui-sans-serif,system-ui,sans-serif}' +
+    '.si-dm-doc{flex:1 1 auto;overflow:auto;padding:4px 14px 40px;font:13px/1.5 ui-sans-serif,system-ui,sans-serif;color:#c8d0e0}' +
+    '.si-dm-doc h1{font-size:17px;color:#fff;margin:12px 0 8px}.si-dm-doc h2{font-size:15px;color:#fff;margin:18px 0 6px;' +
+    'padding-top:10px;border-top:1px solid #1d2536}.si-dm-doc h3{font-size:13px;color:#e6e6e6;margin:14px 0 4px}' +
+    '.si-dm-doc p,.si-dm-doc li{margin:4px 0}.si-dm-doc ul,.si-dm-doc ol{padding-left:20px;margin:4px 0}' +
+    '.si-dm-doc a{color:#7dd3fc}.si-dm-doc strong{color:#fff}' +
+    '.si-dm-doc :not(pre)>code{font:12px ui-monospace,Menlo,monospace;background:#171c28;border:0;border-radius:3px;padding:0 3px;color:#e6e6e6}' +
+    '.si-dm-doc blockquote{margin:8px 0;padding:4px 10px;border-left:3px solid #f59e0b;background:#17140c;color:#f1e3c4}' +
+    '.si-dm-doc table{border-collapse:collapse;margin:6px 0;font-size:12px}' +
+    '.si-dm-doc td,.si-dm-doc th{border:1px solid #1d2536;padding:3px 6px;text-align:left;vertical-align:top}' +
+    '.si-dm-block{position:relative;margin:6px 0}' +
+    '.si-dm-acts{position:absolute;top:4px;right:4px;display:flex;gap:4px}' +
+    '.si-dm-code{margin:0;font:12px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word;' +
+    'background:#11151f;border:1px solid #1d2536;border-radius:5px;padding:6px 8px;color:#c7d0e0}' +
+    '.si-dm-code.si-dm-run{border-left:3px solid #3fb47a;padding-right:110px}' +
+    '.si-dm-code code{all:unset;font:inherit;white-space:inherit;color:inherit}' +
+    '.si-dm-code:not(.si-dm-run){color:#8f9bb3;background:#0f131b}' +
     '.si-rb-item:hover{background:#141a26;border-left-color:#7dd3fc}' +
     '.si-rb-item.flash{background:#1b3a2a}' +
     '.si-rb-label{font-family:ui-sans-serif,system-ui,sans-serif;font-size:13px;color:#e6e6e6}' +
@@ -74,18 +103,20 @@
     '.si-rb-form button.pri{background:#7dd3fc;color:#0b0e14;border-color:#7dd3fc}' +
     '.si-rb-hint{font-size:11px;color:#5b6680;padding:6px 10px}' +
     /* highlighter tokens, scoped dark for the drawer (deck theme must not leak in) */
-    '.si-rb-cmd .si-tk-k{color:#7dd3fc}.si-rb-cmd .si-tk-s{color:#a5e075}' +
-    '.si-rb-cmd .si-tk-n{color:#f5a05a}.si-rb-cmd .si-tk-c{color:#5b6680;font-style:italic}' +
-    '.si-rb-cmd .si-tk-m{color:#c792ea}.si-rb-cmd .si-tk-f{color:#f5a05a}' +
-    '.si-rb-cmd .si-tk-v{color:#ffd080}.si-rb-cmd .si-tk-y{color:#7dd3fc}';
+    ':is(.si-rb-cmd,.si-dm-code) .si-tk-k{color:#7dd3fc}:is(.si-rb-cmd,.si-dm-code) .si-tk-s{color:#a5e075}' +
+    ':is(.si-rb-cmd,.si-dm-code) .si-tk-n{color:#f5a05a}:is(.si-rb-cmd,.si-dm-code) .si-tk-c{color:#5b6680;font-style:italic}' +
+    ':is(.si-rb-cmd,.si-dm-code) .si-tk-m{color:#c792ea}:is(.si-rb-cmd,.si-dm-code) .si-tk-f{color:#f5a05a}' +
+    ':is(.si-rb-cmd,.si-dm-code) .si-tk-v{color:#ffd080}:is(.si-rb-cmd,.si-dm-code) .si-tk-y{color:#7dd3fc}';
   document.head.appendChild(style);
 
   var root = document.createElement('div');
   root.className = 'si-term';
   var hasRunbook = window.SI_RUNBOOK && window.SI_RUNBOOK.categories && window.SI_RUNBOOK.categories.length;
+  var hasDemos = window.SI_DEMOS && window.SI_DEMOS.length;
   root.innerHTML =
     '<div class="si-term-bar">' +
     '<div class="si-term-tabs"></div>' +
+    (hasDemos ? '<button class="si-term-btn" data-act="demos" title="Demo scripts">▶ Demos</button>' : '') +
     (hasRunbook ? '<button class="si-term-btn" data-act="runbook" title="Runbook (cheat-sheet)">⌘ Runbook</button>' : '') +
     '<button class="si-term-btn" data-act="new" title="New tab">+</button>' +
     '<button class="si-term-btn" data-act="hide" title="Hide (`)">✕</button>' +
@@ -122,6 +153,7 @@
         reader.read().then(function (r) {
           if (r.done) { t.term.write('\r\n\x1b[90m[process exited]\x1b[0m\r\n'); return; }
           t.term.write(r.value);
+          t.lastOut = Date.now();
           pump();
         }).catch(function () {});
       })();
@@ -189,11 +221,46 @@
 
   /* ---------- runbook drawer: a command cheat-sheet that types into the shell ---------- */
   var rbPanel = null;
-  function sendToShell(text) {
+  /* Put a command at the prompt (run: also press Enter). It waits until the
+     shell has drawn its prompt (output quiet for 250 ms; a tall prompt takes a
+     moment), so the text lands on the prompt line instead of being echoed above
+     it. When the shell has bracketed paste on (zsh, bash 5.1+), it is sent as a
+     paste: shown whole, multi-line included, and run only on Enter. Copy also
+     puts it on the clipboard. */
+  function sendToShell(text, run) {
+    text = String(text).replace(/\n+$/, '');
+    if (!run && navigator.clipboard) navigator.clipboard.writeText(text).catch(function () {});
     var t = tabs[active];
-    if (!t || !t.id) return; // shell still starting; click again
-    fetch(API + 'in?id=' + t.id, { method: 'POST', body: text }).catch(function () {});
+    if (!t) return;
+    var start = Date.now();
+    (function wait() {
+      var quiet = t.id && t.lastOut && Date.now() - t.lastOut > 250;
+      if (!quiet && Date.now() - start < 5000) { setTimeout(wait, 60); return; }
+      if (!t.id) return; // the shell never started
+      var bp = t.term.modes && t.term.modes.bracketedPasteMode;
+      var body = (bp ? '\x1b[200~' + text + '\x1b[201~' : text) + (run ? '\r' : '');
+      fetch(API + 'in?id=' + t.id, { method: 'POST', body: body }).catch(function () {});
+    })();
     t.term.focus();
+  }
+  function flash(b, label) {
+    var old = b.textContent; b.textContent = label; b.classList.add('done');
+    setTimeout(function () { b.textContent = old; b.classList.remove('done'); }, 900);
+  }
+  function actButtons(cls, getText, before) {
+    var box = document.createElement('div'); box.className = cls;
+    [['Copy', false], ['Run', true]].forEach(function (a) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = a[0];
+      b.title = a[1] ? 'Put it at the prompt and press Enter' : 'Put it at the prompt (not run) and on the clipboard';
+      if (a[1]) b.className = 'run';
+      b.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        if (before && before(a[1])) return;
+        sendToShell(getText(), a[1]); flash(b, a[1] ? 'Sent' : 'Copied'); b.blur();
+      });
+      box.appendChild(b);
+    });
+    return box;
   }
   var RB_VAR = /\{\{([A-Za-z_][A-Za-z0-9_-]*)(?::([^}]*))?\}\}/g; // same as Go
   var RB_TPL = { end: 1, else: 1, break: 1, continue: 1, nil: 1, true: 1, false: 1 }; // Go-template keywords, not placeholders (same as Go)
@@ -221,7 +288,7 @@
       var o = vals(), all = rbSaved();
       for (var k in o) all[k] = o[k];
       try { sessionStorage.setItem('si-rb-vars', JSON.stringify(all)); } catch (x) {}
-      sendToShell(rbFill(e.cmd, o) + (run ? '\r' : ''));
+      sendToShell(rbFill(e.cmd, o), run);
       closeForm();
     }
     function btn(txt, cls, fn) {
@@ -229,7 +296,7 @@
       if (cls) b.className = cls; b.addEventListener('click', fn); return b;
     }
     var row = document.createElement('div');
-    row.appendChild(btn('Type', 'pri', function () { go(false); }));
+    row.appendChild(btn('Copy', 'pri', function () { go(false); }));
     row.appendChild(btn('Run', '', function () { go(true); }));
     row.appendChild(btn('Cancel', '', closeForm));
     f.appendChild(row);
@@ -264,7 +331,7 @@
     list.className = 'si-rb-list';
     var hint = document.createElement('div');
     hint.className = 'si-rb-hint';
-    hint.textContent = 'Click to type · Shift-click to run';
+    hint.textContent = 'Copy puts a command at the prompt (and on the clipboard) · Run also presses Enter';
 
     window.SI_RUNBOOK.categories.forEach(function (cat) {
       var ch = document.createElement('div');
@@ -278,11 +345,15 @@
           (e.desc ? '<div class="si-rb-desc"></div>' : '') +
           '<div class="si-rb-cmd">' + (e.html || '') + '</div>';
         it.querySelector('.si-rb-label').textContent = e.label || e.cmd;
+        it.insertBefore(actButtons('si-rb-acts', function () { return e.cmd; }, function (run) {
+          if (e.vars && e.vars.length) { openForm(e, it); return true; } // the form has its own Copy / Run
+          return false;
+        }), it.firstChild);
         if (e.desc) it.querySelector('.si-rb-desc').textContent = e.desc;
         it._hay = ((e.label || '') + ' ' + (e.desc || '') + ' ' + (e.cmd || '')).toLowerCase();
         it.addEventListener('click', function (ev) {
           if (e.vars && e.vars.length) { openForm(e, it); return; }
-          sendToShell(e.cmd + (ev.shiftKey || ev.metaKey || ev.ctrlKey ? '\r' : ''));
+          sendToShell(e.cmd, ev.shiftKey || ev.metaKey || ev.ctrlKey); // the row itself: Copy (Shift: Run)
           it.classList.add('flash'); setTimeout(function () { it.classList.remove('flash'); }, 220);
         });
         list.appendChild(it); cat._items.push(it);
@@ -310,8 +381,52 @@
     rbPanel.appendChild(head); rbPanel.appendChild(list); rbPanel.appendChild(hint);
     root.querySelector('.si-term-body').appendChild(rbPanel);
   }
+  /* ---------- demos panel: pick a demo script, read it, Copy / Run its commands ---------- */
+  var dmPanel = null;
+  function buildDemos() {
+    if (!hasDemos) return;
+    dmPanel = document.createElement('div'); dmPanel.className = 'si-dm';
+    var head = document.createElement('div'); head.className = 'si-dm-head';
+    var pick = document.createElement('select'); pick.className = 'si-dm-pick'; pick.setAttribute('aria-label', 'Demo');
+    window.SI_DEMOS.forEach(function (d, i) { var o = document.createElement('option'); o.value = i; o.textContent = d.title; pick.appendChild(o); });
+    head.appendChild(pick);
+    var doc = document.createElement('div'); doc.className = 'si-dm-doc';
+    function showDemo(i) {
+      var d = window.SI_DEMOS[i] || window.SI_DEMOS[0];
+      doc.innerHTML = d.html; doc.scrollTop = 0;
+      Array.prototype.forEach.call(doc.querySelectorAll('pre.si-dm-run'), function (pre) {
+        var wrap = document.createElement('div'); wrap.className = 'si-dm-block';
+        pre.parentNode.insertBefore(wrap, pre); wrap.appendChild(pre);
+        wrap.appendChild(actButtons('si-dm-acts', function () { return pre.textContent; }));
+      });
+      try { localStorage.setItem('si-demo-pick', d.file); } catch (e) {}
+    }
+    var saved = null; try { saved = localStorage.getItem('si-demo-pick'); } catch (e) {}
+    var at = 0; window.SI_DEMOS.forEach(function (d, i) { if (d.file === saved) at = i; });
+    pick.value = at; showDemo(at);
+    pick.addEventListener('change', function () { showDemo(+pick.value); });
+    // keys typed in the panel (the drop-down, find-in-page) must not drive the deck
+    dmPanel.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
+    dmPanel.appendChild(head); dmPanel.appendChild(doc);
+    var open = false; try { open = JSON.parse(localStorage.getItem('si-demos-open') || 'false'); } catch (e) {}
+    root.querySelector('.si-term-body').appendChild(dmPanel);
+    if (open) setPanel('demos', true);
+  }
+  /* one side panel at a time: demos or runbook */
+  function setPanel(which, open) {
+    [['demos', dmPanel, 'si-demos-open'], ['runbook', rbPanel, 'si-runbook-open']].forEach(function (p) {
+      if (!p[1]) return;
+      var on = p[0] === which ? open : (open ? false : p[1].classList.contains('is-open'));
+      p[1].classList.toggle('is-open', on);
+      var b = root.querySelector('[data-act="' + p[0] + '"]'); if (b) b.classList.toggle('is-on', on);
+      try { localStorage.setItem(p[2], JSON.stringify(on)); } catch (e) {}
+    });
+    if (active >= 0 && tabs[active]) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); }
+  }
+  function toggleDemos() { if (dmPanel) setPanel('demos', !dmPanel.classList.contains('is-open')); }
   function toggleRunbook() {
     if (!rbPanel) return;
+    if (dmPanel) { setPanel('runbook', !rbPanel.classList.contains('is-open')); return; }
     var open = !rbPanel.classList.contains('is-open');
     rbPanel.classList.toggle('is-open', open);
     var btn = root.querySelector('[data-act="runbook"]');
@@ -320,8 +435,11 @@
     if (active >= 0 && tabs[active]) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); }
   }
   buildRunbook();
+  buildDemos();
   var rbBtn = root.querySelector('[data-act="runbook"]');
   if (rbBtn) rbBtn.addEventListener('click', toggleRunbook);
+  var dmBtn = root.querySelector('[data-act="demos"]');
+  if (dmBtn) dmBtn.addEventListener('click', toggleDemos);
 
-  window.siTerm = { toggle: toggle, show: show, hide: hide, runbook: toggleRunbook };
+  window.siTerm = { toggle: toggle, show: show, hide: hide, runbook: toggleRunbook, demos: toggleDemos };
 })();

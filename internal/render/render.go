@@ -96,6 +96,7 @@ type deckRenderer struct {
 	wmText      string // watermark text
 	wmImg       string // watermark image as a data URI (inlined once)
 	runbookJSON string // window.SI_RUNBOOK payload (play terminal drawer); "" if no runbook
+	demosJSON   string // window.SI_DEMOS payload (play terminal drawer); "" if no demos
 	doc         bool   // rendering a lab document (type: lab), not slides
 }
 
@@ -137,6 +138,7 @@ func Deck(d *deck.Deck, opt Options) Result {
 	dr.resolveTheme()
 	dr.resolveAnim()
 	dr.resolveRunbook()
+	dr.resolveDemos()
 	topics := Topics(d)
 	for i, s := range d.Slides {
 		sh, sc := dr.slide(s, i+1, topics[i])
@@ -609,6 +611,9 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	// in. Never injected into a built deck (opt.Terminal is false for build).
 	if opt.Terminal && dr.runbookJSON != "" {
 		fmt.Fprintf(&b, "<script>window.SI_RUNBOOK=%s;</script>\n", strings.ReplaceAll(dr.runbookJSON, "</", `<\/`))
+	}
+	if opt.Terminal && dr.demosJSON != "" {
+		fmt.Fprintf(&b, "<script>window.SI_DEMOS=%s;</script>\n", strings.ReplaceAll(dr.demosJSON, "</", `<\/`))
 	}
 	if len(dr.anims) > 0 {
 		var js []string
