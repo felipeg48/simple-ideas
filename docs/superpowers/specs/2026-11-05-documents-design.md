@@ -345,13 +345,45 @@ Each phase is useful alone; RULES.md and the agent guide grow with it.
 - Executing code from documents (the Run button stays in the `si play` terminal
   for demos and runbooks only).
 
-## Open questions
+## Decisions (2026-11-05)
 
-1. **Hosting**: a static site (GitHub Pages or similar), or files handed out?
-   This decides between one file per page (default here) and an extra
-   single-file "whole guide" output.
-2. **Code hosts**: public GitHub only, private GitHub, or GitLab / Bitbucket too
-   (decides phase 3 scope and auth)?
-3. **Slides ↔ guides**: should a slide link into a guide section, and a guide
-   page embed a small canvas or stage diagram (they already render in decks)?
-4. **Demo type timing**: keep CACI on pandoc until phase 4, or move it earlier?
+1. **Hosting: both.** `si build` writes a static site (one self-contained file
+   per page, any static host). A new **`si serve <dir>`** serves *everything*
+   (decks, articles, guides with their nav, labs, demos) with live reload, the
+   way `si play` serves decks; `si play` stays the presenter's command (slides,
+   teleprompter, terminal, `--remote`). Both render on every request; `si serve`
+   is loopback by default and never has the terminal.
+2. **Code hosts: GitHub only for now, public and private.** Private access with
+   `GITHUB_TOKEN` (or `gh auth token` when the GitHub CLI is logged in), or a
+   local clone (`repo=<path>`). GitLab, Bitbucket and S3 are later; the
+   `code:` / `diff:` syntax keeps the URL form so they slot in.
+3. **Guides embed slides.** A body directive in any document:
+
+   ```markdown
+   <!-- slides: ../decks/c1-message-flows.md -->            the whole deck, in a 16:9 frame
+   <!-- slides: ../decks/c1-message-flows.md 23-24 -->      slides 23 to 24 only
+   <!-- slides: ../decks/c1-message-flows.md#live-a-first-broker -->   one slide by its heading id
+   ```
+
+   The deck is rendered at build time and inlined (the page stays
+   self-contained): arrow keys and buttons step through slides and build
+   steps, canvases animate, a link opens the full deck. Print shows each
+   slide as a static frame. `si check` reports a missing deck or range.
+4. **CACI demos move to `type: demo`** after all phases are done (not before).
+
+## `si --export example --type`
+
+`si --export example` takes `--type` to pick what to scaffold; the default stays
+the slide deck, so today's command is unchanged.
+
+| `--type` | Aliases | Writes (into `--output`, default `./si-example`) |
+|---|---|---|
+| `deck` (default) | `slides` | the showcase deck + appendix (today's export), now with a runbook and a demo |
+| `article` | | one article using the lede, reading time, a cover, code includes, tabs, callouts |
+| `guide` | `tutorial`, `guides` | a small guide: `_nav.md`, `_header.md`, 4 to 6 pages in sections, an embedded slide range, tagged includes, a `code:` permalink |
+| `lab` | | a lab document (today's `order-lab.md`) |
+| `demo` | | a demo script in the §5 structure, plus the deck front matter that lists it |
+| `all` | | every type side by side, so `si serve si-example` shows them together |
+
+Each example is real content about the order-#4711 story (CLAUDE.md rule 4),
+and every rule it uses is in RULES.md (rule 3).
