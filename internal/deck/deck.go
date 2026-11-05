@@ -61,7 +61,7 @@ var Directives = map[string]string{
 
 // Meta is the deck-level front matter.
 type Meta struct {
-	Type       string // deck (default) | lab
+	Type       string // deck (default) | lab | article | guide
 	Title      string
 	Author     string
 	Date       string
@@ -85,10 +85,16 @@ type Meta struct {
 	LabsLabel        string // heading on a lab slide (default "Now, let's do a Lab!")
 	Runbook          string // path to a JSON runbook (command cheat-sheet); shown only in the `si play` terminal drawer
 	Demos            string // demo scripts (markdown files or folders, comma-separated) for the `si play` terminal drawer
+
+	// documents (lab, article, guide)
+	Description string // one-sentence summary: an article's lede, a guide page's summary, <meta name="description">
+	EditURL     string // guide: base URL of "Edit this page" (the page path is appended)
+	Header      string // guide page: "off" drops the guide's _header.md
+	FooterPage  string // guide page: "off" drops the guide's _footer.md
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -143,10 +149,16 @@ type Deck struct {
 }
 
 // Types are the accepted values of the `type` front matter key.
-var Types = []string{"deck", "lab"}
+var Types = []string{"deck", "lab", "article", "guide"}
 
 // IsLab reports whether the file is a lab document (`type: lab`).
 func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
+
+// IsDoc reports whether the file is a document (lab, article or guide page):
+// one readable page, not slides.
+func (d *Deck) IsDoc() bool {
+	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide"
+}
 
 // buildLab splits the expanded body into document parts, one per run of
 // consecutive lines of one file, so each part resolves relative paths against
@@ -179,7 +191,7 @@ func (d *Deck) buildLab(lines []srcLine) {
 			continue
 		}
 		if name, _, ok := ParseDirective(l.text); ok {
-			msg := fmt.Sprintf("%q has no effect in a lab document", name)
+			msg := fmt.Sprintf("%q has no effect in a %s document", name, d.Meta.Type)
 			if _, known := Directives[name]; !known {
 				msg = fmt.Sprintf("unknown directive %q", name)
 			}
@@ -274,7 +286,12 @@ func (f *fenceTracker) inFence(line string) bool {
 
 // Parse reads and parses the deck at path. Problems are collected in
 // Deck.Problems; the error is only for an unreadable file.
-func Parse(path string) (*Deck, error) {
+func Parse(path string) (*Deck, error) { return ParseWith(path, Meta{Type: "deck"}) }
+
+// ParseWith parses like Parse, starting from def instead of empty front matter:
+// the file's own front matter overrides it key by key (a guide page inherits
+// the guide's settings this way, see Guide.Defaults).
+func ParseWith(path string, def Meta) (*Deck, error) {
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		return nil, err
@@ -287,8 +304,10 @@ func Parse(path string) (*Deck, error) {
 	if ext := strings.ToLower(filepath.Ext(abs)); ext == ".adoc" || ext == ".asciidoc" {
 		src = adocToMarkdown(src) // AsciiDoc decks feed the same Markdown pipeline
 	}
-	d := &Deck{Path: abs, Name: strings.TrimSuffix(filepath.Base(abs), filepath.Ext(abs))}
-	d.Meta.Type = "deck"
+	d := &Deck{Path: abs, Name: strings.TrimSuffix(filepath.Base(abs), filepath.Ext(abs)), Meta: def}
+	if d.Meta.Type == "" {
+		d.Meta.Type = "deck"
+	}
 	lines := splitLines(src)
 	start := d.frontMatter(abs, lines)
 	var out []srcLine
@@ -296,7 +315,7 @@ func Parse(path string) (*Deck, error) {
 		out = append(out, srcLine{abs, start + i + 1, t})
 	}
 	out = d.expandIncludes(abs, out, []string{abs})
-	if d.IsLab() {
+	if d.IsDoc() {
 		d.buildLab(out)
 	} else {
 		d.buildSlides(out)
@@ -349,10 +368,10 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 			d.checkBackground(file, i+1, filepath.Dir(file), val)
 		}
 	}
-	if d.IsLab() {
+	if d.IsDoc() {
 		for _, k := range LabIgnoredKeys {
 			if ln, ok := keyLine[k]; ok {
-				d.Warnings = append(d.Warnings, Problem{File: rel(file), Line: ln, Msg: fmt.Sprintf("front matter %q has no effect in a lab document", k)})
+				d.Warnings = append(d.Warnings, Problem{File: rel(file), Line: ln, Msg: fmt.Sprintf("front matter %q has no effect in a %s document", k, d.Meta.Type)})
 			}
 		}
 	}
@@ -370,6 +389,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"background": &m.Background, "status": &m.Status, "version": &m.Version, "year": &m.Year, "copyright": &m.Copyright,
 		"footer": &m.Footer, "footer-position": &m.FooterPos, "watermark": &m.Watermark, "watermark-opacity": &m.WatermarkOpacity, "labs-label": &m.LabsLabel,
 		"runbook": &m.Runbook, "demos": &m.Demos, "type": &m.Type,
+		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage,
 	}[key]
 	if ptr == nil {
 		return false
@@ -462,7 +482,7 @@ func (d *Deck) expandIncludes(file string, lines []srcLine, stack []string) []sr
 			incLines = append(incLines, srcLine{target, start + i + 1, t})
 		}
 		sep := "---" // a module is its own run of slides
-		if d.IsLab() {
+		if d.IsDoc() {
 			sep = "" // a lab is one document: a blank line, never an <hr> or a setext heading
 		}
 		out = append(out, srcLine{l.file, l.no, sep})
@@ -711,6 +731,10 @@ func directiveNames() []string {
 }
 
 // rel shortens an absolute path to one relative to the working directory.
+// Rel is p relative to the working directory when it sits below it, else p:
+// the file name problems are reported with.
+func Rel(p string) string { return rel(p) }
+
 func rel(p string) string {
 	if wd, err := os.Getwd(); err == nil {
 		if r, err := filepath.Rel(wd, p); err == nil && !strings.HasPrefix(r, "..") {

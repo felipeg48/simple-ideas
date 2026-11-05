@@ -90,10 +90,22 @@ func (s *Server) Handler() http.Handler {
 		case p == "/" && s.file != "":
 			http.Redirect(w, r, "/"+strings.TrimSuffix(filepath.Base(s.file), ".md")+".html", http.StatusFound)
 		case p == "/" || p == "/index.html":
+			if s.source("/index") == "" {
+				if g, err := deck.LoadGuide(s.dir); err == nil && len(g.Pages) > 0 {
+					http.Redirect(w, r, "/"+guideHome(g), http.StatusFound) // serving a guide folder: open its first page
+					return
+				}
+			}
 			s.index(w)
+		case s.file == "" && fileExists(filepath.Join(s.dir, filepath.FromSlash(p), deck.NavFile)):
+			if g, err := deck.LoadGuide(filepath.Join(s.dir, filepath.FromSlash(p))); err == nil && len(g.Pages) > 0 {
+				http.Redirect(w, r, strings.TrimSuffix(p, "/")+"/"+guideHome(g), http.StatusFound) // a guide folder opens at its first page
+				return
+			}
+			static.ServeHTTP(w, r)
 		case strings.HasSuffix(p, ".html"):
-			md := filepath.Join(s.dir, filepath.FromSlash(strings.TrimSuffix(p, ".html")+".md"))
-			if _, err := os.Stat(md); err != nil {
+			md := s.source(strings.TrimSuffix(p, ".html"))
+			if md == "" {
 				static.ServeHTTP(w, r)
 				return
 			}
@@ -130,13 +142,38 @@ func (s *Server) deck(w http.ResponseWriter, md string, term bool) {
 	if v, ok := cfg.Features["terminal"]; ok && !v {
 		termOn = false
 	}
-	res := render.Deck(d, render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Remote: s.Remote, Pages: s.pages(cfg)})
+	opt := render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Remote: s.Remote, Pages: s.pages(cfg)}
+	if g := deck.FindGuide(md, s.dir); g != nil && g.Item(md) != nil { // a guide page: the guide's nav and settings
+		if gd, err := deck.ParseWith(md, g.Defaults()); err == nil {
+			d, opt.Guide = gd, g
+		}
+	}
+	res := render.Deck(d, opt)
 	for _, p := range res.Problems {
 		log.Printf("si play: %s", p)
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Write(res.HTML)
+}
+
+func fileExists(p string) bool { _, err := os.Stat(p); return err == nil }
+
+// source is the .md (or .adoc) file a URL path (without .html) names, or "".
+func (s *Server) source(stem string) string {
+	for _, ext := range []string{".md", ".adoc", ".asciidoc"} {
+		f := filepath.Join(s.dir, filepath.FromSlash(stem)+ext)
+		if _, err := os.Stat(f); err == nil {
+			return f
+		}
+	}
+	return ""
+}
+
+// guideHome is the first page of a guide, relative to its folder.
+func guideHome(g *deck.Guide) string {
+	r, _ := filepath.Rel(g.Dir, g.Pages[0])
+	return filepath.ToSlash(strings.TrimSuffix(r, filepath.Ext(r)) + ".html")
 }
 
 // pages is the find (/) page list for the served folder, read per request so
@@ -166,6 +203,17 @@ func (s *Server) index(w http.ResponseWriter) {
 	for _, f := range files {
 		if d, err := deck.Parse(f); err == nil {
 			entries = append(entries, render.Entry(d))
+		}
+	}
+	if dirs, err := os.ReadDir(s.dir); err == nil { // a guide in a subfolder is one tile
+		for _, e := range dirs {
+			if !e.IsDir() || strings.HasPrefix(e.Name(), ".") || strings.HasPrefix(e.Name(), "_") {
+				continue
+			}
+			if g, err := deck.LoadGuide(filepath.Join(s.dir, e.Name())); err == nil && len(g.Pages) > 0 {
+				entries = append(entries, render.IndexEntry{Href: e.Name() + "/" + guideHome(g), Title: g.Meta.Title, Subtitle: g.Meta.Description,
+					Lab: true, Kind: "guide", Sections: len(g.Pages), Version: g.Meta.Version, Status: g.Meta.Status})
+			}
 		}
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

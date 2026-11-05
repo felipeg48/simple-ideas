@@ -295,7 +295,7 @@ func TestLabGolden(t *testing.T) {
 		t.Fatalf("lab golden mismatch (run go test ./internal/render -update if intended)")
 	}
 	for _, want := range []string{
-		`<body class="si-doc">`, `<nav class="si-doc-toc"`, `<main class="si-doc-body"`,
+		`<body class="si-doc" data-si-doc="lab">`, `<nav class="si-doc-toc"`, `<main class="si-doc-body"`,
 		`<div class="si-callout" data-kind="note">`, `data-kind="tip"`, `data-kind="important"`, `data-kind="warning"`, `data-kind="caution"`,
 		`<blockquote>`, `href="other.html#start"`, `id="read-it-back"`, `<button type="button" class="si-copy"`,
 		"<div class=\"si-table-wrap\">\n<table>", `src="data:image/svg+xml;base64,`, "<hr>", `<thead hidden="">`,

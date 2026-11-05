@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"unicode"
@@ -113,7 +114,11 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 		txt := plain(g[2])
 		id := sl.slug(html.UnescapeString(txt))
 		toc = append(toc, tocEntry{int(g[1][0] - '0'), id, txt})
-		return fmt.Sprintf(`<h%s id="%s">%s<a class="si-anchor" href="#%s" aria-label="Link to this section">#</a></h%s>`, g[1], id, g[2], id, g[1])
+		inner := g[2]
+		if g[1] == "2" && dr.d.Meta.Type != "article" {
+			inner = stepHeading(inner) // "Step 3: Pay" gets a numbered badge
+		}
+		return fmt.Sprintf(`<h%s id="%s">%s<a class="si-anchor" href="#%s" aria-label="Link to this section">#</a></h%s>`, g[1], id, inner, id, g[1])
 	})
 	return h, toc
 }
@@ -247,33 +252,103 @@ const modeIconSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 
 func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Problem) []byte {
 	d, m := dr.d, dr.d.Meta
+	g := dr.opt.Guide
+	kind := m.Type
+	if g != nil {
+		dr.guidePager()
+	}
 	var b bytes.Buffer
 	modeAttr := dr.head(&b)
 	b.WriteString(`<style id="si-css">` + "\n" + assets.LayerOrder + assets.DocCSS + dr.themeCSS + dr.accentCSS() + "</style>\n")
 	dr.userAndMode(&b, modeAttr)
-	b.WriteString("</head>\n<body class=\"si-doc\">\n<header class=\"si-doc-head\"><div class=\"si-doc-head-in\">\n")
-	fmt.Fprintf(&b, "<h1 class=\"si-doc-title\">%s</h1>\n", dr.inline(d.Title()))
+	bodyAttrs := fmt.Sprintf(` data-si-doc="%s"`, html.EscapeString(kind))
+	if g != nil {
+		bodyAttrs += fmt.Sprintf(` data-si-guide="%s" data-si-page="%s"`, html.EscapeString(guideRel(g, g.Pages[0])+"|"+g.Meta.Title), html.EscapeString(guideRel(g, d.Path)))
+	}
+	fmt.Fprintf(&b, "</head>\n<body class=\"si-doc\"%s>\n", bodyAttrs)
+
 	var meta []string
-	for _, v := range []string{m.Author, m.Date, m.Version} {
+	byline := []string{m.Author, m.Date, m.Version}
+	if g != nil { // a guide page's byline shows only what the page itself sets
+		for i, inherited := range []string{g.Meta.Author, g.Meta.Date, g.Meta.Version} {
+			if byline[i] == inherited {
+				byline[i] = ""
+			}
+		}
+	}
+	for _, v := range byline {
 		for _, part := range strings.Split(v, "·") { // "A · B" is two items: CSS draws the separators
 			if part = strings.TrimSpace(part); part != "" {
 				meta = append(meta, "<span>"+html.EscapeString(part)+"</span>")
 			}
 		}
 	}
+	if kind == "article" {
+		meta = append(meta, fmt.Sprintf(`<span class="si-reading-time">%d min read</span>`, readingTime(body)))
+	}
+	metaHTML := ""
 	if len(meta) > 0 {
-		fmt.Fprintf(&b, "<p class=\"si-doc-meta\">%s</p>\n", strings.Join(meta, ""))
+		metaHTML = fmt.Sprintf("<p class=\"si-doc-meta\">%s</p>\n", strings.Join(meta, ""))
 	}
-	b.WriteString(`<button type="button" class="si-doc-mode" data-si-action="mode" title="Light / dark (d)" aria-label="Light / dark">` + modeIconSVG + "</button>\n")
-	b.WriteString("</div></header>\n<div class=\"si-doc-layout\">\n")
-	if len(toc) > 0 {
-		b.WriteString("<nav class=\"si-doc-toc\" aria-label=\"Contents\"><details open><summary>On this page</summary>\n<ol>\n")
-		for _, e := range toc {
-			fmt.Fprintf(&b, "<li class=\"si-toc-h%d\"><a href=\"#%s\">%s</a></li>\n", e.level, e.id, e.text)
+	lede := ""
+	if desc := strings.TrimSpace(m.Description); desc != "" && kind != "lab" {
+		lede = "<p class=\"si-lede\">" + dr.inline(desc) + "</p>\n"
+	}
+	modeBtn := `<button type="button" class="si-doc-mode" data-si-action="mode" title="Light / dark (d)" aria-label="Light / dark">` + modeIconSVG + "</button>\n"
+	tocHTML := ""
+	h2s := 0
+	for _, e := range toc {
+		if e.level == 2 {
+			h2s++
 		}
-		b.WriteString("</ol></details></nav>\n")
 	}
-	b.WriteString("<main class=\"si-doc-body\">\n" + body + dr.pager() + "</main>\n</div>\n")
+	if len(toc) > 0 && (kind != "article" || h2s >= 3) {
+		var t strings.Builder
+		t.WriteString("<nav class=\"si-doc-toc\" aria-label=\"On this page\"><details open><summary>On this page</summary>\n<ol>\n")
+		for _, e := range toc {
+			fmt.Fprintf(&t, "<li class=\"si-toc-h%d\"><a href=\"#%s\">%s</a></li>\n", e.level, e.id, e.text)
+		}
+		t.WriteString("</ol></details></nav>\n")
+		tocHTML = t.String()
+	}
+
+	if g != nil {
+		if m.Header != "off" {
+			if h := dr.partial("_header.md"); h != "" {
+				b.WriteString("<div class=\"si-doc-site\"><div class=\"si-doc-site-in\">" + h + "</div></div>\n")
+			}
+		}
+		fmt.Fprintf(&b, "<div class=\"si-doc-guidebar\"><a class=\"si-doc-guide\" href=\"%s\">%s</a>", html.EscapeString(pageHref(d.Path, g.Pages[0])), html.EscapeString(g.Meta.Title))
+		if g.Meta.Version != "" {
+			fmt.Fprintf(&b, "<span class=\"si-doc-ver\">%s</span>", html.EscapeString(g.Meta.Version))
+		}
+		b.WriteString(modeBtn + "</div>\n")
+		b.WriteString("<div class=\"si-doc-layout\" data-layout=\"guide\">\n")
+		fmt.Fprintf(&b, "<nav class=\"si-doc-nav\" aria-label=\"%s\"><details open><summary>Contents <small class=\"si-doc-progress\"></small></summary>\n%s\n</details></nav>\n",
+			html.EscapeString(g.Meta.Title), navTree(g, d.Path))
+		b.WriteString("<main class=\"si-doc-body\">\n" + guideCrumb(g, d.Path))
+		fmt.Fprintf(&b, "<h1 class=\"si-doc-title\">%s</h1>\n%s%s", dr.inline(d.Title()), lede, metaHTML)
+		b.WriteString(body + dr.pager())
+		if m.EditURL != "" {
+			r, _ := filepath.Rel(g.Dir, d.Path)
+			fmt.Fprintf(&b, "<p class=\"si-doc-edit\"><a href=\"%s\">Edit this page</a></p>\n", html.EscapeString(strings.TrimRight(m.EditURL, "/")+"/"+filepath.ToSlash(r)))
+		}
+		b.WriteString("</main>\n" + tocHTML + "</div>\n")
+		if m.FooterPage != "off" {
+			if f := dr.partial("_footer.md"); f != "" {
+				b.WriteString("<div class=\"si-doc-sitefoot\"><div class=\"si-doc-site-in\">" + f + "</div></div>\n")
+			}
+		}
+	} else {
+		b.WriteString("<header class=\"si-doc-head\"><div class=\"si-doc-head-in\">\n")
+		fmt.Fprintf(&b, "<h1 class=\"si-doc-title\">%s</h1>\n%s%s", dr.inline(d.Title()), lede, metaHTML)
+		b.WriteString(modeBtn + "</div></header>\n<div class=\"si-doc-layout\">\n")
+		if kind == "article" {
+			b.WriteString("<main class=\"si-doc-body\">\n" + body + dr.pager() + "</main>\n" + tocHTML + "</div>\n")
+		} else {
+			b.WriteString(tocHTML + "<main class=\"si-doc-body\">\n" + body + dr.pager() + "</main>\n</div>\n")
+		}
+	}
 	var foot []string
 	if c := copyrightLine(m.Year, m.Copyright); c != "" {
 		foot = append(foot, "<span>"+html.EscapeString(c)+"</span>")

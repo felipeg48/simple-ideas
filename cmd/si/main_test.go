@@ -241,3 +241,37 @@ func TestRemoteFlag(t *testing.T) {
 		t.Error("an unknown role should fail")
 	}
 }
+
+func TestExportExampleTypesAndBuildGuide(t *testing.T) {
+	for _, kind := range []string{"", "slides", "article", "guide", "tutorial", "lab", "all"} {
+		dir := filepath.Join(t.TempDir(), "ex")
+		var stdout, stderr bytes.Buffer
+		if code := run([]string{"--export", "example", "--type", kind, "-o", dir}, &stdout, &stderr); code != 0 {
+			t.Fatalf("--type %q: %d %s", kind, code, stderr.String())
+		}
+		if code := run([]string{"check", dir}, &stdout, &stderr); code != 0 {
+			t.Errorf("--type %q: si check failed: %s", kind, stderr.String())
+		}
+	}
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"--export", "example", "--type", "slideshow", "-o", t.TempDir()}, &stdout, &stderr); code != exitUsage {
+		t.Error("an unknown --type is a usage error")
+	}
+	src := filepath.Join(t.TempDir(), "all")
+	run([]string{"--export", "example", "--type", "all", "-o", src}, &stdout, &stderr)
+	out := t.TempDir()
+	stdout.Reset()
+	stderr.Reset()
+	if code := run([]string{"build", "-o", out, src}, &stdout, &stderr); code != 0 {
+		t.Fatalf("build all: %d %s", code, stderr.String())
+	}
+	for _, f := range []string{"index.html", "retry.html", "showcase.html", "guide/index.html", "guide/happy/pay.html", "guide/reset.html"} {
+		if _, err := os.Stat(filepath.Join(out, f)); err != nil {
+			t.Errorf("build all lacks %s", f)
+		}
+	}
+	idx, _ := os.ReadFile(filepath.Join(out, "index.html"))
+	if !strings.Contains(string(idx), `href="guide/index.html"`) || !strings.Contains(string(idx), ">GUIDE<") || !strings.Contains(string(idx), ">ARTICLE<") {
+		t.Error("the index has a guide tile and an article tile")
+	}
+}

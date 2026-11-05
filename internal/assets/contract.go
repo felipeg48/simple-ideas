@@ -70,6 +70,15 @@ var Tokens = []Token{
 	{"--si-wm-opacity", "watermark opacity (watermark-opacity front matter)", "0.06"},
 	{"--si-wm-img", "watermark image, inlined as a data URI (set from the watermark front matter)", ""},
 	{"--si-brand-logo", "brand logo drawn beside the footer and in .lockup .lk-logo (acemq theme; none hides it)", "none"},
+	// documents (type: lab, article, guide); unset by default, the CSS falls back to the value shown
+	{"--si-font-prose", "documents: font stack of the text of articles, guides and labs", "var(--si-font-body)"},
+	{"--si-prose-size", "documents: size of the text", "1rem"},
+	{"--si-prose-leading", "documents: line height of the text", "1.7"},
+	{"--si-doc-measure", "documents: longest line of the text (articles use 88% of it); code and tables may use the whole column (use ch)", "78ch"},
+	{"--si-lede-size", "documents: the lede (description:) under an article or guide page title", "1.25em"},
+	{"--si-nav-bg", "guides: background of the guide navigation", "color-mix(in srgb, var(--si-surface-2) 55%, var(--si-bg))"},
+	{"--si-nav-active", "guides: background of the current page in the navigation", "color-mix(in srgb, var(--si-accent) 12%, transparent)"},
+	{"--si-step-badge", "labs and guides: background of the number badge of a `## Step N:` heading", "var(--si-accent)"},
 }
 
 // Hook is a stable selector user CSS may target.
@@ -169,6 +178,23 @@ var Hooks = []Hook{
 	{`.si-toc-h3`, "lab: a table of contents entry for an h3 (indented)"},
 	{`.si-doc-body`, "lab: the guide itself (readable measure)"},
 	{`.si-doc-pager`, "lab: previous / next lab links at the end of the guide (si build of a folder with several labs)"},
+	{`.si-doc[data-si-doc]`, "document: its type on the page body (lab, article, guide)"},
+	{`.si-lede`, "article, guide page: the description: line under the title"},
+	{`.si-reading-time`, "article: the reading time in the byline (230 words a minute)"},
+	{`.si-step-num`, "lab, guide: the number badge of a `## Step N:` / `## N.` heading"},
+	{`.si-doc-guidebar`, "guide: the top bar (guide title, version, light / dark)"},
+	{`.si-doc-guide`, "guide: the guide title link in the top bar (to the first page)"},
+	{`.si-doc-ver`, "guide: the version chip (version: in _nav.md)"},
+	{`.si-doc-site`, "guide: the band holding _header.md, above the guide bar"},
+	{`.si-doc-site-in`, "guide: the inner box of the _header.md / _footer.md bands"},
+	{`.si-doc-sitefoot`, "guide: the band holding _footer.md, above the page footer"},
+	{`.si-doc-nav`, "guide: the navigation from _nav.md (a sidebar; folds above the page on narrow screens)"},
+	{`.si-nav-sec`, "guide: a section heading of the navigation (a _nav.md item without a link)"},
+	{`.si-nav-mark`, "guide: the read / current marker before a page link; a read page's link has .is-read"},
+	{`.si-nav-ext`, "guide: a navigation link to an outside URL"},
+	{`.si-doc-progress`, "guide: the N of M read counter of the navigation"},
+	{`.si-doc-crumb`, "guide: the breadcrumb (guide, section, page)"},
+	{`.si-doc-edit`, "guide: the Edit this page link (edit-url: in _nav.md)"},
 	{`.si-doc-foot`, "lab: the footer (copyright and footer front matter)"},
 	{`.si-anchor`, "lab: the # link after an h2 or h3"},
 	{`.si-callout[data-kind]`, "lab: a callout from a GitHub alert: note, tip, important, warning, caution"},
@@ -267,7 +293,7 @@ var Themes = map[string]Theme{
 	"paper": {
 		Label: "Paper", About: "serif type on cream, rust accent",
 		Base: map[string]string{"--si-font-body": serifStack, "--si-font-heading": serifStack, "--si-font-mono": monoStack,
-			"--si-heading-weight": "700", "--si-heading-tracking": "-0.01em"},
+			"--si-heading-weight": "700", "--si-heading-tracking": "-0.01em", "--si-prose-size": "1.06rem", "--si-prose-leading": "1.75"},
 		Light: map[string]string{
 			"--si-bg": "#fbf7ee", "--si-fg": "#231f1a", "--si-muted": "#6f665a", "--si-surface": "#fffdf7",
 			"--si-surface-2": "#f1eadb", "--si-line": "#e0d6c2", "--si-accent": "#b2431c", "--si-accent-2": "#2f6d62",
@@ -284,7 +310,8 @@ var Themes = map[string]Theme{
 	"mono": {
 		Label: "Mono", About: "monospace everything, green accent, flat",
 		Base: map[string]string{"--si-font-body": monoStack, "--si-font-heading": monoStack, "--si-font-mono": monoStack,
-			"--si-heading-weight": "700", "--si-heading-tracking": "0", "--si-radius": ".2em", "--si-scale": ".94"},
+			"--si-heading-weight": "700", "--si-heading-tracking": "0", "--si-radius": ".2em", "--si-scale": ".94",
+			"--si-prose-size": ".94rem", "--si-prose-leading": "1.65", "--si-doc-measure": "84ch"},
 		Light: map[string]string{
 			"--si-bg": "#f4f6f3", "--si-fg": "#111611", "--si-muted": "#5a6659", "--si-surface": "#ffffff",
 			"--si-surface-2": "#e7ece6", "--si-line": "#cfd8cd", "--si-accent": "#18794e", "--si-accent-2": "#6a4cc2",

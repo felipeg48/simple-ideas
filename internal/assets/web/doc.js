@@ -1,5 +1,6 @@
-/* simple-ideas lab document runtime: copy buttons, d (light/dark), the table
- * of contents highlight, Mermaid. No dependencies; works from file://. */
+/* simple-ideas document runtime (lab, article, guide): copy buttons, d
+ * (light/dark), the table of contents highlight, the guide nav (pages read),
+ * Mermaid. No dependencies; works from file://. */
 (function () {
   'use strict';
   var root = document.documentElement;
@@ -70,6 +71,23 @@
       requestAnimationFrame(function () { queued = false; mark(); });
     }, { passive: true });
     mark();
+  }
+
+  /* ---------- guide nav: folded on narrow screens; pages already read get a mark ---------- */
+  var nav = document.querySelector('.si-doc-nav');
+  if (nav) {
+    var nd = nav.querySelector('details');
+    if (nd && window.matchMedia && window.matchMedia('(width < 56rem)').matches) nd.open = false;
+    var key = 'si-read:' + (document.body.getAttribute('data-si-guide') || ''), page = document.body.getAttribute('data-si-page');
+    var read = {};
+    try { read = JSON.parse(localStorage.getItem(key) || '{}') || {}; } catch (e) {}
+    if (page) { read[page] = 1; try { localStorage.setItem(key, JSON.stringify(read)); } catch (e) {} }
+    var pageLinks = nav.querySelectorAll('a[data-page]'), n = 0;
+    Array.prototype.forEach.call(pageLinks, function (a) { if (read[a.getAttribute('data-page')]) { a.classList.add('is-read'); n++; } });
+    var prog = nav.querySelector('.si-doc-progress');
+    if (prog) prog.textContent = n + ' of ' + pageLinks.length + ' read';
+    var curLink = nav.querySelector('a[aria-current="page"]');
+    if (curLink && curLink.scrollIntoView && nd && nd.open) curLink.scrollIntoView({ block: 'nearest' });
   }
 
   /* ---------- Mermaid (only when the lab has a mermaid fence and the script loaded) ---------- */

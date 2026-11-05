@@ -1,0 +1,23 @@
+= Reset the lab
+:description: Put every service back to its first state, so the journey can start again.
+
+== Step 1: Reset the data
+
+[source,bash]
+----
+curl -X POST localhost:8080/admin/reset
+curl -X POST localhost:8081/admin/latency -d '{"ms": 200}'
+curl -X POST localhost:8083/admin/pickers -d '{"count": 1}'
+----
+
+The tracking page for order #4711 now answers *Not found*: you can
+place it again.
+
+== Step 2: Stop the lab
+
+[source,bash]
+----
+docker compose down
+----
+
+`docker compose down -v` also removes the order history.

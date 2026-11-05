@@ -15,6 +15,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"html"
 	"io"
 	"io/fs"
 	"net"
@@ -53,6 +54,9 @@ const usage = `si: markdown in, animated fluid HTML slide decks out
 Usage:
   si play <dir|file.md> [--addr 127.0.0.1:7070] [--open] [--css <dir|file.css>]... [--remote[=tp,draw]]
         serve the decks, rendered from markdown on every request, live reload on change
+  si serve <dir|file.md> [--addr 127.0.0.1:7070] [--open] [--css <dir|file.css>]...
+        serve everything for readers, live: decks, articles, guides (with their
+        navigation) and labs; like play, without the terminal drawer
   si --web [dir] [--addr 127.0.0.1:7070] [--no-open]   the Studio: edit, preview and check decks in the browser (loopback only)
   si [build] <dir|file.md> [--output html/] [--css <dir|file.css>]... [--no-inline-media] [--pdf]
         write one self-contained HTML file per deck plus index.html
@@ -79,7 +83,8 @@ Usage:
         css-rules: starter stylesheet with every --si-* token and .si-* hook
         rules:     RULES.md
         conf:      a starter si.conf with the default keys and features
-        example:   the showcase decks (default output: ./si-example)
+        example:   an example to copy from (default output: ./si-example); --type picks it:
+                   deck (default; also slides), article, guide (also tutorial), lab, all
         themes:    one sample deck per built-in theme (default: ./si-themes)
         agent-rules: CLAUDE.md + AGENTS.md telling a coding agent how to write si decks
                    (default: the current dir; -o - prints it; never overwrites)
@@ -138,10 +143,12 @@ func (m *multi) Set(v string) error { *m = append(*m, v); return nil }
 
 type options struct {
 	output, addr, export, theme, conf, title, ai string
+	kind                                         string // --type of --export example
 	remoteAddr                                   string
 	remote                                       remoteFlag
 	open, help, ver                              bool
 	noInline, pdf, slides, dev, web, noOpen      bool
+	serveMode                                    bool // si serve: play without the terminal (everything, for readers)
 	css                                          multi
 	args                                         []string
 }
@@ -159,6 +166,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.Var(&o.remote, "remote", "")
 	fl.StringVar(&o.remoteAddr, "remote-addr", "", "")
 	fl.StringVar(&o.export, "export", "", "")
+	fl.StringVar(&o.kind, "type", "", "")
 	fl.BoolVar(&o.open, "open", false, "")
 	fl.BoolVar(&o.dev, "dev", false, "")
 	fl.BoolVar(&o.web, "web", false, "")
@@ -262,6 +270,15 @@ func run(argv []string, stdout, stderr io.Writer) int {
 			return usageErr(stderr, "play needs one <dir|file.md>")
 		}
 		return play(rest[0], o, stdout, stderr)
+	case "serve":
+		if len(rest) != 1 {
+			return usageErr(stderr, "serve needs one <dir|file.md>")
+		}
+		if len(o.remote.roles) > 0 {
+			return usageErr(stderr, "--remote is for si play (the presenter); si serve has no teleprompter remote")
+		}
+		o.serveMode = true
+		return play(rest[0], o, stdout, stderr)
 	case "check":
 		if len(rest) != 1 {
 			return usageErr(stderr, "check needs one <dir|file.md>")
@@ -307,12 +324,30 @@ func usageErr(stderr io.Writer, msg string) int {
 }
 
 func build(src string, o *options, stdout, stderr io.Writer) int {
+	if g, ok := guideAt(src); ok {
+		out := o.output
+		if out == "" {
+			out = "html"
+		}
+		css, err := render.LoadCSS(o.css)
+		if err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitUsage
+		}
+		cfg := config.Load(o.conf, filepath.Join(src, "si.conf"))
+		if _, ok := buildGuide(g, out, o, css, cfg, stdout, stderr); !ok {
+			fmt.Fprintln(stderr, "si: FAIL")
+			return exitProblems
+		}
+		return exitOK
+	}
 	files, err := deck.List(src)
 	if err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
 		return exitProblems
 	}
-	if len(files) == 0 {
+	guides := subGuides(src)
+	if len(files) == 0 && len(guides) == 0 {
 		fmt.Fprintf(stderr, "si: no decks (*.md) in %s\n", src)
 		return exitProblems
 	}
@@ -405,13 +440,13 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			continue
 		}
 		entry := render.Entry(d)
-		if d.IsLab() {
-			fmt.Fprintf(stdout, "  %-28s lab  %d sections  %4d KB\n", d.Name+".html", entry.Sections, len(res.HTML)/1024)
+		if d.IsDoc() {
+			fmt.Fprintf(stdout, "  %-28s %s  %d sections  %4d KB\n", d.Name+".html", d.Meta.Type, entry.Sections, len(res.HTML)/1024)
 		} else {
 			fmt.Fprintf(stdout, "  %-28s %3d slides  %5s min  %3d steps  %2d canvases  %4d KB\n",
 				d.Name+".html", len(d.Slides), strconv.FormatFloat(d.Minutes(), 'f', -1, 64), res.Steps, res.Canvases, len(res.HTML)/1024)
 		}
-		if chrome != "" && !d.IsLab() { // the slides PDF does not apply to a lab (print it from the browser)
+		if chrome != "" && !d.IsDoc() { // the slides PDF does not apply to a document (print it from the browser)
 			rel := filepath.Join("pdfs", d.Name+".pdf") // a pdfs/ folder beside the decks; linked from the index tiles
 			pdf := filepath.Join(out, rel)
 			if err := os.MkdirAll(filepath.Dir(pdf), 0o755); err != nil {
@@ -426,6 +461,21 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			}
 		}
 		entries = append(entries, entry)
+	}
+	for _, g := range guides { // a guide folder becomes one tile, built into out/<folder>/
+		sub := filepath.Base(g.Dir)
+		home, ok := buildGuide(g, filepath.Join(out, sub), o, css, cfg, stdout, stderr)
+		if !ok {
+			failed = true
+		}
+		if home == "" {
+			continue
+		}
+		if indexTheme == "" && g.Meta.Theme != "" {
+			indexTheme = g.Meta.Theme
+		}
+		entries = append(entries, render.IndexEntry{Href: sub + "/" + home, Title: g.Meta.Title, Subtitle: g.Meta.Description,
+			Lab: true, Kind: "guide", Sections: len(g.Pages), Version: g.Meta.Version, Status: g.Meta.Status})
 	}
 	title := filepath.Base(filepath.Clean(src))
 	if st, err := os.Stat(src); err == nil && !st.IsDir() {
@@ -447,10 +497,17 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 }
 
 func check(src string, stdout, stderr io.Writer) int {
+	if g, ok := guideAt(src); ok {
+		return checkGuides([]*deck.Guide{g}, 0, stdout, stderr)
+	}
 	files, err := deck.List(src)
 	if err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
 		return exitProblems
+	}
+	guides := subGuides(src)
+	if len(guides) > 0 && len(files) == 0 {
+		return checkGuides(guides, 0, stdout, stderr)
 	}
 	n := 0
 	for _, f := range files {
@@ -469,11 +526,65 @@ func check(src string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "warning: %s\n", w)
 		}
 	}
+	if len(guides) > 0 {
+		fmt.Fprintf(stdout, "si check: %d deck(s), %d problem(s)\n", len(files), n)
+		return checkGuides(guides, n, stdout, stderr)
+	}
 	if n > 0 {
 		fmt.Fprintf(stderr, "si check: %d problem(s) in %d deck(s)\n", n, len(files))
 		return exitProblems
 	}
 	fmt.Fprintf(stdout, "si check: %d deck(s) OK\n", len(files))
+	return exitOK
+}
+
+// guideAt reports whether path is a guide folder (it holds a _nav.md).
+func guideAt(path string) (*deck.Guide, bool) {
+	if st, err := os.Stat(filepath.Join(path, deck.NavFile)); err != nil || st.IsDir() {
+		return nil, false
+	}
+	g, err := deck.LoadGuide(path)
+	return g, err == nil
+}
+
+// subGuides are the guides in the immediate subfolders of dir.
+func subGuides(dir string) []*deck.Guide {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	var out []*deck.Guide
+	for _, e := range entries {
+		if e.IsDir() && !strings.HasPrefix(e.Name(), ".") && !strings.HasPrefix(e.Name(), "_") {
+			if g, ok := guideAt(filepath.Join(dir, e.Name())); ok {
+				out = append(out, g)
+			}
+		}
+	}
+	return out
+}
+
+// checkGuides renders every page of each guide and reports problems
+// (including broken links and anchors between pages) and warnings. prior is
+// the number of problems already found (by the decks of the same check).
+func checkGuides(guides []*deck.Guide, prior int, stdout, stderr io.Writer) int {
+	n, pages := prior, 0
+	for _, g := range guides {
+		ps, probs, warns := render.RenderGuide(g, render.Options{})
+		pages += len(ps)
+		for _, p := range probs {
+			fmt.Fprintf(stderr, "%s\n", p)
+		}
+		for _, w := range warns {
+			fmt.Fprintf(stderr, "warning: %s\n", w)
+		}
+		n += len(probs)
+	}
+	if n > 0 {
+		fmt.Fprintf(stderr, "si check: %d problem(s); %d guide(s), %d page(s)\n", n, len(guides), pages)
+		return exitProblems
+	}
+	fmt.Fprintf(stdout, "si check: %d guide(s), %d page(s) OK\n", len(guides), pages)
 	return exitOK
 }
 
@@ -505,9 +616,15 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		remote = rs
 	}
 	url := "http://" + ln.Addr().String() + "/"
-	fmt.Fprintf(stdout, "si play: serving %s at %s (live reload on; Ctrl+C stops)\n", src, url)
+	cmdName := "si play"
+	if o.serveMode {
+		cmdName = "si serve"
+	}
+	fmt.Fprintf(stdout, "%s: serving %s at %s (live reload on; Ctrl+C stops)\n", cmdName, src, url)
 	if ta, ok := ln.Addr().(*net.TCPAddr); ok {
-		if ta.IP.IsLoopback() {
+		if o.serveMode {
+			// readers: decks, articles, guides and labs, no terminal drawer
+		} else if ta.IP.IsLoopback() {
 			srv.Terminal = true // play terminal: loopback only, never on a reachable address
 			fmt.Fprintf(stdout, "  terminal drawer: press ` (backtick) — runs local commands, loopback only\n")
 			fmt.Fprintf(stdout, "  to open on a phone on your network: si play %s --addr 0.0.0.0:%d\n", src, ta.Port)
@@ -762,11 +879,19 @@ func export(o *options, stdout, stderr io.Writer) int {
 		if out == "" {
 			out = "si-example"
 		}
-		if err := writeExamples(out, ""); err != nil {
+		kind, ok := exampleKinds[strings.ToLower(o.kind)]
+		if !ok {
+			return usageErr(stderr, fmt.Sprintf("unknown --type %q (deck, article, guide, lab, all)", o.kind))
+		}
+		if err := writeExampleKind(out, kind); err != nil {
 			fmt.Fprintf(stderr, "si: %v\n", err)
 			return exitProblems
 		}
-		fmt.Fprintf(stdout, "si: wrote the showcase decks to %s; try: si play %s\n", out, out)
+		cmd := "si play"
+		if kind != "deck" {
+			cmd = "si serve"
+		}
+		fmt.Fprintf(stdout, "si: wrote the %s example to %s; try: %s %s\n", kind, out, cmd, out)
 		return exitOK
 	case "agent-rules":
 		if o.output == "-" {
@@ -828,6 +953,58 @@ func writeAgentRules(dir string) ([]string, error) {
 	return wrote, nil
 }
 
+// buildGuide writes every page of g into out (mirroring its folders) and an
+// index.html (the first page, or a redirect to it). It returns the first
+// page's path inside out, and false when a page or link had a problem.
+func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, cfg *config.Config, stdout, stderr io.Writer) (string, bool) {
+	mode := render.MediaInline
+	if o.noInline {
+		mode = render.MediaCopy
+	}
+	pages, probs, warns := render.RenderGuide(g, render.Options{UserCSS: css, Media: mode, Theme: o.theme, Config: cfg})
+	for _, w := range warns {
+		fmt.Fprintf(stderr, "  warning: %s\n", w)
+	}
+	for _, p := range probs {
+		fmt.Fprintf(stderr, "  error: %s\n", p)
+	}
+	ok := len(probs) == 0
+	for _, p := range pages {
+		dest := filepath.Join(out, filepath.FromSlash(p.Rel))
+		if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return "", false
+		}
+		for _, m := range p.Result.Media {
+			if err := copyFile(m.Src, filepath.Join(filepath.Dir(dest), filepath.FromSlash(m.Rel))); err != nil {
+				fmt.Fprintf(stderr, "si: %v\n", err)
+				ok = false
+			}
+		}
+		if err := os.WriteFile(dest, p.Result.HTML, 0o644); err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return "", false
+		}
+		fmt.Fprintf(stdout, "  %-40s %s  %4d KB\n", filepath.ToSlash(filepath.Join(filepath.Base(out), p.Rel)), p.Deck.Meta.Type, len(p.Result.HTML)/1024)
+	}
+	if len(pages) == 0 {
+		return "", false
+	}
+	home := pages[0].Rel
+	if _, err := os.Stat(filepath.Join(out, "index.html")); err != nil {
+		redirect := fmt.Sprintf("<!doctype html><meta charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0; url=%s\"><title>%s</title><a href=\"%s\">%s</a>\n",
+			home, htmlEscape(g.Meta.Title), home, htmlEscape(g.Meta.Title))
+		if err := os.WriteFile(filepath.Join(out, "index.html"), []byte(redirect), 0o644); err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return "", false
+		}
+	}
+	fmt.Fprintf(stdout, "si: guide %q, %d page(s) -> %s\n", g.Meta.Title, len(pages), out)
+	return home, ok
+}
+
+func htmlEscape(s string) string { return html.EscapeString(s) }
+
 func scaffold(name string, stdout, stderr io.Writer) int {
 	base := filepath.Base(name)
 	if err := writeExamples(name, base+".md"); err != nil {
@@ -840,6 +1017,58 @@ func scaffold(name string, stdout, stderr io.Writer) int {
 
 // writeExamples copies the embedded examples into dir; mainName renames the
 // showcase deck. dir must not exist or be empty.
+// exampleKinds maps --type (and its aliases) to an example set.
+var exampleKinds = map[string]string{"": "deck", "deck": "deck", "slides": "deck", "article": "article",
+	"guide": "guide", "guides": "guide", "tutorial": "guide", "tutorials": "guide", "lab": "lab", "all": "all"}
+
+// writeExampleKind writes one example set into dir (which must not exist or
+// be empty): deck = the showcase decks (today's export), article = the article
+// alone, guide = the guide folder's contents, lab = the lab and its figure,
+// all = the decks with the article beside them and the guide in guide/.
+func writeExampleKind(dir, kind string) error {
+	if entries, err := os.ReadDir(dir); err == nil && len(entries) > 0 {
+		return fmt.Errorf("%s exists and is not empty", dir)
+	}
+	keep := func(p string) (string, bool) { // embedded path -> output path
+		top, _, _ := strings.Cut(p, "/")
+		switch kind {
+		case "deck":
+			return p, top != "article" && top != "guide"
+		case "article":
+			r, ok := strings.CutPrefix(p, "article/")
+			return r, ok
+		case "guide":
+			r, ok := strings.CutPrefix(p, "guide/")
+			return r, ok
+		case "lab":
+			return p, p == "order-lab.md" || p == "assets/floor.svg"
+		default: // all
+			if r, ok := strings.CutPrefix(p, "article/"); ok {
+				return r, true
+			}
+			return p, true
+		}
+	}
+	return fs.WalkDir(examples.FS, ".", func(p string, e fs.DirEntry, err error) error {
+		if err != nil || e.IsDir() || strings.HasSuffix(p, ".go") {
+			return err
+		}
+		out, ok := keep(p)
+		if !ok {
+			return nil
+		}
+		dest := filepath.Join(dir, filepath.FromSlash(out))
+		if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+			return err
+		}
+		raw, err := examples.FS.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(dest, raw, 0o644)
+	})
+}
+
 func writeExamples(dir, mainName string) error {
 	if entries, err := os.ReadDir(dir); err == nil && len(entries) > 0 {
 		return fmt.Errorf("%s exists and is not empty", dir)
@@ -849,6 +1078,12 @@ func writeExamples(dir, mainName string) error {
 			return err
 		}
 		if strings.HasSuffix(p, ".go") {
+			return nil
+		}
+		if top, _, _ := strings.Cut(p, "/"); top == "article" || top == "guide" {
+			if e.IsDir() {
+				return fs.SkipDir // si new scaffolds a deck; the document examples are --export example --type
+			}
 			return nil
 		}
 		dest := filepath.Join(dir, filepath.FromSlash(p))

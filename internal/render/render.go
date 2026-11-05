@@ -60,6 +60,10 @@ type Options struct {
 	// Prev and Next link a lab to its neighbours built from the same
 	// directory (si build); empty Href means no link.
 	Prev, Next DocLink
+	// Guide is the guide a page belongs to (its _nav.md); nil for a page
+	// outside a guide. It gives the sidebar, breadcrumb, Prev / Next (which
+	// then replace Prev and Next), the edit link and the shared partials.
+	Guide *deck.Guide
 }
 
 // DocLink is a link to another lab page.
@@ -128,7 +132,7 @@ func (dr *deckRenderer) warn(sc *slideCtx, format string, a ...any) {
 
 // Deck renders a parsed deck.
 func Deck(d *deck.Deck, opt Options) Result {
-	if d.IsLab() {
+	if d.IsDoc() {
 		return Document(d, opt)
 	}
 	dr := &deckRenderer{d: d, opt: opt, lastState: map[string][]string{}, words: map[string]bool{}, files: map[string]string{}}
@@ -260,7 +264,7 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 
 var (
 	imgSrcRE = regexp.MustCompile(`(<img\b[^>]*?\ssrc=")([^"]+)"`)
-	mdLinkRE = regexp.MustCompile(`(href=")([^"#:]+)\.md(#[^"]*)?"`)
+	mdLinkRE = regexp.MustCompile(`(href=")([^"#:]+)\.(?:md|adoc|asciidoc)(#[^"]*)?"`)
 	tagRE    = regexp.MustCompile(`<[^>]+>|[*_` + "`" + `]`)
 )
 
@@ -657,7 +661,14 @@ func (dr *deckRenderer) head(b *bytes.Buffer) string {
 <meta name="generator" content="simple-ideas">
 <link rel="icon" href="data:,">
 `)
-	fmt.Fprintf(b, "<title>%s</title>\n", html.EscapeString(plain(dr.d.Title())))
+	title := plain(dr.d.Title())
+	if g := dr.opt.Guide; g != nil && g.Meta.Title != "" && g.Meta.Title != title {
+		title += " · " + g.Meta.Title
+	}
+	fmt.Fprintf(b, "<title>%s</title>\n", html.EscapeString(title))
+	if desc := strings.TrimSpace(dr.d.Meta.Description); desc != "" {
+		fmt.Fprintf(b, "<meta name=\"description\" content=\"%s\">\n", html.EscapeString(desc))
+	}
 	return modeAttr
 }
 
@@ -833,7 +844,8 @@ type IndexEntry struct {
 	PDF      string // optional relative href to a slides PDF (pdfs/<name>.pdf); empty = no badge
 	Status   string // optional status badge (e.g. beta, preview, new)
 	Version  string // optional version badge (e.g. v1.2.0)
-	Lab      bool   // a `type: lab` document: shown as "N sections", no slides/time
+	Lab      bool   // a document (lab, article, guide): shown as "N sections", no slides/time
+	Kind     string // "" or "deck", "lab", "article", "guide": the badge and data-kind of the tile
 	Sections int    // lab: number of h2 sections
 }
 
@@ -863,7 +875,11 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 	badges := func(e IndexEntry) string {
 		var s string
 		if e.Lab {
-			s += "<span class=\"si-badge\" data-status=\"lab\">LAB</span>"
+			k := e.Kind
+			if k == "" || k == "deck" {
+				k = "lab"
+			}
+			s += fmt.Sprintf("<span class=\"si-badge\" data-status=\"%s\">%s</span>", k, strings.ToUpper(k))
 		}
 		if e.Status != "" {
 			s += fmt.Sprintf("<span class=\"si-badge\" data-status=\"%s\">%s</span>", html.EscapeString(strings.ToLower(e.Status)), html.EscapeString(strings.ToUpper(e.Status)))
@@ -887,6 +903,11 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 		size, kind := fmt.Sprintf("%d slides%s", e.Slides, mins), "deck"
 		if e.Lab {
 			size, kind = fmt.Sprintf("%d sections", e.Sections), "lab"
+			if e.Kind == "guide" {
+				size, kind = fmt.Sprintf("%d pages", e.Sections), "guide"
+			} else if e.Kind == "article" {
+				kind = "article"
+			}
 		}
 		inner := fmt.Sprintf("<b>%s</b><span>%s</span>%s<small>%s</small>",
 			html.EscapeString(e.Title), html.EscapeString(e.Subtitle), bg, size)
@@ -931,8 +952,12 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 // Entry builds an index entry for a parsed deck.
 func Entry(d *deck.Deck) IndexEntry {
 	e := IndexEntry{Href: d.Name + ".html", Title: plain(d.Title()), Slides: len(d.Slides), Minutes: d.Minutes(), Status: d.Meta.Status, Version: d.Meta.Version}
-	if d.IsLab() {
-		e.Lab, e.Sections, e.Slides, e.Minutes = true, labSections(d), 0, 0
+	if d.IsDoc() {
+		e.Lab, e.Kind, e.Sections, e.Slides, e.Minutes = true, d.Meta.Type, labSections(d), 0, 0
+		if d.Meta.Description != "" {
+			e.Subtitle = plain(d.Meta.Description)
+			return e
+		}
 	}
 	first := d.Slides
 	if !e.Lab && len(first) > 1 {
