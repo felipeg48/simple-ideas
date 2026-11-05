@@ -45,11 +45,20 @@ var (
 // are consumed by the parser; body-level ones stay in the markdown for the
 // renderer.
 var Directives = map[string]string{
-	"include":    "file",  // splice another deck, or a code file as a code block
-	"tabs":       "body",  // the code blocks that follow become tabs
-	"code":       "file",  // a file from git (GitHub permalink, or repo= path= ref=) as a code block
-	"diff":       "file",  // a commit or compare diff from git as a diff block
-	"slides":     "body",  // documents: embed a deck, or some of its slides
+	"include": "file", // splice another deck, or a code file as a code block
+	"tabs":    "body", // the code blocks that follow become tabs
+	"code":    "file", // a file from git (GitHub permalink, or repo= path= ref=) as a code block
+	"diff":    "file", // a commit or compare diff from git as a diff block
+	"slides":  "body", // documents: embed a deck, or some of its slides
+	// plugins (documents and sites)
+	"alert":      "body",  // a dismissable band, hidden after until=
+	"badge":      "body",  // a small status pill
+	"accordion":  "body",  // the ### sections that follow, one open at a time
+	"modal":      "body",  // a dialog up to <!-- end -->, opened by a link to #id
+	"end":        "body",  // ends a modal
+	"carousel":   "body",  // the image paragraphs that follow
+	"event":      "body",  // a countdown toast as a date nears
+	"embed":      "body",  // a deck, document or guide/book/site, framed, as a card, in full or one section
 	"layout":     "slide", // slide layout
 	"transition": "slide", // slide transition
 	"background": "slide", // slide background
@@ -209,7 +218,7 @@ func (d *Deck) buildLab(lines []srcLine) {
 		if ft.inFence(l.text) {
 			continue
 		}
-		if name, _, ok := ParseDirective(l.text); ok && name != "tabs" && name != "slides" { // tabs and slides work in documents
+		if name, _, ok := ParseDirective(l.text); ok && !docDirectives[name] { // tabs, slides and the plugins work in documents
 			msg := fmt.Sprintf("%q has no effect in a %s document", name, d.Meta.Type)
 			if _, known := Directives[name]; !known {
 				msg = fmt.Sprintf("unknown directive %q", name)
@@ -873,3 +882,7 @@ func (d *Deck) checkDemoMinutes(lines []srcLine) {
 }
 
 var durationRE = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*min`)
+
+// docDirectives are the directives a document uses (the rest are deck-only).
+var docDirectives = map[string]bool{"tabs": true, "slides": true, "alert": true, "badge": true, "accordion": true,
+	"modal": true, "end": true, "carousel": true, "event": true, "embed": true}

@@ -23,6 +23,8 @@ type divNode struct {
 	ast.BaseBlock
 	class string
 	attrs [][2]string
+	tag   string // "" is div; plugins use details, dialog, section
+	open  string // raw HTML written right after the opening tag (a summary, a close button)
 }
 
 // rawNode is pre-rendered HTML: an inlined SVG canvas or a state-only step.
@@ -55,14 +57,22 @@ func (r *nodeRenderer) div(
 	w util.BufWriter, _ []byte, node ast.Node, entering bool,
 ) (ast.WalkStatus, error) {
 	n := node.(*divNode)
+	tag := n.tag
+	if tag == "" {
+		tag = "div"
+	}
 	if entering {
-		fmt.Fprintf(w, `<div class="%s"`, n.class)
+		fmt.Fprintf(w, `<%s class="%s"`, tag, n.class)
 		for _, a := range n.attrs {
+			if a[1] == "" && (a[0] == "hidden" || a[0] == "open") {
+				fmt.Fprintf(w, ` %s`, a[0])
+				continue
+			}
 			fmt.Fprintf(w, ` %s="%s"`, a[0], html.EscapeString(a[1]))
 		}
-		w.WriteString(">\n")
+		w.WriteString(">\n" + n.open)
 	} else {
-		w.WriteString("</div>\n")
+		w.WriteString("</" + tag + ">\n")
 	}
 	return ast.WalkContinue, nil
 }
@@ -256,8 +266,8 @@ func (dr *deckRenderer) transform(doc ast.Node, src []byte, sc *slideCtx) {
 					continue
 				case "svg":
 					c = dr.canvas(val, sc)
-				case "slides":
-					dr.problem(sc, "slides: embeds a deck in a document (article, guide, lab), not in a deck")
+				case "slides", "alert", "badge", "accordion", "modal", "end", "carousel", "event", "embed":
+					dr.problem(sc, "%s: works in documents and sites (articles, guides, books, labs, pages), not on a slide", name)
 					continue
 				default:
 					continue // slide-level directives were consumed by the parser

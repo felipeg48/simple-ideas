@@ -70,6 +70,7 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 	src := []byte(s.Body)
 	doc := dr.md.Parser().Parse(text.NewReader(src))
 	dr.codeFeatures(doc, src, sc)
+	dr.plugins(doc, src, s, sc)
 	for c := doc.FirstChild(); c != nil; {
 		next := c.NextSibling()
 		switch n := c.(type) {
