@@ -5,6 +5,7 @@ package deck
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -95,13 +96,16 @@ type Meta struct {
 	Repo        string // default repo of code: / diff: (OWNER/REPO on GitHub, or a local clone)
 	Subtitle    string // book: the line under the title on the cover
 	Edition     string // book: "2nd edition", on the cover and the book bar
+	Session     string // demo: the session it belongs to
+	SlidesRef   string // demo: the slides it runs on ("23, 24")
+	Duration    string // demo: the live time ("14 min"); si check compares it with the script's (N min) steps
 	EditURL     string // guide: base URL of "Edit this page" (the page path is appended)
 	Header      string // guide page: "off" drops the guide's _header.md
 	FooterPage  string // guide page: "off" drops the guide's _footer.md
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -156,7 +160,7 @@ type Deck struct {
 }
 
 // Types are the accepted values of the `type` front matter key.
-var Types = []string{"deck", "lab", "article", "guide", "book"}
+var Types = []string{"deck", "lab", "article", "guide", "book", "demo"}
 
 // IsLab reports whether the file is a lab document (`type: lab`).
 func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
@@ -164,8 +168,11 @@ func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
 // IsDoc reports whether the file is a document (lab, article or guide page):
 // one readable page, not slides.
 func (d *Deck) IsDoc() bool {
-	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide"
+	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide" || d.Meta.Type == "demo"
 }
+
+// IsDemo reports whether the file is an instructor demo script (`type: demo`).
+func (d *Deck) IsDemo() bool { return d.Meta.Type == "demo" }
 
 // buildLab splits the expanded body into document parts, one per run of
 // consecutive lines of one file, so each part resolves relative paths against
@@ -326,6 +333,9 @@ func ParseWith(path string, def Meta) (*Deck, error) {
 	out = d.expandIncludes(abs, out, []string{abs})
 	if d.IsDoc() {
 		d.buildLab(out)
+		if d.IsDemo() {
+			d.checkDemoMinutes(out)
+		}
 	} else {
 		d.buildSlides(out)
 	}
@@ -399,7 +409,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"footer": &m.Footer, "footer-position": &m.FooterPos, "watermark": &m.Watermark, "watermark-opacity": &m.WatermarkOpacity, "labs-label": &m.LabsLabel,
 		"runbook": &m.Runbook, "demos": &m.Demos, "type": &m.Type,
 		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "repo": &m.Repo,
-		"subtitle": &m.Subtitle, "edition": &m.Edition,
+		"subtitle": &m.Subtitle, "edition": &m.Edition, "session": &m.Session, "slides": &m.SlidesRef, "duration": &m.Duration,
 	}[key]
 	if ptr == nil {
 		return false
@@ -817,3 +827,36 @@ func List(path string) ([]string, error) {
 	sort.Strings(out)
 	return out, nil
 }
+
+var (
+	demoStepRE = regexp.MustCompile(`^#{2,3}\s.*\((\d+(?:\.\d+)?)\s*min\)\s*$`)
+)
+
+// checkDemoMinutes warns when the `### Slide N, "…" (M min)` steps of a demo
+// script do not add up to its `duration:`.
+func (d *Deck) checkDemoMinutes(lines []srcLine) {
+	m := durationRE.FindStringSubmatch(d.Meta.Duration)
+	if m == nil {
+		return
+	}
+	want, _ := strconv.ParseFloat(m[1], 64)
+	var got float64
+	steps := 0
+	var ft fenceTracker
+	for _, l := range lines {
+		if ft.inFence(l.text) {
+			continue
+		}
+		if s := demoStepRE.FindStringSubmatch(strings.TrimSpace(l.text)); s != nil {
+			v, _ := strconv.ParseFloat(s[1], 64)
+			got += v
+			steps++
+		}
+	}
+	if steps > 0 && math.Abs(got-want) > 0.01 {
+		d.Warnings = append(d.Warnings, Problem{File: rel(d.Path), Msg: fmt.Sprintf("demo: the script's steps add up to %s min, duration: says %s",
+			strconv.FormatFloat(got, 'f', -1, 64), strconv.FormatFloat(want, 'f', -1, 64))})
+	}
+}
+
+var durationRE = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*min`)

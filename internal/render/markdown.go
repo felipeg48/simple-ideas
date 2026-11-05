@@ -122,7 +122,11 @@ func (r *nodeRenderer) fence(
 		attrs = fenceAttrs(string(n.Info.Segment.Value(src)))
 	}
 	if r.dr.doc { // a document: a header bar with the title or language and a copy button
-		label := `<span class="si-code-lang">` + html.EscapeString(lang) + `</span>`
+		shown := lang
+		if r.dr.d.IsDemo() && (lang == "text" || lang == "output") {
+			shown = "expected output" // a demo: what the room should see
+		}
+		label := `<span class="si-code-lang">` + html.EscapeString(shown) + `</span>`
 		if t := attrs["title"]; t != "" {
 			label = `<span class="si-code-title">` + html.EscapeString(t) + `</span>` + label
 		}

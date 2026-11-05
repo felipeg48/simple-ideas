@@ -112,6 +112,7 @@ Not everything is a slide deck. Pick the type by what the reader does:
 | follow steps over several pages | a guide | a folder with `_nav.md` (the page order), one topic per page |
 | do hands-on work on one page | a lab | `type: lab`, `## Step N:` headings |
 | look things up, read cover to cover | a book | a guide folder whose `_nav.md` says `type: book`: parts, chapters, appendices |
+| run a live demo (the presenter) | a demo script | `type: demo`, `> Say:` lines, every command followed by its expected output |
 
 - **Guides:** write `_nav.md` first (front matter for the guide-wide
   settings, then a nested list: `- [Title](page.md)` pages, plain items as

@@ -70,3 +70,23 @@ func TestBook(t *testing.T) {
 		t.Error("cover: kind, subtitle and the first chapter link")
 	}
 }
+
+func TestDemo(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "d.md")
+	os.WriteFile(p, []byte("---\ntype: demo\ntitle: Live\nsession: 1\nslides: 23, 24\nduration: 10 min\n---\n# Live\n\n## The script\n\n### Slide 23 (4 min)\n\n> Say: \"One node.\"\n\n```bash\nrmq list\n```\n\n```text\nqueues\n```\n\n### Slide 24 (5 min)\n\n> A plain quote.\n"), 0o644)
+	d, err := deck.Parse(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Warnings) != 1 || !strings.Contains(d.Warnings[0].Msg, "add up to 9 min, duration: says 10") {
+		t.Errorf("minutes warning: %v", d.Warnings)
+	}
+	h := string(Deck(d, Options{}).HTML)
+	for _, want := range []string{`data-si-doc="demo"`, `<dl class="si-demo-facts"><div><dt>Session</dt><dd>1</dd></div>`, `<dt>Slides</dt><dd>23, 24</dd>`,
+		"<div class=\"si-say\">\n<p class=\"si-say-label\">Say</p>\n<p>&quot;One node.&quot;</p>", `<span class="si-code-lang">expected output</span>`, `<blockquote>`} {
+		if !strings.Contains(h, want) {
+			t.Errorf("demo lacks %q", want)
+		}
+	}
+}

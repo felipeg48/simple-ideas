@@ -107,6 +107,21 @@ html{font-size:clamp(100%,.85rem + .3vw,150%);-webkit-text-size-adjust:100%;scro
 .si-doc-mode:hover{color:var(--si-fg);border-color:var(--si-muted)}
 .si-doc-mode svg{width:100%;height:100%}
 
+/* demo: an instructor run sheet */
+.si-doc[data-si-doc="demo"] .si-doc-head-in::before{content:"Instructor only";display:inline-block;margin-bottom:.9rem;padding:.2em .7em;border-radius:2em;
+  font:600 .72rem/1.4 var(--si-font-mono);letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--si-crit)}
+.si-demo-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr));margin:1.2rem 0 0;max-width:46rem;
+  border:1px solid var(--si-line);border-radius:var(--si-radius);background:var(--si-surface);font-size:.88rem}
+.si-demo-facts div{padding:.65rem .9rem;border-right:1px solid var(--si-line)}
+.si-demo-facts div:last-child{border-right:0}
+.si-demo-facts dt{font:600 .66rem/1.2 var(--si-font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--si-muted);margin-bottom:.3rem}
+.si-demo-facts dd{margin:0}
+.si-say{margin:1.3em 0;padding:.75em 1.1em .85em;border-left:.25rem solid var(--si-accent-2);border-radius:0 var(--si-radius) var(--si-radius) 0;
+  background:color-mix(in srgb,var(--si-accent-2) 8%,var(--si-bg));font-size:1.04em}
+.si-say>:last-child{margin-bottom:0}
+.si-say-label{margin:0 0 .25em!important;font:600 .68rem/1.2 var(--si-font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--si-accent-2)}
+@media (width < 40rem){.si-demo-facts div{border-right:0;border-bottom:1px solid var(--si-line)}.si-demo-facts div:last-child{border-bottom:0}}
+
 /* article and guide page: lede, reading column */
 .si-lede{margin:1rem 0 0;max-width:42rem;font-family:var(--si-font-prose,var(--si-font-body));font-size:var(--si-lede-size,1.25em);line-height:1.5;color:var(--si-muted);text-wrap:pretty}
 .si-doc-body{font-family:var(--si-font-prose,var(--si-font-body));font-size:var(--si-prose-size,1rem);line-height:var(--si-prose-leading,1.7)}

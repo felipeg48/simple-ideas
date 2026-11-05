@@ -40,7 +40,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/studio"
 )
 
-const version = "0.9.7"
+const version = "0.9.8"
 
 // Exit codes.
 const (
@@ -84,7 +84,7 @@ Usage:
         rules:     RULES.md
         conf:      a starter si.conf with the default keys and features
         example:   an example to copy from (default output: ./si-example); --type picks it:
-                   deck (default; also slides), article, guide (also tutorial), lab, book (also reference), all
+                   deck (default; also slides), article, guide (also tutorial), lab, book (also reference), demo, all
         themes:    one sample deck per built-in theme (default: ./si-themes)
         agent-rules: CLAUDE.md + AGENTS.md telling a coding agent how to write si decks
                    (default: the current dir; -o - prints it; never overwrites)
@@ -101,6 +101,7 @@ Flags (GNU style, before or after the path):
       --remote[=tp,draw] play: a second, keyed listener for a tablet or phone on your network: tp = teleprompter, draw = draw pad (default: both)
       --remote-addr <host:port> play: the --remote address (default 0.0.0.0, the play port + 1)
       --offline         code: / diff: use the cache only (CI, a plane); fails on what was never fetched
+      --no-instructor   build: leave the instructor demo scripts (type: demo) out of a participant build
       --open            play: open the browser
       --dev             play: hot reload — morph changed slides in place (keeps the current slide, step and overview)
       --no-inline-media build: copy images and videos next to the HTML instead of data URIs
@@ -151,6 +152,7 @@ type options struct {
 	noInline, pdf, slides, dev, web, noOpen      bool
 	serveMode                                    bool // si serve: play without the terminal (everything, for readers)
 	offline                                      bool // code: / diff: from the cache only
+	noInstructor                                 bool // si build: leave type: demo scripts out (a participant build)
 	css                                          multi
 	args                                         []string
 }
@@ -170,6 +172,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.export, "export", "", "")
 	fl.StringVar(&o.kind, "type", "", "")
 	fl.BoolVar(&o.offline, "offline", false, "")
+	fl.BoolVar(&o.noInstructor, "no-instructor", false, "")
 	fl.BoolVar(&o.open, "open", false, "")
 	fl.BoolVar(&o.dev, "dev", false, "")
 	fl.BoolVar(&o.web, "web", false, "")
@@ -392,6 +395,10 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 		if err != nil {
 			fmt.Fprintf(stderr, "si: %v\n", err)
 			failed = true
+			continue
+		}
+		if o.noInstructor && d.IsDemo() {
+			fmt.Fprintf(stdout, "  %-28s skipped (instructor demo; --no-instructor)\n", d.Name+".html")
 			continue
 		}
 		decks[i] = d
@@ -885,7 +892,7 @@ func export(o *options, stdout, stderr io.Writer) int {
 		}
 		kind, ok := exampleKinds[strings.ToLower(o.kind)]
 		if !ok {
-			return usageErr(stderr, fmt.Sprintf("unknown --type %q (deck, article, guide, lab, book, all)", o.kind))
+			return usageErr(stderr, fmt.Sprintf("unknown --type %q (deck, article, guide, lab, book, demo, all)", o.kind))
 		}
 		if err := writeExampleKind(out, kind); err != nil {
 			fmt.Fprintf(stderr, "si: %v\n", err)
@@ -1044,7 +1051,7 @@ func scaffold(name string, stdout, stderr io.Writer) int {
 // exampleKinds maps --type (and its aliases) to an example set.
 var exampleKinds = map[string]string{"": "deck", "deck": "deck", "slides": "deck", "article": "article",
 	"guide": "guide", "guides": "guide", "tutorial": "guide", "tutorials": "guide", "lab": "lab",
-	"book": "book", "reference": "book", "all": "all"}
+	"book": "book", "reference": "book", "demo": "demo", "all": "all"}
 
 // writeExampleKind writes one example set into dir (which must not exist or
 // be empty): deck = the showcase decks (today's export), article = the article
@@ -1061,6 +1068,9 @@ func writeExampleKind(dir, kind string) error {
 			return p, top != "article" && top != "guide" && top != "book"
 		case "book":
 			r, ok := strings.CutPrefix(p, "book/")
+			return r, ok
+		case "demo":
+			r, ok := strings.CutPrefix(p, "demos/")
 			return r, ok
 		case "article":
 			r, ok := strings.CutPrefix(p, "article/")

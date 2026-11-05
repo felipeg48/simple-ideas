@@ -5,7 +5,13 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-03)
 
-- **Latest release: v0.9.7** (tagged; the release workflow publishes it).
+- **Latest release: v0.9.8** (tagged; the release workflow publishes it).
+- **v0.9.8: demo scripts** (phase 4): `type: demo` (`session`, `slides`, `duration`
+  facts, INSTRUCTOR ONLY badge, `> Say:` speech callouts, `text` blocks labelled
+  expected output, `### … (N min)` steps checked against `duration`), `si build
+  --no-instructor`, the ▶ Demos panel strips front matter, `examples/demos/order-demo.md`
+  (the showcase lists it), `--export example --type demo`, RULES §22. Deferred from
+  phase 4: search across a guide, side-by-side diffs, versioned guides.
 - **v0.9.7: books** (`type: book` in `_nav.md`; `render/book.go`): `Guide.BookNumbers`
   (front matter / chapters / lettered appendices), `## ` sections numbered N.k,
   captioned figures (image title) and `Table:` captions numbered and given ids,

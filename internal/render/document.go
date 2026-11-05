@@ -81,6 +81,10 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 		case *ast.Blockquote:
 			if cl := callout(n, src); cl != nil {
 				doc.ReplaceChild(doc, n, cl)
+			} else if dr.d.IsDemo() {
+				if say := sayCallout(n, src); say != nil {
+					doc.ReplaceChild(doc, n, say)
+				}
 			}
 		case *ast.Paragraph:
 			if fig := imageFigure(n, src, nil); fig != nil {
@@ -404,6 +408,9 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	} else {
 		b.WriteString("<header class=\"si-doc-head\"><div class=\"si-doc-head-in\">\n")
 		fmt.Fprintf(&b, "<h1 class=\"si-doc-title\">%s</h1>\n%s%s", dr.inline(d.Title()), lede, metaHTML)
+		if d.IsDemo() {
+			b.WriteString(demoFacts(m))
+		}
 		b.WriteString(modeBtn + "</div></header>\n<div class=\"si-doc-layout\">\n")
 		if kind == "article" {
 			b.WriteString("<main class=\"si-doc-body\">\n" + body + dr.pager() + "</main>\n" + tocHTML + "</div>\n")
@@ -434,4 +441,49 @@ func firstNonEmpty(v ...string) string {
 		}
 	}
 	return ""
+}
+
+// sayCallout turns a demo's `> Say: "…"` quote into a speech callout: what the
+// presenter says to the room, verbatim. nil for any other quote.
+func sayCallout(bq *ast.Blockquote, src []byte) ast.Node {
+	p, ok := bq.FirstChild().(*ast.Paragraph)
+	if !ok || !strings.HasPrefix(strings.TrimSpace(textOf(p, src)), "Say:") {
+		return nil
+	}
+	for c := p.FirstChild(); c != nil; c = c.NextSibling() { // drop the "Say:" lead-in
+		if t, ok := c.(*ast.Text); ok {
+			v := string(t.Segment.Value(src))
+			if i := strings.Index(v, "Say:"); i >= 0 {
+				start := t.Segment.Start + i + len("Say:")
+				for start < t.Segment.Stop && src[start] == ' ' {
+					start++
+				}
+				t.Segment = t.Segment.WithStart(start)
+				break
+			}
+		}
+	}
+	d := &divNode{class: "si-say"}
+	d.AppendChild(d, &rawNode{html: `<p class="si-say-label">Say</p>`})
+	for c := bq.FirstChild(); c != nil; {
+		next := c.NextSibling()
+		bq.RemoveChild(bq, c)
+		d.AppendChild(d, c)
+		c = next
+	}
+	return d
+}
+
+// demoFacts is the session / slides / duration block under a demo's title.
+func demoFacts(m deck.Meta) string {
+	var rows []string
+	for _, kv := range [][2]string{{"Session", m.Session}, {"Slides", m.SlidesRef}, {"Duration", m.Duration}} {
+		if strings.TrimSpace(kv[1]) != "" {
+			rows = append(rows, fmt.Sprintf("<div><dt>%s</dt><dd>%s</dd></div>", kv[0], html.EscapeString(kv[1])))
+		}
+	}
+	if len(rows) == 0 {
+		return ""
+	}
+	return `<dl class="si-demo-facts">` + strings.Join(rows, "") + "</dl>\n"
 }

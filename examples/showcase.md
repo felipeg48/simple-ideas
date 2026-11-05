@@ -10,6 +10,7 @@ footer: Northwind Logistics
 watermark: Confidential
 watermark-opacity: 0.05
 runbook: runbook.json
+demos: demos/
 ---
 
 # The Thursday Promise

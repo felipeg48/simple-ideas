@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	gmhtml "github.com/yuin/goldmark/renderer/html"
@@ -116,7 +117,16 @@ func (dr *deckRenderer) resolveDemos() {
 			dr.problem(nil, "demos: cannot read %s", f)
 			continue
 		}
-		docs = append(docs, demoDoc{Title: demoTitle(src, f), File: filepath.Base(f), HTML: demoHTML(src)})
+		title, body := demoTitle(src, f), src
+		if d, err := deck.Parse(f); err == nil && strings.HasPrefix(strings.TrimSpace(string(src)), "---") {
+			if d.Meta.Title != "" {
+				title = d.Meta.Title
+			}
+			if i := strings.Index(string(src)[3:], "\n---"); i >= 0 { // the panel shows the script, not its front matter
+				body = []byte(string(src)[3+i+4:])
+			}
+		}
+		docs = append(docs, demoDoc{Title: title, File: filepath.Base(f), HTML: demoHTML(body)})
 	}
 	if len(docs) == 0 {
 		if len(missing) == 0 {
