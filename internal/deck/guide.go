@@ -113,11 +113,10 @@ func LoadGuide(dir string) (*Guide, error) {
 			if local := !strings.Contains(it.Href, "://") && !strings.HasPrefix(it.Href, "mailto:"); local {
 				path, _, _ := strings.Cut(it.Href, "#")
 				f := filepath.Clean(filepath.Join(abs, filepath.FromSlash(path)))
-				if st, err := os.Stat(f); err == nil && st.IsDir() && IsGuideDir(f) {
-					it.Sub = f // a guide, book or site of its own, linked from this menu
-					break
-				}
+				st, err := os.Stat(f)
 				switch {
+				case err == nil && st.IsDir() && IsGuideDir(f):
+					it.Sub = f // a guide, book or site of its own, linked from this menu
 				case !isDeckFile(filepath.Base(f)):
 					g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: fmt.Sprintf("_nav.md: %s is not a .md or .adoc page", it.Href)})
 				case !strings.HasPrefix(f, abs+string(filepath.Separator)):

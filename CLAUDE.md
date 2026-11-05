@@ -69,14 +69,14 @@ what you chose.
 |---|---|
 | `cmd/si/main.go` | CLI: GNU-style flag parsing (interspersed, long flags), commands play, build, check, new, rules, `--export` |
 | `internal/deck/` | parse a deck: front matter, includes (cycle check), `---` split, headings, `Notes: (N min)`, slide directives; `media.go` validates background and image options; `guide.go` parses a guide's `_nav.md` (`ParseWith` gives pages the guide's settings). No HTML. |
-| `internal/render/` | deck → HTML. `markdown.go`: goldmark + AST transform for body directives (steps, columns, svg, image figures) and fenced code; `svg.go`: canvas inlining, id prefixing, state resolution, helper-attribute CSS; `media.go`: data URIs / link / copy modes, backgrounds, figures; `highlight.go`: tiny highlighter; `css.go`: user CSS layer; `render.go`: page, index; `document.go`: lab / article / guide page; `guide.go`: guide sidebar, breadcrumb, pager, partials, `RenderGuide` + link/anchor checks |
+| `internal/render/` | deck → HTML. `markdown.go`: goldmark + AST transform for body directives (steps, columns, svg, image figures) and fenced code; `svg.go`: canvas inlining, id prefixing, state resolution, helper-attribute CSS; `media.go`: data URIs / link / copy modes, backgrounds, figures; `highlight.go`: tiny highlighter; `css.go`: user CSS layer; `render.go`: page, index; `document.go`: lab / article / guide page; `guide.go`: guide sidebar, breadcrumb, pager, partials, `RenderGuide` + link/anchor checks; `site.go`: site navigators and page frame; `plugins.go`: alert, badge, event, accordion, modal, carousel; `embed.go`: `slides:` and `embed:` |
 | `internal/serve/` | `si play` / `si serve`: on-the-fly render (decks, articles, guide pages with their `_nav.md`), static files, SSE `/_si/events`, mtime-polling watcher (decks, assets, `--css` paths) |
 | `internal/studio/` | `si --web`: gateway (token, Host, Origin), confined workspace, file/deck/check/rules API, assembly with the `si play` server |
 | `web/studio/` | Studio front-end source (Preact + TS + CodeMirror 6, esbuild, vitest, Playwright e2e); bundle committed to `internal/assets/web/studio/assets/` via `make studio-ui` |
 | `internal/config/` | optional `si.conf` (flat `key: value`, stdlib): default theme, `keys.*` command remaps, `feature.*` on/off; injected into the deck as `window.SI_CONFIG`, read by `deck.js` |
 | `internal/assets/` | embedded web files (`web/layout.css` unlayered mechanics, `web/theme.css` looks, `web/deck.js` runtime, `web/doc.css` + `web/doc.js` lab documents (`type: lab`), `web/presenter.html` teleprompter) and `contract.go` (tokens, hooks, theme values, starter CSS) |
 | `docs/docs.go` | embeds RULES.md + reference/user-manual.md + agent-rules.md for `si rules` / `si manual` / `si --export agent-rules` (in `docs/` so go:embed can reach them; no `.go` at the repo root) |
-| `examples/` | showcase deck, included appendix, `assets/journey.svg` canvas, media, `css/harbor.css` theme; embedded for `si new` and `--export example` |
+| `examples/` | showcase deck, included appendix, `assets/journey.svg` canvas, media, `css/harbor.css` theme, one example per document type (`article/`, `guide/`, `book/`, `demos/`, `site/`); embedded for `si new` and `--export example --type` |
 | `docs/screenshots/` | headless screenshots referenced by the README |
 
 ## Run and test
@@ -174,6 +174,11 @@ pass. The steps that matter:
 - A `stage` fence that generates animated flow SVGs (Mermaid-like) is in
   (`docs/stage-diagrams.md`); next: step-driven reveal beyond highlight
   (show/hide, ok/alert per node), single-level fan-out polish.
+- **Google Fonts (v1.1.0):** `fonts: heading=Fraunces:600, body=Inter:400;700`
+  in front matter / si.conf / a theme; fetched at build time (woff2, latin
+  subset, cached like `code:`, `--offline`), inlined as `@font-face` data URIs
+  so the output stays self-contained, mapped to `--si-font-*` tokens.
+- **Publishing integrations (after sites):** Medium first.
 - More themes; `theme:` from a remote URL (the CSS-file path and the
   `si --export themes` gallery already exist).
 - SVG helpers: `data-move` along a path, counters that tick between states,

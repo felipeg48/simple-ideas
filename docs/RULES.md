@@ -1446,3 +1446,105 @@ Point at the latency while the room waits.
 Example: `si --export example --type demo`; the showcase deck lists it, so
 `si --export example && si play si-example` shows it in the ▶ Demos panel.
 
+
+## 23. Sites
+
+A **site** is a folder with a `_site.md`: the guide format (front matter plus
+a nested markdown list), but every page gets the site's **navigator** instead
+of the guide bar and sidebar. Pages are plain pages by default (`type: page`:
+no `---` slide breaks, no slide directives), and any page may say
+`type: article` (byline, contents) or `type: deck` (a talk, built as slides).
+A link in the list to a folder that holds its own `_nav.md` or `_site.md`
+(a guide, a book, another site) opens that one; it is built and checked on its
+own, and links into it are not checked by the parent.
+
+````markdown
+---
+title: Northwind Engineering
+description: How Northwind Logistics moves forty thousand orders a day.
+navigator: topbar
+logo: Northwind Engineering
+cta: Run the lab → docs/index
+theme: studio
+---
+
+- [Home](index.md)
+- Writing
+  - [Retries without the stampede](blog/retries.md)
+  - [The order journey, the talk](talks/journey.md)
+- [Docs](docs/)
+- [About](about.md)
+````
+
+| Key | What |
+|---|---|
+| `navigator:` | `topbar` (default: logo left, menu, call to action right), `topbar-centred` (menu left, logo centred), `mega` (sections open as wide panels), `sidebar` (a sticky column on the left). On narrow screens every navigator folds its menu behind a **Menu** button. |
+| `logo:` | text, or an image path (inlined like any image) |
+| `cta:` | `Label → page` (or `→ https://…`, `→ #modal`): the highlighted button |
+| `title: off` | on a page: no `<h1>` (a home page that opens with its own content) |
+| `header: off` / `footer-page: off` | on a page: leave out `_header.md` / `_footer.md` |
+
+An item without a link (`- Writing` above) is a menu section: its children
+open as a dropdown. `_header.md` and `_footer.md` in the site folder are
+rendered above the navigator and below every page, with their links rewritten
+for each page. `/` searches every page of the site; `watermark:` works as in
+every document. `si build site/`, `si check site/` and `si serve site/` handle
+the whole folder. The index page title is `--site-title <text>` (the old
+`--site <text>` still works, with a warning).
+
+### Plugins
+
+Plugins are directives that work in every document (pages, articles, guides,
+books, labs, demos), so in every site. They are plain HTML plus a few lines of
+runtime; nothing is fetched. On a slide they are reported as a problem.
+Options follow the text after a `·`; a `·` inside the text starts an option,
+so `si check` reports a kind it does not know.
+
+```markdown
+<!-- alert: The lab moves to the new cluster on 24 November. · until=2026-11-25 · warn -->
+<!-- badge: Pipeline healthy, p95 checkout 410 ms · ok -->
+<!-- event: 2026-11-20T17:00 Live: replaying Black Friday 2025 · Save a seat → #seat -->
+```
+
+| Plugin | What |
+|---|---|
+| `alert: text · kind · until=YYYY-MM-DD` | a dismissible band; the reader's dismissal is remembered in that browser; hidden after `until`. Kinds: `info` (default), `ok`, `warn`, `crit`. |
+| `badge: text · kind` | a status pill, same kinds |
+| `event: YYYY-MM-DDTHH:MM text · Label → link` | a corner toast with a live countdown, shown from two days before the time until it starts |
+| `accordion` | the `###` questions that follow become a one-open-at-a-time list; it ends at the next `##`, `---` or directive |
+| `modal: id` … `end` | the blocks up to `<!-- end -->` become a dialog; any `[link](#id)` (or the `cta:`) opens it, and so does a URL ending in `#id`. A document part ends at `##`, so use `###` headings inside a modal. |
+| `carousel: auto=7s` | the image paragraphs that follow slide one at a time: arrows, dots, swipe and ←/→; `auto=` advances it (never with reduced motion); printing shows every image |
+| `embed: …` | another document, inside this page (below) |
+
+```markdown
+<!-- carousel: auto=7s -->
+
+![Pickers at aisle 14](images/aisle.svg "Evening wave, aisle 14")
+
+![The packing line](images/packing.svg "Packing, stations 3 to 5")
+
+<!-- accordion -->
+
+### Can I run the lab on a laptop?
+
+Yes. It needs Docker and about 4 GB of memory.
+
+### Is the lab the real code?
+
+It is a trimmed copy with stubbed providers.
+```
+
+### Embed
+
+`<!-- embed: … -->` puts another si document inside the page:
+
+| Form | Result |
+|---|---|
+| `embed: blog/retries.md` | a card: type, title, description, reading time, linking to the page |
+| `embed: blog/retries.md#what-we-changed` | that section's text, with a *From …* link |
+| `embed: blog/retries.md full` | the whole body |
+| `embed: talks/journey.md 1-3` | a deck: its slides, live, in a frame (as `<!-- slides: -->`) |
+| `embed: docs/` | a guide, book or site folder: a card with its first pages or chapters |
+
+Example: `si --export example --type site` writes this site; `si serve
+si-example` serves it.

@@ -48,6 +48,7 @@ html{font-size:clamp(100%,.85rem + .3vw,150%);-webkit-text-size-adjust:100%;scro
 .si-site-menu>summary{display:none}
 .si-site-links{display:flex;flex-wrap:wrap;align-items:center;gap:.2rem}
 .si-site-tools{display:flex;align-items:center;gap:.5rem;margin-left:auto}
+.si-site-tools .si-doc-mode{position:static;top:auto}
 .si-site-group{position:relative}
 .si-site-drop{position:absolute;top:100%;left:0;z-index:31;display:none;min-width:14rem;padding:.4rem}
 .si-site-group:hover>.si-site-drop,.si-site-group:focus-within>.si-site-drop{display:grid}
@@ -347,6 +348,7 @@ pre.si-code :is(.si-diff-hunk,.si-diff-meta) .si-ln{display:none}
 /* embedded slides (<!-- slides: -->) */
 .si-embed-slides{margin:1.6em 0 1.8em;max-width:100%}
 .si-embed-slides iframe{display:block;width:100%;aspect-ratio:var(--_aspect,16/9);border:1px solid var(--si-line);border-radius:var(--si-radius);background:var(--si-bg)}
+@media (width < 36rem){.si-embed-slides iframe{aspect-ratio:4/3}} /* a 16:9 frame is too short to read on a phone */
 .si-embed-slides figcaption{margin-top:.5em;font-size:.82em;color:var(--si-muted)}
 @media print{.si-embed-slides iframe{break-inside:avoid}}
 

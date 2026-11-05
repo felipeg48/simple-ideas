@@ -119,6 +119,7 @@ Not everything is a slide deck. Pick the type by what the reader does:
 | do hands-on work on one page | a lab | `type: lab`, `## Step N:` headings |
 | look things up, read cover to cover | a book | a guide folder whose `_nav.md` says `type: book`: parts, chapters, appendices |
 | run a live demo (the presenter) | a demo script | `type: demo`, `> Say:` lines, every command followed by its expected output |
+| browse several kinds of content | a site | a folder with `_site.md` (a `navigator:`, a menu list), plain pages, plus articles, talks and guide folders |
 
 - **Guides:** write `_nav.md` first (front matter for the guide-wide
   settings, then a nested list: `- [Title](page.md)` pages, plain items as
@@ -143,6 +144,11 @@ Not everything is a slide deck. Pick the type by what the reader does:
   a commit (never `main`), and show a change with
   `<!-- diff: https://github.com/OWNER/REPO/commit/SHA path=src/x.go -->`.
   `si check --offline` in CI proves the page builds from the cache.
+- **Sites:** pages are plain pages (no `---` slides); a talk inside a site
+  says `type: deck`. Use the plugins (`alert`, `badge`, `event`, `accordion`,
+  `modal` … `end`, `carousel`, `embed`) for interaction instead of raw HTML or
+  script, and `embed:` to show an article, deck slides or a guide on a page.
+  A `·` in a plugin's text starts an option; reword instead (RULES.md §23).
 - **Books:** number nothing by hand: si numbers chapters, sections, figures
   (an image with a title) and tables (a `Table: caption` line after the
   table). Refer with empty links (`[](#fig-…)`, `[](02-x.md#section-id)`) so the

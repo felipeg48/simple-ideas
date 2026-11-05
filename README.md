@@ -47,6 +47,12 @@ self-contained HTML files you can mail, host or open from a USB stick.
   scripts** (`type: demo`) are the presenter's run sheets: facts, `> Say:`
   lines, commands with expected output, and Copy / Run in the `si play`
   terminal (§22).
+- **Sites (v1.0):** a folder with a `_site.md` becomes a site: a navigator
+  (`topbar`, `topbar-centred`, `mega`, `sidebar`) with dropdowns and a phone
+  menu, plain pages beside articles, talks, guides and books, and plugins for
+  alerts, badges, event countdowns, accordions, modals, image carousels and
+  embedding any other document or deck's slides. Still one self-contained
+  HTML file per page; `si --export example --type site` (§23).
 - **Markdown or AsciiDoc:** author decks in `*.md` or `*.adoc` — both feed the
   same pipeline ([docs/asciidoc.md](docs/asciidoc.md)).
 - **Your own look:** four built-in themes (incl. the CockroachDB `crdb` brand),

@@ -70,9 +70,9 @@ Call us.
 }
 
 func TestPluginProblems(t *testing.T) {
-	res := renderDoc(t, "<!-- modal: x -->\n\nText.\n\n<!-- end -->\n\n<!-- end -->\n\n<!-- accordion -->\n\nNo questions.\n\n<!-- event: soon Party -->\n")
+	res := renderDoc(t, "<!-- modal: x -->\n\nText.\n\n<!-- end -->\n\n<!-- end -->\n\n<!-- accordion -->\n\nNo questions.\n\n<!-- event: soon Party -->\n\n<!-- badge: a · b -->\n")
 	got := fmt.Sprint(res.Problems)
-	for _, want := range []string{"end: without", "accordion: must be followed", "event: wants a date"} {
+	for _, want := range []string{"end: without", "accordion: must be followed", "event: wants a date", `badge: "b" is not one of`} {
 		if !strings.Contains(got, want) {
 			t.Errorf("problems lack %q: %s", want, got)
 		}

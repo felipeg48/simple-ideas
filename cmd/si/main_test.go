@@ -228,6 +228,17 @@ func TestExportAgentRules(t *testing.T) {
 	}
 }
 
+func TestSiteTitleFlag(t *testing.T) {
+	o, err := parseArgs([]string{"build", "--site-title", "Harbor", "d"}, io.Discard)
+	if err != nil || o.title != "Harbor" {
+		t.Fatalf("--site-title: %v %q", err, o.title)
+	}
+	var stderr bytes.Buffer
+	if o, _ := parseArgs([]string{"build", "--site", "Old", "d"}, &stderr); o.title != "Old" || !strings.Contains(stderr.String(), "--site-title") {
+		t.Errorf("--site <text> still sets the title, with a warning: %q %q", o.title, stderr.String())
+	}
+}
+
 func TestRemoteFlag(t *testing.T) {
 	o, err := parseArgs([]string{"play", "--remote", "d.md"}, io.Discard)
 	if err != nil || strings.Join(o.remote.roles, ",") != "tp,draw" || len(o.args) != 2 {
@@ -243,7 +254,7 @@ func TestRemoteFlag(t *testing.T) {
 }
 
 func TestExportExampleTypesAndBuildGuide(t *testing.T) {
-	for _, kind := range []string{"", "slides", "article", "guide", "tutorial", "lab", "book", "reference", "all"} {
+	for _, kind := range []string{"", "slides", "article", "guide", "tutorial", "lab", "book", "reference", "site", "all"} {
 		dir := filepath.Join(t.TempDir(), "ex")
 		var stdout, stderr bytes.Buffer
 		if code := run([]string{"--export", "example", "--type", kind, "-o", dir}, &stdout, &stderr); code != 0 {
@@ -265,7 +276,7 @@ func TestExportExampleTypesAndBuildGuide(t *testing.T) {
 	if code := run([]string{"build", "-o", out, src}, &stdout, &stderr); code != 0 {
 		t.Fatalf("build all: %d %s", code, stderr.String())
 	}
-	for _, f := range []string{"index.html", "retry.html", "showcase.html", "guide/index.html", "guide/happy/pay.html", "guide/reset.html"} {
+	for _, f := range []string{"index.html", "retry.html", "showcase.html", "guide/index.html", "guide/happy/pay.html", "guide/reset.html", "site/index.html", "site/about.html", "site/docs/break.html", "site/talks/journey.html"} {
 		if _, err := os.Stat(filepath.Join(out, f)); err != nil {
 			t.Errorf("build all lacks %s", f)
 		}

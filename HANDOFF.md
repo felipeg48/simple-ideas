@@ -3,9 +3,21 @@
 Read this, then `FEATURE.md`, then `CLAUDE.md`. This is a Go CLI (`si`) that turns
 Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
-## Current state (2026-11-03)
+## Current state (2026-11-05)
 
-- **Latest release: v0.9.10** (tagged; the release workflow publishes it).
+- **Latest release: v1.0.0** (tagged; the release workflow publishes it).
+- **v1.0.0: sites.** A folder with `_site.md` (`deck.SiteFile`, `Guide.IsSite()`):
+  pages default to `type: page`, navigators `topbar` / `topbar-centred` / `mega` /
+  `sidebar` with dropdowns and a phone menu (`render/site.go`), folder links to
+  sub-guides/books/sites (`NavItem.Sub`, built and checked on their own). Plugins in
+  every document (`render/plugins.go` + doc.js/doc.css): `alert` (dismiss remembered,
+  `until=`), `badge`, `event` (HUD toast countdown, 48 h window), `accordion`,
+  `modal` … `end`, `carousel`, `embed` (card / `#section` / `full` / deck slides /
+  folder card, `render/embed.go`). `--site-title` (old `--site <text>` warns; `--site`
+  is free for site features). `examples/site/` (Northwind Engineering),
+  `--export example --type site`, RULES §23. Fixed: a folder link in a nav list
+  stopped parsing the rest of the list. Next: v1.1.0 Google Fonts (inlined at build
+  time), then publishing integrations (Medium).
 - **v0.9.10: search (`/`) in every document**: `render/search.go` writes a `#si-search`
   JSON block (a guide/book page: every other page, its sections with a 220-char snippet,
   a book's index terms, filled by `fillGuideSearch` after RenderGuide; a lone page: the

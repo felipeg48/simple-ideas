@@ -26,6 +26,26 @@ import (
 // Plugins are the plugin directive names (documents only).
 var Plugins = []string{"alert", "badge", "accordion", "modal", "end", "carousel", "event", "embed"}
 
+// pluginKinds are the looks of an alert or a badge.
+var pluginKinds = map[string]bool{"info": true, "ok": true, "warn": true, "crit": true}
+
+// pluginKind returns the kind among opts and words, info by default; anything
+// else is a problem (a stray "·" in the text usually).
+func (dr *deckRenderer) pluginKind(sc *slideCtx, name string, opts map[string]string, words []string) string {
+	kind := opts["kind"]
+	if kind == "" && len(words) > 0 {
+		kind = words[0]
+	}
+	if kind == "" {
+		return "info"
+	}
+	if !pluginKinds[kind] {
+		dr.problem(sc, "%s: %q is not one of info, ok, warn, crit (a · in the text starts an option)", name, kind)
+		return "info"
+	}
+	return kind
+}
+
 func isPlugin(name string) bool {
 	for _, p := range Plugins {
 		if p == name {
@@ -71,22 +91,13 @@ func (dr *deckRenderer) plugins(doc ast.Node, src []byte, s *deck.Slide, sc *sli
 		switch name {
 		case "alert":
 			text, opts, words := pluginParts(val)
-			kind := opts["kind"]
-			if kind == "" && len(words) > 0 {
-				kind = words[0]
-			}
-			if kind == "" {
-				kind = "info"
-			}
+			kind := dr.pluginKind(sc, name, opts, words)
 			sum := sha256.Sum256([]byte(text))
 			doc.ReplaceChild(doc, c, &rawNode{html: fmt.Sprintf(`<div class="si-alert" role="status" data-kind="%s" data-until="%s" data-id="%x"><p>%s</p><button type="button" class="si-alert-x" aria-label="Dismiss">×</button></div>`,
 				html.EscapeString(kind), html.EscapeString(opts["until"]), sum[:6], dr.inline(text))})
 		case "badge":
-			text, _, words := pluginParts(val)
-			kind := "info"
-			if len(words) > 0 {
-				kind = words[0]
-			}
+			text, opts, words := pluginParts(val)
+			kind := dr.pluginKind(sc, name, opts, words)
 			doc.ReplaceChild(doc, c, &rawNode{html: fmt.Sprintf(`<p class="si-pill-row"><span class="si-pill" data-kind="%s">%s</span></p>`, html.EscapeString(kind), dr.inline(text))})
 		case "event":
 			text, opts, _ := pluginParts(val)

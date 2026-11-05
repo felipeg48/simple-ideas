@@ -40,7 +40,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/studio"
 )
 
-const version = "0.9.10"
+const version = "1.0.0"
 
 // Exit codes.
 const (
@@ -84,7 +84,7 @@ Usage:
         rules:     RULES.md
         conf:      a starter si.conf with the default keys and features
         example:   an example to copy from (default output: ./si-example); --type picks it:
-                   deck (default; also slides), article, guide (also tutorial), lab, book (also reference), demo, all
+                   deck (default; also slides), article, guide (also tutorial), lab, book (also reference), demo, site, all
         themes:    one sample deck per built-in theme (default: ./si-themes)
         agent-rules: CLAUDE.md + AGENTS.md telling a coding agent how to write si decks
                    (default: the current dir; -o - prints it; never overwrites)
@@ -95,7 +95,7 @@ Flags (GNU style, before or after the path):
       --theme <name>    built-in theme (si theme list: studio, paper, mono, crdb, acemq, acemq-pro; "AceMQ Pro" works too), a .css theme file or an https:// URL; overrides theme: front matter
       --conf <path>     read si.conf (key remaps, feature toggles, default theme); default: si.conf next to the deck
       --title <text>    build, play: title for the index page — its <title> and <h1> (default: the source dir name)
-      --site <text>     alias for --title (reads as "the site/landing page title")
+      --site-title <text> alias for --title: the site or landing page title (--site <text> still works, with a warning)
       --ai <command>    migrate: pipe the migration prompt to this agent command (e.g. "claude -p")
       --addr <host:port> play address (default 127.0.0.1:7070)
       --remote[=tp,draw] play: a second, keyed listener for a tablet or phone on your network: tp = teleprompter, draw = draw pad (default: both)
@@ -147,6 +147,7 @@ type options struct {
 	output, addr, export, theme, conf, title, ai string
 	kind                                         string // --type of --export example
 	remoteAddr                                   string
+	siteOld                                      string // the old --site <text>, now --site-title
 	remote                                       remoteFlag
 	open, help, ver                              bool
 	noInline, pdf, slides, dev, web, noOpen      bool
@@ -186,7 +187,8 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.theme, "theme", "", "")
 	fl.StringVar(&o.conf, "conf", "", "")
 	fl.StringVar(&o.title, "title", "", "")
-	fl.StringVar(&o.title, "site", "", "") // alias: the index page/site title (<title> + <h1>)
+	fl.StringVar(&o.title, "site-title", "", "")
+	fl.StringVar(&o.siteOld, "site", "", "") // deprecated alias of --site-title; --site is kept for site features
 	fl.StringVar(&o.ai, "ai", "", "")
 	fl.BoolVar(&o.slides, "slides", false, "")
 	for {
@@ -203,6 +205,12 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 		}
 		o.args = append(o.args, argv[0])
 		argv = argv[1:]
+	}
+	if o.siteOld != "" {
+		fmt.Fprintln(stderr, "si: warning: --site <text> is now --site-title <text>")
+		if o.title == "" {
+			o.title = o.siteOld
+		}
 	}
 	return o, nil
 }
@@ -895,7 +903,7 @@ func export(o *options, stdout, stderr io.Writer) int {
 		}
 		kind, ok := exampleKinds[strings.ToLower(o.kind)]
 		if !ok {
-			return usageErr(stderr, fmt.Sprintf("unknown --type %q (deck, article, guide, lab, book, demo, all)", o.kind))
+			return usageErr(stderr, fmt.Sprintf("unknown --type %q (deck, article, guide, lab, book, demo, site, all)", o.kind))
 		}
 		if err := writeExampleKind(out, kind); err != nil {
 			fmt.Fprintf(stderr, "si: %v\n", err)
@@ -1084,7 +1092,7 @@ func scaffold(name string, stdout, stderr io.Writer) int {
 // exampleKinds maps --type (and its aliases) to an example set.
 var exampleKinds = map[string]string{"": "deck", "deck": "deck", "slides": "deck", "article": "article",
 	"guide": "guide", "guides": "guide", "tutorial": "guide", "tutorials": "guide", "lab": "lab",
-	"book": "book", "reference": "book", "demo": "demo", "all": "all"}
+	"book": "book", "reference": "book", "demo": "demo", "site": "site", "all": "all"}
 
 // writeExampleKind writes one example set into dir (which must not exist or
 // be empty): deck = the showcase decks (today's export), article = the article
@@ -1098,7 +1106,7 @@ func writeExampleKind(dir, kind string) error {
 		top, _, _ := strings.Cut(p, "/")
 		switch kind {
 		case "deck":
-			return p, top != "article" && top != "guide" && top != "book"
+			return p, top != "article" && top != "guide" && top != "book" && top != "site"
 		case "book":
 			r, ok := strings.CutPrefix(p, "book/")
 			return r, ok
@@ -1110,6 +1118,9 @@ func writeExampleKind(dir, kind string) error {
 			return r, ok
 		case "guide":
 			r, ok := strings.CutPrefix(p, "guide/")
+			return r, ok
+		case "site":
+			r, ok := strings.CutPrefix(p, "site/")
 			return r, ok
 		case "lab":
 			return p, p == "order-lab.md" || p == "assets/floor.svg"
