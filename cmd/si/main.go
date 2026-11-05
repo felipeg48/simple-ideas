@@ -40,7 +40,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/studio"
 )
 
-const version = "0.9.5"
+const version = "0.9.6"
 
 // Exit codes.
 const (
@@ -100,6 +100,7 @@ Flags (GNU style, before or after the path):
       --addr <host:port> play address (default 127.0.0.1:7070)
       --remote[=tp,draw] play: a second, keyed listener for a tablet or phone on your network: tp = teleprompter, draw = draw pad (default: both)
       --remote-addr <host:port> play: the --remote address (default 0.0.0.0, the play port + 1)
+      --offline         code: / diff: use the cache only (CI, a plane); fails on what was never fetched
       --open            play: open the browser
       --dev             play: hot reload — morph changed slides in place (keeps the current slide, step and overview)
       --no-inline-media build: copy images and videos next to the HTML instead of data URIs
@@ -149,6 +150,7 @@ type options struct {
 	open, help, ver                              bool
 	noInline, pdf, slides, dev, web, noOpen      bool
 	serveMode                                    bool // si serve: play without the terminal (everything, for readers)
+	offline                                      bool // code: / diff: from the cache only
 	css                                          multi
 	args                                         []string
 }
@@ -167,6 +169,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.remoteAddr, "remote-addr", "", "")
 	fl.StringVar(&o.export, "export", "", "")
 	fl.StringVar(&o.kind, "type", "", "")
+	fl.BoolVar(&o.offline, "offline", false, "")
 	fl.BoolVar(&o.open, "open", false, "")
 	fl.BoolVar(&o.dev, "dev", false, "")
 	fl.BoolVar(&o.web, "web", false, "")
@@ -215,6 +218,7 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, "si", version)
 		return exitOK
 	}
+	deck.Offline = o.offline
 	if o.theme != "" {
 		lower := strings.ToLower(o.theme)
 		if !strings.HasSuffix(lower, ".css") && !strings.HasPrefix(lower, "http://") && !strings.HasPrefix(lower, "https://") {

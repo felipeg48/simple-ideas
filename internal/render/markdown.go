@@ -126,6 +126,9 @@ func (r *nodeRenderer) fence(
 		if t := attrs["title"]; t != "" {
 			label = `<span class="si-code-title">` + html.EscapeString(t) + `</span>` + label
 		}
+		if u := attrs["src"]; strings.HasPrefix(u, "https://") {
+			label += `<a class="si-src" href="` + html.EscapeString(u) + `" title="` + html.EscapeString(u) + `">source</a>`
+		}
 		fmt.Fprintf(w, `<div class="si-codeblock"><div class="si-code-head">%s<button type="button" class="si-copy" aria-label="Copy code">Copy</button></div>`, label)
 		defer w.WriteString("</div>\n")
 	}
@@ -249,6 +252,9 @@ func (dr *deckRenderer) transform(doc ast.Node, src []byte, sc *slideCtx) {
 					continue
 				case "svg":
 					c = dr.canvas(val, sc)
+				case "slides":
+					dr.problem(sc, "slides: embeds a deck in a document (article, guide, lab), not in a deck")
+					continue
 				default:
 					continue // slide-level directives were consumed by the parser
 				}

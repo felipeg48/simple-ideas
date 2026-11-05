@@ -85,6 +85,10 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 			if fig := imageFigure(n, src, nil); fig != nil {
 				doc.ReplaceChild(doc, n, fig)
 			}
+		case *ast.HTMLBlock:
+			if name, val, ok := deck.ParseDirective(blockText(n, src)); ok && name == "slides" {
+				doc.ReplaceChild(doc, n, &rawNode{html: dr.embedSlides(val, s, sc)})
+			}
 		}
 		c = next
 	}

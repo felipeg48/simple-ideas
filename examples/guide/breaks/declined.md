@@ -59,6 +59,10 @@ real    0m30.4s
 The tracking page showed *Still checking your payment* for thirty seconds,
 then turned the payment tile green.
 
+This is how the talk tells the same moment:
+
+<!-- slides: ../_slides/journey.md 2-3 -->
+
 > [!WARNING]
 > Set the bank back to normal before the next page:
 > `curl -X POST localhost:8081/admin/latency -d '{"ms": 200}'`.

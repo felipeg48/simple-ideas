@@ -93,6 +93,9 @@ func splitHTMLLines(h string) []string {
 // codeHTML is the inner HTML of a code block: highlighted, and line by line
 // when it has highlighted lines, line numbers or callout markers.
 func (dr *deckRenderer) codeHTML(body, lang string, attrs map[string]string, callouts bool) string {
+	if lang == "diff" || lang == "patch" {
+		return diffHTML(body)
+	}
 	lines := strings.Split(body, "\n")
 	marks := map[int][]string{}
 	if callouts {
@@ -132,6 +135,45 @@ func (dr *deckRenderer) codeHTML(body, lang string, attrs map[string]string, cal
 			fmt.Fprintf(&b, `<span class="si-co" data-co="%s" aria-label="callout %s"></span>`, n, n)
 		}
 		b.WriteString("</span>")
+		if i < len(lines)-1 {
+			b.WriteString("\n")
+		}
+	}
+	return b.String()
+}
+
+var hunkRE = regexp.MustCompile(`^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@`)
+
+// diffHTML renders a unified diff line by line: file headers, hunk headers,
+// added and removed lines, each with its old and new line number (drawn by
+// CSS, so Copy copies the patch as it is).
+func diffHTML(body string) string {
+	var b strings.Builder
+	old, nw := 0, 0
+	lines := strings.Split(body, "\n")
+	for i, l := range lines {
+		cls, o, n := "si-diff-meta", "", ""
+		switch {
+		case strings.HasPrefix(l, "@@"):
+			cls = "si-diff-hunk"
+			if m := hunkRE.FindStringSubmatch(l); m != nil {
+				old, _ = strconv.Atoi(m[1])
+				nw, _ = strconv.Atoi(m[2])
+			}
+		case strings.HasPrefix(l, "diff --git"), strings.HasPrefix(l, "index "), strings.HasPrefix(l, "--- "), strings.HasPrefix(l, "+++ "),
+			strings.HasPrefix(l, "new file"), strings.HasPrefix(l, "deleted file"), strings.HasPrefix(l, "similarity"), strings.HasPrefix(l, "rename "), strings.HasPrefix(l, "\\"):
+		case strings.HasPrefix(l, "+"):
+			cls, n = "si-diff-add", strconv.Itoa(nw)
+			nw++
+		case strings.HasPrefix(l, "-"):
+			cls, o = "si-diff-del", strconv.Itoa(old)
+			old++
+		default:
+			cls, o, n = "si-diff-ctx", strconv.Itoa(old), strconv.Itoa(nw)
+			old++
+			nw++
+		}
+		fmt.Fprintf(&b, `<span class="si-line %s"><span class="si-ln" data-n="%s"></span><span class="si-ln" data-n="%s"></span>%s</span>`, cls, o, n, html.EscapeString(l))
 		if i < len(lines)-1 {
 			b.WriteString("\n")
 		}

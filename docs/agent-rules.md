@@ -130,6 +130,11 @@ Not everything is a slide deck. Pick the type by what the reader does:
   lines with `<1>` callouts (a `// <1>` marker on the line, a `<1> text` line
   after the block) instead of prose about line numbers, highlight what matters
   with `hl=`, and put the same code in several languages in `<!-- tabs -->`.
+  Code that lives in a repo comes from the repo: paste a GitHub **permalink**
+  (`<!-- code: https://github.com/OWNER/REPO/blob/COMMIT/path#L5-L10 -->`), pin
+  a commit (never `main`), and show a change with
+  `<!-- diff: https://github.com/OWNER/REPO/commit/SHA path=src/x.go -->`.
+  `si check --offline` in CI proves the page builds from the cache.
 - `si --export example --type guide` (or `article`, `lab`, `all`) writes a
   working example to copy from.
 

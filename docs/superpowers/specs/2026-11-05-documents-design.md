@@ -1,6 +1,6 @@
 # si documents: articles, guides, labs and demos: design
 
-Status: approved 2026-11-05 (designs: the "si Documents" mockup). Phases 1 (v0.9.4) and 2 (v0.9.5) shipped; phases 3–4 to do.
+Status: approved 2026-11-05 (designs: the "si Documents" mockup). Phases 1 (v0.9.4), 2 (v0.9.5) and 3 (v0.9.6) shipped; a book type is next (founder, 2026-11-05), then phase 4.
 
 ## Intent
 

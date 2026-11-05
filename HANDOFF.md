@@ -5,7 +5,14 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-03)
 
-- **Latest release: v0.9.5** (tagged; the release workflow publishes it).
+- **Latest release: v0.9.6** (tagged; the release workflow publishes it).
+- **v0.9.6: documents phase 3**: `<!-- code: GitHub permalink | path= ref= repo= -->`
+  and `<!-- diff: commit/compare URL | repo= ref=a..b path= -->` (`internal/deck/remote.go`:
+  GitHub API with GITHUB_TOKEN / GH_TOKEN / `gh auth token`, else raw URLs; local clones via
+  `git show` / `git diff`; disk cache in os.UserCacheDir()/si/fetch, commits forever, refs 1 h,
+  stale copy on network errors; `--offline`; moving-ref warning), diff rendering with old/new
+  line numbers (`diffHTML`), `repo:` front matter, `<!-- slides: deck.md 2-3 | #id -->` in
+  documents (iframe srcdoc, `render/embed.go`; deck.js guards replaceState for about:srcdoc).
 - **v0.9.5: documents phase 2** (code, slides and documents alike): code-file
   includes `<!-- include: f lines=5-10 | tag=x [hl= title= lang= linenos indent=keep] -->`
   (`internal/deck/codeinc.go`, become fenced blocks at parse time; same-line runs

@@ -75,3 +75,25 @@ func TestSplitHTMLLines(t *testing.T) {
 		t.Errorf("%q", got)
 	}
 }
+
+func TestEmbedSlidesAndDiff(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "talk.md"), []byte("---\naspect: 4:3\n---\n# Talk\n\n---\n\n## Second slide\n\nB\n\n---\n\n## Third slide\n\nC\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "d.md"), []byte("---\ntype: lab\n---\n# D\n\n<!-- slides: talk.md 2-3 -->\n\n<!-- slides: talk.md#third-slide -->\n\n<!-- slides: talk.md 9 -->\n\n"+
+		"```diff\n@@ -1,2 +1,2 @@\n ctx\n-old\n+new\n```\n"), 0o644)
+	d, _ := deck.Parse(filepath.Join(dir, "d.md"))
+	res := Deck(d, Options{})
+	h := string(res.HTML)
+	if strings.Count(h, `class="si-embed-slides"`) != 2 || !strings.Contains(h, `--_aspect:4/3`) || !strings.Contains(h, "slides 2–3") || !strings.Contains(h, "slide 3.") {
+		t.Error("two embeds expected: slides 2–3 and slide 3, at 4/3")
+	}
+	if len(res.Problems) != 1 || !strings.Contains(res.Problems[0].Msg, "has 3 slides") {
+		t.Errorf("an out-of-range embed is a problem: %v", res.Problems)
+	}
+	for _, want := range []string{`<span class="si-line si-diff-del"><span class="si-ln" data-n="2"></span><span class="si-ln" data-n=""></span>-old</span>`,
+		`<span class="si-line si-diff-add"><span class="si-ln" data-n=""></span><span class="si-ln" data-n="2"></span>+new</span>`} {
+		if !strings.Contains(h, want) {
+			t.Errorf("diff lacks %q", want)
+		}
+	}
+}

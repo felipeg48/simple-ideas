@@ -50,6 +50,12 @@ func codeInclude(file string, opts map[string]string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("file not found")
 	}
+	return codeBlock(raw, file, opts, "")
+}
+
+// codeBlock turns file content (named name, for its extension and default
+// title) into fence lines; src, when set, is the source link of the block.
+func codeBlock(raw []byte, file string, opts map[string]string, src string) ([]string, error) {
 	for k := range opts {
 		switch k {
 		case "lines", "tag", "lang", "title", "hl", "linenos", "indent":
@@ -168,7 +174,11 @@ func codeInclude(file string, opts map[string]string) ([]string, error) {
 	}
 	_, ranged := opts["linenos"]
 	if opts["lines"] != "" || opts["tag"] != "" || ranged {
-		info += fmt.Sprintf(" linenos start=%d", keep[0].no) // numbered as in the file
+		// numbered as in the file; ponytail: lines=5-10,20-24 numbers on from 5, add per-line numbers if mixed ranges matter
+		info += fmt.Sprintf(" linenos start=%d", keep[0].no)
+	}
+	if src != "" {
+		info += fmt.Sprintf(" src=%q", src)
 	}
 	return append(append([]string{info}, body...), fence), nil
 }

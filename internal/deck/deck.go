@@ -46,6 +46,9 @@ var (
 var Directives = map[string]string{
 	"include":    "file",  // splice another deck, or a code file as a code block
 	"tabs":       "body",  // the code blocks that follow become tabs
+	"code":       "file",  // a file from git (GitHub permalink, or repo= path= ref=) as a code block
+	"diff":       "file",  // a commit or compare diff from git as a diff block
+	"slides":     "body",  // documents: embed a deck, or some of its slides
 	"layout":     "slide", // slide layout
 	"transition": "slide", // slide transition
 	"background": "slide", // slide background
@@ -89,13 +92,14 @@ type Meta struct {
 
 	// documents (lab, article, guide)
 	Description string // one-sentence summary: an article's lede, a guide page's summary, <meta name="description">
+	Repo        string // default repo of code: / diff: (OWNER/REPO on GitHub, or a local clone)
 	EditURL     string // guide: base URL of "Edit this page" (the page path is appended)
 	Header      string // guide page: "off" drops the guide's _header.md
 	FooterPage  string // guide page: "off" drops the guide's _footer.md
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -193,7 +197,7 @@ func (d *Deck) buildLab(lines []srcLine) {
 		if ft.inFence(l.text) {
 			continue
 		}
-		if name, _, ok := ParseDirective(l.text); ok && name != "tabs" { // tabs work in documents too
+		if name, _, ok := ParseDirective(l.text); ok && name != "tabs" && name != "slides" { // tabs and slides work in documents
 			msg := fmt.Sprintf("%q has no effect in a %s document", name, d.Meta.Type)
 			if _, known := Directives[name]; !known {
 				msg = fmt.Sprintf("unknown directive %q", name)
@@ -392,7 +396,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"background": &m.Background, "status": &m.Status, "version": &m.Version, "year": &m.Year, "copyright": &m.Copyright,
 		"footer": &m.Footer, "footer-position": &m.FooterPos, "watermark": &m.Watermark, "watermark-opacity": &m.WatermarkOpacity, "labs-label": &m.LabsLabel,
 		"runbook": &m.Runbook, "demos": &m.Demos, "type": &m.Type,
-		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage,
+		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "repo": &m.Repo,
 	}[key]
 	if ptr == nil {
 		return false
@@ -450,6 +454,22 @@ func (d *Deck) expandIncludes(file string, lines []srcLine, stack []string) []sr
 			continue
 		}
 		name, val, ok := ParseDirective(l.text)
+		if ok && (name == "code" || name == "diff") { // code and diffs from git, as code blocks
+			block, warn, err := d.remoteBlock(name, val, l.file)
+			if warn != "" {
+				d.Warnings = append(d.Warnings, Problem{File: rel(l.file), Line: l.no, Msg: warn})
+			}
+			if err != nil {
+				d.problem(l.file, l.no, "%s: %v", name, err)
+				continue
+			}
+			out = append(out, srcLine{l.file, l.no, ""})
+			for _, t := range block {
+				out = append(out, srcLine{l.file, l.no, t})
+			}
+			out = append(out, srcLine{l.file, l.no, ""})
+			continue
+		}
 		if !ok || name != "include" {
 			out = append(out, l)
 			continue

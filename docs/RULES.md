@@ -94,6 +94,7 @@ lang: en
 | `description` | text | none | documents: the lede under the title, the index tile subtitle and `<meta name="description">` (§19, §20) |
 | `edit-url` | URL | none | guides: base of the "Edit this page" link (§20) |
 | `header`, `footer-page` | `off` | on | a guide page without the guide's `_header.md` / `_footer.md` (§20) |
+| `repo` | `OWNER/REPO`, a github.com URL, or a local clone folder | none | the default repo of `code:` and `diff:` (§13) |
 
 An included module's own front matter is ignored; the including deck decides.
 
@@ -639,6 +640,55 @@ In a document, choosing a tab switches every group on the page that has a tab
 with the same label, and the choice is remembered for the next page. On a
 slide the group switches on its own. Print shows every tab, labelled. ← / →
 move between tabs.
+
+**Code and diffs from git.** Paste a GitHub permalink (on GitHub: the
+file, then **Copy permalink**), or name the repo, path and commit:
+
+```markdown
+<!-- code: https://github.com/acme/app/blob/3f2a9c1/src/App.java#L5-L10 -->
+<!-- code: https://github.com/acme/app/blob/3f2a9c1/src/App.java tag=retry hl=2 -->
+<!-- code: path=src/App.java ref=3f2a9c1 tag=retry -->        repo: from the front matter
+<!-- code: repo=../app path=src/App.java ref=HEAD -->         a local clone (git show)
+<!-- diff: https://github.com/acme/app/commit/3f2a9c1 path=src/App.java -->
+<!-- diff: https://github.com/acme/app/compare/v1.1...v1.2 path=src/ -->
+<!-- diff: repo=../app ref=v1.1..v1.2 path=src/App.java -->
+```
+
+- `code:` takes every option of a code include (`lines=`, `tag=`, `hl=`,
+  `title=`, `lang=`, `linenos`); a `#L5-L10` in the permalink is `lines=5-10`.
+  The code block's header links to the source.
+- `diff:` shows a commit's changes, or the changes from A to B, filtered to
+  `path=` (a file, or a folder: everything under it): file headers, hunk
+  headers, removed and added lines with their old and new line numbers. Copy
+  copies the patch. A ```` ```diff ```` fence renders the same way.
+- `repo:` in the front matter (or `_nav.md` for a whole guide) is the default
+  repo: `OWNER/REPO`, a github.com URL, or a local folder holding a clone.
+- Everything is **fetched when you build** (and on every `si play` / `si
+  serve` request), cached on disk, and inlined: a reader never fetches it. A
+  commit is cached for good; a branch or tag (`main`, `v1.2`) for an hour, and
+  `si check` warns that it can move: with `lines=` the shown code would drift,
+  so pin a commit.
+- **Private repos**: set `GITHUB_TOKEN` (or `GH_TOKEN`), or log in with the
+  GitHub CLI (`gh auth login`); si then uses the GitHub API. A local clone
+  needs only `git`.
+- `--offline` (with `si build`, `si check`, `si serve`) uses the cache only and
+  reports anything that was never fetched; without it, a network failure falls
+  back to a cached copy when there is one.
+
+**Slides in a document.** A document (lab, article, guide page) can show a
+deck, or some of its slides, playable in place:
+
+```markdown
+<!-- slides: ../decks/talk.md -->                     the whole deck
+<!-- slides: ../decks/talk.md 23-24 -->               slides 23 to 24 (or one: 23)
+<!-- slides: ../decks/talk.md#live-a-first-broker --> the slide with that heading id
+```
+
+The deck is rendered when the page is built, self-contained in a frame of the
+deck's `aspect`: click it, then the arrow keys step through slides and build
+steps; canvases animate. The caption names the deck. `si check` reports a
+missing deck, a range past its end and an unknown heading id. On a slide this
+directive is a problem (decks do not nest).
 
 **AsciiDoc** maps onto the same features: `include::App.java[lines=5..10]`,
 `include::App.java[tag=retry]` (`tags=a;b`), `.Retry.java` before a listing

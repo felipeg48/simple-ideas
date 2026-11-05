@@ -57,6 +57,15 @@ pre.si-code .si-co{margin-left:.7em}
 pre.si-code:has(+ .si-callouts){margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0}
 .si-callouts{font-size:.62em}
 .si-tab>pre.si-code{margin-top:0}
+/* diffs (diff: and ```diff): old / new line numbers, added and removed lines */
+pre.si-code .si-diff-add,pre.si-code .si-diff-del,pre.si-code .si-diff-hunk{display:inline-block;box-sizing:border-box;min-width:calc(100% + 2.4em);margin-inline:-1.2em;padding-inline:1.2em}
+pre.si-code .si-diff-add{background:var(--si-diff-add,color-mix(in srgb,var(--si-ok) 14%,transparent))}
+pre.si-code .si-diff-del{background:var(--si-diff-del,color-mix(in srgb,var(--si-crit) 13%,transparent))}
+pre.si-code .si-diff-hunk{color:var(--si-accent-2);background:color-mix(in srgb,var(--si-accent-2) 9%,transparent)}
+pre.si-code .si-diff-meta{color:var(--si-muted);font-weight:600}
+pre.si-code :is(.si-diff-add,.si-diff-del,.si-diff-ctx,.si-diff-hunk,.si-diff-meta) .si-ln::before{min-width:3.2ch;margin-right:.8ch}
+pre.si-code :is(.si-diff-hunk,.si-diff-meta) .si-ln{display:none}
+
 .si-tk-c{color:var(--si-muted);font-style:italic}.si-tk-s{color:var(--si-accent-2)}.si-tk-k{color:var(--si-accent);font-weight:600}
 .si-tk-n{color:var(--si-warn)}.si-tk-f{color:var(--si-accent-2)}.si-tk-v{color:var(--si-warn)}.si-tk-m{color:var(--si-accent);font-weight:700}.si-tk-y{color:var(--si-accent-2)}
 .si-body table{border-collapse:collapse;width:100%;font-size:.86em;margin:.4em 0 .8em}

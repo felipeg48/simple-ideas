@@ -81,6 +81,8 @@ var Tokens = []Token{
 	{"--si-step-badge", "labs and guides: background of the number badge of a `## Step N:` heading", "var(--si-accent)"},
 	{"--si-code-hl", "code: background of a highlighted line (hl=)", "color-mix(in srgb, var(--si-accent) 12%, transparent)"},
 	{"--si-tab-active", "code: underline of the selected code tab", "var(--si-accent)"},
+	{"--si-diff-add", "diffs: background of an added line", "color-mix(in srgb, var(--si-ok) 14%, transparent)"},
+	{"--si-diff-del", "diffs: background of a removed line", "color-mix(in srgb, var(--si-crit) 13%, transparent)"},
 }
 
 // Hook is a stable selector user CSS may target.
@@ -206,6 +208,13 @@ var Hooks = []Hook{
 	{`.si-tabs`, "code: a <!-- tabs --> group"},
 	{`.si-tabs-bar`, "code: the tab buttons of a group (role=tablist)"},
 	{`.si-tab`, "code: one tab (data-label); hidden unless selected, all shown in print"},
+	{`.si-diff-add`, "diffs: an added line"},
+	{`.si-diff-del`, "diffs: a removed line"},
+	{`.si-diff-ctx`, "diffs: an unchanged context line"},
+	{`.si-diff-hunk`, "diffs: a hunk header (@@ … @@)"},
+	{`.si-diff-meta`, "diffs: a file header line (diff --git, index, ---, +++)"},
+	{`.si-src`, "code from git: the source link in the code block's header bar (documents)"},
+	{`.si-embed-slides`, "documents: an embedded deck (<!-- slides: -->), an iframe and its caption"},
 	{`.si-doc-foot`, "lab: the footer (copyright and footer front matter)"},
 	{`.si-anchor`, "lab: the # link after an h2 or h3"},
 	{`.si-callout[data-kind]`, "lab: a callout from a GitHub alert: note, tip, important, warning, caution"},

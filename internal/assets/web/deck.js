@@ -166,7 +166,7 @@
     if (counter) counter.textContent = (cur + 1) + ' / ' + n + (max ? '  ·  ' + step + '/' + max : '');
     if (progress) progress.style.width = ((cur + 1) / n * 100) + '%';
     var h = '#' + (cur + 1) + (step ? '.' + step : '');
-    if (location.hash !== h) history.replaceState(null, '', location.pathname + location.search + h);
+    if (location.hash !== h) { try { history.replaceState(null, '', location.pathname + location.search + h); } catch (e) {} } /* an embedded deck (about:srcdoc) has no URL to update */
     document.title = (slides[cur].getAttribute('data-title') || data.title) + (cur ? ' · ' + data.title : '');
     syncVideos();
     announce();
