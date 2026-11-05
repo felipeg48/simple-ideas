@@ -44,7 +44,8 @@ var (
 // are consumed by the parser; body-level ones stay in the markdown for the
 // renderer.
 var Directives = map[string]string{
-	"include":    "file",  // splice another deck
+	"include":    "file",  // splice another deck, or a code file as a code block
+	"tabs":       "body",  // the code blocks that follow become tabs
 	"layout":     "slide", // slide layout
 	"transition": "slide", // slide transition
 	"background": "slide", // slide background
@@ -182,7 +183,9 @@ func (d *Deck) buildLab(lines []srcLine) {
 	title := ""
 	var ft fenceTracker
 	for i, l := range lines {
-		if i == 0 || l.file != lines[i-1].file || l.no != lines[i-1].no+1 {
+		// a run continues on the next line of the same file, or on the same line
+		// (a code include expands into several lines that all carry its line)
+		if i == 0 || l.file != lines[i-1].file || (l.no != lines[i-1].no+1 && l.no != lines[i-1].no) {
 			flush()
 			s, text = &Slide{Kind: KindDocument, File: l.file, Line: l.no, Dir: filepath.Dir(l.file)}, nil
 		}
@@ -190,7 +193,7 @@ func (d *Deck) buildLab(lines []srcLine) {
 		if ft.inFence(l.text) {
 			continue
 		}
-		if name, _, ok := ParseDirective(l.text); ok {
+		if name, _, ok := ParseDirective(l.text); ok && name != "tabs" { // tabs work in documents too
 			msg := fmt.Sprintf("%q has no effect in a %s document", name, d.Meta.Type)
 			if _, known := Directives[name]; !known {
 				msg = fmt.Sprintf("unknown directive %q", name)
@@ -453,6 +456,20 @@ func (d *Deck) expandIncludes(file string, lines []srcLine, stack []string) []sr
 		}
 		if val == "" {
 			d.problem(l.file, l.no, "include needs a file: <!-- include: other.md -->")
+			continue
+		}
+		if path, opts := splitIncludeValue(val); !isDeckFile(filepath.Base(path)) {
+			// a code file: a fenced code block (lines=, tag=, lang=, title=, hl=, linenos, indent=keep)
+			block, err := codeInclude(filepath.Join(filepath.Dir(l.file), path), opts)
+			if err != nil {
+				d.problem(l.file, l.no, "include %s: %v", path, err)
+				continue
+			}
+			out = append(out, srcLine{l.file, l.no, ""})
+			for _, t := range block {
+				out = append(out, srcLine{l.file, l.no, t})
+			}
+			out = append(out, srcLine{l.file, l.no, ""})
 			continue
 		}
 		target := filepath.Join(filepath.Dir(l.file), val)

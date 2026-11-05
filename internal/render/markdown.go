@@ -117,8 +117,16 @@ func (r *nodeRenderer) fence(
 		}
 		return ast.WalkSkipChildren, nil
 	}
-	if r.dr.doc { // a lab: a header bar with the language and a copy button
-		fmt.Fprintf(w, `<div class="si-codeblock"><div class="si-code-head"><span class="si-code-lang">%s</span><button type="button" class="si-copy" aria-label="Copy code">Copy</button></div>`, html.EscapeString(lang))
+	attrs := map[string]string{}
+	if n.Info != nil {
+		attrs = fenceAttrs(string(n.Info.Segment.Value(src)))
+	}
+	if r.dr.doc { // a document: a header bar with the title or language and a copy button
+		label := `<span class="si-code-lang">` + html.EscapeString(lang) + `</span>`
+		if t := attrs["title"]; t != "" {
+			label = `<span class="si-code-title">` + html.EscapeString(t) + `</span>` + label
+		}
+		fmt.Fprintf(w, `<div class="si-codeblock"><div class="si-code-head">%s<button type="button" class="si-copy" aria-label="Copy code">Copy</button></div>`, label)
 		defer w.WriteString("</div>\n")
 	}
 	if lang != "" {
@@ -126,7 +134,7 @@ func (r *nodeRenderer) fence(
 	} else {
 		w.WriteString(`<pre class="si-code"><code>`)
 	}
-	w.WriteString(highlight(body, lang))
+	w.WriteString(r.dr.codeHTML(body, lang, attrs, r.dr.callouts[n]))
 	w.WriteString("</code></pre>\n")
 	return ast.WalkSkipChildren, nil
 }
@@ -200,6 +208,7 @@ type placed struct {
 // directives: svg (canvas), step / steps (build steps, optionally driving the
 // canvas state) and column (column breaks).
 func (dr *deckRenderer) transform(doc ast.Node, src []byte, sc *slideCtx) {
+	dr.codeFeatures(doc, src, sc)
 	var nodes []ast.Node
 	for c := doc.FirstChild(); c != nil; c = c.NextSibling() {
 		nodes = append(nodes, c)

@@ -42,15 +42,31 @@ The fix is a single retry, thirty seconds after a timeout, using the order id
 as the idempotency key. If the first call did go through, the bank sees the
 same key and returns the first result instead of charging the card twice.
 
-```java
-var key = order.id();
+<!-- tabs -->
+```java title="Java" hl="3-6"
+var key = order.id();                                  // <1>
 var result = bank.authorize(card, amount, key);
 if (result.isTimeout()) {
-    sleep(Duration.ofSeconds(30));
+    sleep(Duration.ofSeconds(30));                     // <2>
     result = bank.authorize(card, amount, key);
 }
-return result;
+return result;                                         // <3>
 ```
+<1> The order id is the idempotency key: a retry is the same request, never a second charge.
+<2> Thirty seconds covers the bank's batch window; we measured 21 seconds at p99.
+<3> A second timeout is returned as it is: the customer sees "still checking", not "failed".
+
+```python title="Python" hl="3-5"
+key = order.id                                       # <1>
+result = bank.authorize(card, amount, key)
+if result.is_timeout:
+    time.sleep(30)                                   # <2>
+    result = bank.authorize(card, amount, key)
+return result                                        # <3>
+```
+<1> The order id is the idempotency key: a retry is the same request, never a second charge.
+<2> Thirty seconds covers the bank's batch window; we measured 21 seconds at p99.
+<3> A second timeout is returned as it is: the customer sees "still checking", not "failed".
 
 > [!NOTE]
 > Only timeouts are retried. A real decline (insufficient funds, a fraud

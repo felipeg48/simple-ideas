@@ -23,6 +23,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
 )
 
 // MermaidURL is the default Mermaid script (pinned); `mermaid:` in front
@@ -88,7 +89,8 @@ type deckRenderer struct {
 	files       map[string]string
 	svgN        int
 	stageN      int
-	cur         *slideCtx // the slide being rendered, for the stage fence's steps
+	callouts    map[ast.Node]bool // fenced code blocks followed by a <N> callout list
+	cur         *slideCtx         // the slide being rendered, for the stage fence's steps
 	mermaid     bool
 	themeName   string      // resolved theme name (or "custom" for a CSS-file theme)
 	themeCSS    string      // the si.theme layer CSS for this deck

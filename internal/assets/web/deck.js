@@ -584,6 +584,16 @@
     return;
   }
 
+  /* ---------- code tabs on a slide (<!-- tabs -->): a click shows that tab ---------- */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.si-tabs-bar [role="tab"]');
+    if (!b) return;
+    var group = b.closest('.si-tabs'), label = b.getAttribute('data-label');
+    each(group.querySelectorAll(':scope > .si-tabs-bar [role="tab"]'), function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+    each(group.querySelectorAll(':scope > .si-tab'), function (t) { t.hidden = t.getAttribute('data-label') !== label; });
+    b.blur(); e.stopPropagation();
+  });
+
   /* ---------- keys, touch, controls ---------- */
   function toggleHelp(on) { if (help) help.classList.toggle('is-open', on === undefined ? !help.classList.contains('is-open') : on); }
   function fullscreen() {

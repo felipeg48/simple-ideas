@@ -1,6 +1,7 @@
 package deck
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -24,10 +25,11 @@ func adocToMarkdown(src string) string {
 
 	inFence := false // inside a converted code fence (pass body verbatim)
 	inComment := false
-	inQuote := false  // inside a ____ quote block
-	inTable := false  // inside a |=== table
-	pendingLang := "" // from a preceding [source,lang]
-	pendingCols := 0  // from a preceding [cols=...]
+	inQuote := false   // inside a ____ quote block
+	inTable := false   // inside a |=== table
+	pendingLang := ""  // from a preceding [source,lang]
+	pendingAttrs := "" // fence attributes from [source,lang,highlight=..] and a .Title line
+	pendingCols := 0   // from a preceding [cols=...]
 	var tableCells []string
 	tableCols := 0
 	wrote := len(out) > 0
@@ -47,8 +49,8 @@ func adocToMarkdown(src string) string {
 
 		// listing / literal block delimiters -> ``` fences
 		if !inFence && (line == "----" || line == "....") {
-			out = append(out, "```"+pendingLang)
-			pendingLang, inFence, wrote = "", true, true
+			out = append(out, "```"+pendingLang+pendingAttrs)
+			pendingLang, pendingAttrs, inFence, wrote = "", "", true, true
 			continue
 		}
 		if inFence {
@@ -102,7 +104,21 @@ func adocToMarkdown(src string) string {
 		// [source,go] / [source] / [,go] attribute line before a block
 		if m := adocSourceRE.FindStringSubmatch(line); m != nil {
 			pendingLang = m[1]
+			if strings.Contains(m[0], "linenums") {
+				pendingAttrs += " linenos"
+			}
+			if h := adocHighlightRE.FindStringSubmatch(m[2]); h != nil {
+				pendingAttrs += ` hl="` + adocRanges(h[1]) + `"`
+			}
 			continue
+		}
+		// .Title before a listing block: the code block's title
+		if m := adocBlockTitleRE.FindStringSubmatch(line); m != nil {
+			pendingAttrs += fmt.Sprintf(" title=%q", m[1])
+			continue
+		}
+		if trim != "" && !adocAttrRE.MatchString(line) {
+			pendingAttrs = "" // a block title or source attributes apply only to the block right after them
 		}
 		// [cols=...] before a table sets its column count
 		if m := adocColsRE.FindStringSubmatch(line); m != nil {
@@ -120,7 +136,17 @@ func adocToMarkdown(src string) string {
 
 		// include::path[] -> si include directive (expandIncludes converts .adoc too)
 		if m := adocIncludeRE.FindStringSubmatch(line); m != nil {
-			out = append(out, "<!-- include: "+m[1]+" -->")
+			opts := ""
+			for _, a := range strings.Split(m[2], ",") { // lines=5..10;20..24, tag=x, tags=a;b
+				k, v, _ := strings.Cut(strings.TrimSpace(a), "=")
+				switch k {
+				case "lines":
+					opts += " lines=" + adocRanges(v)
+				case "tag", "tags":
+					opts += " tag=" + strings.ReplaceAll(v, ";", ",")
+				}
+			}
+			out = append(out, "<!-- include: "+m[1]+opts+" -->")
 			wrote = true
 			continue
 		}
@@ -196,20 +222,22 @@ func adocToMarkdown(src string) string {
 }
 
 var (
-	adocHeadingRE = regexp.MustCompile(`^(=+)\s+(.*)$`)
-	adocSourceRE  = regexp.MustCompile(`^\[source(?:%[^,\]]*)?\s*,?\s*([a-zA-Z0-9]*)\]\s*$`)
-	adocColsRE    = regexp.MustCompile(`^\[cols=([^\]]+)\]\s*$`)
-	adocAttrRE    = regexp.MustCompile(`^\[[^\]]*\]\s*$`)
-	adocAdmonRE   = regexp.MustCompile(`^(NOTE|TIP|IMPORTANT|WARNING|CAUTION):\s+(.*)$`)
-	adocDescRE    = regexp.MustCompile(`^(\S[^:]*?)::[ \t]+(.+)$`)
-	adocCalloutRE = regexp.MustCompile(`^<(\d+)>\s+(.+)$`)
-	adocIncludeRE = regexp.MustCompile(`^include::(\S+?)\[[^\]]*\]\s*$`)
-	adocULRE      = regexp.MustCompile(`^(\*+)\s+(.*)$`)
-	adocOLRE      = regexp.MustCompile(`^(\.+)\s+(.*)$`)
-	adocBlockImg  = regexp.MustCompile(`^image::(\S+)\[([^\]]*)\]\s*$`)
-	adocInlineImg = regexp.MustCompile(`image:(\S+)\[([^\]]*)\]`)
-	adocLinkRE    = regexp.MustCompile(`(?:link:)?(https?://[^\[\s]+)\[([^\]]*)\]`)
-	adocBoldRE    = regexp.MustCompile(`(^|[\s(])\*(\S[^*]*?\S|\S)\*([\s).,;:!?]|$)`)
+	adocHeadingRE    = regexp.MustCompile(`^(=+)\s+(.*)$`)
+	adocSourceRE     = regexp.MustCompile(`^\[source(?:%[^,\]]*)?\s*,?\s*([a-zA-Z0-9]*)((?:,[^\]]*)?)\]\s*$`)
+	adocHighlightRE  = regexp.MustCompile(`highlight=([0-9.;,-]+)`)
+	adocBlockTitleRE = regexp.MustCompile(`^\.([^.\s].*)$`)
+	adocColsRE       = regexp.MustCompile(`^\[cols=([^\]]+)\]\s*$`)
+	adocAttrRE       = regexp.MustCompile(`^\[[^\]]*\]\s*$`)
+	adocAdmonRE      = regexp.MustCompile(`^(NOTE|TIP|IMPORTANT|WARNING|CAUTION):\s+(.*)$`)
+	adocDescRE       = regexp.MustCompile(`^(\S[^:]*?)::[ \t]+(.+)$`)
+	adocCalloutRE    = regexp.MustCompile(`^<(\d+)>\s+(.+)$`)
+	adocIncludeRE    = regexp.MustCompile(`^include::(\S+?)\[([^\]]*)\]\s*$`)
+	adocULRE         = regexp.MustCompile(`^(\*+)\s+(.*)$`)
+	adocOLRE         = regexp.MustCompile(`^(\.+)\s+(.*)$`)
+	adocBlockImg     = regexp.MustCompile(`^image::(\S+)\[([^\]]*)\]\s*$`)
+	adocInlineImg    = regexp.MustCompile(`image:(\S+)\[([^\]]*)\]`)
+	adocLinkRE       = regexp.MustCompile(`(?:link:)?(https?://[^\[\s]+)\[([^\]]*)\]`)
+	adocBoldRE       = regexp.MustCompile(`(^|[\s(])\*(\S[^*]*?\S|\S)\*([\s).,;:!?]|$)`)
 )
 
 // adocInline converts block/inline images, links and bold on one line.
@@ -343,4 +371,19 @@ func adocHeader(lines []string, out *[]string) int {
 	}
 	*out = append(*out, "---", "", "# "+title, "")
 	return i
+}
+
+// adocRanges turns AsciiDoc line ranges (5..10;20..24, 5..-1) into si's
+// (5-10,20-24, 5-).
+func adocRanges(v string) string {
+	var out []string
+	for _, r := range strings.Split(v, ";") {
+		r = strings.TrimSpace(r)
+		if r == "" {
+			continue
+		}
+		r = strings.ReplaceAll(r, "..-1", "-")
+		out = append(out, strings.ReplaceAll(r, "..", "-"))
+	}
+	return strings.Join(out, ",")
 }

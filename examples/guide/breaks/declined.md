@@ -24,17 +24,24 @@ payment service waits.
 
 ## Step 2: Read the retry
 
-This is the part of the payment service that saves the order:
+This is the part of the payment service that saves the order, in the three
+languages the lab ships. Pick yours; the choice sticks on every page.
 
-```java
-var key = order.id();
-var result = bank.authorize(card, amount, key);
-if (result.isTimeout()) {
-    sleep(Duration.ofSeconds(30));
-    result = bank.authorize(card, amount, key);
-}
-return result;
-```
+<!-- tabs -->
+<!-- include: ../code/Retry.java tag=retry hl=3-6 title=Java -->
+<1> The order id is the idempotency key, the same on both calls.
+<2> One retry only, thirty seconds later.
+<3> A second timeout is returned as it is: the customer sees "still checking".
+
+<!-- include: ../code/retry.py tag=retry hl=3-5 title=Python -->
+<1> The order id is the idempotency key, the same on both calls.
+<2> One retry only, thirty seconds later.
+<3> A second timeout is returned as it is: the customer sees "still checking".
+
+<!-- include: ../code/retry.go tag=retry hl=3-6 title=Go -->
+<1> The order id is the idempotency key, the same on both calls.
+<2> One retry only, thirty seconds later.
+<3> A second timeout is returned as it is: the customer sees "still checking".
 
 The same key goes with both calls, so the bank cannot charge the card twice.
 

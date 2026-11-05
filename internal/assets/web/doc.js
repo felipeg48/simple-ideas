@@ -73,6 +73,44 @@
     mark();
   }
 
+  /* ---------- code tabs (<!-- tabs -->): one choice switches every group with that
+     label on the page and is remembered for the next page; callout badges light
+     up with their list item ---------- */
+  function tabSelect(group, label) {
+    var hit = false;
+    Array.prototype.forEach.call(group.querySelectorAll(':scope > .si-tabs-bar [role="tab"]'), function (b) {
+      var on = b.getAttribute('data-label') === label; b.setAttribute('aria-selected', on ? 'true' : 'false'); if (on) hit = true;
+    });
+    if (!hit) return false;
+    Array.prototype.forEach.call(group.querySelectorAll(':scope > .si-tab'), function (t) { t.hidden = t.getAttribute('data-label') !== label; });
+    return true;
+  }
+  function tabAll(label) { Array.prototype.forEach.call(document.querySelectorAll('.si-tabs'), function (g) { tabSelect(g, label); }); }
+  var savedTab = null;
+  try { savedTab = localStorage.getItem('si-tab'); } catch (e) {}
+  if (savedTab) tabAll(savedTab);
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.si-tabs-bar [role="tab"]');
+    if (!b) return;
+    var label = b.getAttribute('data-label');
+    tabAll(label);
+    try { localStorage.setItem('si-tab', label); } catch (x) {}
+  });
+  document.addEventListener('keydown', function (e) {
+    var b = e.target.closest && e.target.closest('.si-tabs-bar [role="tab"]');
+    if (!b || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
+    var all = Array.prototype.slice.call(b.parentNode.querySelectorAll('[role="tab"]'));
+    var n = all[(all.indexOf(b) + (e.key === 'ArrowRight' ? 1 : -1) + all.length) % all.length];
+    n.focus(); n.click(); e.preventDefault(); e.stopPropagation();
+  });
+  function coToggle(el, on) {
+    var box = el.closest('.si-tab') || el.closest('.si-doc-body') || document.body;
+    var n = el.getAttribute('data-co');
+    Array.prototype.forEach.call(box.querySelectorAll('.si-co[data-co="' + n + '"], .si-callouts li[data-co="' + n + '"]'), function (x) { x.classList.toggle('is-on', on); });
+  }
+  document.addEventListener('mouseover', function (e) { var c = e.target.closest && e.target.closest('.si-co, .si-callouts li'); if (c) coToggle(c, true); });
+  document.addEventListener('mouseout', function (e) { var c = e.target.closest && e.target.closest('.si-co, .si-callouts li'); if (c) coToggle(c, false); });
+
   /* ---------- guide nav: folded on narrow screens; pages already read get a mark ---------- */
   var nav = document.querySelector('.si-doc-nav');
   if (nav) {

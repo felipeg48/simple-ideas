@@ -40,7 +40,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/studio"
 )
 
-const version = "0.9.4"
+const version = "0.9.5"
 
 // Exit codes.
 const (
@@ -1050,7 +1050,7 @@ func writeExampleKind(dir, kind string) error {
 		}
 	}
 	return fs.WalkDir(examples.FS, ".", func(p string, e fs.DirEntry, err error) error {
-		if err != nil || e.IsDir() || strings.HasSuffix(p, ".go") {
+		if err != nil || e.IsDir() || p == "embed.go" { // the package's own source, not an example file
 			return err
 		}
 		out, ok := keep(p)

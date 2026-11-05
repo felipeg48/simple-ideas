@@ -5,7 +5,15 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-03)
 
-- **Latest release: v0.9.4** (tagged; the release workflow publishes it).
+- **Latest release: v0.9.5** (tagged; the release workflow publishes it).
+- **v0.9.5: documents phase 2** (code, slides and documents alike): code-file
+  includes `<!-- include: f lines=5-10 | tag=x [hl= title= lang= linenos indent=keep] -->`
+  (`internal/deck/codeinc.go`, become fenced blocks at parse time; same-line runs
+  stay one document part), fence attributes `title= hl= linenos start=`,
+  `<N>` callouts + `<N> text` list, `<!-- tabs -->` groups (synced by label and
+  remembered in documents) — `internal/render/code.go`; AsciiDoc `include::f[lines=..|tag=..]`,
+  `.Title`, `[source,lang,highlight=..]`, `%linenums`. Tokens `--si-code-hl`,
+  `--si-tab-active`. RULES §13 "Code from files, highlighted lines, callouts and tabs".
 - **v0.9.4: documents phase 1** (spec `docs/superpowers/specs/2026-11-05-documents-design.md`,
   design mockups approved by the founder): `type: article` (lede from `description:`,
   reading time, contents on the right), **guides** = a folder with `_nav.md`

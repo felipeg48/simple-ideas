@@ -124,6 +124,12 @@ Not everything is a slide deck. Pick the type by what the reader does:
   top (`| | |` header, then `| **Time** | 10 minutes |`).
 - **Every command block** is followed by what the reader should see, in a
   `text` block.
+- **Code:** include real files instead of pasting them
+  (`<!-- include: src/App.java tag=retry -->`; mark the region with
+  `// tag::retry[]` … `// end::retry[]`), prefer `tag=` over `lines=`, explain
+  lines with `<1>` callouts (a `// <1>` marker on the line, a `<1> text` line
+  after the block) instead of prose about line numbers, highlight what matters
+  with `hl=`, and put the same code in several languages in `<!-- tabs -->`.
 - `si --export example --type guide` (or `article`, `lab`, `all`) writes a
   working example to copy from.
 

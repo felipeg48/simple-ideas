@@ -570,6 +570,81 @@ references shared assets as `../images/...`.
   `[appendix](appendix.md)` → `appendix.html`.
 - Raw HTML is allowed.
 
+
+### Code from files, highlighted lines, callouts and tabs
+
+These work on slides and in documents (labs, articles, guides).
+
+**Code from a file.** An include of anything that is not `.md` / `.adoc`
+becomes a code block, highlighted by the file's extension:
+
+```markdown
+<!-- include: src/App.java -->                     the whole file
+<!-- include: src/App.java lines=5-10 -->          lines 5 to 10 (also 5-, -10, 5-10,20-24)
+<!-- include: src/App.java tag=retry -->           between tag::retry[] and end::retry[]
+<!-- include: src/App.java tag=retry hl=3-6 title=Java lang=java -->
+```
+
+- **Prefer `tag=` to `lines=`**: a tag moves with the code, line numbers do
+  not. Mark the region in a comment of the file's language
+  (`// tag::retry[]` … `// end::retry[]`, `# tag::retry[]`); marker lines are
+  never shown; `tag=a,b` joins several in file order.
+- A `lines=` or `tag=` include shows the file's own line numbers. The
+  indentation every shown line shares is removed (`indent=keep` keeps it). The
+  title is the file name unless `title=` says otherwise.
+- `si check` reports a missing file, a range past the end, a tag that is not
+  found or not closed, and an unknown option.
+
+**Fence attributes.** After the language of a code fence:
+
+````markdown
+```java title="Retry.java" hl="3,5-6" linenos start=12
+````
+
+`title=` shows in the code block's header bar (documents), `hl=` highlights
+lines (counted from the first line shown), `linenos` shows line numbers, from
+`start=` (default 1). Copy never copies the numbers.
+
+**Callouts.** End a code line with `<N>`, bare or as its comment (`// <1>`,
+`# <1>`, `-- <1>`, `<!-- 1 -->`), and write the explanations right after the
+block, one `<N> text` line each:
+
+````markdown
+```java
+var key = order.id();                     // <1>
+sleep(Duration.ofSeconds(30));            // <2>
+```
+<1> The order id is the idempotency key.
+<2> One retry only, thirty seconds later.
+````
+
+The markers become numbered badges (and leave the code, so Copy copies clean
+code); hovering a badge or its line lights up both. `si check` reports a
+marker without a line and a line without a marker.
+
+**Tabs.** `<!-- tabs -->` turns the code blocks that follow it (with their
+callouts, up to the first other block) into one group of tabs, labelled by
+`title=` or the language:
+
+````markdown
+<!-- tabs -->
+<!-- include: code/Retry.java tag=retry title=Java -->
+<!-- include: code/retry.py tag=retry title=Python -->
+```bash title="curl"
+curl -X POST localhost:8082/orders/4711/pay
+```
+````
+
+In a document, choosing a tab switches every group on the page that has a tab
+with the same label, and the choice is remembered for the next page. On a
+slide the group switches on its own. Print shows every tab, labelled. ← / →
+move between tabs.
+
+**AsciiDoc** maps onto the same features: `include::App.java[lines=5..10]`,
+`include::App.java[tag=retry]` (`tags=a;b`), `.Retry.java` before a listing
+(the title), `[source,java,highlight=3;5..6]` and `%linenums`; `<1>`
+callouts are written the same way.
+
 ## 14. Presenting: keys, touch, overview, print
 
 | Key | Action |

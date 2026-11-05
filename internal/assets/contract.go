@@ -79,6 +79,8 @@ var Tokens = []Token{
 	{"--si-nav-bg", "guides: background of the guide navigation", "color-mix(in srgb, var(--si-surface-2) 55%, var(--si-bg))"},
 	{"--si-nav-active", "guides: background of the current page in the navigation", "color-mix(in srgb, var(--si-accent) 12%, transparent)"},
 	{"--si-step-badge", "labs and guides: background of the number badge of a `## Step N:` heading", "var(--si-accent)"},
+	{"--si-code-hl", "code: background of a highlighted line (hl=)", "color-mix(in srgb, var(--si-accent) 12%, transparent)"},
+	{"--si-tab-active", "code: underline of the selected code tab", "var(--si-accent)"},
 }
 
 // Hook is a stable selector user CSS may target.
@@ -195,6 +197,15 @@ var Hooks = []Hook{
 	{`.si-doc-progress`, "guide: the N of M read counter of the navigation"},
 	{`.si-doc-crumb`, "guide: the breadcrumb (guide, section, page)"},
 	{`.si-doc-edit`, "guide: the Edit this page link (edit-url: in _nav.md)"},
+	{`.si-code-title`, "code: the title= of a code block (documents: in the header bar)"},
+	{`.si-line`, "code: one line of a block with hl=, linenos or callouts; .si-hl when highlighted"},
+	{`.si-hl`, "code: a highlighted line (hl=)"},
+	{`.si-ln`, "code: a line number (linenos); drawn from data-n, never copied"},
+	{`.si-co`, "code: a callout badge, in the code and in the list (data-co); .is-on while hovered"},
+	{`.si-callouts`, "code: the <N> callout list under a code block"},
+	{`.si-tabs`, "code: a <!-- tabs --> group"},
+	{`.si-tabs-bar`, "code: the tab buttons of a group (role=tablist)"},
+	{`.si-tab`, "code: one tab (data-label); hidden unless selected, all shown in print"},
 	{`.si-doc-foot`, "lab: the footer (copyright and footer front matter)"},
 	{`.si-anchor`, "lab: the # link after an h2 or h3"},
 	{`.si-callout[data-kind]`, "lab: a callout from a GitHub alert: note, tip, important, warning, caution"},
