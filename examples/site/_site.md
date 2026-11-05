@@ -5,6 +5,7 @@ navigator: topbar
 logo: Northwind Engineering
 cta: Run the lab → docs/index
 theme: studio
+fonts: heading=fonts/fraunces-600.woff2:600
 footer: Northwind Logistics engineering
 year: 2026
 copyright: Northwind Logistics

@@ -34,6 +34,7 @@ const Default = `# si.conf — every value shown is the built-in default.
 # Flat key: value (same style as deck front matter), not YAML.
 
 theme: studio          # a built-in theme (si theme list), a .css path or a URL
+# fonts: heading=Fraunces:600, body=Inter:400;700   # free web fonts, inlined at build time
 
 keys.overview:   o
 keys.presenter:  p
@@ -69,6 +70,7 @@ feature.terminal:  on   # si play loopback only; always off in a built deck and 
 // Config is a parsed si.conf. Zero value is a usable empty config.
 type Config struct {
 	Theme    string            // default theme, or ""
+	Fonts    string            // default fonts: (a deck's own fonts: wins)
 	Keys     map[string]string // action -> key
 	Features map[string]bool   // feature -> enabled
 	Timer    TimerConfig       // break-timer presets, unit and animation
@@ -176,6 +178,8 @@ func Parse(r io.Reader) *Config {
 		switch {
 		case k == "theme":
 			c.Theme = v
+		case k == "fonts":
+			c.Fonts = v
 		case k == "timer.time":
 			c.setTimerTimes(v, ln)
 		case k == "timer.unit":

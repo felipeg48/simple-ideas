@@ -174,10 +174,9 @@ pass. The steps that matter:
 - A `stage` fence that generates animated flow SVGs (Mermaid-like) is in
   (`docs/stage-diagrams.md`); next: step-driven reveal beyond highlight
   (show/hide, ok/alert per node), single-level fan-out polish.
-- **Google Fonts (v1.1.0):** `fonts: heading=Fraunces:600, body=Inter:400;700`
-  in front matter / si.conf / a theme; fetched at build time (woff2, latin
-  subset, cached like `code:`, `--offline`), inlined as `@font-face` data URIs
-  so the output stays self-contained, mapped to `--si-font-*` tokens.
+- **Web fonts** (DONE, v1.1.0, `render/fonts.go`): `fonts:` from Google, Bunny,
+  Fontshare, Fontsource or a local file, inlined at build time. Next: a
+  `fonts-subset:` key for non-latin scripts; fonts in a theme `.css` file.
 - **Publishing integrations (after sites):** Medium first.
 - More themes; `theme:` from a remote URL (the CSS-file path and the
   `si --export themes` gallery already exist).

@@ -144,6 +144,9 @@ Not everything is a slide deck. Pick the type by what the reader does:
   a commit (never `main`), and show a change with
   `<!-- diff: https://github.com/OWNER/REPO/commit/SHA path=src/x.go -->`.
   `si check --offline` in CI proves the page builds from the cache.
+- **Fonts:** never link a font stylesheet; set `fonts: heading=Family:600,
+  body=Family:400;700` (Google by default; `bunny:`, `fontshare:`,
+  `fontsource:` or a local `.woff2`) and si inlines it (RULES.md §15).
 - **Sites:** pages are plain pages (no `---` slides); a talk inside a site
   says `type: deck`. Use the plugins (`alert`, `badge`, `event`, `accordion`,
   `modal` … `end`, `carousel`, `embed`) for interaction instead of raw HTML or

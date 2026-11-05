@@ -108,6 +108,7 @@ type deckRenderer struct {
 	mermaid       bool
 	themeName     string      // resolved theme name (or "custom" for a CSS-file theme)
 	themeCSS      string      // the si.theme layer CSS for this deck
+	fontsCSS      string      // fonts: inlined @font-face rules and font tokens (fonts.go)
 	anims         []animEntry // resolved break-timer animations (empty if none)
 	problems      []deck.Problem
 	warnings      []deck.Problem
@@ -493,6 +494,7 @@ func (dr *deckRenderer) resolveOneAnim(name, dir string) {
 // become the si.theme layer (the built HTML stays self-contained — the fetch is
 // build-time only; a file theme's relative url()s are inlined like --css files). A read/fetch error is a deck problem and falls back to studio.
 func (dr *deckRenderer) resolveTheme() {
+	defer dr.resolveFonts() // fonts: sets tokens on top of whichever theme won
 	theme := dr.opt.Theme
 	if theme == "" {
 		theme = dr.d.Meta.Theme
@@ -703,12 +705,12 @@ func (dr *deckRenderer) head(b *bytes.Buffer) string {
 	return modeAttr
 }
 
-// accentCSS is the front matter accent override, or "".
+// accentCSS is the front matter accent override and the fonts: rules, or "".
 func (dr *deckRenderer) accentCSS() string {
 	if a := dr.d.Meta.Accent; a != "" {
-		return fmt.Sprintf("@layer si.theme{:root,:root:not([data-si-mode]),:root[data-si-mode=\"dark\"]{--si-accent:%s}}\n", a)
+		return fmt.Sprintf("@layer si.theme{:root,:root:not([data-si-mode]),:root[data-si-mode=\"dark\"]{--si-accent:%s}}\n", a) + dr.fontsCSS
 	}
-	return ""
+	return dr.fontsCSS
 }
 
 // userAndMode writes the --css user layer and the script that restores the

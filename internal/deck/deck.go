@@ -82,6 +82,7 @@ type Meta struct {
 	Theme      string // a built-in theme (si theme list), a .css path or a URL
 	Mode       string // auto | light | dark
 	Accent     string // CSS colour
+	Fonts      string // fonts: heading=Fraunces:600, body=Inter:400;700 (render/fonts.go)
 	Transition string // default slide transition
 	Aspect     string // aspect hint for overview cards and print pages
 	Mermaid    string // "" (CDN default), "off", or a script URL
@@ -117,7 +118,7 @@ type Meta struct {
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -429,7 +430,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"background": &m.Background, "status": &m.Status, "version": &m.Version, "year": &m.Year, "copyright": &m.Copyright,
 		"footer": &m.Footer, "footer-position": &m.FooterPos, "watermark": &m.Watermark, "watermark-opacity": &m.WatermarkOpacity, "labs-label": &m.LabsLabel,
 		"runbook": &m.Runbook, "demos": &m.Demos, "type": &m.Type,
-		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "repo": &m.Repo,
+		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "fonts": &m.Fonts, "repo": &m.Repo,
 		"subtitle": &m.Subtitle, "edition": &m.Edition, "session": &m.Session, "slides": &m.SlidesRef, "duration": &m.Duration,
 		"navigator": &m.Navigator, "logo": &m.Logo, "cta": &m.CTA,
 	}[key]

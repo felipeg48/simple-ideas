@@ -1047,6 +1047,47 @@ styles decks, articles, guides and labs. To change only a few things on top of
 a built-in theme, keep `theme: studio` (or any) and pass the overrides with
 `--css`, which lands in the `si.user` layer after the theme.
 
+### Fonts
+
+`fonts:` gives the headings, the body text and the code free web fonts.
+They are fetched when the deck or page is built and inlined as `@font-face`
+data URIs, so the file still works offline and from `file://`. Put the key in
+a deck's or page's front matter. A guide's `_nav.md` or a site's `_site.md`
+sets it for every page, and `si.conf` sets it for every deck.
+
+```yaml
+fonts: heading=Fraunces:600, body=Inter:400;700, mono=JetBrains Mono
+```
+
+| Entry | Font |
+|---|---|
+| `heading=Fraunces:600` | Google Fonts (the default source), weight 600; one heading weight also sets `--si-heading-weight` |
+| `body=bunny:Inter:400;700` | Bunny Fonts (the Google catalogue from a European, no-tracking CDN) |
+| `heading=fontshare:Satoshi:700` | Fontshare (Indian Type Foundry's free faces: Satoshi, General Sans, Clash Display …) |
+| `mono=fontsource:Fira Code` | Fontsource (Google's and other open-source fonts, via jsDelivr) |
+| `heading=fonts/Brand.woff2:600` | a local `.woff2`, `.woff`, `.ttf` or `.otf` file you have the right to embed |
+
+- Roles: `heading` (`--si-font-heading`), `body` (`--si-font-body` and
+  `--si-font-prose`) and `mono` (`--si-font-mono`). They override the theme's
+  fonts and nothing else; your `--css` still wins over them.
+- Weights are 100 to 900 in steps of 100, separated by `;`. The defaults are
+  700 for heading, 400;700 for body and 400 for mono. Every weight you list
+  adds to the file, typically 20 to 60 KB per weight.
+- Only the latin and latin-ext subsets are kept, so a font with Cyrillic or
+  Greek letters needs a local file.
+- A stylesheet and its files are cached for good: after one online build,
+  `--offline` builds the same output. `si check` reports a family or weight
+  the source does not have.
+- Google, Bunny and Fontsource fonts are under the SIL Open Font License or
+  Apache 2.0, which allow embedding. Fontshare fonts are under the ITF Free
+  Font License, free for personal and commercial use. A local file is your
+  responsibility.
+- `fonts: off` turns off fonts that `si.conf` or a `_nav.md` would set.
+
+Example: the site example's `_site.md` sets
+`fonts: heading=fonts/fraunces-600.woff2:600` (Fraunces, OFL, licence beside
+the file).
+
 ## 16. Configuring keys and features (si.conf)
 
 An optional `si.conf` next to the deck (or `--conf <path>`) sets project-wide

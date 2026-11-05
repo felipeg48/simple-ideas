@@ -53,6 +53,9 @@ self-contained HTML files you can mail, host or open from a USB stick.
   alerts, badges, event countdowns, accordions, modals, image carousels and
   embedding any other document or deck's slides. Still one self-contained
   HTML file per page; `si --export example --type site` (§23).
+- **Free web fonts (v1.1):** `fonts: heading=Fraunces:600, body=Inter:400;700`
+  from Google Fonts, Bunny Fonts, Fontshare, Fontsource or a local file,
+  fetched once, cached, and inlined, so the file stays self-contained (§15).
 - **Markdown or AsciiDoc:** author decks in `*.md` or `*.adoc` — both feed the
   same pipeline ([docs/asciidoc.md](docs/asciidoc.md)).
 - **Your own look:** four built-in themes (incl. the CockroachDB `crdb` brand),

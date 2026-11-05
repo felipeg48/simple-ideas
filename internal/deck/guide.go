@@ -181,11 +181,32 @@ func FindGuide(file, root string) *Guide {
 func (g *Guide) Defaults() Meta {
 	m := g.Meta
 	m.Type, m.Title, m.Description, m.Subtitle = "guide", "", "", ""
+	m.Fonts = absFontFiles(m.Fonts, g.Dir)
 	if g.IsSite() {
 		m.Type = "page" // a site's pages are plain pages unless they say otherwise (type: deck, article, lab …)
 		m.Navigator, m.Logo, m.CTA = "", "", ""
 	}
 	return m
+}
+
+// absFontFiles makes the font file paths in a fonts: value absolute against
+// dir, so pages in subfolders find the files a _nav.md or _site.md names.
+func absFontFiles(val, dir string) string {
+	parts := strings.Split(val, ",")
+	for i, p := range parts {
+		role, rest, ok := strings.Cut(p, "=")
+		file, w, _ := strings.Cut(strings.TrimSpace(rest), ":")
+		switch strings.ToLower(filepath.Ext(file)) {
+		case ".woff2", ".woff", ".ttf", ".otf":
+			if ok && !filepath.IsAbs(file) {
+				if w != "" {
+					w = ":" + w
+				}
+				parts[i] = role + "=" + filepath.Join(dir, file) + w
+			}
+		}
+	}
+	return strings.Join(parts, ",")
 }
 
 // IsSite reports whether the guide is a site (`_site.md`, or `type: site`).

@@ -5,7 +5,14 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-05)
 
-- **Latest release: v1.0.0** (tagged; the release workflow publishes it).
+- **Latest release: v1.1.0** (tagged; the release workflow publishes it).
+- **v1.1.0: web fonts.** `fonts:` (front matter, `_nav.md`/`_site.md` via
+  `Guide.Defaults` with file paths made absolute, `si.conf`): roles heading / body /
+  mono, sources google (default), bunny, fontshare, fontsource, or a local font file
+  (`render/fonts.go`). Stylesheets and files go through `deck.FetchAsset` (cached for
+  good, `--offline`), latin + latin-ext subsets only, woff2 preferred, inlined as data
+  URIs in `@layer si.theme` after the theme. The example site uses a local Fraunces
+  (OFL, `examples/site/fonts/`). RULES §15 "Fonts".
 - **v1.0.0: sites.** A folder with `_site.md` (`deck.SiteFile`, `Guide.IsSite()`):
   pages default to `type: page`, navigators `topbar` / `topbar-centred` / `mega` /
   `sidebar` with dropdowns and a phone menu (`render/site.go`), folder links to

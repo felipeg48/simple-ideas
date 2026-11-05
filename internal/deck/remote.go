@@ -76,6 +76,12 @@ func githubToken() string {
 	return token
 }
 
+// FetchAsset GETs a versioned asset (a font stylesheet or file) through the
+// cache for good; --offline uses the cache only.
+func FetchAsset(url string, headers map[string]string) ([]byte, error) {
+	return fetchCached("asset:"+url, url, headers, true)
+}
+
 // fetchCached GETs url (with headers) through the cache under key. An
 // immutable entry never expires; others are refreshed after an hour, and a
 // stale copy is used when the network fails.
@@ -98,7 +104,9 @@ func fetchCached(key, url string, headers map[string]string, immutable bool) ([]
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
-	req.Header.Set("User-Agent", "simple-ideas")
+	if req.Header.Get("User-Agent") == "" {
+		req.Header.Set("User-Agent", "simple-ideas")
+	}
 	resp, err := (&http.Client{Timeout: 20 * time.Second}).Do(req)
 	if err != nil {
 		if cerr == nil {
