@@ -41,7 +41,9 @@ self-contained HTML files you can mail, host or open from a USB stick.
   for a multi-page guide (sidebar, breadcrumb, Previous / Next, shared header
   and footer, checked links and anchors). Labs (`type: lab`) for hands-on
   work. `si serve` shows them all live; `si --export example --type guide`
-  gives a working one to copy (RULES.md §18–20).
+  gives a working one to copy (RULES.md §18–20). **Books**: `type: book` in
+  `_nav.md` adds a cover, numbered chapters, sections, figures and tables,
+  cross-references, an index, and a one-file edition and PDF (§21).
 - **Markdown or AsciiDoc:** author decks in `*.md` or `*.adoc` — both feed the
   same pipeline ([docs/asciidoc.md](docs/asciidoc.md)).
 - **Your own look:** four built-in themes (incl. the CockroachDB `crdb` brand),

@@ -5,7 +5,15 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-03)
 
-- **Latest release: v0.9.6** (tagged; the release workflow publishes it).
+- **Latest release: v0.9.7** (tagged; the release workflow publishes it).
+- **v0.9.7: books** (`type: book` in `_nav.md`; `render/book.go`): `Guide.BookNumbers`
+  (front matter / chapters / lettered appendices), `## ` sections numbered N.k,
+  captioned figures (image title) and `Table:` captions numbered and given ids,
+  empty-text links filled from a whole-book label map (`bookLinks`), `((term))` /
+  `(((term)))` index (`indexTerms`), generated `index.html` (cover), `contents.html`,
+  `book-index.html`, `book.html` (one file, ids prefixed `c-<page>-`), `book.pdf`
+  with `--pdf`; `si serve` renders the whole book per request; RULES §21;
+  `--export example --type book|reference`. Mockups: "si Documents", "si Books".
 - **v0.9.6: documents phase 3**: `<!-- code: GitHub permalink | path= ref= repo= -->`
   and `<!-- diff: commit/compare URL | repo= ref=a..b path= -->` (`internal/deck/remote.go`:
   GitHub API with GITHUB_TOKEN / GH_TOKEN / `gh auth token`, else raw URLs; local clones via

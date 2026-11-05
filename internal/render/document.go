@@ -35,6 +35,7 @@ func Document(d *deck.Deck, opt Options) Result {
 	res := Result{}
 	dr.finish(&res)
 	res.HTML = dr.docPage(body.String(), toc, res.Problems)
+	res.body, res.toc, res.labels = body.String(), toc, dr.labels
 	return res
 }
 
@@ -83,6 +84,9 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 			}
 		case *ast.Paragraph:
 			if fig := imageFigure(n, src, nil); fig != nil {
+				if im, ok := n.FirstChild().(*ast.Image); ok && string(im.Title) != "" {
+					dr.numberFigure(fig.(*rawNode), string(im.Title), sl)
+				}
 				doc.ReplaceChild(doc, n, fig)
 			}
 		case *ast.HTMLBlock:
@@ -100,7 +104,12 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 		}
 		return ast.WalkContinue, nil
 	})
-	for _, t := range tables { // a markdown table scrolls inside its own box
+	for _, t := range tables { // a markdown table scrolls inside its own box; "Table: …" after it is its caption
+		if p, ok := t.NextSibling().(*ast.Paragraph); ok && t.Parent() == doc {
+			if cap, ok := strings.CutPrefix(strings.TrimSpace(textOf(p, src)), "Table:"); ok {
+				doc.ReplaceChild(doc, p, &rawNode{html: dr.tableCaption(strings.TrimSpace(cap), sl)})
+			}
+		}
 		if h, ok := t.FirstChild().(*east.TableHeader); ok && emptyRow(h) {
 			h.SetAttributeString("hidden", "") // `| | |` header of a pandoc-style key/value table
 		}
@@ -120,7 +129,13 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 		id := sl.slug(html.UnescapeString(txt))
 		toc = append(toc, tocEntry{int(g[1][0] - '0'), id, txt})
 		inner := g[2]
-		if g[1] == "2" && dr.d.Meta.Type != "article" {
+		if g[1] == "2" && dr.opt.Chapter != "" { // a book chapter: 3.1, 3.2, …
+			dr.sec++
+			num := fmt.Sprintf("%s.%d", dr.opt.Chapter, dr.sec)
+			inner = `<span class="si-sec-num">` + num + `</span>` + inner
+			toc[len(toc)-1].text = num + " " + txt
+			dr.label(id, "Section "+num)
+		} else if g[1] == "2" && dr.d.Meta.Type != "article" && (dr.opt.Guide == nil || !dr.opt.Guide.IsBook()) {
 			inner = stepHeading(inner) // "Step 3: Pay" gets a numbered badge
 		}
 		return fmt.Sprintf(`<h%s id="%s">%s<a class="si-anchor" href="#%s" aria-label="Link to this section">#</a></h%s>`, g[1], id, inner, id, g[1])
@@ -267,6 +282,13 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	b.WriteString(`<style id="si-css">` + "\n" + assets.LayerOrder + assets.DocCSS + dr.themeCSS + dr.accentCSS() + "</style>\n")
 	dr.userAndMode(&b, modeAttr)
 	bodyAttrs := fmt.Sprintf(` data-si-doc="%s"`, html.EscapeString(kind))
+	if g != nil && g.IsBook() {
+		bp := dr.opt.bookPage
+		if bp == "" {
+			bp = "chapter"
+		}
+		bodyAttrs += fmt.Sprintf(` data-si-book="%s"`, bp)
+	}
 	if g != nil {
 		bodyAttrs += fmt.Sprintf(` data-si-guide="%s" data-si-page="%s"`, html.EscapeString(guideRel(g, g.Pages[0])+"|"+g.Meta.Title), html.EscapeString(guideRel(g, d.Path)))
 	}
@@ -323,22 +345,57 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 				b.WriteString("<div class=\"si-doc-site\"><div class=\"si-doc-site-in\">" + h + "</div></div>\n")
 			}
 		}
-		fmt.Fprintf(&b, "<div class=\"si-doc-guidebar\"><a class=\"si-doc-guide\" href=\"%s\">%s</a>", html.EscapeString(pageHref(d.Path, g.Pages[0])), html.EscapeString(g.Meta.Title))
-		if g.Meta.Version != "" {
-			fmt.Fprintf(&b, "<span class=\"si-doc-ver\">%s</span>", html.EscapeString(g.Meta.Version))
+		home := pageHref(d.Path, g.Pages[0])
+		if g.IsBook() {
+			home = pageHref(d.Path, filepath.Join(g.Dir, "index.md"))
+		}
+		fmt.Fprintf(&b, "<div class=\"si-doc-guidebar\"><a class=\"si-doc-guide\" href=\"%s\">%s</a>", html.EscapeString(home), html.EscapeString(g.Meta.Title))
+		if v := firstNonEmpty(g.Meta.Edition, g.Meta.Version); v != "" {
+			fmt.Fprintf(&b, "<span class=\"si-doc-ver\">%s</span>", html.EscapeString(v))
+		}
+		if g.IsBook() {
+			b.WriteString(`<nav class="si-book-bar" aria-label="Book">`)
+			for _, l := range [][3]string{{"index.md", "Cover", "cover"}, {"contents.md", "Contents", "contents"}, {"book-index.md", "Index", "index"}} {
+				cur := ""
+				if dr.opt.bookPage == l[2] {
+					cur = ` aria-current="page"`
+				}
+				fmt.Fprintf(&b, `<a href="%s"%s>%s</a>`, html.EscapeString(pageHref(d.Path, filepath.Join(g.Dir, l[0]))), cur, l[1])
+			}
+			if dr.opt.BookPDF != "" {
+				r, _ := filepath.Rel(filepath.Dir(d.Path), filepath.Join(g.Dir, dr.opt.BookPDF))
+				fmt.Fprintf(&b, `<a class="si-book-pdf" href="%s" download>PDF</a>`, html.EscapeString(filepath.ToSlash(r)))
+			}
+			b.WriteString(`</nav>`)
 		}
 		b.WriteString(modeBtn + "</div>\n")
-		b.WriteString("<div class=\"si-doc-layout\" data-layout=\"guide\">\n")
-		fmt.Fprintf(&b, "<nav class=\"si-doc-nav\" aria-label=\"%s\"><details open><summary>Contents <small class=\"si-doc-progress\"></small></summary>\n%s\n</details></nav>\n",
-			html.EscapeString(g.Meta.Title), navTree(g, d.Path))
+		side := dr.opt.bookPage == ""
+		layout := "guide"
+		if !side {
+			layout = "book-page"
+		}
+		fmt.Fprintf(&b, "<div class=\"si-doc-layout\" data-layout=\"%s\">\n", layout)
+		if side {
+			fmt.Fprintf(&b, "<nav class=\"si-doc-nav\" aria-label=\"%s\"><details open><summary>Contents <small class=\"si-doc-progress\"></small></summary>\n%s\n</details></nav>\n",
+				html.EscapeString(g.Meta.Title), navTree(g, d.Path, toc))
+		}
 		b.WriteString("<main class=\"si-doc-body\">\n" + guideCrumb(g, d.Path))
-		fmt.Fprintf(&b, "<h1 class=\"si-doc-title\">%s</h1>\n%s%s", dr.inline(d.Title()), lede, metaHTML)
+		if dr.opt.Chapter != "" {
+			fmt.Fprintf(&b, "<span class=\"si-book-chap\">%s %s</span>\n", html.EscapeString(dr.opt.ChapterKind), html.EscapeString(dr.opt.Chapter))
+		}
+		if dr.opt.bookPage != "cover" && dr.opt.bookPage != "book" {
+			fmt.Fprintf(&b, "<h1 class=\"si-doc-title\">%s</h1>\n%s%s", dr.inline(d.Title()), lede, metaHTML)
+		}
 		b.WriteString(body + dr.pager())
 		if m.EditURL != "" {
 			r, _ := filepath.Rel(g.Dir, d.Path)
 			fmt.Fprintf(&b, "<p class=\"si-doc-edit\"><a href=\"%s\">Edit this page</a></p>\n", html.EscapeString(strings.TrimRight(m.EditURL, "/")+"/"+filepath.ToSlash(r)))
 		}
-		b.WriteString("</main>\n" + tocHTML + "</div>\n")
+		if side {
+			b.WriteString("</main>\n" + tocHTML + "</div>\n")
+		} else {
+			b.WriteString("</main>\n</div>\n")
+		}
 		if m.FooterPage != "off" {
 			if f := dr.partial("_footer.md"); f != "" {
 				b.WriteString("<div class=\"si-doc-sitefoot\"><div class=\"si-doc-site-in\">" + f + "</div></div>\n")
@@ -368,4 +425,13 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	dr.reload(&b)
 	b.WriteString("</body>\n</html>\n")
 	return b.Bytes()
+}
+
+func firstNonEmpty(v ...string) string {
+	for _, s := range v {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
 }

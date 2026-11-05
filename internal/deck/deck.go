@@ -93,13 +93,15 @@ type Meta struct {
 	// documents (lab, article, guide)
 	Description string // one-sentence summary: an article's lede, a guide page's summary, <meta name="description">
 	Repo        string // default repo of code: / diff: (OWNER/REPO on GitHub, or a local clone)
+	Subtitle    string // book: the line under the title on the cover
+	Edition     string // book: "2nd edition", on the cover and the book bar
 	EditURL     string // guide: base URL of "Edit this page" (the page path is appended)
 	Header      string // guide page: "off" drops the guide's _header.md
 	FooterPage  string // guide page: "off" drops the guide's _footer.md
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -154,7 +156,7 @@ type Deck struct {
 }
 
 // Types are the accepted values of the `type` front matter key.
-var Types = []string{"deck", "lab", "article", "guide"}
+var Types = []string{"deck", "lab", "article", "guide", "book"}
 
 // IsLab reports whether the file is a lab document (`type: lab`).
 func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
@@ -397,6 +399,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"footer": &m.Footer, "footer-position": &m.FooterPos, "watermark": &m.Watermark, "watermark-opacity": &m.WatermarkOpacity, "labs-label": &m.LabsLabel,
 		"runbook": &m.Runbook, "demos": &m.Demos, "type": &m.Type,
 		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "repo": &m.Repo,
+		"subtitle": &m.Subtitle, "edition": &m.Edition,
 	}[key]
 	if ptr == nil {
 		return false

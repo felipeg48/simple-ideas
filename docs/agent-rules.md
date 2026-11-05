@@ -111,6 +111,7 @@ Not everything is a slide deck. Pick the type by what the reader does:
 | read one long piece | an article | `type: article`, a `description:` lede, `##` sections |
 | follow steps over several pages | a guide | a folder with `_nav.md` (the page order), one topic per page |
 | do hands-on work on one page | a lab | `type: lab`, `## Step N:` headings |
+| look things up, read cover to cover | a book | a guide folder whose `_nav.md` says `type: book`: parts, chapters, appendices |
 
 - **Guides:** write `_nav.md` first (front matter for the guide-wide
   settings, then a nested list: `- [Title](page.md)` pages, plain items as
@@ -135,8 +136,12 @@ Not everything is a slide deck. Pick the type by what the reader does:
   a commit (never `main`), and show a change with
   `<!-- diff: https://github.com/OWNER/REPO/commit/SHA path=src/x.go -->`.
   `si check --offline` in CI proves the page builds from the cache.
-- `si --export example --type guide` (or `article`, `lab`, `all`) writes a
-  working example to copy from.
+- **Books:** number nothing by hand: si numbers chapters, sections, figures
+  (an image with a title) and tables (a `Table: caption` line after the
+  table). Refer with empty links (`[](#fig-…)`, `[](02-x.md#section-id)`) so the
+  numbers stay right, and mark index terms with `((term))` / `(((term)))`.
+- `si --export example --type guide` (or `article`, `lab`, `book`, `all`)
+  writes a working example to copy from.
 
 ## Slide content
 

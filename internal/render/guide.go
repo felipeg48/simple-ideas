@@ -34,7 +34,11 @@ func guideRel(g *deck.Guide, file string) string {
 // navTree renders the guide sidebar for the page `page`: sections as headings,
 // pages as links (the current one marked), each link carrying its path in the
 // guide (data-page) so doc.js can mark the pages already read.
-func navTree(g *deck.Guide, page string) string {
+func navTree(g *deck.Guide, page string, toc []tocEntry) string {
+	nums := map[string]string{}
+	if g.IsBook() {
+		nums, _ = g.BookNumbers()
+	}
 	var b strings.Builder
 	var walk func(items []*deck.NavItem, depth int)
 	walk = func(items []*deck.NavItem, depth int) {
@@ -46,8 +50,27 @@ func navTree(g *deck.Guide, page string) string {
 				if it.File == page {
 					cur = ` aria-current="page"`
 				}
-				fmt.Fprintf(&b, `<li><a href="%s" data-page="%s"%s><span class="si-nav-mark" aria-hidden="true"></span>%s</a>`,
-					html.EscapeString(pageHref(page, it.File)), html.EscapeString(guideRel(g, it.File)), cur, html.EscapeString(it.Title))
+				mark := `<span class="si-nav-mark" aria-hidden="true"></span>`
+				if g.IsBook() {
+					mark = `<span class="si-nav-num">` + html.EscapeString(nums[it.File]) + `</span>`
+				}
+				fmt.Fprintf(&b, `<li><a href="%s" data-page="%s"%s>%s%s</a>`,
+					html.EscapeString(pageHref(page, it.File)), html.EscapeString(guideRel(g, it.File)), cur, mark, html.EscapeString(it.Title))
+				if g.IsBook() && it.File == page { // the chapter being read lists its sections
+					var secs []string
+					for _, e := range toc {
+						if e.level == 2 {
+							num, rest, ok := strings.Cut(e.text, " ")
+							if !ok || !strings.Contains(num, ".") {
+								num, rest = "", e.text
+							}
+							secs = append(secs, fmt.Sprintf(`<li><a href="#%s"><span class="si-nav-num">%s</span>%s</a></li>`, e.id, num, rest))
+						}
+					}
+					if len(secs) > 0 {
+						b.WriteString(`<ul class="si-nav-secs">` + strings.Join(secs, "") + `</ul>`)
+					}
+				}
 			case it.Href != "":
 				fmt.Fprintf(&b, `<li><a href="%s" class="si-nav-ext">%s</a>`, html.EscapeString(it.Href), html.EscapeString(it.Title))
 			default:
@@ -169,16 +192,27 @@ func RenderGuide(g *deck.Guide, opt Options) (pages []GuidePage, problems, warni
 		warnings = append(warnings, deck.Problem{File: deck.Rel(f), Msg: "not listed in " + deck.NavFile + ": it is not built"})
 	}
 	opt.Guide = g
+	nums, kinds := g.BookNumbers()
 	for _, f := range g.Pages {
 		d, err := deck.ParseWith(f, g.Defaults())
 		if err != nil {
 			problems = append(problems, deck.Problem{File: deck.Rel(f), Msg: err.Error()})
 			continue
 		}
+		if g.IsBook() {
+			opt.Chapter, opt.ChapterKind = nums[f], kinds[f]
+			if guideRel(g, f) == "index.html" {
+				problems = append(problems, deck.Problem{File: deck.Rel(f), Msg: "a book's index.html is its cover: name this page preface.md (or anything but index.md)"})
+			}
+		}
 		res := Deck(d, opt)
 		problems = append(problems, res.Problems...)
 		warnings = append(warnings, res.Warnings...)
 		pages = append(pages, GuidePage{File: f, Rel: guideRel(g, f), Deck: d, Result: res})
+	}
+	if g.IsBook() {
+		opt.Chapter, opt.ChapterKind = "", ""
+		pages = finishBook(g, opt, pages, &problems)
 	}
 	problems = append(problems, checkGuideLinks(pages)...)
 	return pages, problems, warnings

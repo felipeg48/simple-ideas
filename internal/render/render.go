@@ -65,6 +65,13 @@ type Options struct {
 	// outside a guide. It gives the sidebar, breadcrumb, Prev / Next (which
 	// then replace Prev and Next), the edit link and the shared partials.
 	Guide *deck.Guide
+	// Chapter is a book page's number ("3", "A"; "" for front matter) and
+	// ChapterKind its kind ("Chapter", "Appendix"): sections, figures and
+	// tables are numbered from it. Set by RenderGuide for a book.
+	Chapter, ChapterKind string
+	// BookPDF is the href of the book's PDF, shown on the cover and the bar.
+	BookPDF  string
+	bookPage string // a generated book page: "cover", "contents", "index", "book"
 }
 
 // DocLink is a link to another lab page.
@@ -78,32 +85,39 @@ type Result struct {
 	Media    []MediaFile    // files to copy next to the HTML (MediaCopy)
 	Steps    int
 	Canvases int
+
+	// documents: what a whole-book pass needs after the page is rendered
+	body   string            // the page's text (the main column's content)
+	toc    []tocEntry        // its h2 / h3 headings
+	labels map[string]string // id -> "Section 1.2", "Figure 1.1", "Table 1.1"
 }
 
 type deckRenderer struct {
-	d           *deck.Deck
-	opt         Options
-	md          goldmark.Markdown
-	lastState   map[string][]string
-	words       map[string]bool
-	files       map[string]string
-	svgN        int
-	stageN      int
-	callouts    map[ast.Node]bool // fenced code blocks followed by a <N> callout list
-	cur         *slideCtx         // the slide being rendered, for the stage fence's steps
-	mermaid     bool
-	themeName   string      // resolved theme name (or "custom" for a CSS-file theme)
-	themeCSS    string      // the si.theme layer CSS for this deck
-	anims       []animEntry // resolved break-timer animations (empty if none)
-	problems    []deck.Problem
-	warnings    []deck.Problem
-	wmDone      bool   // watermark resolved once (deck-level)
-	wmKind      string // "" | "text" | "img"
-	wmText      string // watermark text
-	wmImg       string // watermark image as a data URI (inlined once)
-	runbookJSON string // window.SI_RUNBOOK payload (play terminal drawer); "" if no runbook
-	demosJSON   string // window.SI_DEMOS payload (play terminal drawer); "" if no demos
-	doc         bool   // rendering a lab document (type: lab), not slides
+	d             *deck.Deck
+	opt           Options
+	md            goldmark.Markdown
+	lastState     map[string][]string
+	words         map[string]bool
+	files         map[string]string
+	svgN          int
+	stageN        int
+	callouts      map[ast.Node]bool // fenced code blocks followed by a <N> callout list
+	sec, fig, tbl int               // book: section, figure and table counters of the chapter
+	labels        map[string]string // book: id -> label of numbered sections, figures, tables
+	cur           *slideCtx         // the slide being rendered, for the stage fence's steps
+	mermaid       bool
+	themeName     string      // resolved theme name (or "custom" for a CSS-file theme)
+	themeCSS      string      // the si.theme layer CSS for this deck
+	anims         []animEntry // resolved break-timer animations (empty if none)
+	problems      []deck.Problem
+	warnings      []deck.Problem
+	wmDone        bool   // watermark resolved once (deck-level)
+	wmKind        string // "" | "text" | "img"
+	wmText        string // watermark text
+	wmImg         string // watermark image as a data URI (inlined once)
+	runbookJSON   string // window.SI_RUNBOOK payload (play terminal drawer); "" if no runbook
+	demosJSON     string // window.SI_DEMOS payload (play terminal drawer); "" if no demos
+	doc           bool   // rendering a lab document (type: lab), not slides
 }
 
 // animEntry is one resolved break-timer animation: its name, kind ("js"/"svg")
@@ -905,8 +919,11 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 		size, kind := fmt.Sprintf("%d slides%s", e.Slides, mins), "deck"
 		if e.Lab {
 			size, kind = fmt.Sprintf("%d sections", e.Sections), "lab"
-			if e.Kind == "guide" {
-				size, kind = fmt.Sprintf("%d pages", e.Sections), "guide"
+			if e.Kind == "guide" || e.Kind == "book" {
+				size, kind = fmt.Sprintf("%d pages", e.Sections), e.Kind
+				if e.Kind == "book" {
+					size = fmt.Sprintf("%d chapters", e.Sections)
+				}
 			} else if e.Kind == "article" {
 				kind = "article"
 			}

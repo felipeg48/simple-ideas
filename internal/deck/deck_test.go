@@ -381,7 +381,7 @@ func TestLabType(t *testing.T) {
 	}{
 		{name: "no type is a deck", files: map[string]string{"d.md": "# D\n\n---\n\n## A\n"}, typ: "deck"},
 		{name: "type deck", files: map[string]string{"d.md": "---\ntype: deck\n---\n# D\n"}, typ: "deck"},
-		{name: "bad type", files: map[string]string{"d.md": "---\ntype: book\n---\n# D\n"}, typ: "book", problems: []string{`unknown type "book"`}},
+		{name: "bad type", files: map[string]string{"d.md": "---\ntype: novel\n---\n# D\n"}, typ: "novel", problems: []string{`unknown type "novel"`}},
 		{name: "lab keeps hr and fenced ---", lab: true, typ: "lab", title: "Lab",
 			files: map[string]string{"d.md": "---\ntype: lab\n---\n# Lab\n\n## One\n\ntext\n\n---\n\n```yaml\n---\na: 1\n```\n"},
 			body:  []string{"# Lab", "\n---\n", "```yaml\n---\na: 1"}},

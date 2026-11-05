@@ -243,7 +243,7 @@ func TestRemoteFlag(t *testing.T) {
 }
 
 func TestExportExampleTypesAndBuildGuide(t *testing.T) {
-	for _, kind := range []string{"", "slides", "article", "guide", "tutorial", "lab", "all"} {
+	for _, kind := range []string{"", "slides", "article", "guide", "tutorial", "lab", "book", "reference", "all"} {
 		dir := filepath.Join(t.TempDir(), "ex")
 		var stdout, stderr bytes.Buffer
 		if code := run([]string{"--export", "example", "--type", kind, "-o", dir}, &stdout, &stderr); code != 0 {

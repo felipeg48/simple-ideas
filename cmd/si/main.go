@@ -40,7 +40,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/studio"
 )
 
-const version = "0.9.6"
+const version = "0.9.7"
 
 // Exit codes.
 const (
@@ -84,7 +84,7 @@ Usage:
         rules:     RULES.md
         conf:      a starter si.conf with the default keys and features
         example:   an example to copy from (default output: ./si-example); --type picks it:
-                   deck (default; also slides), article, guide (also tutorial), lab, all
+                   deck (default; also slides), article, guide (also tutorial), lab, book (also reference), all
         themes:    one sample deck per built-in theme (default: ./si-themes)
         agent-rules: CLAUDE.md + AGENTS.md telling a coding agent how to write si decks
                    (default: the current dir; -o - prints it; never overwrites)
@@ -479,7 +479,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			indexTheme = g.Meta.Theme
 		}
 		entries = append(entries, render.IndexEntry{Href: sub + "/" + home, Title: g.Meta.Title, Subtitle: g.Meta.Description,
-			Lab: true, Kind: "guide", Sections: len(g.Pages), Version: g.Meta.Version, Status: g.Meta.Status})
+			Lab: true, Kind: map[bool]string{true: "book", false: "guide"}[g.IsBook()], Sections: len(g.Pages), Version: firstOf(g.Meta.Edition, g.Meta.Version), Status: g.Meta.Status})
 	}
 	title := filepath.Base(filepath.Clean(src))
 	if st, err := os.Stat(src); err == nil && !st.IsDir() {
@@ -885,7 +885,7 @@ func export(o *options, stdout, stderr io.Writer) int {
 		}
 		kind, ok := exampleKinds[strings.ToLower(o.kind)]
 		if !ok {
-			return usageErr(stderr, fmt.Sprintf("unknown --type %q (deck, article, guide, lab, all)", o.kind))
+			return usageErr(stderr, fmt.Sprintf("unknown --type %q (deck, article, guide, lab, book, all)", o.kind))
 		}
 		if err := writeExampleKind(out, kind); err != nil {
 			fmt.Fprintf(stderr, "si: %v\n", err)
@@ -965,7 +965,16 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 	if o.noInline {
 		mode = render.MediaCopy
 	}
-	pages, probs, warns := render.RenderGuide(g, render.Options{UserCSS: css, Media: mode, Theme: o.theme, Config: cfg})
+	ro := render.Options{UserCSS: css, Media: mode, Theme: o.theme, Config: cfg}
+	chrome := ""
+	if o.pdf && g.IsBook() {
+		if chrome = findChrome(); chrome == "" {
+			fmt.Fprintln(stderr, "si: --pdf needs Google Chrome/Chromium; none found — writing HTML only")
+		} else {
+			ro.BookPDF = "book.pdf"
+		}
+	}
+	pages, probs, warns := render.RenderGuide(g, ro)
 	for _, w := range warns {
 		fmt.Fprintf(stderr, "  warning: %s\n", w)
 	}
@@ -994,7 +1003,18 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 	if len(pages) == 0 {
 		return "", false
 	}
+	if chrome != "" { // a book: the one-file edition printed to PDF
+		if err := deckToPDF(chrome, filepath.Join(out, "book.html"), filepath.Join(out, "book.pdf")); err != nil {
+			fmt.Fprintf(stderr, "si: book pdf: %v\n", err)
+			ok = false
+		} else {
+			fmt.Fprintf(stdout, "  %-40s (pdf)\n", filepath.ToSlash(filepath.Join(filepath.Base(out), "book.pdf")))
+		}
+	}
 	home := pages[0].Rel
+	if g.IsBook() {
+		home = "index.html" // the cover
+	}
 	if _, err := os.Stat(filepath.Join(out, "index.html")); err != nil {
 		redirect := fmt.Sprintf("<!doctype html><meta charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0; url=%s\"><title>%s</title><a href=\"%s\">%s</a>\n",
 			home, htmlEscape(g.Meta.Title), home, htmlEscape(g.Meta.Title))
@@ -1023,7 +1043,8 @@ func scaffold(name string, stdout, stderr io.Writer) int {
 // showcase deck. dir must not exist or be empty.
 // exampleKinds maps --type (and its aliases) to an example set.
 var exampleKinds = map[string]string{"": "deck", "deck": "deck", "slides": "deck", "article": "article",
-	"guide": "guide", "guides": "guide", "tutorial": "guide", "tutorials": "guide", "lab": "lab", "all": "all"}
+	"guide": "guide", "guides": "guide", "tutorial": "guide", "tutorials": "guide", "lab": "lab",
+	"book": "book", "reference": "book", "all": "all"}
 
 // writeExampleKind writes one example set into dir (which must not exist or
 // be empty): deck = the showcase decks (today's export), article = the article
@@ -1037,7 +1058,10 @@ func writeExampleKind(dir, kind string) error {
 		top, _, _ := strings.Cut(p, "/")
 		switch kind {
 		case "deck":
-			return p, top != "article" && top != "guide"
+			return p, top != "article" && top != "guide" && top != "book"
+		case "book":
+			r, ok := strings.CutPrefix(p, "book/")
+			return r, ok
 		case "article":
 			r, ok := strings.CutPrefix(p, "article/")
 			return r, ok
@@ -1084,7 +1108,7 @@ func writeExamples(dir, mainName string) error {
 		if strings.HasSuffix(p, ".go") {
 			return nil
 		}
-		if top, _, _ := strings.Cut(p, "/"); top == "article" || top == "guide" {
+		if top, _, _ := strings.Cut(p, "/"); top == "article" || top == "guide" || top == "book" {
 			if e.IsDir() {
 				return fs.SkipDir // si new scaffolds a deck; the document examples are --export example --type
 			}
@@ -1194,4 +1218,13 @@ func copyFile(src, dest string) error {
 		return err
 	}
 	return os.WriteFile(dest, raw, 0o644)
+}
+
+func firstOf(v ...string) string {
+	for _, s := range v {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
 }

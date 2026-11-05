@@ -106,7 +106,9 @@ func (s *Server) Handler() http.Handler {
 		case strings.HasSuffix(p, ".html"):
 			md := s.source(strings.TrimSuffix(p, ".html"))
 			if md == "" {
-				static.ServeHTTP(w, r)
+				if !s.bookPage(w, p) { // a book's generated pages (cover, contents, index, book.html)
+					static.ServeHTTP(w, r)
+				}
 				return
 			}
 			s.deck(w, md, s.Terminal)
@@ -143,6 +145,10 @@ func (s *Server) deck(w http.ResponseWriter, md string, term bool) {
 		termOn = false
 	}
 	opt := render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Remote: s.Remote, Pages: s.pages(cfg)}
+	if g := deck.FindGuide(md, s.dir); g != nil && g.Item(md) != nil && g.IsBook() { // a book is numbered as a whole
+		s.writeBookPage(w, g, opt, filepath.Join(filepath.Dir(md), strings.TrimSuffix(filepath.Base(md), filepath.Ext(md))+".html"))
+		return
+	}
 	if g := deck.FindGuide(md, s.dir); g != nil && g.Item(md) != nil { // a guide page: the guide's nav and settings
 		if gd, err := deck.ParseWith(md, g.Defaults()); err == nil {
 			d, opt.Guide = gd, g
@@ -159,6 +165,43 @@ func (s *Server) deck(w http.ResponseWriter, md string, term bool) {
 
 func fileExists(p string) bool { _, err := os.Stat(p); return err == nil }
 
+// bookPage serves a book's generated page at URL path p, if p is one.
+func (s *Server) bookPage(w http.ResponseWriter, p string) bool {
+	name := path.Base(p)
+	if name != "index.html" && name != "contents.html" && name != "book-index.html" && name != "book.html" {
+		return false
+	}
+	file := filepath.Join(s.dir, filepath.FromSlash(p))
+	g := deck.FindGuide(file, s.dir)
+	if g == nil || !g.IsBook() || filepath.Dir(file) != g.Dir {
+		return false
+	}
+	cfg := config.Load(s.Conf, filepath.Join(s.dir, "si.conf"))
+	opt := render.Options{LiveReload: true, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg}
+	s.writeBookPage(w, g, opt, file)
+	return true
+}
+
+// writeBookPage renders the whole book and writes the page whose output file
+// (inside the book folder) is file.
+// ponytail: renders every chapter per request; fine for a reference-sized book.
+func (s *Server) writeBookPage(w http.ResponseWriter, g *deck.Guide, opt render.Options, file string) {
+	pages, probs, _ := render.RenderGuide(g, opt)
+	for _, pr := range probs {
+		log.Printf("si: %s", pr)
+	}
+	rel, _ := filepath.Rel(g.Dir, file)
+	for _, pg := range pages {
+		if pg.Rel == filepath.ToSlash(rel) {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Header().Set("Cache-Control", "no-store")
+			w.Write(pg.Result.HTML)
+			return
+		}
+	}
+	http.NotFound(w, nil)
+}
+
 // source is the .md (or .adoc) file a URL path (without .html) names, or "".
 func (s *Server) source(stem string) string {
 	for _, ext := range []string{".md", ".adoc", ".asciidoc"} {
@@ -172,6 +215,9 @@ func (s *Server) source(stem string) string {
 
 // guideHome is the first page of a guide, relative to its folder.
 func guideHome(g *deck.Guide) string {
+	if g.IsBook() {
+		return "index.html" // the cover
+	}
 	r, _ := filepath.Rel(g.Dir, g.Pages[0])
 	return filepath.ToSlash(strings.TrimSuffix(r, filepath.Ext(r)) + ".html")
 }
@@ -212,7 +258,7 @@ func (s *Server) index(w http.ResponseWriter) {
 			}
 			if g, err := deck.LoadGuide(filepath.Join(s.dir, e.Name())); err == nil && len(g.Pages) > 0 {
 				entries = append(entries, render.IndexEntry{Href: e.Name() + "/" + guideHome(g), Title: g.Meta.Title, Subtitle: g.Meta.Description,
-					Lab: true, Kind: "guide", Sections: len(g.Pages), Version: g.Meta.Version, Status: g.Meta.Status})
+					Lab: true, Kind: guideKind(g), Sections: len(g.Pages), Version: g.Meta.Version, Status: g.Meta.Status})
 			}
 		}
 	}
@@ -325,4 +371,11 @@ func (s *Server) signature() uint64 {
 		walk(c)
 	}
 	return h.Sum64()
+}
+
+func guideKind(g *deck.Guide) string {
+	if g.IsBook() {
+		return "book"
+	}
+	return "guide"
 }

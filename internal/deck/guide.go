@@ -153,8 +153,42 @@ func FindGuide(file, root string) *Guide {
 // type guide, without the guide's own title and description.
 func (g *Guide) Defaults() Meta {
 	m := g.Meta
-	m.Type, m.Title, m.Description = "guide", "", ""
+	m.Type, m.Title, m.Description, m.Subtitle = "guide", "", "", ""
 	return m
+}
+
+// IsBook reports whether the guide is a book (`type: book` in _nav.md).
+func (g *Guide) IsBook() bool { return g.Meta.Type == "book" }
+
+// BookNumbers numbers a book's pages in nav order: pages before the first
+// section are front matter (no number), pages under a section called
+// "Appendices" (or "Appendix …") are lettered A, B, …, every other page is a
+// chapter 1, 2, …. kinds holds "Chapter" or "Appendix" per numbered page.
+func (g *Guide) BookNumbers() (nums, kinds map[string]string) {
+	nums, kinds = map[string]string{}, map[string]string{}
+	ch, ap, seenSection := 0, 0, false
+	var walk func(items []*NavItem, appendix bool)
+	walk = func(items []*NavItem, appendix bool) {
+		for _, it := range items {
+			if it.File == "" && it.Href == "" { // a part or section heading
+				seenSection = true
+				walk(it.Children, appendix || strings.HasPrefix(strings.ToLower(strings.TrimSpace(it.Title)), "appendi"))
+				continue
+			}
+			if it.File != "" && seenSection {
+				if appendix {
+					nums[it.File], kinds[it.File] = string(rune('A'+ap)), "Appendix"
+					ap++
+				} else {
+					ch++
+					nums[it.File], kinds[it.File] = fmt.Sprint(ch), "Chapter"
+				}
+			}
+			walk(it.Children, appendix)
+		}
+	}
+	walk(g.Items, false)
+	return nums, kinds
 }
 
 // Item returns the nav item of a page file, or nil.
