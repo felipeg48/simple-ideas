@@ -269,7 +269,15 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 	b.WriteString("</div>\n")
 	b.WriteString(dr.footer(s))
 	if s.Notes != "" || s.HasMinutes {
-		fmt.Fprintf(&b, `<aside class="si-notes" hidden>%s</aside>`+"\n", dr.postprocess(dr.toHTML(s.Notes, nil), s.Dir, sc))
+		notes := dr.postprocess(dr.toHTML(s.Notes, nil), s.Dir, sc)
+		// [CLICK] in the script marks where the speaker advances (a build step,
+		// a canvas change, the next slide): a cue in the teleprompter, never read aloud
+		clicks := len(clickCueRE.FindAllStringIndex(notes, -1))
+		notes = clickCueRE.ReplaceAllString(notes, `<span class="si-cue">click</span>`)
+		if clicks > 0 && (clicks < sc.steps || clicks > sc.steps+1) {
+			dr.warnings = append(dr.warnings, dr.at(sc, "notes: %d [CLICK] cue(s) for %d build step(s): one per step, plus at most one for the next slide", clicks, sc.steps))
+		}
+		fmt.Fprintf(&b, `<aside class="si-notes" hidden>%s</aside>`+"\n", notes)
 	}
 	if s.Points != "" {
 		fmt.Fprintf(&b, `<aside class="si-points" hidden>%s</aside>`+"\n", dr.postprocess(dr.toHTML(s.Points, nil), s.Dir, sc))
@@ -279,9 +287,10 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 }
 
 var (
-	imgSrcRE = regexp.MustCompile(`(<img\b[^>]*?\ssrc=")([^"]+)"`)
-	mdLinkRE = regexp.MustCompile(`(href=")([^"#:]+)\.(?:md|adoc|asciidoc)(#[^"]*)?"`)
-	tagRE    = regexp.MustCompile(`<[^>]+>|[*_` + "`" + `]`)
+	imgSrcRE   = regexp.MustCompile(`(<img\b[^>]*?\ssrc=")([^"]+)"`)
+	clickCueRE = regexp.MustCompile(`\[(?i:click)\]`)
+	mdLinkRE   = regexp.MustCompile(`(href=")([^"#:]+)\.(?:md|adoc|asciidoc)(#[^"]*)?"`)
+	tagRE      = regexp.MustCompile(`<[^>]+>|[*_` + "`" + `]`)
 )
 
 // postprocess resolves relative images (data URI, link or copy) and points

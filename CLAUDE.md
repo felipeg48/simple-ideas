@@ -32,7 +32,11 @@ what you chose.
    spoken sentences, never instructions to the speaker ("pause here", "mention
    X", "tell them", "press next", "this slide shows", "on a phone it stacks").
    `Points:` is the main points of the topic as short bullets, plus reminders
-   for the speaker (pace, emphasis, what to skip, likely questions). Applies to
+   for the speaker (pace, emphasis, what to skip, likely questions). The one
+   allowed non-spoken mark in `Notes:` is the **`[CLICK]` cue** (recommended):
+   placed where the speaker advances a build step, an animation or the slide,
+   one per step (plus at most one for the next slide); the teleprompter shows
+   it as a ▶ CLICK badge and `si check` warns when the count does not fit. Applies to
    every deck we write or ship (examples, scaffolds, samples, migrations) and is
    in the agent guide `docs/agent-rules.md`, exported by `si --export
    agent-rules` as CLAUDE.md + AGENTS.md; keep the two in step.

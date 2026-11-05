@@ -108,3 +108,18 @@ func TestDocumentWatermark(t *testing.T) {
 		t.Errorf("a guide page inherits the watermark: %v", probs)
 	}
 }
+
+func TestClickCues(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "d.md")
+	os.WriteFile(p, []byte("# T\n\n---\n\n## Two steps\n\n<!-- steps -->\n- a\n- b\n\nNotes:\nFirst this. [CLICK] Then that. [click] Done.\n\n---\n\n## None\n\nNotes:\nToo many. [CLICK] [CLICK]\n"), 0o644)
+	d, _ := deck.Parse(p)
+	res := Deck(d, Options{})
+	h := string(res.HTML)
+	if strings.Count(h, `<span class="si-cue">click</span>`) != 4 || strings.Contains(h, "[CLICK]") {
+		t.Error("every [CLICK] becomes a cue")
+	}
+	if len(res.Warnings) != 1 || !strings.Contains(res.Warnings[0].Msg, "2 [CLICK] cue(s) for 0 build step(s)") {
+		t.Errorf("only the slide with more cues than steps + 1 warns: %v", res.Warnings)
+	}
+}

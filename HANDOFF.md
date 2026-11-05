@@ -5,7 +5,11 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-03)
 
-- **Latest release: v0.9.8** (tagged; the release workflow publishes it).
+- **Latest release: v0.9.9** (tagged; the release workflow publishes it).
+- **v0.9.9:** `watermark:` / `watermark-opacity:` in every document type (fixed
+  `.si-doc-wm` layer, inherited from `_nav.md`, printed on every page); `[CLICK]`
+  cues in `Notes:` (teleprompter ▶ CLICK badge `.si-cue`; `si check` warns when the
+  count is < steps or > steps + 1) — CLAUDE.md rule 5, RULES §11, agent guide.
 - **v0.9.8: demo scripts** (phase 4): `type: demo` (`session`, `slides`, `duration`
   facts, INSTRUCTOR ONLY badge, `> Say:` speech callouts, `text` blocks labelled
   expected output, `### … (N min)` steps checked against `duration`), `si build

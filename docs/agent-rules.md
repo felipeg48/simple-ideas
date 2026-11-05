@@ -81,6 +81,12 @@ speaker's voice, addressed to the audience.
   declines.` Good: `One retry thirty seconds later fixed most of the declines.`
 - `(N min)` after `Notes:` is the slide's planned time: `Notes: (1.5 min)`.
   Give every slide one; the deck total is their sum.
+- **`[CLICK]` is the one exception (recommended):** on a slide with build
+  steps, a canvas or a stage animation, write `[CLICK]` in the script exactly
+  where the speaker advances, one per step (and at most one more for the next
+  slide). The teleprompter shows it as a ▶ CLICK badge; it is never read
+  aloud. `The token turns red. [CLICK] Thirty seconds later the retry goes
+  through.`
 
 **`Points:` is the Speaker Notes tab.** It holds the main points of the
 topic, as short bullets the speaker glances at to talk freely instead of

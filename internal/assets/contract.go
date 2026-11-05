@@ -184,6 +184,7 @@ var Hooks = []Hook{
 	{`.si-doc-pager`, "lab: previous / next lab links at the end of the guide (si build of a folder with several labs)"},
 	{`.si-doc[data-si-doc]`, "document: its type on the page body (lab, article, guide); a book page also has data-si-book (chapter, cover, contents, index, book)"},
 	{`.si-lede`, "article, guide page: the description: line under the title"},
+	{`.si-cue`, "teleprompter: a [CLICK] cue in the Notes: script, where the speaker advances"},
 	{`.si-doc-wm`, "documents: the watermark layer (watermark: front matter), fixed over the page and on every printed page"},
 	{`.si-say`, "demo: a > Say: quote, what the presenter says to the room"},
 	{`.si-say-label`, "demo: the Say label of a speech callout"},

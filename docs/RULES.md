@@ -86,7 +86,7 @@ lang: en
 | `version` | text (e.g. `v1.2.0`) | none | an outlined version badge on the index tile / list row |
 | `footer` | text | none | small text in a corner of every slide; a slide's own `<!-- footer: … -->` overrides it, `<!-- footer: off -->` hides it (e.g. the title slide) |
 | `footer-position` | `bottom-right` (default), `bottom-left`, `bottom-center`, `top-right`, `top-left`, `top-center` (short: `br`, `bl`, `bc`, `tr`, `tl`, `tc`) | `bottom-right` | which corner the footer sits in |
-| `watermark` | text, or an image path | none | a faint layer behind every slide — literal text (e.g. `Draft`) is drawn large and angled; an image path is inlined once and centred |
+| `watermark` | text, or an image path | none | a faint layer behind every slide — literal text (e.g. `Draft`) is drawn large and angled; an image path is inlined once and centred In every document type too (labs, articles, guides, books, demos): a fixed layer over the page, on every printed page; a guide or book sets it once in `_nav.md`. |
 | `watermark-opacity` | number `0`–`1` | `0.06` | how visible the watermark is |
 | `labs-label` | text | `Now, let's do a Lab!` | the heading on every lab slide (see the `labs` directive) |
 | `type` | `deck`, `lab` | `deck` | `lab` renders the file as a readable guide page instead of slides; see [Lab documents](#18-lab-documents). Anything else is a `si check` problem |
@@ -432,6 +432,19 @@ Points: What to cover, not a script
   speaker: no "pause here", "mention X", "tell them", "press next", "this slide
   shows". Everything after it, to the end of the slide (or a `Points:` line),
   is the script (markdown).
+- **`[CLICK]` cues (recommended on slides with build steps or animations).**
+  Write `[CLICK]` in the script where the speaker advances: the next build
+  step, a canvas or stage change, the next slide. It is the one mark in
+  `Notes:` that is not read aloud: the teleprompter shows it as a ▶ CLICK
+  badge, so the speaker knows when to press. Put one per build step, and at
+  most one more for moving on to the next slide; `si check` warns when a slide
+  has fewer cues than steps, or more than steps + 1.
+
+  ```markdown
+  Notes: (1 min)
+  The token reaches payments and turns red. [CLICK] Thirty seconds later one
+  retry goes through. [CLICK] And the payment tile turns green.
+  ```
 - A line starting with `Points:` starts the slide's **speaker-notes talking
   points**: the main points of the topic as short bullets, to glance at if
   you'd rather talk than read. Reminders for the speaker (pace, emphasis,
@@ -1155,8 +1168,11 @@ title: Trace an Order Through the Hand-offs
   warning in a lab (in a deck it is an error). A `Notes:` line is not special
   in a lab: it renders as ordinary text.
 - Deck-only front matter keys (`aspect`, `transition`, `background`,
-  `watermark`, `watermark-opacity`, `labs-label`, `footer-position`,
-  `runbook`) have no effect in a lab; `si check` warns about each. `footer`,
+  `labs-label`, `footer-position`, `runbook`, `demos`) have no effect in a
+  lab; `si check` warns about each. `watermark` and `watermark-opacity` work
+  in every document type (labs, articles, guides, books, demos): a faint
+  fixed layer over the page, on every printed page; guide and book pages
+  inherit it from `_nav.md`. `footer`,
   `year` and `copyright` fill the page footer; `author`, `date` and `version`
   the byline. A ` · ` inside one of them splits it into separate byline items
   (`date: Harbor Labs · day 1` is two), and the dots between items are drawn
