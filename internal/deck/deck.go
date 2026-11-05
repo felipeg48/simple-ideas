@@ -829,7 +829,7 @@ func List(path string) ([]string, error) {
 }
 
 var (
-	demoStepRE = regexp.MustCompile(`^#{2,3}\s.*\((\d+(?:\.\d+)?)\s*min\)\s*$`)
+	demoStepRE = regexp.MustCompile(`^#{2,3}\s.*?\((\d+(?:\.\d+)?)\s*min\)`)
 )
 
 // checkDemoMinutes warns when the `### Slide N, "…" (M min)` steps of a demo
