@@ -161,7 +161,7 @@ func bookLinks(h, rel string, labels map[string]string, chapters map[string]stri
 
 // finishBook runs the whole-book pass over rendered pages and appends the
 // generated ones.
-func finishBook(g *deck.Guide, opt Options, pages []GuidePage, probs *[]deck.Problem) []GuidePage {
+func finishBook(g *deck.Guide, opt Options, pages []GuidePage, probs *[]deck.Problem) ([]GuidePage, []ixEntry) {
 	nums, kinds := g.BookNumbers()
 	labels, chapters := map[string]string{}, map[string]string{}
 	for _, p := range pages {
@@ -212,7 +212,7 @@ func finishBook(g *deck.Guide, opt Options, pages []GuidePage, probs *[]deck.Pro
 		gen("contents.html", "Contents", "contents", contents),
 		gen("book-index.html", "Index", "index", index))
 	out = append(out, gen("book.html", g.Meta.Title, "book", wholeBook(g, pages, nums, kinds, entries)))
-	return out
+	return out, entries
 }
 
 // coverHTML is the cover: kind and edition, title, subtitle, byline, the way in.

@@ -210,10 +210,12 @@ func RenderGuide(g *deck.Guide, opt Options) (pages []GuidePage, problems, warni
 		warnings = append(warnings, res.Warnings...)
 		pages = append(pages, GuidePage{File: f, Rel: guideRel(g, f), Deck: d, Result: res})
 	}
+	var terms []ixEntry
 	if g.IsBook() {
 		opt.Chapter, opt.ChapterKind = "", ""
-		pages = finishBook(g, opt, pages, &problems)
+		pages, terms = finishBook(g, opt, pages, &problems)
 	}
+	fillGuideSearch(g, pages, terms)
 	problems = append(problems, checkGuideLinks(pages)...)
 	return pages, problems, warnings
 }

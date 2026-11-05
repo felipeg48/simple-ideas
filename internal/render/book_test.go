@@ -123,3 +123,28 @@ func TestClickCues(t *testing.T) {
 		t.Errorf("only the slide with more cues than steps + 1 warns: %v", res.Warnings)
 	}
 }
+
+func TestDocumentSearchData(t *testing.T) {
+	dir := t.TempDir()
+	for name, body := range map[string]string{
+		"_nav.md":  "---\ntitle: G\n---\n- [A](a.md)\n- Part\n  - [B](sub/b.md)\n",
+		"a.md":     "# A\n\n## Alpha\n\nThe first section talks about prefetch.\n",
+		"sub/b.md": "# B\n\n## Beta\n\nRetry once.\n",
+	} {
+		p := filepath.Join(dir, filepath.FromSlash(name))
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte(body), 0o644)
+	}
+	g, _ := deck.LoadGuide(dir)
+	pages, _, _ := RenderGuide(g, Options{})
+	for _, p := range pages {
+		h := string(p.Result.HTML)
+		if strings.Contains(h, searchSlot) || !strings.Contains(h, `id="si-search"`) || !strings.Contains(h, `class="si-doc-find"`) {
+			t.Errorf("%s: search data and dialog expected, no placeholder", p.Rel)
+		}
+	}
+	b := string(pages[1].Result.HTML)
+	if !strings.Contains(b, `{"h":"../a.html","t":"A","k":"page"}`) || !strings.Contains(b, `"h":"../a.html#alpha","t":"Alpha","p":"A","k":"section","x":"The first section talks about prefetch."`) {
+		t.Error("sub/b.html lists page A and its section, hrefs relative to sub/")
+	}
+}

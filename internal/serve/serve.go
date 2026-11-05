@@ -145,7 +145,7 @@ func (s *Server) deck(w http.ResponseWriter, md string, term bool) {
 		termOn = false
 	}
 	opt := render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Remote: s.Remote, Pages: s.pages(cfg)}
-	if g := deck.FindGuide(md, s.dir); g != nil && g.Item(md) != nil && g.IsBook() { // a book is numbered as a whole
+	if g := deck.FindGuide(md, s.dir); g != nil && g.Item(md) != nil { // a guide or book renders as a whole (numbering, search across pages)
 		s.writeBookPage(w, g, opt, filepath.Join(filepath.Dir(md), strings.TrimSuffix(filepath.Base(md), filepath.Ext(md))+".html"))
 		return
 	}

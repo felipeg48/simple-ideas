@@ -272,6 +272,8 @@ func (dr *deckRenderer) pager() string {
 	return b.String()
 }
 
+const searchIconSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>`
+
 const modeIconSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor"/></svg>`
 
 func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Problem) []byte {
@@ -339,7 +341,8 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	if desc := strings.TrimSpace(m.Description); desc != "" && kind != "lab" {
 		lede = "<p class=\"si-lede\">" + dr.inline(desc) + "</p>\n"
 	}
-	modeBtn := `<button type="button" class="si-doc-mode" data-si-action="mode" title="Light / dark (d)" aria-label="Light / dark">` + modeIconSVG + "</button>\n"
+	modeBtn := `<button type="button" class="si-doc-search" data-si-action="search" title="Search (/)" aria-label="Search">` + searchIconSVG + `<span>Search</span><kbd>/</kbd></button>` +
+		`<button type="button" class="si-doc-mode" data-si-action="mode" title="Light / dark (d)" aria-label="Light / dark">` + modeIconSVG + "</button>\n"
 	tocHTML := ""
 	h2s := 0
 	for _, e := range toc {
@@ -440,6 +443,8 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 		foot = append(foot, "<span>"+html.EscapeString(f)+"</span>")
 	}
 	fmt.Fprintf(&b, "<footer class=\"si-doc-foot\">%s</footer>\n", strings.Join(foot, ""))
+	b.WriteString(`<div class="si-doc-find" role="dialog" aria-label="Search" hidden><div class="si-doc-find-box"><input class="si-doc-find-input" type="search" placeholder="Search this page and the others…" aria-label="Search" autocomplete="off" spellcheck="false"><ol class="si-doc-find-list" role="listbox"></ol><p class="si-doc-find-hint">↑ ↓ to choose · Enter to open · Esc to close</p></div></div>` + "\n")
+	b.WriteString(dr.searchScript())
 	dr.problemsBanner(&b, problems)
 	dr.mermaidScript(&b)
 	b.WriteString("<script>\n" + assets.DocJS + "</script>\n")

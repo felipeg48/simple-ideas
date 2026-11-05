@@ -1191,6 +1191,15 @@ title: Trace an Order Through the Hand-offs
 
 The showcase has one: `examples/order-lab.md`.
 
+**Search (`/`).** Every document (lab, article, guide page, book page, demo)
+has a Search button and opens a search box on `/`, in `si serve` and in the
+built files alike (it works from `file://`). It finds the words on this page
+(a heading first, then the text, with the match marked), then the other
+pages: in a guide or book every page, every section with a snippet of its
+text, and a book's index terms; for a page on its own, the other pages of the
+build. ↑ ↓ choose, Enter opens, Esc closes. Nothing is fetched: the other
+pages' data is written into each page when it is built.
+
 Labs share the document engine with articles (§19) and guides (§20). A
 `## Step N:` (or `## N.`) heading in a lab or a guide page shows N in a
 numbered badge; the contents list keeps the full text.

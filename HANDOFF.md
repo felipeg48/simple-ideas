@@ -5,7 +5,12 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-03)
 
-- **Latest release: v0.9.9** (tagged; the release workflow publishes it).
+- **Latest release: v0.9.10** (tagged; the release workflow publishes it).
+- **v0.9.10: search (`/`) in every document**: `render/search.go` writes a `#si-search`
+  JSON block (a guide/book page: every other page, its sections with a 220-char snippet,
+  a book's index terms, filled by `fillGuideSearch` after RenderGuide; a lone page: the
+  build's page list); doc.js searches the page DOM first; Search button in the header /
+  guide bar; `si serve` renders guides whole (like books) so live pages get the data.
 - **v0.9.9:** `watermark:` / `watermark-opacity:` in every document type (fixed
   `.si-doc-wm` layer, inherited from `_nav.md`, printed on every page); `[CLICK]`
   cues in `Notes:` (teleprompter ▶ CLICK badge `.si-cue`; `si check` warns when the

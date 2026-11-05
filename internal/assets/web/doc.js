@@ -111,6 +111,95 @@
   document.addEventListener('mouseover', function (e) { var c = e.target.closest && e.target.closest('.si-co, .si-callouts li'); if (c) coToggle(c, true); });
   document.addEventListener('mouseout', function (e) { var c = e.target.closest && e.target.closest('.si-co, .si-callouts li'); if (c) coToggle(c, false); });
 
+  /* ---------- search (/): this page from the DOM, the other pages (and their
+     sections, and a book's index terms) from the #si-search data ---------- */
+  var finder = document.querySelector('.si-doc-find');
+  if (finder) {
+    var fInput = finder.querySelector('input'), fList = finder.querySelector('.si-doc-find-list');
+    var others = [];
+    try { others = JSON.parse((document.getElementById('si-search') || {}).textContent || '[]') || []; } catch (e) { others = []; }
+    var local = null, results = [], sel = 0;
+    var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    function buildLocal() {
+      local = [];
+      var cur = { id: '', title: document.title, text: '' };
+      local.push(cur);
+      Array.prototype.forEach.call(document.querySelectorAll('.si-doc-body > *'), function (el) {
+        if (/^H[23]$/.test(el.tagName) && el.id) {
+          var c = el.cloneNode(true), a = c.querySelector('.si-anchor'); if (a) a.remove();
+          Array.prototype.forEach.call(c.querySelectorAll('.si-step-num, .si-sec-num'), function (n) { n.textContent = n.textContent + ' '; });
+          cur = { id: el.id, title: c.textContent.replace(/\s+/g, ' ').trim(), text: '' };
+          local.push(cur);
+        } else if (!el.matches('pre, .si-codeblock, .si-tabs, .si-doc-pager, .si-doc-edit')) {
+          cur.text += ' ' + el.textContent;
+        }
+      });
+      local.forEach(function (s) { s.text = s.text.replace(/\s+/g, ' ').trim(); });
+    }
+    function fuzzy(q, t) {
+      t = t.toLowerCase(); var last = -1, score = 0;
+      for (var i = 0; i < q.length; i++) {
+        if (q.charAt(i) === ' ') continue;
+        var j = t.indexOf(q.charAt(i), last + 1);
+        if (j < 0) return -1;
+        score += 1 + (j === last + 1 ? 2 : 0) + (j === 0 || /[^a-z0-9]/.test(t.charAt(j - 1)) ? 3 : 0);
+        last = j;
+      }
+      return score;
+    }
+    function snip(t, at, n) {
+      var a = Math.max(0, at - 40);
+      return (a ? '…' : '') + esc(t.slice(a, at)) + '<mark>' + esc(t.slice(at, at + n)) + '</mark>' + esc(t.slice(at + n, at + n + 70)) + '…';
+    }
+    function search(q) {
+      q = q.trim().toLowerCase(); results = [];
+      if (!q) return;
+      local.forEach(function (s) {
+        var ti = s.title.toLowerCase().indexOf(q), xi = s.text.toLowerCase().indexOf(q);
+        if (s.id && ti >= 0) results.push({ pri: 0, href: '#' + s.id, title: s.title, where: 'On this page' });
+        else if (xi >= 0) results.push({ pri: 1, href: s.id ? '#' + s.id : '#', title: s.id ? s.title : 'This page', where: 'On this page', snip: snip(s.text, xi, q.length) });
+      });
+      var outer = [];
+      others.forEach(function (o) {
+        var sc = fuzzy(q, o.t), tx = o.x ? o.x.toLowerCase().indexOf(q) : -1;
+        if (sc < 0 && tx < 0) return;
+        var where = o.k === 'page' ? 'Page' : (o.k === 'term' ? 'Index · ' + (o.p || '') : o.p || '');
+        outer.push({ pri: 2, score: sc < 0 ? 0 : sc + (o.k === 'page' ? 2 : 0), href: o.h, title: o.t, where: where, snip: tx >= 0 ? snip(o.x, tx, q.length) : '' });
+      });
+      outer.sort(function (a, b) { return b.score - a.score; });
+      results = results.slice(0, 10).concat(outer.slice(0, 14));
+    }
+    function draw() {
+      sel = Math.min(sel, Math.max(0, results.length - 1));
+      fList.innerHTML = results.length ? results.map(function (r, i) {
+        return '<li role="option" aria-selected="' + (i === sel) + '" data-i="' + i + '"><span class="si-doc-find-t">' + esc(r.title) + '</span><span class="si-doc-find-w">' + esc(r.where) + '</span>' +
+          (r.snip ? '<span class="si-doc-find-x">' + r.snip + '</span>' : '') + '</li>';
+      }).join('') : (fInput.value.trim() ? '<li class="si-doc-find-none">No matches</li>' : '');
+      var on = fList.querySelector('[aria-selected="true"]'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' });
+    }
+    function open(on) {
+      finder.hidden = !on;
+      if (on) { if (!local) buildLocal(); fInput.value = ''; results = []; sel = 0; draw(); setTimeout(function () { fInput.focus(); }, 0); }
+    }
+    function go(r) { if (!r) return; open(false); location.href = r.href; }
+    fInput.addEventListener('input', function () { sel = 0; search(fInput.value); draw(); });
+    fInput.addEventListener('keydown', function (e) {
+      e.stopPropagation();
+      if (e.key === 'Escape') { e.preventDefault(); open(false); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); sel = Math.min(results.length - 1, sel + 1); draw(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); sel = Math.max(0, sel - 1); draw(); }
+      else if (e.key === 'Enter') { e.preventDefault(); go(results[sel]); }
+    });
+    fList.addEventListener('click', function (e) { var li = e.target.closest('li[data-i]'); if (li) go(results[+li.getAttribute('data-i')]); });
+    finder.addEventListener('click', function (e) { if (e.target === finder) open(false); });
+    document.addEventListener('click', function (e) { var t = e.target.closest && e.target.closest('[data-si-action="search"]'); if (t) { e.preventDefault(); open(true); } });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey || !finder.hidden) return;
+      var t = e.target; if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      e.preventDefault(); open(true);
+    });
+  }
+
   /* ---------- guide nav: folded on narrow screens; pages already read get a mark ---------- */
   var nav = document.querySelector('.si-doc-nav');
   if (nav) {
