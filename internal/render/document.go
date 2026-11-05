@@ -296,7 +296,21 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	if g != nil {
 		bodyAttrs += fmt.Sprintf(` data-si-guide="%s" data-si-page="%s"`, html.EscapeString(guideRel(g, g.Pages[0])+"|"+g.Meta.Title), html.EscapeString(guideRel(g, d.Path)))
 	}
-	fmt.Fprintf(&b, "</head>\n<body class=\"si-doc\"%s>\n", bodyAttrs)
+	if wm := dr.watermark(nil); wm != "" { // labs, articles, guides, books, demos: one fixed layer, repeated on every printed page
+		var decls []string
+		if dr.wmImg != "" {
+			decls = append(decls, `--si-wm-img:url("`+dr.wmImg+`")`)
+		}
+		if m.WatermarkOpacity != "" {
+			decls = append(decls, "--si-wm-opacity:"+m.WatermarkOpacity)
+		}
+		if len(decls) > 0 {
+			fmt.Fprintf(&b, "<style id=\"si-wm\">.si-doc{%s}</style>\n", strings.Join(decls, ";"))
+		}
+		fmt.Fprintf(&b, "</head>\n<body class=\"si-doc\"%s>\n%s", bodyAttrs, strings.Replace(wm, `class="si-watermark `, `class="si-watermark si-doc-wm `, 1))
+	} else {
+		fmt.Fprintf(&b, "</head>\n<body class=\"si-doc\"%s>\n", bodyAttrs)
+	}
 
 	var meta []string
 	byline := []string{m.Author, m.Date, m.Version}

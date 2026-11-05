@@ -57,6 +57,10 @@ html{font-size:clamp(100%,.85rem + .3vw,150%);-webkit-text-size-adjust:100%;scro
   .si-doc-body>.si-table-wrap:has(>table>thead[hidden]){width:auto;min-width:0;max-width:var(--_measure)}
 }
 .si-anchor{margin-left:.35em}
+/* watermark (front matter): a faint fixed layer over the page, repeated on every printed page */
+.si-doc-wm{position:fixed;inset:0;z-index:40;display:grid;place-items:center;overflow:hidden;pointer-events:none;opacity:var(--si-wm-opacity,.06)}
+.si-doc-wm.si-wm-text{font:800 clamp(3rem,14vw,14rem)/1 var(--si-font-body);color:var(--si-fg);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;transform:rotate(-28deg)}
+.si-doc-wm.si-wm-img{background:var(--si-wm-img) center/min(70vw,40rem) no-repeat}
 .si-problems{position:fixed;top:0;left:0;right:0;z-index:30;max-height:40vh;overflow:auto;margin:0;padding:.7rem 1rem;font:.875rem/1.4 var(--si-font-mono);color:#fff;background:#b42318}
 .si-problems ul{margin:.3rem 0 0;padding-left:1.2rem}
 @media (width < 56rem){

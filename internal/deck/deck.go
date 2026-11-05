@@ -398,7 +398,7 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 }
 
 // LabIgnoredKeys are the front matter keys a lab page does not use.
-var LabIgnoredKeys = []string{"aspect", "transition", "background", "watermark", "watermark-opacity", "labs-label", "footer-position", "runbook", "demos"}
+var LabIgnoredKeys = []string{"aspect", "transition", "background", "labs-label", "footer-position", "runbook", "demos"}
 
 func (d *Deck) setMeta(key, val string) bool {
 	m := &d.Meta

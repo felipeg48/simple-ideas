@@ -399,8 +399,8 @@ func TestLabType(t *testing.T) {
 			warnings: []string{`unknown directive "columns"`}},
 		{name: "deck-only front matter warns in a lab", lab: true, typ: "lab", title: "Lab",
 			files: map[string]string{"d.md": "---\ntype: lab\naspect: 4:3\ntransition: zoom\nwatermark: X\nwatermark-opacity: 0.1\nlabs-label: L\nfooter: F\nfooter-position: tl\nauthor: A\n---\n# Lab\n"},
-			warnings: []string{`front matter "aspect" has no effect`, `front matter "transition" has no effect`, `front matter "watermark" has no effect`,
-				`front matter "watermark-opacity" has no effect`, `front matter "labs-label" has no effect`, `front matter "footer-position" has no effect`},
+			warnings: []string{`front matter "aspect" has no effect`, `front matter "transition" has no effect`,
+				`front matter "labs-label" has no effect`, `front matter "footer-position" has no effect`}, // watermark works in documents
 			noWarn: []string{`"footer"`, `"author"`}},
 	}
 	for _, tc := range tests {

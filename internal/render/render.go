@@ -335,7 +335,13 @@ func (dr *deckRenderer) watermark(sc *slideCtx) string {
 		dr.wmDone = true
 		if val := dr.d.Meta.Watermark; val != "" {
 			if deck.IsImagePath(val) {
-				if uri, ok := dr.media(filepath.Dir(dr.d.Path), val, sc); ok {
+				dir := filepath.Dir(dr.d.Path)
+				if g := dr.opt.Guide; g != nil && !filepath.IsAbs(val) { // a guide page may inherit it from _nav.md
+					if _, err := os.Stat(filepath.Join(dir, val)); err != nil {
+						dir = g.Dir
+					}
+				}
+				if uri, ok := dr.media(dir, val, sc); ok {
 					dr.wmKind, dr.wmImg = "img", uri
 				} else {
 					dr.problem(sc, "missing file: %s", val)

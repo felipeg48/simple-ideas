@@ -90,3 +90,21 @@ func TestDemo(t *testing.T) {
 		}
 	}
 }
+
+func TestDocumentWatermark(t *testing.T) {
+	dir := t.TempDir()
+	for name, body := range map[string]string{
+		"_nav.md": "---\ntitle: G\nwatermark: Confidential\nwatermark-opacity: 0.1\n---\n- [A](sub/a.md)\n",
+		"sub/a.md": "# A\n\ntext\n",
+	} {
+		p := filepath.Join(dir, filepath.FromSlash(name))
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte(body), 0o644)
+	}
+	g, _ := deck.LoadGuide(dir)
+	pages, probs, _ := RenderGuide(g, Options{})
+	h := string(pages[0].Result.HTML)
+	if len(probs) > 0 || !strings.Contains(h, `<div class="si-watermark si-doc-wm si-wm-text" aria-hidden="true">Confidential</div>`) || !strings.Contains(h, "--si-wm-opacity:0.1") {
+		t.Errorf("a guide page inherits the watermark: %v", probs)
+	}
+}
