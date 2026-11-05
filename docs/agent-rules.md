@@ -101,6 +101,32 @@ Points: Payment retry
 Both blocks are hidden on the slides and run to the end of the slide (or to
 the other block's line).
 
+## Documents: articles, guides, labs
+
+Not everything is a slide deck. Pick the type by what the reader does:
+
+| They will | Write | How |
+|---|---|---|
+| watch a talk | a deck | the default; `---` between slides |
+| read one long piece | an article | `type: article`, a `description:` lede, `##` sections |
+| follow steps over several pages | a guide | a folder with `_nav.md` (the page order), one topic per page |
+| do hands-on work on one page | a lab | `type: lab`, `## Step N:` headings |
+
+- **Guides:** write `_nav.md` first (front matter for the guide-wide
+  settings, then a nested list: `- [Title](page.md)` pages, plain items as
+  section headings). Each page has its own `# Title` and a one-sentence
+  `description:`. Link to other pages by their `.md` file, with an anchor when
+  useful (`install.md#step-2-start-the-stack`). Shared bands go in
+  `_header.md` / `_footer.md`. Run `si check <guide>`: it reports missing
+  pages, broken links and anchors, and pages `_nav.md` forgot.
+- **Steps:** in a lab or a guide, `## Step 1: Start the stack` shows a
+  numbered badge. Put the time and prerequisites in a key/value table at the
+  top (`| | |` header, then `| **Time** | 10 minutes |`).
+- **Every command block** is followed by what the reader should see, in a
+  `text` block.
+- `si --export example --type guide` (or `article`, `lab`, `all`) writes a
+  working example to copy from.
+
 ## Slide content
 
 - Slides carry content, never instructions: no "press the arrow", "this slide

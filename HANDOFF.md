@@ -6,6 +6,22 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 ## Current state (2026-11-03)
 
 - **Latest release: v0.9.3** (tagged; the release workflow publishes it).
+- **Unreleased (main), documents phase 1** (spec `docs/superpowers/specs/2026-11-05-documents-design.md`,
+  design mockups approved by the founder): `type: article` (lede from `description:`,
+  reading time, contents on the right), **guides** = a folder with `_nav.md`
+  (`deck.LoadGuide`, pages via `deck.ParseWith` inherit the nav's front matter;
+  sidebar with read marks, breadcrumb, Prev/Next in nav order, `edit-url`,
+  `_header.md` / `_footer.md` partials, subfolders, `.adoc` pages;
+  `render.RenderGuide` checks links + anchors between pages), `## Step N:` badges
+  in labs and guides, document theme tokens (`--si-font-prose`, `--si-prose-size`,
+  `--si-prose-leading`, `--si-doc-measure`, `--si-lede-size`, `--si-nav-bg`,
+  `--si-nav-active`, `--si-step-badge`; unset by default, CSS falls back), RULES
+  §15 "Themes for documents", §19 Articles, §20 Guides; **`si serve`** (play
+  without the terminal, guide-aware); **`si --export example --type
+  deck|slides|article|guide|tutorial|lab|all`** (examples in `examples/article/`,
+  `examples/guide/`, embedded with `all:guide`). Next: phase 2 (code includes
+  with lines/tag, tabs, callouts, hl), phase 3 (GitHub permalinks, diffs), phase 4
+  (`type: demo`, CACI demos last).
 - **v0.9.3:** find (`/`) also searches the other pages of the folder, fuzzily
   (`idx` → index.html): `render.Pages` (index, decks, labs, PDFs, other `.html`
   in the output dir, si.conf `links.<label>: <url>`) → `SI_CONFIG.pages`;

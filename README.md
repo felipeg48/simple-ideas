@@ -36,6 +36,12 @@ self-contained HTML files you can mail, host or open from a USB stick.
   backgrounds with overlays; sized, aligned, captioned and full-bleed images.
 - **Self-contained output:** CSS, JS, SVGs, images and video in one HTML file;
   or `si build --pdf` for a PDF per deck. Open on a phone with a QR code.
+- **Articles and guides, not only slides:** `type: article` for a long read
+  (lede, reading time, contents on the right), and a folder with a `_nav.md`
+  for a multi-page guide (sidebar, breadcrumb, Previous / Next, shared header
+  and footer, checked links and anchors). Labs (`type: lab`) for hands-on
+  work. `si serve` shows them all live; `si --export example --type guide`
+  gives a working one to copy (RULES.md §18–20).
 - **Markdown or AsciiDoc:** author decks in `*.md` or `*.adoc` — both feed the
   same pipeline ([docs/asciidoc.md](docs/asciidoc.md)).
 - **Your own look:** four built-in themes (incl. the CockroachDB `crdb` brand),
@@ -134,6 +140,7 @@ NOTE: the token reaches payments and turns red.
 | `si play <dir\|file.md> [--addr 127.0.0.1:7070] [--open] [--css path]... [--site text]` | serve the decks, rendered from markdown on every request; live reload over server-sent events when a deck, an asset or a stylesheet changes; the URL hash keeps your slide. Use `--addr 0.0.0.0:7070` to open on a phone (prints a LAN URL + QR). On a loopback address, press `` ` `` for a live terminal drawer; `--site text` titles the index page, as in `si build`. `--remote[=tp,draw]` adds a keyed second port for a tablet: the teleprompter and a draw pad that drive the projected deck (see [docs/remote.md](docs/remote.md)) |
 | `si --web [dir] [--addr 127.0.0.1:7070] [--no-open]` | the Studio: edit decks in the browser with a live preview and the `si check` report; loopback only, opens a tokenised URL (see [docs/studio.md](docs/studio.md)) |
 | `si [build] <dir\|file.md> [--output html/] [--css path]... [--no-inline-media] [--pdf] [--site text]` | write one self-contained HTML file per deck plus `index.html` (a landing page with a tile per deck); `--pdf` also renders `pdfs/<name>.pdf` per deck and adds a PDF download badge to each tile (needs headless Chrome); `--site text` (alias `--title`) sets the landing page's `<title>` and `<h1>` |
+| `si serve <dir\|file.md> [--addr 127.0.0.1:7070] [--open] [--css path]...` | serve everything for readers with live reload: decks, articles, guides with their navigation, labs (no terminal drawer) |
 | `si check <dir\|file.md>` | validate decks: title, directives, options, missing files, include cycles, malformed `stage` blocks, broken canvas SVGs |
 | `si new <name>` | scaffold `<name>/<name>.md` with assets, a module and a theme |
 | `si new-canvas <name>` | scaffold `<name>.svg` (a working animated canvas) + a deck to preview it |

@@ -1,6 +1,6 @@
 # si documents: articles, guides, labs and demos: design
 
-Status: draft for review (2026-11-05). No code yet.
+Status: approved 2026-11-05 (designs: the "si Documents" mockup). Phase 1 implemented on main; phases 2–4 to do.
 
 ## Intent
 

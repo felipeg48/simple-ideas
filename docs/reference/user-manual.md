@@ -18,6 +18,7 @@ This manual is itself an si deck — build it with `si manual --slides` or `si m
 
 - Write a talk in **plain Markdown**; `si` renders animated, fluid HTML slides
 - `si play` serves them with live reload; `si build` writes one self-contained HTML file per deck
+- The same Markdown also makes **articles** (`type: article`), multi-page **guides** (a folder with a `_nav.md`) and **labs** (`type: lab`); `si serve` shows them all live
 - **Fluid, never fixed:** slides reflow from a phone to a 4K screen — no 1280×720 canvas
 - Self-contained output: CSS, JS, SVG, images and video in a single file
 

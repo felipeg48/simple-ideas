@@ -34,6 +34,8 @@ this file; `examples/showcase.md` uses every rule in a real talk.
 16. [Configuring keys and features (si.conf)](#16-configuring-keys-and-features-siconf)
 17. [What si check reports](#17-what-si-check-reports)
 18. [Lab documents](#18-lab-documents)
+19. [Articles](#19-articles)
+20. [Guides (tutorials)](#20-guides-tutorials)
 
 ## 1. Decks and files
 
@@ -88,6 +90,10 @@ lang: en
 | `type` | `deck`, `lab` | `deck` | `lab` renders the file as a readable guide page instead of slides; see [Lab documents](#18-lab-documents). Anything else is a `si check` problem |
 | `runbook` | path to a `.json` file | none | a command cheat-sheet shown in the **`si play` terminal drawer only** (never in a built deck); see §14 |
 | `demos` | markdown files or folders, comma-separated | none | demo scripts shown in the **`si play` terminal drawer only**, with Copy / Run on every shell block; see §14 |
+| `type` values | `deck`, `lab`, `article`, `guide` | `deck` | `lab` §18, `article` §19, `guide` §20 (guide pages get it from `_nav.md`) |
+| `description` | text | none | documents: the lede under the title, the index tile subtitle and `<meta name="description">` (§19, §20) |
+| `edit-url` | URL | none | guides: base of the "Edit this page" link (§20) |
+| `header`, `footer-page` | `off` | on | a guide page without the guide's `_header.md` / `_footer.md` (§20) |
 
 An included module's own front matter is ignored; the including deck decides.
 
@@ -845,6 +851,60 @@ inline SVG.
 <p class="verdict">Both keep your clients. <b>Only B removes the outage.</b></p>
 ```
 
+### Themes for documents (labs, articles, guides)
+
+Every theme styles documents too, from the same tokens as slides. Documents
+read for minutes, so they add a few tokens of their own. Each is **unset by
+default** and the built-in CSS falls back to the value below, so a theme (or a
+`.css` theme file) that never sets them still works; set only what you want
+to change.
+
+| Token | Fallback | What it sets |
+|---|---|---|
+| `--si-font-prose` | `var(--si-font-body)` | font of the text (articles, guides, labs) |
+| `--si-prose-size` | `1rem` | size of the text (paper `1.06rem`, mono `.94rem`) |
+| `--si-prose-leading` | `1.7` | line height of the text |
+| `--si-doc-measure` | `78ch` | longest line; articles use 88% of it; code and tables may use the whole column |
+| `--si-lede-size` | `1.25em` | the `description:` lede under an article or guide page title |
+| `--si-nav-bg` | `surface-2` mixed into `bg` | background of a guide's navigation |
+| `--si-nav-active` | `accent` at 12% | the current page in the navigation |
+| `--si-step-badge` | `var(--si-accent)` | the number badge of a `## Step N:` heading (labs, guides) |
+
+A custom theme for documents is an ordinary theme file: set the colour tokens
+(light and dark) and, if you like, the document tokens. Hook classes for
+finer control are listed by `si --export css-rules` (`.si-doc[data-si-doc]`,
+`.si-lede`, `.si-doc-nav`, `.si-doc-crumb`, `.si-step-num`, `.si-doc-site`,
+...).
+
+```css
+/* harbor-docs.css: use with  theme: harbor-docs.css  in _nav.md or a page */
+:root {
+  --si-bg: #f7f4ee; --si-fg: #1d2430; --si-muted: #5b6574; --si-surface: #ffffff;
+  --si-surface-2: #ece7dd; --si-line: #dcd4c6; --si-accent: #0b6e8a; --si-accent-2: #a2462b;
+  --si-on-accent: #ffffff; --si-ok: #2f7d4a; --si-warn: #b7791f; --si-crit: #b42318;
+  --si-font-body: "Iowan Old Style", Georgia, serif;
+  --si-font-heading: ui-sans-serif, system-ui, sans-serif;
+  --si-font-mono: ui-monospace, Menlo, monospace;
+  --si-heading-weight: 700; --si-heading-tracking: -0.01em; --si-heading-case: none;
+  --si-radius: .4em; --si-shadow: none;
+  /* documents */
+  --si-prose-size: 1.08rem; --si-doc-measure: 72ch; --si-step-badge: var(--si-accent-2);
+}
+:root[data-si-mode="dark"] {
+  --si-bg: #11161d; --si-fg: #e8e4dc; --si-muted: #9aa3b0; --si-surface: #19202a;
+  --si-surface-2: #202834; --si-line: #2c3644; --si-accent: #5cc3e0; --si-accent-2: #f0a27c;
+  --si-on-accent: #11161d;
+}
+/* repeat the dark block inside @media (prefers-color-scheme: dark) { :root:not([data-si-mode]) { … } } */
+```
+
+A `.css` theme file replaces the built-in theme, so it must set the colour,
+font and layout tokens itself (`si --export css-rules` writes a complete,
+commented starter with every token and its studio default). The same file
+styles decks, articles, guides and labs. To change only a few things on top of
+a built-in theme, keep `theme: studio` (or any) and pass the overrides with
+`--css`, which lands in the `si.user` layer after the theme.
+
 ## 16. Configuring keys and features (si.conf)
 
 An optional `si.conf` next to the deck (or `--conf <path>`) sets project-wide
@@ -985,3 +1045,121 @@ title: Trace an Order Through the Hand-offs
   decks.
 
 The showcase has one: `examples/order-lab.md`.
+
+Labs share the document engine with articles (§19) and guides (§20). A
+`## Step N:` (or `## N.`) heading in a lab or a guide page shows N in a
+numbered badge; the contents list keeps the full text.
+
+## 19. Articles
+
+`type: article` is one long read: a blog post, a write-up, a case study.
+
+```markdown
+---
+type: article
+title: One retry fixed nine in ten night-time declines
+description: Order #4711 failed at 21:03 and was paid at 21:05.
+author: Jonas Berg · Payments team
+date: 5 November 2026
+---
+
+# One retry fixed nine in ten night-time declines
+
+For a year we treated every night-time card decline as a fraud signal …
+
+## The declines were timeouts
+```
+
+- The header holds the title, the **lede** (`description:`, one or two
+  sentences; it is also the page's `<meta name="description">` and the
+  subtitle of its index tile), the byline (`author`, `date`, `version`) and
+  the **reading time**, counted at 230 words a minute on the text outside code
+  blocks.
+- "On this page" (the `##` / `###` headings) appears on the right when the
+  article has three or more `##` sections, and above the text on narrow
+  screens; with fewer sections there is none.
+- The text column is narrower than a lab's (88% of `--si-doc-measure`) and
+  slightly larger. Everything else is as in a lab (§18): callouts, code with
+  copy, key/value tables, figures, includes, print, theme and dark mode.
+- `## Step N:` headings stay plain in an article.
+- `si build` writes `<name>.html` with an ARTICLE badge on the index tile.
+
+Example: `si --export example --type article`.
+
+## 20. Guides (tutorials)
+
+A guide is a **folder with a `_nav.md`**: a tutorial of several pages read in
+order, with a navigation sidebar, a breadcrumb, Previous / Next links and
+shared header and footer.
+
+```text
+order-journey/
+  _nav.md          the order of the pages, and the guide-wide settings
+  _header.md       optional: a band at the top of every page
+  _footer.md       optional: a band above the footer of every page
+  index.md
+  install.md
+  happy/place.md   pages may sit in subfolders
+  reset.adoc       and may be AsciiDoc
+```
+
+`_nav.md` is front matter plus a markdown list. An item with a link is a
+page; an item without one is a section heading; indentation nests.
+
+```markdown
+---
+title: The order journey
+description: Follow order #4711 from checkout to the doorstep.
+version: v1.0
+theme: paper
+footer: Northwind Logistics engineering
+edit-url: https://github.com/acme/order-journey/edit/main/docs
+---
+
+- [Introduction](index.md)
+- Getting started
+  - [Install the lab](install.md)
+- The happy path
+  - [Place an order](happy/place.md)
+  - [Pay for the order](happy/pay.md)
+- [Reset the lab](reset.adoc)
+- [Status page](https://status.example.com)
+```
+
+- **Inherited settings.** Every page starts from the front matter of
+  `_nav.md` (theme, mode, accent, footer, year, copyright, edit-url, author,
+  version, …) and its own front matter overrides it key by key. Pages are
+  `type: guide` unless they say otherwise (a `type: lab` page keeps its LAB
+  badge). The guide's `title` and `description` stay the guide's: each page has
+  its own `# Title` and `description:`.
+- **Navigation.** The sidebar follows `_nav.md`: sections as small headings,
+  the current page marked, pages the reader has opened marked as read (kept in
+  that browser), and an "N of M read" count. On narrow screens it folds above
+  the page. A link to an outside URL opens it.
+- **Page.** A breadcrumb (guide › section › page), the title, the
+  `description:` as a lede, the page, then **Previous / Next** in nav order
+  and, with `edit-url:`, an "Edit this page" link (`edit-url` + the page's path
+  in the guide). "On this page" sits on the right on wide screens.
+- **Bar and partials.** A top bar shows the guide title (a link to the first
+  page), the `version` and the light / dark button. `_header.md` and
+  `_footer.md` are markdown, rendered on every page with their links resolved
+  from the guide folder; `header: off` or `footer-page: off` in a page's front
+  matter drops one on that page.
+- **Links.** Link to the `.md` (or `.adoc`) file, with an anchor if you like
+  (`[ports](install.md#step-2-start-the-stack)`); it becomes `.html`. Heading
+  anchors are GitHub-style (lower case, spaces to hyphens, punctuation dropped).
+- **`si check <guide>`** reports a page that `_nav.md` lists but does not
+  exist (or is listed twice, or is outside the folder), a link between pages
+  to a missing page or to an anchor the target does not have, and, as a
+  warning, a page in the folder that `_nav.md` does not list (it is not built).
+  `_`-prefixed files and `README.md` are never pages.
+- **`si build <guide> -o out/`** writes one self-contained HTML file per page,
+  mirroring the folders (`happy/place.md` → `out/happy/place.html`), and an
+  `index.html` (the `index.md` page, or a redirect to the first page). In
+  `si build <folder>`, each subfolder that holds a `_nav.md` is built into
+  `out/<subfolder>/` and becomes one GUIDE tile on the index.
+- **`si serve <folder>`** serves decks, articles, guides and labs with live
+  reload; a guide folder URL opens its first page.
+
+Example: `si --export example --type guide` (or `--type all` for every kind
+side by side, then `si serve si-example`).
