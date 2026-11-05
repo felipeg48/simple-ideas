@@ -177,7 +177,14 @@ pass. The steps that matter:
 - **Web fonts** (DONE, v1.1.0, `render/fonts.go`): `fonts:` from Google, Bunny,
   Fontshare, Fontsource or a local file, inlined at build time. Next: a
   `fonts-subset:` key for non-latin scripts; fonts in a theme `.css` file.
-- **Publishing integrations (after sites):** Medium first.
+- **Publishing (`si publish`, planned):** Medium is out (no new API tokens).
+  LinkedIn via "Share on LinkedIn" (`w_member_social`, one-time loopback OAuth
+  login, token ~60 days, stdlib only): a deck becomes a PDF document post
+  (carousel) with text from `linkedin:` / `description:` / `Points:`; an article
+  becomes a link post (`--url`); `--copy` puts rich text on the clipboard for
+  LinkedIn's article editor (no articles API). Always a dry run unless `--yes`.
+  Full articles: dev.to, Hashnode, Ghost or WordPress (real APIs). Check the
+  current LinkedIn API docs before building.
 - More themes; `theme:` from a remote URL (the CSS-file path and the
   `si --export themes` gallery already exist).
 - SVG helpers: `data-move` along a path, counters that tick between states,
