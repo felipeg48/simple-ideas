@@ -486,7 +486,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			indexTheme = g.Meta.Theme
 		}
 		entries = append(entries, render.IndexEntry{Href: sub + "/" + home, Title: g.Meta.Title, Subtitle: g.Meta.Description,
-			Lab: true, Kind: map[bool]string{true: "book", false: "guide"}[g.IsBook()], Sections: len(g.Pages), Version: firstOf(g.Meta.Edition, g.Meta.Version), Status: g.Meta.Status})
+			Lab: true, Kind: guideKindOf(g), Sections: len(g.Pages), Version: firstOf(g.Meta.Edition, g.Meta.Version), Status: g.Meta.Status})
 	}
 	title := filepath.Base(filepath.Clean(src))
 	if st, err := os.Stat(src); err == nil && !st.IsDir() {
@@ -551,7 +551,7 @@ func check(src string, stdout, stderr io.Writer) int {
 
 // guideAt reports whether path is a guide folder (it holds a _nav.md).
 func guideAt(path string) (*deck.Guide, bool) {
-	if st, err := os.Stat(filepath.Join(path, deck.NavFile)); err != nil || st.IsDir() {
+	if !deck.IsGuideDir(path) {
 		return nil, false
 	}
 	g, err := deck.LoadGuide(path)
@@ -580,6 +580,9 @@ func subGuides(dir string) []*deck.Guide {
 // the number of problems already found (by the decks of the same check).
 func checkGuides(guides []*deck.Guide, prior int, stdout, stderr io.Writer) int {
 	n, pages := prior, 0
+	for i := 0; i < len(guides); i++ { // a site's menu may link sub-guides and books: check those too
+		guides = append(guides, subGuidesOf(guides[i].Items)...)
+	}
 	for _, g := range guides {
 		ps, probs, warns := render.RenderGuide(g, render.Options{})
 		pages += len(ps)
@@ -1030,8 +1033,38 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 			return "", false
 		}
 	}
-	fmt.Fprintf(stdout, "si: guide %q, %d page(s) -> %s\n", g.Meta.Title, len(pages), out)
+	for _, sub := range subGuidesOf(g.Items) { // the guides, books and sites its menu links to
+		rel, _ := filepath.Rel(g.Dir, sub.Dir)
+		if _, subOK := buildGuide(sub, filepath.Join(out, rel), o, css, cfg, stdout, stderr); !subOK {
+			ok = false
+		}
+	}
+	kind := "guide"
+	if g.IsBook() {
+		kind = "book"
+	} else if g.IsSite() {
+		kind = "site"
+	}
+	fmt.Fprintf(stdout, "si: %s %q, %d page(s) -> %s\n", kind, g.Meta.Title, len(pages), out)
 	return home, ok
+}
+
+// subGuidesOf loads the sub-guides (books, sites) a menu links to.
+func subGuidesOf(items []*deck.NavItem) []*deck.Guide {
+	var out []*deck.Guide
+	var walk func([]*deck.NavItem)
+	walk = func(its []*deck.NavItem) {
+		for _, it := range its {
+			if it.Sub != "" {
+				if g, err := deck.LoadGuide(it.Sub); err == nil {
+					out = append(out, g)
+				}
+			}
+			walk(it.Children)
+		}
+	}
+	walk(items)
+	return out
 }
 
 func htmlEscape(s string) string { return html.EscapeString(s) }
@@ -1237,4 +1270,14 @@ func firstOf(v ...string) string {
 		}
 	}
 	return ""
+}
+
+func guideKindOf(g *deck.Guide) string {
+	switch {
+	case g.IsBook():
+		return "book"
+	case g.IsSite():
+		return "site"
+	}
+	return "guide"
 }

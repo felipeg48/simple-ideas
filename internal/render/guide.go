@@ -216,7 +216,20 @@ func RenderGuide(g *deck.Guide, opt Options) (pages []GuidePage, problems, warni
 		pages, terms = finishBook(g, opt, pages, &problems)
 	}
 	fillGuideSearch(g, pages, terms)
-	problems = append(problems, checkGuideLinks(pages)...)
+	var subs []string // links into a sub-guide, book or site are checked when that one is built
+	var walk func([]*deck.NavItem)
+	walk = func(its []*deck.NavItem) {
+		for _, it := range its {
+			if it.Sub != "" {
+				if r, err := filepath.Rel(g.Dir, it.Sub); err == nil {
+					subs = append(subs, filepath.ToSlash(r)+"/")
+				}
+			}
+			walk(it.Children)
+		}
+	}
+	walk(g.Items)
+	problems = append(problems, checkGuideLinks(pages, subs)...)
 	return pages, problems, warnings
 }
 
@@ -228,7 +241,7 @@ var (
 // checkGuideLinks finds links between the pages of a guide that point at a
 // missing page or a missing #anchor. Links that leave the guide folder, and
 // links to other files (images, PDFs, outside URLs), are not checked here.
-func checkGuideLinks(pages []GuidePage) []deck.Problem {
+func checkGuideLinks(pages []GuidePage, skip []string) []deck.Problem {
 	ids := map[string]map[string]bool{}
 	for _, p := range pages {
 		set := map[string]bool{}
@@ -255,6 +268,15 @@ func checkGuideLinks(pages []GuidePage) []deck.Problem {
 				target = filepath.ToSlash(filepath.Clean(filepath.Join(filepath.Dir(p.Rel), path)))
 				if strings.HasPrefix(target, "../") {
 					continue // outside the guide
+				}
+				inSub := false
+				for _, sp := range skip {
+					if strings.HasPrefix(target, sp) {
+						inSub = true
+					}
+				}
+				if inSub {
+					continue
 				}
 			}
 			set, ok := ids[target]

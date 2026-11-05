@@ -360,7 +360,11 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 		tocHTML = t.String()
 	}
 
-	if g != nil {
+	if g != nil && g.IsSite() {
+		var sb strings.Builder
+		dr.sitePage(&sb, body, lede, metaHTML, tocHTML)
+		b.WriteString(sb.String())
+	} else if g != nil {
 		if m.Header != "off" {
 			if h := dr.partial("_header.md"); h != "" {
 				b.WriteString("<div class=\"si-doc-site\"><div class=\"si-doc-site-in\">" + h + "</div></div>\n")

@@ -86,7 +86,6 @@ var (
 func indexTerms(h, rel, chapterLoc string, labels map[string]string, n *int) (string, []ixEntry) {
 	var out strings.Builder
 	var entries []ixEntry
-	skip := 0 // depth inside pre / code / script / style / title / textarea
 	loc := chapterLoc
 	add := func(raw string, shown bool) string {
 		*n++
@@ -103,25 +102,42 @@ func indexTerms(h, rel, chapterLoc string, labels map[string]string, n *int) (st
 		}
 		return `<span class="si-term" id="` + id + `">` + html.EscapeString(vis) + `</span>`
 	}
+	// raw blocks (style, script, pre, …) are copied whole: their text is not
+	// HTML, and a `<` in CSS or JS must not be read as a tag
+	last := 0
+	for _, m := range rawBlockRE.FindAllStringIndex(h, -1) {
+		out.WriteString(termsInHTML(h[last:m[0]], labels, &loc, add))
+		out.WriteString(h[m[0]:m[1]])
+		last = m[1]
+	}
+	out.WriteString(termsInHTML(h[last:], labels, &loc, add))
+	return out.String(), entries
+}
+
+var rawBlockRE = regexp.MustCompile(`(?is)<(script|style|pre|textarea|title)\b.*?</(?:script|style|pre|textarea|title)\s*>`)
+
+// termsInHTML replaces index terms in the text of h (no raw blocks), outside
+// inline code, tracking the section an occurrence is in.
+func termsInHTML(h string, labels map[string]string, loc *string, add func(string, bool) string) string {
+	var out strings.Builder
+	code := 0
 	for _, t := range htmlPartRE.FindAllString(h, -1) {
 		if strings.HasPrefix(t, "<") {
 			low := strings.ToLower(t)
-			for _, tag := range []string{"pre", "code", "script", "style", "title", "textarea"} {
-				if strings.HasPrefix(low, "<"+tag) && (len(low) == len(tag)+2 || low[len(tag)+1] == ' ' || low[len(tag)+1] == '>') {
-					skip++
-				} else if strings.HasPrefix(low, "</"+tag+">") {
-					skip--
-				}
+			if strings.HasPrefix(low, "<code") {
+				code++
+			} else if strings.HasPrefix(low, "</code") {
+				code--
 			}
 			if m := h2OpenRE.FindStringSubmatch(t); m != nil {
 				if l, ok := labels[m[1]]; ok {
-					loc = strings.TrimPrefix(l, "Section ")
+					*loc = strings.TrimPrefix(l, "Section ")
 				}
 			}
 			out.WriteString(t)
 			continue
 		}
-		if skip > 0 || !strings.Contains(t, "((") {
+		if code > 0 || !strings.Contains(t, "((") {
 			out.WriteString(t)
 			continue
 		}
@@ -129,7 +145,7 @@ func indexTerms(h, rel, chapterLoc string, labels map[string]string, n *int) (st
 		t = ixShownRE.ReplaceAllStringFunc(t, func(m string) string { return add(ixShownRE.FindStringSubmatch(m)[1], true) })
 		out.WriteString(t)
 	}
-	return out.String(), entries
+	return out.String()
 }
 
 // bookLinks fills empty links ([](#fig-flow), [](03-queues.md#quorum-queues),

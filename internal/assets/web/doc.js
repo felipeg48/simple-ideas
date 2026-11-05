@@ -200,6 +200,15 @@
     });
   }
 
+  /* ---------- site navigator: the menu is open on wide screens, folded behind Menu on narrow ones ---------- */
+  var siteMenu = document.querySelector('.si-site-menu');
+  if (siteMenu && window.matchMedia) {
+    var smq = window.matchMedia('(width >= 56rem)');
+    var setMenu = function () { siteMenu.open = smq.matches; };
+    setMenu();
+    if (smq.addEventListener) smq.addEventListener('change', setMenu);
+  }
+
   /* ---------- guide nav: folded on narrow screens; pages already read get a mark ---------- */
   var nav = document.querySelector('.si-doc-nav');
   if (nav) {

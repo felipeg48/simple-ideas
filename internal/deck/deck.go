@@ -99,13 +99,16 @@ type Meta struct {
 	Session     string // demo: the session it belongs to
 	SlidesRef   string // demo: the slides it runs on ("23, 24")
 	Duration    string // demo: the live time ("14 min"); si check compares it with the script's (N min) steps
+	Navigator   string // site: topbar (default), topbar-centred, sidebar, mega
+	Logo        string // site: an image (or text) for the navigator
+	CTA         string // site: a button in the navigator, "Label → href"
 	EditURL     string // guide: base URL of "Edit this page" (the page path is appended)
 	Header      string // guide page: "off" drops the guide's _header.md
 	FooterPage  string // guide page: "off" drops the guide's _footer.md
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -160,7 +163,7 @@ type Deck struct {
 }
 
 // Types are the accepted values of the `type` front matter key.
-var Types = []string{"deck", "lab", "article", "guide", "book", "demo"}
+var Types = []string{"deck", "lab", "article", "guide", "book", "demo", "site", "page"}
 
 // IsLab reports whether the file is a lab document (`type: lab`).
 func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
@@ -168,7 +171,7 @@ func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
 // IsDoc reports whether the file is a document (lab, article or guide page):
 // one readable page, not slides.
 func (d *Deck) IsDoc() bool {
-	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide" || d.Meta.Type == "demo"
+	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide" || d.Meta.Type == "demo" || d.Meta.Type == "page"
 }
 
 // IsDemo reports whether the file is an instructor demo script (`type: demo`).
@@ -336,6 +339,15 @@ func ParseWith(path string, def Meta) (*Deck, error) {
 		if d.IsDemo() {
 			d.checkDemoMinutes(out)
 		}
+		if d.Meta.Type == "page" { // a site page with slide separators is probably a deck without its type
+			var ft fenceTracker
+			for _, l := range out {
+				if !ft.inFence(l.text) && strings.TrimSpace(l.text) == "---" {
+					d.Warnings = append(d.Warnings, Problem{File: rel(l.file), Line: l.no, Msg: "a --- line in a site page is a rule, not a slide break: a deck in a site says type: deck"})
+					break
+				}
+			}
+		}
 	} else {
 		d.buildSlides(out)
 	}
@@ -410,6 +422,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"runbook": &m.Runbook, "demos": &m.Demos, "type": &m.Type,
 		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "repo": &m.Repo,
 		"subtitle": &m.Subtitle, "edition": &m.Edition, "session": &m.Session, "slides": &m.SlidesRef, "duration": &m.Duration,
+		"navigator": &m.Navigator, "logo": &m.Logo, "cta": &m.CTA,
 	}[key]
 	if ptr == nil {
 		return false

@@ -97,7 +97,7 @@ func (s *Server) Handler() http.Handler {
 				}
 			}
 			s.index(w)
-		case s.file == "" && fileExists(filepath.Join(s.dir, filepath.FromSlash(p), deck.NavFile)):
+		case s.file == "" && p != "/" && deck.IsGuideDir(filepath.Join(s.dir, filepath.FromSlash(p))):
 			if g, err := deck.LoadGuide(filepath.Join(s.dir, filepath.FromSlash(p))); err == nil && len(g.Pages) > 0 {
 				http.Redirect(w, r, strings.TrimSuffix(p, "/")+"/"+guideHome(g), http.StatusFound) // a guide folder opens at its first page
 				return
@@ -374,8 +374,11 @@ func (s *Server) signature() uint64 {
 }
 
 func guideKind(g *deck.Guide) string {
-	if g.IsBook() {
+	switch {
+	case g.IsBook():
 		return "book"
+	case g.IsSite():
+		return "site"
 	}
 	return "guide"
 }

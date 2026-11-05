@@ -21,8 +21,25 @@ import (
 //	- Getting started
 //	  - [Install the lab](install.md)
 
-// NavFile is the file that makes a folder a guide.
-const NavFile = "_nav.md"
+// NavFile is the file that makes a folder a guide (or a book); SiteFile makes
+// it a site: the same format, with `type: site` implied.
+const (
+	NavFile  = "_nav.md"
+	SiteFile = "_site.md"
+)
+
+// navFile is the guide or site file of dir, "" if it has none.
+func navFile(dir string) string {
+	for _, n := range []string{SiteFile, NavFile} {
+		if st, err := os.Stat(filepath.Join(dir, n)); err == nil && !st.IsDir() {
+			return filepath.Join(dir, n)
+		}
+	}
+	return ""
+}
+
+// IsGuideDir reports whether dir holds a _nav.md or a _site.md.
+func IsGuideDir(dir string) bool { return navFile(dir) != "" }
 
 // Guide is a parsed _nav.md.
 type Guide struct {
@@ -42,6 +59,7 @@ type NavItem struct {
 	Line     int
 	Children []*NavItem
 	Parent   *NavItem
+	Sub      string // a link to a folder that is a guide, book or site of its own: that folder
 }
 
 var navItemRE = regexp.MustCompile(`^(\s*)[-*+]\s+(.*?)\s*$`)
@@ -53,7 +71,10 @@ func LoadGuide(dir string) (*Guide, error) {
 	if err != nil {
 		return nil, err
 	}
-	nav := filepath.Join(abs, NavFile)
+	nav := navFile(abs)
+	if nav == "" {
+		return nil, fmt.Errorf("%s has no %s or %s", abs, NavFile, SiteFile)
+	}
 	raw, err := os.ReadFile(nav)
 	if err != nil {
 		return nil, err
@@ -63,6 +84,9 @@ func LoadGuide(dir string) (*Guide, error) {
 	lines := splitLines(strings.TrimPrefix(string(raw), "\uFEFF"))
 	start := fm.frontMatter(nav, lines)
 	g.Meta, g.Problems, g.Warnings = fm.Meta, fm.Problems, fm.Warnings
+	if filepath.Base(nav) == SiteFile && g.Meta.Type == "" {
+		g.Meta.Type = "site"
+	}
 	if g.Meta.Title == "" {
 		g.Meta.Title = filepath.Base(abs)
 	}
@@ -89,6 +113,10 @@ func LoadGuide(dir string) (*Guide, error) {
 			if local := !strings.Contains(it.Href, "://") && !strings.HasPrefix(it.Href, "mailto:"); local {
 				path, _, _ := strings.Cut(it.Href, "#")
 				f := filepath.Clean(filepath.Join(abs, filepath.FromSlash(path)))
+				if st, err := os.Stat(f); err == nil && st.IsDir() && IsGuideDir(f) {
+					it.Sub = f // a guide, book or site of its own, linked from this menu
+					break
+				}
 				switch {
 				case !isDeckFile(filepath.Base(f)):
 					g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: fmt.Sprintf("_nav.md: %s is not a .md or .adoc page", it.Href)})
@@ -132,7 +160,7 @@ func FindGuide(file, root string) *Guide {
 	dir, _ := filepath.Abs(filepath.Dir(file))
 	root, _ = filepath.Abs(root)
 	for {
-		if _, err := os.Stat(filepath.Join(dir, NavFile)); err == nil {
+		if IsGuideDir(dir) {
 			g, err := LoadGuide(dir)
 			if err == nil {
 				return g
@@ -154,8 +182,15 @@ func FindGuide(file, root string) *Guide {
 func (g *Guide) Defaults() Meta {
 	m := g.Meta
 	m.Type, m.Title, m.Description, m.Subtitle = "guide", "", "", ""
+	if g.IsSite() {
+		m.Type = "page" // a site's pages are plain pages unless they say otherwise (type: deck, article, lab …)
+		m.Navigator, m.Logo, m.CTA = "", "", ""
+	}
 	return m
 }
+
+// IsSite reports whether the guide is a site (`_site.md`, or `type: site`).
+func (g *Guide) IsSite() bool { return g.Meta.Type == "site" }
 
 // IsBook reports whether the guide is a book (`type: book` in _nav.md).
 func (g *Guide) IsBook() bool { return g.Meta.Type == "book" }
@@ -223,8 +258,8 @@ func (g *Guide) Unlisted() []string {
 		}
 		n := e.Name()
 		if e.IsDir() {
-			if p != g.Dir && (strings.HasPrefix(n, ".") || strings.HasPrefix(n, "_") || n == "node_modules") {
-				return filepath.SkipDir
+			if p != g.Dir && (strings.HasPrefix(n, ".") || strings.HasPrefix(n, "_") || n == "node_modules" || IsGuideDir(p)) {
+				return filepath.SkipDir // a sub-guide, book or site lists its own pages
 			}
 			return nil
 		}
