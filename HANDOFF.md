@@ -5,8 +5,8 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-03)
 
-- **Latest release: v0.9.3** (tagged; the release workflow publishes it).
-- **Unreleased (main), documents phase 1** (spec `docs/superpowers/specs/2026-11-05-documents-design.md`,
+- **Latest release: v0.9.4** (tagged; the release workflow publishes it).
+- **v0.9.4: documents phase 1** (spec `docs/superpowers/specs/2026-11-05-documents-design.md`,
   design mockups approved by the founder): `type: article` (lede from `description:`,
   reading time, contents on the right), **guides** = a folder with `_nav.md`
   (`deck.LoadGuide`, pages via `deck.ParseWith` inherit the nav's front matter;
