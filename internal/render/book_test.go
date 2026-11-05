@@ -94,7 +94,7 @@ func TestDemo(t *testing.T) {
 func TestDocumentWatermark(t *testing.T) {
 	dir := t.TempDir()
 	for name, body := range map[string]string{
-		"_nav.md": "---\ntitle: G\nwatermark: Confidential\nwatermark-opacity: 0.1\n---\n- [A](sub/a.md)\n",
+		"_nav.md":  "---\ntitle: G\nwatermark: Confidential\nwatermark-opacity: 0.1\n---\n- [A](sub/a.md)\n",
 		"sub/a.md": "# A\n\ntext\n",
 	} {
 		p := filepath.Join(dir, filepath.FromSlash(name))
