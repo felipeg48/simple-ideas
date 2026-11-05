@@ -5,7 +5,17 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-05)
 
-- **Latest release: v1.1.0** (tagged; the release workflow publishes it).
+- **Latest release: v1.2.0** (tagged; the release workflow publishes it).
+- **v1.2.0: Studio S1 (documents in `si --web`).** `internal/studio/kinds.go`:
+  `guides` cache, `parsePage` (guide defaults like serve), `pageKind`, `guideKind`.
+  Tree nodes carry kinds (article, guide, book, demo, site, page, nav) and `guide`
+  on guide folders; `GET decks` adds `kind`, `url`, `guide` plus one entry per
+  `_nav.md`/`_site.md`; `GET check` renders a guide/book/site whole
+  (`RenderGuide`) and returns `kind`. Front-end: icons, badges, kind labels,
+  Open vs Play, slide-follow only for decks. Fixed in `si serve`/`si play`: an
+  `index.md` beats the generated folder index at `/` and `/index.html`.
+  Next (S2): completion for every directive and key, New… starters per type,
+  Build panel, workspace check; S3 modes (Rehearse, Present, Lab) and ⌘K.
 - **v1.1.0: web fonts.** `fonts:` (front matter, `_nav.md`/`_site.md` via
   `Guide.Defaults` with file paths made absolute, `si.conf`): roles heading / body /
   mono, sources google (default), bunny, fontshare, fontsource, or a local font file

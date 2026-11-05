@@ -1,10 +1,7 @@
-import type { Check } from "./api";
+import { type Check, kindLabel } from "./api";
 import type { DocStatus } from "./editor";
 import { Icon } from "./navigator";
 
-const kindLabel: Record<string, string> = {
-  deck: "si deck", lab: "si lab", markdown: "Markdown", svg: "SVG", css: "CSS", json: "JSON", image: "Image", other: "Text",
-};
 const fmt = (m: number) => (Math.round(m * 10) / 10).toString();
 
 export function StatusBar(p: {
@@ -17,7 +14,7 @@ export function StatusBar(p: {
       <button class={"foot-check" + (p.problems ? " bad" : "")} onClick={p.onProblems} title="Show problems">
         <Icon name={p.problems ? "warn" : "ok"} />
         <span>si check</span>
-        <b>{p.problems ? `${p.problems} problem${p.problems > 1 ? "s" : ""}` : `${p.decks} deck${p.decks === 1 ? "" : "s"} OK`}</b>
+        <b>{p.problems ? `${p.problems} problem${p.problems > 1 ? "s" : ""}` : `${p.decks} file${p.decks === 1 ? "" : "s"} OK`}</b>
       </button>
       {p.check && (
         <span class="foot-stats">

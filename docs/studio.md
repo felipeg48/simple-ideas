@@ -129,10 +129,23 @@ npx playwright install chromium   # once, before the first studio-e2e
 
 Commit the regenerated bundle with the source change.
 
-## Lab documents
+## Documents, guides, books and sites
 
-A file with `type: lab` shows a lab icon in the tree and previews as the guide
-page. Saving re-renders it like a deck.
+Studio reads a workspace the way `si check` and `si serve` do:
+
+- **The tree** gives every source its kind: slides, lab, article, demo script,
+  site page, or a page of a guide or book. A folder that holds a guide, book or
+  site has its own icon and a badge, and its `_nav.md` / `_site.md` shows as a
+  navigation file with the guide's title.
+- **The check** of a page in a guide, book or site renders the whole folder,
+  with that folder's settings (theme, fonts, watermark), and reports what
+  `si check` reports, links and anchors between pages included. A site page is
+  never checked as slides, so plugins and `---` rules are not problems there.
+  Opening the `_nav.md` or `_site.md` checks the whole guide, book or site.
+- **The preview** shows the live page. Only slides follow the cursor slide by
+  slide; a document shows its title and kind instead, and **Play** becomes
+  **Open**. A `_nav.md` or `_site.md` previews the first page (a site's
+  `index.md`).
 
 ## Known limits
 

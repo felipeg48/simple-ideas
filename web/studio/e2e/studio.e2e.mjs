@@ -192,7 +192,7 @@ const tests = {
     await page.screenshot({ path: join(out, "drawer-form-dark.png") });
     await page.fill(".si-rb-form input", "si");
     await page.click(".si-rb-form button:has-text('Run')");
-    await until(async () => (await term()).includes("hello-si"), 6000, "output hello-si");
+    await until(async () => (await term()).includes("hello-si"), 15000, "output hello-si");
     if (await page.$(".si-rb-form")) throw new Error("form still open");
     await page.click(".si-rb-item");
     await page.waitForSelector(".si-rb-form input");

@@ -129,3 +129,24 @@ func TestIndexTitle(t *testing.T) {
 		t.Errorf("--site title not used on the play index")
 	}
 }
+
+func TestIndexMdIsTheHomePage(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "index.md"), []byte("---\ntype: article\n---\n# Our home\n\nHello.\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "talk.md"), []byte("# Talk\n"), 0o644)
+	s, err := New(dir, nil, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(s.Handler())
+	defer srv.Close()
+	resp, err := http.Get(srv.URL + "/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if !strings.Contains(string(b), "Our home") || resp.Request.URL.Path != "/index.html" {
+		t.Errorf("/ should open index.md, got %s %.200s", resp.Request.URL.Path, b)
+	}
+}

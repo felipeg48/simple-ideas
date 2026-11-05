@@ -1,12 +1,15 @@
 // Typed client for the Studio backend (/_si/studio/api/), same origin, cookie auth.
 
-export type Kind = "dir" | "deck" | "lab" | "markdown" | "svg" | "css" | "json" | "image" | "other";
-export interface Node { name: string; path: string; kind: Kind; children?: Node[] }
+export type Kind = "dir" | "deck" | "lab" | "article" | "guide" | "book" | "demo" | "site" | "page" | "nav"
+  | "markdown" | "svg" | "css" | "json" | "image" | "other";
+/** guide marks a folder that holds a guide, book or site. */
+export interface Node { name: string; path: string; kind: Kind; guide?: "guide" | "book" | "site"; children?: Node[] }
 export interface FileData { path: string; content: string; etag: string }
-export interface DeckInfo { path: string; title: string; files: string[]; runbook?: string }
+/** A deck, document page, or a guide / book / site (its _nav.md or _site.md); url is its live page. */
+export interface DeckInfo { path: string; title: string; files: string[]; runbook?: string; kind: Kind; url: string; guide?: string }
 export interface Problem { file: string; line: number; msg: string }
 export interface Slide { index: number; file: string; line: number; title: string; topic: number; minutes: number }
-export interface Check { problems: Problem[]; slides: Slide[]; minutes: number; steps: number; canvases: number }
+export interface Check { problems: Problem[]; slides: Slide[]; minutes: number; steps: number; canvases: number; kind?: Kind }
 export interface Rules { directives: Record<string, string>; layouts: string[]; transitions: string[]; metaKeys: string[] }
 
 /** ApiError carries the HTTP status and the decoded JSON body (if any). */
@@ -47,4 +50,21 @@ export const api = {
 };
 
 /** deckURL is the live-rendered page of a deck: "talks/a.md" → "/talks/a.html". */
-export const deckURL = (deck: string) => "/" + deck.replace(/\.md$/i, "") + ".html";
+export const deckURL = (deck: string) => "/" + deck.replace(/\.(md|adoc)$/i, "") + ".html";
+
+/** pageURL is the live page of a deck or document (a guide's nav file opens its first page). */
+export const pageURL = (d: DeckInfo) => d.url || deckURL(d.path);
+
+/** isSlides: the kind is shown as slides (the preview follows the cursor's slide). */
+export const isSlides = (k?: Kind | null) => k === "deck";
+
+/** isMarkdownKind: an si source file (deck, any document, a nav file) or plain Markdown. */
+export const isMarkdownKind = (k: Kind) =>
+  ["deck", "lab", "article", "guide", "book", "demo", "site", "page", "nav", "markdown"].includes(k);
+
+/** kindLabel names a kind for people. */
+export const kindLabel: Record<string, string> = {
+  deck: "Slides", lab: "Lab", article: "Article", guide: "Guide page", book: "Book page", demo: "Demo script",
+  site: "Site", page: "Site page", nav: "Navigation", markdown: "Markdown", svg: "SVG", css: "CSS", json: "JSON",
+  image: "Image", other: "Text",
+};

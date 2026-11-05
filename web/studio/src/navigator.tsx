@@ -9,6 +9,13 @@ const paths: Record<string, JSX.Element> = {
   dir: <path d="M2.5 4.5a1 1 0 0 1 1-1h3l1.5 1.5h4.5a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1z" />,
   deck: <><rect x="2.5" y="3.5" width="11" height="7.5" rx="1.2" /><path d="M8 11v2.5M5.5 13.5h5" /></>,
   lab: <><path d="M4 2.5h5l3 3v8H4z" /><path d="M6 8h4M6 10h4M6 12h2" /></>,
+  article: <><path d="M3.5 2.5h9v11h-9z" /><path d="M5.5 5h5M5.5 7.5h5M5.5 10h3" /></>,
+  guide: <><path d="M2.5 3.5h4a1.5 1.5 0 0 1 1.5 1.5v8.5a1.5 1.5 0 0 0-1.5-1.5h-4zM13.5 3.5h-4A1.5 1.5 0 0 0 8 5v8.5a1.5 1.5 0 0 1 1.5-1.5h4z" /></>,
+  book: <><path d="M4 2.5h8v11H4.8a.8.8 0 0 1-.8-.8z" /><path d="M4 11.5h8M6.5 2.5v5l1.25-1 1.25 1v-5" /></>,
+  demo: <><rect x="2" y="3" width="12" height="10" rx="1.5" /><path d="m6.5 6 3 2-3 2z" /></>,
+  site: <><circle cx="8" cy="8" r="5.5" /><path d="M2.5 8h11M8 2.5c1.6 1.6 2.3 3.5 2.3 5.5S9.6 11.9 8 13.5M8 2.5C6.4 4.1 5.7 6 5.7 8s.7 3.9 2.3 5.5" /></>,
+  page: <><rect x="2.5" y="3" width="11" height="10" rx="1.2" /><path d="M2.5 5.5h11M5 8h6M5 10.5h4" /></>,
+  nav: <><path d="M3 4h10M3 8h10M3 12h6" /><circle cx="12" cy="12" r="1" /></>,
   markdown: <><path d="M4 2.5h5l3 3v8H4z" /><path d="M6 8.5h4M6 10.5h3" /></>,
   svg: <><path d="M3 12.5 7 5l2.5 4.5L11 7l2 5.5z" /><circle cx="11" cy="4" r="1.2" /></>,
   css: <><path d="M5.5 3.5c-1.5 0-1.5 1-1.5 2s-1 2-1.5 2.5c.5.5 1.5 1 1.5 2.5s0 2 1.5 2M10.5 3.5c1.5 0 1.5 1 1.5 2s1 2 1.5 2.5c-.5.5-1.5 1-1.5 2.5s0 2-1.5 2" /></>,
@@ -190,7 +197,7 @@ export function Navigator(p: Props) {
 
   const row = (n: Node, depth: number): JSX.Element => {
     const isDir = n.kind === "dir", on = n.path === p.active, expanded = open.has(n.path);
-    const title = n.kind === "deck" || n.kind === "lab" ? titles.get(n.path) : undefined;
+    const title = n.kind !== "dir" && n.kind !== "markdown" ? titles.get(n.path) : undefined;
     return (
       <li key={n.path} role="treeitem" aria-expanded={isDir ? expanded : undefined} aria-selected={on}>
         <div class={"row" + (on ? " on" : "")} style={{ "--depth": depth }} onContextMenu={(e) => openMenu(e, n)}>
@@ -201,8 +208,9 @@ export function Navigator(p: Props) {
               if (isDir && e.key === "ArrowLeft" && expanded) toggle(n.path);
             }}>
             {isDir ? <Icon name="chevron" class={"chev" + (expanded ? " open" : "")} /> : <span class="chev" />}
-            <Icon name={n.kind} class={"k-" + n.kind} />
+            <Icon name={n.guide || n.kind} class={"k-" + (n.guide || n.kind)} />
             <span class="name">{n.name}</span>
+            {n.guide && <span class="badge">{n.guide}</span>}
             {title && <span class="sub">{title}</span>}
             {p.dirty.has(n.path) && <span class="dot" aria-label="unsaved" />}
           </button>

@@ -89,12 +89,12 @@ func (s *Server) Handler() http.Handler {
 		switch {
 		case p == "/" && s.file != "":
 			http.Redirect(w, r, "/"+strings.TrimSuffix(filepath.Base(s.file), ".md")+".html", http.StatusFound)
-		case p == "/" || p == "/index.html":
-			if s.source("/index") == "" {
-				if g, err := deck.LoadGuide(s.dir); err == nil && len(g.Pages) > 0 {
-					http.Redirect(w, r, "/"+guideHome(g), http.StatusFound) // serving a guide folder: open its first page
-					return
-				}
+		case p == "/" && s.source("/index") != "":
+			http.Redirect(w, r, "/index.html", http.StatusFound) // a site's (or folder's) own index.md is the home page
+		case p == "/" || (p == "/index.html" && s.source("/index") == ""):
+			if g, err := deck.LoadGuide(s.dir); err == nil && len(g.Pages) > 0 {
+				http.Redirect(w, r, "/"+guideHome(g), http.StatusFound) // serving a guide folder: open its first page
+				return
 			}
 			s.index(w)
 		case s.file == "" && p != "/" && deck.IsGuideDir(filepath.Join(s.dir, filepath.FromSlash(p))):

@@ -1,7 +1,7 @@
 // The live preview: the real deck page in an iframe (it hot-reloads itself),
 // rendered at a real device size and scaled to fit; it follows the cursor's slide.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
-import { type DeckInfo, deckURL } from "./api";
+import { type DeckInfo, isSlides, kindLabel, pageURL } from "./api";
 import { Icon } from "./navigator";
 import { resolvedTheme } from "./theme";
 
@@ -20,7 +20,7 @@ export function Preview(p: { deck: DeckInfo | null; slide: number | null; total:
   const [preset, setPreset] = useState(() => { try { return localStorage.getItem(KEY) || "16:9"; } catch { return "16:9"; } });
   const [box, setBox] = useState({ w: 0, h: 0 });
   const [loaded, setLoaded] = useState(false);
-  const src = p.deck ? deckURL(p.deck.path) : "";
+  const src = p.deck ? pageURL(p.deck) : "";
   // the hash is only the starting slide: later moves go through location.hash, never a reload
   const first = useMemo(() => src + (p.slide ? "#" + p.slide : ""), [src]);
 
@@ -60,10 +60,10 @@ export function Preview(p: { deck: DeckInfo | null; slide: number | null; total:
           ))}
         </div>
         <span class="ptool-info">
-          {p.deck ? <>{p.slide ? <>Slide <b>{p.slide}</b> / {p.total}</> : p.deck.title}{pr.w ? <span class="zoom"> · {Math.round(scale * 100)}%</span> : null}</> : null}
+          {p.deck ? <>{p.slide ? <>Slide <b>{p.slide}</b> / {p.total}</> : <>{p.deck.title}{!isSlides(p.deck.kind) && <span class="zoom"> · {kindLabel[p.deck.kind]}</span>}</>}{pr.w ? <span class="zoom"> · {Math.round(scale * 100)}%</span> : null}</> : null}
         </span>
         {p.deck && (
-          <a class="icon-btn" href={src + (p.slide ? "#" + p.slide : "")} target="_blank" rel="noopener" aria-label="Open deck in a new tab" title="Open deck in a new tab">
+          <a class="icon-btn" href={src + (p.slide ? "#" + p.slide : "")} target="_blank" rel="noopener" aria-label="Open in a new tab" title="Open in a new tab">
             <Icon name="external" />
           </a>
         )}
@@ -78,7 +78,7 @@ export function Preview(p: { deck: DeckInfo | null; slide: number | null; total:
         ) : (
           <div class="prev-empty">
             <Icon name="deck" />
-            <p>Open a deck, or a file it includes, to see it rendered live here.</p>
+            <p>Open a deck, a document, or a file one includes, to see it rendered live here.</p>
           </div>
         )}
       </div>

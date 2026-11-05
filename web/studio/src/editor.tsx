@@ -14,7 +14,7 @@ import { type Diagnostic, lintGutter, lintKeymap, linter, setDiagnostics } from 
 import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
 import { tags as t } from "@lezer/highlight";
-import { ApiError, api, type Kind, type Problem, type Rules } from "./api";
+import { ApiError, api, isMarkdownKind, type Kind, type Problem, type Rules } from "./api";
 import { createAutosave } from "./autosave";
 import { clear, restore, scoped, stash } from "./buffers";
 import { eolOf, toLF, withEol } from "./eol";
@@ -123,7 +123,7 @@ const theme = EditorView.theme({
 });
 
 function extensions(kind: Kind, rules: Rules | null, onUpdate: Extension): Extension {
-  const md = kind === "deck" || kind === "lab" || kind === "markdown";
+  const md = isMarkdownKind(kind);
   return [
     lineNumbers(), highlightActiveLineGutter(), highlightSpecialChars(), history(), drawSelection(), dropCursor(),
     EditorState.allowMultipleSelections.of(true), indentOnInput(), bracketMatching(), closeBrackets(),

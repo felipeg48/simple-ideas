@@ -187,6 +187,10 @@ code, kbd { font-family: var(--mono); font-size: .92em; }
 .k-dir { color: var(--blue); }
 .k-deck { color: var(--accent); }
 .k-lab { color: var(--green); }
+.k-article, .k-page { color: var(--accent); }
+.k-guide, .k-book, .k-site { color: var(--green); }
+.k-demo { color: var(--amber, var(--accent)); }
+.k-nav { color: var(--mute); }
 .k-markdown { color: var(--ink-2); }
 .k-svg { color: var(--green); }
 .k-css { color: var(--violet); }

@@ -83,6 +83,7 @@ type Node struct {
 	Name     string `json:"name"`
 	Path     string `json:"path"`
 	Kind     string `json:"kind"`
+	Guide    string `json:"guide,omitempty"` // a folder holding a guide, book or site: which one
 	Children []Node `json:"children,omitempty"`
 }
 
@@ -91,9 +92,12 @@ var skipDirs = map[string]bool{"node_modules": true, "html": true}
 // Tree lists the workspace: dirs first, then files, each alphabetical.
 func (w *Workspace) Tree() (Node, error) {
 	root := Node{Name: filepath.Base(w.Root), Path: "", Kind: "dir"}
+	if g, err := deck.LoadGuide(w.Root); err == nil {
+		root.Guide = guideKind(g)
+	}
 	inc := map[string]bool{}
 	w.collectIncluded(w.Root, inc)
-	kids, err := w.walk(w.Root, inc)
+	kids, err := w.walk(w.Root, inc, guides{})
 	root.Children = kids
 	return root, err
 }
@@ -121,7 +125,7 @@ func (w *Workspace) collectIncluded(dir string, inc map[string]bool) {
 	}
 }
 
-func (w *Workspace) walk(dir string, inc map[string]bool) ([]Node, error) {
+func (w *Workspace) walk(dir string, inc map[string]bool, gs guides) ([]Node, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -143,7 +147,12 @@ func (w *Workspace) walk(dir string, inc map[string]bool) ([]Node, error) {
 				continue
 			}
 			node.Kind = "dir"
-			if node.Children, err = w.walk(filepath.Join(dir, n), inc); err != nil {
+			if sub := filepath.Join(dir, n); deck.IsGuideDir(sub) {
+				if g, err := deck.LoadGuide(sub); err == nil {
+					node.Guide = guideKind(g)
+				}
+			}
+			if node.Children, err = w.walk(filepath.Join(dir, n), inc, gs); err != nil {
 				return nil, err
 			}
 			dirs = append(dirs, node)
@@ -151,9 +160,11 @@ func (w *Workspace) walk(dir string, inc map[string]bool) ([]Node, error) {
 		}
 		node.Kind = fileKind(n, decks[n])
 		if node.Kind == "deck" {
-			if d, err := deck.Parse(filepath.Join(dir, n)); err == nil && d.IsLab() {
-				node.Kind = "lab"
+			if d, g, err := gs.parsePage(filepath.Join(dir, n), w.Root); err == nil {
+				node.Kind = pageKind(d, g)
 			}
+		} else if isNavFile(n) {
+			node.Kind = "nav"
 		}
 		files = append(files, node)
 	}

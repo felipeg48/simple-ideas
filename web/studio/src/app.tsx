@@ -2,7 +2,7 @@
 // live preview, problems panel and status bar.
 import type { JSX } from "preact";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { ApiError, api, type Check, type DeckInfo, type Kind, type Node, type Problem, type Rules, deckURL } from "./api";
+import { ApiError, api, type Check, type DeckInfo, type Kind, type Node, type Problem, type Rules, isSlides, kindLabel, pageURL } from "./api";
 import { clear, scoped } from "./buffers";
 import { type DocStatus, Editor, type EditorCtl, setRbView, unsaved } from "./editor";
 import { Dialog, Icon, type IconName, Navigator } from "./navigator";
@@ -178,7 +178,8 @@ export function App() {
 
   const deck = decks.find((d) => d.path === deckPath) || null;
   const check = deckPath && isCheck(checks[deckPath]) ? (checks[deckPath] as Check) : null;
-  const slide = check && active && cursor ? slideForCursor(check.slides, active, cursor.line) : null;
+  // documents have parts, not slides: only a deck follows the cursor slide by slide
+  const slide = check && active && cursor && isSlides(deck?.kind) ? slideForCursor(check.slides, active, cursor.line) : null;
   const { problems, errors } = useMemo(() => {
     const seen = new Set<string>(), problems: Problem[] = [], errors: string[] = [];
     for (const [d, c] of Object.entries(checks)) {
@@ -295,9 +296,9 @@ export function App() {
             <Icon name={theme === "system" ? "system" : theme === "light" ? "sun" : "moon"} />
           </button>
           <a class={"btn btn-pri" + (deck ? "" : " disabled")} aria-disabled={!deck}
-            href={deck ? deckURL(deck.path) + (slide ? "#" + slide : "") : undefined} target="_blank" rel="noopener"
-            title={deck ? `Play ${deck.title} in a new tab` : "No deck to play"}>
-            <Icon name="play" />Play
+            href={deck ? pageURL(deck) + (slide ? "#" + slide : "") : undefined} target="_blank" rel="noopener"
+            title={deck ? (isSlides(deck.kind) ? `Play ${deck.title} in a new tab` : `Open ${deck.title} in a new tab`) : "Nothing to play"}>
+            <Icon name="play" />{deck && !isSlides(deck.kind) ? "Open" : "Play"}
           </a>
         </div>
       </header>
@@ -366,12 +367,13 @@ function Welcome(p: { decks: DeckInfo[]; name?: string; onOpen(path: string): vo
       <div class="welcome-card">
         <span class="logo big" aria-hidden="true">si</span>
         <h1>{p.name ?? "si Studio"}</h1>
-        <p class="mute">{p.decks.length ? "Pick a deck to write." : "No decks yet. Create a Markdown file in the navigator."}</p>
+        <p class="mute">{p.decks.length ? "Pick something to write." : "Nothing here yet. Create a Markdown file in the navigator."}</p>
         {p.decks.length > 0 && (
           <ul class="deck-list">
             {p.decks.map((d) => (
               <li><button onClick={() => p.onOpen(d.path)}>
-                <Icon name="deck" class="k-deck" /><span class="t">{d.title || baseName(d.path)}</span><span class="p">{d.path}</span>
+                <Icon name={d.kind || "deck"} class={"k-" + (d.kind || "deck")} /><span class="t">{d.title || baseName(d.path)}</span>
+                <span class="p">{kindLabel[d.kind] || "Slides"} · {d.path}</span>
                 {d.files.length > 1 && <span class="n">{d.files.length} files</span>}
               </button></li>
             ))}

@@ -15,6 +15,11 @@ type deckInfo struct {
 	Files []string `json:"files"`
 	// Runbook is the deck's `runbook:` front-matter value, as written.
 	Runbook string `json:"runbook,omitempty"`
+	// Kind is deck, lab, article, demo, page, or guide / book / site (a page of
+	// one, or its _nav.md / _site.md); Guide is that folder's nav file.
+	Kind  string `json:"kind"`
+	URL   string `json:"url"`
+	Guide string `json:"guide,omitempty"`
 }
 
 // sourceFiles lists the deck's own file first, then each included file in
@@ -46,7 +51,7 @@ func (a *api) rel(p string) string {
 func (a *api) decks(w http.ResponseWriter, r *http.Request) {
 	inc := map[string]bool{}
 	a.ws.collectIncluded(a.ws.Root, inc)
-	out := []deckInfo{}
+	out, gs := []deckInfo{}, guides{}
 	var walk func(dir string)
 	walk = func(dir string) {
 		list, _ := deck.List(dir)
@@ -54,8 +59,23 @@ func (a *api) decks(w http.ResponseWriter, r *http.Request) {
 			if inc[filepath.Clean(f)] {
 				continue // included modules are not decks
 			}
-			if d, err := deck.Parse(f); err == nil {
-				out = append(out, deckInfo{a.rel(d.Path), d.Title(), a.sourceFiles(d), d.Meta.Runbook})
+			if d, g, err := gs.parsePage(f, a.ws.Root); err == nil {
+				info := deckInfo{Path: a.rel(d.Path), Title: d.Title(), Files: a.sourceFiles(d), Runbook: d.Meta.Runbook, Kind: pageKind(d, g)}
+				info.URL = pageURL(info.Path)
+				if g != nil {
+					info.Guide = a.rel(navPath(g))
+				}
+				out = append(out, info)
+			}
+		}
+		if deck.IsGuideDir(dir) { // the guide, book or site itself: its nav file previews its first page
+			if g, err := deck.LoadGuide(dir); err == nil && len(g.Pages) > 0 {
+				nav := a.rel(navPath(g))
+				home := g.Pages[0]
+				if idx := filepath.Join(dir, "index.md"); g.Item(idx) != nil {
+					home = idx
+				}
+				out = append(out, deckInfo{Path: nav, Title: g.Meta.Title, Files: []string{nav}, Kind: guideKind(g), URL: pageURL(a.rel(home)), Guide: nav})
 			}
 		}
 		entries, _ := os.ReadDir(dir)
