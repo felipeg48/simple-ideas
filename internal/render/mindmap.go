@@ -55,7 +55,7 @@ type mmMap struct {
 
 // mmOpts are the look of a map: front matter of a mind map page, or the
 // options of a ```mindmap fence.
-type mmOpts struct{ Layout, Lines, Nodes, Theme, WM, WMPos, View, Camera, Floors string }
+type mmOpts struct{ Layout, Lines, Nodes, Theme, WM, WMPos, View, Camera, Floors, Kind string }
 
 type mmParser struct {
 	dr    *deckRenderer
@@ -361,6 +361,9 @@ func (p *mmParser) component(o mmOpts, start string, full bool) string {
 	if o.Camera != "" {
 		fmt.Fprintf(&b, ` data-camera="%s"`, html.EscapeString(o.Camera))
 	}
+	if o.Kind != "" {
+		fmt.Fprintf(&b, ` data-kind="%s"`, html.EscapeString(o.Kind))
+	}
 	if o.Floors != "" {
 		fmt.Fprintf(&b, ` data-floors="%s"`, html.EscapeString(o.Floors))
 	}
@@ -405,12 +408,12 @@ func listHTML(b *strings.Builder, list []*mmNode) {
 // mindmapFence renders a ```mindmap fence: options are layout=, lines=,
 // nodes=, theme= on the fence line.
 func (dr *deckRenderer) mindmapFence(body string, attrs map[string]string, dir string) string {
-	o := mmOpts{Layout: attrs["layout"], Lines: attrs["lines"], Nodes: attrs["nodes"], Theme: attrs["theme"], View: attrs["view"], Camera: attrs["camera"], Floors: attrs["floors"]}
+	o := mmOpts{Layout: attrs["layout"], Lines: attrs["lines"], Nodes: attrs["nodes"], Theme: attrs["theme"], View: attrs["view"], Camera: attrs["camera"], Floors: attrs["floors"], Kind: attrs["kind"]}
 	for k, v := range attrs {
 		allowed := map[string][]string{"layout": deck.MapLayouts, "lines": deck.MapLines, "nodes": deck.MapNodes, "theme": deck.MapThemes,
-			"view": deck.MapViews, "camera": deck.MapCameras, "floors": deck.OnOff}[k]
+			"view": deck.MapViews, "camera": deck.MapCameras, "floors": deck.OnOff, "kind": deck.MapKinds}[k]
 		if allowed == nil {
-			dr.problem(dr.cur, "mindmap: unknown fence option %q (use layout=, lines=, nodes=, theme=, view=, camera=, floors=)", k)
+			dr.problem(dr.cur, "mindmap: unknown fence option %q (use layout=, lines=, nodes=, theme=, view=, camera=, floors=, kind=)", k)
 		} else if msg := oneOfMsg("mindmap "+k, v, allowed); msg != "" {
 			dr.problem(dr.cur, "%s", msg)
 		}
@@ -464,7 +467,7 @@ func Mindmap(d *deck.Deck, opt Options) Result {
 		wm, wmLayer = dr.wmText, ""
 	}
 	comp := p.component(mmOpts{Layout: m.MapLayout, Lines: m.MapLines, Nodes: m.MapNodes, Theme: m.MapTheme, WM: wm, WMPos: m.WatermarkPos,
-		View: m.MapView, Camera: m.MapCamera, Floors: m.MapFloors}, start, true)
+		View: m.MapView, Camera: m.MapCamera, Floors: m.MapFloors, Kind: m.MapKind}, start, true)
 	dr.mindmap3d = m.MapView == "3d"
 	res := Result{}
 	dr.finish(&res)

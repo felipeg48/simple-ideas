@@ -8,7 +8,17 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 - **Idea being refined (not started; likely a separate project, not part of si):**
   the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
-- **Latest release: v1.13.0: 3D mind maps.** `deck`: keys `view` (2d|3d),
+- **Latest release: v1.14.0: 3D kinds.** `kind: blocks|bricks|toy` (front matter,
+  fence `kind=`; `deck.MapKinds`, `mmOpts.Kind` -> `data-kind`). `mindmap3d.js`:
+  `snap` (stud pitch 0.4), `P.brick` (studs share the body material so Play dims
+  them), `studPath` (instanced round tiles, `inst` grow anim), `baseplate`; toy:
+  `toon` (3-tone gradient), `outlined` (back-face hull, kept in
+  `mesh.userData.outline`, dimmed by Play), `toySize` (drum / hex / pill / note),
+  `P.scenery` (island, trees off topics, clouds on the far side, sky) in
+  `this.deco`, left out of Fit; `P.setKind`; mindmap.js Kind button cycles.
+  Examples: `examples/mindmap/payments.md` (`view: 3d`, `kind: toy`), a
+  `kind=bricks` fence in `examples/article/retry.md`.
+- **v1.13.0: 3D mind maps.** `deck`: keys `view` (2d|3d),
   `camera` (iso|perspective), `floors` (on|off), warned outside mind maps; the
   fence takes `view= camera= floors=`. `render/mindmap.go`: `data-view="3d"`,
   `data-camera`, `data-floors` only when set (2D markup unchanged);

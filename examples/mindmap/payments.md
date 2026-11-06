@@ -1,6 +1,8 @@
 ---
 type: mindmap
 title: Payment
+view: 3d
+kind: toy
 ---
 # Payment
 

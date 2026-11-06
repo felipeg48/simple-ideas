@@ -213,7 +213,9 @@ pass. The steps that matter:
   **3D** (v1.13.0 DONE): `view: 3d` / `view=3d`, `camera: iso|perspective`,
   `floors: on|off`; pills on a shadow floor, cables with flow dots, linked maps
   as glass floors, fly-in drill-down, cards, `/` search, Play, 2D/3D and camera
-  toggles; mockup `docs/superpowers/specs/2026-11-06-mind-maps-3d.html`. Next: a
+  toggles; mockup `docs/superpowers/specs/2026-11-06-mind-maps-3d.html`.
+  **Kinds** (v1.14.0 DONE): `kind: blocks|bricks|toy` / `kind=`, a Kind button
+  in the 3D tools (never call bricks by a toy brand name). Next: a
   phone layout for 3D (portrait maps are small), the visual builder in 3D,
   exports of the 3D view.
 - **Publishing (`si publish`, planned):** Medium is out (no new API tokens).

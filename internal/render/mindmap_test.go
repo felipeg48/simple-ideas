@@ -155,8 +155,16 @@ func TestMindmap3D(t *testing.T) {
 	if h := string(res.HTML); !strings.Contains(h, three) || !strings.Contains(h, `data-view="3d"`) {
 		t.Error("a view: 3d page must inline three.js")
 	}
-	res, _ = renderFiles(t, map[string]string{"d.md": "# Deck\n\n---\n\n## Map\n\n```mindmap view=4d camera=fisheye\n- a\n```\n"}, "d.md")
-	if got := problemsText(res); !strings.Contains(got, `unknown mindmap view "4d"`) || !strings.Contains(got, `unknown mindmap camera "fisheye"`) {
+	res, _ = renderFiles(t, map[string]string{"m.md": "---\ntype: mindmap\nview: 3d\nkind: toy\n---\n# M\n\n- a\n"}, "m.md")
+	if h := string(res.HTML); !strings.Contains(h, `data-kind="toy"`) {
+		t.Error("kind: toy must reach the map")
+	}
+	res, _ = renderFiles(t, map[string]string{"d.md": "# Deck\n\n---\n\n## Map\n\n```mindmap view=3d kind=bricks\n- a\n```\n"}, "d.md")
+	if h := string(res.HTML); len(res.Problems) > 0 || !strings.Contains(h, `data-kind="bricks"`) {
+		t.Errorf("kind=bricks fence: %s", problemsText(res))
+	}
+	res, _ = renderFiles(t, map[string]string{"d.md": "# Deck\n\n---\n\n## Map\n\n```mindmap view=4d camera=fisheye kind=clay\n- a\n```\n"}, "d.md")
+	if got := problemsText(res); !strings.Contains(got, `unknown mindmap view "4d"`) || !strings.Contains(got, `unknown mindmap camera "fisheye"`) || !strings.Contains(got, `unknown mindmap kind "clay"`) {
 		t.Errorf("3D fence options: %s", got)
 	}
 }

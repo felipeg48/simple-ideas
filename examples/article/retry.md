@@ -58,6 +58,18 @@ The fix is a single retry, thirty seconds after a timeout, using the order id
 as the idempotency key. If the first call did go through, the bank sees the
 same key and returns the first result instead of charging the card twice.
 
+Three pieces make the retry safe, and none of them works without the others.
+
+```mindmap view=3d kind=bricks
+# One safe retry
+- Wait thirty seconds {badge=30_s}
+  - The bank finishes its refresh
+- Same idempotency key
+  - The order id, never a new one
+- One try only
+  - A second timeout goes to a person
+```
+
 <!-- tabs -->
 ```java title="Java" hl="3-6"
 var key = order.id();                                  // <1>

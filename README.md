@@ -66,6 +66,9 @@ self-contained HTML files you can mail, host or open from a USB stick.
   topic links to as glass floors above it; fly in with a double-click, search
   with `/`, Play branch by branch, switch 2D/3D on the page. three.js is inlined
   only into pages with a 3D map.
+- **3D kinds (v1.14):** `kind: bricks` builds the map from studded bricks on a
+  baseplate with printed labels; `kind: toy` makes it a cartoon island (outlined
+  candy shapes, roads, trees, clouds). A button cycles Blocks, Bricks and Toy.
 - **In the terminal (v1.7):** `si play talk.md --terminal` presents a deck in
   the terminal itself, in the theme's colours, with block-letter titles, builds,
   code, tables, cards and pictures in half-block pixels; `--notes` in a second

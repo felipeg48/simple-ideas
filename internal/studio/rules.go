@@ -67,6 +67,7 @@ var help = map[string]string{
 	"watermark-position": "a mind map watermark: corner or across",
 	"view":               "a mind map in 2d or 3d (viewers can switch)",
 	"camera":             "the 3D camera: iso or perspective",
+	"kind":               "the 3D look: blocks (pills), bricks (studded bricks on a baseplate) or toy (cartoon shapes on an island)",
 	"floors":             "3D: linked maps hover above their topic (on) or not (off)",
 }
 
@@ -88,6 +89,7 @@ var values = map[string][]string{
 	"watermark-position": deck.WatermarkPos,
 	"view":               deck.MapViews,
 	"camera":             deck.MapCameras,
+	"kind":               deck.MapKinds,
 	"floors":             deck.OnOff,
 }
 

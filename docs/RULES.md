@@ -1757,9 +1757,10 @@ window.
 | `view` | `2d`, `3d` (topics as pills on a floor; see *In 3D*) | `2d` |
 | `camera` | `iso` (isometric), `perspective` (3D only) | `iso` |
 | `floors` | `on` (linked maps hover above their topic), `off` (3D only) | `on` |
+| `kind` | `blocks` (pills), `bricks` (studded bricks on a baseplate), `toy` (cartoon shapes on an island); 3D only, see *Kinds* | `blocks` |
 
 `title`, `description`, `theme`, `mode`, `accent`, `fonts`, `lang` work as on
-any page. `layout`, `lines`, `nodes`, `map-theme`, `view`, `camera` and
+any page. `layout`, `lines`, `nodes`, `map-theme`, `view`, `camera`, `kind` and
 `floors` in any other file draw a warning: a fence takes them as options
 instead.
 
@@ -1895,6 +1896,39 @@ theme, dark mode and the map themes all apply.
 With `floors: on`, each map a topic links to (`→ payments.md`, `→ #refunds`)
 hovers as a glass floor above that topic, joined by a dashed beam, so a map and
 the maps it opens read as one building.
+
+#### Kinds
+
+```markdown
+---
+type: mindmap
+title: Payment
+view: 3d
+kind: toy
+---
+```
+
+````markdown
+```mindmap view=3d kind=bricks
+# One safe retry
+- Wait thirty seconds {badge=30_s}
+- Same idempotency key
+- One try only
+```
+````
+
+| `kind` | Topics | Lines | Ground | Linked maps |
+|---|---|---|---|---|
+| `blocks` (default) | matte rounded pills, text on top | cables | a soft shadow | glass floors |
+| `bricks` | studded plastic bricks snapped to a stud grid; the text is printed on the front face; sticky notes and code are smooth printed tiles | rows of round tiles | a studded baseplate | small studded plates |
+| `toy` | cartoon shapes with ink outlines and three-tone shading: a round drum for the central topic, a hexagon for a topic that opens another map, pills for the rest, flat cards for notes and code | light roads | a floating grass island with trees on its rim (never on a topic) and clouds | small floating islands |
+
+The **kind** button in the 3D tools cycles Blocks → Bricks → Toy; the Markdown
+only sets the start. `bricks` and `blocks` take their colours from the
+`--si-mm-*` tokens; `toy` keeps its own candy palette and turns to a night
+scene on a dark page or a dark map theme. Search, Play (the dimmed branches
+include studs and outlines), drill-down, the cards and the flow dots work the
+same in every kind.
 
 The 3D view uses three.js (r128, MIT), inlined into the page like everything
 else (no network): about 620 KB, only on pages that have a map starting in 3D.

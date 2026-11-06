@@ -147,6 +147,7 @@ A nested list becomes a map you can fold, move and drill into:
 - `nodes:` box, pill, underline · `map-theme:` auto, harbor, blueprint, ink, garden
 - On a page: `/` searches every map, Play walks the branches; full guide: RULES.md §24
 - `view: 3d` · `camera:` iso, perspective · `floors:` on, off: pills on a floor, linked maps hover above
+- `kind:` blocks, bricks, toy: pills, studded bricks on a baseplate, or a cartoon island
 
 ---
 

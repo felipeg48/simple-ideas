@@ -33,7 +33,7 @@
 .si-mm-3d{position:absolute;inset:0}
 .si-mm-3d[hidden],.si-mm-card[hidden],.si-mm-msg[hidden]{display:none}
 .si-mm-3d canvas{display:block;inline-size:100%;block-size:100%;touch-action:none;cursor:grab}
-.si-mindmap.si-mm-is3d .si-mm-svg,.si-mindmap.si-mm-is3d [data-a="tidy"],.si-mindmap:not(.si-mm-is3d) [data-a="cam"]{display:none}
+.si-mindmap.si-mm-is3d .si-mm-svg,.si-mindmap.si-mm-is3d [data-a="tidy"],.si-mindmap:not(.si-mm-is3d) [data-a="cam"],.si-mindmap:not(.si-mm-is3d) [data-a="kind"]{display:none}
 .si-mm-card{position:absolute;inset-inline-start:.75em;inset-block-end:.75em;inline-size:min(21em,calc(100% - 1.5em));z-index:3;box-sizing:border-box;border-radius:.9em;padding:.9em 2.4em .8em .9em;display:grid;gap:.4em;font-size:.9em}
 .si-mm-card strong{font-size:1.25em;line-height:1.2}
 .si-mm-card div{display:flex;flex-wrap:wrap;gap:.4em;margin-block-start:.2em}
