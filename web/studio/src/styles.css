@@ -636,3 +636,23 @@ button.link { color: var(--blue); text-decoration: underline; text-underline-off
   .mode-panes { grid-template-columns: 1fr; }
   .foot .foot-stats { display: none; }
 }
+
+/* ---------- map editor (mind map pages and fences) ---------- */
+.mapx { display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, 300px); min-height: 0; flex: 1; }
+.mapx-canvas { position: relative; min-height: 0; min-width: 0; }
+.mapx-canvas iframe { width: 100%; height: 100%; border: 0; display: block; background: var(--bg); }
+.mapx-err { position: absolute; left: 10px; right: 10px; bottom: 10px; }
+.mapx-side { border-left: 1px solid var(--line); overflow: auto; min-height: 0; }
+.mapx-side .insp { max-height: none; border-top: 0; border-bottom: 1px solid var(--line); }
+.mapx-hint { margin: 0; color: var(--mute); line-height: 1.5; }
+.mapx-hint kbd { font: 600 11px var(--mono, ui-monospace, monospace); padding: 1px 5px; border: 1px solid var(--line-2); border-radius: 4px; }
+.mapx-checks { display: flex; gap: 14px; flex-wrap: wrap; }
+.mapx-checks label { display: inline-flex; gap: 5px; align-items: center; color: var(--ink); }
+.mapx-code { font-family: var(--mono, ui-monospace, monospace); font-size: 12px; resize: vertical; }
+.mapx-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.mapx-maps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.mapx-maps .btn.on { border-color: var(--accent); color: var(--accent); }
+.mapx-problems { margin: 10px 0 0; padding-left: 18px; color: var(--red); }
+.ed-host:has(.mapx) { container-type: inline-size; }
+/* a narrow editor pane: the panels go under the canvas, which keeps the full width */
+@container (max-width: 760px) { .mapx { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 3fr) minmax(0, 2fr); } .mapx-side { border-left: 0; border-top: 1px solid var(--line); } }

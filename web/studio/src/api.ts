@@ -13,7 +13,7 @@ export interface Slide {
   layout?: string; transition?: string; background?: string; class?: string; eyebrow?: string;
   words?: number; clicks?: number; steps?: number;
 }
-export interface Check { problems: Problem[]; slides: Slide[]; minutes: number; steps: number; canvases: number; kind?: Kind }
+export interface Check { problems: Problem[]; slides: Slide[]; minutes: number; steps: number; canvases: number; kind?: Kind; maps?: number; topics?: number }
 export interface Rules {
   directives: Record<string, string>; layouts: string[]; transitions: string[]; metaKeys: string[];
   /** one-line help per directive and front-matter key */
@@ -61,6 +61,8 @@ export const api = {
   rules: () => call<Rules>("GET", "rules"),
   checkAll: () => call<{ problems: Problem[]; checked: number }>("GET", "checkall"),
   build: (pdf: boolean) => call<{ code: number; output: string; url: string }>("POST", "build", { pdf }),
+  /** mindmap redraws a mind map from text (a page, or the ```mindmap fence holding line), applying op first if given. */
+  mindmap: (path: string, text: string, line: number, op: unknown) => call<any>("POST", "mindmap", { path, text, line, op }),
   starter: (kind: Kind, path: string, title: string) =>
     call<{ created: string[]; open: string }>("POST", "starter", { kind, path, title }),
 };

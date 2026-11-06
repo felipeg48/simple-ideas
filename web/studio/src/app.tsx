@@ -129,6 +129,10 @@ export function App() {
 
   const nodes = useMemo(() => flatten(tree), [tree]);
   const kindOf = (p: string): Kind => nodes.get(p)?.kind ?? extKind(p);
+  const files = useMemo(() => {
+    const all = [...nodes.values()], of = (k: Kind) => all.filter((n) => n.kind === k).map((n) => n.path);
+    return { images: of("image"), maps: of("mindmap"), decks: of("deck") };
+  }, [nodes]);
 
   const refresh = useCallback(async () => {
     try {
@@ -413,7 +417,7 @@ export function App() {
               <div class="ed-body">
                 {ready && (
                   <Editor path={textPath} kind={textPath ? kindOf(textPath) : "other"} rules={rules} problems={problems}
-                    reload={reload} reveal={reveal} missing={missing} onDiscard={discard} ctl={ctl} onCursor={onCursor} onStatus={onStatus} />
+                    reload={reload} reveal={reveal} missing={missing} onDiscard={discard} ctl={ctl} onCursor={onCursor} onStatus={onStatus} files={files} />
                 )}
                 {isImage && active && (
                   <div class="imgview">

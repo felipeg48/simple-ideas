@@ -83,7 +83,7 @@
   /* the layout in use: a narrow portrait screen (a phone) gets the tall right layout */
   M.lay = function () {
     var l = this.opt('layout'), w = this.el.clientWidth, h = this.el.clientHeight;
-    return w && w < 640 && h > w ? 'right' : l;
+    return w && w < 640 && h > w && !this.el.hasAttribute('data-edit') ? 'right' : l; /* the map editor keeps the chosen layout */
   };
 
   /* ---------- chrome: crumbs, tools, search, Play ---------- */

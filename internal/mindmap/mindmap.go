@@ -458,3 +458,19 @@ func (d *Doc) FrontMap() map[string]string {
 	}
 	return out
 }
+
+// Count is the number of maps and topics of a source.
+func Count(src string) (maps, topics int) {
+	var walk func([]*Topic)
+	walk = func(ts []*Topic) {
+		for _, t := range ts {
+			topics++
+			walk(t.Kids)
+		}
+	}
+	for _, m := range Parse(src).Maps() {
+		maps++
+		walk(m.Topics)
+	}
+	return
+}

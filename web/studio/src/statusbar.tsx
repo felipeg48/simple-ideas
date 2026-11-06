@@ -16,7 +16,10 @@ export function StatusBar(p: {
         <span>si check</span>
         <b>{p.problems ? `${p.problems} problem${p.problems > 1 ? "s" : ""}` : `${p.decks} file${p.decks === 1 ? "" : "s"} OK`}</b>
       </button>
-      {p.check && (
+      {p.check && p.check.maps !== undefined && (
+        <span class="foot-stats">{p.check.maps} map{p.check.maps === 1 ? "" : "s"} · {p.check.topics} topic{p.check.topics === 1 ? "" : "s"}</span>
+      )}
+      {p.check && p.check.maps === undefined && (
         <span class="foot-stats">
           {fmt(p.check.minutes)} min · {p.check.steps} steps · {p.check.canvases} canvas{p.check.canvases === 1 ? "" : "es"}
         </span>

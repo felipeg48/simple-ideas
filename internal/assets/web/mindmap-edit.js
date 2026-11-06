@@ -7,6 +7,10 @@
    Markdown and sends the new maps back. The canvas never writes text itself. */
 (function () {
   'use strict';
+  /* mindmap.js starts its maps on DOMContentLoaded: start after it */
+  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); return; }
+  init();
+  function init() {
   var el = document.querySelector('.si-mindmap');
   var mm = el && el.siMindmap;
   if (!mm) return;
@@ -39,7 +43,7 @@
       if (n) { /* keep it on screen */
         var vb = mm.vb, pad = 30;
         if (n.x - n.w / 2 < vb.x + pad || n.x + n.w / 2 > vb.x + vb.w - pad || n.y - n.h / 2 < vb.y + pad || n.y + n.h / 2 > vb.y + vb.h - pad) {
-          mm.tween({ x: n.x - vb.w / 2, y: n.y - vb.h / 2, w: vb.w, h: vb.h }, 300);
+          mm.tween(mm.fitBox(mm.cur.all), 300); /* the whole map again: it grew past the view */
         }
       }
     }
@@ -238,5 +242,14 @@
     if (b) { e.stopImmediatePropagation(); op({ kind: 'tidy', path: [] }); }
   }, true);
 
+  /* the canvas pane changes size with the Studio's panes: keep the whole map in view */
+  if (window.ResizeObserver) {
+    var lastW = 0, lastH = 0;
+    new ResizeObserver(function () {
+      var w = el.clientWidth, h = el.clientHeight;
+      if (Math.abs(w - lastW) > 8 || Math.abs(h - lastH) > 8) { lastW = w; lastH = h; if (mm.cur) mm.setVB(mm.fitBox(mm.cur.all)); }
+    }).observe(el);
+  }
   post({ type: 'si-mm-ready' });
+  }
 })();

@@ -67,7 +67,9 @@ const RB_ORIGINAL = readFileSync(RB, "utf8");
 const TALK = join(root, "talk.md");
 const TALK_ORIGINAL = readFileSync(TALK, "utf8");
 const LABOPS = join(root, "lab-ops.json");
-const reset = () => { writeFileSync(ONE, ORIGINAL); writeFileSync(RB, RB_ORIGINAL); writeFileSync(TALK, TALK_ORIGINAL); rmSync(LABOPS, { force: true }); };
+const MAP = join(root, "thursday.md");
+const MAP_ORIGINAL = readFileSync(MAP, "utf8");
+const reset = () => { writeFileSync(MAP, MAP_ORIGINAL); writeFileSync(ONE, ORIGINAL); writeFileSync(RB, RB_ORIGINAL); writeFileSync(TALK, TALK_ORIGINAL); rmSync(LABOPS, { force: true }); };
 async function openRunbook(page) {
   await openFile(page, "labs/runbook.json");
   await page.waitForSelector(".rb-view .rb-entry");
@@ -450,6 +452,34 @@ const tests = {
     }
     rmSync(join(root, "notes.adoc"));
   },
+};
+
+tests["map editor: Tab adds a child, rename, undo"] = async function () {
+  for (const [theme, size] of [["light", { width: 1440, height: 900 }], ["dark", { width: 820, height: 1180 }]]) {
+    const { ctx, page } = await open(theme, size);
+    if (size.width < 1000) await page.click(".nav-toggle"); // narrow: the files slide over the editor
+    await openFile(page, "thursday.md");
+    await page.waitForSelector(".mapx iframe");
+    const f = await (await page.$(".mapx iframe")).contentFrame();
+    await until(() => f.$('.si-mm-node[data-id="r.1"]'), 8000, "the map is drawn");
+    await f.click('.si-mm-node[data-id="r.1"]');
+    await until(async () => (await page.textContent(".mapx-side .insp-head")).includes("Warehouse"), 5000, "the topic panel");
+    await page.keyboard.press("Tab");
+    await until(() => f.$('.si-mm-node[data-id="r.1.2"]'), 5000, "Tab added a child");
+    await page.keyboard.type("Labels");
+    await page.keyboard.press("Enter");
+    await until(async () => (await f.$$eval(".si-mm-node text", (n) => n.map((x) => x.textContent))).includes("Labels"), 5000, "the rename");
+    await page.screenshot({ path: join(out, `map-editor-${theme}.png`) });
+    await until(() => readFileSync(MAP, "utf8").includes("  - Labels\n"), 6000, "the Markdown was saved with the new topic");
+    await page.keyboard.press("ControlOrMeta+z");
+    await until(async () => !(await f.$$eval(".si-mm-node text", (n) => n.map((x) => x.textContent))).includes("Labels"), 5000, "undo");
+    await page.click(".rb-mode button:has-text('Text')");
+    const text = await page.textContent(".cm-content");
+    if (!text.includes("- New topic") || text.includes("Labels")) throw new Error("the text view does not follow the map: " + text);
+    await ctx.close();
+    reset();
+    await sleep(800); // let autosave settle before the next pass
+  }
 };
 
 let failed = 0;

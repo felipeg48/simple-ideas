@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/felipeg48/simple-ideas/internal/deck"
+	"github.com/felipeg48/simple-ideas/internal/mindmap"
 	"github.com/felipeg48/simple-ideas/internal/render"
 )
 
@@ -84,10 +85,16 @@ func (a *api) check(w http.ResponseWriter, r *http.Request) {
 	}
 	res := render.Deck(d, opt)
 	add(res.Problems)
-	writeJSON(w, http.StatusOK, map[string]any{
+	out := map[string]any{
 		"problems": problems, "slides": a.slides(d), "kind": pageKind(d, nil),
 		"minutes": d.Minutes(), "steps": res.Steps, "canvases": res.Canvases,
-	})
+	}
+	if d.IsMindmap() { // the status bar counts maps and topics, not minutes and steps
+		if raw, err := os.ReadFile(abs); err == nil {
+			out["maps"], out["topics"] = mindmap.Count(string(raw))
+		}
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 var stepRE = regexp.MustCompile(`<!--\s*steps?\s*(?::|-->)`)
