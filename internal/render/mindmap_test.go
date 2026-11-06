@@ -168,3 +168,42 @@ func TestMindmap3D(t *testing.T) {
 		t.Errorf("3D fence options: %s", got)
 	}
 }
+
+func TestMindmapStepsFlow(t *testing.T) {
+	res, _ := renderFiles(t, map[string]string{
+		"d.md": "# Deck\n\n---\n\n## Map\n\n```mindmap steps flow=on\n# Late\n- a\n- b\n  - b1\n- c\n```\n\n```mindmap\n# Late\n- x\n```\n",
+	}, "d.md")
+	h := string(res.HTML)
+	if len(res.Problems) > 0 || res.Steps != 3 || strings.Count(h, `class="si-mm-step" data-mm="1"`) != 3 {
+		t.Fatalf("steps: %d %s", res.Steps, problemsText(res))
+	}
+	if !strings.Contains(h, `data-flow="on" data-steps="1"`) {
+		t.Error("flow and steps must reach the map")
+	}
+	if !strings.Contains(h, `id="mm1-late"`) || !strings.Contains(h, `id="mm2-late"`) {
+		t.Error("two fences with one title must not share fallback ids")
+	}
+	res, _ = renderFiles(t, map[string]string{"d.md": "# Deck\n\n---\n\n## Map\n\n```mindmap flow=fast reveal=topics\n- a\n```\n"}, "d.md")
+	if got := problemsText(res); !strings.Contains(got, `unknown mindmap flow "fast"`) || !strings.Contains(got, `unknown mindmap reveal "topics"`) {
+		t.Errorf("bad fence options: %s", got)
+	}
+}
+
+func TestMindmapEditCanvas(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "m.md")
+	src := "---\ntype: mindmap\nlines: tapered\n---\n# M\n\n- a\n"
+	os.WriteFile(p, []byte(src), 0o644)
+	d, err := deck.ParseSource(p, src, deck.Meta{Type: "deck"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	v := MindmapEdit(d, "", "", Options{})
+	if !strings.Contains(string(v.Data), `"t":"a"`) || v.Opts["lines"] != "tapered" {
+		t.Fatalf("%s %v", v.Data, v.Opts)
+	}
+	page := string(MindmapCanvas(d, "", "", Options{}))
+	if !strings.Contains(page, `class="si-mindmap" data-edit`) || !strings.Contains(page, "The Studio's map editor") {
+		t.Error("the canvas must carry the editor script and data-edit")
+	}
+}

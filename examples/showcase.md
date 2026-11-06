@@ -237,6 +237,28 @@ Forty-two routes leave between half past five and seven, each van with about a h
 ---
 
 <!-- layout: center -->
+## Where a promise breaks
+
+```mindmap steps flow=on layout=right
+# A late parcel
+- Payment
+  - Bank timeout
+  - Fraud review
+- Warehouse
+  - One short-staffed shift
+- Road
+  - A cut-off that leaves too early
+```
+
+Notes: (1 min)
+A late parcel almost always has one of three causes. [CLICK] Payment: a bank timeout, or a fraud review that holds the order overnight. [CLICK] The warehouse: one short-staffed shift is enough. [CLICK] And the road: a cut-off that leaves before the last parcels are packed.
+
+Points: Three causes, one per click
+- Payment and warehouse are the two we fixed
+- The road cut-off is still open: ask ops
+
+---
+
 <!-- transition: slide -->
 <!-- class: habits -->
 <!-- background: assets/dusk.jpg opacity=0.22 blur=6 -->

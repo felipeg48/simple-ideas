@@ -357,7 +357,7 @@
     if (n.link) { c.font = '700 28px ' + T.font; var cw = c.measureText('map ›').width + 34; rr(c, R / 2 - cw / 2, R / 2 + 22, cw, 46, 23); c.fill(); c.fillStyle = k.top; c.fillText('map ›', R / 2, R / 2 + 46); }
     var tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
     /* the cap's texture runs along the world axes; turn it to read upright from the camera (hexagons are turned 30° more) */
-    tex.center.set(0.5, 0.5); tex.rotation = -3 * Math.PI / 4 + (n.shape === 'hex' ? -Math.PI / 6 : 0);
+    tex.center.set(0.5, 0.5); tex.rotation = 3 * Math.PI / 4 + (n.shape === 'hex' ? -Math.PI / 6 : 0);
     return tex;
   };
   P.toyMesh = function (n, T) {
