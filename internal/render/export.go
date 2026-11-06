@@ -24,3 +24,11 @@ func Highlight(code, lang string) string { return highlight(code, lang) }
 
 // TextOf is the plain text under a node.
 func TextOf(n ast.Node, src []byte) string { return textOf(n, src) }
+
+// DemoFiles expands a deck's demos: value (files and folders, relative to
+// base) into its markdown files, and the entries it could not read.
+func DemoFiles(base, spec string) ([]string, []string) { return demoFiles(base, spec) }
+
+// RunLang reports whether a fence language is a command (Copy / Run in the
+// Demos panel, a runnable entry in the terminal Lab).
+func RunLang(lang string) bool { return runLangs[lang] }

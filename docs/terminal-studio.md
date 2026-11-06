@@ -59,7 +59,28 @@ The Studio as a keyboard app, the twin of `si --web [dir]`.
   the next `[CLICK]` highlighted.
 - **Present:** hands the terminal to `si play --terminal` until you quit it;
   inside tmux the teleprompter opens in a pane beside.
-- **Lab:** see below (1.9).
+- **Lab:** see below.
+
+## Lab (`4`)
+
+The slide (← → step through builds), the commands of the deck, and a shell:
+
+- **Commands** are the deck's runbook entries (`runbook:` JSON) and the shell
+  blocks (`bash`, `sh`, `zsh`, `console`, `sql`, …) of its demo scripts
+  (`demos:`), grouped by category and by demo, each with its heading.
+- **Inside tmux** Lab opens a shell pane below (Ctrl+T opens another beside):
+  Enter types the selected command into it, `x` types and runs it. The pane is
+  your normal shell, so interactive tools (`cockroach sql`, `rabbitmqctl`) work
+  there.
+- **Outside tmux** Enter runs the command and streams its output into the
+  Output pane (`c` clears it); `!` opens your shell full screen until you exit.
+- **Placeholders** (`{{name}}`, `{{name:default}}`) ask for their values first,
+  prefilled with the last value used this session, or the default.
+- Tab switches between the commands and the slide; 1 2 3 leave Lab (and close
+  its pane).
+
+The shell pane runs your login shell: if your shell takes long to start (a heavy
+`.zshrc`), wait for its prompt before running the first command.
 
 It reuses the web Studio's backend (`studio.Workspace`: tree, kinds, titles,
 check, starters) and the CLI's own entry point for Build.

@@ -249,10 +249,11 @@ func (m *studioModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case buildDone:
 		m.overlay, m.output, m.lsel = "output", strings.Split(strings.TrimRight(msg.out, "\n"), "\n"), 0
 		m.refreshTree()
-	case labOutput:
+	case labLine:
 		if m.lab != nil {
-			m.lab.add(msg)
+			m.lab.add(msg.o)
 		}
+		return m, waitLine(msg.ch)
 	case tea.PasteMsg:
 		if m.overlay != "" {
 			m.input.insert(msg.Content)
@@ -275,6 +276,9 @@ func (m *studioModel) key(msg tea.KeyPressMsg) tea.Cmd {
 	k := msg.String()
 	switch k {
 	case "q", "ctrl+c":
+		if m.lab != nil && m.lab.pane != "" {
+			exec.Command("tmux", "kill-pane", "-t", m.lab.pane).Run()
+		}
 		return tea.Quit
 	case "?":
 		m.overlay = "help"

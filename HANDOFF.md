@@ -5,7 +5,15 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-05)
 
-- **Latest release: v1.8.0: `si --terminal [dir]`, the Studio in the terminal**
+- **Latest release: v1.9.0: Lab in `si --terminal`** (`internal/tui/lab.go`):
+  runbook entries + demo shell blocks (`render.DemoFiles`, `render.RunLang`); in tmux a
+  shell pane below (`split-window -P`, `send-keys -l`, `x` adds Enter); outside tmux
+  `sh -c` output streamed (`labLine` channel pattern), `!` full shell; placeholders
+  prompt. Tested: unit test outside tmux; a detached tmux session (`-L sitest`) drove
+  it headless (works with /bin/sh panes; the founder's zsh showed no prompt in a bare
+  tmux within 15 s). Next: 1.10 real pictures (Kitty / iTerm2) and a teleprompter for
+  a browser deck.
+- **v1.8.0: `si --terminal [dir]`, the Studio in the terminal**
   (`internal/tui/studio.go`): files, live preview (slides, documents, images),
   problems (`studio.Workspace.Check`), `e` `$EDITOR` (tmux pane beside), `n`
   starters, `b` build (CLI in-process), `s` storyboard, `i` inspector
