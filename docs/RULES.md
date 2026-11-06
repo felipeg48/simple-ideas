@@ -550,8 +550,11 @@ references shared assets as `../images/...`.
 ## 13. Code, Mermaid, stage diagrams, tables, links
 
 - Fenced code with a language gets a small built-in highlighter (Go, Python,
-  JavaScript/TypeScript, Java, Kotlin, Rust, SQL, YAML, TOML, JSON, Bash,
-  CSS, HTML) and a language label; other languages are shown plain.
+  JavaScript/TypeScript, Java, Kotlin, C# (`csharp`, `cs`, `c#`), C, C++,
+  PHP, Ruby, Swift, Scala, Rust, SQL, YAML, TOML, JSON, Bash, PowerShell,
+  Dockerfile, CSS, HTML, XML (also `csproj`, `props`, `xaml`, `svg`, `pom`,
+  `nuspec`: tags, attributes, comments)) and a language label; other
+  languages get strings and numbers only.
 - ```` ```mermaid ```` fences render with Mermaid, themed from the deck tokens
   and re-rendered on light/dark switch. **This is the only network
   resource:** the pinned Mermaid script from jsDelivr is added only to decks

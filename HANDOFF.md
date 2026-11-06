@@ -8,7 +8,11 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 - **Idea being refined (not started; likely a separate project, not part of si):**
   the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
-- **Latest release: v2.0.0: the mind map builder.** `internal/mindmap` (new):
+- **Latest release: v2.0.1: highlighter languages.** `render/highlight.go` adds C# (`csharp`/`cs`/`c#`/`dotnet`),
+  XML with tags, attributes, comments, `<?xml?>` and CDATA (`xml`, `csproj`, `props`, `targets`, `nuspec`, `resx`,
+  `xaml`, `svg`, `pom`, …; HTML shares it), C, C++, PHP, Ruby, Swift, Scala, PowerShell, Dockerfile (case-insensitive).
+  Before, C# and XML fences had a label but no colour. `TestHighlightLanguages`.
+- **v2.0.0: the mind map builder.** `internal/mindmap` (new):
   `Parse`/`String` model (topic line `[!sticky] text ![alt](img) {attrs} → target`,
   fenced code under an item = code topic, `# Title {#id}` = map, other text kept as
   `Part.Text`; the examples round-trip byte for byte), `Apply(Op)` (add-child,

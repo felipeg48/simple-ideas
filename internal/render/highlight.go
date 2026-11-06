@@ -33,18 +33,48 @@ var keywords = map[string]string{
 	"html":   "",
 	"toml":   "true false",
 	"kotlin": "fun val var class object interface if else when for while return import package true false null",
+	"csharp": "abstract as async await base bool break byte case catch char checked class const continue decimal default " +
+		"delegate do double else enum event explicit extern false finally fixed float for foreach get goto if implicit in init " +
+		"int interface internal is lock long namespace new null object operator out override params partial private protected " +
+		"public readonly record ref return sbyte sealed set short sizeof stackalloc static string struct switch this throw true " +
+		"try typeof uint ulong unchecked unsafe ushort using var virtual void volatile when where while yield",
+	"c": "auto break case char const continue default do double else enum extern float for goto if inline int long register " +
+		"return short signed sizeof static struct switch typedef union unsigned void volatile while NULL true false",
+	"cpp": "auto bool break case catch char class const constexpr continue default delete do double else enum explicit extern " +
+		"false float for friend if inline int long namespace new noexcept nullptr operator override private protected public " +
+		"return short signed sizeof static struct switch template this throw true try typedef typename union unsigned using " +
+		"virtual void volatile while",
+	"php": "abstract and array as break case catch class const continue declare default do echo else elseif extends final " +
+		"fn for foreach function global if implements interface match namespace new null or private protected public readonly " +
+		"return static switch throw trait true false try use var while yield",
+	"ruby": "begin def class module end if elsif else unless case when while until for in do return yield self nil true " +
+		"false and or not require include extend attr_accessor puts",
+	"swift": "let var func class struct enum protocol extension import return if else guard for while in switch case " +
+		"default break continue true false nil self init deinit throws throw try catch async await public private static",
+	"scala": "def val var class object trait extends with case match if else for while yield return import package new " +
+		"true false null this",
+	"powershell": "function param if elseif else foreach for while do switch return try catch finally throw begin process end",
+	"dockerfile": "from run cmd label expose env add copy entrypoint volume user workdir arg onbuild stopsignal healthcheck shell as",
+	"xml":        "",
 }
 
 var aliases = map[string]string{
 	"js": "javascript", "ts": "javascript", "typescript": "javascript", "jsx": "javascript", "tsx": "javascript",
 	"py": "python", "sh": "bash", "shell": "bash", "zsh": "bash", "console": "bash", "yml": "yaml", "golang": "go",
 	"rs": "rust", "kt": "kotlin", "json5": "json",
+	"cs": "csharp", "c#": "csharp", "dotnet": "csharp", "h": "c", "c++": "cpp", "cc": "cpp", "hpp": "cpp", "rb": "ruby",
+	"ps1": "powershell", "pwsh": "powershell", "docker": "dockerfile", "containerfile": "dockerfile",
+	"csproj": "xml", "fsproj": "xml", "vbproj": "xml", "props": "xml", "targets": "xml", "nuspec": "xml", "resx": "xml",
+	"xaml": "xml", "svg": "xml", "plist": "xml", "pom": "xml", "xsd": "xml", "xsl": "xml", "xslt": "xml", "wsdl": "xml",
+	"htm": "html", "xhtml": "html", "vue": "html",
 }
 
 var (
-	hashComment  = map[string]bool{"bash": true, "python": true, "yaml": true, "toml": true}
-	slashComment = map[string]bool{"go": true, "javascript": true, "java": true, "rust": true, "kotlin": true, "css": true, "json": true}
-	hlCache      sync.Map
+	hashComment  = map[string]bool{"bash": true, "python": true, "yaml": true, "toml": true, "ruby": true, "powershell": true, "dockerfile": true}
+	slashComment = map[string]bool{"go": true, "javascript": true, "java": true, "rust": true, "kotlin": true, "css": true, "json": true,
+		"csharp": true, "c": true, "cpp": true, "php": true, "swift": true, "scala": true}
+	markup  = map[string]bool{"html": true, "xml": true} // tags as keywords, attribute names as keys
+	hlCache sync.Map
 )
 
 func langRE(lang string) *regexp.Regexp {
@@ -59,19 +89,22 @@ func langRE(lang string) *regexp.Regexp {
 		parts = append(parts, `(?P<c>//.*|/\*[\s\S]*?\*/)`)
 	case lang == "sql":
 		parts = append(parts, `(?P<c>--.*)`)
-	case lang == "html":
-		parts = append(parts, `(?P<c><!--[\s\S]*?-->)`)
+	case markup[lang]:
+		parts = append(parts, `(?P<c><!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>)`, `(?P<m><\?[\s\S]*?\?>|<![A-Za-z][^>]*>)`)
 	}
 	parts = append(parts, "(?P<s>\"(?:\\\\.|[^\"\\\\\\n])*\"|'(?:\\\\.|[^'\\\\\\n])*'|`[^`\\n]*`)")
 	if lang == "bash" {
 		parts = append(parts, `(?P<m>(?m:^[ \t]*(?:\$ )?[a-z][\w.-]*))`, `(?P<v>\$\{?[A-Za-z_]\w*\}?)`, `(?P<f>(?:^|[ \t])--?[A-Za-z][\w-]*)`)
+	}
+	if markup[lang] {
+		parts = append(parts, `(?P<k></?[A-Za-z][\w:.-]*|/?>)`, `(?P<y>[A-Za-z_:][\w:.-]*=)`)
 	}
 	if lang == "yaml" || lang == "toml" {
 		parts = append(parts, `(?P<y>(?m:^[ \t]*-?[ \t]*[\w.\-/]+[ \t]*[:=]))`)
 	}
 	if kw := strings.Fields(keywords[lang]); len(kw) > 0 {
 		group := `\b(?:` + strings.Join(kw, "|") + `)\b`
-		if lang == "sql" {
+		if lang == "sql" || lang == "dockerfile" {
 			// SQL keywords are case-insensitive; most CockroachDB SQL is UPPERCASE.
 			group = `(?i:` + group + `)`
 		}
