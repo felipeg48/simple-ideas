@@ -158,7 +158,7 @@ func (r *nodeRenderer) fence(
 
 func (dr *deckRenderer) markdown() goldmark.Markdown {
 	return goldmark.New(
-		goldmark.WithExtensions(extension.GFM),
+		goldmark.WithExtensions(extension.GFM, highlightExt{}),
 		goldmark.WithRendererOptions(
 			ghtml.WithUnsafe(),
 			renderer.WithNodeRenderers(util.Prioritized(&nodeRenderer{dr: dr}, 100)),
@@ -266,7 +266,11 @@ func (dr *deckRenderer) transform(doc ast.Node, src []byte, sc *slideCtx) {
 					continue
 				case "svg":
 					c = dr.canvas(val, sc)
-				case "slides", "alert", "badge", "accordion", "modal", "end", "carousel", "event", "embed":
+				case "badge":
+					c = &rawNode{html: dr.badgeHTML(val, sc, true)}
+				case "logo":
+					c = &rawNode{html: dr.logoHTML(val, sc.s, sc)}
+				case "slides", "alert", "accordion", "modal", "end", "carousel", "event", "embed":
 					dr.problem(sc, "%s: works in documents and sites (articles, guides, books, labs, pages), not on a slide", name)
 					continue
 				default:

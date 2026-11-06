@@ -5,7 +5,13 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-05)
 
-- **Latest release: v1.6.1** (fix: the deck teleprompter `p` opened window.open(''), which the shell sent to NSWorkspace → "The application can't be opened. -50"; only http(s) pages of other sites leave the app now)
+- **Latest release: v1.6.2: components without raw HTML.** `==text==` highlight
+  (`render/highlight_mark.go`, goldmark delimiter like ~~strike~~; `plain()` drops the
+  marks); `badge` and new `logo` work on slides (CACI pill / lockup markup, with
+  `si-*` hooks; generic looks under `:where()` so a theme's `.pill`/`.lockup`/`.hl` wins);
+  a `· part` that is no kind stays text. AceMQ Pro sample and CACI converted (CACI
+  backup `_backup-2026-11-06-pre-components/`).
+- **v1.6.1** (fix: the deck teleprompter `p` opened window.open(''), which the shell sent to NSWorkspace → "The application can't be opened. -50"; only http(s) pages of other sites leave the app now)
 - **v1.6.0 release:** (tagged; the release workflow publishes it, plus
   `si-Studio-<v>-macos.zip` from a macOS runner).
 - **v1.6.0: si Studio for macOS + storyboard thumbnails.** `desktop/` (own module,

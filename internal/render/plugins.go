@@ -24,26 +24,75 @@ import (
 //	<!-- embed: … -->             see embed.go
 
 // Plugins are the plugin directive names (documents only).
-var Plugins = []string{"alert", "badge", "accordion", "modal", "end", "carousel", "event", "embed"}
+var Plugins = []string{"alert", "badge", "logo", "accordion", "modal", "end", "carousel", "event", "embed"}
 
 // pluginKinds are the looks of an alert or a badge.
 var pluginKinds = map[string]bool{"info": true, "ok": true, "warn": true, "crit": true}
 
-// pluginKind returns the kind among opts and words, info by default; anything
-// else is a problem (a stray "·" in the text usually).
-func (dr *deckRenderer) pluginKind(sc *slideCtx, name string, opts map[string]string, words []string) string {
+// pluginKind returns the text and the kind of an alert or badge: kind= or a
+// word that is a kind (info by default); any other "· part" belongs to the
+// text, so "Prepared for CACI · Session 1 of 5" keeps its dot.
+func (dr *deckRenderer) pluginKind(sc *slideCtx, name, text string, opts map[string]string, words []string) (string, string) {
 	kind := opts["kind"]
-	if kind == "" && len(words) > 0 {
-		kind = words[0]
+	if kind != "" && !pluginKinds[kind] {
+		dr.problem(sc, "%s: kind=%q is not one of info, ok, warn, crit", name, kind)
+		kind = ""
+	}
+	for _, w := range words {
+		if kind == "" && pluginKinds[w] {
+			kind = w
+			continue
+		}
+		text += " · " + w
 	}
 	if kind == "" {
-		return "info"
+		kind = "info"
 	}
-	if !pluginKinds[kind] {
-		dr.problem(sc, "%s: %q is not one of info, ok, warn, crit (a · in the text starts an option)", name, kind)
-		return "info"
+	return text, kind
+}
+
+// badgeHTML is a status pill: in a document a pill in its own paragraph; on
+// a slide the pill paragraph itself, with the mark a theme can style
+// (AceMQ Pro's .pill / .pill-mark).
+func (dr *deckRenderer) badgeHTML(val string, sc *slideCtx, slide bool) string {
+	text, opts, words := pluginParts(val)
+	text, kind := dr.pluginKind(sc, "badge", text, opts, words)
+	if slide {
+		return fmt.Sprintf(`<p class="si-pill pill" data-kind="%s"><span class="si-pill-mark pill-mark"></span>%s</p>`, html.EscapeString(kind), dr.inline(text))
 	}
-	return kind
+	return fmt.Sprintf(`<p class="si-pill-row"><span class="si-pill" data-kind="%s">%s</span></p>`, html.EscapeString(kind), dr.inline(text))
+}
+
+// logoHTML is a logo lockup: <!-- logo: [image] × Partner · alt=Brand -->.
+// Without an image the theme draws its own logo (--si-brand-logo, AceMQ Pro).
+func (dr *deckRenderer) logoHTML(val string, s *deck.Slide, sc *slideCtx) string {
+	text, opts, _ := pluginParts(val)
+	img, name, _ := strings.Cut(text, "×")
+	img, name = strings.TrimSpace(img), strings.TrimSpace(name)
+	alt := opts["alt"]
+	if alt == "" {
+		alt = "Logo"
+	}
+	var b strings.Builder
+	b.WriteString(`<div class="si-lockup lockup">`)
+	if img != "" {
+		if !deck.IsImagePath(img) {
+			dr.problem(sc, "logo: %q is not an image (want logo: path/to/logo.svg × Partner)", img)
+			return ""
+		}
+		uri, ok := dr.media(s.Dir, img, sc)
+		if !ok {
+			return ""
+		}
+		fmt.Fprintf(&b, `<img class="si-lk-img" src="%s" alt="%s">`, uri, html.EscapeString(alt))
+	} else {
+		fmt.Fprintf(&b, `<span class="si-lk-logo lk-logo" role="img" aria-label="%s"></span>`, html.EscapeString(alt))
+	}
+	if name != "" {
+		fmt.Fprintf(&b, `<span class="si-lk-x lk-x"></span><span class="si-lk-name lk-name">%s</span>`, dr.inline(name))
+	}
+	b.WriteString("</div>")
+	return b.String()
 }
 
 func isPlugin(name string) bool {
@@ -91,14 +140,14 @@ func (dr *deckRenderer) plugins(doc ast.Node, src []byte, s *deck.Slide, sc *sli
 		switch name {
 		case "alert":
 			text, opts, words := pluginParts(val)
-			kind := dr.pluginKind(sc, name, opts, words)
+			text, kind := dr.pluginKind(sc, name, text, opts, words)
 			sum := sha256.Sum256([]byte(text))
 			doc.ReplaceChild(doc, c, &rawNode{html: fmt.Sprintf(`<div class="si-alert" role="status" data-kind="%s" data-until="%s" data-id="%x"><p>%s</p><button type="button" class="si-alert-x" aria-label="Dismiss">×</button></div>`,
 				html.EscapeString(kind), html.EscapeString(opts["until"]), sum[:6], dr.inline(text))})
 		case "badge":
-			text, opts, words := pluginParts(val)
-			kind := dr.pluginKind(sc, name, opts, words)
-			doc.ReplaceChild(doc, c, &rawNode{html: fmt.Sprintf(`<p class="si-pill-row"><span class="si-pill" data-kind="%s">%s</span></p>`, html.EscapeString(kind), dr.inline(text))})
+			doc.ReplaceChild(doc, c, &rawNode{html: dr.badgeHTML(val, sc, false)})
+		case "logo":
+			doc.ReplaceChild(doc, c, &rawNode{html: dr.logoHTML(val, s, sc)})
 		case "event":
 			text, opts, _ := pluginParts(val)
 			m := eventAtRE.FindStringSubmatch(text)

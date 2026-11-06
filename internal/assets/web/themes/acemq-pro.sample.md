@@ -6,13 +6,13 @@ footer: Source: Northwind Pay incident reports, Aug–Sep 2026
 
 <!-- footer: off -->
 
-# Payments messaging that <span class="hl">survives a lost zone.</span>
+# Payments messaging that ==survives a lost zone.==
 
 <div class="floaters"><div class="fl">AMQP</div><div class="fl">MQTT</div><div class="fl">K8s</div></div>
 
-<div class="lockup"><span class="lk-logo" role="img" aria-label="AceMQ"></span><span class="lk-x"></span><span class="lk-name">Northwind Pay</span></div>
+<!-- logo: × Northwind Pay · alt=AceMQ -->
 
-<p class="pill"><span class="pill-mark"></span>Prepared for Northwind Pay · November 2026</p>
+<!-- badge: Prepared for Northwind Pay · November 2026 -->
 
 <p class="cover-sub">One broker, run by the people who build it.</p>
 
@@ -22,7 +22,7 @@ footer: Source: Northwind Pay incident reports, Aug–Sep 2026
 
 <!-- eyebrow: August – September 2026 -->
 
-## Six numbers from <span class="hl">your own tickets.</span>
+## Six numbers from ==your own tickets.==
 
 <div class="heard">
 <div class="hc"><span class="k">Peak rate</span><span class="big">42<em>k/s</em></span><p>Card authorisations at the Friday peak.</p></div>
@@ -37,7 +37,7 @@ footer: Source: Northwind Pay incident reports, Aug–Sep 2026
 
 <!-- eyebrow: Incidents -->
 
-## Four outages, <span class="hl">one root cause.</span>
+## Four outages, ==one root cause.==
 
 <div class="inc">
 <div class="ic"><span class="when">Aug 04</span><h4>Zone b lost</h4><p>Leaders on b stopped; 47 min to recover.</p></div>
@@ -51,7 +51,7 @@ footer: Source: Northwind Pay incident reports, Aug–Sep 2026
 
 <!-- eyebrow: The core problem -->
 
-## A zone is a node, <span class="hl">until it fails.</span>
+## A zone is a node, ==until it fails.==
 
 <div class="split2">
 <ul class="blist">
@@ -70,7 +70,7 @@ footer: Source: Northwind Pay incident reports, Aug–Sep 2026
 
 <!-- eyebrow: Options -->
 
-## Four ways forward, <span class="hl">one we recommend.</span>
+## Four ways forward, ==one we recommend.==
 
 <div class="opts">
 <div class="opt"><span class="ol">A</span><span class="tag">Today</span><h4>Keep as is</h4><p>Hand-run clusters, classic mirrors.</p><dl><div><dt>Lost zone</dt><dd>Outage</dd></div><div><dt>Effort</dt><dd>None</dd></div></dl></div>
@@ -83,7 +83,7 @@ footer: Source: Northwind Pay incident reports, Aug–Sep 2026
 
 <!-- eyebrow: Side by side -->
 
-## Same workload, <span class="hl">fewer surprises.</span>
+## Same workload, ==fewer surprises.==
 
 <table class="tbl">
 <thead><tr><th></th><th>Today</th><th>Managed MQ</th><th class="us">AceMQ</th></tr></thead>
@@ -98,7 +98,7 @@ footer: Source: Northwind Pay incident reports, Aug–Sep 2026
 
 <!-- eyebrow: What changes -->
 
-## The numbers that <span class="hl">move first.</span>
+## The numbers that ==move first.==
 
 <div class="facts">
 <div class="fr"><span class="fn">47<em>min</em></span><div><h4>to under 10 seconds</h4><p>A lost zone becomes a leader election, not an outage.</p></div></div>
@@ -110,7 +110,7 @@ footer: Source: Northwind Pay incident reports, Aug–Sep 2026
 
 <!-- eyebrow: AceMQ Broker -->
 
-## Built for the day <span class="hl">a zone goes dark.</span>
+## Built for the day ==a zone goes dark.==
 
 <div class="feat">
 <div class="fc"><span class="icon-chip"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg></span><h4>Quorum by default</h4><p>Every queue replicated across three zones.</p></div>
@@ -126,7 +126,7 @@ footer: Source: Northwind Pay incident reports, Aug–Sep 2026
 <!-- eyebrow: Benchmark · 3 nodes, 1 KB messages -->
 <!-- footer: Source: AceMQ lab, c7i.2xlarge, persistent messages -->
 
-## Twice the rate, <span class="hl">a third of the lag.</span>
+## Twice the rate, ==a third of the lag.==
 
 <div class="bench">
 <div class="brow us" style="--w:92%"><span class="bl">AceMQ Broker</span><span class="bar"></span><span class="bv">84k/s</span></div>
@@ -143,7 +143,7 @@ footer: Source: Northwind Pay incident reports, Aug–Sep 2026
 
 <!-- eyebrow: Migration -->
 
-## Six steps, <span class="hl">no message left behind.</span>
+## Six steps, ==no message left behind.==
 
 <div class="flowline">
 <div class="fs"><h4>Inventory</h4><p>Queues, policies, clients.</p></div>
@@ -162,7 +162,7 @@ footer: Source: Northwind Pay incident reports, Aug–Sep 2026
 
 <!-- eyebrow: Trial and PoC -->
 
-## Prove it on <span class="hl">your traffic shape.</span>
+## Prove it on ==your traffic shape.==
 
 <div class="poc">
 <div class="pc2"><span class="tag">Week 1</span><h4>Trial</h4><p>A three-node cluster in your account.</p><dl><div><dt>Scope</dt><dd>One region</dd></div><div><dt>Success</dt><dd>Zone kill, no outage</dd></div></dl><div class="term2"><span class="c"># kill a zone, watch the leaders move</span>
@@ -175,7 +175,7 @@ footer: Source: Northwind Pay incident reports, Aug–Sep 2026
 
 <!-- eyebrow: Next steps -->
 
-## Four steps to <span class="hl">a quiet Friday.</span>
+## Four steps to ==a quiet Friday.==
 
 <div class="steps">
 <div class="st"><span class="num">1</span><h4>Agree scope</h4><p>Queues and success criteria.</p></div>
@@ -189,9 +189,9 @@ footer: Source: Northwind Pay incident reports, Aug–Sep 2026
 <!-- class: on-ink -->
 <!-- footer: off -->
 
-# A lost zone should be <span class="hl">a log line.</span>
+# A lost zone should be ==a log line.==
 
-<div class="lockup"><span class="lk-logo" role="img" aria-label="AceMQ"></span><span class="lk-x"></span><span class="lk-name">Northwind Pay</span></div>
+<!-- logo: × Northwind Pay · alt=AceMQ -->
 
 <p class="lead">Commercials to follow.</p>
 

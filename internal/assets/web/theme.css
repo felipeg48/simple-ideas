@@ -150,4 +150,15 @@ pre.si-mermaid{background:none;border:0;text-align:center;margin:.4em 0;font-fam
 .si-list td:last-child a{font-family:var(--si-font-mono);font-size:.8rem;font-weight:700;color:var(--si-accent)}
 .si-index[data-view=tiles] .si-list{display:none}
 .si-index[data-view=list] .grid{display:none}
+/* ==highlight==, <!-- badge --> on a slide, <!-- logo: … × Partner -->: zero
+   specificity (:where) so any theme's own .hl / .pill / .lockup wins */
+:where(.hl){background:linear-gradient(color-mix(in srgb,var(--si-accent) 30%,transparent),color-mix(in srgb,var(--si-accent) 30%,transparent)) 0 88%/100% .32em no-repeat;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding-inline:.04em}
+:where(.si-lockup){display:flex;align-items:center;gap:1em;margin-bottom:1.2em}
+:where(.si-lk-img){height:1.9em;width:auto;max-height:none;border-radius:0;box-shadow:none}
+:where(.si-lk-logo,.si-lk-logo+.si-lk-x){display:none}
+:where(.si-lk-x){width:2px;height:1.9em;background:var(--si-line)}
+:where(.si-lk-name){font:800 1.4em/1 var(--si-font-heading);letter-spacing:-.02em;color:var(--si-fg)}
+:where(.si-slide .si-pill){display:inline-flex;align-items:center;gap:.6em;width:fit-content;padding:.45em 1em .45em .6em;border-radius:99em;font-size:.6em;font-weight:600;color:var(--si-fg);background:var(--si-surface);border:1px solid var(--si-line)}
+:where(.si-pill-mark){width:.7em;height:.7em;border-radius:50%;background:var(--si-accent);flex:none}
+:where(.si-pill[data-kind=ok] .si-pill-mark){background:var(--si-ok)}:where(.si-pill[data-kind=warn] .si-pill-mark){background:var(--si-warn)}:where(.si-pill[data-kind=crit] .si-pill-mark){background:var(--si-crit)}
 }

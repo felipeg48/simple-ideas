@@ -313,7 +313,12 @@ func (dr *deckRenderer) postprocess(h, dir string, sc *slideCtx) string {
 	return mdLinkRE.ReplaceAllString(h, `${1}${2}.html${3}"`)
 }
 
-func plain(s string) string { return strings.TrimSpace(tagRE.ReplaceAllString(s, "")) }
+func plain(s string) string {
+	return strings.TrimSpace(markRE.ReplaceAllString(tagRE.ReplaceAllString(s, ""), "$1"))
+}
+
+// markRE is a ==highlight== mark, dropped from plain text (titles, search).
+var markRE = regexp.MustCompile(`==([^=\n]+?)==`)
 
 // Topics numbers the overview column of every slide: 0 for the framing slides
 // at the start of the deck (title, agenda), then a new topic at each section

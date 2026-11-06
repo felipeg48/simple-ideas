@@ -17,6 +17,10 @@ demos: demos/
 
 <!-- footer: off -->
 
+<!-- logo: assets/northwind.svg × Operations · alt=Northwind Logistics -->
+
+<!-- badge: Operations review · Spring 2026 -->
+
 How one order crosses five teams, fails twice, and still arrives on time.
 
 Notes: (0.5 min)
@@ -25,7 +29,7 @@ Welcome. This talk follows a single parcel, order #4711, from the click on "buy"
 ---
 
 <!-- eyebrow: Order #4711 · the promise -->
-## One promise, five hand-offs
+## One promise, ==five hand-offs==
 
 <!-- steps -->
 - The shop promises **Thursday** the moment the customer pays

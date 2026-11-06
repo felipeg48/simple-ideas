@@ -93,4 +93,14 @@ the answer
 
 ---
 
+## Components, ==highlighted==
+
+<!-- logo: × Partner · alt=Brand -->
+
+<!-- badge: Prepared for Partner · Session 1 of 5 -->
+
+Body with a ==phrase==.
+
+---
+
 # The end

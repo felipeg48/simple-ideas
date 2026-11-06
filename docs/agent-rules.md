@@ -144,6 +144,10 @@ Not everything is a slide deck. Pick the type by what the reader does:
   a commit (never `main`), and show a change with
   `<!-- diff: https://github.com/OWNER/REPO/commit/SHA path=src/x.go -->`.
   `si check --offline` in CI proves the page builds from the cache.
+- **No raw HTML for common pieces:** a highlighted phrase is `==text==`; a
+  status pill is `<!-- badge: text · ok -->`; a logo lockup is
+  `<!-- logo: path/logo.svg × Partner -->` (or `<!-- logo: × Partner -->` for
+  the theme's own logo). They work on slides and in documents (RULES.md §13, §23).
 - **Fonts:** never link a font stylesheet; set `fonts: heading=Family:600,
   body=Family:400;700` (Google by default; `bunny:`, `fontshare:`,
   `fontsource:` or a local `.woff2`) and si inlines it (RULES.md §15).

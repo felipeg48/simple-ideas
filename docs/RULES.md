@@ -597,6 +597,22 @@ references shared assets as `../images/...`.
 - Raw HTML is allowed.
 
 
+### Highlighted words: `==text==`
+
+Two `=` on each side mark a phrase to stand out, in a heading or in body text:
+
+```markdown
+## Five things ==to keep==
+
+Every team was green; ==the customer still waited==.
+```
+
+It renders as `<span class="hl">…</span>`, so a theme decides the look: the
+built-in themes underline it with a band of the accent colour, and AceMQ Pro
+sweeps the band in as the slide arrives. It nests (`==**bold** words==`), stays
+on one line, and leaves code, a single `=` and `===` alone. Plain-text copies
+of a title (the tab, the teleprompter, search) drop the marks.
+
 ### Code from files, highlighted lines, callouts and tabs
 
 These work on slides and in documents (labs, articles, guides).
@@ -992,7 +1008,7 @@ inline SVG.
 
 ```markdown
 <!-- eyebrow: Options -->
-## Four ways forward, <span class="hl">one we recommend.</span>
+## Four ways forward, ==one we recommend.==
 
 <div class="opts">
 <div class="opt"><span class="ol">A</span><span class="tag">Today</span><h4>Keep as is</h4><p>Hand-run clusters.</p></div>
@@ -1545,9 +1561,11 @@ the whole folder. The index page title is `--site-title <text>` (the old
 
 Plugins are directives that work in every document (pages, articles, guides,
 books, labs, demos), so in every site. They are plain HTML plus a few lines of
-runtime; nothing is fetched. On a slide they are reported as a problem.
-Options follow the text after a `·`; a `·` inside the text starts an option,
-so `si check` reports a kind it does not know.
+runtime; nothing is fetched. `badge` and `logo` also work on slides; the
+others, on a slide, are reported as a problem.
+Options follow the text after a `·`: `key=value`, or a kind word (`info`,
+`ok`, `warn`, `crit`). Any other `· part` stays in the text, so
+`<!-- badge: Prepared for CACI · Session 1 of 5 -->` keeps its dot.
 
 ```markdown
 <!-- alert: The lab moves to the new cluster on 24 November. · until=2026-11-25 · warn -->
@@ -1558,7 +1576,8 @@ so `si check` reports a kind it does not know.
 | Plugin | What |
 |---|---|
 | `alert: text · kind · until=YYYY-MM-DD` | a dismissible band; the reader's dismissal is remembered in that browser; hidden after `until`. Kinds: `info` (default), `ok`, `warn`, `crit`. |
-| `badge: text · kind` | a status pill, same kinds |
+| `badge: text · kind` | a status pill, same kinds; on a slide, the pill paragraph a cover or closing slide carries (AceMQ Pro styles it with its orange mark) |
+| `logo: [image] × Partner · alt=Brand` | a logo lockup: the image (or, with none, the theme's own logo: `--si-brand-logo`, as in AceMQ Pro), a bar, and the partner's name; on slides and pages |
 | `event: YYYY-MM-DDTHH:MM text · Label → link` | a corner toast with a live countdown, shown from two days before the time until it starts |
 | `accordion` | the `###` questions that follow become a one-open-at-a-time list; it ends at the next `##`, `---` or directive |
 | `modal: id` … `end` | the blocks up to `<!-- end -->` become a dialog; any `[link](#id)` (or the `cta:`) opens it, and so does a URL ending in `#id`. A document part ends at `##`, so use `###` headings inside a modal. |
@@ -1594,6 +1613,16 @@ It is a trimmed copy with stubbed providers.
 | `embed: blog/retries.md full` | the whole body |
 | `embed: talks/journey.md 1-3` | a deck: its slides, live, in a frame (as `<!-- slides: -->`) |
 | `embed: docs/` | a guide, book or site folder: a card with its first pages or chapters |
+
+On a cover slide:
+
+```markdown
+# Message flows, end to end
+
+<!-- logo: × CACI · alt=AceMQ -->
+
+<!-- badge: Prepared for CACI · Session 1 of 5 -->
+```
 
 Example: `si --export example --type site` writes this site; `si serve
 si-example` serves it.

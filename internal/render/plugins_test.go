@@ -70,9 +70,9 @@ Call us.
 }
 
 func TestPluginProblems(t *testing.T) {
-	res := renderDoc(t, "<!-- modal: x -->\n\nText.\n\n<!-- end -->\n\n<!-- end -->\n\n<!-- accordion -->\n\nNo questions.\n\n<!-- event: soon Party -->\n\n<!-- badge: a · b -->\n")
+	res := renderDoc(t, "<!-- modal: x -->\n\nText.\n\n<!-- end -->\n\n<!-- end -->\n\n<!-- accordion -->\n\nNo questions.\n\n<!-- event: soon Party -->\n\n<!-- badge: a · kind=nope -->\n")
 	got := fmt.Sprint(res.Problems)
-	for _, want := range []string{"end: without", "accordion: must be followed", "event: wants a date", `badge: "b" is not one of`} {
+	for _, want := range []string{"end: without", "accordion: must be followed", "event: wants a date", `badge: kind="nope" is not one of`} {
 		if !strings.Contains(got, want) {
 			t.Errorf("problems lack %q: %s", want, got)
 		}
@@ -117,5 +117,31 @@ func TestPluginsOnSlideAreProblems(t *testing.T) {
 	}
 	if res := Deck(d, Options{}); !strings.Contains(fmt.Sprint(res.Problems), "not on a slide") {
 		t.Errorf("problems: %v", res.Problems)
+	}
+}
+
+func TestBadgeKeepsItsDotAndWorksOnSlides(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "logo.svg"), []byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 4"><rect width="10" height="4"/></svg>`), 0o644)
+	p := filepath.Join(dir, "d.md")
+	os.WriteFile(p, []byte("# Cover\n\n<!-- logo: × CACI · alt=AceMQ -->\n\n<!-- badge: Prepared for CACI · Session 1 of 5 -->\n\n---\n\n## Two\n\n<!-- logo: logo.svg × CACI -->\n\n<!-- badge: Pipeline healthy · ok -->\n"), 0o644)
+	d, err := deck.Parse(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := Deck(d, Options{})
+	if len(res.Problems) > 0 {
+		t.Fatal(res.Problems)
+	}
+	h := string(res.HTML)
+	for _, want := range []string{
+		`<p class="si-pill pill" data-kind="info"><span class="si-pill-mark pill-mark"></span>Prepared for CACI · Session 1 of 5</p>`,
+		`<p class="si-pill pill" data-kind="ok"><span class="si-pill-mark pill-mark"></span>Pipeline healthy</p>`,
+		`<div class="si-lockup lockup"><span class="si-lk-logo lk-logo" role="img" aria-label="AceMQ"></span><span class="si-lk-x lk-x"></span><span class="si-lk-name lk-name">CACI</span></div>`,
+		`<img class="si-lk-img" src="data:image/svg+xml`,
+	} {
+		if !strings.Contains(h, want) {
+			t.Errorf("lacks %q", want)
+		}
 	}
 }

@@ -241,10 +241,11 @@ html :is(.si-title, .si-closing) .si-sub { display: contents !important; }
 html :is(.si-title, .si-closing) h1.si-heading { order: 0; font-size: 3.6em; line-height: .98; letter-spacing: -.04em; max-width: 13em; margin: 0 0 .3em !important; }
 .lockup { order: -2; display: flex; align-items: center; gap: 1.1em; margin-bottom: 1.4em !important; }
 html .lockup img { height: 1.9em; width: auto; max-height: none; border-radius: 0; box-shadow: none; }
+.lockup .lk-logo, .lockup .lk-logo + .lk-x { display: block; }
 .lockup .lk-logo { height: 1.9em; aspect-ratio: 1729 / 473; background: var(--si-brand-logo) left center / contain no-repeat; filter: var(--ace-logo-filter); }
 .lockup .lk-x { width: 2px; height: 1.9em; background: var(--ace-stroke-strong); }
 .lockup .lk-name { font: 800 1.55em/1 var(--si-font-heading); letter-spacing: -.03em; color: var(--ace-text); }
-.pill { order: -1; display: inline-flex; align-items: center; gap: .6em; padding: .5em 1em .5em .6em; border-radius: 99em;
+.pill { order: -1; display: inline-flex; align-items: center; gap: .6em; font-weight: 400; padding: .5em 1em .5em .6em; border-radius: 99em;
         background: var(--ace-card-bg); border: 1px solid var(--ace-stroke); box-shadow: var(--ace-sh-2); font-size: .74em; margin-bottom: 1.2em !important; }
 html .si-slide .pill { color: var(--ace-text-2); }
 .pill-mark { width: .75em; height: .75em; border-radius: 50%; background: var(--ace-orange); box-shadow: 0 0 0 .3em var(--ace-orange-fill); }
