@@ -12,6 +12,23 @@ import (
 // checkAll checks the whole workspace like `si check <dir>`: every deck and
 // document on its own, every guide, book and site as a whole.
 func (a *api) checkAll(w http.ResponseWriter, r *http.Request) {
+	problems, checked := a.problemsAll()
+	writeJSON(w, http.StatusOK, map[string]any{"problems": problems, "checked": checked})
+}
+
+// Problem is one si check finding, with a workspace-relative file.
+type Problem = problemJSON
+
+// DeckInfo is a deck, document page, or guide / book / site of a workspace.
+type DeckInfo = deckInfo
+
+// Check checks the whole workspace like si check (the terminal Studio's problems).
+func (w *Workspace) Check() ([]Problem, int) { return (&api{ws: w}).problemsAll() }
+
+// Decks lists the workspace's decks, document pages and guides, with kinds and titles.
+func (w *Workspace) Decks() []DeckInfo { return (&api{ws: w}).listDecks() }
+
+func (a *api) problemsAll() ([]problemJSON, int) {
 	problems, checked := []problemJSON{}, 0
 	opt := render.Options{ShowProblems: true, Media: render.MediaLink}
 	add := func(ps []deck.Problem) {
@@ -39,7 +56,7 @@ func (a *api) checkAll(w http.ResponseWriter, r *http.Request) {
 			checked++
 		}
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"problems": problems, "checked": checked})
+	return problems, checked
 }
 
 // build runs `si build` on the workspace into its html/ folder (which the

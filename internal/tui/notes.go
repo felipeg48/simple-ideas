@@ -141,7 +141,14 @@ func (m *teleprompter) localStep(dir int) {
 	}
 }
 
-var clickRE = regexp.MustCompile(`(?i)\[click\]`)
+var (
+	clickRE = regexp.MustCompile(`(?i)\[click\]`)
+	// cueRE finds the [CLICK] cues after cueMark replaced them: private-use
+	// marks survive markdown (a NUL does not)
+	cueRE = regexp.MustCompile("\uE000CUE(\\d+)\uE001")
+)
+
+func cueMark(n int) string { return fmt.Sprintf("\uE000CUE%d\uE001", n) }
 
 func (m *teleprompter) View() tea.View {
 	v := tea.NewView(m.render())
@@ -216,7 +223,7 @@ func (m *teleprompter) render() string {
 	cue := 0
 	src = clickRE.ReplaceAllStringFunc(src, func(string) string {
 		cue++
-		return fmt.Sprintf("\uE000CUE%d\uE001", cue) // private-use marks survive markdown (NUL does not)
+		return cueMark(cue)
 	})
 	nr := &textRenderer{pal: m.pal, w: rw, k: 1 << 30}
 	var script []string
@@ -226,19 +233,8 @@ func (m *teleprompter) render() string {
 		}
 		script = append(script, b.lines...)
 	}
-	cueRE := regexp.MustCompile("\uE000CUE(\\d+)\uE001")
-	for i, l := range script {
-		script[i] = cueRE.ReplaceAllStringFunc(l, func(c string) string {
-			n := 0
-			fmt.Sscanf(cueRE.FindStringSubmatch(c)[1], "%d", &n)
-			switch {
-			case n <= m.k:
-				return mu.Render("✓ click")
-			case n == m.k+1:
-				return lipgloss.NewStyle().Background(m.pal.Accent).Foreground(m.pal.BG).Bold(true).Render(" ▶ CLICK ")
-			}
-			return st.Foreground(m.pal.Accent).Render("▶ click")
-		})
+	for i := range script {
+		script[i] = cueMarks(script[i], m.k, m.pal)
 	}
 	if len(script) == 0 {
 		script = []string{mu.Render("No " + strings.ToLower(map[bool]string{false: "Notes:", true: "Points:"}[m.points]) + " on this slide.")}

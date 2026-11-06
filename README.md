@@ -57,6 +57,9 @@ self-contained HTML files you can mail, host or open from a USB stick.
   the terminal itself, in the theme's colours, with block-letter titles, builds,
   code, tables, cards and pictures in half-block pixels; `--notes` in a second
   terminal is the teleprompter, following the presenter. Over SSH and in tmux.
+  `si --terminal [dir]` (v1.8) is the Studio as a keyboard app: files, live
+  preview, problems, New, Build, storyboard, inspector, Rehearse and Present,
+  editing in your `$EDITOR`. See `docs/terminal-studio.md`.
 - **si Studio for macOS (v1.6):** the browser editor (`si --web`) as a native
   app: its own windows, Dock icon, folders dropped on it open, teleprompter and
   full screen as app windows. Download `si-Studio-<version>-macos.zip` from a

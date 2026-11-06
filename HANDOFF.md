@@ -5,7 +5,14 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-05)
 
-- **Latest release: v1.7.0: si in the terminal.** `internal/tui` (Bubble Tea v2 +
+- **Latest release: v1.8.0: `si --terminal [dir]`, the Studio in the terminal**
+  (`internal/tui/studio.go`): files, live preview (slides, documents, images),
+  problems (`studio.Workspace.Check`), `e` `$EDITOR` (tmux pane beside), `n`
+  starters, `b` build (CLI in-process), `s` storyboard, `i` inspector
+  (`deck.SetDirective`, the Go port of the web inspector's writer), `:` palette,
+  Rehearse, Present (hands the terminal to `si play --terminal`; tmux opens
+  `--notes` beside). Lab is a stub until 1.9. `docs/terminal-studio.md`.
+- **v1.7.0: si in the terminal.** `internal/tui` (Bubble Tea v2 +
   Lip Gloss v2): `si play deck.md --terminal` (every layout, builds, block-letter
   titles, code/tables/cards/badges/logos, half-block images, stage diagrams; live
   reload; keys like the browser), `--notes` (teleprompter in a second terminal over a

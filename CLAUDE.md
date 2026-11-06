@@ -86,7 +86,7 @@ what you chose.
 | `docs/docs.go` | embeds RULES.md + reference/user-manual.md + agent-rules.md for `si rules` / `si manual` / `si --export agent-rules` (in `docs/` so go:embed can reach them; no `.go` at the repo root) |
 | `examples/` | showcase deck, included appendix, `assets/journey.svg` canvas, media, `css/harbor.css` theme, one example per document type (`article/`, `guide/`, `book/`, `demos/`, `site/`); embedded for `si new` and `--export example --type` |
 | `docs/screenshots/` | headless screenshots referenced by the README |
-| `internal/tui/` | si in the terminal: `slide.go` + `text.go` (the deck as text and colour: layouts, builds, code, tables, cards), `font.go` (block letters), `image.go` (half-block pixels), `palette.go` (theme tokens), `play.go` (`si play --terminal`, `--dump`), `notes.go` (the `--notes` teleprompter), `sync.go` (the local socket between them) |
+| `internal/tui/` | si in the terminal: `slide.go` + `text.go` (the deck as text and colour: layouts, builds, code, tables, cards), `font.go` (block letters), `image.go` (half-block pixels), `palette.go` (theme tokens), `play.go` (`si play --terminal`, `--dump`), `notes.go` (the `--notes` teleprompter), `sync.go` (the local socket between them), `studio.go` (`si --terminal [dir]`: files, preview, problems, overlays, modes), `lab.go` (Lab mode); see `docs/terminal-studio.md` |
 | `desktop/` | si Studio.app for macOS: its own module; `main.go` (starts/stops `si --web` per folder), `app_darwin.m` (Cocoa + WebKit windows and menus), `build-mac.sh` (universal bundle + zip, `make desktop-mac`) |
 
 ## Run and test

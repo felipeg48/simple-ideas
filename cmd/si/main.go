@@ -41,7 +41,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "1.7.0"
+const version = "1.8.0"
 
 // Exit codes.
 const (
@@ -62,6 +62,7 @@ Usage:
         serve everything for readers, live: decks, articles, guides (with their
         navigation) and labs; like play, without the terminal drawer
   si --web [dir] [--addr 127.0.0.1:7070] [--no-open]   the Studio: edit, preview and check decks in the browser (loopback only)
+  si --terminal [dir]   the Studio in the terminal: files, live preview, problems, Rehearse, Present, Lab; edits in $EDITOR
   si [build] <dir|file.md> [--output html/] [--css <dir|file.css>]... [--no-inline-media] [--pdf]
         write one self-contained HTML file per deck plus index.html
         --pdf also renders each deck to pdfs/<name>.pdf and adds a PDF badge to the index tiles
@@ -258,6 +259,21 @@ func run(argv []string, stdout, stderr io.Writer) int {
 			}
 			o.theme = name
 		}
+	}
+	// si --terminal [dir]: the Studio in the terminal (si play x --terminal is the presenter)
+	if o.terminal && !o.help && (len(o.args) == 0 || len(o.args) == 1 && isDir(o.args[0])) {
+		dir := "."
+		if len(o.args) == 1 {
+			dir = o.args[0]
+		}
+		self, _ := os.Executable()
+		err := tui.Studio(dir, tui.StudioOptions{Theme: o.theme, Self: self,
+			Run: func(args []string, out io.Writer) int { return run(args, out, out) }})
+		if err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitProblems
+		}
+		return exitOK
 	}
 	if o.web && !o.help {
 		if len(o.args) > 1 {
@@ -1450,4 +1466,9 @@ func playTerminal(src string, o *options, stdout, stderr io.Writer) int {
 		return exitProblems
 	}
 	return exitOK
+}
+
+func isDir(p string) bool {
+	fi, err := os.Stat(p)
+	return err == nil && fi.IsDir()
 }
