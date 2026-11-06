@@ -62,6 +62,10 @@ what you chose.
    `make studio-e2e`, never for go build/test. The Studio assets are served only
    by `si --web` (loopback only), never in a built deck, so rule #2 holds too. The
    Go module adds no dependencies. See `docs/studio.md`.
+   **Exception (v1.6.0, desktop shell only):** `desktop/` is its own Go module
+   (`desktop/go.mod`) with cgo and Objective-C against Apple's Cocoa and WebKit
+   frameworks (no third-party code). It bundles `si` and runs `si --web` per
+   folder; the si module itself stays cgo-free. See `docs/desktop.md`.
 
 ## Layout of the code
 
@@ -78,6 +82,7 @@ what you chose.
 | `docs/docs.go` | embeds RULES.md + reference/user-manual.md + agent-rules.md for `si rules` / `si manual` / `si --export agent-rules` (in `docs/` so go:embed can reach them; no `.go` at the repo root) |
 | `examples/` | showcase deck, included appendix, `assets/journey.svg` canvas, media, `css/harbor.css` theme, one example per document type (`article/`, `guide/`, `book/`, `demos/`, `site/`); embedded for `si new` and `--export example --type` |
 | `docs/screenshots/` | headless screenshots referenced by the README |
+| `desktop/` | si Studio.app for macOS: its own module; `main.go` (starts/stops `si --web` per folder), `app_darwin.m` (Cocoa + WebKit windows and menus), `build-mac.sh` (universal bundle + zip, `make desktop-mac`) |
 
 ## Run and test
 

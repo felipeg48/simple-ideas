@@ -139,7 +139,11 @@ code, kbd { font-family: var(--mono); font-size: .92em; }
 .ribbon span { display: flex; flex-direction: column; min-width: 0; padding: 6px 8px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 14%, transparent); font-size: 11px; }
 .ribbon b, .ribbon i { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ribbon i { font-style: normal; color: var(--mute); font-variant-numeric: tabular-nums; }
-.board-cols { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 260px); gap: 12px; align-items: start; }
+.board-cols { display: grid; grid-auto-flow: column; grid-auto-columns: 260px; gap: 12px; align-items: start; }
+/* a 1440 × 810 slide drawn at the card's inner width (238 px) */
+.thumb { grid-column: 1 / -1; position: relative; display: block; width: 238px; aspect-ratio: 16 / 9; overflow: hidden; margin: -2px 0 6px;
+  border-radius: 6px; background: var(--bg); border: 1px solid var(--line); }
+.thumb iframe { position: absolute; top: 0; left: 0; width: 1440px; height: 810px; border: 0; transform: scale(.16528); transform-origin: 0 0; pointer-events: none; }
 .board-col h3 { display: flex; flex-direction: column; gap: 2px; margin: 0 0 8px; font-size: 13px; }
 .board-col h3 span { color: var(--mute); font-weight: 400; font-size: 11px; }
 .card { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; width: 100%; margin-bottom: 8px; padding: 10px; text-align: left; border-radius: 10px;

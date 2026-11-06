@@ -5,7 +5,16 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-05)
 
-- **Latest release: v1.5.0** (tagged; the release workflow publishes it).
+- **Latest release: v1.6.0** (tagged; the release workflow publishes it, plus
+  `si-Studio-<v>-macos.zip` from a macOS runner).
+- **v1.6.0: si Studio for macOS + storyboard thumbnails.** `desktop/` (own module,
+  cgo + Cocoa/WebKit, no Wails): one WKWebView window per folder, each running the
+  bundled `si --web --addr 127.0.0.1:0`; window.open → app windows; external links →
+  browser; ad-hoc signed universal bundle (`make desktop-mac`); `docs/desktop.md`.
+  The window UI was not visually tested (no windows on the founder's screen);
+  `desktop/main_test.go` tests start/stop headless. Storyboard thumbnails:
+  deck.js `?si-view=thumb` (role `thumb`: no channel, all steps), live reload skips
+  it. Next: Windows/Linux desktop, `si publish` (LinkedIn).
 - **v1.5.0: Studio S4.** Inspector (`inspector.tsx`, `inspector-edit.ts`
   `setDirective`, `EditorCtl.edit` one undoable minimal change; check API slides
   carry layout/transition/background/class/eyebrow/words/clicks/steps), storyboard

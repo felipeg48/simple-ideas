@@ -40,7 +40,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/studio"
 )
 
-const version = "1.5.0"
+const version = "1.6.0"
 
 // Exit codes.
 const (

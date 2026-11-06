@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key><string>si Studio</string>
+	<key>CFBundleDisplayName</key><string>si Studio</string>
+	<key>CFBundleIdentifier</key><string>io.github.felipeg48.si-studio</string>
+	<key>CFBundleExecutable</key><string>si-studio</string>
+	<key>CFBundleIconFile</key><string>AppIcon</string>
+	<key>CFBundlePackageType</key><string>APPL</string>
+	<key>CFBundleShortVersionString</key><string>__VERSION__</string>
+	<key>CFBundleVersion</key><string>__VERSION__</string>
+	<key>LSMinimumSystemVersion</key><string>13.0</string>
+	<key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
+	<key>NSHighResolutionCapable</key><true/>
+	<key>NSHumanReadableCopyright</key><string>Apache License 2.0</string>
+	<!-- the Studio is served over http on 127.0.0.1 -->
+	<key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
+	<!-- a folder dropped on the Dock icon opens it -->
+	<key>CFBundleDocumentTypes</key>
+	<array><dict>
+		<key>CFBundleTypeName</key><string>Folder</string>
+		<key>CFBundleTypeRole</key><string>Viewer</string>
+		<key>LSItemContentTypes</key><array><string>public.folder</string></array>
+	</dict></array>
+</dict>
+</plist>

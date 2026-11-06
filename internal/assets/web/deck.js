@@ -18,6 +18,9 @@
   /* ?si-view=tp: this page becomes the teleprompter of the deck open in another
      window or frame of the same browser (si --web Rehearse / Lab, or by hand) */
   if (!role && /[?&]si-view=tp(?:&|$)/.test(location.search)) role = 'tp-local';
+  /* ?si-view=thumb: a still picture of one slide (si --web storyboard): every
+     build step shown, no sync, no live reload */
+  if (!role && /[?&]si-view=thumb(?:&|$)/.test(location.search)) role = 'thumb';
   if (cfg.keys) for (var _k in cfg.keys) if (cmd.hasOwnProperty(_k) && cfg.keys[_k]) cmd[_k] = cfg.keys[_k];
   var feat = { draw: true, timer: true, presenter: true, overview: true, find: true };
   if (cfg.features) for (var _f in cfg.features) if (feat.hasOwnProperty(_f)) feat[_f] = !!cfg.features[_f];
@@ -519,7 +522,7 @@
   /* ---------- presenter view (p): a second window synced over BroadcastChannel,
      and with si play --remote also over the relay (other devices) ---------- */
   var chans = [];
-  try { if ('BroadcastChannel' in window && role !== 'tp' && role !== 'tp-local') chans.push(new BroadcastChannel('si:' + data.name)); } catch (e) {}
+  try { if ('BroadcastChannel' in window && role !== 'tp' && role !== 'tp-local' && role !== 'thumb') chans.push(new BroadcastChannel('si:' + data.name)); } catch (e) {}
   /* window.SI_RELAY is injected by si play --remote only (never in a built deck) */
   if (remoteOn && role !== 'tp' && window.SI_RELAY) chans.push(window.SI_RELAY());
   /* a page on the same origin hears a message twice (BroadcastChannel and relay): mid dedupes */
@@ -936,6 +939,7 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fit(slides[cur]); });
   window.addEventListener('load', function () { renderMermaid(false); fit(slides[cur]); });
   fromHash(true);
+  if (role === 'thumb') go(cur, 'end', true);
   /* remote draw pad: the pen is always on; prev/next buttons drive the deck */
   if (role === 'draw' && draw) {
     toggleDraw(true);

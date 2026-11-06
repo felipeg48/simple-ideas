@@ -1,0 +1,59 @@
+//go:build darwin
+
+package main
+
+import (
+	"net/http"
+	"net/http/cookiejar"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+)
+
+// TestStartAndStop runs the real si --web the way the app does (no window).
+func TestStartAndStop(t *testing.T) {
+	bin := t.TempDir()
+	build := exec.Command("go", "build", "-o", filepath.Join(bin, "si"), "./cmd/si")
+	build.Dir = ".."
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build si: %v\n%s", err, out)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "talk.md"), []byte("# Talk\n"), 0o644)
+	url, err := start(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(url, "http://127.0.0.1:") || !strings.Contains(url, "?token=") {
+		t.Fatalf("url %q", url)
+	}
+	jar, _ := cookiejar.New(nil)
+	resp, err := (&http.Client{Jar: jar}).Get(url) // the token is swapped for a cookie and the Studio page served
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != 200 {
+		t.Fatalf("GET studio: %d", resp.StatusCode)
+	}
+	goShutdown()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if _, err := http.Get(url); err != nil {
+			return // stopped
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	t.Error("si --web still answers after goShutdown")
+}
+
+func TestStartReportsAFailure(t *testing.T) {
+	t.Setenv("PATH", t.TempDir()) // no si anywhere
+	if _, err := start(t.TempDir()); err == nil || !strings.Contains(err.Error(), "si binary") {
+		t.Errorf("want a clear error without si: %v", err)
+	}
+}

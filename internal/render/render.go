@@ -818,7 +818,7 @@ const RelayJS = `<script id="si-relay">window.SI_RELAY=function(){var id=Math.ra
 
 // LiveReloadJS reloads the page when si play reports a change; the URL hash
 // keeps the slide and step.
-const LiveReloadJS = `<script>(function(){if(!window.EventSource)return;var es=new EventSource('/_si/events');es.addEventListener('reload',function(){location.reload()});})();</script>` + "\n"
+const LiveReloadJS = `<script>(function(){if(!window.EventSource||/[?&]si-view=thumb/.test(location.search))return;var es=new EventSource('/_si/events');es.addEventListener('reload',function(){location.reload()});})();</script>` + "\n"
 
 // DevReloadJS is the si play --dev hot-reload client: on a change it fetches the
 // re-rendered deck and morphs the slides in place (when the slide count is
@@ -826,7 +826,7 @@ const LiveReloadJS = `<script>(function(){if(!window.EventSource)return;var es=n
 // full-page flash. It falls back to a full reload when the structure changes,
 // and shows an overlay when the deck fails to render.
 const DevReloadJS = `<script>(function(){
-  if(!window.EventSource)return;
+  if(!window.EventSource||/[?&]si-view=thumb/.test(location.search))return;
   var es=new EventSource('/_si/events');
   es.addEventListener('reload',hot);
   function overlay(msg){

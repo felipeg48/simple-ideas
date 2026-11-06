@@ -390,7 +390,7 @@ export function App() {
           onCreate={onCreate} onRename={onRename} onDelete={onDelete} onRunbook={onRunbook} onStarter={onStarter} />
         <Split label="Resize navigator" onMove={(dx) => setLayout((l) => ({ ...l, nav: Math.min(480, Math.max(180, l.nav + dx)) }))} />
         <div class={"work" + (problemsOpen ? " with-problems" : "")}>
-          {view === "board" && <Storyboard check={check} current={slide} title={deck?.title ?? ""} onGo={(f, l) => { setView("edit"); open(f, l); }} />}
+          {view === "board" && <Storyboard check={check} current={slide} title={deck?.title ?? ""} url={deck && isSlides(deck.kind) ? pageURL(deck) : null} onGo={(f, l) => { setView("edit"); open(f, l); }} />}
           {/* the editor stays mounted under the storyboard, so open files keep their state */}
           <div class={"panes" + (view === "focus" ? " focus" : "")} ref={panes} style={{ "--pcols": paneCols }} hidden={view === "board"}>
             <section class="ed" aria-label="Editor">

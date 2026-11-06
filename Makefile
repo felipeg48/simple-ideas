@@ -1,7 +1,7 @@
 BIN := bin/si
 INSTALL_DIR ?= $(HOME)/.bin
 
-.PHONY: build test install play-example examples check fmt clean studio-ui studio-e2e
+.PHONY: build test install play-example examples check fmt clean studio-ui studio-e2e desktop-mac
 
 build:
 	go build -o $(BIN) ./cmd/si
@@ -49,3 +49,7 @@ clean:
 
 studio-e2e: build
 	cd web/studio && npm run e2e
+
+# si Studio.app for macOS (universal), into desktop/dist; needs Xcode command line tools
+desktop-mac:
+	desktop/build-mac.sh

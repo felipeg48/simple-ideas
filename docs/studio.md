@@ -181,8 +181,9 @@ Write has three views (the switch beside Build, or ⌘K):
   words of its `Notes:` script, its build steps and its `[CLICK]` cues.
 - **Storyboard** — the whole deck at a glance: one column per topic (the topics
   of the deck's `o` overview), a time ribbon of the notes minutes per topic,
-  and a card per slide (layout, minutes, builds, slides without a script).
-  Click a card to go to its source.
+  and a card per slide: a live thumbnail (the deck page with `?si-view=thumb`,
+  loaded lazily, reloaded after every save), layout, minutes, builds, and
+  slides without a script. Click a card to go to its source.
 - **Focus** — no navigator, the editor centred at a reading width, tabs faded,
   and the live slide floating in a corner.
 
@@ -223,5 +224,4 @@ Studio reads a workspace the way `si check` and `si serve` do:
 
 - The bundle is about 700 KB (240 KB gzipped); most of it is CodeMirror. About 120 KB is the HTML / JavaScript / CSS grammar Markdown highlighting pulls in for raw HTML; dropping it would need a custom Markdown language. Not worth it on a loopback app today.
 - Build runs in the request; a very large workspace (or `--pdf`) keeps the dialog busy until it finishes.
-- The storyboard shows text cards, not slide thumbnails.
 - `make studio-e2e` needs `npx playwright install chromium` once.

@@ -511,6 +511,8 @@ si play talk.md --remote --remote-addr 0.0.0.0:9000
 (for example `talk.html?si-view=tp`) turns that page into the teleprompter of
 the same deck open in another tab, window or frame of the same browser,
 synced like the `p` window. `si --web` uses it for its Rehearse and Lab modes.
+`?si-view=thumb` shows one slide as a still picture (every build step shown,
+no sync, no live reload); the Studio storyboard uses it for its thumbnails.
 
 ## 12. Includes
 
