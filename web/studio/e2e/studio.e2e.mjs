@@ -17,7 +17,11 @@ cpSync(join(here, "fixture"), root, { recursive: true });
 const ONE = join(root, "sections/one.md");
 const ORIGINAL = readFileSync(ONE, "utf8");
 
-const srv = spawn(si, ["--web", root, "--addr", "127.0.0.1:0", "--no-open"], { stdio: ["ignore", "pipe", "pipe"] });
+// the terminal tests must not depend on the user's shell start-up (a heavy
+// .zshrc takes seconds): zsh reads its rc files from an empty ZDOTDIR here
+const zdot = mkdtempSync(join(tmpdir(), "si-e2e-zdot-"));
+const srv = spawn(si, ["--web", root, "--addr", "127.0.0.1:0", "--no-open"],
+  { stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, SHELL: "/bin/zsh", ZDOTDIR: zdot } });
 const url = await new Promise((res, rej) => {
   let buf = "";
   const t = setTimeout(() => rej(new Error("no URL from si --web: " + buf)), 10000);
