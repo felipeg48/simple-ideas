@@ -1,6 +1,7 @@
 # Screen demo recorder: plan for a separate project
 
-Status: **idea, being refined by the founder. Do not build yet.** Saved
+Status: **moved to its own project, Retake (`~/Progs/AI/retake-app`, see its
+CLAUDE.md).** This file is the original plan. Saved
 2026-11-06 so the next session starts from the same understanding.
 
 ## The feature

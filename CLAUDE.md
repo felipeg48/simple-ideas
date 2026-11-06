@@ -187,8 +187,8 @@ pass. The steps that matter:
 - **Web fonts** (DONE, v1.1.0, `render/fonts.go`): `fonts:` from Google, Bunny,
   Fontshare, Fontsource or a local file, inlined at build time. Next: a
   `fonts-subset:` key for non-latin scripts; fonts in a theme `.css` file.
-- **Screen demo recorder (idea, being refined; do not build; likely a
-  separate project, not part of si):** scripted demos of native Mac apps
+- **Screen demo recorder: moved to its own project, Retake
+  (`~/Progs/AI/retake-app`), not part of si:** scripted demos of native Mac apps
   recorded with narration into MP4s, and the same scripts as screen-level
   tests; a native Swift app. Plan, hard parts, phases and the founder's open
   questions: `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md`.
