@@ -113,6 +113,7 @@ const theme = EditorView.theme({
   ".cm-diagnostic-error": { borderLeftColor: "var(--red)" },
   ".cm-lintRange-error": { backgroundImage: "none", textDecoration: "underline wavy var(--red)", textUnderlineOffset: "3px" },
   ".cm-gutter-lint": { width: "14px" },
+  ".cm-si-hl": { backgroundImage: "linear-gradient(var(--accent-soft), var(--accent-soft))", backgroundSize: "100% .5em", backgroundPosition: "0 88%", backgroundRepeat: "no-repeat" },
   ".cm-si-chip": { backgroundColor: "var(--chip-bg)", boxShadow: "inset 0 0 0 1px var(--chip-line)",
     borderRadius: "6px", padding: "1px 0", color: "var(--chip-punct)" },
   ".cm-si-chip-slide": { backgroundColor: "var(--chip2-bg)", boxShadow: "inset 0 0 0 1px var(--chip2-line)" },

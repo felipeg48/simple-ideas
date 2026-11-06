@@ -286,3 +286,35 @@ func TestExportExampleTypesAndBuildGuide(t *testing.T) {
 		t.Error("the index has a guide tile and an article tile")
 	}
 }
+
+func TestNewWithTypeAndFix(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	var out, errb bytes.Buffer
+	if code := run([]string{"new", "harbor", "--type", "site"}, &out, &errb); code != 0 {
+		t.Fatalf("new site: %d %s", code, errb.String())
+	}
+	if code := run([]string{"new", "harbor/queues", "--type", "article"}, &out, &errb); code != 0 {
+		t.Fatalf("new article: %d %s", code, errb.String())
+	}
+	if nav, _ := os.ReadFile(filepath.Join(dir, "harbor", "_site.md")); !strings.Contains(string(nav), "- [Queues](queues.md)") {
+		t.Errorf("the article joins the site menu:\n%s", nav)
+	}
+	if code := run([]string{"check", "harbor"}, &out, &errb); code != 0 {
+		t.Errorf("starters check clean: %s", errb.String())
+	}
+	if code := run([]string{"new", "harbor/queues", "--type", "article"}, &out, &errb); code == 0 {
+		t.Error("si new never overwrites")
+	}
+
+	os.WriteFile(filepath.Join(dir, "talk.md"), []byte("# Talk\n\n## A <span class=\"hl\">phrase</span>\n"), 0o644)
+	out.Reset()
+	run([]string{"fix", "talk.md"}, &out, &errb)
+	if raw, _ := os.ReadFile(filepath.Join(dir, "talk.md")); strings.Contains(string(raw), "==") || !strings.Contains(out.String(), "1 highlight") {
+		t.Errorf("a dry run reports and writes nothing: %s", out.String())
+	}
+	run([]string{"fix", ".", "--write"}, &out, &errb)
+	if raw, _ := os.ReadFile(filepath.Join(dir, "talk.md")); !strings.Contains(string(raw), "## A ==phrase==") {
+		t.Errorf("--write applies it: %s", raw)
+	}
+}

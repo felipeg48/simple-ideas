@@ -213,6 +213,7 @@ var langNames = map[string]string{"bash": "bash", "sh": "bash", "shell": "bash",
 // code blocks that follow it into tabs. It runs before the slide transform,
 // which never sees the tabs directive.
 func (dr *deckRenderer) codeFeatures(doc ast.Node, src []byte, sc *slideCtx) {
+	defer dr.cardsPass(doc, src, sc) // cards group blocks too, on slides and in documents
 	if dr.callouts == nil {
 		dr.callouts = map[ast.Node]bool{}
 	}

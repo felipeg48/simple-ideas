@@ -3,6 +3,7 @@ package studio
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/felipeg48/simple-ideas/internal/deck"
@@ -62,6 +63,12 @@ func pageKind(d *deck.Deck, g *deck.Guide) string {
 
 // isNavFile reports whether name is a _nav.md or _site.md.
 func isNavFile(name string) bool { return name == deck.NavFile || name == deck.SiteFile }
+
+// plainTitle drops ==highlight== marks from a title the editor lists
+// (tree, storyboard, inspector, ⌘K): they style a slide, not a label.
+func plainTitle(s string) string { return markRE.ReplaceAllString(s, "$1") }
+
+var markRE = regexp.MustCompile(`==([^=\n]+?)==`)
 
 // pageURL is the live page of a workspace-relative file: "a/b.md" → "/a/b.html".
 func pageURL(rel string) string { return "/" + strings.TrimSuffix(rel, filepath.Ext(rel)) + ".html" }

@@ -187,7 +187,9 @@ commands mid-demo (`docker ps`, `cockroach sql`, …). It exists only under
 si play <dir>              # serve with live reload (--dev: in-place hot reload)
 si build <dir> --pdf       # self-contained HTML (+ PDF)
 si check <dir>             # validate; exit 1 on a problem
-si new <name>              # scaffold a deck
+si new <name>              # scaffold a deck (the showcase, every rule)
+si new <name> --type article   # a small starter: deck, article, guide, book, site, page, lab, demo
+si fix <dir> [--write]     # raw-HTML components (hl, pill, lockup, cards) into si syntax
 si new-canvas <name>       # scaffold an animated canvas
 si manual --slides         # this manual
 si rules                   # the full format reference

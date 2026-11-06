@@ -48,6 +48,8 @@ type tocEntry struct {
 var (
 	calloutRE = regexp.MustCompile(`(?i)^\[!(note|tip|important|warning|caution)\]$`)
 	docHeadRE = regexp.MustCompile(`(?s)<h([23])>(.*?)</h[23]>`)
+	// customIDRE is a heading's own id: "## Jitter {#jitter}"
+	customIDRE = regexp.MustCompile(`\s*\{#([A-Za-z][\w-]*)\}\s*$`)
 )
 
 // docBody renders one part of the lab body (paths relative to the part's
@@ -130,10 +132,18 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 	var toc []tocEntry
 	h = docHeadRE.ReplaceAllStringFunc(h, func(m string) string {
 		g := docHeadRE.FindStringSubmatch(m)
-		txt := plain(g[2])
-		id := sl.slug(html.UnescapeString(txt))
-		toc = append(toc, tocEntry{int(g[1][0] - '0'), id, txt})
 		inner := g[2]
+		var id string
+		if m := customIDRE.FindStringSubmatch(inner); m != nil { // ## Jitter {#jitter}: a fixed id for links and embeds
+			inner = strings.TrimSpace(inner[:len(inner)-len(m[0])])
+			id = m[1]
+			sl[id] = true
+		}
+		txt := plain(inner)
+		if id == "" {
+			id = sl.slug(html.UnescapeString(txt))
+		}
+		toc = append(toc, tocEntry{int(g[1][0] - '0'), id, txt})
 		if g[1] == "2" && dr.opt.Chapter != "" { // a book chapter: 3.1, 3.2, …
 			dr.sec++
 			num := fmt.Sprintf("%s.%d", dr.opt.Chapter, dr.sec)

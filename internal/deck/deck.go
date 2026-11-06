@@ -60,6 +60,7 @@ var Directives = map[string]string{
 	"event":      "body",  // a countdown toast as a date nears
 	"embed":      "body",  // a deck, document or guide/book/site, framed, as a card, in full or one section
 	"logo":       "body",  // a logo lockup: [image] × partner name (slides, documents, sites)
+	"cards":      "body",  // the ### headings that follow become a grid of cards (slides, documents)
 	"layout":     "slide", // slide layout
 	"transition": "slide", // slide transition
 	"background": "slide", // slide background
@@ -76,23 +77,24 @@ var Directives = map[string]string{
 
 // Meta is the deck-level front matter.
 type Meta struct {
-	Type       string // deck (default) | lab | article | guide
-	Title      string
-	Author     string
-	Date       string
-	Theme      string // a built-in theme (si theme list), a .css path or a URL
-	Mode       string // auto | light | dark
-	Accent     string // CSS colour
-	Fonts      string // fonts: heading=Fraunces:600, body=Inter:400;700 (render/fonts.go)
-	Transition string // default slide transition
-	Aspect     string // aspect hint for overview cards and print pages
-	Mermaid    string // "" (CDN default), "off", or a script URL
-	Background string // default background of every slide
-	Lang       string
-	Status     string // optional course status badge on the index (e.g. beta, preview, new)
-	Version    string // optional course version badge on the index (e.g. v1.2.0)
-	Year       string // optional year shown in the title-slide copyright line
-	Copyright  string // optional copyright holder shown on the title slide (© year holder)
+	Type        string // deck (default) | lab | article | guide
+	Title       string
+	Author      string
+	Date        string
+	Theme       string // a built-in theme (si theme list), a .css path or a URL
+	Mode        string // auto | light | dark
+	Accent      string // CSS colour
+	Fonts       string // fonts: heading=Fraunces:600, body=Inter:400;700 (render/fonts.go)
+	FontsSubset string // fonts-subset: latin, latin-ext, greek … (default latin, latin-ext)
+	Transition  string // default slide transition
+	Aspect      string // aspect hint for overview cards and print pages
+	Mermaid     string // "" (CDN default), "off", or a script URL
+	Background  string // default background of every slide
+	Lang        string
+	Status      string // optional course status badge on the index (e.g. beta, preview, new)
+	Version     string // optional course version badge on the index (e.g. v1.2.0)
+	Year        string // optional year shown in the title-slide copyright line
+	Copyright   string // optional copyright holder shown on the title slide (© year holder)
 
 	Footer           string // text shown in a corner of every slide; a slide's `footer:` overrides it, `footer: off` hides it
 	FooterPos        string // footer corner: bottom-right (default), bottom-left, bottom-center, top-right, top-left, top-center
@@ -119,7 +121,7 @@ type Meta struct {
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -431,7 +433,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"background": &m.Background, "status": &m.Status, "version": &m.Version, "year": &m.Year, "copyright": &m.Copyright,
 		"footer": &m.Footer, "footer-position": &m.FooterPos, "watermark": &m.Watermark, "watermark-opacity": &m.WatermarkOpacity, "labs-label": &m.LabsLabel,
 		"runbook": &m.Runbook, "demos": &m.Demos, "type": &m.Type,
-		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "fonts": &m.Fonts, "repo": &m.Repo,
+		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "fonts": &m.Fonts, "fonts-subset": &m.FontsSubset, "repo": &m.Repo,
 		"subtitle": &m.Subtitle, "edition": &m.Edition, "session": &m.Session, "slides": &m.SlidesRef, "duration": &m.Duration,
 		"navigator": &m.Navigator, "logo": &m.Logo, "cta": &m.CTA,
 	}[key]
@@ -886,5 +888,5 @@ func (d *Deck) checkDemoMinutes(lines []srcLine) {
 var durationRE = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*min`)
 
 // docDirectives are the directives a document uses (the rest are deck-only).
-var docDirectives = map[string]bool{"tabs": true, "slides": true, "alert": true, "badge": true, "logo": true, "accordion": true,
+var docDirectives = map[string]bool{"tabs": true, "slides": true, "alert": true, "badge": true, "logo": true, "cards": true, "accordion": true,
 	"modal": true, "end": true, "carousel": true, "event": true, "embed": true}

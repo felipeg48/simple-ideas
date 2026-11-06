@@ -5,7 +5,14 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-05)
 
-- **Latest release: v1.6.2: components without raw HTML.** `==text==` highlight
+- **Latest release: v1.6.3.** `<!-- cards -->` (`render/cards.go`, a pass in
+  `codeFeatures` so slides and documents share it; card class `.si-cell` because
+  `.si-card` is the index tile), `si fix [--write]` (`deck.FixComponents`), `si new
+  <name> --type …` (`studio.WriteStarter`, shared with the Studio), Studio titles drop
+  `==` (`plainTitle`), editor colours `==highlight==` (`HL_RE`), `## Title {#id}` in
+  documents, `fonts-subset:`, desktop File ▸ Open Recent (own list, NSMenuDelegate),
+  CACI: cards converted, the two [CLICK] warnings fixed.
+- **v1.6.2: components without raw HTML.** `==text==` highlight
   (`render/highlight_mark.go`, goldmark delimiter like ~~strike~~; `plain()` drops the
   marks); `badge` and new `logo` work on slides (CACI pill / lockup markup, with
   `si-*` hooks; generic looks under `:where()` so a theme's `.pill`/`.lockup`/`.hl` wins);

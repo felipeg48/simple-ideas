@@ -109,6 +109,7 @@ type deckRenderer struct {
 	themeName     string      // resolved theme name (or "custom" for a CSS-file theme)
 	themeCSS      string      // the si.theme layer CSS for this deck
 	fontsCSS      string      // fonts: inlined @font-face rules and font tokens (fonts.go)
+	fontSubsets   []string    // fonts-subset: the subsets kept from a split family
 	anims         []animEntry // resolved break-timer animations (empty if none)
 	problems      []deck.Problem
 	warnings      []deck.Problem

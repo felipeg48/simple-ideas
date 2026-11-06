@@ -458,6 +458,19 @@ pre.si-code :is(.si-diff-hunk,.si-diff-meta) .si-ln{display:none}
 @media (width < 56rem){.si-site-drop{border:0;box-shadow:none;background:none}.si-site-group-t::after{content:""}}
 
 /* ---------- plugins ---------- */
+/* <!-- cards --> (zero specificity: a theme's own .cards / .card wins) */
+:where(.si-cards){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,14em),1fr));gap:.8em;width:100%;margin:.6em 0}
+:where(.si-cards.c2){grid-template-columns:repeat(auto-fit,minmax(min(100%,20em),1fr))}
+:where(.si-cards.c3){grid-template-columns:repeat(auto-fit,minmax(min(100%,15em),1fr))}
+:where(.si-cards.c4){grid-template-columns:repeat(auto-fit,minmax(min(100%,10.5em),1fr))}
+:where(.si-cell){padding:.9em 1em .8em;border-radius:.8em;background:var(--si-surface);border:1px solid var(--si-line);border-top:.22em solid var(--si-line);line-height:1.32}
+:where(.si-cell.teal,.si-cell.ok){border-top-color:var(--si-ok)}
+:where(.si-cell.orange,.si-cell.hi){border-top-color:var(--si-accent)}
+:where(.si-cell.crit){border-top-color:var(--si-crit)}
+:where(.si-cell.hi){border:2px solid var(--si-accent);border-top-width:.22em}
+:where(.si-cell h4){margin:.15em 0 .3em;font:700 1.05em/1.15 var(--si-font-heading)}
+:where(.si-cell p){margin:0 0 .4em;font-size:.86em}
+:where(.si-card-tag){display:block;font:600 .62em/1.2 var(--si-font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--si-muted)}
 /* ==highlight==, <!-- badge --> on a slide, <!-- logo: … × Partner -->: zero
    specificity (:where) so any theme's own .hl / .pill / .lockup wins */
 :where(.hl){background:linear-gradient(color-mix(in srgb,var(--si-accent) 30%,transparent),color-mix(in srgb,var(--si-accent) 30%,transparent)) 0 88%/100% .32em no-repeat;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding-inline:.04em}

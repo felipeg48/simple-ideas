@@ -152,7 +152,7 @@ html .si-footer::before { content: ""; display: inline-block; width: .5em; heigh
 html .si-slide:has(> .si-footer) .si-inner { padding-bottom: max(calc(var(--si-pad-y) + 2.6cqi + .9rem), 4.2rem) !important; }
 
 /* ---------- components (raw HTML in slides) ---------- */
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14em), 1fr)); gap: .8em; width: 100%; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14em), 1fr)); gap: .8em; width: 100%; margin: 0; }
 .cards.c2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 20em), 1fr)); }
 .cards.c4 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5em), 1fr)); }
 .card {

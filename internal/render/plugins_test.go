@@ -86,7 +86,7 @@ func TestEmbed(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("post.md", "---\ntype: article\ntitle: Retries\ndescription: Back off.\n---\n# Retries\n\n## Jitter\n\nSpread them out.\n\n## Budgets\n\nCap them.\n")
+	write("post.md", "---\ntype: article\ntitle: Retries\ndescription: Back off.\n---\n# Retries\n\n## Full jitter {#jitter}\n\nSpread them out.\n\n## Budgets\n\nCap them.\n")
 	write("talk.md", "---\ntitle: Talk\n---\n# Talk\n\n---\n\n## Two\n")
 	write("d.md", "---\ntype: article\n---\n# D\n\n<!-- embed: post.md -->\n\n<!-- embed: post.md#jitter -->\n\n<!-- embed: talk.md -->\n")
 	d, err := deck.Parse(filepath.Join(dir, "d.md"))
@@ -102,6 +102,9 @@ func TestEmbed(t *testing.T) {
 		if !strings.Contains(h, want) {
 			t.Errorf("lacks %q", want)
 		}
+	}
+	if strings.Contains(h, "{#jitter}") {
+		t.Error("a custom id is not part of the heading text")
 	}
 	if strings.Contains(h[strings.Index(h, `si-embed-doc`):], "Cap them.") {
 		t.Errorf("section embed ran past its section")
@@ -143,5 +146,29 @@ func TestBadgeKeepsItsDotAndWorksOnSlides(t *testing.T) {
 		if !strings.Contains(h, want) {
 			t.Errorf("lacks %q", want)
 		}
+	}
+}
+
+func TestCardsOnSlidesAndInDocuments(t *testing.T) {
+	body := "<!-- cards: 2 -->\n\n### High availability · In seconds · teal\n\nOne cluster.\n\n### Disaster recovery · orange\n\nTwo sites.\n\n## After\n"
+	h := string(renderDoc(t, body).HTML)
+	for _, want := range []string{
+		`<div class="si-cards cards c2">`,
+		`<div class="si-cell card teal">`, `<span class="si-card-tag tag teal">In seconds</span><h4>High availability</h4>`,
+		`<div class="si-cell card orange">`, `<h4>Disaster recovery</h4>`,
+	} {
+		if !strings.Contains(h, want) {
+			t.Errorf("document lacks %q", want)
+		}
+	}
+	p := filepath.Join(t.TempDir(), "d.md")
+	os.WriteFile(p, []byte("# T\n\n---\n\n## Two\n\n<!-- step -->\n<!-- cards -->\n\n### A\n\nx\n\n### B · hi\n\ny\n"), 0o644)
+	d, _ := deck.Parse(p)
+	res := Deck(d, Options{})
+	if len(res.Problems) > 0 {
+		t.Fatal(res.Problems)
+	}
+	if hs := string(res.HTML); !strings.Contains(hs, `<div class="si-cards cards si-step"`) && !strings.Contains(hs, `si-step`) || !strings.Contains(hs, `<div class="si-cell card hi">`) {
+		t.Errorf("slide cards: %s", hs[strings.Index(hs, "si-cards")-80:strings.Index(hs, "si-cards")+200])
 	}
 }

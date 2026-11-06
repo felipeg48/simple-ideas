@@ -97,7 +97,7 @@ func (a *api) slides(d *deck.Deck) []slideJSON {
 	topics := render.Topics(d)
 	out := []slideJSON{}
 	for i, s := range d.Slides {
-		out = append(out, slideJSON{Index: i + 1, File: a.rel(s.File), Line: s.Line, Title: s.Title, Topic: topics[i], Minutes: s.Minutes,
+		out = append(out, slideJSON{Index: i + 1, File: a.rel(s.File), Line: s.Line, Title: plainTitle(s.Title), Topic: topics[i], Minutes: s.Minutes,
 			Layout: s.Layout, Transition: s.Transition, Background: s.Background, Class: strings.Join(s.Classes, " "), Eyebrow: s.Eyebrow,
 			Words: len(strings.Fields(s.Notes)), Clicks: strings.Count(s.Notes, "[CLICK]"), Steps: len(stepRE.FindAllString(s.Body, -1))})
 	}

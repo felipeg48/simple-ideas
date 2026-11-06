@@ -40,7 +40,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/studio"
 )
 
-const version = "1.6.2"
+const version = "1.6.3"
 
 // Exit codes.
 const (
@@ -63,8 +63,14 @@ Usage:
         --pdf also renders each deck to pdfs/<name>.pdf and adds a PDF badge to the index tiles
   si check <dir|file.md>
         validate decks: title, directives, assets, includes; exit 1 on a problem
-  si new <name>
-        scaffold <name>/ with a deck that uses every rule
+  si new <name> [--type deck|article|guide|book|site|page|lab|demo]
+        scaffold <name>/ with a deck that uses every rule; with --type, a small
+        starter of that type (<name>.md, or a <name>/ folder for guide, book and
+        site), added to the menu of the guide or site it is created in
+  si fix <dir|file.md>... [--write]
+        turn raw-HTML components into si syntax: <span class="hl"> into ==text==,
+        the pill into <!-- badge -->, the logo lockup into <!-- logo -->, simple card
+        grids into <!-- cards -->; prints what would change, writes with --write
   si new-canvas <name>
         scaffold <name>.svg (a working animated canvas) + <name>.md to preview it
   si migrate <dir|file> [--output dir] [--ai "<command>"]
@@ -151,6 +157,7 @@ type options struct {
 	remote                                       remoteFlag
 	open, help, ver                              bool
 	noInline, pdf, slides, dev, web, noOpen      bool
+	write                                        bool // si fix --write
 	serveMode                                    bool // si serve: play without the terminal (everything, for readers)
 	offline                                      bool // code: / diff: from the cache only
 	noInstructor                                 bool // si build: leave type: demo scripts out (a participant build)
@@ -180,6 +187,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.noOpen, "no-open", false, "")
 	fl.BoolVar(&o.noInline, "no-inline-media", false, "")
 	fl.BoolVar(&o.pdf, "pdf", false, "")
+	fl.BoolVar(&o.write, "write", false, "")
 	fl.BoolVar(&o.help, "help", false, "")
 	fl.BoolVar(&o.help, "h", false, "")
 	fl.BoolVar(&o.ver, "version", false, "")
@@ -303,7 +311,15 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		if len(rest) != 1 {
 			return usageErr(stderr, "new needs a <name>")
 		}
+		if o.kind != "" {
+			return newStarter(rest[0], o.kind, stdout, stderr)
+		}
 		return scaffold(rest[0], stdout, stderr)
+	case "fix":
+		if len(rest) < 1 {
+			return usageErr(stderr, "fix needs a <dir|file.md>")
+		}
+		return fixComponents(rest, o.write, stdout, stderr)
 	case "new-canvas":
 		if len(rest) != 1 {
 			return usageErr(stderr, "new-canvas needs a <name>")
@@ -1292,4 +1308,105 @@ func guideKindOf(g *deck.Guide) string {
 		return "site"
 	}
 	return "guide"
+}
+
+// newStarter writes a small starter of one type (si new <name> --type <kind>).
+func newStarter(name, kind string, stdout, stderr io.Writer) int {
+	kind = strings.ToLower(kind)
+	if alias, ok := map[string]string{"slides": "deck", "tutorial": "guide", "reference": "book"}[kind]; ok {
+		kind = alias
+	}
+	folder := kind == "guide" || kind == "book" || kind == "site"
+	path := strings.TrimSuffix(name, "/")
+	if !folder && !strings.HasSuffix(strings.ToLower(path), ".md") {
+		path += ".md"
+	}
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		fmt.Fprintf(stderr, "si: %v\n", err)
+		return exitProblems
+	}
+	cwd, _ := os.Getwd()
+	created, open, linked, err := studio.WriteStarter(kind, abs, "", cwd)
+	if err != nil {
+		if errors.Is(err, studio.ErrStarterExists) {
+			fmt.Fprintf(stderr, "si: %s already exists; si new never overwrites\n", path)
+			return exitProblems
+		}
+		fmt.Fprintf(stderr, "si: %v\n", err)
+		return exitUsage
+	}
+	rel := func(p string) string {
+		if r, err := filepath.Rel(cwd, p); err == nil {
+			return r
+		}
+		return p
+	}
+	for _, c := range created {
+		fmt.Fprintf(stdout, "si: created %s\n", rel(c))
+	}
+	if linked != "" {
+		fmt.Fprintf(stdout, "si: added it to %s\n", rel(linked))
+	}
+	cmd := "si serve"
+	if kind == "deck" {
+		cmd = "si play"
+	}
+	fmt.Fprintf(stdout, "  edit %s, then: %s %s\n", rel(open), cmd, rel(filepath.Dir(open)))
+	return exitOK
+}
+
+// fixComponents runs deck.FixComponents over every markdown file under the
+// paths (folders starting with _ or . are skipped: backups, partial builds).
+func fixComponents(paths []string, write bool, stdout, stderr io.Writer) int {
+	total := 0
+	for _, root := range paths {
+		err := filepath.WalkDir(root, func(p string, e fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if e.IsDir() {
+				if p != root && (strings.HasPrefix(e.Name(), "_") || strings.HasPrefix(e.Name(), ".") || e.Name() == "node_modules") {
+					return fs.SkipDir
+				}
+				return nil
+			}
+			if !strings.HasSuffix(strings.ToLower(p), ".md") {
+				return nil
+			}
+			raw, err := os.ReadFile(p)
+			if err != nil {
+				return err
+			}
+			out, n := deck.FixComponents(string(raw))
+			if out == string(raw) {
+				return nil
+			}
+			var parts []string
+			for _, k := range []string{"highlight", "badge", "logo", "cards"} {
+				if n[k] > 0 {
+					parts = append(parts, fmt.Sprintf("%d %s", n[k], k))
+					total += n[k]
+				}
+			}
+			fmt.Fprintf(stdout, "%s: %s\n", p, strings.Join(parts, ", "))
+			if write {
+				return os.WriteFile(p, []byte(out), 0o644)
+			}
+			return nil
+		})
+		if err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitProblems
+		}
+	}
+	switch {
+	case total == 0:
+		fmt.Fprintln(stdout, "si fix: nothing to change")
+	case write:
+		fmt.Fprintf(stdout, "si fix: %d change(s) written\n", total)
+	default:
+		fmt.Fprintf(stdout, "si fix: %d change(s); run again with --write to apply them\n", total)
+	}
+	return exitOK
 }

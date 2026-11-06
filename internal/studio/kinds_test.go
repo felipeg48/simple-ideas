@@ -67,3 +67,15 @@ func TestDecksAndTreeKnowSites(t *testing.T) {
 		}
 	}
 }
+
+func TestTitlesDropHighlightMarks(t *testing.T) {
+	f := newFx(t)
+	f.put("talk.md", "# The ==Thursday== promise\n\n---\n\n## Five things ==to keep==\n")
+	_, m := f.do("GET", "check?deck=talk.md", nil)
+	if s := fmt.Sprint(m["slides"]); strings.Contains(s, "==") || !strings.Contains(s, "Five things to keep") {
+		t.Errorf("slide titles: %s", s)
+	}
+	if d := fmt.Sprint(f.doAny("GET", "decks")); strings.Contains(d, "==") {
+		t.Errorf("deck titles: %s", d)
+	}
+}

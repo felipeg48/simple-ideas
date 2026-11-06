@@ -46,6 +46,27 @@ The big win is paid to picked: the lent picker. Packed to van barely moves becau
 
 ---
 
+## Three changes that ==held==
+
+<!-- cards: 3 -->
+
+### Retry once, after 30 s · Payments · teal
+
+A declined card waits half a minute and tries again, once.
+
+### Pick by evening wave · Warehouse
+
+Orders paid before 18:00 are picked the same night.
+
+### One dusk departure · Courier · hi
+
+Vans leave at 21:40 with every parcel picked that day.
+
+Notes:
+Three changes, one per team, and each one is still in place a year later. The highlighted one, the single dusk departure, is the change that moved Thursday from a hope to a promise.
+
+---
+
 ## Two views of route 7
 
 <!-- layout: two-col -->

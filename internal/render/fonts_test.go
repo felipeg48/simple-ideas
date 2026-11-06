@@ -35,6 +35,8 @@ func TestFontsInlined(t *testing.T) {
 			fmt.Fprint(w, "/* cyrillic */\n@font-face {\n  font-family: 'Testa';\n  font-weight: 600;\n  src: url(/cyr.woff2) format('woff2');\n  unicode-range: U+0400-045F;\n}\n/* latin */\n@font-face {\n  font-family: 'Testa';\n  font-weight: 600;\n  src: url(files/lat.woff2) format('woff2'), url(files/lat.woff) format('woff');\n  unicode-range: U+0000-00FF;\n}\n")
 		case "/files/lat.woff2":
 			w.Write([]byte("LATIN"))
+		case "/cyr.woff2":
+			w.Write([]byte("CYRIL"))
 		default:
 			http.NotFound(w, r)
 		}
@@ -69,5 +71,26 @@ func TestFontsInlined(t *testing.T) {
 	}
 	if strings.Contains(h, "cyr.woff2") || strings.Contains(h, "U+0400") {
 		t.Error("a non-latin subset was kept")
+	}
+}
+
+func TestFontsSubset(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/css":
+			fmt.Fprint(w, "/* cyrillic */\n@font-face {\n  font-family: 'Sub';\n  src: url(/cyr.woff2) format('woff2');\n  unicode-range: U+0400-045F;\n}\n/* latin */\n@font-face {\n  font-family: 'Sub';\n  src: url(/lat.woff2) format('woff2');\n  unicode-range: U+0000-00FF;\n}\n")
+		default:
+			w.Write([]byte(r.URL.Path))
+		}
+	}))
+	defer srv.Close()
+	fontProviders["sub"] = func(string, []string) []string { return []string{srv.URL + "/css"} }
+	defer delete(fontProviders, "sub")
+	p := filepath.Join(t.TempDir(), "d.md")
+	os.WriteFile(p, []byte("---\nfonts: body=sub:Sub\nfonts-subset: cyrillic, latin\n---\n# D\n"), 0o644)
+	d, _ := deck.Parse(p)
+	h := string(Deck(d, Options{}).HTML)
+	if !strings.Contains(h, "U+0400-045F") || !strings.Contains(h, "U+0000-00FF") {
+		t.Error("fonts-subset: cyrillic, latin keeps both")
 	}
 }

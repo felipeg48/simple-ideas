@@ -54,6 +54,22 @@ function chips(rules: Rules) {
   );
 }
 
+// ==highlight== phrases: tinted like the slide shows them
+const hlMark = Decoration.mark({ class: "cm-si-hl" });
+/** HL_RE matches a ==highlight== (exactly two = each side, like si's parser). */
+export const HL_RE = /(?<![=])==(?=[^=\s])[^=\n]+?==(?!=)/g;
+const highlights = (() => {
+  const deco = new MatchDecorator({ regexp: HL_RE, decoration: () => hlMark });
+  return ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+      constructor(view: EditorView) { this.decorations = deco.createDeco(view); }
+      update(u: ViewUpdate) { this.decorations = deco.updateDeco(u, this.decorations); }
+    },
+    { decorations: (p) => p.decorations },
+  );
+})();
+
 // ponytail: recomputes front-matter marks on every doc change; it scans at most 200 lines.
 const frontMatter = ViewPlugin.fromClass(
   class {
@@ -170,5 +186,5 @@ export function siCompletions(rules: Rules) {
 export function siMarkdown(rules: Rules): Extension {
   // one source object: the completion plugin tracks sources by identity
   const data = [{ autocomplete: siCompletions(rules) }];
-  return [markdown(), chips(rules), frontMatter, EditorState.languageData.of(() => data)];
+  return [markdown(), chips(rules), highlights, frontMatter, EditorState.languageData.of(() => data)];
 }

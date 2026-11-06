@@ -65,7 +65,7 @@ func (a *api) listDecks() []deckInfo {
 				continue // included modules are not decks
 			}
 			if d, g, err := gs.parsePage(f, a.ws.Root); err == nil {
-				info := deckInfo{Path: a.rel(d.Path), Title: d.Title(), Files: a.sourceFiles(d), Runbook: d.Meta.Runbook, Kind: pageKind(d, g)}
+				info := deckInfo{Path: a.rel(d.Path), Title: plainTitle(d.Title()), Files: a.sourceFiles(d), Runbook: d.Meta.Runbook, Kind: pageKind(d, g)}
 				info.URL = pageURL(info.Path)
 				if g != nil {
 					info.Guide = a.rel(navPath(g))

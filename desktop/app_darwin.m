@@ -9,6 +9,7 @@ extern void goCloseURL(char *url);
 extern void goShutdown(void);
 
 static NSString *const kLastFolder = @"lastFolder";
+static NSString *const kRecent = @"recentFolders"; // newest first, at most ten
 
 @interface SIWindow : NSObject <WKUIDelegate, WKNavigationDelegate, NSWindowDelegate>
 @property(strong) NSWindow *window;
@@ -16,7 +17,7 @@ static NSString *const kLastFolder = @"lastFolder";
 @property(copy) NSString *studioURL; // set on a folder's main window: closing it stops its si
 @end
 
-@interface SIApp : NSObject <NSApplicationDelegate>
+@interface SIApp : NSObject <NSApplicationDelegate, NSMenuDelegate>
 @end
 
 static NSMutableArray<SIWindow *> *windows;
@@ -202,6 +203,11 @@ static NSMenu *submenu(NSMenu *bar, NSString *title) {
 	}
 	[[NSUserDefaults standardUserDefaults] setObject:path forKey:kLastFolder];
 	[[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:[NSURL fileURLWithPath:path]];
+	NSMutableArray *recent = [([[NSUserDefaults standardUserDefaults] arrayForKey:kRecent] ?: @[]) mutableCopy];
+	[recent removeObject:path];
+	[recent insertObject:path atIndex:0];
+	while (recent.count > 10) [recent removeLastObject];
+	[[NSUserDefaults standardUserDefaults] setObject:recent forKey:kRecent];
 	WKWebViewConfiguration *cfg = [WKWebViewConfiguration new];
 	cfg.websiteDataStore = [WKWebsiteDataStore defaultDataStore];
 	NSSize size = NSScreen.mainScreen ? NSMakeSize(NSScreen.mainScreen.visibleFrame.size.width * 0.9, NSScreen.mainScreen.visibleFrame.size.height * 0.9)
@@ -218,6 +224,41 @@ static NSMenu *submenu(NSMenu *bar, NSString *title) {
 
 - (void)applicationWillTerminate:(NSNotification *)n {
 	goShutdown();
+}
+
+// Open Recent: the folders opened last, newest first; missing ones are skipped.
+- (void)menuNeedsUpdate:(NSMenu *)menu {
+	[menu removeAllItems];
+	NSArray<NSString *> *recent = [[NSUserDefaults standardUserDefaults] arrayForKey:kRecent] ?: @[];
+	for (NSString *path in recent) {
+		BOOL isDir = NO;
+		if (![[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDir] || !isDir) continue;
+		NSMenuItem *it = item(path.lastPathComponent, @selector(openRecent:), @"");
+		it.target = self;
+		it.representedObject = path;
+		it.toolTip = path;
+		it.image = [[NSWorkspace sharedWorkspace] iconForFile:path];
+		it.image.size = NSMakeSize(16, 16);
+		[menu addItem:it];
+	}
+	if (menu.numberOfItems == 0) {
+		NSMenuItem *none = item(@"No Recent Folders", nil, @"");
+		none.enabled = NO;
+		[menu addItem:none];
+		return;
+	}
+	[menu addItem:[NSMenuItem separatorItem]];
+	NSMenuItem *clear = item(@"Clear Menu", @selector(clearRecent:), @"");
+	clear.target = self;
+	[menu addItem:clear];
+}
+
+- (void)openRecent:(NSMenuItem *)sender {
+	[self openPath:sender.representedObject];
+}
+
+- (void)clearRecent:(id)sender {
+	[[NSUserDefaults standardUserDefaults] removeObjectForKey:kRecent];
 }
 
 - (void)buildMenu {
@@ -237,6 +278,11 @@ static NSMenu *submenu(NSMenu *bar, NSString *title) {
 	NSMenuItem *open = item(@"Open Folder…", @selector(openFolder:), @"o");
 	open.target = self;
 	[file addItem:open];
+	NSMenuItem *recentItem = item(@"Open Recent", nil, @"");
+	NSMenu *recent = [[NSMenu alloc] initWithTitle:@"Open Recent"];
+	recent.delegate = self; // filled from the saved list each time it opens
+	recentItem.submenu = recent;
+	[file addItem:recentItem];
 	[file addItem:[NSMenuItem separatorItem]];
 	[file addItem:item(@"Close Window", @selector(performClose:), @"w")];
 

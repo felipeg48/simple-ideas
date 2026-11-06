@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EditorState } from "@codemirror/state";
 import { CompletionContext, type CompletionResult, type CompletionSource } from "@codemirror/autocomplete";
-import { relPath, setCompletionFiles, siMarkdown } from "../src/si-lang";
+import { HL_RE, relPath, setCompletionFiles, siMarkdown } from "../src/si-lang";
 import type { Rules } from "../src/api";
 
 const rules: Rules = {
@@ -76,5 +76,12 @@ describe("siMarkdown sources", () => {
     const a = state.languageDataAt("autocomplete", 5), b = state.languageDataAt("autocomplete", 5);
     expect(a.length).toBeGreaterThan(0);
     expect(a).toEqual(b);
+  });
+});
+
+describe("highlight marks", () => {
+  it("match ==phrases==, not a single = or ===", () => {
+    const text = "## Five ==to keep== and a = b and ===no=== and ==two== more";
+    expect([...text.matchAll(HL_RE)].map((m) => m[0])).toEqual(["==to keep==", "==two=="]);
   });
 });

@@ -1097,8 +1097,9 @@ fonts: heading=Fraunces:600, body=Inter:400;700, mono=JetBrains Mono
 - Weights are 100 to 900 in steps of 100, separated by `;`. The defaults are
   700 for heading, 400;700 for body and 400 for mono. Every weight you list
   adds to the file, typically 20 to 60 KB per weight.
-- Only the latin and latin-ext subsets are kept, so a font with Cyrillic or
-  Greek letters needs a local file.
+- A split family keeps only the latin and latin-ext character sets unless
+  `fonts-subset:` names others: `fonts-subset: latin, greek` (or `cyrillic`,
+  `vietnamese`, `cyrillic-ext` …; also in `si.conf`). Each set adds to the file.
 - A stylesheet and its files are cached for good: after one online build,
   `--offline` builds the same output. `si check` reports a family or weight
   the source does not have.
@@ -1561,8 +1562,8 @@ the whole folder. The index page title is `--site-title <text>` (the old
 
 Plugins are directives that work in every document (pages, articles, guides,
 books, labs, demos), so in every site. They are plain HTML plus a few lines of
-runtime; nothing is fetched. `badge` and `logo` also work on slides; the
-others, on a slide, are reported as a problem.
+runtime; nothing is fetched. `badge`, `logo` and `cards` also work on slides;
+the others, on a slide, are reported as a problem.
 Options follow the text after a `·`: `key=value`, or a kind word (`info`,
 `ok`, `warn`, `crit`). Any other `· part` stays in the text, so
 `<!-- badge: Prepared for CACI · Session 1 of 5 -->` keeps its dot.
@@ -1577,6 +1578,7 @@ Options follow the text after a `·`: `key=value`, or a kind word (`info`,
 |---|---|
 | `alert: text · kind · until=YYYY-MM-DD` | a dismissible band; the reader's dismissal is remembered in that browser; hidden after `until`. Kinds: `info` (default), `ok`, `warn`, `crit`. |
 | `badge: text · kind` | a status pill, same kinds; on a slide, the pill paragraph a cover or closing slide carries (AceMQ Pro styles it with its orange mark) |
+| `cards: 2` | the `###` headings that follow become a grid of cards (2, 3 or 4 columns, or as many as fit): `### Title · tag · colour`, colour one of `teal`, `orange`, `ok`, `crit`, `hi` (the highlighted card); the grid ends at the next `##`, `---` or directive; a `<!-- step -->` before it reveals the whole grid |
 | `logo: [image] × Partner · alt=Brand` | a logo lockup: the image (or, with none, the theme's own logo: `--si-brand-logo`, as in AceMQ Pro), a bar, and the partner's name; on slides and pages |
 | `event: YYYY-MM-DDTHH:MM text · Label → link` | a corner toast with a live countdown, shown from two days before the time until it starts |
 | `accordion` | the `###` questions that follow become a one-open-at-a-time list; it ends at the next `##`, `---` or directive |
@@ -1609,10 +1611,24 @@ It is a trimmed copy with stubbed providers.
 | Form | Result |
 |---|---|
 | `embed: blog/retries.md` | a card: type, title, description, reading time, linking to the page |
-| `embed: blog/retries.md#what-we-changed` | that section's text, with a *From …* link |
+| `embed: blog/retries.md#what-we-changed` | that section's text, with a *From …* link; give a heading a fixed id with `## What we changed {#changes}` so the link survives a reworded title |
 | `embed: blog/retries.md full` | the whole body |
 | `embed: talks/journey.md 1-3` | a deck: its slides, live, in a frame (as `<!-- slides: -->`) |
 | `embed: docs/` | a guide, book or site folder: a card with its first pages or chapters |
+
+Cards, on a slide or a page:
+
+```markdown
+<!-- cards: 2 -->
+
+### High availability · In seconds · teal
+
+One cluster, one site. **Recovers by itself.**
+
+### Disaster recovery · By decision · orange
+
+Two clusters, two sites. **Recovers by decision.**
+```
 
 On a cover slide:
 

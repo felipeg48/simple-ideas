@@ -11,10 +11,19 @@ carry the pager for all four.
 
 ## How we work
 
-- Every incident gets a written review within five working days.
-- Every review ends with one change to the lab, so the next person can break
-  the same thing on purpose.
-- Talks and posts on this site come from those reviews.
+<!-- cards: 3 -->
+
+### A written review · Within five days
+
+Every incident gets one, signed by the people who were on call.
+
+### One change to the lab · Every review · teal
+
+So the next person can break the same thing on purpose.
+
+### Talks and posts · From the reviews
+
+Everything on this site starts as a review.
 
 ## Where we are
 

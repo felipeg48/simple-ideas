@@ -73,6 +73,17 @@ var (
 	fontFileExt = map[string]string{".woff2": "woff2", ".woff": "woff", ".ttf": "truetype", ".otf": "opentype"}
 )
 
+// wantSubset reports whether a split family's @font-face comment ("latin-ext",
+// "inter-greek-400-normal") names a subset the deck asked for.
+func (dr *deckRenderer) wantSubset(comment string) bool {
+	for _, s := range dr.fontSubsets {
+		if strings.Contains(comment, s) {
+			return true
+		}
+	}
+	return false
+}
+
 func fontID(family string) string { return strings.ToLower(strings.Join(strings.Fields(family), "-")) }
 
 // fontSpec is one role=… entry.
@@ -145,6 +156,19 @@ func (dr *deckRenderer) resolveFonts() {
 	if strings.TrimSpace(val) == "" || val == "off" {
 		return
 	}
+	subset := dr.d.Meta.FontsSubset
+	if subset == "" && dr.opt.Config != nil {
+		subset = dr.opt.Config.FontsSubset
+	}
+	dr.fontSubsets = []string{"latin"} // "latin" keeps latin-ext too
+	if strings.TrimSpace(subset) != "" {
+		dr.fontSubsets = nil
+		for _, x := range strings.Split(subset, ",") {
+			if x = strings.ToLower(strings.TrimSpace(x)); x != "" {
+				dr.fontSubsets = append(dr.fontSubsets, x)
+			}
+		}
+	}
 	specs, bad := parseFonts(val)
 	for _, m := range bad {
 		dr.problem(nil, "fonts: %s", m)
@@ -203,8 +227,8 @@ func (dr *deckRenderer) fontFaces(sp fontSpec) (string, string, error) {
 		n := 0
 		for _, m := range fontFaceRE.FindAllStringSubmatch(string(css), -1) {
 			comment, body := strings.ToLower(m[1]), m[2]
-			if strings.Contains(body, "unicode-range") && !strings.Contains(comment, "latin") {
-				continue // a non-latin subset of a split family
+			if strings.Contains(body, "unicode-range") && !dr.wantSubset(comment) {
+				continue // a subset of a split family nobody asked for
 			}
 			src := fontURLRE.FindAllStringSubmatch(body, -1)
 			if len(src) == 0 {
