@@ -36,6 +36,21 @@ same deck open in a browser through the `si play` server (`--addr`, default
 teleprompter listens (`GET /_si/position/events`) and sends `next` / `prev` /
 `go` back (`POST /_si/position/cmd`, same-origin only). Built decks never report.
 
+## Animated canvases
+
+`internal/tui/canvas.go` draws an `svg:` canvas on a character grid scaled from
+its viewBox (cells are about twice as tall as wide): rounded or square boxes for
+outlined rects, coloured bands for pills, tags and bars (their text sits on the
+band), wires for lines, polylines and paths (curves sampled), `●` for circles,
+and text by its anchor. Colours come from the CSS (`var(--si-…)` maps to the
+theme's palette). The state is computed like the browser
+(`canvasStates`: `render.ResolveState` / `render.ApplyOps` over the slides), and
+the canvas's CSS is parsed for rules of the form
+`.root[data-state~="w"] .part tag{…}` (descendant class and tag selectors).
+The presenter redraws about ten times a second while a slide has a canvas or a
+stage dot: packets ride their wires, `data-flow` dashes march, `data-alert`
+pulses, and between two builds a moved part eases from its old place for 0.9 s.
+
 ## Pictures
 
 Real pictures where the terminal can draw them (Kitty, Ghostty, WezTerm: Kitty

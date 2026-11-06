@@ -3,6 +3,7 @@ package tui
 import (
 	"html"
 	"image/color"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -35,7 +36,16 @@ type textRenderer struct {
 	k     int       // build steps shown: a block of step n shows when n <= k
 	steps int       // build steps counted so far
 	pics  *Pictures // real pictures (Kitty / iTerm2), nil for half blocks
-	src   []byte
+	// canvases: their state on this slide (by the path the directive names),
+	// the state they come from (a tween while p < 1), and the time
+	opts *SlideOpts
+	// collect: only record the slide's canvases and build-step ops (canvasStates)
+	collect    bool
+	svgs       []svgRef
+	stepOps    []string
+	tokens     []string // the state tokens of the steps list being rendered
+	pendingOps string   // the state ops of the next <!-- step: ops -->
+	src        []byte
 }
 
 var md = render.NewParser()
@@ -56,9 +66,11 @@ func (r *textRenderer) body(markdown string) []blk {
 		b.col = col
 		out = append(out, b)
 	}
-	// visible counts one build step and says whether it is shown
+	// visible counts one build step (and its state ops) and says whether it is shown
 	visible := func() bool {
 		r.steps++
+		r.stepOps = append(r.stepOps, r.pendingOps)
+		r.pendingOps = ""
 		return r.steps <= r.k
 	}
 	for i := 0; i < len(nodes); i++ {
@@ -75,8 +87,10 @@ func (r *textRenderer) body(markdown string) []blk {
 			switch name {
 			case "step":
 				step = true
+				r.pendingOps = val
 			case "steps":
 				stepsList = true
+				r.tokens = strings.Fields(val)
 			case "column":
 				col++
 			case "badge":
@@ -98,17 +112,26 @@ func (r *textRenderer) body(markdown string) []blk {
 				}
 				add(blk{lines: lines})
 			case "svg":
-				add(blk{lines: r.placeholder("◇ animated canvas", strings.Fields(val)), media: true})
+				f := strings.Fields(val)
+				if len(f) > 0 {
+					r.svgs = append(r.svgs, svgRef{f[0], f[1:]})
+				}
+				add(blk{lines: r.canvasLines(f), media: true})
 			}
 			continue
 		}
 		if l, ok := n.(*ast.List); ok && stepsList {
 			stepsList = false
 			add(blk{lines: r.list(l, 0, true)})
+			r.tokens = nil
 			continue
 		}
 		if step || stepsList {
+			if stepsList && len(r.tokens) > 0 { // steps: ops on a block that is not a list: one step
+				r.pendingOps = r.tokens[0]
+			}
 			step, stepsList = false, false
+			r.tokens = nil
 			if !visible() {
 				continue
 			}
@@ -236,9 +259,16 @@ func (r *textRenderer) list(l *ast.List, depth int, each bool) []string {
 	if num == 0 {
 		num = 1
 	}
+	item := 0
 	for it := l.FirstChild(); it != nil; it = it.NextSibling() {
 		if each {
 			r.steps++
+			ops := "" // this item's state token from <!-- steps: a b . c -->
+			if item < len(r.tokens) && r.tokens[item] != "." {
+				ops = r.tokens[item]
+			}
+			item++
+			r.stepOps = append(r.stepOps, ops)
 			if r.steps > r.k {
 				num++
 				continue
@@ -290,10 +320,11 @@ func (r *textRenderer) quote(q *ast.Blockquote) []string {
 // ---------- code ----------
 
 var (
-	tokRE     = regexp.MustCompile(`(?s)<span class="si-tk-(\w)">(.*?)</span>`)
-	calloutRE = regexp.MustCompile(`\s*(?://|#|--|;)?\s*<(\d+)>\s*$`)
-	attrRE    = regexp.MustCompile(`(\w+)(?:=("[^"]*"|\S+))?`)
-	circled   = []rune("❶❷❸❹❺❻❼❽❾❿")
+	stageDotRE = regexp.MustCompile(`(?m)^\s*dot\s+([^.\s]+)\.\.([^\s]+)(?:\s+([\d.]+)s)?`)
+	tokRE      = regexp.MustCompile(`(?s)<span class="si-tk-(\w)">(.*?)</span>`)
+	calloutRE  = regexp.MustCompile(`\s*(?://|#|--|;)?\s*<(\d+)>\s*$`)
+	attrRE     = regexp.MustCompile(`(\w+)(?:=("[^"]*"|\S+))?`)
+	circled    = []rune("❶❷❸❹❺❻❼❽❾❿")
 )
 
 func fenceAttrs(info string) (string, map[string]string) {
@@ -353,7 +384,7 @@ func (r *textRenderer) code(code, lang string, attrs map[string]string) []string
 	inner := r.w - 4
 	var body []string
 	for i, l := range lines {
-		h := r.tokens(render.Highlight(strings.ReplaceAll(l, "\x00", ""), lang))
+		h := r.hlTokens(render.Highlight(strings.ReplaceAll(l, "\x00", ""), lang))
 		h = strings.Replace(h, "●", r.st().Foreground(r.pal.Accent).Render("●"), 1)
 		for _, c := range circled {
 			h = strings.Replace(h, string(c), r.st().Foreground(r.pal.Accent).Render(string(c)), 1)
@@ -378,8 +409,8 @@ func (r *textRenderer) code(code, lang string, attrs map[string]string) []string
 	return r.box(title, body, w, r.pal.Line)
 }
 
-// tokens turns si's highlighted HTML into ANSI colours.
-func (r *textRenderer) tokens(h string) string {
+// hlTokens turns si's highlighted HTML into ANSI colours.
+func (r *textRenderer) hlTokens(h string) string {
 	col := map[string]lipgloss.Style{
 		"c": r.st().Foreground(r.pal.Muted).Italic(true), "s": r.st().Foreground(r.pal.Accent2),
 		"k": r.st().Foreground(r.pal.Accent).Bold(true), "n": r.st().Foreground(r.pal.Warn),
@@ -482,6 +513,7 @@ func (r *textRenderer) stage(src string) []string {
 	var rows [][3]string
 	var cur [3]string
 	curW := 0
+	centers := map[string]int{} // node -> its column, while there is one row
 	for i, n := range nodes {
 		bw := ansi.StringWidth(n) + 4
 		need := bw
@@ -498,12 +530,32 @@ func (r *textRenderer) stage(src string) []string {
 			cur[1] += arrow
 			cur[2] += "   "
 		}
+		centers[n] = curW + need - bw + bw/2
 		cur[0] += bs.Render("╭" + strings.Repeat("─", bw-2) + "╮")
 		cur[1] += bs.Render("│ ") + r.st().Bold(i == 0).Render(n) + bs.Render(" │")
 		cur[2] += bs.Render("╰" + strings.Repeat("─", bw-2) + "╯")
 		curW += need
 	}
 	rows = append(rows, cur)
+	// the travelling dot (dot A..B 3s) rides the arrows of a one-row diagram
+	if m := stageDotRE.FindStringSubmatch(src); m != nil && len(rows) == 1 {
+		a, aok := centers[m[1]]
+		b, bok := centers[m[2]]
+		if aok && bok && b > a {
+			dur, _ := strconv.ParseFloat(m[3], 64)
+			if dur <= 0 {
+				dur = 3
+			}
+			t := 0.0
+			if r.opts != nil {
+				t = r.opts.T
+			}
+			x := a + int(float64(b-a)*math.Mod(t/dur, 1))
+			row := rows[0][2]
+			w := ansi.StringWidth(row)
+			rows[0][2] = ansi.Cut(row, 0, x) + r.st().Foreground(r.pal.Accent).Bold(true).Render("●") + ansi.Cut(row, x+1, w)
+		}
+	}
 	var out []string
 	for i, row := range rows {
 		if i > 0 {

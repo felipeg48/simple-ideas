@@ -16,6 +16,9 @@ import (
 // background, so a cell holds two square pixels. Formats Go cannot decode
 // (SVG, WebP, video) get a placeholder with their name.
 func (r *textRenderer) image(src, alt string) []string {
+	if r.collect {
+		return nil
+	}
 	if strings.Contains(src, "://") || strings.HasPrefix(src, "data:") {
 		return r.placeholder("▣ "+orName(alt, "image"), []string{src})
 	}

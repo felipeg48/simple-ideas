@@ -91,9 +91,13 @@ type presenter struct {
 	msg        string // a reload problem, shown in the bar
 	mtimes     map[string]time.Time
 	hub        *hub
-	proto      string      // real pictures: kitty or iterm ("" draws half blocks)
-	pics       *Pictures   // the pictures of the frame on screen
-	places     []placement // and where they go
+	states     map[string][]string // the canvases' state at (i, k)
+	prevStates map[string][]string // the state they come from, for the move
+	changedAt  time.Time           // when (i, k) last changed: the move's start
+	moving     bool                // the slide has canvases or a stage dot: redraw ~10 times a second
+	proto      string              // real pictures: kitty or iterm ("" draws half blocks)
+	pics       *Pictures           // the pictures of the frame on screen
+	places     []placement         // and where they go
 }
 
 type drawPicsMsg struct{}
@@ -107,7 +111,7 @@ func (m *presenter) redraw() tea.Cmd {
 	return tea.Sequence(tea.ClearScreen, tea.Tick(80*time.Millisecond, func(time.Time) tea.Msg { return drawPicsMsg{} }))
 }
 
-func (m *presenter) Init() tea.Cmd { return tick() }
+func (m *presenter) Init() tea.Cmd { return tea.Batch(tick(), frame()) }
 
 func (m *presenter) steps(i int) int {
 	_, n := Slide(m.d, i, 0, max(40, m.w), max(10, m.h), m.pal)
@@ -150,11 +154,24 @@ func (m *presenter) broadcast() {
 func (m *presenter) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	before := [3]int{m.i, m.k, m.w*10000 + m.h}
 	model, cmd := m.update(msg)
-	if before != [3]int{m.i, m.k, m.w*10000 + m.h} {
+	if before != [3]int{m.i, m.k, m.w*10000 + m.h} || m.states == nil {
+		if before[0] != m.i || before[1] != m.k || m.states == nil {
+			m.states, m.prevStates = canvasStates(m.d, m.i, m.k)
+			m.changedAt = time.Now()
+			m.moving = len(m.states) > 0 || strings.Contains(m.d.Slides[m.i].Body, "```stage")
+		}
 		cmd = tea.Batch(cmd, m.redraw())
+	}
+	if _, ok := msg.(frameMsg); ok {
+		cmd = tea.Batch(cmd, frame())
 	}
 	return model, cmd
 }
+
+type frameMsg struct{}
+
+// frame redraws animated canvases about ten times a second (nothing else moves).
+func frame() tea.Cmd { return tea.Tick(time.Second/10, func(time.Time) tea.Msg { return frameMsg{} }) }
 
 func (m *presenter) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -244,7 +261,12 @@ func (m *presenter) View() tea.View {
 		if m.proto != "" {
 			pics = &Pictures{Proto: m.proto}
 		}
-		body, steps := Slide(m.d, m.i, m.k, m.w, m.h-1, m.pal, pics)
+		opts := &SlideOpts{Pics: pics, T: time.Since(m.start).Seconds(), States: m.states, Prev: m.prevStates,
+			P: min(1, time.Since(m.changedAt).Seconds()/0.9)}
+		if !m.moving {
+			opts.T = 0
+		}
+		body, steps := Slide(m.d, m.i, m.k, m.w, m.h-1, m.pal, opts)
 		if pics != nil {
 			body, m.places = pics.placements(body)
 			m.pics = pics

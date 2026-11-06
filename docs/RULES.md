@@ -903,8 +903,17 @@ same markdown:
   (Kitty, Ghostty and WezTerm through the Kitty graphics protocol; iTerm2 through
   its inline images), and as half-block pixels everywhere else, inside tmux too
   (`SI_PICTURES=kitty|iterm|halfblock` overrides the guess); **stage diagrams**
-  as boxes and arrows. SVG images, animated canvases,
-  Mermaid diagrams and video show a labelled placeholder: the browser draws them.
+  as boxes and arrows, the travelling dot moving along them.
+- **Animated canvases** (`<!-- svg: -->`) drawn with characters: boxes, wires,
+  text and dots from the SVG's shapes, in the state the deck has reached (the
+  same words, `+w` / `-w` and build-step ops as in the browser). The helper
+  attributes work (`data-show`, `data-hide`, `data-ok`, `data-alert`,
+  `data-flow`, `data-packets`, `data-grow`) and so do the canvas's own CSS state
+  rules for `opacity`, `display`, `fill` and `transform` (translate, scaleX).
+  They move: packets travel along their wires, flows march, alerts pulse, and a
+  part that moves between two states slides there when you press →. Other CSS
+  (`offset-path`, counters, filters) shows the end state. SVG images, Mermaid
+  diagrams and video show a labelled placeholder: the browser draws them.
 
 Keys are the browser's: → Space `n` next, ← `p` back, `g` / `G` first and
 last, `o` overview, `t` restart the timer, `?` keys, `q` quit. The deck reloads

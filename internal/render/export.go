@@ -32,3 +32,10 @@ func DemoFiles(base, spec string) ([]string, []string) { return demoFiles(base, 
 // RunLang reports whether a fence language is a command (Copy / Run in the
 // Demos panel, a runnable entry in the terminal Lab).
 func RunLang(lang string) bool { return runLangs[lang] }
+
+// ResolveState applies an svg: directive's words to the state the previous
+// slide left the same canvas in (relative +w / -w, else absolute).
+func ResolveState(prev, words []string) []string { return resolveState(prev, words) }
+
+// ApplyOps applies one build step's state ops (w, +w, -w, `.`) to a state.
+func ApplyOps(state []string, ops string) []string { return applyOps(state, ops) }

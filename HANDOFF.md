@@ -5,7 +5,13 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-05)
 
-- **Latest release: v1.10.0: real pictures and a teleprompter for browser decks.**
+- **Latest release: v1.10.1: canvases animated in the terminal.** `tui/canvas.go`
+  (SVG → character grid: rects as boxes or bands, wires, text runs in order, dots;
+  helper attributes; CSS state rules for opacity / display / fill / transform),
+  `tui/canvasstate.go` (`canvasStates`, `SlideOpts`, canvas cache), presenter
+  `frameMsg` at 10 fps while `moving`, 0.9 s ease between builds; stage `dot A..B`
+  moves. Wires go under box edges and text; pill text snaps onto its band.
+- **v1.10.0: real pictures and a teleprompter for browser decks.**
   `tui/pictures.go`: `PictureProtocol()` (env guess, never in tmux; `SI_PICTURES`),
   reserved cells with a U+E100+n marker, `placements` after rendering, `draw` (Kitty
   graphics chunks / iTerm2 OSC 1337) sent with `tea.Raw` 80 ms after a cleared frame.

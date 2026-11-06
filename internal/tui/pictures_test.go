@@ -45,7 +45,7 @@ func TestRealPicturesReserveAndDraw(t *testing.T) {
 	d2, _ := parsePage(filepath.Join(dir, "talk.md"), dir)
 	for _, proto := range []string{"kitty", "iterm"} {
 		pics := &Pictures{Proto: proto}
-		screen, _ := Slide(d2, 1, 0, 100, 30, PaletteFor("", ""), pics)
+		screen, _ := Slide(d2, 1, 0, 100, 30, PaletteFor("", ""), &SlideOpts{Pics: pics, P: 1})
 		if strings.Contains(screen, "▀") {
 			t.Errorf("%s: no half blocks when the terminal draws pictures", proto)
 		}
