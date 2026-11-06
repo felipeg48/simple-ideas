@@ -25,8 +25,9 @@ says what it does, and the video shows it happening.
 - **Native Mac apps** first.
 - Probably **a separate project**, not part of `si` (founder, 2026-11-06).
   Recommended: yes. Its own repo and releases, a native Swift Mac app plus
-  a small CLI. Name open: candidates *Take*, *Reel*, *Director*, *Stagehand*
-  (check for clashes before choosing).
+  a small CLI. Name open: shortlist *Retake*, *Docent*, *Clapper*, *Take One*
+  (check for clashes before choosing; *Stagehand* is out, a browser-automation
+  tool already uses it).
 - The earlier option was an `si` companion that talks only to `si`
   (working name `si-recorder`). It is kept below as the integration path.
 
@@ -108,8 +109,8 @@ for this companion.
    and an obvious abort (Esc, or the mouse to a screen corner).
 6. **Developing it.** Building and testing means clicking and recording on a
    real desktop, which breaks the "no windows on the founder's screen" rule.
-   Needs a sandbox Mac: the `terminal-mac` VM plugin (installed 2026-11-06,
-   failing to connect: `Executable not found in $PATH: stdio`) must work first.
+   Needs a sandbox Mac (a VM or a spare machine). Not the `terminal-mac`
+   plugin: the founder ruled it out (2026-11-06).
 
 ## Phases (proposed)
 
