@@ -55,7 +55,11 @@ type mmMap struct {
 
 // mmOpts are the look of a map: front matter of a mind map page, or the
 // options of a ```mindmap fence.
-type mmOpts struct{ Layout, Lines, Nodes, Theme, WM, WMPos, View, Camera, Floors, Kind string }
+type mmOpts struct {
+	Layout, Lines, Nodes, Theme, WM, WMPos, View, Camera, Floors, Kind, Flow string
+	Steps                                                                    string // a fence revealed one branch per build step: its number on the page
+	Prefix                                                                   string // ids of the fallback list (fences: one per fence, so two never clash)
+}
 
 type mmParser struct {
 	dr    *deckRenderer
@@ -64,6 +68,7 @@ type mmParser struct {
 	files map[string]string // absolute file -> its first map id
 	queue []string          // linked mind map files still to inline
 	slug  slugger
+	own   int // maps from the file itself (the rest are inlined linked files)
 }
 
 func newMMParser(dr *deckRenderer, sc *slideCtx) *mmParser {
@@ -339,7 +344,7 @@ func (p *mmParser) finish() {
 // component is the map's HTML: the data for mindmap.js and, for readers
 // without JavaScript (and screen readers), the maps as nested lists.
 func (p *mmParser) component(o mmOpts, start string, full bool) string {
-	data, _ := json.Marshal(map[string]any{"start": start, "maps": p.maps})
+	data := p.data(start)
 	var b strings.Builder
 	title := ""
 	for _, m := range p.maps {
@@ -367,19 +372,32 @@ func (p *mmParser) component(o mmOpts, start string, full bool) string {
 	if o.Floors != "" {
 		fmt.Fprintf(&b, ` data-floors="%s"`, html.EscapeString(o.Floors))
 	}
+	if o.Flow != "" {
+		fmt.Fprintf(&b, ` data-flow="%s"`, html.EscapeString(o.Flow))
+	}
+	if o.Steps != "" {
+		fmt.Fprintf(&b, ` data-steps="%s"`, o.Steps)
+	}
 	fmt.Fprintf(&b, ` role="group" aria-label="%s">`+"\n", html.EscapeString(title))
 	fmt.Fprintf(&b, `<script type="application/json" class="si-mm-data">%s</script>`+"\n", data)
 	b.WriteString(`<div class="si-mm-list">`)
 	for _, m := range p.maps {
-		fmt.Fprintf(&b, `<section id="%s"><h2>%s</h2>`, html.EscapeString(m.ID), html.EscapeString(m.Title))
-		listHTML(&b, m.Kids)
+		fmt.Fprintf(&b, `<section id="%s"><h2>%s</h2>`, html.EscapeString(o.Prefix+m.ID), html.EscapeString(m.Title))
+		listHTML(&b, m.Kids, o.Prefix)
 		b.WriteString("</section>")
 	}
 	b.WriteString("</div>\n</div>\n")
 	return b.String()
 }
 
-func listHTML(b *strings.Builder, list []*mmNode) {
+// data is the JSON the runtime reads: the maps (this file's first, own of
+// them, then the inlined linked files) and the one to start on.
+func (p *mmParser) data(start string) []byte {
+	data, _ := json.Marshal(map[string]any{"start": start, "own": p.own, "maps": p.maps})
+	return data
+}
+
+func listHTML(b *strings.Builder, list []*mmNode, prefix string) {
 	if len(list) == 0 {
 		return
 	}
@@ -390,7 +408,7 @@ func listHTML(b *strings.Builder, list []*mmNode) {
 		case n.Code != nil:
 			fmt.Fprintf(b, `<pre class="si-code"><code>%s</code></pre>`, n.Code.HTML)
 		case n.Link != "":
-			fmt.Fprintf(b, `<a href="#%s">%s</a>`, html.EscapeString(n.Link), html.EscapeString(n.T))
+			fmt.Fprintf(b, `<a href="#%s">%s</a>`, html.EscapeString(prefix+n.Link), html.EscapeString(n.T))
 		case n.Href != "":
 			fmt.Fprintf(b, `<a href="%s">%s</a>`, html.EscapeString(n.Href), html.EscapeString(n.T))
 		default:
@@ -399,7 +417,7 @@ func listHTML(b *strings.Builder, list []*mmNode) {
 		if n.Badge != "" {
 			fmt.Fprintf(b, " (%s)", html.EscapeString(n.Badge))
 		}
-		listHTML(b, n.Kids)
+		listHTML(b, n.Kids, prefix)
 		b.WriteString("</li>")
 	}
 	b.WriteString("</ul>")
@@ -408,18 +426,28 @@ func listHTML(b *strings.Builder, list []*mmNode) {
 // mindmapFence renders a ```mindmap fence: options are layout=, lines=,
 // nodes=, theme= on the fence line.
 func (dr *deckRenderer) mindmapFence(body string, attrs map[string]string, dir string) string {
-	o := mmOpts{Layout: attrs["layout"], Lines: attrs["lines"], Nodes: attrs["nodes"], Theme: attrs["theme"], View: attrs["view"], Camera: attrs["camera"], Floors: attrs["floors"], Kind: attrs["kind"]}
+	o := mmOpts{Layout: attrs["layout"], Lines: attrs["lines"], Nodes: attrs["nodes"], Theme: attrs["theme"], View: attrs["view"], Camera: attrs["camera"], Floors: attrs["floors"], Kind: attrs["kind"], Flow: attrs["flow"]}
+	dr.mmN++
+	o.Prefix = fmt.Sprintf("mm%d-", dr.mmN)
+	_, steps := attrs["steps"]
+	if attrs["reveal"] == "branches" {
+		steps = true
+	}
 	for k, v := range attrs {
+		if k == "steps" && v == "" {
+			continue
+		}
 		allowed := map[string][]string{"layout": deck.MapLayouts, "lines": deck.MapLines, "nodes": deck.MapNodes, "theme": deck.MapThemes,
-			"view": deck.MapViews, "camera": deck.MapCameras, "floors": deck.OnOff, "kind": deck.MapKinds}[k]
+			"view": deck.MapViews, "camera": deck.MapCameras, "floors": deck.OnOff, "kind": deck.MapKinds, "flow": deck.OnOff, "reveal": {"branches"}}[k]
 		if allowed == nil {
-			dr.problem(dr.cur, "mindmap: unknown fence option %q (use layout=, lines=, nodes=, theme=, view=, camera=, floors=, kind=)", k)
+			dr.problem(dr.cur, "mindmap: unknown fence option %q (use layout=, lines=, nodes=, theme=, view=, camera=, floors=, kind=, flow=, steps)", k)
 		} else if msg := oneOfMsg("mindmap "+k, v, allowed); msg != "" {
 			dr.problem(dr.cur, "%s", msg)
 		}
 	}
 	p := newMMParser(dr, dr.cur)
 	start := p.addSource(body, dir, dr.d.Path, "Mind map")
+	p.own = len(p.maps)
 	p.finish()
 	if start == "" {
 		dr.problem(dr.cur, "mindmap: no topics (write a list, one topic per item)")
@@ -429,7 +457,20 @@ func (dr *deckRenderer) mindmapFence(body string, attrs map[string]string, dir s
 	if o.View == "3d" {
 		dr.mindmap3d = true
 	}
-	return `<figure class="si-figure si-mm-figure">` + p.component(o, start, false) + "</figure>\n"
+	var marks strings.Builder
+	if steps {
+		sc := dr.cur
+		if sc == nil {
+			dr.problem(nil, "mindmap: steps works on a slide (a document shows every branch)")
+		} else {
+			o.Steps = strconv.Itoa(dr.mmN)
+			for i := range p.maps[0].Kids {
+				fmt.Fprintf(&marks, `<span class="si-mm-step" data-mm="%d" data-step="%d" hidden></span>`+"\n", dr.mmN, sc.steps+1+i)
+			}
+			sc.steps += len(p.maps[0].Kids)
+		}
+	}
+	return `<figure class="si-figure si-mm-figure">` + p.component(o, start, false) + "</figure>\n" + marks.String()
 }
 
 func oneOfMsg(what, val string, allowed []string) string {
@@ -456,6 +497,7 @@ func Mindmap(d *deck.Deck, opt Options) Result {
 		}
 	}
 	p.files[d.Path] = start
+	p.own = len(p.maps)
 	p.finish()
 	if start == "" {
 		dr.problem(nil, "mindmap: no topics (write a list, one topic per item)")
@@ -467,7 +509,7 @@ func Mindmap(d *deck.Deck, opt Options) Result {
 		wm, wmLayer = dr.wmText, ""
 	}
 	comp := p.component(mmOpts{Layout: m.MapLayout, Lines: m.MapLines, Nodes: m.MapNodes, Theme: m.MapTheme, WM: wm, WMPos: m.WatermarkPos,
-		View: m.MapView, Camera: m.MapCamera, Floors: m.MapFloors, Kind: m.MapKind}, start, true)
+		View: m.MapView, Camera: m.MapCamera, Floors: m.MapFloors, Kind: m.MapKind, Flow: m.MapFlow}, start, true)
 	dr.mindmap3d = m.MapView == "3d"
 	res := Result{}
 	dr.finish(&res)
@@ -501,4 +543,70 @@ func (dr *deckRenderer) mindmapScripts() string {
 		js = "<script>\n" + assets.ThreeJS + "\n" + assets.ThreeOrbitJS + "\n" + assets.Mindmap3DJS + "</script>\n"
 	}
 	return js + "<script>\n" + assets.MindmapJS + "</script>\n"
+}
+
+// mmBuild parses one mind map for the Studio's map editor: the page itself,
+// or (info != "") a ```mindmap fence of it with that opening line and body.
+func mmBuild(d *deck.Deck, body, info string, opt Options) (*deckRenderer, *mmParser, string, mmOpts) {
+	dr := &deckRenderer{d: d, opt: opt, doc: true, lastState: map[string][]string{}, words: map[string]bool{}, files: map[string]string{}}
+	dr.md = dr.markdown()
+	dr.resolveTheme()
+	p := newMMParser(dr, nil)
+	p.files[d.Path] = ""
+	start := ""
+	var o mmOpts
+	if info != "" {
+		a := fenceAttrs(strings.TrimSpace(strings.TrimLeft(strings.TrimSpace(info), "`~")))
+		o = mmOpts{Layout: a["layout"], Lines: a["lines"], Nodes: a["nodes"], Theme: a["theme"], Flow: a["flow"]}
+		start = p.addSource(body, filepath.Dir(d.Path), d.Path, "Mind map")
+	} else {
+		for _, s := range d.Slides {
+			if id := p.addSource(s.Body, s.Dir, d.Path, d.Title()); start == "" {
+				start = id
+			}
+		}
+		m := d.Meta
+		dr.watermark(nil)
+		wm := ""
+		if dr.wmKind == "text" {
+			wm = dr.wmText
+		}
+		o = mmOpts{Layout: m.MapLayout, Lines: m.MapLines, Nodes: m.MapNodes, Theme: m.MapTheme, WM: wm, WMPos: m.WatermarkPos, Flow: m.MapFlow}
+	}
+	p.files[d.Path] = start
+	p.own = len(p.maps)
+	p.finish()
+	return dr, p, start, o
+}
+
+// MindmapView is what the map editor redraws from: the maps, the options
+// that change the drawing, and the problems.
+type MindmapView struct {
+	Data     json.RawMessage   `json:"data"`
+	Opts     map[string]string `json:"opts"`
+	Problems []deck.Problem    `json:"problems"`
+}
+
+// MindmapEdit renders one mind map (see mmBuild) as the editor's data.
+func MindmapEdit(d *deck.Deck, body, info string, opt Options) MindmapView {
+	dr, p, start, o := mmBuild(d, body, info, opt)
+	res := Result{}
+	dr.finish(&res)
+	return MindmapView{Data: p.data(start), Problems: res.Problems, Opts: map[string]string{
+		"layout": firstNonEmpty(o.Layout, "map"), "lines": firstNonEmpty(o.Lines, "curved"), "nodes": firstNonEmpty(o.Nodes, "box"),
+		"mm-theme": firstNonEmpty(o.Theme, "auto"), "wm": o.WM, "wm-pos": firstNonEmpty(o.WMPos, "corner"), "flow": o.Flow}}
+}
+
+// MindmapCanvas is the map editor's canvas: one mind map, full size, with the
+// editing script that sends every change to the Studio as an op.
+func MindmapCanvas(d *deck.Deck, body, info string, opt Options) []byte {
+	dr, p, start, o := mmBuild(d, body, info, opt)
+	var b bytes.Buffer
+	modeAttr := dr.head(&b)
+	b.WriteString(`<style id="si-css">` + "\n" + assets.LayerOrder + assets.DocCSS + assets.MindmapCSS + dr.themeCSS + dr.accentCSS() + "</style>\n")
+	dr.userAndMode(&b, modeAttr)
+	b.WriteString("</head>\n<body class=\"si-doc si-mm-page\" data-si-doc=\"mindmap\">\n<main class=\"si-mm-main\">\n")
+	b.WriteString(strings.Replace(p.component(o, start, true), `<div class="si-mindmap"`, `<div class="si-mindmap" data-edit`, 1))
+	b.WriteString("</main>\n<script>\n" + assets.MindmapJS + "</script>\n<script>\n" + assets.MindmapEditJS + "</script>\n</body>\n</html>\n")
+	return b.Bytes()
 }

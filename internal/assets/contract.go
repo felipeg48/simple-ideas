@@ -359,6 +359,8 @@ var Hooks = []Hook{
 	{`.si-mm-chip, .si-mm-chip-link, .si-mm-chip-href, .si-mm-chip-badge, .si-mm-chip-more`, "chips after a topic: map › (drill-down), a page or slide link, a badge, +N folded"},
 	{`.si-mm-code, .si-mm-lang, .si-mm-pre, .si-mm-sticky`, "a code topic (its language label and highlighted text), a sticky note"},
 	{`.si-mm-edge, .si-mm-tap, .si-mm-note, .si-mm-flow`, "a line (tapered, to a sticky note) and its flow overlay"},
+	{`.si-mm-hide, .si-mm-step`, "a branch waiting for its build step (```mindmap steps), and the hidden step marks that drive it"},
+	{`.si-mm-sel, .si-mm-drop-in, .si-mm-drop-before, .si-mm-drop-after, .si-mm-ghost, .si-mm-rename`, "the map editor (Studio): the selected topic, drop targets while dragging, the dragged copy, the rename box"},
 	{`.si-mm-moving, .si-mm-pulse, .si-mm-dim, .si-mm-wm, .si-mm-wm-corner`, "a topic being moved, a search hit, a branch dimmed by Play, the watermark (across or in the corner)"},
 	{`.si-mm-3d, .si-mm-is3d, .si-mm-card, .si-mm-x, .si-mm-msg`, "the 3D view (view: 3d; its canvas), a map shown in 3D, the card of a clicked 3D topic and its close button, a short message (no WebGL)"},
 	{`.si-mm-crumbs, .si-mm-here, .si-mm-tools, .si-mm-find, .si-mm-tour`, "the breadcrumb of drilled maps, zoom/fit/tidy (+ Find, Play on a page), the / search box, the Play position"},

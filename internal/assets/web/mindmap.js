@@ -26,6 +26,7 @@
     this.el = el; this.uid = 'mm' + (++seq);
     var data = JSON.parse(el.querySelector('.si-mm-data').textContent);
     this.maps = {};
+    this.order = data.maps.map(function (m) { return m.id; }); this.own = data.own || data.maps.length;
     data.maps.forEach(function (m) {
       (function fix(list) { (list || []).forEach(function (n) {
         if (n.pos) n.pos = { x: n.pos[0], y: n.pos[1] };
@@ -53,6 +54,12 @@
       }).observe(el);
     }
     var slide = el.closest('.si-slide');
+    if (slide && window.MutationObserver && this.opt('steps')) { /* ```mindmap steps: each branch is a build step of the slide */
+      var marks = [].slice.call(slide.querySelectorAll('.si-mm-step[data-mm="' + this.opt('steps') + '"]'));
+      var count = function () { self.reveal = marks.filter(function (m) { return m.classList.contains('is-visible'); }).length; self.applyReveal(); };
+      marks.forEach(function (m) { new MutationObserver(count).observe(m, { attributes: true, attributeFilter: ['class'] }); });
+      this.reveal = 0; this.applyReveal();
+    }
     if (slide && window.MutationObserver) { /* grow in again whenever the slide comes on screen */
       var was = slide.classList.contains('si-current');
       new MutationObserver(function () {
@@ -64,6 +71,13 @@
   }
 
   var M = Mindmap.prototype;
+  /* build steps: branches after the revealed count stay hidden (the layout keeps their room) */
+  M.applyReveal = function () {
+    if (this.reveal === undefined || this.reveal === null) return;
+    var k = this.reveal, st = this.st;
+    if (this.cur && st.stack.length === 0) this.svg.querySelectorAll('[data-top]').forEach(function (e) { e.classList.toggle('si-mm-hide', +e.getAttribute('data-top') >= k); });
+    if (this.d3 && this.d3.revealBranches) this.d3.revealBranches(st.stack.length ? Infinity : k);
+  };
   M.opt = function (k) { return this.el.getAttribute('data-' + k) || ''; };
   M.css = function (k) { return getComputedStyle(this.el).getPropertyValue(k).trim(); };
   /* the layout in use: a narrow portrait screen (a phone) gets the tall right layout */
@@ -405,6 +419,8 @@
     this.svg.classList.remove('si-mm-anim');
     if (anim && !reduce) { void this.svg.getBoundingClientRect(); this.svg.classList.add('si-mm-anim'); }
     this.drawCrumbs();
+    this.applyReveal();
+    if (this.onPaint) this.onPaint();
   };
   M.show = function (id, opt) {
     var self = this;
@@ -602,6 +618,61 @@
     if (!quiet) this.tween(this.fitBox(this.cur.all), 600);
   };
 
-  function start() { document.querySelectorAll('.si-mindmap').forEach(function (el) { if (!el.siMindmap) el.siMindmap = new Mindmap(el); }); }
+  /* ---------- export: a standalone SVG of one map (si build --svg/--png/--pdf) ---------- */
+  var PROPS = ['fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-opacity', 'stroke-linecap', 'stroke-linejoin', 'stroke-dasharray', 'opacity', 'font-family', 'font-size', 'font-weight', 'font-style', 'letter-spacing', 'text-transform', 'display', 'color', 'white-space'];
+  M.exportSVG = function (id, linkTo) {
+    var keep = { map: this.st.map, reveal: this.reveal };
+    this.st.map = id; this.reveal = null;
+    var r = this.render(), b = this.fitBox(r.all);
+    var tmp = document.createElementNS(NS, 'svg');
+    tmp.setAttribute('class', 'si-mm-svg'); tmp.style.position = 'absolute'; tmp.style.left = '-99999px';
+    tmp.innerHTML = r.html; this.el.appendChild(tmp);
+    var src = tmp.querySelectorAll('*'), out = tmp.cloneNode(true), dst = out.querySelectorAll('*');
+    for (var i = 0; i < src.length; i++) {
+      var cs = getComputedStyle(src[i]), st = '';
+      PROPS.forEach(function (p) { var v = cs.getPropertyValue(p); if (v) st += p + ':' + v + ';'; });
+      dst[i].setAttribute('style', st);
+      dst[i].removeAttribute('tabindex'); dst[i].removeAttribute('role');
+    }
+    [].forEach.call(out.querySelectorAll('.si-mm-flow'), function (e) { e.remove(); });
+    /* drill-down topics link to their map's page of the PDF */
+    if (linkTo) r.all.forEach(function (n) {
+      if (!n.link) return;
+      var g = out.querySelector('[data-id="' + n.id + '"]'); if (!g) return;
+      var a = document.createElementNS(NS, 'a'); a.setAttribute('href', linkTo(n.link));
+      g.parentNode.insertBefore(a, g); a.appendChild(g);
+    });
+    tmp.remove();
+    var bg = document.createElementNS(NS, 'rect');
+    [['x', b.x], ['y', b.y], ['width', b.w], ['height', b.h]].forEach(function (a) { bg.setAttribute(a[0], f1(a[1])); });
+    bg.setAttribute('fill', this.css('--si-mm-bg') || '#ffffff');
+    out.insertBefore(bg, out.firstChild);
+    var faces = '';
+    [].forEach.call(document.styleSheets, function (sh) { try { [].forEach.call(sh.cssRules, function (rule) { if (rule.type === 5) faces += rule.cssText + '\n'; }); } catch (e) { /* cross-origin sheet */ } });
+    if (faces) { var style = document.createElementNS(NS, 'style'); style.textContent = faces; out.insertBefore(style, out.firstChild); }
+    out.removeAttribute('class'); out.removeAttribute('style');
+    out.setAttribute('xmlns', NS); out.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+    out.setAttribute('viewBox', [b.x, b.y, b.w, b.h].map(f1).join(' '));
+    out.setAttribute('width', Math.round(b.w)); out.setAttribute('height', Math.round(b.h));
+    this.st.map = keep.map; this.reveal = keep.reveal;
+    return { id: id, title: this.maps[id].title, w: Math.round(b.w), h: Math.round(b.h), svg: new XMLSerializer().serializeToString(out) };
+  };
+  /* #si-export: every map of the page as SVG, in a <pre> that si build reads back */
+  function exportAll(mm) {
+    var own = [].concat(mm.order || Object.keys(mm.maps)), out = [];
+    own.forEach(function (id) { out.push(mm.exportSVG(id, function (to) { return '#map-' + to; })); });
+    var pre = document.createElement('pre'); pre.id = 'si-export'; pre.hidden = true; pre.textContent = JSON.stringify(out);
+    document.body.appendChild(pre);
+  }
+
+  function start() {
+    document.querySelectorAll('.si-mindmap').forEach(function (el) { if (!el.siMindmap) el.siMindmap = new Mindmap(el); });
+    var first = document.querySelector('.si-mindmap[data-full]');
+    if (location.hash === '#si-export' && first) {
+      var go = function () { try { exportAll(first.siMindmap); } catch (e) { var p = document.createElement('pre'); p.id = 'si-export-error'; p.textContent = String(e); document.body.appendChild(p); } };
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(go); else go();
+    }
+  }
+  window.SIMindmap = Mindmap;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();

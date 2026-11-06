@@ -137,10 +137,11 @@ type Meta struct {
 	MapCamera    string // mindmap in 3d: iso (default) or perspective
 	MapFloors    string // mindmap in 3d: on (default, linked maps hover above their topic) or off
 	MapKind      string // mindmap in 3d: blocks (default), bricks, toy
+	MapFlow      string // mindmap: on draws flowing dots along the lines (2D default off, 3D on)
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "view", "camera", "floors", "kind"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "view", "camera", "floors", "kind", "flow"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -354,7 +355,17 @@ func ParseWith(path string, def Meta) (*Deck, error) {
 	if err != nil {
 		return nil, err
 	}
-	src := strings.TrimPrefix(string(raw), "\uFEFF") // a BOM would hide the front matter
+	return ParseSource(abs, string(raw), def)
+}
+
+// ParseSource parses a deck from text that may not be saved yet (an editor's
+// buffer); path still names the file, for relative paths and includes.
+func ParseSource(path, text string, def Meta) (*Deck, error) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+	src := strings.TrimPrefix(text, "\uFEFF") // a BOM would hide the front matter
 	if ext := strings.ToLower(filepath.Ext(abs)); ext == ".adoc" || ext == ".asciidoc" {
 		src = adocToMarkdown(src) // AsciiDoc decks feed the same Markdown pipeline
 	}
@@ -435,7 +446,7 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 		}
 	}
 	if !d.IsMindmap() {
-		for _, k := range []string{"layout", "lines", "nodes", "map-theme", "view", "camera", "floors", "kind"} {
+		for _, k := range []string{"layout", "lines", "nodes", "map-theme", "view", "camera", "floors", "kind", "flow"} {
 			if ln, ok := keyLine[k]; ok {
 				d.Warnings = append(d.Warnings, Problem{File: rel(file), Line: ln, Msg: fmt.Sprintf("front matter %q is for mind maps (type: mindmap); a ```mindmap fence takes it as an option", k)})
 			}
@@ -466,7 +477,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"subtitle": &m.Subtitle, "edition": &m.Edition, "session": &m.Session, "slides": &m.SlidesRef, "duration": &m.Duration,
 		"navigator": &m.Navigator, "logo": &m.Logo, "cta": &m.CTA,
 		"layout": &m.MapLayout, "lines": &m.MapLines, "nodes": &m.MapNodes, "map-theme": &m.MapTheme, "watermark-position": &m.WatermarkPos,
-		"view": &m.MapView, "camera": &m.MapCamera, "floors": &m.MapFloors, "kind": &m.MapKind,
+		"view": &m.MapView, "camera": &m.MapCamera, "floors": &m.MapFloors, "kind": &m.MapKind, "flow": &m.MapFlow,
 	}[key]
 	if ptr == nil {
 		return false
@@ -510,6 +521,8 @@ func validateMeta(key, val string) string {
 		return oneOf("mind map camera", val, MapCameras)
 	case "kind":
 		return oneOf("mind map kind", val, MapKinds)
+	case "flow":
+		return oneOf("mind map flow", val, OnOff)
 	case "floors":
 		return oneOf("mind map floors", val, OnOff)
 	case "watermark-position":

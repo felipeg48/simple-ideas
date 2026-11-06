@@ -35,6 +35,11 @@ var MindmapCSS string
 //go:embed web/mindmap.js
 var MindmapJS string
 
+// MindmapEditJS is the Studio map editor inside its canvas (si --web only).
+//
+//go:embed web/mindmap-edit.js
+var MindmapEditJS string
+
 // Mindmap3DJS draws mind maps in 3D with three.js (r128, MIT, vendored as
 // ThreeJS and ThreeOrbitJS); inlined only into pages with a 3D map.
 //

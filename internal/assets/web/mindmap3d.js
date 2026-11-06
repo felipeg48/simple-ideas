@@ -356,7 +356,8 @@
     c.fillText(n.t, R / 2, R / 2 - (n.link ? 18 : 0));
     if (n.link) { c.font = '700 28px ' + T.font; var cw = c.measureText('map ›').width + 34; rr(c, R / 2 - cw / 2, R / 2 + 22, cw, 46, 23); c.fill(); c.fillStyle = k.top; c.fillText('map ›', R / 2, R / 2 + 46); }
     var tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
-    tex.center.set(0.5, 0.5); tex.rotation = Math.PI / 2;
+    /* the cap's texture runs along the world axes; turn it to read upright from the camera (hexagons are turned 30° more) */
+    tex.center.set(0.5, 0.5); tex.rotation = -3 * Math.PI / 4 + (n.shape === 'hex' ? -Math.PI / 6 : 0);
     return tex;
   };
   P.toyMesh = function (n, T) {
@@ -553,6 +554,18 @@
     this.animStart = performance.now();
     this.built = this.st.map;
     this.mm.drawCrumbs();
+    if (this.revealK !== undefined) this.revealBranches(this.revealK);
+  };
+  /* ```mindmap steps: branches from the k-th on stay hidden until their build step */
+  P.revealBranches = function (k) {
+    this.revealK = k;
+    if (!this.main) return;
+    this.main.userData.all.forEach(function (n) {
+      var hide = n.dd > 0 && n.top >= k;
+      if (n.holder) n.holder.visible = !hide;
+      if (n.edge) n.edge.visible = !hide;
+    });
+    this.flows.forEach(function (f) { f.hidden = f.of.top >= k; });
   };
 
   /* ---------- camera ---------- */
@@ -575,7 +588,11 @@
     }, done);
   };
   function boxOf(objs) { var b = new THREE.Box3(); objs.forEach(function (o) { b.expandByObject(o); }); return b; }
-  P.fit = function (ms) { this.fly(boxOf([this.world]), ms === undefined ? 700 : ms); };
+  /* a portrait screen (a phone) frames the main map only, a little tighter, floors left above it */
+  P.fit = function (ms) {
+    var portrait = (this.box.clientWidth || 1) < (this.box.clientHeight || 1) * 0.8;
+    this.fly(portrait && this.main ? boxOf([this.main]).expandByScalar(-0.4) : boxOf([this.world]), ms === undefined ? 700 : ms);
+  };
   P.zoom = function (f) {
     if (this.camera === this.ortho) { this.camera.zoom = Math.max(0.2, Math.min(8, this.camera.zoom / f)); this.camera.updateProjectionMatrix(); }
     else this.camera.position.sub(this.controls.target).multiplyScalar(f).add(this.controls.target);
@@ -743,9 +760,9 @@
       else if (a.show && el > a.delay) a.show.visible = true;
     });
     this.blocks.forEach(function (m) { var h = m.userData.holder; h.position.y += ((m.userData.lift || 0) - h.position.y) * 0.18; });
-    var t = now / 1000, dy = this.dotY();
+    var t = now / 1000, dy = this.dotY(), flowOn = this.mm.opt('flow') !== 'off';
     this.flows.forEach(function (f) {
-      f.dot.visible = !f.dim;
+      f.dot.visible = !f.dim && !f.hidden && flowOn;
       var pt = f.curve.getPointAt((t * f.speed + f.off) % 1);
       f.dot.position.set(pt.x, dy, pt.z);
     });

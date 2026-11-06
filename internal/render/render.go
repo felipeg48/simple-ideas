@@ -108,6 +108,7 @@ type deckRenderer struct {
 	mermaid       bool
 	mindmap       bool        // a ```mindmap fence: the page loads mindmap.css and mindmap.js
 	mindmap3d     bool        // a map starts in 3D: three.js and mindmap3d.js are inlined too
+	mmN           int         // ```mindmap fences so far (ids of their fallback lists, their build steps)
 	curDir        string      // directory of the part being rendered (fences resolve paths against it)
 	themeName     string      // resolved theme name (or "custom" for a CSS-file theme)
 	themeCSS      string      // the si.theme layer CSS for this deck

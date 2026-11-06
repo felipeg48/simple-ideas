@@ -44,6 +44,8 @@ func (a *api) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET "+apiPrefix+"decks", a.decks)
 	mux.HandleFunc("GET "+apiPrefix+"check", a.check)
 	mux.HandleFunc("GET "+apiPrefix+"rules", a.rules)
+	mux.HandleFunc("POST "+apiPrefix+"mindmap", a.mindmap)
+	mux.HandleFunc("GET "+apiPrefix+"mmcanvas", a.mmcanvas)
 }
 
 func etagOf(b []byte) string {

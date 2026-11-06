@@ -84,6 +84,13 @@
 .si-mm-edge.si-mm-tap{fill:var(--si-mm-c);stroke:none}
 .si-mm-edge.si-mm-note{stroke:var(--si-mm-muted);stroke-dasharray:4 5;stroke-width:1.4}
 .si-mm-flow{display:none}
+.si-mindmap[data-flow="on"] .si-mm-flow{display:inline;fill:none;stroke:var(--si-mm-bg);stroke-width:1.6;stroke-dasharray:2 10;stroke-linecap:round;animation:si-mm-flow 1s linear infinite}
+.si-mm-hide{opacity:0;pointer-events:none}
+.si-mm-sel .si-mm-shape,.si-mm-sel .si-mm-uline{stroke:var(--si-mm-accent);stroke-width:3.5}
+.si-mm-drop-in .si-mm-shape{stroke:var(--si-mm-accent);stroke-width:3;stroke-dasharray:6 4}
+.si-mm-drop-before .si-mm-shape,.si-mm-drop-after .si-mm-shape{stroke:var(--si-mm-accent);stroke-width:2.5}
+.si-mm-ghost{opacity:.55;pointer-events:none}
+.si-mm-rename{position:fixed;z-index:9;font:600 15px var(--si-mm-font);color:var(--si-mm-fg);background:var(--si-mm-surface);border:2px solid var(--si-mm-accent);border-radius:.4em;padding:.2em .45em;outline:none;box-shadow:0 6px 20px rgb(0 0 0 / .2)}
 .si-mm-wm{font:600 18px var(--si-mm-font);fill:var(--si-mm-fg);opacity:.08}
 .si-mm-wm.si-mm-wm-corner{font-size:13px;font-weight:500;opacity:.5}
 .si-mm-anim .si-mm-node{animation:si-mm-pop .55s cubic-bezier(.2,.9,.25,1.15) both;animation-delay:calc(var(--i) * 55ms);transform-box:fill-box;transform-origin:center}
@@ -96,8 +103,9 @@
 @keyframes si-mm-pop{from{opacity:0;transform:scale(.55)}}
 @keyframes si-mm-draw{to{stroke-dashoffset:0}}
 @keyframes si-mm-fade{from{opacity:0}}
+@keyframes si-mm-flow{to{stroke-dashoffset:-12}}
 @keyframes si-mm-pulse{50%{stroke:var(--si-mm-accent);stroke-width:6}}
-@media (prefers-reduced-motion:reduce){.si-mm-anim .si-mm-node,.si-mm-anim .si-mm-edge,.si-mm-pulse .si-mm-shape{animation:none}.si-mm-anim .si-mm-edge{stroke-dasharray:none}}
+@media (prefers-reduced-motion:reduce){.si-mindmap[data-flow="on"] .si-mm-flow{animation:none}.si-mm-anim .si-mm-node,.si-mm-anim .si-mm-edge,.si-mm-pulse .si-mm-shape{animation:none}.si-mm-anim .si-mm-edge{stroke-dasharray:none}}
 .si-mm-crumbs button,.si-mm-tools button{color:var(--si-mm-fg);background:color-mix(in srgb,var(--si-mm-surface) 88%,transparent);border:1px solid var(--si-mm-line)}
 .si-mm-crumbs button{color:var(--si-mm-muted)}
 .si-mm-crumbs,.si-mm-here{color:var(--si-mm-fg)}
