@@ -35,6 +35,15 @@ var MindmapCSS string
 //go:embed web/mindmap.js
 var MindmapJS string
 
+// CodewinCSS and CodewinJS draw code windows and code shows (a fence with
+// window= or id=): chrome, backdrops, callouts, the morph between steps.
+//
+//go:embed web/codewin.css
+var CodewinCSS string
+
+//go:embed web/codewin.js
+var CodewinJS string
+
 // MindmapEditJS is the Studio map editor inside its canvas (si --web only).
 //
 //go:embed web/mindmap-edit.js

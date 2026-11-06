@@ -57,6 +57,7 @@ var (
 var Directives = map[string]string{
 	"include": "file", // splice another deck, or a code file as a code block
 	"tabs":    "body", // the code blocks that follow become tabs
+	"callout": "body", // a note on a code window line: <!-- callout: 3 text at=dx,dy -->
 	"code":    "file", // a file from git (GitHub permalink, or repo= path= ref=) as a code block
 	"diff":    "file", // a commit or compare diff from git as a diff block
 	"slides":  "body", // documents: embed a deck, or some of its slides
@@ -950,5 +951,5 @@ func (d *Deck) checkDemoMinutes(lines []srcLine) {
 var durationRE = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*min`)
 
 // docDirectives are the directives a document uses (the rest are deck-only).
-var docDirectives = map[string]bool{"tabs": true, "slides": true, "alert": true, "badge": true, "logo": true, "cards": true, "accordion": true,
+var docDirectives = map[string]bool{"tabs": true, "callout": true, "slides": true, "alert": true, "badge": true, "logo": true, "cards": true, "accordion": true,
 	"modal": true, "end": true, "carousel": true, "event": true, "embed": true}

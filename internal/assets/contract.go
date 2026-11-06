@@ -104,6 +104,28 @@ var Tokens = []Token{
 	{"--si-mm-sticky", "mind maps: sticky note paper", "#ffe27a"},
 	{"--si-mm-sticky-fg", "mind maps: sticky note text", "#3d3000"},
 	{"--si-mm-height", "mind maps: height of an embedded map (slides: --si-figure-max)", "clamp(24em, 62vh, 48em)"},
+	// code windows (a fence with window= or id=); theme=night|paper|dusk set them all, auto reads the deck theme
+	{"--si-cw-bg", "code windows: the window and its code", "var(--si-surface)"},
+	{"--si-cw-bar", "code windows: the title bar or terminal tabs", "var(--si-surface-2)"},
+	{"--si-cw-rule", "code windows: the line under the title bar", "var(--si-line)"},
+	{"--si-cw-fg", "code windows: code text", "var(--si-fg)"},
+	{"--si-cw-muted", "code windows: title, line numbers, prompt", "var(--si-muted)"},
+	{"--si-cw-k", "code windows: keywords, tags, the highlighted-line bar", "var(--si-accent)"},
+	{"--si-cw-s", "code windows: strings", "var(--si-accent-2)"},
+	{"--si-cw-c", "code windows: comments", "var(--si-muted)"},
+	{"--si-cw-n", "code windows: numbers and variables", "var(--si-warn)"},
+	{"--si-cw-f", "code windows: flags, attribute names, keys", "var(--si-accent-2)"},
+	{"--si-cw-hl", "code windows: background of a highlighted line (hl=)", "accent at 12%"},
+	{"--si-cw-backdrop", "code windows: the backdrop behind the window (backdrop=)", "transparent"},
+	{"--si-cw-pad", "code windows: room between the backdrop's edge and the window", "0 (with a backdrop: clamp(1em, 6cqi, 3.5em))"},
+	{"--si-cw-radius", "code windows: corner radius of the window and the backdrop", ".75em (windows: .5em)"},
+	{"--si-cw-shadow", "code windows: the window's shadow", "a soft drop shadow"},
+	{"--si-cw-size", "code windows: font size of the window, relative to the text around it", ".9em"},
+	{"--si-cw-pin", "code windows: the numbered callout dots", "#ffd23f"},
+	{"--si-cw-pin-fg", "code windows: the numbers on the dots", "#2a1f00"},
+	{"--si-cw-note", "code windows: callout notes", "#fffdf5"},
+	{"--si-cw-note-fg", "code windows: callout text", "#24221c"},
+	{"--si-cw-wire", "code windows: the dashed wire from a dot to its note", "var(--si-fg) (on a backdrop: white)"},
 }
 
 // Hook is a stable selector user CSS may target.
@@ -364,6 +386,11 @@ var Hooks = []Hook{
 	{`.si-mm-moving, .si-mm-pulse, .si-mm-dim, .si-mm-wm, .si-mm-wm-corner`, "a topic being moved, a search hit, a branch dimmed by Play, the watermark (across or in the corner)"},
 	{`.si-mm-3d, .si-mm-is3d, .si-mm-card, .si-mm-x, .si-mm-msg`, "the 3D view (view: 3d; its canvas), a map shown in 3D, the card of a clicked 3D topic and its close button, a short message (no WebGL)"},
 	{`.si-mm-crumbs, .si-mm-here, .si-mm-tools, .si-mm-find, .si-mm-tour`, "the breadcrumb of drilled maps, zoom/fit/tidy (+ Find, Play on a page), the / search box, the Play position"},
+	{`.si-cw[data-window][data-cw-theme][data-backdrop][data-transition][data-cw-id][data-numbers][data-cw-nav]`, "a code window (a fence with window= or id=) and its options; .si-cw-on once codewin.js runs, .si-cw-listmode when its notes move under it"},
+	{`.si-cw-stage, .si-cw-win, .si-cw-bar, .si-cw-title, .si-cw-lights, .si-cw-pad, .si-cw-ctl, .si-cw-tabs, .si-cw-tab, .si-cw-prompt`, "the backdrop, the window, its title bar (macOS lights, Windows controls) or terminal tabs and prompt"},
+	{`.si-cw-body, .si-cw-code, .si-cw-gutter, .si-cw-l, .si-cw-hl`, "the code area, the lines (one .si-cw-l each, moved by the morph), line numbers, a highlighted line"},
+	{`.si-cw-notes-layer, .si-cw-wires, .si-cw-dot, .si-cw-bubble, .si-cw-list`, "callouts: their layer, the dashed wires, the numbered dots, the notes, and the list used on narrow screens"},
+	{`.si-cw-steps, .si-cw-name, .si-cw-nav, .si-cw-on, .si-cw-listmode`, "every step as a plain code block (without JavaScript), a step's name, ← → Play under a show in a document"},
 }
 
 // Theme holds the token values of one theme. Base values apply in both modes.

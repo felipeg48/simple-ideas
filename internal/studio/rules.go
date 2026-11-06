@@ -13,6 +13,7 @@ var help = map[string]string{
 	// directives
 	"include":    "splice another deck or section file, or a code file as a code block",
 	"tabs":       "the code blocks that follow become tabs",
+	"callout":    "a note on a code window line, right after the fence: LINE text at=dx,dy",
 	"code":       "a file from git: a GitHub permalink, or repo= path= ref=",
 	"diff":       "a commit or compare diff from git",
 	"slides":     "documents: a deck's slides, live (path 2-4); a demo's front matter: its slides (6-9)",

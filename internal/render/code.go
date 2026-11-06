@@ -214,6 +214,7 @@ var langNames = map[string]string{"bash": "bash", "sh": "bash", "shell": "bash",
 // which never sees the tabs directive.
 func (dr *deckRenderer) codeFeatures(doc ast.Node, src []byte, sc *slideCtx) {
 	defer dr.cardsPass(doc, src, sc) // cards group blocks too, on slides and in documents
+	dr.codeWindows(doc, src, sc)
 	if dr.callouts == nil {
 		dr.callouts = map[ast.Node]bool{}
 	}

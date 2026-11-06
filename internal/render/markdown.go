@@ -107,6 +107,10 @@ func (r *nodeRenderer) fence(
 		fmt.Fprintf(w, "<pre class=\"si-mermaid\">%s</pre>\n", html.EscapeString(body))
 		return ast.WalkSkipChildren, nil
 	}
+	if sh := r.dr.cw[n]; sh != nil {
+		w.WriteString(r.dr.cwFence(sh))
+		return ast.WalkSkipChildren, nil
+	}
 	if lang == "mindmap" {
 		dir := r.dr.curDir
 		if dir == "" {

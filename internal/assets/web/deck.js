@@ -97,7 +97,9 @@
   function apply(s, k) { applySteps(s, k); applyCanvas(s, k); applyCounts(s); }
   function canvasKey(s) {
     var f = s.querySelectorAll('.si-figure[data-src]');
-    return f.length === 1 ? f[0].getAttribute('data-src') : '';
+    if (f.length === 1) return f[0].getAttribute('data-src');
+    var cw = s.querySelectorAll('.si-cw[data-cw-id]'); /* a code show across slides morphs like a canvas */
+    return !f.length && cw.length === 1 ? 'cw:' + cw[0].getAttribute('data-cw-id') : '';
   }
 
   /* ---------- fit: when a slide overflows, shrink its figures (canvas, image,

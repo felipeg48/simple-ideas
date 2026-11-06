@@ -306,6 +306,7 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 		mmCSS = assets.MindmapCSS
 	}
 	b.WriteString(`<style id="si-css">` + "\n" + assets.LayerOrder + assets.DocCSS + dr.themeCSS + dr.accentCSS() + mmCSS + "</style>\n")
+	dr.codewinCSS(&b)
 	dr.userAndMode(&b, modeAttr)
 	bodyAttrs := fmt.Sprintf(` data-si-doc="%s"`, html.EscapeString(kind))
 	if g != nil && g.IsBook() {
@@ -476,6 +477,7 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	if dr.mindmap {
 		b.WriteString(dr.mindmapScripts())
 	}
+	dr.codewinJS(&b)
 	dr.reload(&b)
 	b.WriteString("</body>\n</html>\n")
 	return b.Bytes()
