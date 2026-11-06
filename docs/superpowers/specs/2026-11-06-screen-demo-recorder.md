@@ -1,4 +1,4 @@
-# Screen demo recorder: plan for the next big milestone
+# Screen demo recorder: plan for a separate project
 
 Status: **idea, being refined by the founder. Do not build yet.** Saved
 2026-11-06 so the next session starts from the same understanding.
@@ -23,11 +23,34 @@ says what it does, and the video shows it happening.
 ## Founder decisions so far
 
 - **Native Mac apps** first.
-- A **companion app** that only talks to `si` (working name `si-recorder`;
-  a better name is open: candidates *si Director*, *si Take*, *si Reel*,
-  *si Stage*).
+- Probably **a separate project**, not part of `si` (founder, 2026-11-06).
+  Recommended: yes. Its own repo and releases, a native Swift Mac app plus
+  a small CLI. Name open: candidates *Take*, *Reel*, *Director*, *Stagehand*
+  (check for clashes before choosing).
+- The earlier option was an `si` companion that talks only to `si`
+  (working name `si-recorder`). It is kept below as the integration path.
 
-## Why it fits si
+## Separate project or part of si?
+
+Separate, because:
+
+- It breaks si's core rules: si is stdlib + goldmark, cross-platform, and
+  writes one self-contained HTML file. The recorder is Mac-only, needs Swift,
+  code signing, Screen Recording and Accessibility permissions, and writes video.
+- The audience differs: si serves people who present; the recorder serves
+  people who ship apps (demos, release videos, UI tests).
+- Release cadence and support differ: macOS updates break capture and
+  permissions; si should not ship a release for that.
+
+The link to si stays light:
+
+- The script is plain Markdown (steps + `Say:` lines), so a script can live
+  next to a deck and reuse the `type: demo` conventions.
+- A recorded MP4 drops into a deck with si's existing video support.
+- Later, if useful: `si` could hand a demo page to the recorder as its script.
+  Nothing in si depends on the recorder.
+
+## What it borrows from si
 
 - `type: demo` scripts already hold *what to say* (`> Say:`) and *what to
   run*. Add UI steps (`open menu File › Export`, `click button Save`, `type …`)
@@ -52,9 +75,9 @@ A **Swift companion app** is still the better fit:
   confusing; a companion `.app` with a stable bundle id asks once, by name.
 - ScreenCaptureKit, AVFoundation and the speech APIs are Swift-first (async,
   delegates); doing them through cgo is possible but painful.
-- `si` stays Go and cross-platform; it talks to the companion over a local
-  Unix socket with JSON lines (the same pattern as the terminal teleprompter's
-  `internal/tui/sync.go`).
+- As a separate project, the Swift app can be the whole tool. If a Go CLI
+  is wanted, it talks to the Swift app over a local Unix socket with JSON
+  lines (the pattern of si's `internal/tui/sync.go`).
 
 Caveat: macOS ties these permissions to the code signature. An ad-hoc signed
 app (our current "no code signing" decision) may lose them on every rebuild and
@@ -100,9 +123,9 @@ for this companion.
 
 ## Version
 
-By semantic versioning this is still a minor release (nothing existing
-breaks); calling it **2.0.0** is a product decision the founder may take for a
-feature this size.
+As a separate project it starts at its own 0.1.0, and si's version is
+unaffected. If it ever folds back into si, by semantic versioning it would be
+a minor release; calling it 2.0.0 would be a product decision.
 
 ## Open questions for the founder
 
@@ -121,4 +144,5 @@ feature this size.
 6. "Feedback to fix bugs": a report with clips and screenshots, or GitHub
    issues filed automatically?
 7. Record in a VM (clean, isolated) or on your real desktop?
-8. The companion's name.
+8. The project's name.
+9. Separate project confirmed? Open source like si, or private/commercial?

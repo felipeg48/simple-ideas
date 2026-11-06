@@ -5,8 +5,8 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-05)
 
-- **Next big milestone (not started, the founder is refining it):** the screen demo
-  recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
+- **Idea being refined (not started; likely a separate project, not part of si):**
+  the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
 - **Latest release: v1.10.1: canvases animated in the terminal.** `tui/canvas.go`
   (SVG → character grid: rects as boxes or bands, wires, text runs in order, dots;
