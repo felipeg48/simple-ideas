@@ -246,7 +246,13 @@
   function exportAll() {
     var css = exportCSS(), out = [];
     all.forEach(function (w, n) {
-      var frames = [], k = 6;
+      var frames = [], k = 6, mw = 0, mh = 0;
+      /* one size for every frame: the widest and tallest step, the window centred on the backdrop */
+      w.fig.style.width = '1700px'; w.fig.style.maxWidth = 'none'; /* room to measure: the window takes its natural width */
+      var pad = parseFloat(getComputedStyle(w.stage).paddingLeft) || 0;
+      w.steps.forEach(function (st) { w.frame(st, st, 1); mw = Math.max(mw, w.win.getBoundingClientRect().width + 2 * pad); mh = Math.max(mh, w.stage.getBoundingClientRect().height); });
+      if (w.steps.some(function (st) { return (st.notes || []).length; })) mw += 2 * 18 * parseFloat(getComputedStyle(w.fig).fontSize); /* room for the notes on the right */
+      w.stage.style.width = Math.ceil(mw) + 'px'; w.stage.style.minHeight = Math.ceil(mh) + 'px';
       w.steps.forEach(function (st, i) {
         w.frame(st, st, 1); frames.push({ step: i + 1, hold: true, svg: w.svg(css), w: Math.ceil(w.stage.getBoundingClientRect().width), h: Math.ceil(w.stage.getBoundingClientRect().height) });
         if (i + 1 < w.steps.length) for (var f = 1; f < k; f++) {

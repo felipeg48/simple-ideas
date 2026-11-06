@@ -69,6 +69,9 @@ Usage:
   si [build] <map.md> [--svg] [--png [--scale 2]] [--pdf]
         mind map pages: every map as <name>-<id>.svg / .png (2D, theme and watermark
         baked in), and pdfs/<name>.pdf with one page per map (map › links work)
+  si code <file.md> [--id show] [--png [--scale 2]] [--svg] [--gif] [-o dir]
+        code windows and shows: one <file>-<id>-<n>.png / .svg per step (window,
+        backdrop and callouts) and <file>-<id>.gif, the whole show animated
   si mindmap import <file.opml|.mm|.xmind|.mmd> [-o out.md]
         turn an OPML, FreeMind, XMind or Mermaid mindmap file into a mind map page
   si mindmap export <map.md> --to opml|freemind|xmind|mermaid [--map id] [-o file|-]
@@ -179,6 +182,8 @@ type options struct {
 	svg, png                                     bool    // si build: mind map pages also as SVG / PNG
 	scale                                        float64 // si build --png: device pixels per CSS pixel
 	to, mapID                                    string  // si mindmap export --to, --map
+	gif                                          bool    // si code --gif
+	showID                                       string  // si code --id
 	css                                          multi
 	args                                         []string
 }
@@ -210,6 +215,8 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.Float64Var(&o.scale, "scale", 2, "")
 	fl.StringVar(&o.to, "to", "", "")
 	fl.StringVar(&o.mapID, "map", "", "")
+	fl.BoolVar(&o.gif, "gif", false, "")
+	fl.StringVar(&o.showID, "id", "", "")
 	fl.BoolVar(&o.write, "write", false, "")
 	fl.BoolVar(&o.terminal, "terminal", false, "")
 	fl.BoolVar(&o.notes, "notes", false, "")
@@ -378,6 +385,11 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		return selfUpdate(stdout, stderr)
 	case "mindmap":
 		return runMindmap(rest, o, stdout, stderr)
+	case "code":
+		if len(rest) != 1 {
+			return usageErr(stderr, "code needs one <file.md> with code windows (--png, --svg, --gif)")
+		}
+		return runCode(rest[0], o, stdout, stderr)
 	case "build":
 		if len(rest) != 1 {
 			return usageErr(stderr, "build needs one <dir|file.md>")

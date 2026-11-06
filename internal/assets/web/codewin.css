@@ -1,7 +1,7 @@
 /* ---------- code windows (a fence with window= or id=): mechanics ---------- */
 .si-cw{margin:1.2em 0;container-type:inline-size;font-size:var(--si-cw-size,.9em)}
 .si-slide .si-cw{margin:0;inline-size:100%}
-.si-cw-stage{position:relative;display:grid;place-items:center;padding:var(--si-cw-pad);border-radius:var(--si-cw-radius);background:var(--si-cw-backdrop)}
+.si-cw-stage{position:relative;box-sizing:border-box;display:grid;place-items:center;padding:var(--si-cw-pad);border-radius:var(--si-cw-radius);background:var(--si-cw-backdrop)}
 .si-cw-win{position:relative;max-inline-size:100%;min-inline-size:0;display:flex;flex-direction:column;overflow:hidden;border-radius:var(--si-cw-radius);background:var(--si-cw-bg);color:var(--si-cw-fg);box-shadow:var(--si-cw-shadow)}
 .si-cw-bar{display:flex;align-items:center;gap:.7em;block-size:2.6em;padding:0 1em;flex:none}
 .si-cw-title{flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.85em}
