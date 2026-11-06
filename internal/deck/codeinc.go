@@ -2,6 +2,7 @@ package deck
 
 import (
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/codeshow"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -41,6 +42,41 @@ var extLang = map[string]string{
 }
 
 var tagMarkRE = regexp.MustCompile(`\b(tag|end)::([\w.-]+)\[\]`)
+
+// fileLang is the fence language of a code file: its name (codeshow.LangOf:
+// .csproj and .config are XML, Dockerfile is dockerfile), the extensions only
+// includes know, then a look at the content (<?xml or a tag, JSON, a #! line).
+func fileLang(file string, raw []byte) string {
+	if l := codeshow.LangOf(filepath.Base(file)); l != "" {
+		return l
+	}
+	if l := extLang[strings.ToLower(filepath.Ext(file))]; l != "" && l != "text" {
+		return l
+	}
+	s := strings.TrimSpace(string(raw[:min(len(raw), 512)]))
+	switch {
+	case strings.HasPrefix(s, "<?xml"), xmlStartRE.MatchString(s):
+		return "xml"
+	case (strings.HasPrefix(s, "{") || strings.HasPrefix(s, "[")) && jsonStartRE.MatchString(s):
+		return "json"
+	case strings.HasPrefix(s, "#!"):
+		first, _, _ := strings.Cut(s, "\n")
+		switch {
+		case strings.Contains(first, "python"):
+			return "python"
+		case strings.Contains(first, "node"):
+			return "javascript"
+		case strings.Contains(first, "sh"):
+			return "bash"
+		}
+	}
+	return extLang[strings.ToLower(filepath.Ext(file))]
+}
+
+var (
+	xmlStartRE  = regexp.MustCompile(`^<[A-Za-z][\w:.-]*[\s>/]`)
+	jsonStartRE = regexp.MustCompile(`^[\[{]\s*(?:"|\{|\[|\]|\}|-?\d|true|false|null)`)
+)
 
 // codeInclude reads file and returns the fence lines of a code block, after
 // applying the options. Options it does not know are errors, so a typo is
@@ -155,7 +191,7 @@ func codeBlock(raw []byte, file string, opts map[string]string, src string) ([]s
 	}
 	lang := opts["lang"]
 	if lang == "" {
-		lang = extLang[strings.ToLower(filepath.Ext(file))]
+		lang = fileLang(file, raw)
 	}
 	title := opts["title"]
 	if title == "" {

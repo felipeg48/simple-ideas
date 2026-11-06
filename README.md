@@ -79,6 +79,16 @@ self-contained HTML files you can mail, host or open from a USB stick.
   map with working links), `si mindmap import` / `export` for OPML, FreeMind,
   XMind and Mermaid, `steps` on a slide to reveal one branch per click, and
   `flow: on` for dots running along the lines (§24).
+- **Code windows (v2.1):** `window=mac|windows|terminal` on a code fence draws
+  it as a window on a backdrop, with numbered callouts you drag into place
+  (`<!-- callout: 3 text at=dx,dy -->`); fences with the same `id=` are a show
+  whose lines glide from step to step, in documents (← → Play), on slides (one
+  click per step, and across slides) and in mind maps. `si code file.md --png
+  --svg --gif` exports every step and the animated show; the Studio's Window view
+  edits it all (§25). Also: a fence without a language (``` title="config.csproj" ```) or
+  in pandoc form (```{.xml title="x"}```) reads right; the title's extension names
+  the language. Code is coloured more like an editor: calls and type names too,
+  and labels read C#, JavaScript, Shell instead of CSHARP.
 - **In the terminal (v1.7):** `si play talk.md --terminal` presents a deck in
   the terminal itself, in the theme's colours, with block-letter titles, builds,
   code, tables, cards and pictures in half-block pixels; `--notes` in a second

@@ -39,3 +39,9 @@ func ResolveState(prev, words []string) []string { return resolveState(prev, wor
 
 // ApplyOps applies one build step's state ops (w, +w, -w, `.`) to a state.
 func ApplyOps(state []string, ops string) []string { return applyOps(state, ops) }
+
+// FenceLang is a fence's language as the renderer reads it (fenceLang).
+func FenceLang(n *ast.FencedCodeBlock, src []byte) string { return fenceLang(n, src) }
+
+// LangName is how a language is written for a reader (csharp → C#).
+func LangName(lang string) string { return langName(lang) }

@@ -150,7 +150,7 @@ func (p *mmParser) items(list *ast.List, src []byte, dir string) []*mmNode {
 			case *ast.List:
 				n.Kids = append(n.Kids, p.items(b, src, dir)...)
 			case *ast.FencedCodeBlock:
-				lang := strings.ToLower(string(b.Language(src)))
+				lang := fenceLang(b, src)
 				var code strings.Builder
 				for i := 0; i < b.Lines().Len(); i++ {
 					seg := b.Lines().At(i)

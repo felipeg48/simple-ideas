@@ -63,10 +63,32 @@ func (c Callout) String() string {
 	return s + " -->"
 }
 
-// Attrs parses a fence info string after its language, keeping the order.
+// Attrs reads a fence info string: the language and the options, in order.
+// The forms a reader writes all work: `go title="a.go"`, ` title="a.go"`
+// (no language: a first word with = is an option), pandoc's
+// `{.go title="a.go"}`, and `go {title="a.go"}`. Without a language, the
+// title's extension names it (config.csproj → xml).
 func Attrs(info string) (lang string, keys []string, vals map[string]string) {
-	lang, rest, _ := strings.Cut(strings.TrimSpace(info), " ")
+	s := strings.TrimSpace(info)
+	first, rest, _ := strings.Cut(s, " ")
+	switch {
+	case strings.HasPrefix(s, "{"): // {.xml title="x"}
+		first, rest = "", s
+	case strings.Contains(first, "="): // title="x" with no language
+		first, rest = "", s
+	}
+	rest = strings.TrimSpace(rest)
+	if strings.HasPrefix(rest, "{") {
+		rest = strings.TrimSuffix(strings.TrimPrefix(rest, "{"), "}")
+	}
+	lang = strings.Trim(first, "{}")
 	vals = map[string]string{}
+	for _, m := range classRE.FindAllStringSubmatch(rest, -1) { // pandoc: .xml is the language
+		if lang == "" {
+			lang = m[1]
+		}
+	}
+	rest = classRE.ReplaceAllString(rest, "")
 	for _, m := range attrRE.FindAllStringSubmatch(rest, -1) {
 		v := m[2]
 		if v == "" {
@@ -77,7 +99,45 @@ func Attrs(info string) (lang string, keys []string, vals map[string]string) {
 		}
 		vals[m[1]] = v
 	}
+	lang = strings.TrimPrefix(lang, ".")
+	if lang == "" {
+		lang = LangOf(vals["title"])
+	}
 	return lang, keys, vals
+}
+
+var classRE = regexp.MustCompile(`(?:^|\s)\.([\w#+-]+)`)
+
+// LangOf is the language a file name suggests ("" when it suggests none).
+func LangOf(name string) string {
+	base := strings.ToLower(name)
+	if i := strings.LastIndexAny(base, "/\\"); i >= 0 {
+		base = base[i+1:]
+	}
+	if base == "dockerfile" || strings.HasPrefix(base, "dockerfile.") || base == "containerfile" {
+		return "dockerfile"
+	}
+	if base == "makefile" {
+		return "make"
+	}
+	i := strings.LastIndex(base, ".")
+	if i < 0 {
+		return ""
+	}
+	return map[string]string{
+		"go": "go", "java": "java", "kt": "kotlin", "cs": "csharp", "py": "python", "js": "javascript", "mjs": "javascript",
+		"ts": "javascript", "tsx": "javascript", "jsx": "javascript", "rs": "rust", "rb": "ruby", "php": "php", "swift": "swift",
+		"scala": "scala", "c": "c", "h": "c", "cpp": "cpp", "cc": "cpp", "hpp": "cpp", "sh": "bash", "bash": "bash", "zsh": "bash",
+		"ps1": "powershell", "sql": "sql", "yml": "yaml", "yaml": "yaml", "toml": "toml", "json": "json", "css": "css",
+		"html": "html", "htm": "html", "xml": "xml", "csproj": "xml", "fsproj": "xml", "vbproj": "xml", "props": "xml",
+		"targets": "xml", "nuspec": "xml", "resx": "xml", "xaml": "xml", "svg": "xml", "plist": "xml", "config": "xml",
+	}[base[i+1:]]
+}
+
+// Info is Attrs without the order: the language and the options of a fence.
+func Info(info string) (string, map[string]string) {
+	lang, _, vals := Attrs(info)
+	return lang, vals
 }
 
 // SetAttr sets key in a fence info string: val "" removes it, "true" writes

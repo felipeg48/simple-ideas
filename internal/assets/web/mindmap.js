@@ -352,7 +352,7 @@
       if (bar) { /* a code window: macOS lights, or the title on a bar */
         s += '<path class="si-mm-bar" d="M' + f1(x) + ' ' + f1(y + 26) + 'V' + f1(y + 9) + 'Q' + f1(x) + ' ' + f1(y) + ' ' + f1(x + 9) + ' ' + f1(y) + 'H' + f1(x + n.w - 9) + 'Q' + f1(x + n.w) + ' ' + f1(y) + ' ' + f1(x + n.w) + ' ' + f1(y + 9) + 'V' + f1(y + 26) + 'Z"/>';
         if (n.code.window === 'mac') ['#ff5f57', '#febc2e', '#28c840'].forEach(function (c, i) { s += '<circle cx="' + f1(x + 13 + i * 12) + '" cy="' + f1(y + 13) + '" r="4" fill="' + c + '"/>'; });
-        if (n.code.title) s += '<text class="si-mm-lang" x="' + f1(x + n.w / 2) + '" y="' + f1(y + 13) + '" text-anchor="middle" dominant-baseline="central">' + esc(n.code.title) + '</text>';
+        if (n.code.title) s += '<text class="si-mm-lang si-mm-wtitle" x="' + f1(x + n.w / 2) + '" y="' + f1(y + 13) + '" text-anchor="middle" dominant-baseline="central">' + esc(n.code.title) + '</text>';
       } else s += '<text class="si-mm-lang" x="' + f1(x + n.w - 12) + '" y="' + f1(y + 13) + '" text-anchor="end" dominant-baseline="central">' + esc(n.code.lang || 'code') + '</text>';
       y += bar;
       s += '<foreignObject x="' + f1(x + 12) + '" y="' + f1(y + 20) + '" width="' + f1(n.w - 20) + '" height="' + f1(n.h - 24 - bar) + '"><pre xmlns="http://www.w3.org/1999/xhtml" class="si-mm-pre"><code>' + n.code.html + '</code></pre></foreignObject>';

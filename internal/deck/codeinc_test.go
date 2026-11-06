@@ -1,6 +1,7 @@
 package deck
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -43,6 +44,35 @@ func TestAdocCodeMapping(t *testing.T) {
 	for _, want := range []string{"<!-- include: App.java lines=5-10,20- -->", "<!-- include: App.java tag=a,b -->", "```java title=\"Consumer.java\" hl=\"3,5-6\""} {
 		if !strings.Contains(md, want) {
 			t.Errorf("adoc lacks %q:\n%s", want, md)
+		}
+	}
+}
+
+func TestCodeIncludeLanguage(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, s string) string {
+		p := filepath.Join(dir, name)
+		if err := os.WriteFile(p, []byte(s), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	for _, c := range []struct {
+		file, body string
+		opts       map[string]string
+		want       string
+	}{
+		{write("NuGet.config", "<configuration>\n</configuration>\n"), "", map[string]string{"title": "NuGet.config"}, "```xml title=\"NuGet.config\""},
+		{write("NuGet.config", "<configuration/>\n"), "", map[string]string{"lang": "text"}, "```text title=\"NuGet.config\""},
+		{write("settings.unknown", "<?xml version=\"1.0\"?>\n<a/>\n"), "", nil, "```xml title=\"settings.unknown\""},
+		{write("data.unknown", "{\"a\": 1}\n"), "", nil, "```json title=\"data.unknown\""},
+		{write("run", "#!/usr/bin/env bash\necho hi\n"), "", nil, "```bash title=\"run\""},
+		{write("Dockerfile", "FROM alpine\n"), "", nil, "```dockerfile title=\"Dockerfile\""},
+		{write("App.csproj", "<Project/>\n"), "", nil, "```xml title=\"App.csproj\""},
+	} {
+		lines, err := codeInclude(c.file, c.opts)
+		if err != nil || lines[0] != c.want {
+			t.Errorf("%s %v: %v %q, want %q", filepath.Base(c.file), c.opts, err, lines[0], c.want)
 		}
 	}
 }

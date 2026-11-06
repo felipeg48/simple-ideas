@@ -94,3 +94,21 @@ func TestSource(t *testing.T) {
 		t.Errorf("only r: %d shows", n)
 	}
 }
+
+func TestAttrsForms(t *testing.T) {
+	for _, c := range []struct{ info, lang, title string }{
+		{`xml title="config.csproj"`, "xml", "config.csproj"},
+		{` title="config.csproj"`, "xml", "config.csproj"},
+		{`title=main.go`, "go", "main.go"},
+		{`{.xml title="config.csproj"}`, "xml", "config.csproj"},
+		{`xml {title="config.csproj"}`, "xml", "config.csproj"},
+		{`go`, "go", ""},
+		{`title="notes"`, "", "notes"},
+		{`title="Dockerfile"`, "dockerfile", "Dockerfile"},
+	} {
+		lang, vals := Info(c.info)
+		if lang != c.lang || vals["title"] != c.title {
+			t.Errorf("%q: lang %q title %q, want %q %q", c.info, lang, vals["title"], c.lang, c.title)
+		}
+	}
+}

@@ -335,15 +335,8 @@ var (
 )
 
 func fenceAttrs(info string) (string, map[string]string) {
-	f := strings.Fields(info)
-	if len(f) == 0 {
-		return "", map[string]string{}
-	}
-	attrs := map[string]string{}
-	for _, m := range attrRE.FindAllStringSubmatch(strings.TrimPrefix(info, f[0]), -1) {
-		attrs[m[1]] = strings.Trim(m[2], `"`)
-	}
-	return f[0], attrs
+	lang, attrs := codeshow.Info(info)
+	return strings.ToLower(lang), attrs
 }
 
 func (r *textRenderer) fence(f *ast.FencedCodeBlock) []string {
@@ -418,6 +411,9 @@ func (r *textRenderer) code(code, lang string, attrs map[string]string) []string
 		w = max(w, ansi.StringWidth(b))
 	}
 	title := attrs["title"]
+	if title == "" && lang != "" {
+		title = render.LangName(lang)
+	}
 	if win := attrs["window"]; win == "mac" { // a code window: its title bar in the box's top line
 		title = "● ● ●  " + title
 	} else if win == "terminal" {
@@ -461,6 +457,7 @@ func (r *textRenderer) hlTokens(h string) string {
 		"k": r.st().Foreground(r.pal.Accent).Bold(true), "n": r.st().Foreground(r.pal.Warn),
 		"f": r.st().Foreground(r.pal.Accent2), "v": r.st().Foreground(r.pal.Warn),
 		"m": r.st().Foreground(r.pal.Accent).Bold(true), "y": r.st().Foreground(r.pal.Accent2),
+		"t": r.st().Foreground(r.pal.OK),
 	}
 	var b strings.Builder
 	last := 0

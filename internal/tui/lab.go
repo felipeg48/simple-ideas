@@ -103,7 +103,7 @@ func labCommands(d *deck.Deck) []labCmd {
 					heading = render.TextOf(h, raw)
 				}
 				fc, ok := n.(*ast.FencedCodeBlock)
-				if !ok || !render.RunLang(string(fc.Language(raw))) {
+				if !ok || !render.RunLang(render.FenceLang(fc, raw)) {
 					continue
 				}
 				code := strings.TrimSpace(blockText(fc, raw))

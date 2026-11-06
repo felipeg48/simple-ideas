@@ -553,8 +553,11 @@ references shared assets as `../images/...`.
   JavaScript/TypeScript, Java, Kotlin, C# (`csharp`, `cs`, `c#`), C, C++,
   PHP, Ruby, Swift, Scala, Rust, SQL, YAML, TOML, JSON, Bash, PowerShell,
   Dockerfile, CSS, HTML, XML (also `csproj`, `props`, `xaml`, `svg`, `pom`,
-  `nuspec`: tags, attributes, comments)) and a language label; other
-  languages get strings and numbers only.
+  `nuspec`: tags, attributes, comments)) and a language label written as a
+  reader expects it (C#, JavaScript, Shell, XML…). Keywords, strings,
+  comments and numbers are coloured, and so are calls (the name before a `(`)
+  and, in C#, Java, Go, Kotlin, Swift, Scala, JavaScript, C++, Rust and PHP,
+  types (PascalCase names); other languages get strings, calls and numbers.
 - ```` ```mermaid ```` fences render with Mermaid, themed from the deck tokens
   and re-rendered on light/dark switch. **This is the only network
   resource:** the pinned Mermaid script from jsDelivr is added only to decks
@@ -642,6 +645,11 @@ becomes a code block, highlighted by the file's extension:
 - A `lines=` or `tag=` include shows the file's own line numbers. The
   indentation every shown line shares is removed (`indent=keep` keeps it). The
   title is the file name unless `title=` says otherwise.
+- The language comes from the file's name (`.cs` → C#, `.csproj`, `.config`,
+  `.props`, `.xaml` → XML, `Dockerfile` → dockerfile, `.sh` → bash, `.yml` →
+  YAML), then from its first characters (`<?xml` or a tag → XML, `{` or `[` →
+  JSON, a `#!` line → bash or Python). `lang=` overrides both, here and on
+  `<!-- code: -->`: `<!-- include: ../code/NuGet.config title=NuGet.config lang=xml -->`.
 - `si check` reports a missing file, a range past the end, a tag that is not
   found or not closed, and an unknown option.
 
@@ -654,6 +662,12 @@ becomes a code block, highlighted by the file's extension:
 `title=` shows in the code block's header bar (documents), `hl=` highlights
 lines (counted from the first line shown), `linenos` shows line numbers, from
 `start=` (default 1). Copy never copies the numbers.
+
+The language may be left out or written the pandoc way; all of these read
+the same: ```` ```xml title="config.csproj" ````, ```` ``` title="config.csproj" ````
+(no language: the title's extension names it, `.csproj` → `xml`, `.go` → `go`,
+`Dockerfile` → `dockerfile`), ```` ```{.xml title="config.csproj"} ```` and
+```` ```xml {title="config.csproj"} ````.
 
 **Callouts.** End a code line with `<N>`, bare or as its comment (`// <1>`,
 `# <1>`, `-- <1>`, `<!-- 1 -->`), and write the explanations right after the
@@ -2062,3 +2076,134 @@ its linked maps as floors, `payments.md` with two maps in one file,
 `warehouse.md` in 2D, `org` layout with `orthogonal` lines), and the article
 `examples/article/retry.md` has a fence.
 `si new ideas --type mindmap` writes a starter.
+
+## 25. Code windows and code shows
+
+A fenced code block with `window=` is drawn as a window: macOS (traffic
+lights and a centred title), Windows (title on the left, minimise, maximise,
+close), a terminal (a tab and a `$ cat` prompt) or `none` (a plain rounded
+card), optionally on a backdrop, with numbered callouts you place by hand. A
+run of code blocks with the same `id=` is a **show**: one window whose steps
+morph into each other (the lines that stay glide to their new place, new lines
+fade in, removed ones fade out). It works in every document type, on slides and
+in mind maps.
+
+````markdown
+```go id=retry title="retry.go" window=mac theme=night backdrop=dusk numbers step="One attempt"
+func send(order Order) error {
+	resp, err := client.Post(url, order)
+	if err != nil {
+		return err
+	}
+	return check(resp)
+}
+```
+<!-- callout: 2 One attempt: a dropped connection loses the order. at=60,-54 -->
+
+```go id=retry title="retry.go" window=mac theme=night backdrop=dusk numbers step="Retry five times" hl=3
+func send(order Order) error {
+	var last error
+	for try := 1; try <= 5; try++ {
+		resp, err := client.Post(url, order)
+		if err == nil {
+			return check(resp)
+		}
+		last = err
+	}
+	return last
+}
+```
+<!-- callout: 3 Five tries, back to back. -->
+````
+
+### Options (on the fence line)
+
+| Option | Values | What it does |
+|---|---|---|
+| `window=` | `mac`, `windows`, `terminal`, `none` | turns the block into a window; without `window=` or `id=` nothing changes |
+| `title=` | text (quote it when it has spaces) | the title bar: `title="PaymentClient.cs - Gateway"` |
+| `theme=` | `auto` (default), `night`, `paper`, `dusk` | `auto` uses the deck or page colours (light and dark); the others are code-window looks |
+| `backdrop=` | `none` (default), `dusk`, `ocean`, `mint`, `graphite` | a gradient behind the window, with room around it |
+| `numbers` | (a flag; `linenos` works too) | line numbers in a gutter |
+| `hl=` | `3`, `3,5-7` | highlighted lines of this step |
+| `id=` | a name | blocks with the same id in a row are one show; on slides, the same id on consecutive slides morphs |
+| `step=` | text | the step's name, shown under the window (`2 / 4 · Back off`) and in the Studio |
+| `transition=` | `morph` (default), `fade`, `slide` | how a show goes from step to step |
+
+```xml window=windows title="Gateway.csproj" theme=paper
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+</Project>
+```
+
+```sh window=terminal title="checkout" backdrop=graphite
+go test ./payments -count=100
+```
+
+An unknown value of `window=`, `theme=`, `backdrop=` or `transition=` is a
+`si check` problem.
+
+### Callouts
+
+`<!-- callout: LINE text -->` right after the block (blank lines between are
+fine, one per line) puts a numbered dot at the end of that code line and a
+note beside the window, joined by a dashed wire. The text takes inline
+Markdown. `at=dx,dy` is where the note sits, in pixels from the end of the
+line; without it the note goes to the right of the window. Drag a note to move
+it: in `si play` and a built page the move is local; in the Studio's Window
+view it is written back as `at=`.
+
+```markdown
+<!-- callout: 8 Declines are final: never retry a refused card. at=70,-64 -->
+<!-- callout: 12 Jitter spreads the retries of a thousand orders. -->
+```
+
+On a narrow screen (a phone) the notes move under the window as a numbered
+list; the dots stay on the lines. `si check` reports a callout on a line the
+block does not have and a callout with no window above it.
+
+### Shows in documents, on slides, in mind maps
+
+- **Documents** (articles, guides, labs, sites): a show is one window with
+  `← →` and Play under it (Play steps every 2.6 s).
+- **Slides:** several same-id blocks on one slide are build steps, one click
+  each (write one `[CLICK]` per extra step in `Notes:`); the same id on
+  consecutive slides morphs as the slide changes, without the slide's fade, like
+  an animated canvas.
+- **Mind maps:** a code topic takes `window=` and `title=` and gets a title bar
+  (macOS lights or the title).
+- Without JavaScript every step is a plain code block with its callouts as a
+  list.
+
+### Exports
+
+```bash
+si code retry.md --png --scale 2   # retry-retry-1.png … one per step, backdrop and callouts included
+si code retry.md --svg             # retry-retry-1.svg … (fonts embedded)
+si code retry.md --gif             # retry-retry.gif, the whole show: 2.2 s per step, a short morph between
+si code talk.md --id charge --gif -o out/   # one show of a deck (its id), into out/
+```
+
+Files are named `<file>-<id>-<step>`; a window without an id is
+`window-<n>`, counting the file's windows from 1. A show split across
+slides exports as one show. Exports need Chrome or Chromium (headless). The
+GIF uses one shared 256-colour palette, and the morph is drawn as five frames
+between steps.
+
+### In the Studio and the terminal
+
+Put the cursor in a code block and choose **Window** in the bar above it: a
+preview of the window and panels for its look (window, theme, backdrop,
+transition, title, line numbers), its steps (name, order, add a step as a copy,
+delete) and its callouts (add one on a line, edit, delete, drag in the preview
+to place it), plus PNG, SVG and GIF exports next to the file. Every change is
+written into the Markdown as one undoable edit. `si play --terminal` shows a
+window's title (`● ● ●  retry.go` for `mac`) in its box and the callouts as
+numbered notes; a show's steps are shown one under the other.
+
+Examples: `examples/code/retry.md` (a four-step show on a backdrop, a Windows
+window with C# and a `.csproj`, a terminal), the showcase slide "The retry
+rule" (two steps, one click), and a terminal window in
+`examples/article/retry.md`.

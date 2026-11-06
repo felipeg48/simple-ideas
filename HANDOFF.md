@@ -8,7 +8,29 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 - **Idea being refined (not started; likely a separate project, not part of si):**
   the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
-- **Latest release: v2.0.1: highlighter languages.** `render/highlight.go` adds C# (`csharp`/`cs`/`c#`/`dotnet`),
+- **Latest release: v2.1.0: code windows and code shows.** `internal/render/codewin.go` groups fences with
+  `window=` / `id=` (and their `<!-- callout: -->` lines, now a known directive, also in documents) into shows and
+  writes a figure with each step's highlighted lines as JSON; `web/codewin.js` draws the chrome (mac / windows /
+  terminal / none), the backdrop, the lines (morph keyed by text + occurrence), callouts (dot, wire, draggable note;
+  a numbered list when the note does not fit), ← → Play in documents, build-step markers (`.si-cw-mark`) on slides,
+  and a slide-to-slide morph (`deck.js` canvasKey `cw:<id>`). `internal/codeshow` edits the Markdown by lines
+  (Studio Window view, `POST codewin`) and builds the export article (`Source`). `si code --png --svg --gif`
+  (`cmd/si/code.go`): Chrome dumps `#si-code-export` (SVG frames: foreignObject with the window's CSS, tokens and
+  data-URI fonts), rasterises each, Go encodes the GIF (a popularity palette, no dithering: 0.9 MB for the four-step example). Mind map code topics
+  take `window=`/`title=` (and keep them through the map editor). Terminal: title bar in the code box, callouts as
+  numbered notes. Examples: `examples/code/retry.md`, showcase "The retry rule", article terminal window.
+  Fix: a fence's language and options are read by one helper (`codeshow.Attrs`, used by render, tui, studio): a
+  first word with `=` is an option, not the language (``` title="config.csproj" ``` used to show the label
+  `TITLE="CONFIG.CSPROJ"`), pandoc's `{.xml title="x"}` and `xml {title="x"}` work, and without a language the
+  title's extension names it (`.csproj` → xml).
+  Highlighter: calls (the name before `(`, the group's span only) as `si-tk-f` and PascalCase types as the new
+  `si-tk-t` (C#, Java, Go, Kotlin, Swift, Scala, JS/TS, C++, Rust, PHP); colours in theme.css, doc.css, mindmap.css,
+  codewin.css (`--si-cw-t`) and the terminal. Code labels use display names (`langName`: C#, JavaScript, Shell, XML…)
+  in document headers, tabs, code window titles and the terminal; doc.css no longer uppercases them.
+  Code includes (`deck/codeinc.go` `fileLang`): the language from the file name (`codeshow.LangOf`: `.config`,
+  `.csproj`, `.props`, … → xml, Dockerfile), then the content (`<?xml` / a tag, JSON, `#!`); `lang=` wins (it
+  already did, now documented).
+- **v2.0.1: highlighter languages.** `render/highlight.go` adds C# (`csharp`/`cs`/`c#`/`dotnet`),
   XML with tags, attributes, comments, `<?xml?>` and CDATA (`xml`, `csproj`, `props`, `targets`, `nuspec`, `resx`,
   `xaml`, `svg`, `pom`, …; HTML shares it), C, C++, PHP, Ruby, Swift, Scala, PowerShell, Dockerfile (case-insensitive).
   Before, C# and XML fences had a label but no colour. `TestHighlightLanguages`.

@@ -1,0 +1,386 @@
+<title>si Code Windows</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: controls on top, the stage (backdrop + window + callouts) as the hero, the step strip and the Markdown under it. */
+:root{
+  --bg:#f3f4f7; --fg:#15171c; --muted:#5d6370; --surface:#ffffff; --line:#dfe2e8;
+  --accent:#5b4bdb; --on-accent:#ffffff;
+  --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-display:"Bricolage Grotesque","IBM Plex Sans",system-ui,sans-serif;
+  --font-code:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){color-scheme:dark;--bg:#0e1015;--fg:#e8eaf0;--muted:#99a0ad;--surface:#161920;--line:#2a2e38;--accent:#9b8cff;--on-accent:#0e0b1f}
+}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0e1015;--fg:#e8eaf0;--muted:#99a0ad;--surface:#161920;--line:#2a2e38;--accent:#9b8cff;--on-accent:#0e0b1f}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--font-body);font-size:15px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1240px;margin:0 auto;padding-block:28px 44px;display:grid;gap:18px}
+header{display:grid;gap:4px}
+.eyebrow{font:600 12px/1 var(--font-code);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font:700 clamp(28px,4vw,42px)/1.05 var(--font-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+.lede{margin:0;color:var(--muted);max-width:68ch}
+.bar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:end}
+.ctl{display:grid;gap:5px}
+.ctl > span{font:600 11px/1 var(--font-code);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.seg{display:flex;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:3px;gap:2px}
+.seg button,.btn{font:500 13px/1 var(--font-body);color:var(--fg);background:transparent;border:0;border-radius:6px;padding:8px 11px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.seg button:hover:not([aria-pressed="true"]){background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.btn{border:1px solid var(--line);background:var(--surface);padding:9px 12px}
+.btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+input[type=range]{accent-color:var(--accent);width:110px}
+
+/* the stage */
+.stage{position:relative;border-radius:16px;border:1px solid var(--line);overflow:hidden;display:grid;place-items:center;min-height:clamp(420px,62vh,640px);padding:var(--pad,56px) clamp(14px,6vw,var(--pad,56px));transition:background .4s}
+.stage[data-bg="dusk"]{background:linear-gradient(135deg,#f6855b 0%,#c0508f 48%,#3c3b8f 100%)}
+.stage[data-bg="ocean"]{background:linear-gradient(135deg,#36d1dc 0%,#5b86e5 100%)}
+.stage[data-bg="mint"]{background:linear-gradient(135deg,#d4fc79 0%,#96e6a1 100%)}
+.stage[data-bg="graphite"]{background:radial-gradient(120% 120% at 20% 0%,#3a3f4b 0%,#14161a 70%)}
+.stage[data-bg="none"]{background:var(--surface)}
+.win{position:relative;max-width:100%;border-radius:12px;background:var(--c-bg);color:var(--c-fg);box-shadow:0 28px 70px rgba(10,12,30,.35),0 2px 6px rgba(10,12,30,.18);overflow:hidden;transition:border-radius .3s}
+.stage[data-bg="none"] .win{box-shadow:0 10px 30px rgba(10,12,30,.14)}
+.win[data-chrome="windows"]{border-radius:8px}
+.win[data-chrome="none"]{border-radius:14px}
+.chrome{display:flex;align-items:center;gap:10px;height:40px;padding:0 14px;font:500 12.5px var(--font-body);color:var(--c-muted);background:var(--c-bar);border-bottom:1px solid var(--c-rule);user-select:none}
+.chrome .title{flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lights{display:flex;gap:8px}
+.lights i{width:12px;height:12px;border-radius:50%;display:block}
+.lights i:nth-child(1){background:#ff5f57}.lights i:nth-child(2){background:#febc2e}.lights i:nth-child(3){background:#28c840}
+.winctl{display:flex;gap:0;margin-right:-14px}
+.winctl b{width:46px;height:40px;display:grid;place-items:center}
+.winctl svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.1}
+.wicon{width:16px;height:16px;border-radius:4px;background:linear-gradient(135deg,#00add8,#5dc9e2);display:grid;place-items:center;font:700 8px var(--font-code);color:#fff}
+.tabs{display:flex;align-items:flex-end;height:40px;padding:0 10px;gap:2px;background:var(--c-bar);border-bottom:1px solid var(--c-rule)}
+.tabs .tab{font:500 12.5px var(--font-code);padding:8px 14px;border-radius:8px 8px 0 0;background:var(--c-bg);color:var(--c-fg)}
+.tabs .tab.dim{background:transparent;color:var(--c-muted)}
+.body{position:relative;font-variant-ligatures:none;padding:18px 22px 22px 0;font:var(--fs,15px)/var(--lh,24px) var(--font-code);transition:height .5s cubic-bezier(.3,.8,.25,1)}
+.win[data-chrome="none"] .body{padding-top:22px}
+.prompt{font:var(--fs,15px)/var(--lh,24px) var(--font-code);padding:14px 22px 0;color:var(--c-muted)}
+.prompt b{color:var(--c-k);font-weight:600}
+.gutter{position:absolute;left:0;top:18px;width:var(--gw,46px);text-align:right;color:var(--c-muted);opacity:.55;user-select:none}
+.code{position:relative;margin-left:calc(var(--gw,46px) + 18px);white-space:pre}
+.ln{position:absolute;left:0;top:0;white-space:pre;transition:transform .55s cubic-bezier(.3,.8,.25,1),opacity .35s ease;will-change:transform}
+.ln.hl::before{content:"";position:absolute;inset:0 -22px 0 calc(-1 * (var(--gw,46px) + 18px));background:var(--c-hl);border-left:3px solid var(--c-k);z-index:-1}
+.gn{position:absolute;right:0;transition:opacity .3s}
+.k{color:var(--c-k);font-weight:600}.s{color:var(--c-s)}.c{color:var(--c-c);font-style:italic}.n{color:var(--c-n)}.f{color:var(--c-f)}.t{color:var(--c-t)}
+.win[data-theme="night"]{--c-bg:#0f1420;--c-bar:#151b29;--c-rule:#222a3b;--c-fg:#d8dee9;--c-muted:#7d879a;--c-k:#c792ea;--c-s:#a5e075;--c-c:#6b7489;--c-n:#f78c6c;--c-f:#82aaff;--c-t:#ffcb6b;--c-hl:rgba(199,146,234,.12)}
+.win[data-theme="paper"]{--c-bg:#fdfcf9;--c-bar:#f2f0ea;--c-rule:#e4e0d6;--c-fg:#24292f;--c-muted:#8a8f98;--c-k:#cf222e;--c-s:#0a7f4f;--c-c:#8b949e;--c-n:#0550ae;--c-f:#8250df;--c-t:#953800;--c-hl:rgba(207,34,46,.07)}
+.win[data-theme="dusk"]{--c-bg:#1f1a33;--c-bar:#28213f;--c-rule:#362d52;--c-fg:#ece6ff;--c-muted:#9c90c2;--c-k:#ff7ab2;--c-s:#ffd27a;--c-c:#7f74a6;--c-n:#7ae0ff;--c-f:#b39bff;--c-t:#8ff0c2;--c-hl:rgba(255,122,178,.13)}
+
+/* callouts */
+.callouts{position:absolute;inset:0;pointer-events:none}
+.callouts svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.callouts path{fill:none;stroke:#fff;stroke-width:2;stroke-dasharray:4 4;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
+.stage[data-bg="none"] .callouts path,.stage[data-bg="mint"] .callouts path{stroke:var(--fg)}
+.dot{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:#ffd23f;color:#2a1f00;font:700 12px/22px var(--font-body);text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.3);transition:opacity .3s}
+.bubble{position:absolute;max-width:min(240px,46vw);background:#fffdf5;color:#24221c;border-radius:12px;padding:10px 12px 10px 38px;font:500 13.5px/1.35 var(--font-body);box-shadow:0 12px 28px rgba(0,0,0,.28);pointer-events:auto;cursor:grab;user-select:none;touch-action:none;transition:opacity .3s}
+.bubble::before{content:attr(data-n);position:absolute;left:10px;top:9px;width:20px;height:20px;border-radius:50%;background:#ffd23f;color:#2a1f00;font:700 11.5px/20px var(--font-body);text-align:center}
+.bubble:active{cursor:grabbing}
+.hidden-c .callouts{opacity:0}
+
+/* steps */
+.steps{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.strip{display:flex;gap:8px;flex-wrap:wrap}
+.strip button{display:grid;gap:2px;text-align:left;font:500 13px var(--font-body);color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;min-width:120px}
+.strip button small{font:600 10.5px var(--font-code);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.strip button[aria-current="step"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.progress{height:3px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--accent)}
+.two{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.panel h2{margin:0;padding:12px 14px;border-bottom:1px solid var(--line);font:600 12px/1 var(--font-code);letter-spacing:.06em;color:var(--muted);display:flex;justify-content:space-between}
+.panel pre{margin:0;padding:14px;overflow:auto;max-height:420px;font:12.5px/1.65 var(--font-code)}
+.mk{color:var(--muted)}.ma{color:var(--accent)}.mc{color:#c2410c}
+.notes{padding:14px;display:grid;gap:10px;color:var(--muted);font-size:14px}
+.notes b{color:var(--fg)}
+.notes p{margin:0}
+code{font-family:var(--font-code);font-size:.92em}
+dialog#exp{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--fg);padding:0;width:min(900px,calc(100vw - 32px))}
+dialog#exp::backdrop{background:rgba(10,12,18,.55)}
+.exp-h{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
+.exp-h h3{margin:0;font:700 20px var(--font-display)}
+.exp-b{padding:16px;display:grid;gap:14px}
+.frames{display:grid;align-items:start;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.frame{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
+.frame .shot{height:120px;overflow:hidden;position:relative}
+.frame .shot > div{transform-origin:0 0;position:absolute;left:0;top:0}
+.frame span{display:block;padding:6px 9px;font:12px var(--font-code);color:var(--muted);border-top:1px solid var(--line)}
+.fmt{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.fmt div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:4px}
+.fmt b{font:700 14px var(--font-display)}
+.fmt span{color:var(--muted);font-size:13px}
+.fmt code{background:var(--bg);padding:6px 8px;border-radius:6px;font-size:12px;overflow-x:auto;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.ln,.body,.bubble,.dot{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">si · concept mockup · code windows</span>
+    <h1>Code that walks on stage</h1>
+    <p class="lede">A code block becomes a window: macOS, Windows or a terminal, on a backdrop, with numbered callouts you place by hand. A run of blocks becomes a show, and the lines that stay glide to their new place while the rest fades in.</p>
+  </header>
+
+  <div class="bar" role="toolbar" aria-label="Window style">
+    <div class="ctl"><span>Window</span><div class="seg" data-key="chrome"><button data-v="mac">macOS</button><button data-v="windows">Windows</button><button data-v="terminal">Terminal</button><button data-v="none">None</button></div></div>
+    <div class="ctl"><span>Theme</span><div class="seg" data-key="theme"><button data-v="night">Night</button><button data-v="paper">Paper</button><button data-v="dusk">Dusk</button></div></div>
+    <div class="ctl"><span>Backdrop</span><div class="seg" data-key="bg"><button data-v="dusk">Dusk</button><button data-v="ocean">Ocean</button><button data-v="mint">Mint</button><button data-v="graphite">Graphite</button><button data-v="none">None</button></div></div>
+    <div class="ctl"><span>Transition</span><div class="seg" data-key="tx"><button data-v="morph">Morph</button><button data-v="fade">Fade</button><button data-v="slide">Slide</button></div></div>
+    <div class="ctl"><span>Show</span><div class="row"><button class="btn" id="nums" aria-pressed="true">Line numbers</button><button class="btn" id="calls" aria-pressed="true">Callouts</button></div></div>
+    <div class="ctl"><span>Size · padding</span><div class="row"><input type="range" id="fs" min="12" max="19" value="15" aria-label="Font size"><input type="range" id="pad" min="16" max="96" value="56" aria-label="Padding"></div></div>
+  </div>
+
+  <section class="stage" id="stage" data-bg="dusk" aria-label="Code window">
+    <div class="win" id="win" data-chrome="mac" data-theme="night">
+      <div id="chrome"></div>
+      <div class="body" id="body"><div class="gutter" id="gutter"></div><div class="code" id="code"></div></div>
+    </div>
+    <div class="callouts" id="callouts"><svg id="wires" aria-hidden="true"></svg></div>
+  </section>
+
+  <div class="steps">
+    <div class="strip" id="strip" role="tablist" aria-label="Steps"></div>
+    <div class="row"><button class="btn" id="prev" aria-label="Previous step">←</button><button class="btn" id="play" aria-pressed="false">Play ▶</button><button class="btn" id="next" aria-label="Next step">→</button><button class="btn primary" id="export">Export…</button></div>
+  </div>
+  <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+
+  <div class="two">
+    <div class="panel"><h2><span>retry.md</span><span>source</span></h2><pre id="src"></pre></div>
+    <div class="panel"><h2><span>How it works in si</span><span></span></h2>
+      <div class="notes">
+        <p><b>One fence, one window.</b> Options on the fence line pick the window, the theme, the backdrop and the line numbers; nothing else changes in the Markdown.</p>
+        <p><b>Callouts are placed by hand.</b> Drag a note anywhere; si writes its place back as <code>at=</code>, so the next build puts it in the same spot.</p>
+        <p><b>A show is a run of fences with the same <code>id=</code>.</b> On slides each one is a click; lines that stay glide, new ones fade in, like the canvas morph between slides.</p>
+        <p><b>Anywhere a fence goes.</b> On a slide it fills the figure, and across consecutive slides the same <code>id=</code> morphs as the slide changes. In a tutorial or an article it sits in the text, with ← → under it. In a mind map, a code topic can wear the same window.</p>
+        <p><b>Exports:</b> an animated GIF of the whole show, or one PNG or SVG per step, framed with the backdrop.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<dialog id="exp" aria-labelledby="exp-t">
+  <div class="exp-h"><h3 id="exp-t">Export the show</h3><button class="btn" id="exp-x">Close</button></div>
+  <div class="exp-b">
+    <div class="frames" id="frames"></div>
+    <div class="fmt">
+      <div><b>Animated GIF</b><span id="gif-d"></span><code>si code retry.md --gif</code></div>
+      <div><b>PNG per step</b><span>retry-1.png … retry-4.png at 2×, backdrop included</span><code>si code retry.md --png --scale 2</code></div>
+      <div><b>SVG per step</b><span>vector, fonts inlined, callouts kept</span><code>si code retry.md --svg</code></div>
+    </div>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  'use strict';
+  var STEPS = [
+    { name: 'One attempt', code: 'func send(order Order) error {\n\tresp, err := client.Post(url, order)\n\tif err != nil {\n\t\treturn err\n\t}\n\treturn check(resp)\n}',
+      notes: [{ line: 2, text: 'One attempt: a dropped connection loses the order.', dx: 70, dy: -54 }] },
+    { name: 'Retry five times', code: 'func send(order Order) error {\n\tvar last error\n\tfor try := 1; try <= 5; try++ {\n\t\tresp, err := client.Post(url, order)\n\t\tif err == nil {\n\t\t\treturn check(resp)\n\t\t}\n\t\tlast = err\n\t}\n\treturn last\n}',
+      notes: [{ line: 3, text: 'Five tries, back to back.', dx: 60, dy: -46 }] },
+    { name: 'Back off', code: 'func send(order Order) error {\n\tvar last error\n\tfor try := 1; try <= 5; try++ {\n\t\tresp, err := client.Post(url, order)\n\t\tif err == nil {\n\t\t\treturn check(resp)\n\t\t}\n\t\tlast = err\n\t\ttime.Sleep(backoff(try))\n\t}\n\treturn last\n}',
+      notes: [{ line: 9, text: 'Wait 0.2 s, 0.4 s, 0.8 s… before the next try.', dx: 60, dy: 30 }], hl: [9] },
+    { name: 'Only what can recover', code: 'func send(order Order) error {\n\tvar last error\n\tfor try := 1; try <= 5; try++ {\n\t\tresp, err := client.Post(url, order)\n\t\tif err == nil {\n\t\t\treturn check(resp)\n\t\t}\n\t\tif !isNetwork(err) {\n\t\t\treturn err // a decline is final\n\t\t}\n\t\tlast = err\n\t\ttime.Sleep(backoff(try) + jitter())\n\t}\n\treturn last\n}',
+      notes: [{ line: 8, text: 'Declines are final: never retry a refused card.', dx: 70, dy: -64 }, { line: 12, text: 'Jitter spreads the retries of a thousand orders.', dx: 50, dy: 40 }], hl: [8, 9, 10, 12] }
+  ];
+  var st = { chrome: 'mac', theme: 'night', bg: 'dusk', tx: 'morph', nums: true, calls: true, step: 0, fs: 15 };
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var $ = function (id) { return document.getElementById(id); };
+  var win = $('win'), stage = $('stage'), codeEl = $('code'), gutter = $('gutter'), body = $('body');
+
+  /* a small Go highlighter */
+  var KW = /\b(func|return|if|for|var|nil|err|range|go|defer|type|struct|import|package)\b/;
+  function hl(line) {
+    var re = /(\/\/.*$)|("(?:[^"\\]|\\.)*")|\b(func|return|if|for|var|nil|range|defer|type|struct|import|package)\b|\b(error|int|string|bool|Order)\b|\b(\d+(?:\.\d+)?)\b|\b([A-Za-z_]\w*)(?=\()/g, out = '', last = 0, m;
+    void KW;
+    while ((m = re.exec(line))) {
+      out += esc(line.slice(last, m.index));
+      var cls = m[1] ? 'c' : m[2] ? 's' : m[3] ? 'k' : m[4] ? 't' : m[5] ? 'n' : 'f';
+      out += '<span class="' + cls + '">' + esc(m[0]) + '</span>';
+      last = re.lastIndex;
+    }
+    return out + esc(line.slice(last));
+  }
+  function esc(s) { return s.replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+  function lines(i) { return STEPS[i].code.replace(/\t/g, '    ').split('\n'); }
+  var maxCols = Math.max.apply(null, STEPS.map(function (s, i) { return Math.max.apply(null, lines(i).map(function (l) { return l.length; })); }));
+
+  /* ---------- chrome ---------- */
+  function chrome() {
+    var t = 'retry.go', h = '';
+    if (st.chrome === 'mac') h = '<div class="chrome"><span class="lights"><i></i><i></i><i></i></span><span class="title">' + t + ' — checkout</span><span style="width:52px"></span></div>';
+    else if (st.chrome === 'windows') h = '<div class="chrome" style="padding-right:14px"><span class="wicon">GO</span><span class="title" style="text-align:left">' + t + ' - Checkout</span><span class="winctl"><b><svg viewBox="0 0 10 10"><path d="M1 5h8"/></svg></b><b><svg viewBox="0 0 10 10"><rect x="1" y="1" width="8" height="8"/></svg></b><b><svg viewBox="0 0 10 10"><path d="M1 1l8 8M9 1l-8 8"/></svg></b></span></div>';
+    else if (st.chrome === 'terminal') h = '<div class="tabs"><span class="tab">zsh — retry.go</span><span class="tab dim">go test</span></div><div class="prompt"><b>~/checkout</b> $ cat retry.go</div>';
+    $('chrome').innerHTML = h;
+    win.setAttribute('data-chrome', st.chrome);
+  }
+
+  /* ---------- the code, with a morph between steps ---------- */
+  var live = {}; /* key -> element */
+  function LH() { return Math.round(st.fs * 1.6); }
+  function render(animate) {
+    var ls = lines(st.step), lh = LH(), keep = {}, seen = {}, hlset = {};
+    (STEPS[st.step].hl || []).forEach(function (n) { hlset[n] = true; });
+    win.style.setProperty('--fs', st.fs + 'px'); win.style.setProperty('--lh', lh + 'px');
+    codeEl.style.width = maxCols + 'ch';
+    var gw = st.nums ? 46 : 0; win.style.setProperty('--gw', gw + 'px'); gutter.hidden = !st.nums;
+    var tx = reduce || !animate ? 'none' : st.tx;
+    if (tx === 'fade' || tx === 'slide') {
+      Object.keys(live).forEach(function (k) { var el = live[k]; el.style.opacity = 0; if (tx === 'slide') el.style.transform += ' translateX(-28px)'; setTimeout(function () { el.remove(); }, 340); });
+      live = {};
+    }
+    ls.forEach(function (text, i) {
+      var key = text + '\u0001' + (seen[text] = (seen[text] || 0) + 1), el = live[key];
+      var y = 'translateY(' + i * lh + 'px)';
+      if (el) { el.style.transform = y; el.style.transitionDelay = '0s'; }
+      else {
+        el = document.createElement('div'); el.className = 'ln'; el.innerHTML = hl(text) || ' ';
+        el.style.transform = y + (tx === 'slide' ? ' translateX(28px)' : ''); el.style.opacity = tx === 'none' ? 1 : 0;
+        codeEl.appendChild(el);
+        (function (e, d) { requestAnimationFrame(function () { requestAnimationFrame(function () { e.style.transitionDelay = d; e.style.opacity = 1; e.style.transform = y; }); }); })(el, tx === 'none' ? '0s' : (tx === 'morph' ? '.32s' : '.18s'));
+      }
+      el.classList.toggle('hl', !!hlset[i + 1]);
+      el.style.height = lh + 'px'; el.style.width = '100%';
+      keep[key] = el;
+    });
+    Object.keys(live).forEach(function (k) { if (!keep[k]) { var el = live[k]; el.style.transitionDelay = '0s'; el.style.opacity = 0; setTimeout(function () { el.remove(); }, 360); } });
+    live = keep;
+    codeEl.style.height = ls.length * lh + 'px';
+    gutter.innerHTML = ls.map(function (_, i) { return '<div style="height:' + lh + 'px">' + (i + 1) + '</div>'; }).join('');
+    strip(); source(); progress();
+    placeCallouts(animate && !reduce ? 620 : 0);
+  }
+
+  /* ---------- callouts, placed by hand ---------- */
+  var layer = $('callouts'), wires = $('wires');
+  function placeCallouts(delay) {
+    layer.querySelectorAll('.bubble,.dot').forEach(function (e) { e.style.opacity = 0; setTimeout(function () { e.remove(); }, delay ? 250 : 0); });
+    setTimeout(drawCallouts, delay);
+  }
+  function anchorOf(n) {
+    var ls = lines(st.step), sr = stage.getBoundingClientRect(), cr = codeEl.getBoundingClientRect();
+    var ch = cr.width / maxCols, len = (ls[n.line - 1] || '').replace(/\s+$/, '').length;
+    return { x: cr.left - sr.left + (len + 1.5) * ch, y: cr.top - sr.top + (n.line - 0.5) * LH() };
+  }
+  function drawCallouts() {
+    layer.querySelectorAll('.bubble,.dot').forEach(function (e) { e.remove(); });
+    wires.innerHTML = '';
+    if (!st.calls) return;
+    var sr = stage.getBoundingClientRect();
+    STEPS[st.step].notes.forEach(function (n, k) {
+      var a = anchorOf(n), dot = document.createElement('div'); dot.className = 'dot'; dot.textContent = k + 1;
+      dot.style.left = a.x + 'px'; dot.style.top = a.y + 'px'; dot.style.opacity = 0; layer.appendChild(dot);
+      var b = document.createElement('div'); b.className = 'bubble'; b.setAttribute('data-n', k + 1); b.textContent = n.text; b.style.opacity = 0;
+      layer.appendChild(b);
+      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path'); wires.appendChild(path);
+      function place() {
+        var bw = b.offsetWidth, bh = b.offsetHeight;
+        var wr = win.getBoundingClientRect().right - sr.left;
+        var x = Math.max(8, Math.min(sr.width - bw - 8, Math.max(a.x + n.dx, wr + 24))), y = Math.max(8, Math.min(sr.height - bh - 8, a.y + n.dy - bh / 2));
+        b.style.left = x + 'px'; b.style.top = y + 'px';
+        var ex = x < a.x ? x + bw : x, ey = y + bh / 2;
+        path.setAttribute('d', 'M' + (a.x + 11) + ' ' + a.y + ' C' + ((a.x + ex) / 2) + ' ' + a.y + ' ' + ((a.x + ex) / 2) + ' ' + ey + ' ' + ex + ' ' + ey);
+      }
+      place();
+      requestAnimationFrame(function () { dot.style.opacity = 1; b.style.opacity = 1; });
+      var drag = null;
+      b.addEventListener('pointerdown', function (e) { drag = { x: e.clientX, y: e.clientY, dx: n.dx, dy: n.dy }; b.setPointerCapture(e.pointerId); });
+      b.addEventListener('pointermove', function (e) { if (!drag) return; n.dx = drag.dx + e.clientX - drag.x; n.dy = drag.dy + e.clientY - drag.y; place(); });
+      b.addEventListener('pointerup', function () { if (drag) { drag = null; source(); } });
+    });
+  }
+  window.addEventListener('resize', function () { drawCallouts(); });
+
+  /* ---------- steps, Play ---------- */
+  function strip() {
+    $('strip').innerHTML = STEPS.map(function (s, i) { return '<button role="tab" data-i="' + i + '"' + (i === st.step ? ' aria-current="step" aria-selected="true"' : ' aria-selected="false"') + '><small>Step ' + (i + 1) + '</small>' + s.name + '</button>'; }).join('');
+  }
+  $('strip').addEventListener('click', function (e) { var b = e.target.closest('[data-i]'); if (b) go(+b.getAttribute('data-i')); });
+  function go(i) { i = (i + STEPS.length) % STEPS.length; if (i === st.step) return; st.step = i; render(true); }
+  $('prev').onclick = function () { stop(); go(st.step - 1); };
+  $('next').onclick = function () { stop(); go(st.step + 1); };
+  var timer = null, t0 = 0, DWELL = 2600;
+  function progress() { t0 = performance.now(); }
+  function tick(now) { requestAnimationFrame(tick); $('prog').style.width = timer ? Math.min(100, (now - t0) / DWELL * 100) + '%' : ((st.step + 1) / STEPS.length * 100) + '%'; }
+  requestAnimationFrame(tick);
+  function stop() { if (!timer) return; clearInterval(timer); timer = null; $('play').setAttribute('aria-pressed', 'false'); $('play').textContent = 'Play ▶'; }
+  $('play').onclick = function () {
+    if (timer) { stop(); return; }
+    $('play').setAttribute('aria-pressed', 'true'); $('play').textContent = 'Pause';
+    progress(); timer = setInterval(function () { go(st.step + 1); }, DWELL);
+  };
+  document.addEventListener('keydown', function (e) {
+    if (/input|textarea/i.test(e.target.tagName)) return;
+    if (e.key === 'ArrowRight') { stop(); go(st.step + 1); } else if (e.key === 'ArrowLeft') { stop(); go(st.step - 1); }
+  });
+
+  /* ---------- the Markdown it comes from ---------- */
+  function source() {
+    var out = '', opts = 'window=' + st.chrome + ' theme=' + st.theme + ' backdrop=' + st.bg + (st.nums ? ' numbers' : '');
+    out += '<span class="mk">## The retry, step by step</span>\n\n';
+    STEPS.forEach(function (s, i) {
+      var cur = i === st.step;
+      out += (cur ? '' : '<span class="mk">') + '```go id=retry title="retry.go" ' + (i === 0 ? opts + ' transition=' + st.tx : '') + (s.hl ? ' hl=' + s.hl.join(',') : '') + '\n';
+      if (cur) out += esc(lines(i).join('\n')) + '\n'; else out += '…\n';
+      out += '```' + (cur ? '' : '</span>') + '\n';
+      s.notes.forEach(function (n) { out += '<span class="ma">&lt;!-- callout: ' + n.line + ' ' + esc(n.text) + ' at=' + Math.round(n.dx) + ',' + Math.round(n.dy) + ' --&gt;</span>\n'; });
+      out += '\n';
+    });
+    $('src').innerHTML = out.trim();
+  }
+
+  /* ---------- export ---------- */
+  $('export').onclick = function () {
+    var fr = '';
+    STEPS.forEach(function (s, i) { fr += '<div class="frame"><div class="shot" data-i="' + i + '"></div><span>retry-' + (i + 1) + '.png</span></div>'; });
+    $('frames').innerHTML = fr;
+    $('gif-d').textContent = STEPS.length + ' steps · ' + st.tx + ' · ' + (DWELL / 1000) + ' s each · loops';
+    var cur = st.step;
+    $('frames').querySelectorAll('.shot').forEach(function (shot) {
+      var i = +shot.getAttribute('data-i');
+      var copy = stage.cloneNode(true); copy.removeAttribute('id'); copy.querySelector('.callouts').remove();
+      copy.querySelectorAll('[id]').forEach(function (e) { e.removeAttribute('id'); });
+      var ls = lines(i), lh = LH(), code = copy.querySelector('.code'), gut = copy.querySelector('.gutter');
+      code.innerHTML = ls.map(function (t, k) { return '<div class="ln" style="transform:translateY(' + k * lh + 'px);opacity:1;height:' + lh + 'px;width:100%">' + (hl(t) || ' ') + '</div>'; }).join('');
+      code.style.height = ls.length * lh + 'px';
+      gut.innerHTML = ls.map(function (_, k) { return '<div style="height:' + lh + 'px">' + (k + 1) + '</div>'; }).join('');
+      var w = stage.offsetWidth, k = shot.clientWidth / w || 0.2;
+      var holder = document.createElement('div'); holder.style.width = w + 'px'; holder.style.transform = 'scale(' + k + ')';
+      copy.style.minHeight = '0'; holder.appendChild(copy); shot.appendChild(holder);
+      shot.style.height = Math.round(stage.offsetHeight * k) + 'px';
+    });
+    st.step = cur;
+    $('exp').showModal();
+  };
+  $('exp-x').onclick = function () { $('exp').close(); };
+
+  /* ---------- toolbar ---------- */
+  function pressed() {
+    document.querySelectorAll('.seg').forEach(function (g) { var k = g.getAttribute('data-key'); g.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === st[k])); }); });
+  }
+  document.querySelectorAll('.seg').forEach(function (g) {
+    g.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      var k = g.getAttribute('data-key'); st[k] = b.getAttribute('data-v'); pressed();
+      if (k === 'chrome') chrome();
+      if (k === 'theme') win.setAttribute('data-theme', st.theme);
+      if (k === 'bg') stage.setAttribute('data-bg', st.bg);
+      source(); setTimeout(drawCallouts, 20);
+    });
+  });
+  $('nums').onclick = function () { st.nums = !st.nums; this.setAttribute('aria-pressed', String(st.nums)); render(false); };
+  $('calls').onclick = function () { st.calls = !st.calls; this.setAttribute('aria-pressed', String(st.calls)); drawCallouts(); };
+  $('fs').oninput = function () { st.fs = +this.value; render(false); };
+  $('pad').oninput = function () { stage.style.setProperty('--pad', this.value + 'px'); drawCallouts(); };
+
+  pressed(); chrome(); render(false);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { drawCallouts(); });
+})();
+</script>

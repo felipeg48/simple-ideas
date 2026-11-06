@@ -154,6 +154,32 @@ A nested list becomes a map you can fold, move and drill into:
 
 ---
 
+## Code windows
+
+```go id=send window=mac title="send.go" numbers step="Once"
+func send(o Order) error {
+	return post(o)
+}
+```
+<!-- callout: 2 One try only -->
+
+```go id=send window=mac title="send.go" numbers step="Retry" hl=2-4
+func send(o Order) error {
+	for try := 1; try <= 5; try++ {
+		if post(o) == nil { return nil }
+	}
+	return errGaveUp
+}
+```
+
+- `window=` mac, windows, terminal, none · `theme=` night, paper, dusk · `backdrop=` dusk, ocean, mint, graphite
+- Same `id=` in a row: a show that morphs; on a slide, one click per step
+- `si code file.md --png --svg --gif`; in the Studio, put the cursor in a block and choose Window
+
+Notes: A code block can be a window. [CLICK] Blocks with the same id become one window whose lines glide into the next step.
+
+---
+
 ## Animated canvases
 
 One inline SVG whose parts change state slide by slide:

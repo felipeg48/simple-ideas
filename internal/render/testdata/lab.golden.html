@@ -42,7 +42,7 @@ next lab picks up from here: <a href="other.html#start">Replay the queue</a>.</p
 </blockquote>
 <h2 id="set-up">Set up<a class="si-anchor" href="#set-up" aria-label="Link to this section">#</a></h2>
 <h3 id="clone">Clone<a class="si-anchor" href="#clone" aria-label="Link to this section">#</a></h3>
-<div class="si-codeblock"><div class="si-code-head"><span class="si-code-lang">bash</span><button type="button" class="si-copy" aria-label="Copy code">Copy</button></div><pre class="si-code" data-lang="bash"><code class="language-bash"><span class="si-tk-m">git</span> clone https://example.com/harbor/orders.git &amp;&amp; cd orders &amp;&amp; make bootstrap ENV=lab REGION=us-east-<span class="si-tk-n">1</span> WORKERS=<span class="si-tk-n">4</span> QUEUE=orders-lab RETRIES=<span class="si-tk-n">5</span> TIMEOUT=<span class="si-tk-n">30s</span> LOG_LEVEL=debug</code></pre>
+<div class="si-codeblock"><div class="si-code-head"><span class="si-code-lang">Shell</span><button type="button" class="si-copy" aria-label="Copy code">Copy</button></div><pre class="si-code" data-lang="bash"><code class="language-bash"><span class="si-tk-m">git</span> clone https://example.com/harbor/orders.git &amp;&amp; cd orders &amp;&amp; make bootstrap ENV=lab REGION=us-east-<span class="si-tk-n">1</span> WORKERS=<span class="si-tk-n">4</span> QUEUE=orders-lab RETRIES=<span class="si-tk-n">5</span> TIMEOUT=<span class="si-tk-n">30s</span> LOG_LEVEL=debug</code></pre>
 </div>
 <h3 id="clone-2">Clone<a class="si-anchor" href="#clone-2" aria-label="Link to this section">#</a></h3>
 <p>Clone the fixtures too.</p>
@@ -110,7 +110,7 @@ next lab picks up from here: <a href="other.html#start">Replay the queue</a>.</p
 <hr>
 <h2 id="read-it-back">Read it back<a class="si-anchor" href="#read-it-back" aria-label="Link to this section">#</a></h2>
 <p>Query the order you placed:</p>
-<div class="si-codeblock"><div class="si-code-head"><span class="si-code-lang">sql</span><button type="button" class="si-copy" aria-label="Copy code">Copy</button></div><pre class="si-code" data-lang="sql"><code class="language-sql"><span class="si-tk-k">SELECT</span> id, status <span class="si-tk-k">FROM</span> orders <span class="si-tk-k">WHERE</span> id = <span class="si-tk-n">42</span>;</code></pre>
+<div class="si-codeblock"><div class="si-code-head"><span class="si-code-lang">SQL</span><button type="button" class="si-copy" aria-label="Copy code">Copy</button></div><pre class="si-code" data-lang="sql"><code class="language-sql"><span class="si-tk-k">SELECT</span> id, status <span class="si-tk-k">FROM</span> orders <span class="si-tk-k">WHERE</span> id = <span class="si-tk-n">42</span>;</code></pre>
 </div>
 </main>
 </div>

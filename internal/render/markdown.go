@@ -95,7 +95,7 @@ func (r *nodeRenderer) fence(
 		return ast.WalkContinue, nil
 	}
 	n := node.(*ast.FencedCodeBlock)
-	lang := strings.ToLower(string(n.Language(src)))
+	lang := fenceLang(n, src)
 	var code bytes.Buffer
 	for i := 0; i < n.Lines().Len(); i++ {
 		seg := n.Lines().At(i)
@@ -149,7 +149,7 @@ func (r *nodeRenderer) fence(
 		attrs = fenceAttrs(string(n.Info.Segment.Value(src)))
 	}
 	if r.dr.doc { // a document: a header bar with the title or language and a copy button
-		shown := lang
+		shown := langName(lang)
 		if r.dr.d.IsDemo() && (lang == "text" || lang == "output") {
 			shown = "expected output" // a demo: what the room should see
 		}

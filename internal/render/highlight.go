@@ -8,9 +8,9 @@ import (
 )
 
 // A tiny dependency-free highlighter: one regexp per language, one CSS class
-// per token kind (.si-tk-c comment, s string, k keyword, n number, f flag,
-// v variable, m command, y yaml key). Good enough for slides; unknown
-// languages get strings and numbers only.
+// per token kind (.si-tk-c comment, s string, k keyword, n number, f a call's
+// name or a flag, t a type (PascalCase), v variable, m command, y key).
+// Good enough for slides; unknown languages get strings, calls and numbers.
 
 var keywords = map[string]string{
 	"go": "break case chan const continue default defer else fallthrough for func go goto if import interface map " +
@@ -74,6 +74,9 @@ var (
 	slashComment = map[string]bool{"go": true, "javascript": true, "java": true, "rust": true, "kotlin": true, "css": true, "json": true,
 		"csharp": true, "c": true, "cpp": true, "php": true, "swift": true, "scala": true}
 	markup  = map[string]bool{"html": true, "xml": true} // tags as keywords, attribute names as keys
+	noCalls = map[string]bool{"bash": true, "yaml": true, "toml": true, "json": true, "css": true, "dockerfile": true, "powershell": true}
+	typed   = map[string]bool{"csharp": true, "java": true, "go": true, "kotlin": true, "swift": true, "scala": true,
+		"javascript": true, "cpp": true, "rust": true, "php": true}
 	hlCache sync.Map
 )
 
@@ -110,6 +113,12 @@ func langRE(lang string) *regexp.Regexp {
 		}
 		parts = append(parts, `(?P<k>`+group+`)`)
 	}
+	if !noCalls[lang] && !markup[lang] { // a name followed by ( is a call: the name only
+		parts = append(parts, `(?P<f>\b[A-Za-z_]\w*)\s*\(`)
+	}
+	if typed[lang] { // PascalCase: a type or a class
+		parts = append(parts, `(?P<t>\b[A-Z][A-Za-z0-9]*[a-z][A-Za-z0-9]*\b)`)
+	}
 	parts = append(parts, `(?P<n>\b\d[\w.]*\b)`)
 	re := regexp.MustCompile(strings.Join(parts, "|"))
 	hlCache.Store(lang, re)
@@ -128,16 +137,16 @@ func highlight(code, lang string) string {
 	var b strings.Builder
 	pos := 0
 	for _, m := range re.FindAllStringSubmatchIndex(code, -1) {
-		kind := ""
+		kind, from, to := "", m[0], m[1]
 		for g := 1; g < len(names); g++ {
 			if m[2*g] >= 0 {
-				kind = names[g]
+				kind, from, to = names[g], m[2*g], m[2*g+1] // only the group: a call's ( stays plain
 				break
 			}
 		}
-		b.WriteString(html.EscapeString(code[pos:m[0]]))
-		b.WriteString(`<span class="si-tk-` + kind + `">` + html.EscapeString(code[m[0]:m[1]]) + `</span>`)
-		pos = m[1]
+		b.WriteString(html.EscapeString(code[pos:from]))
+		b.WriteString(`<span class="si-tk-` + kind + `">` + html.EscapeString(code[from:to]) + `</span>`)
+		pos = to
 	}
 	b.WriteString(html.EscapeString(code[pos:]))
 	return b.String()

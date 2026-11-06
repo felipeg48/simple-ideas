@@ -46,6 +46,7 @@ type cwStep struct {
 
 // cwShow is a window waiting for its first fence to be rendered.
 type cwShow struct {
+	lang  string
 	opts  map[string]string
 	steps []cwStep
 }
@@ -78,7 +79,7 @@ func (dr *deckRenderer) codeWindows(doc ast.Node, src []byte, sc *slideCtx) {
 				cur, curID = nil, ""
 				break
 			}
-			lang := strings.ToLower(string(n.Language(src)))
+			lang := fenceLang(n, src)
 			st := dr.cwStep(n, src, lang, attrs)
 			if cur != nil && attrs["id"] != "" && attrs["id"] == curID {
 				cur.steps = append(cur.steps, st)
@@ -86,7 +87,7 @@ func (dr *deckRenderer) codeWindows(doc ast.Node, src []byte, sc *slideCtx) {
 				break
 			}
 			dr.cwValidate(attrs, sc)
-			cur, curID = &cwShow{opts: attrs, steps: []cwStep{st}}, attrs["id"]
+			cur, curID = &cwShow{lang: lang, opts: attrs, steps: []cwStep{st}}, attrs["id"]
 			dr.cw[n] = cur
 			dr.codewin = true
 		case *ast.HTMLBlock:
@@ -182,7 +183,7 @@ func (dr *deckRenderer) cwFence(sh *cwShow) string {
 	if dr.doc || dr.cur == nil {
 		b.WriteString(` data-cw-nav`)
 	}
-	title := firstNonEmpty(sh.steps[0].Title, o["title"])
+	title := firstNonEmpty(sh.steps[0].Title, o["title"], langName(sh.lang))
 	fmt.Fprintf(&b, ` aria-label="%s">`, html.EscapeString(firstNonEmpty(title, "Code")))
 	b.WriteString(`<div class="si-cw-stage"><div class="si-cw-win">`)
 	b.WriteString(cwChrome(win, title))

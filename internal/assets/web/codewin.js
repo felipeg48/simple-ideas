@@ -53,7 +53,7 @@
         if (now && !was) {
           var prev = self.id && shown[self.id];
           if (prev && prev.win !== self) { self.paint(prev.step, false); requestAnimationFrame(function () { self.show(self.k, true); }); }
-          else self.place();
+          else { self.place(); self.remember(); }
         }
         was = now;
       }).observe(slide, { attributes: true, attributeFilter: ['class'] });
@@ -62,6 +62,11 @@
   }
   var W = Win.prototype;
 
+  /* what a slide carries to the next: only the window on screen (or one not on a slide) speaks for its id */
+  W.remember = function () {
+    var slide = this.fig.closest('.si-slide');
+    if (this.id && (!slide || slide.classList.contains('si-current'))) shown[this.id] = { win: this, step: this.cur || this.steps[this.k] };
+  };
   W.lh = function () { return parseFloat(getComputedStyle(this.body).lineHeight) || 24; };
   W.tx = function () { return this.fig.getAttribute('data-transition') || 'morph'; };
 
@@ -69,7 +74,7 @@
   W.show = function (k, animate) {
     this.k = Math.max(0, Math.min(this.steps.length - 1, k));
     this.paint(this.steps[this.k], animate && !reduce);
-    if (this.id) shown[this.id] = { win: this, step: this.steps[this.k] };
+    this.remember();
     if (this.out) this.out.textContent = (this.k + 1) + ' / ' + this.steps.length + (this.steps[this.k].name ? ' · ' + this.steps[this.k].name : '');
   };
 
@@ -134,7 +139,9 @@
     if (!this.stage.offsetWidth) return;
     this.layer.querySelectorAll('.si-cw-bubble,.si-cw-dot').forEach(function (e) { e.remove(); });
     wires.innerHTML = '';
-    var sr = this.stage.getBoundingClientRect(), wr = this.win.getBoundingClientRect().right - sr.left, listMode = false;
+    this.fig.classList.remove('si-cw-listmode'); /* measure the notes as they would show */
+    var sr = this.stage.getBoundingClientRect(), wr = this.win.getBoundingClientRect().right - sr.left;
+    var listMode = sr.width < 34 * parseFloat(getComputedStyle(this.fig).fontSize); /* a phone: the notes go under the window */
     notes.forEach(function (n, k) {
       var a = self.anchor(n);
       var dot = document.createElement('div'); dot.className = 'si-cw-dot'; dot.textContent = k + 1;
@@ -188,7 +195,7 @@
   };
 
   /* ---------- #si-code-export: every show as SVG frames for si code ---------- */
-  var TOKENS = ['--si-cw-bg', '--si-cw-bar', '--si-cw-rule', '--si-cw-fg', '--si-cw-muted', '--si-cw-k', '--si-cw-s', '--si-cw-c', '--si-cw-n', '--si-cw-f', '--si-cw-hl',
+  var TOKENS = ['--si-cw-bg', '--si-cw-bar', '--si-cw-rule', '--si-cw-fg', '--si-cw-muted', '--si-cw-k', '--si-cw-s', '--si-cw-c', '--si-cw-n', '--si-cw-f', '--si-cw-t', '--si-cw-hl',
     '--si-cw-backdrop', '--si-cw-pad', '--si-cw-radius', '--si-cw-shadow', '--si-cw-pin', '--si-cw-pin-fg', '--si-cw-note', '--si-cw-note-fg', '--si-cw-wire',
     '--si-font-mono', '--si-font-body', '--si-cw-size'];
   function exportCSS() {
@@ -260,7 +267,7 @@
           frames.push({ step: i + 1, hold: false, svg: w.svg(css), w: Math.ceil(w.stage.getBoundingClientRect().width), h: Math.ceil(w.stage.getBoundingClientRect().height) });
         }
       });
-      out.push({ id: w.id || String(n + 1), title: w.fig.getAttribute('aria-label') || '', steps: w.steps.length, frames: frames });
+      out.push({ id: w.id || 'window-' + (n + 1), title: w.fig.getAttribute('aria-label') || '', steps: w.steps.length, frames: frames });
     });
     var pre = document.createElement('pre'); pre.id = 'si-code-export'; pre.hidden = true; pre.textContent = JSON.stringify(out);
     document.body.appendChild(pre);

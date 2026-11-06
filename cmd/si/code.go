@@ -196,7 +196,8 @@ func readPNG(p string) (image.Image, error) {
 }
 
 // encodeGIF quantises the frames to one shared palette (the 256 most used
-// colours, 4 bits a channel, of the first frames) and dithers them.
+// colours, 4 bits a channel) without dithering: dithered gradients made a
+// four-step show 5.8 MB, plain ones 0.9 MB.
 // ponytail: a popularity palette, not median cut; good for windows on a
 // gradient, upgrade if photos ever land in code windows.
 func encodeGIF(frames []image.Image, delays []int) ([]byte, error) {
@@ -229,7 +230,7 @@ func encodeGIF(frames []image.Image, delays []int) ([]byte, error) {
 	g := &gif.GIF{LoopCount: 0}
 	for i, f := range frames {
 		p := image.NewPaletted(b, pal)
-		draw.FloydSteinberg.Draw(p, b, f, f.Bounds().Min)
+		draw.Draw(p, b, f, f.Bounds().Min, draw.Src)
 		g.Image = append(g.Image, p)
 		g.Delay = append(g.Delay, delays[i])
 	}

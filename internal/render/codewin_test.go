@@ -40,3 +40,19 @@ func TestCodeWindows(t *testing.T) {
 		}
 	}
 }
+
+func TestFenceInfoForms(t *testing.T) {
+	src := "---\ntype: article\n---\n# T\n\n``` title=\"config.csproj\"\n<Project/>\n```\n\n```{.xml title=\"app.config\"}\n<Project/>\n```\n\n```xml {title=\"x.props\"}\n<Project/>\n```\n"
+	res, _ := renderFiles(t, map[string]string{"t.md": src}, "t.md")
+	h := string(res.HTML)
+	for _, want := range []string{`<span class="si-code-title">config.csproj</span><span class="si-code-lang">XML</span>`,
+		`<span class="si-code-title">app.config</span><span class="si-code-lang">XML</span>`,
+		`<span class="si-code-title">x.props</span><span class="si-code-lang">XML</span>`, `<span class="si-tk-k">&lt;Project</span>`} {
+		if !strings.Contains(h, want) {
+			t.Errorf("missing %s", want)
+		}
+	}
+	if strings.Contains(strings.ToLower(h), `title=&#34;config`) || strings.Contains(h, `{.xml`) {
+		t.Error("an option or a pandoc class leaked into the language label")
+	}
+}

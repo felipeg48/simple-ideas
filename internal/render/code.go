@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/felipeg48/simple-ideas/internal/codeshow"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/yuin/goldmark/ast"
 )
@@ -17,20 +18,21 @@ import (
 // Line numbers and callout markers are drawn by CSS from data attributes, so
 // copying a block copies only the code.
 
-var fenceAttrRE = regexp.MustCompile(`([\w-]+)(?:="([^"]*)"|=(\S+))?`)
-
-// fenceAttrs parses the info string after the language.
+// fenceAttrs parses the options of a fence info string (codeshow.Attrs:
+// `go title="a.go"`, ` title="a.go"`, `{.go title="a.go"}`, `go {title=…}`).
 func fenceAttrs(info string) map[string]string {
-	_, rest, _ := strings.Cut(strings.TrimSpace(info), " ")
-	out := map[string]string{}
-	for _, m := range fenceAttrRE.FindAllStringSubmatch(rest, -1) {
-		v := m[2]
-		if v == "" {
-			v = m[3]
-		}
-		out[m[1]] = v
-	}
+	_, out := codeshow.Info(info)
 	return out
+}
+
+// fenceLang is a fence's language, lower case: the first word unless it is an
+// option, pandoc's {.lang}, or what the title's extension suggests.
+func fenceLang(n *ast.FencedCodeBlock, src []byte) string {
+	if n.Info == nil {
+		return ""
+	}
+	lang, _ := codeshow.Info(string(n.Info.Segment.Value(src)))
+	return strings.ToLower(lang)
 }
 
 // lineSet parses "3,5-6" into a set of 1-based line numbers.
@@ -202,10 +204,23 @@ func calloutList(n ast.Node, src []byte) ([][2]string, bool) {
 	return items, true
 }
 
-var langNames = map[string]string{"bash": "bash", "sh": "bash", "shell": "bash", "js": "JavaScript", "javascript": "JavaScript",
-	"ts": "TypeScript", "typescript": "TypeScript", "py": "Python", "python": "Python", "go": "Go", "java": "Java",
-	"kotlin": "Kotlin", "csharp": "C#", "cs": "C#", "cpp": "C++", "c": "C", "ruby": "Ruby", "rust": "Rust",
-	"sql": "SQL", "yaml": "YAML", "json": "JSON", "powershell": "PowerShell", "php": "PHP", "swift": "Swift"}
+var langNames = map[string]string{"bash": "Shell", "sh": "Shell", "shell": "Shell", "zsh": "Shell", "console": "Shell",
+	"js": "JavaScript", "javascript": "JavaScript", "jsx": "JavaScript", "ts": "TypeScript", "typescript": "TypeScript", "tsx": "TypeScript",
+	"py": "Python", "python": "Python", "go": "Go", "golang": "Go", "java": "Java", "kotlin": "Kotlin", "kt": "Kotlin",
+	"csharp": "C#", "cs": "C#", "c#": "C#", "dotnet": "C#", "fsharp": "F#", "f#": "F#", "cpp": "C++", "c++": "C++", "cc": "C++", "c": "C",
+	"ruby": "Ruby", "rb": "Ruby", "rust": "Rust", "rs": "Rust", "sql": "SQL", "yaml": "YAML", "yml": "YAML", "json": "JSON",
+	"toml": "TOML", "xml": "XML", "csproj": "XML", "fsproj": "XML", "vbproj": "XML", "props": "XML", "targets": "XML", "nuspec": "XML",
+	"resx": "XML", "xaml": "XML", "svg": "SVG", "pom": "XML", "html": "HTML", "htm": "HTML", "css": "CSS", "dockerfile": "Dockerfile",
+	"docker": "Dockerfile", "powershell": "PowerShell", "ps1": "PowerShell", "pwsh": "PowerShell", "php": "PHP", "swift": "Swift",
+	"scala": "Scala", "diff": "Diff", "patch": "Diff", "mermaid": "Mermaid"}
+
+// langName is how a language is written for a reader: csharp → C#, js → JavaScript.
+func langName(lang string) string {
+	if n := langNames[lang]; n != "" {
+		return n
+	}
+	return lang
+}
 
 // codeFeatures runs on the top-level blocks of a slide or a document part:
 // a paragraph of `<N> text` lines after a code block becomes its callout
@@ -284,10 +299,8 @@ func (dr *deckRenderer) codeFeatures(doc ast.Node, src []byte, sc *slideCtx) {
 			}
 			label := attrs["title"]
 			if label == "" {
-				lang := strings.ToLower(string(fc.Language(src)))
-				if label = langNames[lang]; label == "" {
-					label = lang
-				}
+				lang := fenceLang(fc, src)
+				label = langName(lang)
 			}
 			if label == "" {
 				label = fmt.Sprintf("Tab %d", n+1)
