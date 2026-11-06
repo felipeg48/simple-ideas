@@ -66,6 +66,13 @@ Usage:
   si [build] <dir|file.md> [--output html/] [--css <dir|file.css>]... [--no-inline-media] [--pdf]
         write one self-contained HTML file per deck plus index.html
         --pdf also renders each deck to pdfs/<name>.pdf and adds a PDF badge to the index tiles
+  si [build] <map.md> [--svg] [--png [--scale 2]] [--pdf]
+        mind map pages: every map as <name>-<id>.svg / .png (2D, theme and watermark
+        baked in), and pdfs/<name>.pdf with one page per map (map › links work)
+  si mindmap import <file.opml|.mm|.xmind|.mmd> [-o out.md]
+        turn an OPML, FreeMind, XMind or Mermaid mindmap file into a mind map page
+  si mindmap export <map.md> --to opml|freemind|xmind|mermaid [--map id] [-o file|-]
+        write a mind map in another format (XMind: every map, one sheet each)
   si check <dir|file.md>
         validate decks: title, directives, assets, includes; exit 1 on a problem
   si new <name> [--type deck|article|guide|book|site|page|lab|demo|mindmap]
@@ -166,9 +173,12 @@ type options struct {
 	terminal, notes                              bool // si play --terminal [--notes]; si --terminal
 	dump                                         int  // si play --terminal --dump N
 	size                                         string
-	serveMode                                    bool // si serve: play without the terminal (everything, for readers)
-	offline                                      bool // code: / diff: from the cache only
-	noInstructor                                 bool // si build: leave type: demo scripts out (a participant build)
+	serveMode                                    bool    // si serve: play without the terminal (everything, for readers)
+	offline                                      bool    // code: / diff: from the cache only
+	noInstructor                                 bool    // si build: leave type: demo scripts out (a participant build)
+	svg, png                                     bool    // si build: mind map pages also as SVG / PNG
+	scale                                        float64 // si build --png: device pixels per CSS pixel
+	to, mapID                                    string  // si mindmap export --to, --map
 	css                                          multi
 	args                                         []string
 }
@@ -195,6 +205,11 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.noOpen, "no-open", false, "")
 	fl.BoolVar(&o.noInline, "no-inline-media", false, "")
 	fl.BoolVar(&o.pdf, "pdf", false, "")
+	fl.BoolVar(&o.svg, "svg", false, "")
+	fl.BoolVar(&o.png, "png", false, "")
+	fl.Float64Var(&o.scale, "scale", 2, "")
+	fl.StringVar(&o.to, "to", "", "")
+	fl.StringVar(&o.mapID, "map", "", "")
 	fl.BoolVar(&o.write, "write", false, "")
 	fl.BoolVar(&o.terminal, "terminal", false, "")
 	fl.BoolVar(&o.notes, "notes", false, "")
@@ -361,6 +376,8 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		return runManual(o, stdout, stderr)
 	case "selfupdate":
 		return selfUpdate(stdout, stderr)
+	case "mindmap":
+		return runMindmap(rest, o, stdout, stderr)
 	case "build":
 		if len(rest) != 1 {
 			return usageErr(stderr, "build needs one <dir|file.md>")
@@ -432,9 +449,9 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	failed := false
 	chrome := ""
-	if o.pdf {
+	if o.pdf || o.svg || o.png {
 		if chrome = findChrome(); chrome == "" {
-			fmt.Fprintln(stderr, "si: --pdf needs Google Chrome/Chromium; none found — writing HTML only")
+			fmt.Fprintln(stderr, "si: --pdf, --svg and --png need Google Chrome/Chromium; none found — writing HTML only")
 		}
 	}
 	var entries []render.IndexEntry
@@ -508,7 +525,15 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stdout, "  %-28s %3d slides  %5s min  %3d steps  %2d canvases  %4d KB\n",
 				d.Name+".html", len(d.Slides), strconv.FormatFloat(d.Minutes(), 'f', -1, 64), res.Steps, res.Canvases, len(res.HTML)/1024)
 		}
-		if chrome != "" && !d.IsDoc() { // the slides PDF does not apply to a document (print it from the browser)
+		if chrome != "" && d.IsMindmap() { // mind maps: every map as SVG / PNG, the PDF one page per map
+			if rel, err := exportMindmap(chrome, dest, out, d.Name, o.svg, o.png, o.pdf, o.scale, stdout); err != nil {
+				fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
+				failed = true
+			} else if rel != "" {
+				entry.PDF = rel
+			}
+		}
+		if chrome != "" && o.pdf && !d.IsDoc() { // the slides PDF does not apply to a document (print it from the browser)
 			rel := filepath.Join("pdfs", d.Name+".pdf") // a pdfs/ folder beside the decks; linked from the index tiles
 			pdf := filepath.Join(out, rel)
 			if err := os.MkdirAll(filepath.Dir(pdf), 0o755); err != nil {

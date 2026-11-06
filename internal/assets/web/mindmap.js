@@ -660,7 +660,7 @@
   /* #si-export: every map of the page as SVG, in a <pre> that si build reads back */
   function exportAll(mm) {
     var own = [].concat(mm.order || Object.keys(mm.maps)), out = [];
-    own.forEach(function (id) { out.push(mm.exportSVG(id, function (to) { return '#map-' + to; })); });
+    own.forEach(function (id, i) { var m = mm.exportSVG(id, function (to) { return '#map-' + to; }); m.own = i < mm.own; out.push(m); });
     var pre = document.createElement('pre'); pre.id = 'si-export'; pre.hidden = true; pre.textContent = JSON.stringify(out);
     document.body.appendChild(pre);
   }

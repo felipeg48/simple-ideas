@@ -318,3 +318,26 @@ func TestNewWithTypeAndFix(t *testing.T) {
 		t.Errorf("--write applies it: %s", raw)
 	}
 }
+
+func TestMindmapImportExport(t *testing.T) {
+	dir := t.TempDir()
+	mmd := filepath.Join(dir, "plan.mmd")
+	os.WriteFile(mmd, []byte("mindmap\n  root((Launch))\n    Plan\n      Budget\n    Ship\n"), 0o644)
+	var out, errb strings.Builder
+	if code := run([]string{"mindmap", "import", mmd}, &out, &errb); code != 0 {
+		t.Fatalf("import: %d %s", code, errb.String())
+	}
+	md, _ := os.ReadFile(filepath.Join(dir, "plan.md"))
+	if !strings.Contains(string(md), "type: mindmap\ntitle: Launch\n---\n# Launch\n\n- Plan\n  - Budget\n- Ship\n") {
+		t.Fatalf("%s", md)
+	}
+	if code := run([]string{"mindmap", "export", filepath.Join(dir, "plan.md"), "--to", "opml", "-o", "-"}, &out, &errb); code != 0 || !strings.Contains(out.String(), `<outline text="Budget"/>`) {
+		t.Fatalf("export: %d %s %s", code, out.String(), errb.String())
+	}
+	if code := run([]string{"mindmap", "export", filepath.Join(dir, "plan.md")}, &out, &errb); code != 2 {
+		t.Fatalf("export without --to: %d", code)
+	}
+	if code := run([]string{"mindmap", "import", mmd}, &out, &errb); code == 0 {
+		t.Fatal("import overwrote plan.md")
+	}
+}
