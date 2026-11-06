@@ -35,6 +35,8 @@ export interface EditorCtl {
   drop(path: string): void;
   /** unsaved lists open docs at or under path whose text is not safely on disk. */
   unsaved(path: string): string[];
+  /** edit rewrites the open file's text through fn as one undoable change; false if path is not open. */
+  edit(path: string, fn: (text: string) => string): boolean;
 }
 
 interface Doc {
@@ -311,6 +313,19 @@ export function Editor(p: Props) {
         return [...docs.current.values()]
           .filter((d) => under(d.path, path) && (text(d) !== d.saved || d.conflict || d.deleted || d.error))
           .map((d) => d.path);
+      },
+      edit(path, fn) {
+        const v = view.current;
+        if (!v || cur.current !== path) return false;
+        const was = v.state.doc.toString(), next = fn(was);
+        if (next === was) return true;
+        // the smallest change: keeps the cursor and makes one undo step
+        let a = 0;
+        while (a < was.length && a < next.length && was[a] === next[a]) a++;
+        let b = 0;
+        while (b < was.length - a && b < next.length - a && was[was.length - 1 - b] === next[next.length - 1 - b]) b++;
+        v.dispatch({ changes: { from: a, to: was.length - b, insert: next.slice(a, next.length - b) }, userEvent: "input.inspector" });
+        return true;
       },
     };
     return () => { document.removeEventListener("visibilitychange", onHide); v.destroy(); };

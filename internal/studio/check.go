@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/render"
@@ -22,6 +24,15 @@ type slideJSON struct {
 	Title   string  `json:"title"`
 	Topic   int     `json:"topic"`
 	Minutes float64 `json:"minutes"`
+	// what the inspector shows and edits
+	Layout     string `json:"layout,omitempty"`
+	Transition string `json:"transition,omitempty"`
+	Background string `json:"background,omitempty"`
+	Class      string `json:"class,omitempty"`
+	Eyebrow    string `json:"eyebrow,omitempty"`
+	Words      int    `json:"words"`  // words in Notes: (the teleprompter script)
+	Clicks     int    `json:"clicks"` // [CLICK] cues in Notes:
+	Steps      int    `json:"steps"`  // step / steps directives in the body
 }
 
 func (a *api) check(w http.ResponseWriter, r *http.Request) {
@@ -79,12 +90,16 @@ func (a *api) check(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+var stepRE = regexp.MustCompile(`<!--\s*steps?\s*(?::|-->)`)
+
 // slides lists a deck's slides (a document's parts) for the editor's slide map.
 func (a *api) slides(d *deck.Deck) []slideJSON {
 	topics := render.Topics(d)
 	out := []slideJSON{}
 	for i, s := range d.Slides {
-		out = append(out, slideJSON{i + 1, a.rel(s.File), s.Line, s.Title, topics[i], s.Minutes})
+		out = append(out, slideJSON{Index: i + 1, File: a.rel(s.File), Line: s.Line, Title: s.Title, Topic: topics[i], Minutes: s.Minutes,
+			Layout: s.Layout, Transition: s.Transition, Background: s.Background, Class: strings.Join(s.Classes, " "), Eyebrow: s.Eyebrow,
+			Words: len(strings.Fields(s.Notes)), Clicks: strings.Count(s.Notes, "[CLICK]"), Steps: len(stepRE.FindAllString(s.Body, -1))})
 	}
 	return out
 }

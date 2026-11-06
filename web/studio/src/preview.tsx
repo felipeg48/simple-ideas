@@ -14,12 +14,12 @@ const presets = [
 ];
 const KEY = "si-studio-preview";
 
-export function Preview(p: { deck: DeckInfo | null; slide: number | null; total: number }) {
+export function Preview(p: { deck: DeckInfo | null; slide: number | null; total: number; inspector?: { on: boolean; toggle(): void } }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const [preset, setPreset] = useState(() => { try { return localStorage.getItem(KEY) || "16:9"; } catch { return "16:9"; } });
   const [box, setBox] = useState({ w: 0, h: 0 });
-  const [loaded, setLoaded] = useState(false);
+  const [loads, setLoads] = useState(0); // counts loads: a live reload must re-sync the slide too
   const src = p.deck ? pageURL(p.deck) : "";
   // the hash is only the starting slide: later moves go through location.hash, never a reload
   const first = useMemo(() => src + (p.slide ? "#" + p.slide : ""), [src]);
@@ -39,8 +39,7 @@ export function Preview(p: { deck: DeckInfo | null; slide: number | null; total:
     try { if (w && p.slide && w.location.hash.split(".")[0] !== "#" + p.slide) w.location.hash = "#" + p.slide; } catch { /* not loaded */ }
   };
   useEffect(() => { addEventListener("si-theme", syncMode); return () => removeEventListener("si-theme", syncMode); }, []);
-  useEffect(syncSlide, [p.slide, loaded]);
-  useEffect(() => setLoaded(false), [src]);
+  useEffect(syncSlide, [p.slide, loads]);
 
   const pr = presets.find((x) => x.id === preset) || presets[1];
   const pad = 24, aw = Math.max(box.w - pad * 2, 1), ah = Math.max(box.h - pad * 2, 1);
@@ -62,6 +61,10 @@ export function Preview(p: { deck: DeckInfo | null; slide: number | null; total:
         <span class="ptool-info">
           {p.deck ? <>{p.slide ? <>Slide <b>{p.slide}</b> / {p.total}</> : <>{p.deck.title}{!isSlides(p.deck.kind) && <span class="zoom"> · {kindLabel[p.deck.kind]}</span>}</>}{pr.w ? <span class="zoom"> · {Math.round(scale * 100)}%</span> : null}</> : null}
         </span>
+        {p.inspector && p.deck && isSlides(p.deck.kind) && (
+          <button class={"icon-btn" + (p.inspector.on ? " on" : "")} aria-pressed={p.inspector.on} onClick={p.inspector.toggle}
+            aria-label="Inspector" title="Inspector: the slide under the cursor"><Icon name="braces" /></button>
+        )}
         {p.deck && (
           <a class="icon-btn" href={src + (p.slide ? "#" + p.slide : "")} target="_blank" rel="noopener" aria-label="Open in a new tab" title="Open in a new tab">
             <Icon name="external" />
@@ -73,7 +76,7 @@ export function Preview(p: { deck: DeckInfo | null; slide: number | null; total:
           // mount only once measured: a frame loaded at near-zero scale may never paint
           box.w > 0 && <div class="frame-shell" style={shell}>
             <iframe ref={frame} src={first} title={`Preview of ${p.deck.title}`} style={frameStyle}
-              onLoad={() => { syncMode(); setLoaded(true); }} />
+              onLoad={() => { syncMode(); setLoads((n) => n + 1); }} />
           </div>
         ) : (
           <div class="prev-empty">

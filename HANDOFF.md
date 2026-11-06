@@ -5,7 +5,14 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-05)
 
-- **Latest release: v1.4.0** (tagged; the release workflow publishes it).
+- **Latest release: v1.5.0** (tagged; the release workflow publishes it).
+- **v1.5.0: Studio S4.** Inspector (`inspector.tsx`, `inspector-edit.ts`
+  `setDirective`, `EditorCtl.edit` one undoable minimal change; check API slides
+  carry layout/transition/background/class/eyebrow/words/clicks/steps), storyboard
+  (`storyboard.tsx`), focus view, Write view switch, narrow layout (< 900 px: nav
+  drawer, stacked panes), preview re-syncs the slide after every load. Bundle left as
+  is (measured; see docs/studio.md). Next: the desktop shell (Wails), slide
+  thumbnails in the storyboard, `si publish` (LinkedIn).
 - **v1.4.0: Studio S3 (modes + ⌘K).** `modes.tsx` (Rehearse, Present, Lab on the
   previewed deck), `palette.tsx` (⌘K, `fuzzy`). deck.js: `?si-view=tp` makes the page
   the teleprompter of the same deck elsewhere in the browser (role `tp-local`, no

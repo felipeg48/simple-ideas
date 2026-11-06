@@ -8,7 +8,11 @@ export interface FileData { path: string; content: string; etag: string }
 /** A deck, document page, or a guide / book / site (its _nav.md or _site.md); url is its live page. */
 export interface DeckInfo { path: string; title: string; files: string[]; runbook?: string; kind: Kind; url: string; guide?: string }
 export interface Problem { file: string; line: number; msg: string }
-export interface Slide { index: number; file: string; line: number; title: string; topic: number; minutes: number }
+export interface Slide {
+  index: number; file: string; line: number; title: string; topic: number; minutes: number;
+  layout?: string; transition?: string; background?: string; class?: string; eyebrow?: string;
+  words?: number; clicks?: number; steps?: number;
+}
 export interface Check { problems: Problem[]; slides: Slide[]; minutes: number; steps: number; canvases: number; kind?: Kind }
 export interface Rules {
   directives: Record<string, string>; layouts: string[]; transitions: string[]; metaKeys: string[];

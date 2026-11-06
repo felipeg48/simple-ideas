@@ -169,6 +169,28 @@ teleprompter.
 the name or the path), the modes, New, Build, Show problems, light / dark, and
 opening the previewed page in a new tab.
 
+## Inspector, storyboard and focus
+
+Write has three views (the switch beside Build, or ⌘K):
+
+- **Editor** — the editor and the live preview. The **{ }** button in the
+  preview toolbar opens the **inspector** for the slide under the cursor: its
+  layout, transition, background, classes and eyebrow (a change is written into
+  that slide as a directive — `<!-- layout: two-col -->` under its heading — as
+  one undoable edit; an empty value removes the directive), and its time, the
+  words of its `Notes:` script, its build steps and its `[CLICK]` cues.
+- **Storyboard** — the whole deck at a glance: one column per topic (the topics
+  of the deck's `o` overview), a time ribbon of the notes minutes per topic,
+  and a card per slide (layout, minutes, builds, slides without a script).
+  Click a card to go to its source.
+- **Focus** — no navigator, the editor centred at a reading width, tabs faded,
+  and the live slide floating in a corner.
+
+On narrow screens (under 900 px: tablet portrait, phone) the navigator becomes
+a drawer behind the **Files** button, the preview and the inspector stack under
+the editor, the top bar keeps its icons, and the modes put the teleprompter
+under the deck.
+
 ## Rebuilding the UI
 
 ```bash
@@ -199,8 +221,7 @@ Studio reads a workspace the way `si check` and `si serve` do:
 
 ## Known limits
 
-- Desktop-only layout; it is not responsive to phone widths.
+- The bundle is about 700 KB (240 KB gzipped); most of it is CodeMirror. About 120 KB is the HTML / JavaScript / CSS grammar Markdown highlighting pulls in for raw HTML; dropping it would need a custom Markdown language. Not worth it on a loopback app today.
 - Build runs in the request; a very large workspace (or `--pdf`) keeps the dialog busy until it finishes.
-- The bundle is about 661 KB (`app.js`).
-- The inspector, the storyboard and focus mode arrive in later plans.
+- The storyboard shows text cards, not slide thumbnails.
 - `make studio-e2e` needs `npx playwright install chromium` once.

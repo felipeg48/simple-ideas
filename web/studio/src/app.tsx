@@ -7,6 +7,9 @@ import { BuildDialog } from "./build-dialog";
 import { type Mode, ModeView } from "./modes";
 import { type Command, Palette } from "./palette";
 import { NewDialog } from "./new-dialog";
+import { Inspector } from "./inspector";
+import { Storyboard } from "./storyboard";
+import { setDirective } from "./inspector-edit";
 import { ApiError, api, type Check, type DeckInfo, type Kind, type Node, type Problem, type Rules, isSlides, kindLabel, pageURL } from "./api";
 import { clear, scoped } from "./buffers";
 import { type DocStatus, Editor, type EditorCtl, setRbView, unsaved } from "./editor";
@@ -101,6 +104,11 @@ export function App() {
   const [checks, setChecks] = useState<Record<string, CheckResult>>({});
   const [mode, setMode] = useState<Mode>("write");
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // Write's three views: the editor with its preview, the storyboard, and focus (calm editor, floating preview)
+  const [view, setView] = useState<"edit" | "board" | "focus">("edit");
+  const [navOpen, setNavOpen] = useState(false); // narrow screens: the navigator slides over the editor
+  const [inspOn, setInspOn] = useState(() => load("si-studio-insp", { on: false }).on);
+  useEffect(() => persist("si-studio-insp", { on: inspOn }), [inspOn]);
   const deckRef = useRef<string | null>(null);
   const saved = useMemo(() => load(scoped("si-studio-tabs"), { tabs: [] as string[], active: null as string | null }), []);
   const [tabs, setTabs] = useState<string[]>(saved.tabs);
@@ -222,6 +230,7 @@ export function App() {
   const dirty = useMemo(() => new Set(Object.entries(status).filter(([, s]) => unsaved(s)).map(([p]) => p)), [status]);
 
   const open = (path: string, line?: number) => {
+    setNavOpen(false);
     setTabs((ts) => (ts.includes(path) ? ts : [...ts, path]));
     setActive(path);
     if (line) setReveal({ path, line, n: Date.now() });
@@ -270,7 +279,17 @@ export function App() {
     await refresh();
     open(r.open);
   };
+  // the slide under the cursor, and the inspector's edits written into its lines
+  const curSlide = check && slide ? check.slides.find((s) => s.index === slide) ?? null : null;
+  const setSlideDirective = (name: string, value: string) => {
+    if (!curSlide || !active || curSlide.file !== active) return;
+    const next = check!.slides.find((s) => s.file === curSlide.file && s.line > curSlide.line);
+    ctl.current?.edit(active, (t) => setDirective(t, curSlide.line, next ? next.line - 1 : t.split("\n").length, name, value));
+  };
   const commands: Command[] = [
+    { id: "view-board", label: "Show the storyboard", icon: "deck", run: () => { setMode("write"); setView("board"); } },
+    { id: "view-focus", label: view === "focus" ? "Leave focus mode" : "Focus mode", icon: "system", run: () => { setMode("write"); setView((v) => (v === "focus" ? "edit" : "focus")); } },
+    { id: "inspector", label: inspOn ? "Hide the inspector" : "Show the inspector", icon: "braces", run: () => setInspOn((o) => !o) },
     ...modes.map((m): Command => ({ id: "mode-" + m.id, label: `Mode: ${m.label}`, icon: m.icon, run: () => setMode(m.id) })),
     { id: "new", label: "New slides, article, guide, site…", icon: "plus", run: () => setDialog(
       <NewDialog dir={active && active.includes("/") ? active.slice(0, active.lastIndexOf("/")) : ""} ok={onStarter} onClose={() => setDialog(null)} />) },
@@ -313,13 +332,14 @@ export function App() {
   const activeKind = active ? kindOf(active) : null;
   const isImage = activeKind === "image";
   const textPath = active && !isImage ? active : null;
-  const cols = `${layout.nav}px 1px minmax(0,1fr)`;
-  const paneCols = `minmax(240px,${1 - layout.prev}fr) 1px minmax(240px,${layout.prev}fr)`;
+  const cols = view === "focus" ? "minmax(0,1fr)" : `${layout.nav}px 1px minmax(0,1fr)`;
+  const paneCols = view === "focus" ? "minmax(0,1fr) 0 0" : `minmax(240px,${1 - layout.prev}fr) 1px minmax(240px,${layout.prev}fr)`;
 
   return (
     <div class="app">
       <header class="top">
         <div class="top-left">
+        <button class="icon-btn nav-toggle" aria-expanded={navOpen} aria-label="Files" title="Files" onClick={() => setNavOpen((o) => !o)}><Icon name="dir" /></button>
         <div class="brand"><span class="logo" aria-hidden="true">si</span><span>Studio</span></div>
         <div class="crumbs" title={active || ""}>
           <span class="ws"><Icon name="dir" />{tree?.name ?? "…"}</span>
@@ -337,6 +357,15 @@ export function App() {
           ))}
         </div>
         <div class="top-right">
+          {mode === "write" && (
+            <div class="views" role="radiogroup" aria-label="Write view">
+              {([["edit", "Editor", "pen"], ["board", "Storyboard", "deck"], ["focus", "Focus", "system"]] as const).map(([id, label, icon]) => (
+                <button role="radio" aria-checked={view === id} class={view === id ? "on" : ""} title={label} aria-label={label} onClick={() => setView(id)}>
+                  <Icon name={icon} />
+                </button>
+              ))}
+            </div>
+          )}
           {offline && <span class="offline" role="status">Reconnecting…</span>}
           <button class="icon-btn" title={`Theme: ${themeLabel[theme]}`}
             aria-label={`Theme: ${themeLabel[theme]}. Switch to ${themeLabel[nextTheme[theme]]}`}
@@ -356,12 +385,14 @@ export function App() {
 
       {mode !== "write" && <ModeView mode={mode} deck={deck} decks={decks} slide={slide} onPick={(d) => setDeckPath(d)} />}
       {/* Write stays mounted while another mode shows, so open files keep their state */}
-      <div class="body" style={{ gridTemplateColumns: cols }} hidden={mode !== "write"}>
+      <div class={"body" + (view === "focus" ? " focus" : "") + (navOpen ? " nav-open" : "")} style={{ "--cols": cols }} hidden={mode !== "write"}>
         <Navigator tree={tree} decks={decks} active={active} dirty={dirty} onOpen={(n) => open(n.path)}
           onCreate={onCreate} onRename={onRename} onDelete={onDelete} onRunbook={onRunbook} onStarter={onStarter} />
         <Split label="Resize navigator" onMove={(dx) => setLayout((l) => ({ ...l, nav: Math.min(480, Math.max(180, l.nav + dx)) }))} />
         <div class={"work" + (problemsOpen ? " with-problems" : "")}>
-          <div class="panes" ref={panes} style={{ gridTemplateColumns: paneCols }}>
+          {view === "board" && <Storyboard check={check} current={slide} title={deck?.title ?? ""} onGo={(f, l) => { setView("edit"); open(f, l); }} />}
+          {/* the editor stays mounted under the storyboard, so open files keep their state */}
+          <div class={"panes" + (view === "focus" ? " focus" : "")} ref={panes} style={{ "--pcols": paneCols }} hidden={view === "board"}>
             <section class="ed" aria-label="Editor">
               <div class="tabs" role="tablist" aria-label="Open files">
                 {tabs.map((t) => {
@@ -399,7 +430,12 @@ export function App() {
             }} />
             {/* only one live deck at a time: in the other modes the mode view owns the deck, and a
                 second copy here would also answer the teleprompter */}
-            {mode === "write" ? <Preview deck={deck} slide={slide} total={check?.slides.length ?? 0} /> : <section class="prev" />}
+            {mode === "write" ? (
+              <div class="prev-col">
+                <Preview deck={deck} slide={slide} total={check?.slides.length ?? 0} inspector={{ on: inspOn, toggle: () => setInspOn((o) => !o) }} />
+                {inspOn && isSlides(deck?.kind) && <Inspector slide={curSlide} rules={rules} onSet={setSlideDirective} />}
+              </div>
+            ) : <section class="prev" />}
           </div>
           {problemsOpen && (
             <Problems problems={problems} errors={errors} onClose={() => setProblemsOpen(false)}
