@@ -455,7 +455,7 @@ const tests = {
 };
 
 tests["map editor: Tab adds a child, rename, undo"] = async function () {
-  for (const [theme, size] of [["light", { width: 1440, height: 900 }], ["dark", { width: 820, height: 1180 }]]) {
+  for (const [theme, size] of [["light", { width: 1440, height: 900 }], ["dark", { width: 1440, height: 900 }], ["light", { width: 820, height: 1180 }], ["dark", { width: 820, height: 1180 }]]) {
     const { ctx, page } = await open(theme, size);
     if (size.width < 1000) await page.click(".nav-toggle"); // narrow: the files slide over the editor
     await openFile(page, "thursday.md");
@@ -469,7 +469,7 @@ tests["map editor: Tab adds a child, rename, undo"] = async function () {
     await page.keyboard.type("Labels");
     await page.keyboard.press("Enter");
     await until(async () => (await f.$$eval(".si-mm-node text", (n) => n.map((x) => x.textContent))).includes("Labels"), 5000, "the rename");
-    await page.screenshot({ path: join(out, `map-editor-${theme}.png`) });
+    await page.screenshot({ path: join(out, `map-editor-${theme}-${size.width}.png`) });
     await until(() => readFileSync(MAP, "utf8").includes("  - Labels\n"), 6000, "the Markdown was saved with the new topic");
     await page.keyboard.press("ControlOrMeta+z");
     await until(async () => !(await f.$$eval(".si-mm-node text", (n) => n.map((x) => x.textContent))).includes("Labels"), 5000, "undo");

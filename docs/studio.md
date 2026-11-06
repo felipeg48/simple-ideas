@@ -220,6 +220,27 @@ Studio reads a workspace the way `si check` and `si serve` do:
   **Open**. A `_nav.md` or `_site.md` previews the first page (a site's
   `index.md`).
 
+## Mind maps: the map editor
+
+A mind map page opens in **Map** view (the bar above the editor switches to
+**Text**); in any other file, a ```` ```mindmap ```` fence under the cursor
+offers **Map** too. The canvas is the real runtime (`internal/assets/web/mindmap.js`)
+plus `mindmap-edit.js`, served by `GET /_si/studio/api/mmcanvas?path=&line=`
+in an iframe. Clicks, keys and drags there become ops sent to the UI with
+`postMessage` (`si-mm-op`); the UI posts them with the editor's current text to
+`POST /_si/studio/api/mindmap`, where `internal/mindmap` parses the Markdown,
+applies the op and writes it back (front matter, comments and other text kept;
+the examples round-trip byte for byte), and `render.MindmapEdit` returns the
+maps to redraw. The new text goes into CodeMirror as one change, so Undo, the
+autosave, conflicts and the Text view behave as for typing; text typed in Text
+view redraws the map the same way. Nothing in this path writes files.
+
+Panels: the selected topic (text, badge, what it opens, picture and alt text,
+sticky, folded, a code topic's language and code) and the page or fence (every
+mind map key or option, the maps of the file, Add a map). Topics of a map
+inlined from another file are shown read-only. The status bar counts maps and
+topics. Keys and drags: RULES.md §24, *Editing in the Studio*.
+
 ## Known limits
 
 - The bundle is about 700 KB (240 KB gzipped); most of it is CodeMirror. About 120 KB is the HTML / JavaScript / CSS grammar Markdown highlighting pulls in for raw HTML; dropping it would need a custom Markdown language. Not worth it on a loopback app today.

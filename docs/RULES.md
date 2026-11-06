@@ -1758,10 +1758,11 @@ window.
 | `camera` | `iso` (isometric), `perspective` (3D only) | `iso` |
 | `floors` | `on` (linked maps hover above their topic), `off` (3D only) | `on` |
 | `kind` | `blocks` (pills), `bricks` (studded bricks on a baseplate), `toy` (cartoon shapes on an island); 3D only, see *Kinds* | `blocks` |
+| `flow` | `on` (dots run along the lines, from each topic to its children), `off` | 2D `off`, 3D `on` |
 
 `title`, `description`, `theme`, `mode`, `accent`, `fonts`, `lang` work as on
-any page. `layout`, `lines`, `nodes`, `map-theme`, `view`, `camera`, `kind` and
-`floors` in any other file draw a warning: a fence takes them as options
+any page. `layout`, `lines`, `nodes`, `map-theme`, `view`, `camera`, `kind`,
+`floors` and `flow` in any other file draw a warning: a fence takes them as options
 instead.
 
 ### Topics
@@ -1835,12 +1836,36 @@ opens that map first.
 ```
 ````
 
-The fence takes `layout=`, `lines=`, `nodes=`, `theme=`, `view=`, `camera=`
-and `floors=` (the same values as the front matter; `theme=` is the map
-theme): ```` ```mindmap view=3d camera=perspective ````. Topics, links and drill-down work
+The fence takes `layout=`, `lines=`, `nodes=`, `theme=`, `view=`, `camera=`,
+`floors=`, `kind=` and `flow=` (the same values as the front matter; `theme=`
+is the map theme): ```` ```mindmap view=3d camera=perspective ````. Topics, links and drill-down work
 as on a page; `→ file.md` inlines that map file. In a slide the map is as tall
 as `--si-figure-max`; in a document `--si-mm-height`. The map grows in each time
-its slide comes on screen.
+its slide comes on screen. Two fences with the same title on one page keep
+their own ids.
+
+**One branch per click.** On a slide, `steps` (or `reveal=branches`) makes each
+first-level branch a build step: → shows them one by one, in 2D and in 3D, and
+they count as the slide's steps, so put one `[CLICK]` per branch in `Notes:`:
+
+````markdown
+## Where a promise breaks
+
+```mindmap steps flow=on layout=right
+# A late parcel
+- Payment
+  - Bank timeout
+- Warehouse
+  - One short-staffed shift
+- Road
+  - A cut-off that leaves too early
+```
+
+Notes: (1 min)
+A late parcel almost always has one of three causes. [CLICK] Payment… [CLICK] The warehouse… [CLICK] And the road…
+````
+
+In a document `steps` is reported (there are no clicks there); every branch shows.
 
 ### Reading a map
 
@@ -1954,19 +1979,80 @@ The tokens (`si --export css-rules` lists them all): `--si-mm-bg`,
 `--si-mm-font`, `--si-mm-mono`, `--si-mm-hand`, `--si-mm-grid`,
 `--si-mm-sticky`, `--si-mm-sticky-fg`, `--si-mm-height`.
 
+### Editing in the Studio
+
+`si --web` (and the desktop app, which runs it) opens a mind map page in the
+**map editor**: the map itself, drawn by the same runtime, with a panel for
+the selected topic and one for the page. Text / Map in the bar above switches
+between the Markdown and the map; Map is the default for a mind map page, and
+a new map from New → Mind map opens there. In any other file, put the cursor
+in a ```` ```mindmap ```` fence and press Map in the bar that appears.
+
+| Do | What it writes |
+|---|---|
+| click a topic | selects it (↑ ↓ ← → move the selection; Esc clears it) |
+| Tab / Enter | a child / a sibling, named *New topic*, selected |
+| F2, a double-click, or start typing | renames the topic in place (Enter keeps, Esc cancels) |
+| Delete or Backspace | removes the topic and its branch |
+| drag a topic onto another | makes it that topic's last child; dropped on the top or bottom edge, it goes before or after it |
+| Alt + ↑ / ↓ | moves the topic up or down among its siblings |
+| Shift-drag / Alt-drag | places the topic (`{pos=x,y}`) / its branch (`{branch-pos=x,y}`) freely |
+| Space | folds or opens the branch (`{collapsed}`) |
+| Tidy | removes every `pos=` and `branch-pos=` of the map |
+| ⌘Z / Ctrl+Z, ⇧⌘Z / Ctrl+Y | undo / redo (the editor's own history) |
+
+The topic panel edits the text, the badge, what it opens (`#map`, a mind map
+file, `slides: deck.md#N`, a URL; the list suggests them), a picture from the
+workspace and its alt text, sticky note, folded, and a code topic's language
+and code (Add code makes one). The page panel sets every front matter key of
+the table above (on a fence: its options), switches between the maps of the
+file, and adds a map (`---` and `# New map {#new-map}`). Every change is
+written back into the Markdown by si itself, as one undoable change, and saved
+like any edit; the rest of the file (front matter, comments, other text) is
+kept as it was. Topics of a linked map that comes from another file show, but
+are edited in their own file.
+
+### Exports
+
+```bash
+si build map.md --svg              # every map: map-<id>.svg (standalone, fonts inside)
+si build map.md --png --scale 3    # map-<id>.png at 3× (default 2×)
+si build map.md --pdf              # pdfs/map.pdf: one page per map, sized to it
+```
+
+Exports draw the 2D map (a `view: 3d` map too), with its theme, lines, moved
+topics and watermark; the PDF also has the linked maps, and a `map ›` topic
+there jumps to its page. They need headless Chrome, like `--pdf` for decks.
+
+### Other mind map tools
+
+```bash
+si mindmap import plan.opml          # → plan.md (also .mm FreeMind, .xmind XMind, .mmd Mermaid)
+si mindmap import plan.xmind -o maps/plan.md
+si mindmap export map.md --to xmind  # → map.xmind (opml, freemind, xmind, mermaid)
+si mindmap export map.md --to mermaid --map refunds -o -   # one map, to stdout
+```
+
+Import keeps the topics, their order and web links; every XMind sheet becomes
+a map. Export writes one map (the first, or `--map id`); XMind takes every
+map, one sheet each. Pictures, badges, sticky notes and code stay in si.
+Import never overwrites a file.
+
 ### In the terminal
 
 `si play talk.md --terminal` and `si --terminal` draw a mind map (a fence on a
 slide, or a mind map page in the preview) as a tree: `✲` the central topic,
 `├─ └─` its branches, `→ target` for links, `[badge]`, `▨` a picture, `✎` a
-sticky note, `‹go›` a code topic.
+sticky note, `‹go›` a code topic. The terminal Studio shows the tree read-only:
+`e` opens the file in `$EDITOR`.
 
 ### What si check reports
 
 A missing file (`→ other.md`, a picture), a map id that does not exist
 (`→ #ghost`), an unknown topic option (`{size=3}`), a `pos=` without two
-numbers, an unknown fence option or value, a map with no topics, and unknown
-front matter values.
+numbers, an unknown fence option or value, `steps` outside a slide, a map with
+no topics, and unknown front matter values. A slide with `steps` counts one
+step per branch, so its `[CLICK]` cues are checked like any build.
 
 Example: `examples/mindmap/` (three linked maps: `thursday.md` in 3D with
 its linked maps as floors, `payments.md` with two maps in one file,

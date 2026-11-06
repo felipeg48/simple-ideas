@@ -172,7 +172,13 @@ Not everything is a slide deck. Pick the type by what the reader does:
   sticky note; a fenced code block inside an item is a code topic; `![alt](img)`
   puts a picture in a topic. Look: `layout:` map/right/org/radial, `lines:`
   curved/straight/orthogonal/tapered, `nodes:` box/pill/underline, `map-theme:`
-  auto/harbor/blueprint/ink/garden (a fence: `layout= lines= nodes= theme=`).
+  auto/harbor/blueprint/ink/garden, `flow: on` for dots along the lines (a
+  fence: `layout= lines= nodes= theme= flow=`). On a slide, ```` ```mindmap steps ````
+  reveals one first-level branch per click: write one `[CLICK]` per branch in
+  `Notes:`. Exports: `si build map.md --svg --png --pdf`; other tools:
+  `si mindmap import file.opml|.mm|.xmind|.mmd`, `si mindmap export map.md --to
+  opml|freemind|xmind|mermaid`. The Studio edits maps visually (Map view);
+  the Markdown it writes is the same you would write by hand.
   Keep one idea per branch and at most about seven branches per map; move
   detail into a linked map instead of a deep tree.
 - `si --export example --type guide` (or `article`, `lab`, `book`, `all`)

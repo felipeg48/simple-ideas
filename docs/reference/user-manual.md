@@ -148,6 +148,9 @@ A nested list becomes a map you can fold, move and drill into:
 - On a page: `/` searches every map, Play walks the branches; full guide: RULES.md §24
 - `view: 3d` · `camera:` iso, perspective · `floors:` on, off: pills on a floor, linked maps hover above
 - `kind:` blocks, bricks, toy: pills, studded bricks on a baseplate, or a cartoon island
+- On a slide, `steps` shows one branch per click; `flow: on` runs dots along the lines
+- `si build map.md --svg --png --pdf`; `si mindmap import plan.opml`, `export --to xmind`
+- In the Studio, Map view: Tab adds a child, Enter a sibling, drag to move, typing renames
 
 ---
 

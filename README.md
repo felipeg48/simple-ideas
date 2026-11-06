@@ -69,6 +69,16 @@ self-contained HTML files you can mail, host or open from a USB stick.
 - **3D kinds (v1.14):** `kind: bricks` builds the map from studded bricks on a
   baseplate with printed labels; `kind: toy` makes it a cartoon island (outlined
   candy shapes, roads, trees, clouds). A button cycles Blocks, Bricks and Toy.
+- **The mind map builder (v2.0):** the Studio (`si --web` and the desktop app)
+  opens a mind map as a map you edit directly: click a topic, Tab adds a child,
+  Enter a sibling, type to rename, drag a topic onto another to move it there,
+  Shift-drag to place it, panels for badges, links, pictures, sticky notes, code
+  and the page's look. si writes every change back into the Markdown (the rest
+  of the file stays as it was), as one undoable edit. Also new:
+  `si build map.md --svg --png --pdf` (each map as SVG and PNG, one PDF page per
+  map with working links), `si mindmap import` / `export` for OPML, FreeMind,
+  XMind and Mermaid, `steps` on a slide to reveal one branch per click, and
+  `flow: on` for dots running along the lines (§24).
 - **In the terminal (v1.7):** `si play talk.md --terminal` presents a deck in
   the terminal itself, in the theme's colours, with block-letter titles, builds,
   code, tables, cards and pictures in half-block pixels; `--notes` in a second

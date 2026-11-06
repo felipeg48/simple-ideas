@@ -8,7 +8,25 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 - **Idea being refined (not started; likely a separate project, not part of si):**
   the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
-- **Latest release: v1.14.0: 3D kinds.** `kind: blocks|bricks|toy` (front matter,
+- **Latest release: v2.0.0: the mind map builder.** `internal/mindmap` (new):
+  `Parse`/`String` model (topic line `[!sticky] text ![alt](img) {attrs} → target`,
+  fenced code under an item = code topic, `# Title {#id}` = map, other text kept as
+  `Part.Text`; the examples round-trip byte for byte), `Apply(Op)` (add-child,
+  add-sibling, delete, rename, set, move, up/down, pos, tidy, meta, add-map),
+  `FenceAt`/`Fence.Replace`/`SetInfo`, `Import`/`Export` (OPML, FreeMind, XMind
+  content.json (+ content.xml read), Mermaid). Studio: `internal/studio/mindmap.go`
+  (`POST mindmap` {path, text, line, op} → {text, data, opts, maps, front, select};
+  `GET mmcanvas`), `render.MindmapEdit`/`MindmapCanvas`, `web/mindmap-edit.js` (the
+  canvas: selection, keys, rename box, drag with drop zones, postMessage ops),
+  `web/studio/src/map-editor.tsx` (iframe + panels; text → map redraw debounced;
+  ops → `ctl` one undoable change via `editMap` in editor.tsx), e2e "map editor".
+  CLI: `cmd/si/mindmap.go` (`--svg --png --scale --pdf` via Chrome `--dump-dom` of
+  `#si-export`, which `mindmap.js exportSVG` fills; `si mindmap import|export`).
+  Render: fence `steps`/`reveal=branches` (`.si-mm-step` marks with data-step,
+  `sc.steps += branches`; runtime `applyReveal`, 3D `revealBranches`), `flow:`/
+  `flow=`, fallback ids prefixed `mmN-` per fence, `"own"` count in the map JSON.
+  Terminal Studio: mind maps stay a read-only tree (`e` edits in `$EDITOR`).
+- **v1.14.0: 3D kinds.** `kind: blocks|bricks|toy` (front matter,
   fence `kind=`; `deck.MapKinds`, `mmOpts.Kind` -> `data-kind`). `mindmap3d.js`:
   `snap` (stud pitch 0.4), `P.brick` (studs share the body material so Play dims
   them), `studPath` (instanced round tiles, `inst` grow anim), `baseplate`; toy:
