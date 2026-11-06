@@ -146,6 +146,29 @@ file exists it says so and stops.
   command's output with a link to the built index. It calls the CLI's own entry
   point in-process.
 
+## Modes and the command palette
+
+The mode switch in the top bar works on the slide deck being previewed (any
+other file offers a list of decks):
+
+- **Write** — the editor and live preview.
+- **Rehearse** — the live deck beside the real teleprompter (the deck page
+  opened with `?si-view=tp`, synced over BroadcastChannel): notes, timers,
+  pace and previews follow the deck, and the teleprompter's own controls drive
+  it. **Teleprompter window** opens it in its own window instead.
+- **Present** — the deck alone; **Full screen** puts it on the whole screen and
+  **Open the teleprompter** opens the notes in another window.
+- **Lab** — the deck with the `si play` terminal drawer opened (shells, the
+  runbook and the ▶ Demos panel) beside the teleprompter.
+
+Write stays mounted while another mode shows, so open files keep their state;
+the Write preview is unmounted so only one copy of the deck answers the
+teleprompter.
+
+**⌘K / Ctrl+K** opens the command palette: every workspace file (fuzzy match on
+the name or the path), the modes, New, Build, Show problems, light / dark, and
+opening the previewed page in a new tab.
+
 ## Rebuilding the UI
 
 ```bash
@@ -179,6 +202,5 @@ Studio reads a workspace the way `si check` and `si serve` do:
 - Desktop-only layout; it is not responsive to phone widths.
 - Build runs in the request; a very large workspace (or `--pdf`) keeps the dialog busy until it finishes.
 - The bundle is about 661 KB (`app.js`).
-- Rehearse, Present, Lab, the inspector, the storyboard and the command palette
-  (Cmd-K) arrive in later plans.
+- The inspector, the storyboard and focus mode arrive in later plans.
 - `make studio-e2e` needs `npx playwright install chromium` once.

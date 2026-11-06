@@ -4,6 +4,9 @@ import type { JSX } from "preact";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { setCompletionFiles } from "./si-lang";
 import { BuildDialog } from "./build-dialog";
+import { type Mode, ModeView } from "./modes";
+import { type Command, Palette } from "./palette";
+import { NewDialog } from "./new-dialog";
 import { ApiError, api, type Check, type DeckInfo, type Kind, type Node, type Problem, type Rules, isSlides, kindLabel, pageURL } from "./api";
 import { clear, scoped } from "./buffers";
 import { type DocStatus, Editor, type EditorCtl, setRbView, unsaved } from "./editor";
@@ -56,7 +59,7 @@ const why = (e: unknown, what: "create" | "rename" | "delete") => {
   return "Cannot reach si.";
 };
 
-const modes: { id: string; label: string; icon: IconName }[] = [
+const modes: { id: Mode; label: string; icon: IconName }[] = [
   { id: "write", label: "Write", icon: "pen" },
   { id: "rehearse", label: "Rehearse", icon: "mic" },
   { id: "present", label: "Present", icon: "play" },
@@ -96,6 +99,8 @@ export function App() {
   const [rules, setRules] = useState<Rules | null>(null);
   const [ready, setReady] = useState(false);
   const [checks, setChecks] = useState<Record<string, CheckResult>>({});
+  const [mode, setMode] = useState<Mode>("write");
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const deckRef = useRef<string | null>(null);
   const saved = useMemo(() => load(scoped("si-studio-tabs"), { tabs: [] as string[], active: null as string | null }), []);
   const [tabs, setTabs] = useState<string[]>(saved.tabs);
@@ -185,9 +190,10 @@ export function App() {
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") { e.preventDefault(); void ctl.current?.flush(); }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); e.stopPropagation(); setPaletteOpen((o) => !o); }
     };
-    addEventListener("keydown", key);
-    return () => removeEventListener("keydown", key);
+    addEventListener("keydown", key, true); // capture: before the editor's own Mod-k
+    return () => removeEventListener("keydown", key, true);
   }, []);
 
   // the open deck's own check (slides, minutes) when the preview moves to another deck
@@ -264,6 +270,17 @@ export function App() {
     await refresh();
     open(r.open);
   };
+  const commands: Command[] = [
+    ...modes.map((m): Command => ({ id: "mode-" + m.id, label: `Mode: ${m.label}`, icon: m.icon, run: () => setMode(m.id) })),
+    { id: "new", label: "New slides, article, guide, site…", icon: "plus", run: () => setDialog(
+      <NewDialog dir={active && active.includes("/") ? active.slice(0, active.lastIndexOf("/")) : ""} ok={onStarter} onClose={() => setDialog(null)} />) },
+    { id: "build", label: "Build the folder to HTML…", icon: "braces", run: () => setDialog(<BuildDialog onClose={() => setDialog(null)} />) },
+    { id: "problems", label: "Show problems", icon: "warn", run: () => setProblemsOpen(true) },
+    { id: "theme", label: "Switch light / dark", icon: "moon", run: () => { const t = nextTheme[theme]; setTheme(t); applyTheme(t); } },
+    ...(deck ? [{ id: "open-live", label: `Open ${deck.title} in a new tab`, icon: "external" as IconName, run: () => window.open(pageURL(deck), "_blank", "noopener") }] : []),
+    ...[...nodes.values()].filter((n) => n.kind !== "dir").map((n): Command => ({
+      id: "f-" + n.path, label: baseName(n.path), hint: n.path, icon: n.kind, run: () => { setMode("write"); open(n.path); } })),
+  ];
   // a runbook made by the generator opens in the Visual view
   const onRunbook = async (path: string) => {
     setRbView(path, "visual");
@@ -312,9 +329,12 @@ export function App() {
         </div>
         </div>
         <div class="modes" role="group" aria-label="Mode">
-          {modes.map((m) => m.id === "write"
-            ? <button class="on" aria-pressed="true"><Icon name={m.icon} />{m.label}</button>
-            : <button aria-disabled="true" title="Coming soon" onClick={(e) => e.preventDefault()}><Icon name={m.icon} />{m.label}</button>)}
+          {modes.map((m) => (
+            <button class={m.id === mode ? "on" : ""} aria-pressed={m.id === mode} onClick={() => setMode(m.id)}
+              title={m.id === "write" ? "Write" : m.id === "rehearse" ? "The deck beside its teleprompter" : m.id === "present" ? "Full screen, teleprompter in another window" : "The deck with its terminal and runbook"}>
+              <Icon name={m.icon} />{m.label}
+            </button>
+          ))}
         </div>
         <div class="top-right">
           {offline && <span class="offline" role="status">Reconnecting…</span>}
@@ -334,7 +354,9 @@ export function App() {
         </div>
       </header>
 
-      <div class="body" style={{ gridTemplateColumns: cols }}>
+      {mode !== "write" && <ModeView mode={mode} deck={deck} decks={decks} slide={slide} onPick={(d) => setDeckPath(d)} />}
+      {/* Write stays mounted while another mode shows, so open files keep their state */}
+      <div class="body" style={{ gridTemplateColumns: cols }} hidden={mode !== "write"}>
         <Navigator tree={tree} decks={decks} active={active} dirty={dirty} onOpen={(n) => open(n.path)}
           onCreate={onCreate} onRename={onRename} onDelete={onDelete} onRunbook={onRunbook} onStarter={onStarter} />
         <Split label="Resize navigator" onMove={(dx) => setLayout((l) => ({ ...l, nav: Math.min(480, Math.max(180, l.nav + dx)) }))} />
@@ -375,7 +397,9 @@ export function App() {
               const w = panes.current?.clientWidth || 1;
               setLayout((l) => ({ ...l, prev: Math.min(0.75, Math.max(0.2, l.prev - dx / w)) }));
             }} />
-            <Preview deck={deck} slide={slide} total={check?.slides.length ?? 0} />
+            {/* only one live deck at a time: in the other modes the mode view owns the deck, and a
+                second copy here would also answer the teleprompter */}
+            {mode === "write" ? <Preview deck={deck} slide={slide} total={check?.slides.length ?? 0} /> : <section class="prev" />}
           </div>
           {problemsOpen && (
             <Problems problems={problems} errors={errors} onClose={() => setProblemsOpen(false)}
@@ -384,6 +408,7 @@ export function App() {
         </div>
       </div>
 
+      {paletteOpen && <Palette commands={commands} onClose={() => setPaletteOpen(false)} />}
       <StatusBar decks={decks.length} problems={problems.length + errors.length} check={check}
         cursor={textPath ? cursor : null} kind={activeKind} doc={active ? status[active] ?? null : null} slide={slide}
         onProblems={() => setProblemsOpen((o) => !o)} />
@@ -411,6 +436,7 @@ function Welcome(p: { decks: DeckInfo[]; name?: string; onOpen(path: string): vo
           </ul>
         )}
         <dl class="keys">
+          <dt><kbd>⌘</kbd><kbd>K</kbd></dt><dd>Open any file or run a command</dd>
           <dt><kbd>⌘</kbd><kbd>S</kbd></dt><dd>Save now (Studio also saves as you type)</dd>
           <dt><kbd>Ctrl</kbd><kbd>Space</kbd></dt><dd>Complete a directive, layout or transition</dd>
           <dt><kbd>⌘</kbd><kbd>F</kbd></dt><dd>Find in file</dd>

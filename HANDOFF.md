@@ -5,7 +5,13 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-05)
 
-- **Latest release: v1.3.0** (tagged; the release workflow publishes it).
+- **Latest release: v1.4.0** (tagged; the release workflow publishes it).
+- **v1.4.0: Studio S3 (modes + ⌘K).** `modes.tsx` (Rehearse, Present, Lab on the
+  previewed deck), `palette.tsx` (⌘K, `fuzzy`). deck.js: `?si-view=tp` makes the page
+  the teleprompter of the same deck elsewhere in the browser (role `tp-local`, no
+  BroadcastChannel of its own), `window.SI.run(cmd)` (Lab opens the terminal with
+  it). Next (S4): inspector, storyboard, focus mode, a smaller bundle, narrow layouts;
+  then the desktop shell.
 - **v1.3.0: Studio S2 (writing).** Completion for every directive/key with help,
   values and workspace paths (`rules.go` help/values/paths; `si-lang.ts`
   `valueOptions`, `pathOptions`, `setCompletionFiles`). **New** dialog

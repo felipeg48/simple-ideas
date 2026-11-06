@@ -15,6 +15,9 @@
      teleprompter, ?role=draw into a draw pad that follows the deck */
   var remoteOn = !!cfg.remote;
   var role = remoteOn ? ((/[?&]role=(tp|draw)(?:&|$)/.exec(location.search) || [])[1] || '') : '';
+  /* ?si-view=tp: this page becomes the teleprompter of the deck open in another
+     window or frame of the same browser (si --web Rehearse / Lab, or by hand) */
+  if (!role && /[?&]si-view=tp(?:&|$)/.test(location.search)) role = 'tp-local';
   if (cfg.keys) for (var _k in cfg.keys) if (cmd.hasOwnProperty(_k) && cfg.keys[_k]) cmd[_k] = cfg.keys[_k];
   var feat = { draw: true, timer: true, presenter: true, overview: true, find: true };
   if (cfg.features) for (var _f in cfg.features) if (feat.hasOwnProperty(_f)) feat[_f] = !!cfg.features[_f];
@@ -516,7 +519,7 @@
   /* ---------- presenter view (p): a second window synced over BroadcastChannel,
      and with si play --remote also over the relay (other devices) ---------- */
   var chans = [];
-  try { if ('BroadcastChannel' in window && role !== 'tp') chans.push(new BroadcastChannel('si:' + data.name)); } catch (e) {}
+  try { if ('BroadcastChannel' in window && role !== 'tp' && role !== 'tp-local') chans.push(new BroadcastChannel('si:' + data.name)); } catch (e) {}
   /* window.SI_RELAY is injected by si play --remote only (never in a built deck) */
   if (remoteOn && role !== 'tp' && window.SI_RELAY) chans.push(window.SI_RELAY());
   /* a page on the same origin hears a message twice (BroadcastChannel and relay): mid dedupes */
@@ -578,8 +581,8 @@
     setTimeout(announce, 150);
   }
   /* remote teleprompter: this page becomes the presenter view, synced over the relay */
-  if (role === 'tp') {
-    var becomeTp = function () { var doc = presenterDoc(true); document.open(); document.write(doc); document.close(); };
+  if (role === 'tp' || role === 'tp-local') {
+    var becomeTp = function () { var doc = presenterDoc(role === 'tp'); document.open(); document.write(doc); document.close(); };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', becomeTp); else setTimeout(becomeTp, 0);
     return;
   }
@@ -956,5 +959,5 @@
       go(cur, step, true);
     }
   }
-  window.SI = { go: go, next: forward, prev: backward, overview: overview, mode: toggleMode, refresh: refresh };
+  window.SI = { go: go, next: forward, prev: backward, overview: overview, mode: toggleMode, refresh: refresh, run: runCmd };
 })();

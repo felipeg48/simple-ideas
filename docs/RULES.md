@@ -506,6 +506,12 @@ si play talk.md --remote --remote-addr 0.0.0.0:9000
 - With a folder of decks the QR code opens a picker (deck × role).
 - Play only: a built deck never contains any of it. See `docs/remote.md`.
 
+
+**Teleprompter in a tab or frame.** Opening a deck page with `?si-view=tp`
+(for example `talk.html?si-view=tp`) turns that page into the teleprompter of
+the same deck open in another tab, window or frame of the same browser,
+synced like the `p` window. `si --web` uses it for its Rehearse and Lab modes.
+
 ## 12. Includes
 
 ```markdown
