@@ -8,7 +8,20 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 - **Idea being refined (not started; likely a separate project, not part of si):**
   the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
-- **Latest release: v1.12.0: mind maps.** `deck`: type `mindmap`, keys `layout`,
+- **Latest release: v1.13.0: 3D mind maps.** `deck`: keys `view` (2d|3d),
+  `camera` (iso|perspective), `floors` (on|off), warned outside mind maps; the
+  fence takes `view= camera= floors=`. `render/mindmap.go`: `data-view="3d"`,
+  `data-camera`, `data-floors` only when set (2D markup unchanged);
+  `dr.mindmap3d` -> `mindmapScripts()` inlines `assets.ThreeJS` +
+  `ThreeOrbitJS` + `Mindmap3DJS` before `MindmapJS`. `web/mindmap3d.js`:
+  `window.SIMindmap3D(mm)` shares the 2D instance's data, `st` (map, stack) and
+  chrome; theme from `--si-mm-*` (colours resolved through a 1-pixel canvas);
+  `enter/leave/rebuild/fly/drill/drillTo/back/reveal/tour*`. `mindmap.js`:
+  `set3d`, `active()`, Find on every map (`/` only on a page), `chainTo` shared by
+  2D and 3D search. Verified headless (SwiftShader WebGL): 24 runs (4 sizes ×
+  light/dark × page, slide fence, article fence), search across inlined maps,
+  breadcrumb back, Play, camera and 2D/3D toggles, drill-down, web Studio preview.
+- **v1.12.0: mind maps.** `deck`: type `mindmap`, keys `layout`,
   `lines`, `nodes`, `map-theme`, `watermark-position` (warned outside mind maps).
   `render/mindmap.go`: goldmark list → `mmMap`/`mmNode` JSON (topic line:
   `[!sticky] text ![](img) {badge= collapsed pos= branch-pos=} → target`; targets

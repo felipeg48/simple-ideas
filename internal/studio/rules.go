@@ -60,6 +60,14 @@ var help = map[string]string{
 	"edit-url":          "base of the Edit this page link",
 	"repo":              "the default repo for code: and diff:",
 	"watermark-opacity": "watermark opacity (default 0.06)",
+	// mind maps (type: mindmap)
+	"lines":              "mind map lines: curved, straight, orthogonal or tapered",
+	"nodes":              "mind map topics: box, pill or underline",
+	"map-theme":          "mind map look: auto (the theme), harbor, blueprint, ink or garden",
+	"watermark-position": "a mind map watermark: corner or across",
+	"view":               "a mind map in 2d or 3d (viewers can switch)",
+	"camera":             "the 3D camera: iso or perspective",
+	"floors":             "3D: linked maps hover above their topic (on) or not (off)",
 }
 
 // values lists what a directive or key accepts, for completion after its colon.
@@ -73,7 +81,14 @@ var values = map[string][]string{
 	"footer":    {"off"},
 	"fonts": {"heading=Fraunces:600", "body=Inter:400;700", "mono=JetBrains Mono", "body=bunny:Inter",
 		"heading=fontshare:Satoshi:700", "mono=fontsource:Fira Code", "off"},
-	"kinds": {"info", "ok", "warn", "crit"}, // alert and badge, after a ·
+	"kinds":              {"info", "ok", "warn", "crit"}, // alert and badge, after a ·
+	"lines":              deck.MapLines,
+	"nodes":              deck.MapNodes,
+	"map-theme":          deck.MapThemes,
+	"watermark-position": deck.WatermarkPos,
+	"view":               deck.MapViews,
+	"camera":             deck.MapCameras,
+	"floors":             deck.OnOff,
 }
 
 // paths are the directives and keys whose value is a workspace path.

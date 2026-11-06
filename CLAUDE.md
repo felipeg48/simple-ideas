@@ -21,7 +21,8 @@ what you chose.
 2. **Self-contained output.** One deck = one HTML file: CSS, JS, SVGs, images,
    video inlined (or copied with `--no-inline-media`). The only network
    resource allowed is the pinned Mermaid script, and only for decks with a
-   Mermaid fence.
+   Mermaid fence. (three.js for 3D mind maps is inlined, not fetched: see the
+   v1.13.0 exception under #8.)
 3. **Every rule is documented in RULES.md with an example, and used in
    `examples/`.** A directive that is not in RULES.md does not exist.
 4. **Example decks carry content, never instructions.** No slide says "press
@@ -56,6 +57,12 @@ what you chose.
    `si play` on a loopback address — a built deck never loads it — so rules #2 and
    #8 hold everywhere except that one play-only, loopback-only subsystem. See
    `docs/terminal.md`.
+   **Exception (v1.13.0, 3D mind maps only):** three.js r128 (MIT) and its
+   OrbitControls are vendored in `internal/assets/web/` (`three.min.js`,
+   `three-orbitcontrols.js`, `THREE-LICENSE`) and inlined, with
+   `mindmap3d.js`, only into pages that have a map starting in 3D
+   (`view: 3d`, `view=3d`): about 620 KB, no network, no Go dependency.
+   2D-only pages never carry it.
    **Exception (v0.8.0, `si --web` Studio only):** the editor front-end vendors
    Preact and CodeMirror 6, bundled by esbuild and committed under
    `internal/assets/web/studio/assets/`; Node is needed only for `make studio-ui` /
@@ -82,7 +89,7 @@ what you chose.
 | `internal/studio/` | `si --web`: gateway (token, Host, Origin), confined workspace, file/deck/check/rules API, assembly with the `si play` server |
 | `web/studio/` | Studio front-end source (Preact + TS + CodeMirror 6, esbuild, vitest, Playwright e2e); bundle committed to `internal/assets/web/studio/assets/` via `make studio-ui` |
 | `internal/config/` | optional `si.conf` (flat `key: value`, stdlib): default theme, `keys.*` command remaps, `feature.*` on/off; injected into the deck as `window.SI_CONFIG`, read by `deck.js` |
-| `internal/assets/` | embedded web files (`web/layout.css` unlayered mechanics, `web/theme.css` looks, `web/deck.js` runtime, `web/doc.css` + `web/doc.js` lab documents (`type: lab`), `web/presenter.html` teleprompter, `web/mindmap.js` + `web/mindmap.css` mind maps: layout, lines, drill-down, search, Play) and `contract.go` (tokens, hooks, theme values, starter CSS) |
+| `internal/assets/` | embedded web files (`web/layout.css` unlayered mechanics, `web/theme.css` looks, `web/deck.js` runtime, `web/doc.css` + `web/doc.js` lab documents (`type: lab`), `web/presenter.html` teleprompter, `web/mindmap.js` + `web/mindmap.css` mind maps: layout, lines, drill-down, search, Play; `web/mindmap3d.js` the 3D view on vendored `web/three.min.js` + `web/three-orbitcontrols.js`, inlined only with a 3D map) and `contract.go` (tokens, hooks, theme values, starter CSS) |
 | `docs/docs.go` | embeds RULES.md + reference/user-manual.md + agent-rules.md for `si rules` / `si manual` / `si --export agent-rules` (in `docs/` so go:embed can reach them; no `.go` at the repo root) |
 | `examples/` | showcase deck, included appendix, `assets/journey.svg` canvas, media, `css/harbor.css` theme, one example per document type (`article/`, `guide/`, `book/`, `demos/`, `site/`); embedded for `si new` and `--export example --type` |
 | `docs/screenshots/` | headless screenshots referenced by the README |
@@ -203,6 +210,12 @@ pass. The steps that matter:
   exports `--svg`/`--png`/`--pdf` (one page per map, links between pages);
   import/export OPML, FreeMind `.mm`, XMind, Mermaid mindmap; a flow animation
   option on lines. 2.0.0 when the builder ships.
+  **3D** (v1.13.0 DONE): `view: 3d` / `view=3d`, `camera: iso|perspective`,
+  `floors: on|off`; pills on a shadow floor, cables with flow dots, linked maps
+  as glass floors, fly-in drill-down, cards, `/` search, Play, 2D/3D and camera
+  toggles; mockup `docs/superpowers/specs/2026-11-06-mind-maps-3d.html`. Next: a
+  phone layout for 3D (portrait maps are small), the visual builder in 3D,
+  exports of the 3D view.
 - **Publishing (`si publish`, planned):** Medium is out (no new API tokens).
   LinkedIn via "Share on LinkedIn" (`w_member_social`, one-time loopback OAuth
   login, token ~60 days, stdlib only): a deck becomes a PDF document post

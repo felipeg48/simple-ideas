@@ -61,6 +61,11 @@ self-contained HTML files you can mail, host or open from a USB stick.
   offline). Drag topics, fold branches, `/` searches every map, Play walks the
   branches. A ```` ```mindmap ```` fence puts one on a slide or in an article
   (§24).
+- **3D mind maps (v1.13):** `view: 3d` draws the same maps as pills on a floor
+  (isometric or perspective camera), cables with flowing dots, and the maps a
+  topic links to as glass floors above it; fly in with a double-click, search
+  with `/`, Play branch by branch, switch 2D/3D on the page. three.js is inlined
+  only into pages with a 3D map.
 - **In the terminal (v1.7):** `si play talk.md --terminal` presents a deck in
   the terminal itself, in the theme's colours, with block-letter titles, builds,
   code, tables, cards and pictures in half-block pixels; `--notes` in a second

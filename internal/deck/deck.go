@@ -45,6 +45,9 @@ var (
 	MapNodes     = []string{"box", "pill", "underline"}
 	MapThemes    = []string{"auto", "harbor", "blueprint", "ink", "garden"}
 	WatermarkPos = []string{"corner", "across"}
+	MapViews     = []string{"2d", "3d"}
+	MapCameras   = []string{"iso", "perspective"}
+	OnOff        = []string{"on", "off"}
 )
 
 // Directives lists every `<!-- name: value -->` directive. Slide-level ones
@@ -129,10 +132,13 @@ type Meta struct {
 	MapNodes     string // mindmap: box (default), pill, underline
 	MapTheme     string // mindmap: auto (default, the deck theme), harbor, blueprint, ink, garden
 	WatermarkPos string // watermark placement on a mind map: corner (default), across
+	MapView      string // mindmap: 2d (default) or 3d
+	MapCamera    string // mindmap in 3d: iso (default) or perspective
+	MapFloors    string // mindmap in 3d: on (default, linked maps hover above their topic) or off
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "view", "camera", "floors"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -427,7 +433,7 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 		}
 	}
 	if !d.IsMindmap() {
-		for _, k := range []string{"layout", "lines", "nodes", "map-theme"} {
+		for _, k := range []string{"layout", "lines", "nodes", "map-theme", "view", "camera", "floors"} {
 			if ln, ok := keyLine[k]; ok {
 				d.Warnings = append(d.Warnings, Problem{File: rel(file), Line: ln, Msg: fmt.Sprintf("front matter %q is for mind maps (type: mindmap); a ```mindmap fence takes it as an option", k)})
 			}
@@ -458,6 +464,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"subtitle": &m.Subtitle, "edition": &m.Edition, "session": &m.Session, "slides": &m.SlidesRef, "duration": &m.Duration,
 		"navigator": &m.Navigator, "logo": &m.Logo, "cta": &m.CTA,
 		"layout": &m.MapLayout, "lines": &m.MapLines, "nodes": &m.MapNodes, "map-theme": &m.MapTheme, "watermark-position": &m.WatermarkPos,
+		"view": &m.MapView, "camera": &m.MapCamera, "floors": &m.MapFloors,
 	}[key]
 	if ptr == nil {
 		return false
@@ -495,6 +502,12 @@ func validateMeta(key, val string) string {
 		return oneOf("mind map nodes", val, MapNodes)
 	case "map-theme":
 		return oneOf("map-theme", val, MapThemes)
+	case "view":
+		return oneOf("mind map view", val, MapViews)
+	case "camera":
+		return oneOf("mind map camera", val, MapCameras)
+	case "floors":
+		return oneOf("mind map floors", val, OnOff)
 	case "watermark-position":
 		return oneOf("watermark-position", val, WatermarkPos)
 	case "accent":

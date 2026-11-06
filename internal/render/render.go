@@ -107,6 +107,7 @@ type deckRenderer struct {
 	cur           *slideCtx         // the slide being rendered, for the stage fence's steps
 	mermaid       bool
 	mindmap       bool        // a ```mindmap fence: the page loads mindmap.css and mindmap.js
+	mindmap3d     bool        // a map starts in 3D: three.js and mindmap3d.js are inlined too
 	curDir        string      // directory of the part being rendered (fences resolve paths against it)
 	themeName     string      // resolved theme name (or "custom" for a CSS-file theme)
 	themeCSS      string      // the si.theme layer CSS for this deck
@@ -683,7 +684,7 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	b.WriteString(assets.DeckJS)
 	b.WriteString("</script>\n")
 	if dr.mindmap {
-		b.WriteString("<script>\n" + assets.MindmapJS + "</script>\n")
+		b.WriteString(dr.mindmapScripts())
 	}
 	dr.reload(&b)
 	b.WriteString("</body>\n</html>\n")

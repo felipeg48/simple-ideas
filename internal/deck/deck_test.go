@@ -403,14 +403,17 @@ func TestLabType(t *testing.T) {
 				`front matter "labs-label" has no effect`, `front matter "footer-position" has no effect`}, // watermark works in documents
 			noWarn: []string{`"footer"`, `"author"`}},
 		{name: "mind map keys", typ: "mindmap", title: "Order",
-			files:  map[string]string{"d.md": "---\ntype: mindmap\nlayout: radial\nlines: tapered\nnodes: pill\nmap-theme: harbor\nwatermark-position: across\n---\n# Order\n\n- a\n"},
-			noWarn: []string{`layout`, `lines`}},
+			files:  map[string]string{"d.md": "---\ntype: mindmap\nlayout: radial\nlines: tapered\nnodes: pill\nmap-theme: harbor\nwatermark-position: across\nview: 3d\ncamera: perspective\nfloors: off\n---\n# Order\n\n- a\n"},
+			noWarn: []string{`layout`, `lines`, `view`, `camera`, `floors`}},
+		{name: "bad 3D values", typ: "mindmap", title: "Order",
+			files:    map[string]string{"d.md": "---\ntype: mindmap\nview: 4d\ncamera: fisheye\nfloors: maybe\n---\n# Order\n\n- a\n"},
+			problems: []string{`unknown mind map view "4d"`, `unknown mind map camera "fisheye"`, `unknown mind map floors "maybe"`}},
 		{name: "bad mind map values", typ: "mindmap", title: "Order",
 			files:    map[string]string{"d.md": "---\ntype: mindmap\nlayout: spiral\nlines: wavy\nmap-theme: neon\n---\n# Order\n\n- a\n"},
 			problems: []string{`unknown mind map layout "spiral"`, `unknown mind map lines "wavy"`, `unknown map-theme "neon"`}},
 		{name: "mind map keys warn in a deck", typ: "deck", title: "D",
-			files:    map[string]string{"d.md": "---\nlayout: map\n---\n# D\n"},
-			warnings: []string{`front matter "layout" is for mind maps`}},
+			files:    map[string]string{"d.md": "---\nlayout: map\nview: 3d\n---\n# D\n"},
+			warnings: []string{`front matter "layout" is for mind maps`, `front matter "view" is for mind maps`}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

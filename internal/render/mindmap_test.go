@@ -132,3 +132,31 @@ func TestMindmapFence(t *testing.T) {
 		t.Error("a deck without a map must not load mindmap.js")
 	}
 }
+
+// TestMindmap3D: three.js and the 3D renderer are inlined only into pages with
+// a map that starts in 3D; 2D maps keep their markup and their size.
+func TestMindmap3D(t *testing.T) {
+	const three = "Copyright 2010-2021 Three.js Authors"
+	res, _ := renderFiles(t, map[string]string{
+		"d.md": "# Deck\n\n---\n\n## Map\n\n```mindmap view=3d camera=perspective floors=off\n# Order\n- a\n```\n",
+	}, "d.md")
+	h := string(res.HTML)
+	if len(res.Problems) > 0 || !strings.Contains(h, `data-view="3d"`) || !strings.Contains(h, `data-camera="perspective"`) || !strings.Contains(h, `data-floors="off"`) {
+		t.Fatalf("3D fence: %s", problemsText(res))
+	}
+	if !strings.Contains(h, three) || !strings.Contains(h, "SIMindmap3D") || strings.Index(h, "SIMindmap3D") > strings.Index(h, "si mind maps:") {
+		t.Error("a 3D map must inline three.js and mindmap3d.js before mindmap.js")
+	}
+	res, _ = renderFiles(t, map[string]string{"d.md": "# Deck\n\n---\n\n## Map\n\n```mindmap\n# Order\n- a\n```\n"}, "d.md")
+	if h := string(res.HTML); strings.Contains(h, three) || strings.Contains(h, `data-view="3d"`) {
+		t.Error("a 2D map must not carry three.js or a data-view attribute")
+	}
+	res, _ = renderFiles(t, map[string]string{"m.md": "---\ntype: mindmap\nview: 3d\n---\n# M\n\n- a\n"}, "m.md")
+	if h := string(res.HTML); !strings.Contains(h, three) || !strings.Contains(h, `data-view="3d"`) {
+		t.Error("a view: 3d page must inline three.js")
+	}
+	res, _ = renderFiles(t, map[string]string{"d.md": "# Deck\n\n---\n\n## Map\n\n```mindmap view=4d camera=fisheye\n- a\n```\n"}, "d.md")
+	if got := problemsText(res); !strings.Contains(got, `unknown mindmap view "4d"`) || !strings.Contains(got, `unknown mindmap camera "fisheye"`) {
+		t.Errorf("3D fence options: %s", got)
+	}
+}

@@ -1754,10 +1754,14 @@ window.
 | `map-theme` | `auto` (the page theme: `theme:` and light/dark), `harbor` (navy and amber), `blueprint` (blue grid, white lines, monospace), `ink` (black on white), `garden` (greens) | `auto` |
 | `watermark` | text drawn on the map (and its exports); a picture stays a page layer | none |
 | `watermark-position` | `corner` (`© text` bottom right), `across` (faint diagonal text over the map) | `corner` |
+| `view` | `2d`, `3d` (topics as pills on a floor; see *In 3D*) | `2d` |
+| `camera` | `iso` (isometric), `perspective` (3D only) | `iso` |
+| `floors` | `on` (linked maps hover above their topic), `off` (3D only) | `on` |
 
 `title`, `description`, `theme`, `mode`, `accent`, `fonts`, `lang` work as on
-any page. `layout`, `lines`, `nodes` and `map-theme` in any other file draw a
-warning: a fence takes them as options instead.
+any page. `layout`, `lines`, `nodes`, `map-theme`, `view`, `camera` and
+`floors` in any other file draw a warning: a fence takes them as options
+instead.
 
 ### Topics
 
@@ -1830,8 +1834,9 @@ opens that map first.
 ```
 ````
 
-The fence takes `layout=`, `lines=`, `nodes=` and `theme=` (the same values as
-the front matter; `theme=` is the map theme). Topics, links and drill-down work
+The fence takes `layout=`, `lines=`, `nodes=`, `theme=`, `view=`, `camera=`
+and `floors=` (the same values as the front matter; `theme=` is the map
+theme): ```` ```mindmap view=3d camera=perspective ````. Topics, links and drill-down work
 as on a page; `→ file.md` inlines that map file. In a slide the map is as tall
 as `--si-figure-max`; in a document `--si-mm-height`. The map grows in each time
 its slide comes on screen.
@@ -1849,12 +1854,53 @@ its slide comes on screen.
 | `+` `−`, the wheel (a page), Ctrl + wheel or a pinch (a map in a slide or a document) | zoom |
 | Fit | the whole map |
 | Tidy | puts every moved topic back in its automatic place |
-| `/` or Find (a page) | searches every topic, sticky note and code topic of every map; Enter opens the map and zooms to the hit |
+| `/` (a page) or Find (any map) | searches every topic, sticky note and code topic of every map (linked and inlined maps too); ↑ ↓ choose, Enter unfolds the path, opens the right map with the breadcrumb, and zooms to the hit (in 3D the camera flies there and the pill lifts). In a slide `/` stays the deck's search: use the Find button |
 | Play (a page) | the overview, then one branch per step with the others dimmed; ← → Space PgUp PgDn step, it advances by itself every 3 s, Esc stops |
 
 Moves made in the browser last until the page reloads; write them down as
 `{pos=…}` / `{branch-pos=…}` to keep them. On a narrow portrait screen (a
 phone) any layout is drawn as `right`, which stays readable.
+
+### In 3D
+
+```markdown
+---
+type: mindmap
+title: The Thursday Promise
+view: 3d
+camera: iso
+floors: on
+---
+```
+
+`view: 3d` (or `view=3d` on a fence) draws the same maps as rounded pills on a
+floor: the central topic is the tallest, deeper topics lower, each a matte
+shade of its branch colour with a soft shadow. Lines are cables on the floor
+with dots flowing along them (`tapered` draws as `curved`). Pictures, badges,
+link chips, sticky notes, code topics and the watermark are printed on top of
+the pills; colours and fonts come from the same `--si-mm-*` tokens, so the page
+theme, dark mode and the map themes all apply.
+
+| Do (3D) | What happens |
+|---|---|
+| drag | orbits the camera; right-drag or two fingers pan |
+| the wheel (a page), Ctrl + wheel or a pinch (a slide or a document), `+` `−` | zoom |
+| hover a pill | lifts it |
+| click a pill | a card: *Open map ›* (drill-down), the slide or page link, *Fold*/*Unfold*, *Focus* |
+| double-click a `map ›` pill (or one on a floor) | the camera flies into it and the next map grows out of the floor; the breadcrumb flies back |
+| the camera button | Isometric (no perspective, the default) or Perspective |
+| Fit, Find, Play | as in 2D: Play flies branch by branch with the rest dimmed (← → Esc) |
+| **2D** / **3D** | switches the view; the Markdown only sets where it starts |
+
+With `floors: on`, each map a topic links to (`→ payments.md`, `→ #refunds`)
+hovers as a glass floor above that topic, joined by a dashed beam, so a map and
+the maps it opens read as one building.
+
+The 3D view uses three.js (r128, MIT), inlined into the page like everything
+else (no network): about 620 KB, only on pages that have a map starting in 3D.
+Pages with 2D maps only stay small and show no 3D button. A browser without
+WebGL shows the map in 2D with a short note. Reduced motion skips the grow-in,
+the flow and the camera flights.
 
 ### Looks
 
@@ -1888,7 +1934,8 @@ A missing file (`→ other.md`, a picture), a map id that does not exist
 numbers, an unknown fence option or value, a map with no topics, and unknown
 front matter values.
 
-Example: `examples/mindmap/` (three linked maps: `thursday.md`,
-`payments.md` with two maps in one file, `warehouse.md` in `org` layout with
-`orthogonal` lines), and the article `examples/article/retry.md` has a fence.
+Example: `examples/mindmap/` (three linked maps: `thursday.md` in 3D with
+its linked maps as floors, `payments.md` with two maps in one file,
+`warehouse.md` in 2D, `org` layout with `orthogonal` lines), and the article
+`examples/article/retry.md` has a fence.
 `si new ideas --type mindmap` writes a starter.

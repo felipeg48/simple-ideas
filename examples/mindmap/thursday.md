@@ -5,6 +5,9 @@ description: Every hand-off between "Buy now" on Monday and the doorstep on Thur
 layout: map
 lines: curved
 nodes: box
+view: 3d
+camera: iso
+floors: on
 theme: studio
 watermark: Northwind Logistics
 ---

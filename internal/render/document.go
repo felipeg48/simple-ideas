@@ -474,7 +474,7 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	dr.mermaidScript(&b)
 	b.WriteString("<script>\n" + assets.DocJS + "</script>\n")
 	if dr.mindmap {
-		b.WriteString("<script>\n" + assets.MindmapJS + "</script>\n")
+		b.WriteString(dr.mindmapScripts())
 	}
 	dr.reload(&b)
 	b.WriteString("</body>\n</html>\n")

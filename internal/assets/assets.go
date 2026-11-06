@@ -35,6 +35,18 @@ var MindmapCSS string
 //go:embed web/mindmap.js
 var MindmapJS string
 
+// Mindmap3DJS draws mind maps in 3D with three.js (r128, MIT, vendored as
+// ThreeJS and ThreeOrbitJS); inlined only into pages with a 3D map.
+//
+//go:embed web/mindmap3d.js
+var Mindmap3DJS string
+
+//go:embed web/three.min.js
+var ThreeJS string
+
+//go:embed web/three-orbitcontrols.js
+var ThreeOrbitJS string
+
 // DocCSS styles a lab document (type: lab): unlayered page mechanics plus
 // its looks in the si.theme layer, all reading the --si-* tokens.
 //

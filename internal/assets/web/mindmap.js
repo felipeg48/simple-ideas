@@ -43,6 +43,7 @@
     el.classList.add('si-mm-on');
     this.build();
     this.show(this.st.map);
+    if (window.SIMindmap3D && this.opt('view') === '3d') this.set3d(true);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { self.paint(false); self.setVB(self.fitBox(self.cur.all)); });
     if (window.ResizeObserver) {
       var lastLay = this.lay();
@@ -81,22 +82,31 @@
     this.crumbs = div('si-mm-crumbs'); this.crumbs.setAttribute('role', 'navigation'); this.crumbs.setAttribute('aria-label', 'Maps');
     el.appendChild(this.crumbs);
     var tools = div('si-mm-tools');
-    tools.innerHTML = (this.full ? '<button type="button" data-a="find" title="Find (/)">Find</button><button type="button" data-a="play" aria-pressed="false" title="Play: one branch at a time">Play</button>' : '') +
+    var has3d = !!window.SIMindmap3D, persp = this.opt('camera') === 'perspective';
+    tools.innerHTML = '<button type="button" data-a="find" title="Find' + (this.full ? ' (/)' : '') + '">Find</button>' +
+      (this.full ? '<button type="button" data-a="play" aria-pressed="false" title="Play: one branch at a time">Play</button>' : '') +
+      (has3d ? '<button type="button" data-a="view" aria-pressed="false" title="Show the map in 3D or 2D">3D</button><button type="button" data-a="cam" title="Switch the 3D camera">' + (persp ? 'Isometric' : 'Perspective') + '</button>' : '') +
       '<button type="button" data-a="in" aria-label="Zoom in">+</button><button type="button" data-a="out" aria-label="Zoom out">−</button><button type="button" data-a="fit">Fit</button><button type="button" data-a="tidy" title="Put moved topics back">Tidy</button>';
     el.appendChild(tools);
     this.playBtn = tools.querySelector('[data-a="play"]');
+    this.viewBtn = tools.querySelector('[data-a="view"]'); this.camBtn = tools.querySelector('[data-a="cam"]');
     tools.addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
-      var a = b.getAttribute('data-a'), w = svg.clientWidth, hh = svg.clientHeight;
-      if (a === 'in') self.zoomAt(0.8, w / 2, hh / 2);
+      var a = b.getAttribute('data-a'), w = svg.clientWidth, hh = svg.clientHeight, d3 = self.is3d && self.d3;
+      if (a === 'view') self.set3d(!self.is3d);
+      else if (a === 'cam' && self.d3) { self.d3.setCam(self.d3.cam === 'iso' ? 'persp' : 'iso'); b.textContent = self.d3.cam === 'iso' ? 'Perspective' : 'Isometric'; }
+      else if (d3 && (a === 'in' || a === 'out')) d3.zoom(a === 'in' ? 0.8 : 1.25);
+      else if (d3 && a === 'fit') d3.fit();
+      else if (d3 && a === 'play') { if (d3.tour) d3.tourStop(); else d3.tourStart(); }
+      else if (a === 'in') self.zoomAt(0.8, w / 2, hh / 2);
       else if (a === 'out') self.zoomAt(1.25, w / 2, hh / 2);
       else if (a === 'fit') self.tween(self.fitBox(self.cur.all), 420);
       else if (a === 'tidy') self.tidy();
       else if (a === 'find') self.openFind();
       else if (a === 'play') { if (self.tour) self.tourStop(); else self.tourStart(); }
     });
-    if (this.full) {
-      this.find = div('si-mm-find'); this.find.hidden = true;
+    this.find = div('si-mm-find'); this.find.hidden = true;
+    {
       this.find.innerHTML = '<input type="search" placeholder="Find a topic, a note or code in every map" aria-label="Find" autocomplete="off" spellcheck="false"><ol role="listbox"></ol>';
       el.appendChild(this.find);
       this.findQ = this.find.querySelector('input'); this.findList = this.find.querySelector('ol');
@@ -107,21 +117,44 @@
         else if (e.key === 'Escape') { e.preventDefault(); self.closeFind(); }
       });
       this.findList.addEventListener('click', function (e) { var li = e.target.closest('[data-k]'); if (li) self.goHit(self.hits[+li.getAttribute('data-k')]); });
+    }
+    if (this.full) {
       this.tourEl = div('si-mm-tour'); this.tourEl.hidden = true; this.tourEl.setAttribute('role', 'status');
       el.appendChild(this.tourEl);
       document.addEventListener('keydown', function (e) {
         var typing = /input|textarea|select/i.test(e.target.tagName) || e.target.isContentEditable;
         if (e.key === '/' && !typing && !e.metaKey && !e.ctrlKey) { e.preventDefault(); self.openFind(); return; }
-        if (!self.tour || typing) return;
-        if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); clearInterval(self.tour.timer); self.tourGo(self.tour.k + 1); }
-        else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); clearInterval(self.tour.timer); self.tourGo(self.tour.k - 1); }
-        else if (e.key === 'Escape') self.tourStop();
+        var t = self.active();
+        if (!t.tour || typing) { if (e.key === 'Escape' && self.d3) self.d3.closeCard(); return; }
+        if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); clearInterval(t.tour.timer); t.tourGo(t.tour.k + 1); }
+        else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); clearInterval(t.tour.timer); t.tourGo(t.tour.k - 1); }
+        else if (e.key === 'Escape') t.tourStop();
       });
     }
-    this.crumbs.addEventListener('click', function (e) { var b = e.target.closest('[data-back]'); if (b) self.back(+b.getAttribute('data-back')); });
+    this.crumbs.addEventListener('click', function (e) { var b = e.target.closest('[data-back]'); if (b) self.active().back(+b.getAttribute('data-back')); });
     this.pointer();
   };
   function div(c) { var d = document.createElement('div'); d.className = c; return d; }
+
+  /* ---------- 2D or 3D (mindmap3d.js, when the page carries three.js) ---------- */
+  M.active = function () { return this.is3d ? this.d3 : this; };
+  M.set3d = function (on) {
+    var t = this.active(); if (t.tour) t.tourStop(true);
+    if (on && !this.d3) {
+      try { this.d3 = new window.SIMindmap3D(this); } catch (e) { this.d3 = null; }
+      if (!this.d3 || !this.d3.ok) { this.d3 = null; this.msg('3D needs WebGL, which this browser does not offer: the map is shown in 2D.'); return; }
+    }
+    this.is3d = !!(on && this.d3);
+    this.el.classList.toggle('si-mm-is3d', this.is3d);
+    if (this.viewBtn) { this.viewBtn.textContent = this.is3d ? '2D' : '3D'; this.viewBtn.setAttribute('aria-pressed', String(this.is3d)); }
+    if (this.is3d) this.d3.enter();
+    else { if (this.d3) this.d3.leave(); this.paint(false); this.setVB(this.fitBox(this.cur.all)); }
+  };
+  M.msg = function (text) {
+    var m = this.note || (this.note = this.el.appendChild(div('si-mm-msg')));
+    m.textContent = text; m.hidden = false;
+    clearTimeout(this.noteT); this.noteT = setTimeout(function () { m.hidden = true; }, 6000);
+  };
 
   /* ---------- sizes ---------- */
   M.size = function (n, d, f) {
@@ -514,6 +547,15 @@
   };
   function unfold(list, obj) { return (list || []).some(function (n) { if (n === obj) return true; if (unfold(n.kids, obj)) { n.collapsed = false; return true; } return false; }); }
   function idIn(list, obj, id) { for (var i = 0; i < list.length; i++) { var me = id + '.' + i; if (list[i] === obj) return me; if (list[i].kids) { var r = idIn(list[i].kids, obj, me); if (r) return r; } } return null; }
+  /* the breadcrumb to a map: the maps that link to it, from the first one; their links unfold */
+  M.chainTo = function (map) {
+    var self = this;
+    this.st0 = this.st0 || Object.keys(this.maps)[0];
+    var par = this.parentOf(), chain = [], m = map, guard = 0;
+    while (par[m] && guard++ < 50) { chain.unshift(par[m]); m = par[m].map; }
+    chain.forEach(function (c) { unfold(self.maps[c.map].kids, c.obj); });
+    return chain.map(function (c) { return { map: c.map, via: idIn(self.maps[c.map].kids, c.obj, 'r') }; });
+  };
   M.pulse = function (obj) {
     var n = null; this.cur.all.forEach(function (m) { if (m === obj) n = m; }); if (!n) return;
     this.tween(around(n, 3), 520);
@@ -522,14 +564,15 @@
   };
   M.goHit = function (h) {
     var self = this;
-    if (!h) return; this.closeFind(); if (this.tour) this.tourStop(true);
+    if (!h) return; this.closeFind(); var t = this.active(); if (t.tour) t.tourStop(true);
     if (h.obj) unfold(this.maps[h.map].kids, h.obj);
+    if (this.is3d) {
+      if (h.map !== this.st.map) this.st.stack = this.chainTo(h.map);
+      this.d3.reveal(h.map, h.obj);
+      return;
+    }
     if (h.map === this.st.map) { this.paint(false); if (h.obj) this.pulse(h.obj); else this.tween(this.fitBox(this.cur.all), 420); return; }
-    this.st0 = this.st0 || Object.keys(this.maps)[0];
-    var par = this.parentOf(), chain = [], m = h.map, guard = 0;
-    while (par[m] && guard++ < 50) { chain.unshift(par[m]); m = par[m].map; }
-    chain.forEach(function (c) { unfold(self.maps[c.map].kids, c.obj); });
-    this.st.stack = chain.map(function (c) { return { map: c.map, via: idIn(self.maps[c.map].kids, c.obj, 'r') }; });
+    this.st.stack = this.chainTo(h.map);
     this.busy = true; this.svg.style.opacity = 0;
     setTimeout(function () { self.show(h.map, { fromRoot: true }); if (h.obj) setTimeout(function () { self.pulse(h.obj); }, reduce ? 0 : 680); }, reduce ? 0 : 160);
   };

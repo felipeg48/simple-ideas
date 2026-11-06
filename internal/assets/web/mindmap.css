@@ -29,6 +29,18 @@
 .si-mm-pre{margin:0;font:12.5px/18px var(--si-mm-mono);white-space:pre;overflow:hidden}
 .si-mm-pre code{font:inherit;background:none;padding:0}
 
+/* the 3D view (mindmap3d.js): a WebGL canvas under the same chrome */
+.si-mm-3d{position:absolute;inset:0}
+.si-mm-3d[hidden],.si-mm-card[hidden],.si-mm-msg[hidden]{display:none}
+.si-mm-3d canvas{display:block;inline-size:100%;block-size:100%;touch-action:none;cursor:grab}
+.si-mindmap.si-mm-is3d .si-mm-svg,.si-mindmap.si-mm-is3d [data-a="tidy"],.si-mindmap:not(.si-mm-is3d) [data-a="cam"]{display:none}
+.si-mm-card{position:absolute;inset-inline-start:.75em;inset-block-end:.75em;inline-size:min(21em,calc(100% - 1.5em));z-index:3;box-sizing:border-box;border-radius:.9em;padding:.9em 2.4em .8em .9em;display:grid;gap:.4em;font-size:.9em}
+.si-mm-card strong{font-size:1.25em;line-height:1.2}
+.si-mm-card div{display:flex;flex-wrap:wrap;gap:.4em;margin-block-start:.2em}
+.si-mm-card button{font:inherit;font-weight:600;font-size:.9em;border-radius:.55em;padding:.45em .7em;cursor:pointer}
+.si-mm-card .si-mm-x{position:absolute;inset-block-start:.4em;inset-inline-end:.4em;padding:.1em .45em;font-size:1.2em;line-height:1}
+.si-mm-msg{position:absolute;inset-block-start:3.4em;inset-inline-start:50%;transform:translateX(-50%);z-index:3;inline-size:max-content;max-inline-size:calc(100% - 1.5em);border-radius:.6em;padding:.5em .9em;font-size:.85em}
+
 @layer si.theme{
 /* the map's palette: by default the deck or page theme; data-mm-theme picks a look of its own */
 .si-mindmap{--si-mm-bg:var(--si-surface);--si-mm-fg:var(--si-fg);--si-mm-muted:var(--si-muted);--si-mm-surface:var(--si-bg);--si-mm-line:var(--si-line);
@@ -97,4 +109,11 @@
 .si-mm-find li small{color:var(--si-mm-muted)}
 .si-mm-find li[aria-selected="true"]{background:color-mix(in srgb,var(--si-mm-accent) 20%,transparent)}
 .si-mm-tour{background:var(--si-mm-accent);color:var(--si-mm-on-accent)}
+.si-mm-card{background:color-mix(in srgb,var(--si-mm-surface) 94%,transparent);color:var(--si-mm-fg);border:1px solid var(--si-mm-line);box-shadow:0 18px 40px rgb(5 10 20 / .22);backdrop-filter:blur(10px)}
+.si-mm-card small{color:var(--si-mm-muted)}
+.si-mm-card button{color:var(--si-mm-fg);background:transparent;border:1px solid var(--si-mm-line)}
+.si-mm-card button[data-primary]{background:var(--si-mm-accent);color:var(--si-mm-on-accent);border-color:var(--si-mm-accent)}
+.si-mm-card .si-mm-x{border:0;color:var(--si-mm-muted)}
+.si-mm-card button:focus-visible{outline:2px solid var(--si-mm-accent);outline-offset:2px}
+.si-mm-msg{background:var(--si-mm-fg);color:var(--si-mm-bg)}
 }

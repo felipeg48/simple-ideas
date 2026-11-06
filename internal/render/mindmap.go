@@ -55,7 +55,7 @@ type mmMap struct {
 
 // mmOpts are the look of a map: front matter of a mind map page, or the
 // options of a ```mindmap fence.
-type mmOpts struct{ Layout, Lines, Nodes, Theme, WM, WMPos string }
+type mmOpts struct{ Layout, Lines, Nodes, Theme, WM, WMPos, View, Camera, Floors string }
 
 type mmParser struct {
 	dr    *deckRenderer
@@ -355,6 +355,15 @@ func (p *mmParser) component(o mmOpts, start string, full bool) string {
 	if o.WM != "" {
 		fmt.Fprintf(&b, ` data-wm="%s" data-wm-pos="%s"`, html.EscapeString(o.WM), firstNonEmpty(o.WMPos, "corner"))
 	}
+	if o.View == "3d" { // only set when not the default, so 2D markup stays as it was
+		fmt.Fprintf(&b, ` data-view="3d"`)
+	}
+	if o.Camera != "" {
+		fmt.Fprintf(&b, ` data-camera="%s"`, html.EscapeString(o.Camera))
+	}
+	if o.Floors != "" {
+		fmt.Fprintf(&b, ` data-floors="%s"`, html.EscapeString(o.Floors))
+	}
 	fmt.Fprintf(&b, ` role="group" aria-label="%s">`+"\n", html.EscapeString(title))
 	fmt.Fprintf(&b, `<script type="application/json" class="si-mm-data">%s</script>`+"\n", data)
 	b.WriteString(`<div class="si-mm-list">`)
@@ -396,11 +405,12 @@ func listHTML(b *strings.Builder, list []*mmNode) {
 // mindmapFence renders a ```mindmap fence: options are layout=, lines=,
 // nodes=, theme= on the fence line.
 func (dr *deckRenderer) mindmapFence(body string, attrs map[string]string, dir string) string {
-	o := mmOpts{Layout: attrs["layout"], Lines: attrs["lines"], Nodes: attrs["nodes"], Theme: attrs["theme"]}
+	o := mmOpts{Layout: attrs["layout"], Lines: attrs["lines"], Nodes: attrs["nodes"], Theme: attrs["theme"], View: attrs["view"], Camera: attrs["camera"], Floors: attrs["floors"]}
 	for k, v := range attrs {
-		allowed := map[string][]string{"layout": deck.MapLayouts, "lines": deck.MapLines, "nodes": deck.MapNodes, "theme": deck.MapThemes}[k]
+		allowed := map[string][]string{"layout": deck.MapLayouts, "lines": deck.MapLines, "nodes": deck.MapNodes, "theme": deck.MapThemes,
+			"view": deck.MapViews, "camera": deck.MapCameras, "floors": deck.OnOff}[k]
 		if allowed == nil {
-			dr.problem(dr.cur, "mindmap: unknown fence option %q (use layout=, lines=, nodes=, theme=)", k)
+			dr.problem(dr.cur, "mindmap: unknown fence option %q (use layout=, lines=, nodes=, theme=, view=, camera=, floors=)", k)
 		} else if msg := oneOfMsg("mindmap "+k, v, allowed); msg != "" {
 			dr.problem(dr.cur, "%s", msg)
 		}
@@ -413,6 +423,9 @@ func (dr *deckRenderer) mindmapFence(body string, attrs map[string]string, dir s
 		return ""
 	}
 	dr.mindmap = true
+	if o.View == "3d" {
+		dr.mindmap3d = true
+	}
 	return `<figure class="si-figure si-mm-figure">` + p.component(o, start, false) + "</figure>\n"
 }
 
@@ -450,7 +463,9 @@ func Mindmap(d *deck.Deck, opt Options) Result {
 	if dr.wmKind == "text" {
 		wm, wmLayer = dr.wmText, ""
 	}
-	comp := p.component(mmOpts{Layout: m.MapLayout, Lines: m.MapLines, Nodes: m.MapNodes, Theme: m.MapTheme, WM: wm, WMPos: m.WatermarkPos}, start, true)
+	comp := p.component(mmOpts{Layout: m.MapLayout, Lines: m.MapLines, Nodes: m.MapNodes, Theme: m.MapTheme, WM: wm, WMPos: m.WatermarkPos,
+		View: m.MapView, Camera: m.MapCamera, Floors: m.MapFloors}, start, true)
+	dr.mindmap3d = m.MapView == "3d"
 	res := Result{}
 	dr.finish(&res)
 	var b bytes.Buffer
@@ -468,9 +483,19 @@ func Mindmap(d *deck.Deck, opt Options) Result {
 	b.WriteString(comp)
 	b.WriteString("</main>\n")
 	dr.problemsBanner(&b, res.Problems)
-	b.WriteString("<script>\n" + assets.MindmapJS + "</script>\n")
+	b.WriteString(dr.mindmapScripts())
 	dr.reload(&b)
 	b.WriteString("</body>\n</html>\n")
 	res.HTML = b.Bytes()
 	return res
+}
+
+// mindmapScripts is the mind map runtime, with three.js and the 3D renderer
+// before it when a map on the page starts in 3D (2D-only pages stay small).
+func (dr *deckRenderer) mindmapScripts() string {
+	js := ""
+	if dr.mindmap3d {
+		js = "<script>\n" + assets.ThreeJS + "\n" + assets.ThreeOrbitJS + "\n" + assets.Mindmap3DJS + "</script>\n"
+	}
+	return js + "<script>\n" + assets.MindmapJS + "</script>\n"
 }
