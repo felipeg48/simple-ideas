@@ -8,7 +8,25 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 - **Idea being refined (not started; likely a separate project, not part of si):**
   the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
-- **Latest release: v1.11.0: phone clicker + pace vs last run.** `--remote` role
+- **Latest release: v1.12.0: mind maps.** `deck`: type `mindmap`, keys `layout`,
+  `lines`, `nodes`, `map-theme`, `watermark-position` (warned outside mind maps).
+  `render/mindmap.go`: goldmark list → `mmMap`/`mmNode` JSON (topic line:
+  `[!sticky] text ![](img) {badge= collapsed pos= branch-pos=} → target`; targets
+  `#id`, `slides: x.md#N`, URL, mind map file (queued, inlined, cycles resolve),
+  other page); `Mindmap()` page (Document dispatches), `mindmapFence` (options
+  validated); `component()` writes `.si-mindmap` + data script + nested-list
+  fallback. `assets/web/mindmap.js` (one `Mindmap` per element: layouts map,
+  right, org, radial; phone portrait → right; lines; chips; foreignObject code;
+  drag/Shift-drag/arrows; drill-down with breadcrumb; `/` search and Play on
+  pages; regrow when its slide becomes current) + `mindmap.css` (mechanics
+  unlayered, looks and `data-mm-theme` palettes in si.theme; `--si-mm-*` in
+  contract.go). Terminal: `textRenderer.mindmap` trees (fences, mind map docs in
+  the Studio). Studio: `mindmap` starter/kind (web + terminal). Examples:
+  `examples/mindmap/` (3 files, 4 maps), a fence in `examples/article/retry.md`.
+  Tested: deck/render/tui unit tests, golden, headless 4 sizes × light/dark
+  (page, slide fence, article fence), drill/search/Play, web Studio preview,
+  studio e2e.
+- **v1.11.0: phone clicker + pace vs last run.** `--remote` role
   `clicker` (`serve.RemoteRoles`; deck.js `role === 'clicker'`: a fixed `#si-clicker`
   overlay with inline token styles, posts `cmd` next/prev, follows `state`, sends
   `hello` on open, stopwatch resets on tap). Teleprompter `#lastpace`: elapsed vs the

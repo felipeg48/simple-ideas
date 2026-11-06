@@ -21,6 +21,9 @@ import (
 // (markdown, media modes, .md links, highlighter, Mermaid, theme, user CSS,
 // live reload); slide machinery (steps, canvases, layouts) does not apply.
 func Document(d *deck.Deck, opt Options) Result {
+	if d.IsMindmap() {
+		return Mindmap(d, opt)
+	}
 	dr := &deckRenderer{d: d, opt: opt, doc: true, lastState: map[string][]string{}, words: map[string]bool{}, files: map[string]string{}}
 	dr.md = dr.markdown()
 	dr.resolveTheme()
@@ -125,6 +128,7 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 		w.AppendChild(w, t)
 	}
 	var buf bytes.Buffer
+	dr.curDir = s.Dir
 	if err := dr.md.Renderer().Render(&buf, src, doc); err != nil {
 		dr.problem(sc, "render: %v", err)
 	}
@@ -297,7 +301,11 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	}
 	var b bytes.Buffer
 	modeAttr := dr.head(&b)
-	b.WriteString(`<style id="si-css">` + "\n" + assets.LayerOrder + assets.DocCSS + dr.themeCSS + dr.accentCSS() + "</style>\n")
+	mmCSS := ""
+	if dr.mindmap {
+		mmCSS = assets.MindmapCSS
+	}
+	b.WriteString(`<style id="si-css">` + "\n" + assets.LayerOrder + assets.DocCSS + dr.themeCSS + dr.accentCSS() + mmCSS + "</style>\n")
 	dr.userAndMode(&b, modeAttr)
 	bodyAttrs := fmt.Sprintf(` data-si-doc="%s"`, html.EscapeString(kind))
 	if g != nil && g.IsBook() {
@@ -465,6 +473,9 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	dr.problemsBanner(&b, problems)
 	dr.mermaidScript(&b)
 	b.WriteString("<script>\n" + assets.DocJS + "</script>\n")
+	if dr.mindmap {
+		b.WriteString("<script>\n" + assets.MindmapJS + "</script>\n")
+	}
 	dr.reload(&b)
 	b.WriteString("</body>\n</html>\n")
 	return b.Bytes()

@@ -41,7 +41,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "1.11.0"
+const version = "1.12.0"
 
 // Exit codes.
 const (
@@ -68,7 +68,7 @@ Usage:
         --pdf also renders each deck to pdfs/<name>.pdf and adds a PDF badge to the index tiles
   si check <dir|file.md>
         validate decks: title, directives, assets, includes; exit 1 on a problem
-  si new <name> [--type deck|article|guide|book|site|page|lab|demo]
+  si new <name> [--type deck|article|guide|book|site|page|lab|demo|mindmap]
         scaffold <name>/ with a deck that uses every rule; with --type, a small
         starter of that type (<name>.md, or a <name>/ folder for guide, book and
         site), added to the menu of the guide or site it is created in
@@ -95,7 +95,7 @@ Usage:
         rules:     RULES.md
         conf:      a starter si.conf with the default keys and features
         example:   an example to copy from (default output: ./si-example); --type picks it:
-                   deck (default; also slides), article, guide (also tutorial), lab, book (also reference), demo, site, all
+                   deck (default; also slides, mindmap: the showcase with its mind maps), article, guide (also tutorial), lab, book (also reference), demo, site, all
         themes:    one sample deck per built-in theme (default: ./si-themes)
         agent-rules: CLAUDE.md + AGENTS.md telling a coding agent how to write si decks
                    (default: the current dir; -o - prints it; never overwrites)
@@ -503,7 +503,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 		}
 		entry := render.Entry(d)
 		if d.IsDoc() {
-			fmt.Fprintf(stdout, "  %-28s %s  %d sections  %4d KB\n", d.Name+".html", d.Meta.Type, entry.Sections, len(res.HTML)/1024)
+			fmt.Fprintf(stdout, "  %-28s %s  %s  %4d KB\n", d.Name+".html", d.Meta.Type, entry.SizeLabel(), len(res.HTML)/1024)
 		} else {
 			fmt.Fprintf(stdout, "  %-28s %3d slides  %5s min  %3d steps  %2d canvases  %4d KB\n",
 				d.Name+".html", len(d.Slides), strconv.FormatFloat(d.Minutes(), 'f', -1, 64), res.Steps, res.Canvases, len(res.HTML)/1024)
@@ -950,7 +950,7 @@ func export(o *options, stdout, stderr io.Writer) int {
 		}
 		kind, ok := exampleKinds[strings.ToLower(o.kind)]
 		if !ok {
-			return usageErr(stderr, fmt.Sprintf("unknown --type %q (deck, article, guide, lab, book, demo, site, all)", o.kind))
+			return usageErr(stderr, fmt.Sprintf("unknown --type %q (deck, article, guide, lab, book, demo, site, mindmap, all)", o.kind))
 		}
 		if err := writeExampleKind(out, kind); err != nil {
 			fmt.Fprintf(stderr, "si: %v\n", err)
@@ -1139,7 +1139,7 @@ func scaffold(name string, stdout, stderr io.Writer) int {
 // exampleKinds maps --type (and its aliases) to an example set.
 var exampleKinds = map[string]string{"": "deck", "deck": "deck", "slides": "deck", "article": "article",
 	"guide": "guide", "guides": "guide", "tutorial": "guide", "tutorials": "guide", "lab": "lab",
-	"book": "book", "reference": "book", "demo": "demo", "site": "site", "all": "all"}
+	"book": "book", "reference": "book", "demo": "demo", "site": "site", "all": "all", "mindmap": "deck", "mindmaps": "deck"}
 
 // writeExampleKind writes one example set into dir (which must not exist or
 // be empty): deck = the showcase decks (today's export), article = the article

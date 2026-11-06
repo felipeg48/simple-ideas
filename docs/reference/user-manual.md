@@ -129,6 +129,26 @@ dot Draft..Ship 2s
 
 ---
 
+## Mind maps
+
+A nested list becomes a map you can fold, move and drill into:
+
+```mindmap layout=right
+# A mind map
+- Page: type: mindmap
+  - One file per map → linked with →
+  - Or one file: maps between --- lines
+- Fence on a slide or in a document
+- Topics {badge=options}
+  - [!sticky] Sticky notes, pictures, code
+```
+
+- `layout:` map, right, org, radial · `lines:` curved, straight, orthogonal, tapered
+- `nodes:` box, pill, underline · `map-theme:` auto, harbor, blueprint, ink, garden
+- On a page: `/` searches every map, Play walks the branches; full guide: RULES.md §24
+
+---
+
 ## Animated canvases
 
 One inline SVG whose parts change state slide by slide:

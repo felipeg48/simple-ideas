@@ -106,6 +106,8 @@ type deckRenderer struct {
 	labels        map[string]string // book: id -> label of numbered sections, figures, tables
 	cur           *slideCtx         // the slide being rendered, for the stage fence's steps
 	mermaid       bool
+	mindmap       bool        // a ```mindmap fence: the page loads mindmap.css and mindmap.js
+	curDir        string      // directory of the part being rendered (fences resolve paths against it)
 	themeName     string      // resolved theme name (or "custom" for a CSS-file theme)
 	themeCSS      string      // the si.theme layer CSS for this deck
 	fontsCSS      string      // fonts: inlined @font-face rules and font tokens (fonts.go)
@@ -597,6 +599,9 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	b.WriteString(dr.helperCSS())
 	fmt.Fprintf(&b, "@page{size:%s;margin:0}\n", pageSizes[aspect])
 	b.WriteString(dr.accentCSS())
+	if dr.mindmap {
+		b.WriteString(assets.MindmapCSS)
+	}
 	b.WriteString("</style>\n")
 	if dr.wmImg != "" || d.Meta.WatermarkOpacity != "" {
 		var decls []string
@@ -677,6 +682,9 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	b.WriteString("<script>\nwindow.SI_PRESENTER = " + strings.ReplaceAll(string(presenter), "</", `<\/`) + ";\n")
 	b.WriteString(assets.DeckJS)
 	b.WriteString("</script>\n")
+	if dr.mindmap {
+		b.WriteString("<script>\n" + assets.MindmapJS + "</script>\n")
+	}
 	dr.reload(&b)
 	b.WriteString("</body>\n</html>\n")
 	return b.Bytes()
@@ -949,14 +957,9 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 		}
 		size, kind := fmt.Sprintf("%d slides%s", e.Slides, mins), "deck"
 		if e.Lab {
-			size, kind = fmt.Sprintf("%d sections", e.Sections), "lab"
-			if e.Kind == "guide" || e.Kind == "book" {
-				size, kind = fmt.Sprintf("%d pages", e.Sections), e.Kind
-				if e.Kind == "book" {
-					size = fmt.Sprintf("%d chapters", e.Sections)
-				}
-			} else if e.Kind == "article" {
-				kind = "article"
+			size, kind = e.SizeLabel(), "lab"
+			if e.Kind == "guide" || e.Kind == "book" || e.Kind == "article" || e.Kind == "mindmap" {
+				kind = e.Kind
 			}
 		}
 		inner := fmt.Sprintf("<b>%s</b><span>%s</span>%s<small>%s</small>",
@@ -985,7 +988,7 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 		}
 		n := fmt.Sprint(e.Slides)
 		if e.Lab {
-			n, t = fmt.Sprintf("%d sections", e.Sections), ""
+			n, t = e.SizeLabel(), ""
 		}
 		fmt.Fprintf(&b, "<tr><td><a href=\"%s\">%s</a></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n",
 			html.EscapeString(e.Href), html.EscapeString(e.Title), badges(e), n, t, pdf)
@@ -997,6 +1000,22 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 	}
 	b.WriteString("</body>\n</html>\n")
 	return b.Bytes()
+}
+
+// SizeLabel is the size of a document entry: sections, pages, chapters or maps.
+func (e IndexEntry) SizeLabel() string {
+	switch e.Kind {
+	case "guide":
+		return fmt.Sprintf("%d pages", e.Sections)
+	case "book":
+		return fmt.Sprintf("%d chapters", e.Sections)
+	case "mindmap":
+		if e.Sections == 1 {
+			return "1 map"
+		}
+		return fmt.Sprintf("%d maps", e.Sections)
+	}
+	return fmt.Sprintf("%d sections", e.Sections)
 }
 
 // Entry builds an index entry for a parsed deck.
@@ -1025,18 +1044,26 @@ outer:
 	return e
 }
 
-// labSections counts a lab's h2 headings, ignoring fenced code.
+// labSections counts a lab's h2 headings, ignoring fenced code (a mind map
+// page: its maps, one per h1).
 func labSections(d *deck.Deck) int {
+	head := "## "
+	if d.IsMindmap() {
+		head = "# "
+	}
 	n, fence := 0, false
 	for _, s := range d.Slides {
 		for _, line := range strings.Split(s.Body, "\n") {
 			switch {
 			case strings.HasPrefix(line, "```") || strings.HasPrefix(line, "~~~"):
 				fence = !fence
-			case !fence && strings.HasPrefix(line, "## "):
+			case !fence && strings.HasPrefix(line, head):
 				n++
 			}
 		}
+	}
+	if n == 0 && d.IsMindmap() {
+		n = 1 // a list with no # Title is one map
 	}
 	return n
 }

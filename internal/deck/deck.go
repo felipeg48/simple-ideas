@@ -39,6 +39,12 @@ var (
 	FooterPositions = []string{"bottom-right", "bottom-left", "bottom-center", "top-right", "top-left", "top-center", "br", "bl", "bc", "tr", "tl", "tc"}
 	Modes           = []string{"auto", "light", "dark"}
 	Aspects         = []string{"16:9", "16:10", "4:3", "1:1", "9:16"}
+	// Mind maps (`type: mindmap` front matter and ```mindmap fence options).
+	MapLayouts   = []string{"map", "right", "org", "radial"}
+	MapLines     = []string{"curved", "straight", "orthogonal", "tapered"}
+	MapNodes     = []string{"box", "pill", "underline"}
+	MapThemes    = []string{"auto", "harbor", "blueprint", "ink", "garden"}
+	WatermarkPos = []string{"corner", "across"}
 )
 
 // Directives lists every `<!-- name: value -->` directive. Slide-level ones
@@ -105,23 +111,28 @@ type Meta struct {
 	Demos            string // demo scripts (markdown files or folders, comma-separated) for the `si play` terminal drawer
 
 	// documents (lab, article, guide)
-	Description string // one-sentence summary: an article's lede, a guide page's summary, <meta name="description">
-	Repo        string // default repo of code: / diff: (OWNER/REPO on GitHub, or a local clone)
-	Subtitle    string // book: the line under the title on the cover
-	Edition     string // book: "2nd edition", on the cover and the book bar
-	Session     string // demo: the session it belongs to
-	SlidesRef   string // demo: the slides it runs on ("23, 24")
-	Duration    string // demo: the live time ("14 min"); si check compares it with the script's (N min) steps
-	Navigator   string // site: topbar (default), topbar-centred, sidebar, mega
-	Logo        string // site: an image (or text) for the navigator
-	CTA         string // site: a button in the navigator, "Label → href"
-	EditURL     string // guide: base URL of "Edit this page" (the page path is appended)
-	Header      string // guide page: "off" drops the guide's _header.md
-	FooterPage  string // guide page: "off" drops the guide's _footer.md
+	Description  string // one-sentence summary: an article's lede, a guide page's summary, <meta name="description">
+	Repo         string // default repo of code: / diff: (OWNER/REPO on GitHub, or a local clone)
+	Subtitle     string // book: the line under the title on the cover
+	Edition      string // book: "2nd edition", on the cover and the book bar
+	Session      string // demo: the session it belongs to
+	SlidesRef    string // demo: the slides it runs on ("23, 24")
+	Duration     string // demo: the live time ("14 min"); si check compares it with the script's (N min) steps
+	Navigator    string // site: topbar (default), topbar-centred, sidebar, mega
+	Logo         string // site: an image (or text) for the navigator
+	CTA          string // site: a button in the navigator, "Label → href"
+	EditURL      string // guide: base URL of "Edit this page" (the page path is appended)
+	Header       string // guide page: "off" drops the guide's _header.md
+	FooterPage   string // guide page: "off" drops the guide's _footer.md
+	MapLayout    string // mindmap: map (default), right, org, radial
+	MapLines     string // mindmap: curved (default), straight, orthogonal, tapered
+	MapNodes     string // mindmap: box (default), pill, underline
+	MapTheme     string // mindmap: auto (default, the deck theme), harbor, blueprint, ink, garden
+	WatermarkPos string // watermark placement on a mind map: corner (default), across
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -176,7 +187,7 @@ type Deck struct {
 }
 
 // Types are the accepted values of the `type` front matter key.
-var Types = []string{"deck", "lab", "article", "guide", "book", "demo", "site", "page"}
+var Types = []string{"deck", "lab", "article", "guide", "book", "demo", "site", "page", "mindmap"}
 
 // IsLab reports whether the file is a lab document (`type: lab`).
 func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
@@ -184,8 +195,11 @@ func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
 // IsDoc reports whether the file is a document (lab, article or guide page):
 // one readable page, not slides.
 func (d *Deck) IsDoc() bool {
-	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide" || d.Meta.Type == "demo" || d.Meta.Type == "page"
+	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide" || d.Meta.Type == "demo" || d.Meta.Type == "page" || d.Meta.Type == "mindmap"
 }
+
+// IsMindmap reports whether the file is a mind map page (`type: mindmap`).
+func (d *Deck) IsMindmap() bool { return d.Meta.Type == "mindmap" }
 
 // IsDemo reports whether the file is an instructor demo script (`type: demo`).
 func (d *Deck) IsDemo() bool { return d.Meta.Type == "demo" }
@@ -412,6 +426,13 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 			d.checkBackground(file, i+1, filepath.Dir(file), val)
 		}
 	}
+	if !d.IsMindmap() {
+		for _, k := range []string{"layout", "lines", "nodes", "map-theme"} {
+			if ln, ok := keyLine[k]; ok {
+				d.Warnings = append(d.Warnings, Problem{File: rel(file), Line: ln, Msg: fmt.Sprintf("front matter %q is for mind maps (type: mindmap); a ```mindmap fence takes it as an option", k)})
+			}
+		}
+	}
 	if d.IsDoc() {
 		for _, k := range LabIgnoredKeys {
 			if ln, ok := keyLine[k]; ok {
@@ -436,6 +457,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "fonts": &m.Fonts, "fonts-subset": &m.FontsSubset, "repo": &m.Repo,
 		"subtitle": &m.Subtitle, "edition": &m.Edition, "session": &m.Session, "slides": &m.SlidesRef, "duration": &m.Duration,
 		"navigator": &m.Navigator, "logo": &m.Logo, "cta": &m.CTA,
+		"layout": &m.MapLayout, "lines": &m.MapLines, "nodes": &m.MapNodes, "map-theme": &m.MapTheme, "watermark-position": &m.WatermarkPos,
 	}[key]
 	if ptr == nil {
 		return false
@@ -465,6 +487,16 @@ func validateMeta(key, val string) string {
 		return oneOf("aspect", val, Aspects)
 	case "footer-position":
 		return oneOf("footer-position", val, FooterPositions)
+	case "layout":
+		return oneOf("mind map layout", val, MapLayouts)
+	case "lines":
+		return oneOf("mind map lines", val, MapLines)
+	case "nodes":
+		return oneOf("mind map nodes", val, MapNodes)
+	case "map-theme":
+		return oneOf("map-theme", val, MapThemes)
+	case "watermark-position":
+		return oneOf("watermark-position", val, WatermarkPos)
 	case "accent":
 		if !colourRE.MatchString(val) {
 			return fmt.Sprintf("accent %q is not a CSS colour", val)

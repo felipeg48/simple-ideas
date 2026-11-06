@@ -1,6 +1,6 @@
 // Typed client for the Studio backend (/_si/studio/api/), same origin, cookie auth.
 
-export type Kind = "dir" | "deck" | "lab" | "article" | "guide" | "book" | "demo" | "site" | "page" | "nav"
+export type Kind = "dir" | "deck" | "lab" | "article" | "guide" | "book" | "demo" | "site" | "page" | "mindmap" | "nav"
   | "markdown" | "svg" | "css" | "json" | "image" | "other";
 /** guide marks a folder that holds a guide, book or site. */
 export interface Node { name: string; path: string; kind: Kind; guide?: "guide" | "book" | "site"; children?: Node[] }
@@ -76,11 +76,11 @@ export const isSlides = (k?: Kind | null) => k === "deck";
 
 /** isMarkdownKind: an si source file (deck, any document, a nav file) or plain Markdown. */
 export const isMarkdownKind = (k: Kind) =>
-  ["deck", "lab", "article", "guide", "book", "demo", "site", "page", "nav", "markdown"].includes(k);
+  ["deck", "lab", "article", "guide", "book", "demo", "site", "page", "mindmap", "nav", "markdown"].includes(k);
 
 /** kindLabel names a kind for people. */
 export const kindLabel: Record<string, string> = {
   deck: "Slides", lab: "Lab", article: "Article", guide: "Guide page", book: "Book page", demo: "Demo script",
-  site: "Site", page: "Site page", nav: "Navigation", markdown: "Markdown", svg: "SVG", css: "CSS", json: "JSON",
+  site: "Site", page: "Site page", mindmap: "Mind map", nav: "Navigation", markdown: "Markdown", svg: "SVG", css: "CSS", json: "JSON",
   image: "Image", other: "Text",
 };

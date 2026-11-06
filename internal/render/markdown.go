@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -106,6 +107,18 @@ func (r *nodeRenderer) fence(
 		fmt.Fprintf(w, "<pre class=\"si-mermaid\">%s</pre>\n", html.EscapeString(body))
 		return ast.WalkSkipChildren, nil
 	}
+	if lang == "mindmap" {
+		dir := r.dr.curDir
+		if dir == "" {
+			dir = filepath.Dir(r.dr.d.Path)
+		}
+		attrs := map[string]string{}
+		if n.Info != nil {
+			attrs = fenceAttrs(string(n.Info.Segment.Value(src)))
+		}
+		w.WriteString(r.dr.mindmapFence(body, attrs, dir))
+		return ast.WalkSkipChildren, nil
+	}
 	if lang == "stage" {
 		r.dr.stageN++
 		svg, stepOps, err := genStage(body, r.dr.stageN)
@@ -189,6 +202,9 @@ func (dr *deckRenderer) toHTML(md string, sc *slideCtx) string {
 	}
 	dr.cur = sc // the stage fence reads/updates this slide's step count
 	defer func() { dr.cur = nil }()
+	if sc != nil && sc.s != nil {
+		dr.curDir = sc.s.Dir
+	}
 	var buf bytes.Buffer
 	if err := dr.md.Renderer().Render(&buf, src, doc); err != nil {
 		dr.problem(sc, "render: %v", err)

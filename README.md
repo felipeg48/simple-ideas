@@ -53,6 +53,14 @@ self-contained HTML files you can mail, host or open from a USB stick.
   alerts, badges, event countdowns, accordions, modals, image carousels and
   embedding any other document or deck's slides. Still one self-contained
   HTML file per page; `si --export example --type site` (§23).
+- **Mind maps (v1.12):** `type: mindmap` turns a nested list into a map
+  (layouts map, right, org, radial; curved, straight, orthogonal or tapered
+  lines; box, pill or underline topics; five map themes). Topics carry badges,
+  pictures, sticky notes, highlighted code and links to slides or pages;
+  `→ other.md` drills into another map with a zoom (inlined, so it works
+  offline). Drag topics, fold branches, `/` searches every map, Play walks the
+  branches. A ```` ```mindmap ```` fence puts one on a slide or in an article
+  (§24).
 - **In the terminal (v1.7):** `si play talk.md --terminal` presents a deck in
   the terminal itself, in the theme's colours, with block-letter titles, builds,
   code, tables, cards and pictures in half-block pixels; `--notes` in a second
@@ -170,7 +178,7 @@ NOTE: the token reaches payments and turns red.
 | `si [build] <dir\|file.md> [--output html/] [--css path]... [--no-inline-media] [--pdf] [--site text]` | write one self-contained HTML file per deck plus `index.html` (a landing page with a tile per deck); `--pdf` also renders `pdfs/<name>.pdf` per deck and adds a PDF download badge to each tile (needs headless Chrome); `--site text` (alias `--title`) sets the landing page's `<title>` and `<h1>` |
 | `si serve <dir\|file.md> [--addr 127.0.0.1:7070] [--open] [--css path]...` | serve everything for readers with live reload: decks, articles, guides with their navigation, labs (no terminal drawer) |
 | `si check <dir\|file.md>` | validate decks: title, directives, options, missing files, include cycles, malformed `stage` blocks, broken canvas SVGs |
-| `si new <name>` | scaffold `<name>/<name>.md` with assets, a module and a theme; `--type article` (or deck, guide, book, site, page, lab, demo) writes a small starter instead, added to the menu of the guide or site it lands in |
+| `si new <name>` | scaffold `<name>/<name>.md` with assets, a module and a theme; `--type article` (or deck, guide, book, site, page, lab, demo, mindmap) writes a small starter instead, added to the menu of the guide or site it lands in |
 | `si fix <dir> [--write]` | turn raw-HTML components into si syntax (`==highlight==`, badge, logo, cards); a dry run unless `--write` |
 | `si new-canvas <name>` | scaffold `<name>.svg` (a working animated canvas) + a deck to preview it |
 | `si migrate <dir\|file> [--ai "<cmd>"]` | print an editorial-migration prompt for an existing deck; `--ai "claude -p"` pipes it to an agent |

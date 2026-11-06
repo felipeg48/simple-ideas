@@ -26,6 +26,15 @@ var ThemeLooksCSS string
 //go:embed web/deck.js
 var DeckJS string
 
+// MindmapCSS and MindmapJS draw mind maps (a `type: mindmap` page or a
+// ```mindmap fence): layouts, lines, drill-down, search and Play.
+//
+//go:embed web/mindmap.css
+var MindmapCSS string
+
+//go:embed web/mindmap.js
+var MindmapJS string
+
 // DocCSS styles a lab document (type: lab): unlayered page mechanics plus
 // its looks in the si.theme layer, all reading the --si-* tokens.
 //

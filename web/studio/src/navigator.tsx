@@ -16,6 +16,7 @@ const paths: Record<string, JSX.Element> = {
   demo: <><rect x="2" y="3" width="12" height="10" rx="1.5" /><path d="m6.5 6 3 2-3 2z" /></>,
   site: <><circle cx="8" cy="8" r="5.5" /><path d="M2.5 8h11M8 2.5c1.6 1.6 2.3 3.5 2.3 5.5S9.6 11.9 8 13.5M8 2.5C6.4 4.1 5.7 6 5.7 8s.7 3.9 2.3 5.5" /></>,
   page: <><rect x="2.5" y="3" width="11" height="10" rx="1.2" /><path d="M2.5 5.5h11M5 8h6M5 10.5h4" /></>,
+  mindmap: <><circle cx="8" cy="8" r="2" /><circle cx="3" cy="3.5" r="1.3" /><circle cx="13" cy="3.5" r="1.3" /><circle cx="3" cy="12.5" r="1.3" /><circle cx="13" cy="12.5" r="1.3" /><path d="M6.4 6.8 4 4.5M9.6 6.8 12 4.5M6.4 9.2 4 11.5M9.6 9.2 12 11.5" /></>,
   nav: <><path d="M3 4h10M3 8h10M3 12h6" /><circle cx="12" cy="12" r="1" /></>,
   markdown: <><path d="M4 2.5h5l3 3v8H4z" /><path d="M6 8.5h4M6 10.5h3" /></>,
   svg: <><path d="M3 12.5 7 5l2.5 4.5L11 7l2 5.5z" /><circle cx="11" cy="4" r="1.2" /></>,

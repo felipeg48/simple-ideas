@@ -36,6 +36,22 @@ The timeouts cluster between 21:00 and 23:30, when the bank runs its nightly
 fraud model refresh. During that window its authorisation endpoint takes 20
 to 25 seconds to answer, and our client gave up after 15.
 
+Sorted by cause, the night-time declines fall into three families, and only
+one of them deserves a second try.
+
+```mindmap layout=right lines=orthogonal
+# A night-time decline
+- Bank timeout {badge=87%}
+  - The bank is refreshing its fraud model
+  - Retry once, same idempotency key
+- Real decline {badge=9%}
+  - Insufficient funds
+  - Card blocked
+  - Ask the customer for another card
+- Fraud rule {badge=4%}
+  - [!sticky] Never retried: a person reviews it the next morning.
+```
+
 ## One idempotent retry
 
 The fix is a single retry, thirty seconds after a timeout, using the order id

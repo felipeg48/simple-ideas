@@ -83,6 +83,27 @@ var Tokens = []Token{
 	{"--si-tab-active", "code: underline of the selected code tab", "var(--si-accent)"},
 	{"--si-diff-add", "diffs: background of an added line", "color-mix(in srgb, var(--si-ok) 14%, transparent)"},
 	{"--si-diff-del", "diffs: background of a removed line", "color-mix(in srgb, var(--si-crit) 13%, transparent)"},
+	// mind maps (type: mindmap, ```mindmap); data-mm-theme sets them all, auto reads the deck theme
+	{"--si-mm-bg", "mind maps: background of the map", "var(--si-surface) (a page: var(--si-bg))"},
+	{"--si-mm-fg", "mind maps: topic text", "var(--si-fg)"},
+	{"--si-mm-muted", "mind maps: breadcrumbs, note lines, code comments", "var(--si-muted)"},
+	{"--si-mm-surface", "mind maps: fill of a topic box (tinted with its branch colour)", "var(--si-bg)"},
+	{"--si-mm-line", "mind maps: borders of buttons, code topics and deep topics", "var(--si-line)"},
+	{"--si-mm-accent", "mind maps: the central topic, map › chips, focus, Play", "var(--si-accent)"},
+	{"--si-mm-on-accent", "mind maps: text on --si-mm-accent", "var(--si-on-accent)"},
+	{"--si-mm-1", "mind maps: colour of the 1st branch (and the 6th, 11th…)", "var(--si-accent)"},
+	{"--si-mm-2", "mind maps: colour of the 2nd branch", "var(--si-accent-2)"},
+	{"--si-mm-3", "mind maps: colour of the 3rd branch", "var(--si-ok)"},
+	{"--si-mm-4", "mind maps: colour of the 4th branch", "var(--si-warn)"},
+	{"--si-mm-5", "mind maps: colour of the 5th branch", "a mix of accent and crit"},
+	{"--si-mm-c", "mind maps: the branch colour of one topic or line, set by the runtime from --si-mm-1…5", ""},
+	{"--si-mm-font", "mind maps: font stack of topics", "var(--si-font-body)"},
+	{"--si-mm-mono", "mind maps: font stack of code topics", "var(--si-font-mono)"},
+	{"--si-mm-hand", "mind maps: font stack of sticky notes (load one with fonts:, e.g. google:Caveat)", "a handwriting stack"},
+	{"--si-mm-grid", "mind maps: colour of the background grid (transparent: none)", "transparent"},
+	{"--si-mm-sticky", "mind maps: sticky note paper", "#ffe27a"},
+	{"--si-mm-sticky-fg", "mind maps: sticky note text", "#3d3000"},
+	{"--si-mm-height", "mind maps: height of an embedded map (slides: --si-figure-max)", "clamp(24em, 62vh, 48em)"},
 }
 
 // Hook is a stable selector user CSS may target.
@@ -331,6 +352,15 @@ var Hooks = []Hook{
 	{`.si-badge`, "a status or version badge (status: / version: front matter); data-status colours known values"},
 	{`.si-badge-ver`, "the version-badge variant (outlined, not filled)"},
 	{`.si-list`, "the index list/table view: Course, Status, Slides, Time, PDF columns"},
+	{`.si-mindmap[data-layout][data-lines][data-nodes][data-mm-theme][data-full]`, "a mind map (page or ```mindmap fence) and its options; .si-mm-on once mindmap.js runs"},
+	{`.si-mm-page, .si-mm-main, .si-mm-figure, .si-mm-list, .si-mm-on`, "a mind map page body and main, the figure of a fence, the nested-list fallback (hidden once the script runs)"},
+	{`.si-mm-svg, .si-mm-edges, .si-mm-nodes, .si-mm-anim, .si-mm-dragging`, "the drawing, its groups of lines and topics, grow-in animation, panning or moving"},
+	{`.si-mm-node, .si-mm-root, .si-mm-lv2, .si-mm-shape, .si-mm-hit, .si-mm-uline`, "a topic (the central one, deeper ones), its box, the hit area and line of an underline topic"},
+	{`.si-mm-chip, .si-mm-chip-link, .si-mm-chip-href, .si-mm-chip-badge, .si-mm-chip-more`, "chips after a topic: map › (drill-down), a page or slide link, a badge, +N folded"},
+	{`.si-mm-code, .si-mm-lang, .si-mm-pre, .si-mm-sticky`, "a code topic (its language label and highlighted text), a sticky note"},
+	{`.si-mm-edge, .si-mm-tap, .si-mm-note, .si-mm-flow`, "a line (tapered, to a sticky note) and its flow overlay"},
+	{`.si-mm-moving, .si-mm-pulse, .si-mm-dim, .si-mm-wm, .si-mm-wm-corner`, "a topic being moved, a search hit, a branch dimmed by Play, the watermark (across or in the corner)"},
+	{`.si-mm-crumbs, .si-mm-here, .si-mm-tools, .si-mm-find, .si-mm-tour`, "the breadcrumb of drilled maps, zoom/fit/tidy (+ Find, Play on a page), the / search box, the Play position"},
 }
 
 // Theme holds the token values of one theme. Base values apply in both modes.

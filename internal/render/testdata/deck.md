@@ -103,4 +103,15 @@ Body with a ==phrase==.
 
 ---
 
+## A mind map
+
+```mindmap layout=right lines=orthogonal
+# Order
+- Checkout {badge=Thu}
+  - Payment
+- [!sticky] Ask ops.
+```
+
+---
+
 # The end

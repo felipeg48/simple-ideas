@@ -349,6 +349,8 @@ func (r *textRenderer) fence(f *ast.FencedCodeBlock) []string {
 	switch lang {
 	case "stage":
 		return r.stage(code)
+	case "mindmap":
+		return r.mindmap(code)
 	case "mermaid":
 		lines := strings.Split(strings.TrimRight(code, "\n"), "\n")
 		if len(lines) > 8 {
@@ -816,3 +818,110 @@ func sideLine(row string, w int) string {
 }
 
 func padLeft(s string, n int) string { return strings.Repeat(" ", max(0, n-len(s))) + s }
+
+// ---------- mind maps: each map as a tree ----------
+
+var (
+	mmTargetRE = regexp.MustCompile(`\s*(?:→|\s->)\s*(\S.*)$`)
+	mmAttrsRE  = regexp.MustCompile(`\s*\{([^{}]*)\}\s*$`)
+	mmBadgeRE  = regexp.MustCompile(`(?:^|\s)badge=(\S+)`)
+	mmPicRE    = regexp.MustCompile(`!\[([^\]]*)\]\([^)]*\)`)
+)
+
+// mindmap draws a ```mindmap fence (or a mind map page's body) as trees: a
+// `# Title` is a root, list items its branches; links end in →, pictures
+// are ▨, sticky notes ✎, code ‹lang›.
+func (r *textRenderer) mindmap(src string) []string {
+	type item struct {
+		depth int
+		text  string
+	}
+	var out []string
+	var items []item
+	flush := func() {
+		open := map[int]bool{}
+		for i, it := range items {
+			last := true
+			for j := i + 1; j < len(items); j++ {
+				if items[j].depth < it.depth {
+					break
+				}
+				if items[j].depth == it.depth {
+					last = false
+					break
+				}
+			}
+			prefix := ""
+			for d := 0; d < it.depth; d++ {
+				if open[d] {
+					prefix += "│  "
+				} else {
+					prefix += "   "
+				}
+			}
+			branch := "├─ "
+			if last {
+				branch = "└─ "
+			}
+			open[it.depth] = !last
+			line := r.st().Foreground(r.pal.Muted).Render(prefix+branch) + it.text
+			out = append(out, ansi.Truncate(line, r.w, "…"))
+		}
+		items = nil
+	}
+	fence := false
+	for _, l := range strings.Split(src, "\n") {
+		t := strings.TrimSpace(l)
+		depth := (len(l) - len(strings.TrimLeft(l, " \t"))) / 2
+		switch {
+		case strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~"):
+			if !fence {
+				lang := strings.Fields(strings.TrimLeft(t, "`~") + " code")[0]
+				items = append(items, item{depth, r.st().Foreground(r.pal.Accent2).Render("‹" + lang + "›")})
+			}
+			fence = !fence
+		case fence:
+		case strings.HasPrefix(t, "# "):
+			flush()
+			if len(out) > 0 {
+				out = append(out, "")
+			}
+			title := strings.TrimSpace(customIDTail.ReplaceAllString(t[2:], ""))
+			out = append(out, r.st().Bold(true).Foreground(r.pal.Accent).Render("✲ "+stripMarks(title)))
+		case strings.HasPrefix(t, "- ") || strings.HasPrefix(t, "* ") || strings.HasPrefix(t, "+ "):
+			items = append(items, item{depth, r.mmTopic(t[2:])})
+		}
+	}
+	flush()
+	return out
+}
+
+var customIDTail = regexp.MustCompile(`\s*\{#[^}]*\}\s*$`)
+
+// mmTopic is one topic line as text: sticky ✎, picture ▨, badge, link →.
+func (r *textRenderer) mmTopic(t string) string {
+	pre := ""
+	if rest, ok := strings.CutPrefix(t, "[!sticky]"); ok {
+		pre, t = "✎ ", strings.TrimSpace(rest)
+	}
+	target := ""
+	if m := mmTargetRE.FindStringSubmatch(t); m != nil {
+		target, t = m[1], mmTargetRE.ReplaceAllString(t, "")
+	}
+	badge := ""
+	if m := mmAttrsRE.FindStringSubmatch(t); m != nil {
+		t = mmAttrsRE.ReplaceAllString(t, "")
+		if b := mmBadgeRE.FindStringSubmatch(m[1]); b != nil {
+			badge = " " + r.st().Foreground(r.pal.Muted).Render("["+strings.ReplaceAll(b[1], "_", " ")+"]")
+		}
+	}
+	if mmPicRE.MatchString(t) {
+		pre += "▨ "
+		t = mmPicRE.ReplaceAllString(t, "")
+	}
+	s := pre + stripMarks(strings.TrimSpace(t)) + badge
+	if target != "" {
+		s += " " + r.st().Foreground(r.pal.Accent).Render("→ "+target)
+	}
+	return s
+}

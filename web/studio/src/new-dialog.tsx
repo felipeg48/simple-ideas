@@ -13,6 +13,7 @@ export const starterKinds: { kind: Kind; label: string; what: string; folder?: b
   { kind: "page", label: "Site page", what: "One plain page for a site" },
   { kind: "lab", label: "Lab", what: "Hands-on steps with commands and output" },
   { kind: "demo", label: "Demo script", what: "What the presenter says and runs, live" },
+  { kind: "mindmap", label: "Mind map", what: "Topics that branch out, and maps that open into maps" },
 ];
 
 /** slug turns a name into a file or folder name: "Our Q3 Plan" → "our-q3-plan". */

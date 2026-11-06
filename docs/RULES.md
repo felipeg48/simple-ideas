@@ -38,6 +38,8 @@ this file; `examples/showcase.md` uses every rule in a real talk.
 20. [Guides (tutorials)](#20-guides-tutorials)
 21. [Books (references)](#21-books-references)
 22. [Demo scripts](#22-demo-scripts)
+23. [Sites](#23-sites)
+24. [Mind maps](#24-mind-maps)
 
 ## 1. Decks and files
 
@@ -92,7 +94,7 @@ lang: en
 | `type` | `deck`, `lab` | `deck` | `lab` renders the file as a readable guide page instead of slides; see [Lab documents](#18-lab-documents). Anything else is a `si check` problem |
 | `runbook` | path to a `.json` file | none | a command cheat-sheet shown in the **`si play` terminal drawer only** (never in a built deck); see §14 |
 | `demos` | markdown files or folders, comma-separated | none | demo scripts shown in the **`si play` terminal drawer only**, with Copy / Run on every shell block; see §14 |
-| `type` values | `deck`, `lab`, `article`, `guide`, `book` | `deck` | `lab` §18, `article` §19, `guide` §20 (guide pages get it from `_nav.md`), `book` §21 (in `_nav.md` only) |
+| `type` values | `deck`, `lab`, `article`, `guide`, `book`, `mindmap` | `deck` | `lab` §18, `article` §19, `guide` §20 (guide pages get it from `_nav.md`), `book` §21 (in `_nav.md` only), `mindmap` §24 (with `layout`, `lines`, `nodes`, `map-theme`, `watermark-position`) |
 | `subtitle`, `edition` | text | none | books: the cover's subtitle and edition (§21) |
 | `session`, `slides`, `duration` | text | none | demo scripts: the facts under the title; `duration: 14 min` is checked against the script's steps (§22) |
 | `description` | text | none | documents: the lede under the title, the index tile subtitle and `<meta name="description">` (§19, §20) |
@@ -1700,3 +1702,193 @@ On a cover slide:
 
 Example: `si --export example --type site` writes this site; `si serve
 si-example` serves it.
+
+## 24. Mind maps
+
+A mind map is a Markdown list of topics under a `# Title`. It is a page of
+its own (`type: mindmap`) or a ```` ```mindmap ```` fence inside a slide, an
+article, a guide page or any other document. The browser lays it out, draws
+the lines, and lets the reader fold branches, move topics, and open linked
+maps with a zoom. Without JavaScript (a screen reader, a feed, a print of the
+source) the map is the nested list it was written as.
+
+### A mind map page
+
+```markdown
+---
+type: mindmap
+title: The Thursday Promise
+description: Every hand-off between "Buy now" and the doorstep.
+layout: map
+lines: curved
+nodes: box
+map-theme: auto
+watermark: Northwind Logistics
+watermark-position: corner
+---
+# The Thursday Promise
+
+- Checkout
+  - Cart & address
+  - Payment → payments.md
+  - Promise date {badge=Thu}
+- Warehouse → warehouse.md
+  - Picking
+  - Label printed → slides: talk.md#7
+- Delivery
+  - Dusk departure ![The first vans](img/dusk.jpg)
+  - [!sticky] Drivers asked for a later cut-off on Thursdays.
+```
+
+`si build` writes one self-contained HTML file per map file (into `--output`
+like every other page) and lists it on the index as *N maps*; `si play` and
+`si serve` serve it live; `si check` reports its problems. The page fills the
+window.
+
+| Front matter | Values | Default |
+|---|---|---|
+| `type` | `mindmap` | |
+| `layout` | `map` (branches on both sides), `right` (a tree to the right), `org` (top-down; leaves stack under their branch), `radial` (rings around the centre) | `map` |
+| `lines` | `curved`, `straight`, `orthogonal` (elbows with round corners), `tapered` (thick at the parent, thin at the child) | `curved` |
+| `nodes` | `box`, `pill`, `underline` (deep topics are text on a line in their branch colour) | `box` |
+| `map-theme` | `auto` (the page theme: `theme:` and light/dark), `harbor` (navy and amber), `blueprint` (blue grid, white lines, monospace), `ink` (black on white), `garden` (greens) | `auto` |
+| `watermark` | text drawn on the map (and its exports); a picture stays a page layer | none |
+| `watermark-position` | `corner` (`© text` bottom right), `across` (faint diagonal text over the map) | `corner` |
+
+`title`, `description`, `theme`, `mode`, `accent`, `fonts`, `lang` work as on
+any page. `layout`, `lines`, `nodes` and `map-theme` in any other file draw a
+warning: a fence takes them as options instead.
+
+### Topics
+
+One list item is one topic; a nested list holds its children; the order is
+the order on the map. The central topic is the `# Title` (without one, the
+page title).
+
+| Write | You get |
+|---|---|
+| `- Picking` | a topic |
+| `- Promise date {badge=Thu}` | a badge after the text (`_` is a space: `{badge=two_days}`) |
+| `- Delivery {collapsed}` | the branch starts folded, with a `+3` chip |
+| `- Route 7 {pos=40,-12}` | the topic moved by hand (x, y from its automatic place); only this topic moves |
+| `- Warehouse {branch-pos=52,104}` | the topic and its whole branch moved by hand |
+| `- Dusk departure ![alt](img/dusk.jpg)` | a picture in the topic (resolved and inlined like any image; the alt text names it when the topic has no text) |
+| `- [!sticky] Check with ops.` | a sticky note on a dashed line, handwritten |
+| a fenced code block inside an item | a code topic, highlighted like any code block |
+| `- Payment → payments.md` | `map ›`: opens that mind map file with a zoom (drill-down) |
+| `- Refunds → #refunds` | `map ›`: opens the map `# Refunds {#refunds}` of the same page |
+| `- Label → slides: talk.md#7` | a `slide 7` chip: opens the deck at that slide |
+| `- Docs → https://example.com` | a `link` chip: opens the page in a new tab |
+| `- Retry → ../article/retry.md` | a `page` chip: opens that page (`.md` becomes `.html`) |
+
+Options combine: `- Checkout {badge=Thu collapsed} → checkout.md`. `->`
+works as well as `→`. A code topic:
+
+````markdown
+- Retry with backoff
+  ```go
+  for try := 1; try <= 5; try++ {
+      time.Sleep(backoff(try))
+  }
+  ```
+````
+
+### Many maps
+
+One file per map is the usual structure: link them with `→ other.md`. The
+linked mind map files (and the ones they link, cycles included) are inlined
+into the page, so drill-down works offline from one HTML file, and a
+breadcrumb leads back. One big file works too: separate the maps with `---`
+and give each a `# Title {#id}`:
+
+```markdown
+# Payment
+
+- Refunds → #refunds
+
+---
+
+# Refunds {#refunds}
+
+- Partial
+- Full
+```
+
+A map's id is its `{#id}`, or its title as a slug. On a page, `page.html#refunds`
+opens that map first.
+
+### In a slide or a document
+
+````markdown
+## Where an order goes
+
+```mindmap layout=right lines=tapered theme=harbor
+# Order
+- Checkout
+  - Payment
+- Delivery {badge=Thu}
+```
+````
+
+The fence takes `layout=`, `lines=`, `nodes=` and `theme=` (the same values as
+the front matter; `theme=` is the map theme). Topics, links and drill-down work
+as on a page; `→ file.md` inlines that map file. In a slide the map is as tall
+as `--si-figure-max`; in a document `--si-mm-height`. The map grows in each time
+its slide comes on screen.
+
+### Reading a map
+
+| Do | What happens |
+|---|---|
+| click a topic | folds or opens its branch; a topic that only links opens its link |
+| click `map ›` | drills into that map with a zoom; the breadcrumb zooms back out |
+| drag a topic | moves only that topic; its lines stretch to follow |
+| Shift-drag a topic | moves the topic and its branch |
+| arrow keys on a focused topic | nudge it (Shift: its branch); Enter or Space acts like a click |
+| drag the canvas | pans |
+| `+` `−`, the wheel (a page), Ctrl + wheel or a pinch (a map in a slide or a document) | zoom |
+| Fit | the whole map |
+| Tidy | puts every moved topic back in its automatic place |
+| `/` or Find (a page) | searches every topic, sticky note and code topic of every map; Enter opens the map and zooms to the hit |
+| Play (a page) | the overview, then one branch per step with the others dimmed; ← → Space PgUp PgDn step, it advances by itself every 3 s, Esc stops |
+
+Moves made in the browser last until the page reloads; write them down as
+`{pos=…}` / `{branch-pos=…}` to keep them. On a narrow portrait screen (a
+phone) any layout is drawn as `right`, which stays readable.
+
+### Looks
+
+Branch colours come from `--si-mm-1` … `--si-mm-5` (by default the theme's
+accent, second accent, ok, warn and a mix of accent and crit), so every
+built-in theme and dark mode work. A `map-theme` (or `theme=` on a fence) sets
+every `--si-mm-*` token at once; your CSS can set any of them:
+
+```css
+.si-mindmap { --si-mm-1: #0f766e; --si-mm-grid: rgb(0 0 0 / .05); }
+.si-mindmap { --si-mm-hand: "Caveat", cursive; }  /* load it with fonts: google:Caveat */
+```
+
+The tokens (`si --export css-rules` lists them all): `--si-mm-bg`,
+`--si-mm-fg`, `--si-mm-muted`, `--si-mm-surface`, `--si-mm-line`,
+`--si-mm-accent`, `--si-mm-on-accent`, `--si-mm-1` … `--si-mm-5`,
+`--si-mm-font`, `--si-mm-mono`, `--si-mm-hand`, `--si-mm-grid`,
+`--si-mm-sticky`, `--si-mm-sticky-fg`, `--si-mm-height`.
+
+### In the terminal
+
+`si play talk.md --terminal` and `si --terminal` draw a mind map (a fence on a
+slide, or a mind map page in the preview) as a tree: `✲` the central topic,
+`├─ └─` its branches, `→ target` for links, `[badge]`, `▨` a picture, `✎` a
+sticky note, `‹go›` a code topic.
+
+### What si check reports
+
+A missing file (`→ other.md`, a picture), a map id that does not exist
+(`→ #ghost`), an unknown topic option (`{size=3}`), a `pos=` without two
+numbers, an unknown fence option or value, a map with no topics, and unknown
+front matter values.
+
+Example: `examples/mindmap/` (three linked maps: `thursday.md`,
+`payments.md` with two maps in one file, `warehouse.md` in `org` layout with
+`orthogonal` lines), and the article `examples/article/retry.md` has a fence.
+`si new ideas --type mindmap` writes a starter.

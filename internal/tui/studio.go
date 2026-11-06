@@ -506,6 +506,7 @@ var starterLabels = []struct{ kind, label, what string }{
 	{"page", "Site page", "one plain page for a site"},
 	{"lab", "Lab", "hands-on steps with commands and output"},
 	{"demo", "Demo script", "what the presenter says and runs"},
+	{"mindmap", "Mind map", "topics that branch out; maps that open into maps"},
 }
 
 func (m *studioModel) openNew() {
@@ -933,7 +934,7 @@ func (m *studioModel) writeView(w, h int) []string {
 }
 
 var kindIcon = map[string]string{
-	"deck": "▣", "article": "▤", "page": "▢", "guide": "▦", "book": "▥", "site": "◍", "demo": "▶", "lab": "⚗",
+	"deck": "▣", "article": "▤", "page": "▢", "guide": "▦", "book": "▥", "site": "◍", "demo": "▶", "lab": "⚗", "mindmap": "✲",
 	"nav": "≡", "markdown": "·", "image": "▨", "svg": "◇", "css": "#", "json": "{", "other": " ",
 }
 
@@ -1035,6 +1036,11 @@ func (m *studioModel) docLines(w, h int) []string {
 	}
 	for i, s := range m.d.Slides {
 		r := &textRenderer{pal: m.pal, dir: s.Dir, w: w, maxH: h / 2, k: 1 << 30}
+		if m.d.IsMindmap() { // a mind map page: every map as a tree
+			out = append(out, "")
+			out = append(out, r.mindmap(s.Body)...)
+			continue
+		}
 		if i > 0 && s.Title != "" {
 			out = append(out, "", st.Bold(true).Foreground(m.pal.Accent2).Render(stripMarks(s.Title)))
 		}

@@ -402,6 +402,15 @@ func TestLabType(t *testing.T) {
 			warnings: []string{`front matter "aspect" has no effect`, `front matter "transition" has no effect`,
 				`front matter "labs-label" has no effect`, `front matter "footer-position" has no effect`}, // watermark works in documents
 			noWarn: []string{`"footer"`, `"author"`}},
+		{name: "mind map keys", typ: "mindmap", title: "Order",
+			files:  map[string]string{"d.md": "---\ntype: mindmap\nlayout: radial\nlines: tapered\nnodes: pill\nmap-theme: harbor\nwatermark-position: across\n---\n# Order\n\n- a\n"},
+			noWarn: []string{`layout`, `lines`}},
+		{name: "bad mind map values", typ: "mindmap", title: "Order",
+			files:    map[string]string{"d.md": "---\ntype: mindmap\nlayout: spiral\nlines: wavy\nmap-theme: neon\n---\n# Order\n\n- a\n"},
+			problems: []string{`unknown mind map layout "spiral"`, `unknown mind map lines "wavy"`, `unknown map-theme "neon"`}},
+		{name: "mind map keys warn in a deck", typ: "deck", title: "D",
+			files:    map[string]string{"d.md": "---\nlayout: map\n---\n# D\n"},
+			warnings: []string{`front matter "layout" is for mind maps`}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

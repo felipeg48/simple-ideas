@@ -120,6 +120,7 @@ Not everything is a slide deck. Pick the type by what the reader does:
 | look things up, read cover to cover | a book | a guide folder whose `_nav.md` says `type: book`: parts, chapters, appendices |
 | run a live demo (the presenter) | a demo script | `type: demo`, `> Say:` lines, every command followed by its expected output |
 | browse several kinds of content | a site | a folder with `_site.md` (a `navigator:`, a menu list), plain pages, plus articles, talks and guide folders |
+| explore a topic and how its parts connect | a mind map | `type: mindmap`, a `# Title`, then a nested list of topics; or a ```` ```mindmap ```` fence on a slide or in a document |
 
 - **Guides:** write `_nav.md` first (front matter for the guide-wide
   settings, then a nested list: `- [Title](page.md)` pages, plain items as
@@ -162,6 +163,18 @@ Not everything is a slide deck. Pick the type by what the reader does:
   (an image with a title) and tables (a `Table: caption` line after the
   table). Refer with empty links (`[](#fig-…)`, `[](02-x.md#section-id)`) so the
   numbers stay right, and mark index terms with `((term))` / `(((term)))`.
+- **Mind maps** (RULES.md §24): one list item per topic, nested lists for
+  children, short topic text (a few words). Link maps with `→ other.md` (one
+  file per map; they are inlined and open with a zoom) or, in one file,
+  `---` + `# Title {#id}` and `→ #id`. `→ slides: talk.md#7` opens a slide,
+  `→ https://…` a page. Options go in braces at the end:
+  `{badge=Thu collapsed pos=40,-12 branch-pos=0,30}`; `[!sticky] text` is a
+  sticky note; a fenced code block inside an item is a code topic; `![alt](img)`
+  puts a picture in a topic. Look: `layout:` map/right/org/radial, `lines:`
+  curved/straight/orthogonal/tapered, `nodes:` box/pill/underline, `map-theme:`
+  auto/harbor/blueprint/ink/garden (a fence: `layout= lines= nodes= theme=`).
+  Keep one idea per branch and at most about seven branches per map; move
+  detail into a linked map instead of a deep tree.
 - `si --export example --type guide` (or `article`, `lab`, `book`, `all`)
   writes a working example to copy from.
 
