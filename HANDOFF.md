@@ -8,7 +8,14 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 - **Idea being refined (not started; likely a separate project, not part of si):**
   the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
-- **Latest release: v1.10.1: canvases animated in the terminal.** `tui/canvas.go`
+- **Latest release: v1.10.2: shared media.** `render.shareMedia` (media.go): a
+  data URI of 1 KB or more used in two or more src / href / poster / xlink:href
+  attributes is written once in a small script after the slides (deck) or before
+  doc.js (documents); each use carries `data-si-m-<attr>="N"`. Showcase build
+  1495 KB → 614 KB. Checked headless: no broken images. Backlog cleaned: the
+  `data-count` tween was already bounded (650 ms) and no canvas overflows at 400 px
+  (showcase + the 7 CACI decks; only wide tables scroll, in their own box).
+- **v1.10.1: canvases animated in the terminal.** `tui/canvas.go`
   (SVG → character grid: rects as boxes or bands, wires, text runs in order, dots;
   helper attributes; CSS state rules for opacity / display / fill / transform),
   `tui/canvasstate.go` (`canvasStates`, `SlideOpts`, canvas cache), presenter
@@ -314,15 +321,5 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Known minor issues / polish backlog
 
-- **`data-count` unbounded tween (found 2026-10-27, course migration).** The SVG
-  counter helper tweens proportionally to the value delta, so a large range
-  (e.g. `10,000,000 → 1`) never settles in a reasonable time — the number keeps
-  animating. Workaround authors used: per-state `data-show` numbers instead of
-  `data-count`. Fix candidate: cap the tween duration (ease by ratio/steps, not
-  by absolute delta) so any range settles in a bounded time. Lives in the
-  counter logic in `web/deck.js`. Low severity (workaroundable), real defect.
-- Very wide full-bleed canvases scroll horizontally at the 400px phone floor
-  (matches the existing house decks — not a regression; candidate for a
-  canvas-responsiveness pass).
 - `rules.go` → moved to `docs/docs.go` already (embedder lives with the docs).
 - Roadmap ideas are in CLAUDE.md "Roadmap ideas".

@@ -235,3 +235,43 @@ func figure(alt, dest, title string, a *deck.ImageAttrs) string {
 	b.WriteString(`</figure>`)
 	return b.String()
 }
+
+// mediaAttrRE finds a data URI in an src, href, poster or xlink:href
+// attribute.
+var mediaAttrRE = regexp.MustCompile(`(src|href|poster|xlink:href)="(data:[^"]+)"`)
+
+// shareMedia embeds a data URI used more than once only once: each use becomes
+// a data-si-m-<attr> index, and the returned script (after the markup) puts
+// the URI back. html comes back unchanged, with no script, when nothing
+// repeats.
+func shareMedia(html string) (string, string) {
+	count := map[string]int{}
+	for _, m := range mediaAttrRE.FindAllStringSubmatch(html, -1) {
+		if len(m[2]) >= 1024 { // small ones cost less than the script
+			count[m[2]]++
+		}
+	}
+	index := map[string]int{}
+	var uris []string
+	html = mediaAttrRE.ReplaceAllStringFunc(html, func(attr string) string {
+		m := mediaAttrRE.FindStringSubmatch(attr)
+		if count[m[2]] < 2 {
+			return attr
+		}
+		n, ok := index[m[2]]
+		if !ok {
+			n = len(uris)
+			index[m[2]] = n
+			uris = append(uris, m[2])
+		}
+		return fmt.Sprintf(`data-si-m-%s="%d"`, strings.Replace(m[1], ":", "-", 1), n)
+	})
+	if len(uris) == 0 {
+		return html, ""
+	}
+	list := make([]string, len(uris))
+	for i, u := range uris {
+		list[i] = strconv.Quote(u)
+	}
+	return html, `<script>(function(){var M=[` + strings.Join(list, ",") + `];['src','poster','href','xlink-href'].forEach(function(a){document.querySelectorAll('[data-si-m-'+a+']').forEach(function(e){e.setAttribute(a==='xlink-href'?'href':a,M[+e.getAttribute('data-si-m-'+a)]);e.removeAttribute('data-si-m-'+a)})})})();</script>` + "\n"
+}

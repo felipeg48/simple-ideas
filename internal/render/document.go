@@ -291,6 +291,7 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	d, m := dr.d, dr.d.Meta
 	g := dr.opt.Guide
 	kind := m.Type
+	body, shared := shareMedia(body)
 	if g != nil {
 		dr.guidePager()
 	}
@@ -460,6 +461,7 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	fmt.Fprintf(&b, "<footer class=\"si-doc-foot\">%s</footer>\n", strings.Join(foot, ""))
 	b.WriteString(`<div class="si-doc-find" role="dialog" aria-label="Search" hidden><div class="si-doc-find-box"><input class="si-doc-find-input" type="search" placeholder="Search this page and the others…" aria-label="Search" autocomplete="off" spellcheck="false"><ol class="si-doc-find-list" role="listbox"></ol><p class="si-doc-find-hint">↑ ↓ to choose · Enter to open · Esc to close</p></div></div>` + "\n")
 	b.WriteString(dr.searchScript())
+	b.WriteString(shared)
 	dr.problemsBanner(&b, problems)
 	dr.mermaidScript(&b)
 	b.WriteString("<script>\n" + assets.DocJS + "</script>\n")

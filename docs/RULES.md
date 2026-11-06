@@ -303,7 +303,9 @@ Side by side: put images in columns (`two-col` + `<!-- column -->`) or use
 `split` (text left, image right). Full bleed: `<!-- layout: image -->`.
 
 Every image, background, poster and SVG is embedded as a data URI, so one
-deck is one self-contained file. Files above 2 MB draw a warning; build with
+deck is one self-contained file. A file used on several slides (the same
+photo as two backgrounds and a figure) is embedded once. Files above 2 MB draw
+a warning; build with
 `--no-inline-media` to copy media next to the HTML instead. `si play` links
 files from the deck directory directly. A missing file fails `si check`.
 

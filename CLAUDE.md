@@ -205,8 +205,6 @@ pass. The steps that matter:
 - SVG helpers: `data-move` along a path, counters that tick between states,
   `data-grow` bars. (The `si check` SVG lint — `<` in `<style>`, missing
   viewBox — is done.)
-- Shared media: a data URI used on many slides embedded once (the showcase
-  repeats the dusk photo).
 - Speaker view extras: notes from a separate file, rehearsal timings saved
   per slide.
 - Replace the remaining Python deck builder workflows (fully Python-free).
