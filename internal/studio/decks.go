@@ -49,6 +49,11 @@ func (a *api) rel(p string) string {
 }
 
 func (a *api) decks(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, a.listDecks())
+}
+
+// listDecks lists every deck, document page and guide / book / site in the workspace.
+func (a *api) listDecks() []deckInfo {
 	inc := map[string]bool{}
 	a.ws.collectIncluded(a.ws.Root, inc)
 	out, gs := []deckInfo{}, guides{}
@@ -86,5 +91,5 @@ func (a *api) decks(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	walk(a.ws.Root)
-	writeJSON(w, http.StatusOK, out)
+	return out
 }

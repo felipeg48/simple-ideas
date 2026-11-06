@@ -1,15 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { EditorState } from "@codemirror/state";
 import { CompletionContext, type CompletionResult, type CompletionSource } from "@codemirror/autocomplete";
-import { siMarkdown } from "../src/si-lang";
+import { relPath, setCompletionFiles, siMarkdown } from "../src/si-lang";
 import type { Rules } from "../src/api";
 
 const rules: Rules = {
   directives: { include: "file", layout: "slide", transition: "slide", svg: "body", steps: "body" },
   layouts: ["two-col", "big-number", "quote"],
   transitions: ["fade", "slide"],
-  metaKeys: ["title", "author", "theme"],
+  metaKeys: ["title", "author", "theme", "type", "fonts"],
+  help: { alert: "a dismissible band", type: "deck, lab, article …" },
+  values: { type: ["deck", "article", "site"], theme: ["studio", "paper"], kinds: ["info", "ok", "warn", "crit"] },
+  paths: ["include", "svg", "embed", "theme"],
 };
+rules.directives.alert = "body";
+rules.directives.embed = "body";
 
 async function complete(doc: string, pos = doc.length): Promise<string[]> {
   const state = EditorState.create({ doc, extensions: siMarkdown(rules) });
@@ -34,6 +39,34 @@ describe("siMarkdown", () => {
   it("completes front-matter keys only inside the leading --- block", async () => {
     expect(await complete("---\nti", 6)).toContain("title");
     expect(await complete("---\ntitle: x\n---\n\nti")).not.toContain("title");
+  });
+});
+
+describe("values and paths", () => {
+  it("completes front-matter values", async () => {
+    expect(await complete("---\ntype: ar", 12)).toContain("article");
+    expect(await complete("---\ntheme: ", 11)).toEqual(expect.arrayContaining(["studio", "paper"]));
+  });
+  it("completes alert kinds after a ·", async () => {
+    expect(await complete("<!-- alert: Closed Monday · w")).toContain("warn");
+    expect(await complete("<!-- alert: Clo")).toEqual([]);
+  });
+  it("completes workspace paths relative to the open file", async () => {
+    setCompletionFiles(["blog/post.md", "talks/a.md", "images/aisle.svg", "index.md", "_site.md", "docs/_nav.md"], "blog/post.md");
+    const got = await complete("<!-- embed: ");
+    expect(got).toEqual(expect.arrayContaining(["../talks/a.md", "../index.md", "../talks/"]));
+    expect(got).not.toContain("../images/aisle.svg");
+    expect(got).not.toContain("../_site.md");
+    expect(got).toContain("../docs/");
+    expect(await complete("<!-- svg: ")).toEqual(["../images/aisle.svg"]);
+  });
+  it("stops after the directive closes", async () => {
+    expect(await complete("<!-- layout: two-col -->")).toEqual([]);
+  });
+  it("relPath walks up and down", () => {
+    expect(relPath("a/b/c.md", "a/d.md")).toBe("../d.md");
+    expect(relPath("x.md", "a/b.md")).toBe("a/b.md");
+    expect(relPath("a/x.md", "a/y.md")).toBe("y.md");
   });
 });
 

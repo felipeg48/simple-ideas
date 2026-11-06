@@ -3,6 +3,7 @@
 import type { ComponentChildren, JSX } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { DeckInfo, Kind, Node } from "./api";
+import { NewDialog } from "./new-dialog";
 import { RunbookWizard } from "./runbook-wizard";
 
 const paths: Record<string, JSX.Element> = {
@@ -143,6 +144,7 @@ interface Props {
   onRename(from: string, to: string): Promise<void>;
   onDelete(path: string, dir: boolean): Promise<void>;
   onRunbook(path: string): Promise<void>;
+  onStarter(kind: Kind, path: string, title: string): Promise<void>;
 }
 
 export function Navigator(p: Props) {
@@ -226,10 +228,12 @@ export function Navigator(p: Props) {
   };
 
   const target = (n: Node) => (n.kind === "dir" ? n.path : parentOf(n.path));
+  const starter = (dir: string) => setDialog(<NewDialog dir={dir} ok={p.onStarter} onClose={() => setDialog(null)} />);
   return (
     <nav class="nav" aria-label="Workspace files">
       <div class="nav-head">
         <span class="grp">Workspace</span>
+        <button class="icon-btn" aria-label="New from a starter" title="New slides, article, guide, site …" onClick={() => starter(p.active ? parentOf(p.active) : "")}><Icon name="plus" /></button>
         <button class="icon-btn" aria-label="New file" title="New file" onClick={() => create("", false)}><Icon name="plusFile" /></button>
         <button class="icon-btn" aria-label="New folder" title="New folder" onClick={() => create("", true)}><Icon name="plusDir" /></button>
         <button class="icon-btn" aria-label="New runbook" title="New runbook" onClick={() => newRunbook(p.active ? parentOf(p.active) : "")}><Icon name="plusRunbook" /></button>
@@ -241,6 +245,7 @@ export function Navigator(p: Props) {
       </div>
       {menu && (
         <Menu x={menu.x} y={menu.y} onClose={() => setMenu(null)} items={[
+          { label: "New slides, article, guide…", run: () => starter(target(menu.node)) },
           { label: "New file…", run: () => create(target(menu.node), false) },
           { label: "New folder…", run: () => create(target(menu.node), true) },
           { label: "New runbook…", run: () => newRunbook(target(menu.node)) },

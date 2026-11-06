@@ -2,6 +2,7 @@ package studio
 
 import (
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/felipeg48/simple-ideas/internal/deck"
@@ -93,5 +94,23 @@ func TestCheckFilesAreWorkspaceRelativeFromParentCwd(t *testing.T) {
 	}
 	if s := m["slides"].([]any)[1].(map[string]any); s["file"] != "sections/a.md" {
 		t.Fatalf("slide file: %v", s["file"])
+	}
+}
+
+func TestEveryDirectiveAndKeyHasHelp(t *testing.T) {
+	for n := range deck.Directives {
+		if help[n] == "" {
+			t.Errorf("directive %s has no help line in studio/rules.go", n)
+		}
+	}
+	for _, k := range []string{"title", "type", "theme", "fonts", "navigator", "cta", "logo", "watermark", "runbook", "demos", "description"} {
+		if help[k] == "" {
+			t.Errorf("key %s has no help line", k)
+		}
+	}
+	for _, p := range paths {
+		if _, ok := deck.Directives[p]; !ok && !slices.Contains(deck.MetaKeys, p) {
+			t.Errorf("path entry %s is neither a directive nor a key", p)
+		}
 	}
 }

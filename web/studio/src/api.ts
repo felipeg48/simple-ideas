@@ -10,7 +10,15 @@ export interface DeckInfo { path: string; title: string; files: string[]; runboo
 export interface Problem { file: string; line: number; msg: string }
 export interface Slide { index: number; file: string; line: number; title: string; topic: number; minutes: number }
 export interface Check { problems: Problem[]; slides: Slide[]; minutes: number; steps: number; canvases: number; kind?: Kind }
-export interface Rules { directives: Record<string, string>; layouts: string[]; transitions: string[]; metaKeys: string[] }
+export interface Rules {
+  directives: Record<string, string>; layouts: string[]; transitions: string[]; metaKeys: string[];
+  /** one-line help per directive and front-matter key */
+  help?: Record<string, string>;
+  /** accepted values per directive or key ("kinds": alert / badge kinds after a ·) */
+  values?: Record<string, string[]>;
+  /** directives and keys whose value is a workspace path */
+  paths?: string[];
+}
 
 /** ApiError carries the HTTP status and the decoded JSON body (if any). */
 export class ApiError extends Error {
@@ -47,6 +55,10 @@ export const api = {
   decks: () => call<DeckInfo[]>("GET", "decks"),
   check: (deck: string) => call<Check>("GET", `check?deck=${q(deck)}`),
   rules: () => call<Rules>("GET", "rules"),
+  checkAll: () => call<{ problems: Problem[]; checked: number }>("GET", "checkall"),
+  build: (pdf: boolean) => call<{ code: number; output: string; url: string }>("POST", "build", { pdf }),
+  starter: (kind: Kind, path: string, title: string) =>
+    call<{ created: string[]; open: string }>("POST", "starter", { kind, path, title }),
 };
 
 /** deckURL is the live-rendered page of a deck: "talks/a.md" → "/talks/a.html". */

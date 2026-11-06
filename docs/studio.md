@@ -119,6 +119,33 @@ create. Deck links add or replace `runbook:` in each chosen deck's front matter
 using si's own front-matter rules. The wizard never overwrites: if the target
 file exists it says so and stops.
 
+## Writing help
+
+- **Completion** (Ctrl+Space, or as you type after `<!-- ` or in front matter)
+  knows every directive and front-matter key, each with a one-line help, and
+  their values: layouts, transitions, `type:`, `theme:` (the built-in themes),
+  `navigator:`, `mode:`, `aspect:`, `fonts:` examples, and the alert / badge
+  kinds after a `·`. Directives and keys that take a path (`include`, `svg`,
+  `embed`, `slides`, `code`, `runbook`, `demos`, `logo`, `watermark`,
+  `theme`) offer the workspace's files of the right type, relative to the
+  open file; `embed` and `demos` also offer folders that hold pages. Partials
+  and nav files (`_*.md`) are left out. The help lines live in
+  `internal/studio/rules.go`; a test fails when a directive has none.
+- **New** (the **+** in the navigator, or right-click **New slides, article,
+  guide…**) writes a small starter: slides, article, lab, demo script or site
+  page as one file; a guide, book or site as a folder with its first pages
+  (`internal/studio/starters/`). The name becomes the file or folder name and
+  the title. It never overwrites. A page or folder created inside a guide,
+  book or site is added to the end of its `_nav.md` / `_site.md`, so it is
+  built.
+- **Problems** come from one whole-workspace check (`GET checkall`, the same as
+  `si check <dir>`: a guide, book or site is rendered once, not once per
+  page) plus the open deck's own check for its slide map and minutes.
+- **Build** (top bar) runs `si build` on the workspace into `html/`, with the
+  Studio's `--css`, `--theme` and `--title`, optionally `--pdf`, and shows the
+  command's output with a link to the built index. It calls the CLI's own entry
+  point in-process.
+
 ## Rebuilding the UI
 
 ```bash
@@ -150,6 +177,7 @@ Studio reads a workspace the way `si check` and `si serve` do:
 ## Known limits
 
 - Desktop-only layout; it is not responsive to phone widths.
+- Build runs in the request; a very large workspace (or `--pdf`) keeps the dialog busy until it finishes.
 - The bundle is about 661 KB (`app.js`).
 - Rehearse, Present, Lab, the inspector, the storyboard and the command palette
   (Cmd-K) arrive in later plans.

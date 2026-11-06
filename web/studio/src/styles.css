@@ -208,6 +208,23 @@ code, kbd { font-family: var(--mono); font-size: .92em; }
 .dialog { width: min(440px, calc(100vw - 32px)); padding: 18px 18px 14px; border-radius: 14px; background: var(--pop); border: 1px solid var(--line-2); box-shadow: var(--shadow-pop); animation: pop .15s ease-out; }
 .dialog h2 { margin: 0 0 6px; font-size: 15px; letter-spacing: -.01em; }
 .dialog-body { margin: 0 0 12px; color: var(--mute); }
+.dialog-wide { width: min(640px, calc(100vw - 32px)); }
+.dialog-ok { display: flex; gap: 6px; align-items: center; margin: 0 0 10px; color: var(--green); }
+.dialog-ok a, .dialog-err a { color: var(--accent); }
+.check-row { display: flex; gap: 8px; align-items: center; margin: 0 0 12px; font-size: 13px; }
+.build-log { max-height: 40vh; overflow: auto; margin: 0 0 12px; padding: 10px; border-radius: 8px; background: var(--hover);
+  font: 11.5px/1.5 var(--mono, ui-monospace, monospace); white-space: pre-wrap; }
+.starter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 10px 0 14px; }
+.starter { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; align-items: start; text-align: left; padding: 10px; border-radius: 10px;
+  border: 1px solid var(--line-2); background: transparent; color: var(--fg); cursor: pointer; font: inherit; }
+.starter .ico { grid-row: span 2; width: 18px; height: 18px; margin-top: 1px; }
+.starter b { font-size: 13px; }
+.starter span { font-size: 11.5px; color: var(--mute); line-height: 1.35; }
+.starter:hover { background: var(--hover); }
+.starter.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.starter:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.starter-name { display: grid; gap: 4px; font-size: 12px; color: var(--mute); }
+.starter-name .field { width: 100%; }
 .dialog-err { margin: 8px 0 0; color: var(--red); font-size: 12px; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 .field { width: 100%; height: 34px; padding: 0 10px; border-radius: 8px; background: var(--field); border: 1px solid var(--line-2); font-family: var(--mono); font-size: 12.5px; }

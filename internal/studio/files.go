@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -23,7 +24,11 @@ const (
 
 // api holds the state shared by the studio HTTP handlers.
 type api struct {
-	ws *Workspace
+	ws    *Workspace
+	run   func(args []string, out io.Writer) int // the si CLI, for Build (nil: no Build)
+	css   []string
+	theme string
+	title string
 }
 
 func (a *api) routes(mux *http.ServeMux) {
@@ -33,6 +38,9 @@ func (a *api) routes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE "+apiPrefix+"file", a.deleteFile)
 	mux.HandleFunc("POST "+apiPrefix+"create", a.create)
 	mux.HandleFunc("POST "+apiPrefix+"rename", a.rename)
+	mux.HandleFunc("POST "+apiPrefix+"starter", a.starter)
+	mux.HandleFunc("GET "+apiPrefix+"checkall", a.checkAll)
+	mux.HandleFunc("POST "+apiPrefix+"build", a.build)
 	mux.HandleFunc("GET "+apiPrefix+"decks", a.decks)
 	mux.HandleFunc("GET "+apiPrefix+"check", a.check)
 	mux.HandleFunc("GET "+apiPrefix+"rules", a.rules)

@@ -1,5 +1,6 @@
 // si-aware Markdown for CodeMirror: directive chips, front-matter keys and
-// completion for directive names, layouts, transitions and front-matter keys.
+// completion for directive names, front-matter keys, their values (layouts,
+// transitions, types, themes, plugin kinds …) and workspace paths.
 import { EditorState, type Extension, type Text } from "@codemirror/state";
 import { Decoration, type DecorationSet, EditorView, MatchDecorator, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import { markdown } from "@codemirror/lang-markdown";
@@ -78,15 +79,63 @@ const frontMatter = ViewPlugin.fromClass(
 const opts = (labels: string[], type: string, detail?: (l: string) => string, apply?: (l: string) => string): Completion[] =>
   labels.map((label) => ({ label, type, detail: detail?.(label), apply: apply?.(label) }));
 
+// The workspace files and the open file, for path completion (set by the app).
+let ws = { files: [] as string[], current: "" };
+export function setCompletionFiles(files: string[], current: string) { ws = { files, current }; }
+
+/** relPath is the path from the folder of `from` to `to` (both workspace-relative). */
+export function relPath(from: string, to: string): string {
+  const a = from.split("/").slice(0, -1), b = to.split("/");
+  let i = 0;
+  while (i < a.length && i < b.length - 1 && a[i] === b[i]) i++;
+  return [...Array(a.length - i).fill(".."), ...b.slice(i)].join("/");
+}
+
+// which files each path-valued directive or key offers
+const pathExt: Record<string, RegExp> = {
+  include: /\.(md|adoc|asciidoc|java|py|go|js|ts|tsx|rb|rs|c|cpp|cs|kt|sh|sql|ya?ml|json|toml|xml|html|css)$/i,
+  svg: /\.svg$/i, embed: /\.(md|adoc)$|\/$/i, slides: /\.(md|adoc)$/i, code: /\.[\w]+$/i, runbook: /\.json$/i,
+  demos: /\.md$|\/$/i, logo: /\.(svg|png|jpe?g|webp|gif)$/i, watermark: /\.(svg|png|jpe?g|webp|gif)$/i, theme: /\.css$/i,
+};
+
+/** pathOptions lists workspace files (and folders, for embed and demos) relative to the open file. */
+function pathOptions(name: string): Completion[] {
+  const ok = pathExt[name];
+  if (!ok) return [];
+  const dirs = new Set<string>();
+  for (const f of ws.files) {
+    if (!/\.(md|adoc)$/i.test(f)) continue; // a folder is offered only when it holds pages
+    const parts = f.split("/");
+    for (let i = 1; i < parts.length; i++) dirs.add(parts.slice(0, i).join("/") + "/");
+  }
+  return [...ws.files, ...dirs]
+    .filter((f) => f !== ws.current && ok.test(f) && !/(^|\/)[._][^/]*$/.test(f) && !/(^|\/)\./.test(f)) // no hidden files, partials or nav files
+    .map((f) => relPath(ws.current, f))
+    .sort()
+    .map((label) => ({ label, type: label.endsWith("/") ? "namespace" : "file" }));
+}
+
+/** valueOptions: what can follow `name:` (a directive or a front-matter key). */
+function valueOptions(rules: Rules, name: string, typed: string): Completion[] {
+  if (name === "layout") return opts(rules.layouts, "enum");
+  if (name === "transition") return opts(rules.transitions, "enum");
+  if ((name === "alert" || name === "badge") && /·\s*[\w]*$/.test(typed)) return opts(rules.values?.kinds ?? [], "enum");
+  const vals = rules.values?.[name];
+  if (vals) return opts(vals, "enum");
+  if (rules.paths?.includes(name)) return pathOptions(name);
+  return [];
+}
+
 export function siCompletions(rules: Rules) {
   const names = Object.keys(rules.directives).sort();
   return (ctx: CompletionContext): CompletionResult | null => {
     const line = ctx.state.doc.lineAt(ctx.pos);
     const before = line.text.slice(0, ctx.pos - line.from);
-    let m = /<!--\s*(layout|transition)\s*:\s*([\w-]*)$/.exec(before);
-    if (m) {
-      const list = m[1] === "layout" ? rules.layouts : rules.transitions;
-      return { from: ctx.pos - m[2].length, options: opts(list, "enum"), validFor: /^[\w-]*$/ };
+    let m = /<!--\s*([\w-]+)\s*:(.*?)([^\s·,]*)$/.exec(before);
+    if (m && rules.directives[m[1]] && !(m[2] + m[3]).includes("-->")) {
+      const options = valueOptions(rules, m[1], m[2] + m[3]);
+      if (options.length) return { from: ctx.pos - m[3].length, options, validFor: /^[^\s·,]*$/ };
+      return null;
     }
     m = /<!--\s*([\w-]*)$/.exec(before);
     if (m) {
@@ -95,7 +144,7 @@ export function siCompletions(rules: Rules) {
       return {
         from: ctx.pos - m[1].length,
         options: names.map((n) => ({
-          label: n, type: "keyword", detail: rules.directives[n],
+          label: n, type: "keyword", detail: rules.help?.[n] ?? rules.directives[n],
           apply: closes ? `${n}: ` : (view: EditorView, _c: Completion, from: number, to: number) => {
             view.dispatch({ changes: { from, to, insert: `${n}:  -->` }, selection: { anchor: from + n.length + 2 } });
           },
@@ -104,11 +153,14 @@ export function siCompletions(rules: Rules) {
       };
     }
     if (inFrontMatter(ctx.state.doc, line.number)) {
-      m = /^transition\s*:\s*([\w-]*)$/.exec(before);
-      if (m) return { from: ctx.pos - m[1].length, options: opts(rules.transitions, "enum"), validFor: /^[\w-]*$/ };
+      m = /^([\w-]+)\s*:(.*?)([^\s,]*)$/.exec(before);
+      if (m) {
+        const options = valueOptions(rules, m[1], m[2] + m[3]);
+        return options.length ? { from: ctx.pos - m[3].length, options, validFor: /^[^\s,]*$/ } : null;
+      }
       m = /^([\w-]*)$/.exec(before);
       if (m && (m[1] || ctx.explicit))
-        return { from: line.from, options: opts(rules.metaKeys, "property", () => "front matter", (k) => `${k}: `), validFor: /^[\w-]*$/ };
+        return { from: line.from, options: opts(rules.metaKeys, "property", (k) => rules.help?.[k] ?? "front matter", (k) => `${k}: `), validFor: /^[\w-]*$/ };
     }
     return null;
   };

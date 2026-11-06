@@ -5,7 +5,15 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-05)
 
-- **Latest release: v1.2.0** (tagged; the release workflow publishes it).
+- **Latest release: v1.3.0** (tagged; the release workflow publishes it).
+- **v1.3.0: Studio S2 (writing).** Completion for every directive/key with help,
+  values and workspace paths (`rules.go` help/values/paths; `si-lang.ts`
+  `valueOptions`, `pathOptions`, `setCompletionFiles`). **New** dialog
+  (`new-dialog.tsx`) + `POST starter` (`starters.go`, `starters/`): eight
+  starters, never overwrite, auto-link into the enclosing `_nav.md`/`_site.md`.
+  `GET checkall` (one pass like `si check <dir>`) replaces one check per deck on
+  refresh; `POST build` runs the CLI in-process (`studio.Options.Run`) into
+  `html/` (`build-dialog.tsx`). Next: S3 modes (Rehearse, Present, Lab) and ⌘K.
 - **v1.2.0: Studio S1 (documents in `si --web`).** `internal/studio/kinds.go`:
   `guides` cache, `parsePage` (guide defaults like serve), `pageKind`, `guideKind`.
   Tree nodes carry kinds (article, guide, book, demo, site, page, nav) and `guide`

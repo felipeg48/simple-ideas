@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"io"
 	"io/fs"
 	"net"
 	"net/http"
@@ -16,6 +17,8 @@ import (
 type Options struct {
 	CSS                             []string
 	Theme, Conf, Title, Token, Addr string
+	// Run runs an si command line (the CLI's own entry point), for Build.
+	Run func(args []string, out io.Writer) int
 }
 
 // Studio is the editor backend: API, UI and the deck server behind one gateway.
@@ -37,7 +40,7 @@ func New(dir string, opt Options) (*Studio, error) {
 	srv.Dev, srv.Terminal, srv.Title = true, true, opt.Title
 
 	mux := http.NewServeMux()
-	(&api{ws: ws}).routes(mux)
+	(&api{ws: ws, run: opt.Run, css: opt.CSS, theme: opt.Theme, title: opt.Title}).routes(mux)
 	mux.Handle(assetsPrefix, http.StripPrefix("/_si/studio/", http.FileServerFS(assets.StudioFS)))
 	index, err := fs.ReadFile(assets.StudioFS, "index.html")
 	if err != nil {

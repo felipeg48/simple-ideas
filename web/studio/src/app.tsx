@@ -2,6 +2,8 @@
 // live preview, problems panel and status bar.
 import type { JSX } from "preact";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { setCompletionFiles } from "./si-lang";
+import { BuildDialog } from "./build-dialog";
 import { ApiError, api, type Check, type DeckInfo, type Kind, type Node, type Problem, type Rules, isSlides, kindLabel, pageURL } from "./api";
 import { clear, scoped } from "./buffers";
 import { type DocStatus, Editor, type EditorCtl, setRbView, unsaved } from "./editor";
@@ -15,6 +17,7 @@ import { type ThemeMode, applyTheme, storedTheme } from "./theme";
 
 type CheckResult = Check | { error: string };
 const isCheck = (c: CheckResult | undefined): c is Check => !!c && !("error" in c);
+const WORKSPACE = "*workspace"; // the checks key of the whole-workspace pass
 
 const extKind = (path: string): Kind => {
   const e = path.split(".").pop()!.toLowerCase();
@@ -93,6 +96,7 @@ export function App() {
   const [rules, setRules] = useState<Rules | null>(null);
   const [ready, setReady] = useState(false);
   const [checks, setChecks] = useState<Record<string, CheckResult>>({});
+  const deckRef = useRef<string | null>(null);
   const saved = useMemo(() => load(scoped("si-studio-tabs"), { tabs: [] as string[], active: null as string | null }), []);
   const [tabs, setTabs] = useState<string[]>(saved.tabs);
   const [active, setActive] = useState<string | null>(saved.active);
@@ -119,9 +123,16 @@ export function App() {
       setTree(t);
       setDecks(ds);
       setOffline(false);
-      const cs = await Promise.all(ds.map((d) =>
-        api.check(d.path).then((c): [string, CheckResult] => [d.path, c], (e): [string, CheckResult] => [d.path, { error: (e as Error).message }])));
-      setChecks(Object.fromEntries(cs));
+      // one pass over the workspace for problems (a guide, book or site is rendered
+      // once, not once per page), plus the open deck's own check for its slide map
+      const one = (p: string) => api.check(p).then((c): CheckResult => c, (e): CheckResult => ({ error: (e as Error).message }));
+      const cur = deckRef.current && ds.some((d) => d.path === deckRef.current) ? deckRef.current : ds[0]?.path;
+      const [all, c] = await Promise.all([
+        api.checkAll().then((a): CheckResult => ({ problems: a.problems, slides: [], minutes: 0, steps: 0, canvases: 0 }),
+          (e): CheckResult => ({ error: (e as Error).message })),
+        cur ? one(cur) : Promise.resolve(null),
+      ]);
+      setChecks(cur && c ? { [WORKSPACE]: all, [cur]: c } : { [WORKSPACE]: all });
     } catch {
       setOffline(true);
     }
@@ -161,6 +172,9 @@ export function App() {
     setMissing((m) => (m.size === r.missing.length && r.missing.every((p) => m.has(p)) ? m : new Set(r.missing)));
   }, [tree]);
 
+  // path completion offers the workspace files, relative to the open file
+  useEffect(() => setCompletionFiles([...nodes.values()].filter((n) => n.kind !== "dir").map((n) => n.path), active ?? ""), [nodes, active]);
+
   // the preview follows the deck that owns the open file
   useEffect(() => {
     const d = active && decks.find((d) => d.files.includes(active));
@@ -176,6 +190,14 @@ export function App() {
     return () => removeEventListener("keydown", key);
   }, []);
 
+  // the open deck's own check (slides, minutes) when the preview moves to another deck
+  useEffect(() => {
+    deckRef.current = deckPath;
+    if (!deckPath || checks[deckPath]) return;
+    api.check(deckPath).then((c) => setChecks((cs) => ({ ...cs, [deckPath]: c })),
+      (e) => setChecks((cs) => ({ ...cs, [deckPath]: { error: (e as Error).message } })));
+  }, [deckPath]);
+
   const deck = decks.find((d) => d.path === deckPath) || null;
   const check = deckPath && isCheck(checks[deckPath]) ? (checks[deckPath] as Check) : null;
   // documents have parts, not slides: only a deck follows the cursor slide by slide
@@ -183,7 +205,7 @@ export function App() {
   const { problems, errors } = useMemo(() => {
     const seen = new Set<string>(), problems: Problem[] = [], errors: string[] = [];
     for (const [d, c] of Object.entries(checks)) {
-      if (!isCheck(c)) { errors.push(`${d}: ${c.error}`); continue; }
+      if (!isCheck(c)) { errors.push(`${d === WORKSPACE ? "Workspace check" : d}: ${c.error}`); continue; }
       for (const q of c.problems) {
         const k = `${q.file}:${q.line}:${q.msg}`;
         if (!seen.has(k)) { seen.add(k); problems.push(q); }
@@ -235,6 +257,12 @@ export function App() {
     try { await api.create(path, dir); } catch (e) { throw new Error(why(e, "create")); }
     await refresh();
     if (!dir) open(path);
+  };
+  const onStarter = async (kind: Kind, path: string, title: string) => {
+    let r;
+    try { r = await api.starter(kind, path, title); } catch (e) { throw new Error(why(e, "create")); }
+    await refresh();
+    open(r.open);
   };
   // a runbook made by the generator opens in the Visual view
   const onRunbook = async (path: string) => {
@@ -295,6 +323,9 @@ export function App() {
             onClick={() => { const t = nextTheme[theme]; setTheme(t); applyTheme(t); }}>
             <Icon name={theme === "system" ? "system" : theme === "light" ? "sun" : "moon"} />
           </button>
+          <button class="btn" title="Build the folder to self-contained HTML" onClick={() => setDialog(<BuildDialog onClose={() => setDialog(null)} />)}>
+            <Icon name="braces" />Build
+          </button>
           <a class={"btn btn-pri" + (deck ? "" : " disabled")} aria-disabled={!deck}
             href={deck ? pageURL(deck) + (slide ? "#" + slide : "") : undefined} target="_blank" rel="noopener"
             title={deck ? (isSlides(deck.kind) ? `Play ${deck.title} in a new tab` : `Open ${deck.title} in a new tab`) : "Nothing to play"}>
@@ -305,7 +336,7 @@ export function App() {
 
       <div class="body" style={{ gridTemplateColumns: cols }}>
         <Navigator tree={tree} decks={decks} active={active} dirty={dirty} onOpen={(n) => open(n.path)}
-          onCreate={onCreate} onRename={onRename} onDelete={onDelete} onRunbook={onRunbook} />
+          onCreate={onCreate} onRename={onRename} onDelete={onDelete} onRunbook={onRunbook} onStarter={onStarter} />
         <Split label="Resize navigator" onMove={(dx) => setLayout((l) => ({ ...l, nav: Math.min(480, Math.max(180, l.nav + dx)) }))} />
         <div class={"work" + (problemsOpen ? " with-problems" : "")}>
           <div class="panes" ref={panes} style={{ gridTemplateColumns: paneCols }}>

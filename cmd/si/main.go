@@ -40,7 +40,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/studio"
 )
 
-const version = "1.2.0"
+const version = "1.3.0"
 
 // Exit codes.
 const (
@@ -758,7 +758,8 @@ func web(dir string, o *options, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	tok := studio.NewToken()
-	st, err := studio.New(dir, studio.Options{CSS: o.css, Theme: o.theme, Conf: o.conf, Title: o.title, Token: tok, Addr: ln.Addr().String()})
+	st, err := studio.New(dir, studio.Options{CSS: o.css, Theme: o.theme, Conf: o.conf, Title: o.title, Token: tok, Addr: ln.Addr().String(),
+		Run: func(args []string, out io.Writer) int { return run(args, out, out) }})
 	if err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
 		return exitProblems

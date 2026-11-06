@@ -14,6 +14,7 @@ type fx struct {
 	t    *testing.T
 	root string
 	mux  *http.ServeMux
+	api  *api
 }
 
 func newFx(t *testing.T) *fx {
@@ -23,8 +24,9 @@ func newFx(t *testing.T) *fx {
 		t.Fatal(err)
 	}
 	mux := http.NewServeMux()
-	(&api{ws: w}).routes(mux)
-	return &fx{t, w.Root, mux}
+	a := &api{ws: w}
+	a.routes(mux)
+	return &fx{t, w.Root, mux, a}
 }
 
 func (f *fx) do(method, url string, body any) (int, map[string]any) {
