@@ -5,7 +5,15 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-05)
 
-- **Latest release: v1.6.3.** `<!-- cards -->` (`render/cards.go`, a pass in
+- **Latest release: v1.7.0: si in the terminal.** `internal/tui` (Bubble Tea v2 +
+  Lip Gloss v2): `si play deck.md --terminal` (every layout, builds, block-letter
+  titles, code/tables/cards/badges/logos, half-block images, stage diagrams; live
+  reload; keys like the browser), `--notes` (teleprompter in a second terminal over a
+  Unix socket: script with [CLICK] badges, timers and pace, NOW/NEXT, auto-scroll),
+  `--dump N --size WxH`. QA: dumps converted to HTML and screenshotted; a pty driver
+  ran presenter + teleprompter together. Plan: 1.8 `si --terminal` Studio, 1.9 Lab,
+  1.10 real pictures (Kitty/iTerm2) and a teleprompter for a browser deck.
+- **v1.6.3.** `<!-- cards -->` (`render/cards.go`, a pass in
   `codeFeatures` so slides and documents share it; card class `.si-cell` because
   `.si-card` is the index tile), `si fix [--write]` (`deck.FixComponents`), `si new
   <name> --type …` (`studio.WriteStarter`, shared with the Studio), Studio titles drop

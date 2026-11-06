@@ -1,0 +1,26 @@
+package render
+
+import (
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/extension"
+)
+
+// What other front ends (the terminal renderer in internal/tui) share with
+// the HTML renderer: the same markdown dialect and the same highlighter.
+
+// KindHighlight is the AST node kind of a ==highlight==.
+var KindHighlight = kindHighlight
+
+// NewParser is si's markdown dialect (GFM plus ==highlight==) for walking the
+// AST; its HTML renderer is not si's.
+func NewParser() goldmark.Markdown {
+	return goldmark.New(goldmark.WithExtensions(extension.GFM, highlightExt{}))
+}
+
+// Highlight is si's code highlighter: HTML with <span class="si-tk-KIND"> tokens
+// (c comment, s string, k keyword, n number, f function, v variable, m meta, y type).
+func Highlight(code, lang string) string { return highlight(code, lang) }
+
+// TextOf is the plain text under a node.
+func TextOf(n ast.Node, src []byte) string { return textOf(n, src) }

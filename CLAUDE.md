@@ -62,6 +62,10 @@ what you chose.
    `make studio-e2e`, never for go build/test. The Studio assets are served only
    by `si --web` (loopback only), never in a built deck, so rule #2 holds too. The
    Go module adds no dependencies. See `docs/studio.md`.
+   **Exception (v1.7.0, the terminal front end only):** `internal/tui` uses
+   the Charm libraries (`charm.land/bubbletea/v2`, `charm.land/lipgloss/v2`, and
+   their `x/ansi`) for `si play --terminal` and, later, `si --terminal`. A built
+   deck never touches them; the HTML renderer stays goldmark-only.
    **Exception (v1.6.0, desktop shell only):** `desktop/` is its own Go module
    (`desktop/go.mod`) with cgo and Objective-C against Apple's Cocoa and WebKit
    frameworks (no third-party code). It bundles `si` and runs `si --web` per
@@ -82,6 +86,7 @@ what you chose.
 | `docs/docs.go` | embeds RULES.md + reference/user-manual.md + agent-rules.md for `si rules` / `si manual` / `si --export agent-rules` (in `docs/` so go:embed can reach them; no `.go` at the repo root) |
 | `examples/` | showcase deck, included appendix, `assets/journey.svg` canvas, media, `css/harbor.css` theme, one example per document type (`article/`, `guide/`, `book/`, `demos/`, `site/`); embedded for `si new` and `--export example --type` |
 | `docs/screenshots/` | headless screenshots referenced by the README |
+| `internal/tui/` | si in the terminal: `slide.go` + `text.go` (the deck as text and colour: layouts, builds, code, tables, cards), `font.go` (block letters), `image.go` (half-block pixels), `palette.go` (theme tokens), `play.go` (`si play --terminal`, `--dump`), `notes.go` (the `--notes` teleprompter), `sync.go` (the local socket between them) |
 | `desktop/` | si Studio.app for macOS: its own module; `main.go` (starts/stops `si --web` per folder), `app_darwin.m` (Cocoa + WebKit windows and menus), `build-mac.sh` (universal bundle + zip, `make desktop-mac`) |
 
 ## Run and test

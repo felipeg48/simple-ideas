@@ -38,9 +38,10 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/render"
 	"github.com/felipeg48/simple-ideas/internal/serve"
 	"github.com/felipeg48/simple-ideas/internal/studio"
+	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "1.6.3"
+const version = "1.7.0"
 
 // Exit codes.
 const (
@@ -52,6 +53,9 @@ const (
 const usage = `si: markdown in, animated fluid HTML slide decks out
 
 Usage:
+  si play <file.md> --terminal [--notes] [--dump N --size WxH]
+        present in the terminal (no browser); --notes is the teleprompter, in a second
+        terminal; --dump prints one slide and exits
   si play <dir|file.md> [--addr 127.0.0.1:7070] [--open] [--css <dir|file.css>]... [--remote[=tp,draw]]
         serve the decks, rendered from markdown on every request, live reload on change
   si serve <dir|file.md> [--addr 127.0.0.1:7070] [--open] [--css <dir|file.css>]...
@@ -158,6 +162,9 @@ type options struct {
 	open, help, ver                              bool
 	noInline, pdf, slides, dev, web, noOpen      bool
 	write                                        bool // si fix --write
+	terminal, notes                              bool // si play --terminal [--notes]; si --terminal
+	dump                                         int  // si play --terminal --dump N
+	size                                         string
 	serveMode                                    bool // si serve: play without the terminal (everything, for readers)
 	offline                                      bool // code: / diff: from the cache only
 	noInstructor                                 bool // si build: leave type: demo scripts out (a participant build)
@@ -188,6 +195,10 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.noInline, "no-inline-media", false, "")
 	fl.BoolVar(&o.pdf, "pdf", false, "")
 	fl.BoolVar(&o.write, "write", false, "")
+	fl.BoolVar(&o.terminal, "terminal", false, "")
+	fl.BoolVar(&o.notes, "notes", false, "")
+	fl.IntVar(&o.dump, "dump", 0, "")
+	fl.StringVar(&o.size, "size", "100x30", "")
 	fl.BoolVar(&o.help, "help", false, "")
 	fl.BoolVar(&o.help, "h", false, "")
 	fl.BoolVar(&o.ver, "version", false, "")
@@ -627,6 +638,9 @@ func checkGuides(guides []*deck.Guide, prior int, stdout, stderr io.Writer) int 
 }
 
 func play(src string, o *options, stdout, stderr io.Writer) int {
+	if o.terminal {
+		return playTerminal(src, o, stdout, stderr)
+	}
 	if _, err := render.LoadCSS(o.css); err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
 		return exitUsage
@@ -1407,6 +1421,33 @@ func fixComponents(paths []string, write bool, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "si fix: %d change(s) written\n", total)
 	default:
 		fmt.Fprintf(stdout, "si fix: %d change(s); run again with --write to apply them\n", total)
+	}
+	return exitOK
+}
+
+// playTerminal presents a deck in the terminal (si play deck.md --terminal),
+// runs its teleprompter (--notes), or prints one slide (--dump N --size WxH).
+func playTerminal(src string, o *options, stdout, stderr io.Writer) int {
+	if fi, err := os.Stat(src); err == nil && fi.IsDir() {
+		return usageErr(stderr, "play --terminal needs a deck file (talk.md), not a folder")
+	}
+	opt := tui.Options{Theme: o.theme, Notes: o.notes}
+	if o.dump > 0 {
+		var w, h int
+		if _, err := fmt.Sscanf(o.size, "%dx%d", &w, &h); err != nil || w < 20 || h < 8 {
+			return usageErr(stderr, "--size wants WIDTHxHEIGHT, at least 20x8 (e.g. 100x30)")
+		}
+		out, err := tui.Dump(src, o.dump, w, h, opt)
+		if err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitProblems
+		}
+		fmt.Fprintln(stdout, out)
+		return exitOK
+	}
+	if err := tui.Play(src, opt); err != nil {
+		fmt.Fprintf(stderr, "si: %v\n", err)
+		return exitProblems
 	}
 	return exitOK
 }

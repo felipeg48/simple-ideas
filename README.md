@@ -53,6 +53,10 @@ self-contained HTML files you can mail, host or open from a USB stick.
   alerts, badges, event countdowns, accordions, modals, image carousels and
   embedding any other document or deck's slides. Still one self-contained
   HTML file per page; `si --export example --type site` (§23).
+- **In the terminal (v1.7):** `si play talk.md --terminal` presents a deck in
+  the terminal itself, in the theme's colours, with block-letter titles, builds,
+  code, tables, cards and pictures in half-block pixels; `--notes` in a second
+  terminal is the teleprompter, following the presenter. Over SSH and in tmux.
 - **si Studio for macOS (v1.6):** the browser editor (`si --web`) as a native
   app: its own windows, Dock icon, folders dropped on it open, teleprompter and
   full screen as app windows. Download `si-Studio-<version>-macos.zip` from a

@@ -880,6 +880,46 @@ See `docs/studio.md`.
 si --web examples --no-open
 ```
 
+### In the terminal
+
+`si play talk.md --terminal` presents the deck in the terminal itself: no
+browser, over SSH, in tmux. Every rule above draws as text and colour from the
+same markdown:
+
+- **The theme's colours** (its dark values, or light with `mode: light`): accent,
+  muted text, the `==highlight==` band, card colours.
+- **Titles of title, section and closing slides** in block letters made of
+  half-block characters (falling back to bold text where a letter has no glyph
+  or a word does not fit); the big number of a `big-number` slide too.
+- **Builds** (`<!-- step -->`, `<!-- steps -->`) reveal one at a time; going back
+  to a slide shows it whole.
+- **Layouts:** columns (`<!-- column -->`, two-col and split with text left and
+  media right) side by side when the terminal is 60 columns or wider, stacked
+  below that; `center`, `quote` and `big-number` centred.
+- **Code** highlighted with si's own highlighter, in a box with its title,
+  `hl=` lines, `linenos` and callouts (❶); **tables** with borders and the
+  column alignment; **cards**, **badges** and **logo lockups** as text.
+- **Images** (PNG, JPEG, GIF) as half-block pixels, two pixels per character;
+  **stage diagrams** as boxes and arrows. SVG images, animated canvases,
+  Mermaid diagrams and video show a labelled placeholder: the browser draws them.
+
+Keys are the browser's: → Space `n` next, ← `p` back, `g` / `G` first and
+last, `o` overview, `t` restart the timer, `?` keys, `q` quit. The deck reloads
+when a file changes, and the slides reflow when the terminal is resized.
+
+`si play talk.md --terminal --notes` in a second terminal (another tmux pane,
+or the laptop screen while the projector shows the first) is the
+teleprompter: it follows the presenter over a local socket and drives it back
+(Space and ← move the slides from the notes). It shows the `Notes:` script with
+the `[CLICK]` cues as badges (done ones ticked, the next one highlighted),
+slide and total timers against the `(N min)` plan with the pace (on time,
+ahead, behind), the clock, and the current and next slide. It scrolls by itself
+(`a` on / off, `+` / `-` speed, ↑ ↓ by hand); Tab switches to the `Points:`.
+Without a presenter it moves on its own.
+
+`si play talk.md --terminal --dump 4 --size 100x30` prints slide 4 with every
+build shown (ANSI colours) and exits: for scripts, READMEs and checks.
+
 ## 15. Styling: themes and your own CSS
 
 - `theme:` picks a built-in theme (`studio`, `paper`, `mono`, `crdb`,
