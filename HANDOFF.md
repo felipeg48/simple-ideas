@@ -5,7 +5,8 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-05)
 
-- **Latest release: v1.6.0** (tagged; the release workflow publishes it, plus
+- **Latest release: v1.6.1** (fix: the deck teleprompter `p` opened window.open(''), which the shell sent to NSWorkspace → "The application can't be opened. -50"; only http(s) pages of other sites leave the app now)
+- **v1.6.0 release:** (tagged; the release workflow publishes it, plus
   `si-Studio-<v>-macos.zip` from a macOS runner).
 - **v1.6.0: si Studio for macOS + storyboard thumbnails.** `desktop/` (own module,
   cgo + Cocoa/WebKit, no Wails): one WKWebView window per folder, each running the

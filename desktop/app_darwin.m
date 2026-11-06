@@ -21,10 +21,13 @@ static NSString *const kLastFolder = @"lastFolder";
 
 static NSMutableArray<SIWindow *> *windows;
 
-// isLocal: a page of a Studio (loopback); anything else opens in the default browser.
-static BOOL isLocal(NSURL *u) {
-	NSString *h = u.host.lowercaseString;
-	return [h isEqualToString:@"127.0.0.1"] || [h isEqualToString:@"localhost"] || [u.scheme isEqualToString:@"about"];
+// isExternal: a web page of another site, which opens in the default browser. Everything
+// else stays in the app: the Studio (loopback), and windows with no address yet, like
+// the teleprompter the deck opens with window.open('') and then writes itself.
+static BOOL isExternal(NSURL *u) {
+	NSString *scheme = u.scheme.lowercaseString, *h = u.host.lowercaseString;
+	if (![scheme isEqualToString:@"http"] && ![scheme isEqualToString:@"https"]) return NO;
+	return !([h isEqualToString:@"127.0.0.1"] || [h isEqualToString:@"localhost"] || [h isEqualToString:@"[::1]"]);
 }
 
 @implementation SIWindow
@@ -59,7 +62,7 @@ static BOOL isLocal(NSURL *u) {
 - (WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)cfg
        forNavigationAction:(WKNavigationAction *)action
             windowFeatures:(WKWindowFeatures *)features {
-	if (!isLocal(action.request.URL)) {
+	if (isExternal(action.request.URL)) {
 		[[NSWorkspace sharedWorkspace] openURL:action.request.URL];
 		return nil;
 	}
@@ -75,7 +78,7 @@ static BOOL isLocal(NSURL *u) {
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)action
     decisionHandler:(void (^)(WKNavigationActionPolicy))decide {
 	NSURL *u = action.request.URL;
-	if (([u.scheme isEqualToString:@"http"] || [u.scheme isEqualToString:@"https"]) && !isLocal(u)) {
+	if (isExternal(u)) {
 		[[NSWorkspace sharedWorkspace] openURL:u];
 		decide(WKNavigationActionPolicyCancel);
 		return;
