@@ -187,6 +187,11 @@ pass. The steps that matter:
 - **Web fonts** (DONE, v1.1.0, `render/fonts.go`): `fonts:` from Google, Bunny,
   Fontshare, Fontsource or a local file, inlined at build time. Next: a
   `fonts-subset:` key for non-latin scripts; fonts in a theme `.css` file.
+- **Screen demo recorder (next big milestone, being refined; do not build
+  yet):** scripted demos of native Mac apps recorded with narration into MP4s,
+  and the same scripts as screen-level tests; a Swift companion app talking to
+  `si` over a local socket. Plan, hard parts, phases and the founder's open
+  questions: `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md`.
 - **Publishing (`si publish`, planned):** Medium is out (no new API tokens).
   LinkedIn via "Share on LinkedIn" (`w_member_social`, one-time loopback OAuth
   login, token ~60 days, stdlib only): a deck becomes a PDF document post
