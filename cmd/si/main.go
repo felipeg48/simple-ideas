@@ -41,7 +41,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "1.9.0"
+const version = "1.10.0"
 
 // Exit codes.
 const (
@@ -1447,7 +1447,7 @@ func playTerminal(src string, o *options, stdout, stderr io.Writer) int {
 	if fi, err := os.Stat(src); err == nil && fi.IsDir() {
 		return usageErr(stderr, "play --terminal needs a deck file (talk.md), not a folder")
 	}
-	opt := tui.Options{Theme: o.theme, Notes: o.notes}
+	opt := tui.Options{Theme: o.theme, Notes: o.notes, Addr: o.addr}
 	if o.dump > 0 {
 		var w, h int
 		if _, err := fmt.Sscanf(o.size, "%dx%d", &w, &h); err != nil || w < 20 || h < 8 {

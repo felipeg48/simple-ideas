@@ -5,7 +5,16 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-05)
 
-- **Latest release: v1.9.0: Lab in `si --terminal`** (`internal/tui/lab.go`):
+- **Latest release: v1.10.0: real pictures and a teleprompter for browser decks.**
+  `tui/pictures.go`: `PictureProtocol()` (env guess, never in tmux; `SI_PICTURES`),
+  reserved cells with a U+E100+n marker, `placements` after rendering, `draw` (Kitty
+  graphics chunks / iTerm2 OSC 1337) sent with `tea.Raw` 80 ms after a cleared frame.
+  `serve/position.go`: `POST /_si/position` (deck.js `announce()` when `cfg.live`),
+  `GET /_si/position/events` (state + cmd events), `POST /_si/position/cmd`
+  (same-origin); `tui` follower `followBrowser`. Tested: unit tests, a headless
+  browser (positions in, `next` moved #2.1→#2.2). Pictures not seen on screen (no
+  graphics terminal here): the sequences are unit-tested.
+- **v1.9.0: Lab in `si --terminal`** (`internal/tui/lab.go`):
   runbook entries + demo shell blocks (`render.DemoFiles`, `render.RunLang`); in tmux a
   shell pane below (`split-window -P`, `send-keys -l`, `x` adds Enter); outside tmux
   `sh -c` output streamed (`labLine` channel pattern), `!` full shell; placeholders

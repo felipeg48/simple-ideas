@@ -645,7 +645,7 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 			timer = map[string]any{"time": t.Times, "unit": t.Unit, "face": t.Face, "animations": names, "animKinds": kinds}
 		}
 	}
-	cfg, _ := json.Marshal(map[string]any{"keys": keys, "features": feats, "timer": timer, "terminal": opt.Terminal, "remote": opt.Remote, "pages": opt.Pages})
+	cfg, _ := json.Marshal(map[string]any{"keys": keys, "features": feats, "timer": timer, "terminal": opt.Terminal, "remote": opt.Remote, "pages": opt.Pages, "live": opt.LiveReload})
 	fmt.Fprintf(&b, "<script>window.SI_CONFIG=%s;</script>\n", cfg)
 	if opt.Remote {
 		b.WriteString(RelayJS)
@@ -762,7 +762,14 @@ func (dr *deckRenderer) reload(b *bytes.Buffer) {
 	} else if dr.opt.LiveReload {
 		b.WriteString(LiveReloadJS)
 	}
+	if dr.opt.Dev || dr.opt.LiveReload {
+		b.WriteString(PositionJS)
+	}
 }
+
+// PositionJS passes a terminal teleprompter's commands (next, prev, go) to the
+// deck: si play / si serve only, like the reload client, never in a built deck.
+const PositionJS = `<script>(function(){if(!window.EventSource||/[?&]si-view=/.test(location.search))return;var es=new EventSource('/_si/position/events?page='+encodeURIComponent(location.pathname));es.addEventListener('cmd',function(e){try{if(window.SI&&SI.cmd)SI.cmd(JSON.parse(e.data))}catch(x){}});})();</script>` + "\n"
 
 const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <span class="si-controls">

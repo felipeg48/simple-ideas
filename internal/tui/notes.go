@@ -54,6 +54,11 @@ func playNotes(path string, opt Options) error {
 	m.mtimes = fileTimes(d)
 	p := tea.NewProgram(m)
 	m.f = follow(SocketPath(path), func(s state, live bool) { p.Send(stateMsg{s, live}) })
+	addr := opt.Addr
+	if addr == "" {
+		addr = "127.0.0.1:7070"
+	}
+	m.f.followBrowser(addr, path)
 	_, err = p.Run()
 	return err
 }

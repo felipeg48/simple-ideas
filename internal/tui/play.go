@@ -18,6 +18,7 @@ import (
 type Options struct {
 	Theme string // --theme; else the deck's theme:
 	Notes bool   // --notes: the teleprompter instead of the slides
+	Addr  string // --notes: the si play server a browser deck is on (default 127.0.0.1:7070)
 }
 
 // Dump prints slide i (1-based) of the deck at w × h with every build step
@@ -59,7 +60,7 @@ func Play(path string, opt Options) error {
 	if err != nil {
 		return err
 	}
-	m := &presenter{path: path, opt: opt, d: d, pal: deckPalette(d, opt), start: time.Now(), slideStart: time.Now()}
+	m := &presenter{path: path, opt: opt, d: d, pal: deckPalette(d, opt), start: time.Now(), slideStart: time.Now(), proto: PictureProtocol()}
 	m.mtimes = fileTimes(d)
 	p := tea.NewProgram(m)
 	hub, err := listen(SocketPath(path), func(c command) { p.Send(c) })
@@ -90,6 +91,20 @@ type presenter struct {
 	msg        string // a reload problem, shown in the bar
 	mtimes     map[string]time.Time
 	hub        *hub
+	proto      string      // real pictures: kitty or iterm ("" draws half blocks)
+	pics       *Pictures   // the pictures of the frame on screen
+	places     []placement // and where they go
+}
+
+type drawPicsMsg struct{}
+
+// redraw schedules the pictures after the new frame is on screen; a cleared
+// screen first, so no picture of the last slide is left behind.
+func (m *presenter) redraw() tea.Cmd {
+	if m.proto == "" {
+		return nil
+	}
+	return tea.Sequence(tea.ClearScreen, tea.Tick(80*time.Millisecond, func(time.Time) tea.Msg { return drawPicsMsg{} }))
 }
 
 func (m *presenter) Init() tea.Cmd { return tick() }
@@ -133,7 +148,20 @@ func (m *presenter) broadcast() {
 }
 
 func (m *presenter) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	before := [3]int{m.i, m.k, m.w*10000 + m.h}
+	model, cmd := m.update(msg)
+	if before != [3]int{m.i, m.k, m.w*10000 + m.h} {
+		cmd = tea.Batch(cmd, m.redraw())
+	}
+	return model, cmd
+}
+
+func (m *presenter) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case drawPicsMsg:
+		if m.pics != nil && m.proto != "" && !m.overview && !m.help {
+			return m, tea.Raw(m.pics.draw(m.places))
+		}
 	case tea.WindowSizeMsg:
 		m.w, m.h = msg.Width, msg.Height
 	case tickMsg:
@@ -212,7 +240,15 @@ func (m *presenter) View() tea.View {
 	case m.help:
 		content = helpView(m.pal, m.w, m.h)
 	default:
-		body, steps := Slide(m.d, m.i, m.k, m.w, m.h-1, m.pal)
+		var pics *Pictures
+		if m.proto != "" {
+			pics = &Pictures{Proto: m.proto}
+		}
+		body, steps := Slide(m.d, m.i, m.k, m.w, m.h-1, m.pal, pics)
+		if pics != nil {
+			body, m.places = pics.placements(body)
+			m.pics = pics
+		}
 		timer := clock(time.Since(m.start))
 		bar := Bar(m.d, m.i, m.k, steps, m.w, timer, m.pal)
 		if m.msg != "" {

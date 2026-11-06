@@ -541,6 +541,14 @@
     return c.outerHTML;
   }
   function announce() {
+    /* si play / si serve: tell the server where we are, for a terminal teleprompter
+       (si play deck.md --terminal --notes); a built deck has no cfg.live */
+    if (cfg.live && !role && cur >= 0) {
+      try {
+        fetch('/_si/position', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page: location.pathname, i: cur, k: step, steps: maxStep(slides[cur]), n: n }) });
+      } catch (e) {}
+    }
     if (!chans.length || cur < 0 || role) return; /* only the deck itself speaks for the deck */
     var s = slides[cur], max = maxStep(s), nx = null, label = 'End of deck';
     if (step < max) { nx = snapshot(s, step + 1); label = 'Next step ' + (step + 1) + '/' + max; }
@@ -566,6 +574,7 @@
     else if (m.cmd === 'first') go(0, 0);
     else if (m.cmd === 'last') go(n - 1, 'end');
     else if (m.cmd === 'hello') announce();
+    else if (m.cmd === 'go' && typeof m.i === 'number') go(m.i, 0);
   }
   chans.forEach(function (c) { c.onmessage = onMsg; });
   function presenterDoc(relay) {
@@ -963,5 +972,7 @@
       go(cur, step, true);
     }
   }
-  window.SI = { go: go, next: forward, prev: backward, overview: overview, mode: toggleMode, refresh: refresh, run: runCmd };
+  window.SI = { go: go, next: forward, prev: backward, overview: overview, mode: toggleMode, refresh: refresh, run: runCmd,
+    /* a command from outside (a terminal teleprompter, through si play's PositionJS) */
+    cmd: function (c) { if (!role) onMsg({ data: Object.assign({ type: 'cmd' }, c) }); } };
 })();

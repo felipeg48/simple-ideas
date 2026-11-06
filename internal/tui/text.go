@@ -31,9 +31,10 @@ type textRenderer struct {
 	pal   Palette
 	dir   string // base for images
 	w     int
-	maxH  int // tallest an image may be (rows)
-	k     int // build steps shown: a block of step n shows when n <= k
-	steps int // build steps counted so far
+	maxH  int       // tallest an image may be (rows)
+	k     int       // build steps shown: a block of step n shows when n <= k
+	steps int       // build steps counted so far
+	pics  *Pictures // real pictures (Kitty / iTerm2), nil for half blocks
 	src   []byte
 }
 

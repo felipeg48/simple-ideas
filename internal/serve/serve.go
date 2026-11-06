@@ -24,14 +24,15 @@ import (
 
 // Server renders the decks under Root (a directory or one .md file).
 type Server struct {
-	Root     string   // directory or deck file
-	CSSPaths []string // user CSS files or directories (--css)
-	Theme    string   // --theme override; empty keeps each deck's theme: front matter
-	Conf     string   // --conf path; empty falls back to si.conf next to the deck
-	Terminal bool     // enable the play terminal drawer; set only on a loopback address
-	Dev      bool     // --dev: in-place hot reload instead of full-page reload
-	Remote   bool     // --remote: decks join the relay (see remote.go)
-	Title    string   // --title / --site: the index page title; empty uses the directory name
+	pos      *positions // where each deck open in a browser is (position.go)
+	Root     string     // directory or deck file
+	CSSPaths []string   // user CSS files or directories (--css)
+	Theme    string     // --theme override; empty keeps each deck's theme: front matter
+	Conf     string     // --conf path; empty falls back to si.conf next to the deck
+	Terminal bool       // enable the play terminal drawer; set only on a loopback address
+	Dev      bool       // --dev: in-place hot reload instead of full-page reload
+	Remote   bool       // --remote: decks join the relay (see remote.go)
+	Title    string     // --title / --site: the index page title; empty uses the directory name
 	Interval time.Duration
 
 	dir     string
@@ -67,6 +68,12 @@ func New(root string, css []string, theme, conf string) (*Server, error) {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/_si/events", s.events)
+	if s.pos == nil {
+		s.pos = newPositions()
+	}
+	mux.HandleFunc("POST /_si/position", s.pos.post)
+	mux.HandleFunc("POST /_si/position/cmd", s.pos.command)
+	mux.HandleFunc("GET /_si/position/events", s.pos.events)
 	if s.Remote {
 		mux.HandleFunc("GET /_si/remote/events", s.relay.events)
 		mux.HandleFunc("POST /_si/remote/send", s.relay.send)

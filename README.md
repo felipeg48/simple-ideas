@@ -61,7 +61,8 @@ self-contained HTML files you can mail, host or open from a USB stick.
   preview, problems, New, Build, storyboard, inspector, Rehearse and Present,
   editing in your `$EDITOR`; and Lab (v1.9): the slide, the deck's runbook and demo
   commands, and a shell (a tmux pane, or output streamed in place). See
-  `docs/terminal-studio.md`.
+  `docs/terminal-studio.md`. Since v1.10 pictures are real pictures in Kitty,
+  Ghostty, WezTerm and iTerm2, and `--notes` also follows a deck open in a browser.
 - **si Studio for macOS (v1.6):** the browser editor (`si --web`) as a native
   app: its own windows, Dock icon, folders dropped on it open, teleprompter and
   full screen as app windows. Download `si-Studio-<version>-macos.zip` from a

@@ -40,6 +40,13 @@ func (r *textRenderer) image(src, alt string) []string {
 		cols = max(4, ph*b.Dx()/max(1, b.Dy()))
 	}
 	rows := (ph + 1) / 2
+	if r.pics != nil && r.pics.Proto != "" { // the terminal draws the real picture into this block
+		out := r.pics.reserve(img, cols, rows)
+		if alt != "" {
+			out = append(out, r.st().Foreground(r.pal.Muted).Italic(true).Render(alt))
+		}
+		return out
+	}
 	// box-sample the source into cols × ph pixels
 	sample := func(x, y int) (uint32, uint32, uint32) {
 		x0, x1 := b.Min.X+x*b.Dx()/cols, b.Min.X+(x+1)*b.Dx()/cols

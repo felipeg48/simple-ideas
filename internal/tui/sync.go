@@ -2,9 +2,13 @@ package tui
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"net"
+	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -108,6 +112,8 @@ type follower struct {
 	onState func(state, bool) // the state, and whether the presenter is there
 	mu      sync.Mutex
 	conn    net.Conn
+	// a deck in a browser (si play / si serve at base): its page, once it reports
+	base, page string
 }
 
 func follow(path string, onState func(state, bool)) *follower {
@@ -116,7 +122,12 @@ func follow(path string, onState func(state, bool)) *follower {
 		for {
 			c, err := net.Dial("unix", path)
 			if err != nil {
-				onState(state{}, false)
+				f.mu.Lock()
+				browser := f.page != ""
+				f.mu.Unlock()
+				if !browser { // following a browser deck is being connected too
+					onState(state{}, false)
+				}
 				time.Sleep(time.Second)
 				continue
 			}
@@ -145,10 +156,64 @@ func follow(path string, onState func(state, bool)) *follower {
 func (f *follower) send(c command) bool {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.conn == nil && f.page != "" { // the browser deck, through the play server
+		body, _ := json.Marshal(map[string]any{"page": f.page, "cmd": c.Cmd, "i": c.I})
+		resp, err := http.Post(f.base+"/_si/position/cmd", "application/json", bytes.NewReader(body))
+		if err == nil {
+			resp.Body.Close()
+		}
+		return err == nil
+	}
 	if f.conn == nil {
 		return false
 	}
 	b, _ := json.Marshal(c)
 	_, err := f.conn.Write(append(b, '\n'))
 	return err == nil
+}
+
+// followBrowser follows a deck open in a browser through the si play (or si
+// serve) server at addr: the page whose path ends in /name.html, where name is
+// the deck file's name.
+func (f *follower) followBrowser(addr, deckFile string) {
+	f.base = "http://" + addr
+	want := "/" + strings.TrimSuffix(filepath.Base(deckFile), filepath.Ext(deckFile)) + ".html"
+	go func() {
+		for {
+			resp, err := http.Get(f.base + "/_si/position/events")
+			if err != nil || resp.StatusCode != http.StatusOK {
+				if resp != nil {
+					resp.Body.Close()
+				}
+				time.Sleep(2 * time.Second)
+				continue
+			}
+			sc := bufio.NewScanner(resp.Body)
+			event := ""
+			for sc.Scan() {
+				line := sc.Text()
+				switch {
+				case strings.HasPrefix(line, "event: "):
+					event = strings.TrimPrefix(line, "event: ")
+				case strings.HasPrefix(line, "data: ") && event == "state":
+					var p struct {
+						Page        string
+						I, K, Steps int
+						N           int
+					}
+					if json.Unmarshal([]byte(strings.TrimPrefix(line, "data: ")), &p) == nil && strings.HasSuffix(p.Page, want) {
+						f.mu.Lock()
+						f.page = p.Page
+						socket := f.conn != nil
+						f.mu.Unlock()
+						if !socket { // a terminal presenter, when there is one, wins
+							f.onState(state{I: p.I, K: p.K, Steps: p.Steps, N: p.N}, true)
+						}
+					}
+				}
+			}
+			resp.Body.Close()
+			time.Sleep(time.Second)
+		}
+	}()
 }

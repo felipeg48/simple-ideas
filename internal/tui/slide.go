@@ -13,7 +13,7 @@ import (
 // Slide renders slide i of d with k build steps shown into w × h cells (the
 // bar under it is not part of it). It also returns the slide's number of
 // build steps.
-func Slide(d *deck.Deck, i, k, w, h int, pal Palette) (string, int) {
+func Slide(d *deck.Deck, i, k, w, h int, pal Palette, pics ...*Pictures) (string, int) {
 	if i < 0 || i >= len(d.Slides) || w < 10 || h < 3 {
 		return "", 0
 	}
@@ -21,6 +21,9 @@ func Slide(d *deck.Deck, i, k, w, h int, pal Palette) (string, int) {
 	px := max(2, w/16) // side margin
 	cw := w - 2*px
 	r := &textRenderer{pal: pal, dir: s.Dir, w: cw, maxH: max(4, h-8), k: k}
+	if len(pics) > 0 {
+		r.pics = pics[0]
+	}
 	st := r.st()
 
 	var head []string
@@ -66,7 +69,7 @@ func Slide(d *deck.Deck, i, k, w, h int, pal Palette) (string, int) {
 	// hanging indent and boxes their borders
 	if n := columnCount(blocks, s.Layout); n > 1 && cw >= 60 {
 		colW := (cw - 4*(n-1)) / n
-		cr := &textRenderer{pal: pal, dir: s.Dir, w: colW, maxH: max(4, h-8), k: k}
+		cr := &textRenderer{pal: pal, dir: s.Dir, w: colW, maxH: max(4, h-8), k: k, pics: r.pics}
 		blocks = cr.body(s.Body)
 		if cover {
 			var rest []blk

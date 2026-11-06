@@ -1,6 +1,9 @@
 package tui
 
 import (
+	"bufio"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -10,6 +13,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/felipeg48/simple-ideas/internal/deck"
+	"github.com/felipeg48/simple-ideas/internal/serve"
 )
 
 var escRE = regexp.MustCompile("\x1b\\[[0-9;]*m|\x1b\\]8;[^\x07\x1b]*(\x07|\x1b\\\\)")
@@ -198,4 +202,51 @@ func TestSocketSync(t *testing.T) {
 	if c := <-cmds; c.Cmd != "next" {
 		t.Errorf("command %v", c)
 	}
+}
+
+func TestTeleprompterFollowsABrowserDeck(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "talk.md"), []byte(talk), 0o644)
+	srv, err := serve.New(dir, nil, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ts := httptest.NewServer(srv.Handler())
+	defer func() { ts.CloseClientConnections(); ts.Close() }() // the follower's stream never ends on its own
+	addr := strings.TrimPrefix(ts.URL, "http://")
+	got := make(chan state, 8)
+	f := &follower{onState: func(s state, live bool) {
+		if live {
+			got <- s
+		}
+	}}
+	f.followBrowser(addr, filepath.Join(dir, "talk.md"))
+	time.Sleep(200 * time.Millisecond)
+	// the deck in the browser reports where it is
+	http.Post(ts.URL+"/_si/position", "application/json", strings.NewReader(`{"page":"/talk.html","i":1,"k":1,"steps":2,"n":3}`))
+	select {
+	case s := <-got:
+		if s.I != 1 || s.K != 1 {
+			t.Errorf("state %+v", s)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("the teleprompter never heard the browser deck")
+	}
+	// and the teleprompter's next reaches the deck's stream as a cmd event
+	resp, err := http.Get(ts.URL + "/_si/position/events?page=/talk.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if !f.send(command{Cmd: "next"}) {
+		t.Fatal("send failed")
+	}
+	sc := bufio.NewScanner(resp.Body)
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) && sc.Scan() {
+		if strings.Contains(sc.Text(), `"cmd":"next"`) {
+			return
+		}
+	}
+	t.Error("the deck never got next")
 }

@@ -30,7 +30,20 @@ The deck reloads when a file changes; resize the terminal and the slide reflows.
 In a second terminal: the `Notes:` script, `[CLICK]` cues as badges, timers
 with pace, NOW / NEXT, auto-scroll (`a`, `+` `-`), `Tab` for the `Points:`.
 It follows the presenter over a Unix socket (`$TMPDIR/si-<hash>.sock`, one per
-deck) and Space / ← drive it back.
+deck) and Space / ← drive it back. With no terminal presenter it follows the
+same deck open in a browser through the `si play` server (`--addr`, default
+`127.0.0.1:7070`): the page reports its position (`POST /_si/position`), the
+teleprompter listens (`GET /_si/position/events`) and sends `next` / `prev` /
+`go` back (`POST /_si/position/cmd`, same-origin only). Built decks never report.
+
+## Pictures
+
+Real pictures where the terminal can draw them (Kitty, Ghostty, WezTerm: Kitty
+graphics; iTerm2, WezTerm: inline images), half-block pixels elsewhere and
+inside tmux. The slide reserves the picture's cells with a private-use marker;
+after the frame is on screen the presenter writes the picture there
+(`tea.Raw`), clearing the screen on each slide change so nothing is left
+behind. `SI_PICTURES=kitty|iterm|halfblock` overrides the guess.
 
 ## Studio: `si --terminal [dir]`
 
