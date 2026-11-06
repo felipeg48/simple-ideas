@@ -473,7 +473,7 @@ static HTML (`file://`), and either window drives both. It has two tabs:
 | Notes only | `x` hides the previews, the prompt fills the window |
 | Previews | the current slide (with its step state) and the next step or slide |
 | Clocks | time on this slide against its `(N min)` (amber when over, red at 1.5×), total against the deck plan, ahead/behind pace, wall clock |
-| Rehearsal | the time you spent on each slide is recorded per run; next to the slide clock it shows `last M:SS` — your previous run's time for this slide, to pace against |
+| Rehearsal | the time you spent on each slide is recorded per run; next to the slide clock it shows `last M:SS` — your previous run's time for this slide, to pace against; and the whole talk against it: `vs last run 0:40 behind` (works without any `(N min)` plan) |
 | Timer | `t` pause/resume, `0` reset (promotes this run to the `last` reference and starts fresh) |
 | Navigation | → ← Space PgDn PgUp Home End, buttons |
 
@@ -485,7 +485,7 @@ second listener on your network, next to the loopback one, and prints one
 keyed URL and QR code per role:
 
 ```bash
-si play talk.md --remote                    # both roles
+si play talk.md --remote                    # every role
 si play talk.md --remote=tp                 # teleprompter only
 si play talk.md --remote --remote-addr 0.0.0.0:9000
 ```
@@ -494,6 +494,7 @@ si play talk.md --remote --remote-addr 0.0.0.0:9000
 |---|---|---|
 | `tp` | the teleprompter above: script, tabs, auto-scroll, clocks, previews, mirror | Prev / Next, keys |
 | `draw` | the current slide with the pen always on (Apple Pencil pressure works); Prev / Next in the pen bar | the strokes appear on the projected slide live; Prev / Next |
+| `clicker` | a phone remote: big Next and Prev, the slide and step (`2 / 22 · step 1/4`), its title, what comes next, and a stopwatch (tap it to reset) | Prev / Next |
 
 - The deck on the laptop stays on `127.0.0.1`, so the terminal drawer keeps
   working. The remote listener (default: every interface, the play port + 1)

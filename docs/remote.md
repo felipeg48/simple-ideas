@@ -1,11 +1,11 @@
-# Remote: teleprompter and draw pad on another device
+# Remote: teleprompter, draw pad and clicker on another device
 
 `si play --remote` lets a tablet or phone on the same network act as the
-teleprompter (`tp`) or as a pen pad (`draw`) for the deck you project from
-the laptop.
+teleprompter (`tp`), as a pen pad (`draw`) or as a clicker (`clicker`) for the
+deck you project from the laptop.
 
 ```bash
-si play talk.md --remote            # tp + draw, LAN port = play port + 1
+si play talk.md --remote            # tp + draw + clicker, LAN port = play port + 1
 si play talk.md --remote=tp         # only the teleprompter
 si play decks/ --remote --remote-addr 0.0.0.0:9000
 ```
@@ -39,7 +39,9 @@ Scan it on the iPad; open the deck on the laptop as usual
 - **Pages**: the same deck HTML. `?role=tp` replaces the page with the
   teleprompter (the same `presenter.html`, with the relay instead of
   BroadcastChannel); `?role=draw` follows the deck's state, keeps the pen on
-  and turns Prev / Next into commands.
+  and turns Prev / Next into commands; `?role=clicker` covers the slide with
+  big Next / Prev buttons that send commands and shows the deck's state
+  (position, title, the next label) and a stopwatch.
 - **Transport code** (`window.SI_RELAY`, `render.RelayJS`) is injected only by
   `si play --remote`, like the live-reload client. A built deck contains none
   of it, and the local presenter window keeps using BroadcastChannel (so it

@@ -64,6 +64,7 @@ body{overflow:hidden;height:100%}
       <span id="slideclock">slide <strong id="slideel">00:00</strong> <span id="slideplan"></span> <span id="rehearse" class="pv-rehearse"></span></span>
       <span id="totalclock">total <strong id="elapsed">00:00</strong> <span id="planned"></span></span>
       <span class="pace" id="pace"></span>
+      <span class="pace" id="lastpace"></span>
       <span>clock <strong id="clock"></strong></span>
     </span></div>
   <div class="pv-prompt" id="prompt"><div class="pv-prompt-head"><div class="pv-tabs"><button class="pv-tab" id="tab-tele" aria-pressed="true" title="Verbatim script (1)">Teleprompter</button><button class="pv-tab" id="tab-notes" aria-pressed="false" title="Talking points (2)">Speaker Notes</button></div><span id="nmins"></span><span id="scrollstate"></span></div><div class="pv-notes" id="notes"></div><div class="pv-points" id="points" hidden></div></div>
@@ -155,6 +156,10 @@ body{overflow:hidden;height:100%}
     var d = new Date(); $('clock').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
     var prev = cur >= 0 ? prevSpent[cur] : 0;
     $('rehearse').textContent = prev ? 'last ' + fmt(prev) : '';
+    /* the whole talk against the last run: where it was by the end of this slide */
+    var ref = 0; for (var j = 0; j < cur; j++) ref += prevSpent[j] || 0;
+    var d2 = el - Math.min(sl, prev || 0) - ref;
+    $('lastpace').textContent = cur >= 0 && prevSpent.length ? 'vs last run ' + (Math.abs(d2) < 15000 ? 'on pace' : (d2 > 0 ? fmt(d2) + ' behind' : fmt(-d2) + ' ahead')) : '';
   }
   function toggleTimer() {
     if (pausedAt) { paused += Date.now() - pausedAt; slideStart += Date.now() - pausedAt; pausedAt = 0; $('timer').textContent = 'Pause'; }

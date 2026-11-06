@@ -8,7 +8,14 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 - **Idea being refined (not started; likely a separate project, not part of si):**
   the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
-- **Latest release: v1.10.2: shared media.** `render.shareMedia` (media.go): a
+- **Latest release: v1.11.0: phone clicker + pace vs last run.** `--remote` role
+  `clicker` (`serve.RemoteRoles`; deck.js `role === 'clicker'`: a fixed `#si-clicker`
+  overlay with inline token styles, posts `cmd` next/prev, follows `state`, sends
+  `hello` on open, stopwatch resets on tap). Teleprompter `#lastpace`: elapsed vs the
+  last run's per-slide times (`prevSpent`), "vs last run M:SS behind/ahead/on pace".
+  Tested headless: a real `si play --remote`, deck + 400×800 clicker in light and
+  dark (#1 → #2.1); the teleprompter popup with a seeded last run.
+- **v1.10.2: shared media.** `render.shareMedia` (media.go): a
   data URI of 1 KB or more used in two or more src / href / poster / xlink:href
   attributes is written once in a small script after the slides (deck) or before
   doc.js (documents); each use carries `data-si-m-<attr>="N"`. Showcase build

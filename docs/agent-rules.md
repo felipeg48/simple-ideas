@@ -16,7 +16,7 @@ si build <dir> -o html/ --pdf   # also a PDF per deck (needs headless Chrome)
 si theme list                   # built-in themes for theme: / --theme
 si new <name>                   # a scaffold deck that uses every rule
 si --export example             # the showcase decks, to copy patterns from
-si play talk.md --remote        # teleprompter / draw pad on a tablet (keyed LAN port)
+si play talk.md --remote        # teleprompter / draw pad / clicker on a tablet or phone (keyed LAN port)
 ```
 
 ## A deck

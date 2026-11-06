@@ -241,7 +241,7 @@ func TestSiteTitleFlag(t *testing.T) {
 
 func TestRemoteFlag(t *testing.T) {
 	o, err := parseArgs([]string{"play", "--remote", "d.md"}, io.Discard)
-	if err != nil || strings.Join(o.remote.roles, ",") != "tp,draw" || len(o.args) != 2 {
+	if err != nil || strings.Join(o.remote.roles, ",") != "tp,draw,clicker" || len(o.args) != 2 {
 		t.Fatalf("--remote: %v %v %v", err, o.remote.roles, o.args)
 	}
 	o, err = parseArgs([]string{"play", "d.md", "--remote=draw", "--remote-addr", "127.0.0.1:0"}, io.Discard)

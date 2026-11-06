@@ -1,7 +1,8 @@
 package serve
 
 // Remote: `si play --remote` puts a second listener on the network for a
-// tablet or phone: the teleprompter (role tp) and a draw pad (role draw).
+// tablet or phone: the teleprompter (role tp), a draw pad (role draw) and a
+// clicker (role clicker).
 //
 // Both listeners share one relay: pages POST small JSON messages to
 // /_si/remote/send and read everyone else's on the /_si/remote/events SSE
@@ -30,10 +31,10 @@ import (
 )
 
 // RemoteRoles are the remote page roles, in the order they are listed.
-var RemoteRoles = []string{"tp", "draw"}
+var RemoteRoles = []string{"tp", "draw", "clicker"}
 
 // RemoteRoleNames describes each role for the picker page and the CLI.
-var RemoteRoleNames = map[string]string{"tp": "Teleprompter", "draw": "Draw pad"}
+var RemoteRoleNames = map[string]string{"tp": "Teleprompter", "draw": "Draw pad", "clicker": "Clicker"}
 
 const remoteCookie = "si_remote"
 

@@ -41,7 +41,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "1.10.2"
+const version = "1.11.0"
 
 // Exit codes.
 const (
@@ -56,7 +56,7 @@ Usage:
   si play <file.md> --terminal [--notes] [--dump N --size WxH]
         present in the terminal (no browser); --notes is the teleprompter, in a second
         terminal; --dump prints one slide and exits
-  si play <dir|file.md> [--addr 127.0.0.1:7070] [--open] [--css <dir|file.css>]... [--remote[=tp,draw]]
+  si play <dir|file.md> [--addr 127.0.0.1:7070] [--open] [--css <dir|file.css>]... [--remote[=tp,draw,clicker]]
         serve the decks, rendered from markdown on every request, live reload on change
   si serve <dir|file.md> [--addr 127.0.0.1:7070] [--open] [--css <dir|file.css>]...
         serve everything for readers, live: decks, articles, guides (with their
@@ -109,7 +109,7 @@ Flags (GNU style, before or after the path):
       --site-title <text> alias for --title: the site or landing page title (--site <text> still works, with a warning)
       --ai <command>    migrate: pipe the migration prompt to this agent command (e.g. "claude -p")
       --addr <host:port> play address (default 127.0.0.1:7070)
-      --remote[=tp,draw] play: a second, keyed listener for a tablet or phone on your network: tp = teleprompter, draw = draw pad (default: both)
+      --remote[=tp,draw,clicker] play: a second, keyed listener for a tablet or phone on your network: tp = teleprompter, draw = draw pad, clicker = phone remote (default: all)
       --remote-addr <host:port> play: the --remote address (default 0.0.0.0, the play port + 1)
       --offline         code: / diff: use the cache only (CI, a plane); fails on what was never fetched
       --no-instructor   build: leave the instructor demo scripts (type: demo) out of a participant build

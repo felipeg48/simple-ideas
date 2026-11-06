@@ -171,7 +171,8 @@ Open on a phone: `si play --addr 0.0.0.0:7070` prints a LAN URL + QR.
 Teleprompter or pen on a tablet: `si play talk.md --remote` keeps the deck on
 loopback and opens a keyed second port (play port + 1) with one QR per role:
 `tp` (the teleprompter, drives the deck) and `draw` (a pen pad whose strokes
-show on the projected slide). `--remote=tp` picks roles, `--remote-addr` the
+show on the projected slide) and `clicker` (a phone remote: big Next / Prev,
+where you are, what comes next, a stopwatch). `--remote=tp` picks roles, `--remote-addr` the
 address. See `docs/remote.md`.
 
 The **terminal drawer** (`` ` ``) slides up a tabbed, real shell for running

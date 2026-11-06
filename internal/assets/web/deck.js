@@ -12,9 +12,10 @@
   var termEnabled = !!cfg.terminal; /* si play on a loopback address only; never in a built deck */
   if (termEnabled) cmd.terminal = '`';
   /* si play --remote: this page joins the relay; ?role=tp turns it into the
-     teleprompter, ?role=draw into a draw pad that follows the deck */
+     teleprompter, ?role=draw into a draw pad that follows the deck, ?role=clicker
+     into a phone remote */
   var remoteOn = !!cfg.remote;
-  var role = remoteOn ? ((/[?&]role=(tp|draw)(?:&|$)/.exec(location.search) || [])[1] || '') : '';
+  var role = remoteOn ? ((/[?&]role=(tp|draw|clicker)(?:&|$)/.exec(location.search) || [])[1] || '') : '';
   /* ?si-view=tp: this page becomes the teleprompter of the deck open in another
      window or frame of the same browser (si --web Rehearse / Lab, or by hand) */
   if (!role && /[?&]si-view=tp(?:&|$)/.test(location.search)) role = 'tp-local';
@@ -567,6 +568,7 @@
     if (m.name && m.name !== data.name) return;
     if (m.mid) { if (seen.indexOf(m.mid) >= 0) return; seen.push(m.mid); if (seen.length > 64) seen.shift(); }
     if (m.type === 'ink' || m.type === 'erase' || m.type === 'clear') { inkIn(m); return; }
+    if (m.type === 'state' && role === 'clicker') { clickerState(m); return; }
     if (m.type === 'state' && role === 'draw') { if (m.i !== cur || m.k !== step) go(m.i, m.k); return; }
     if (m.type !== 'cmd' || role) return;
     if (m.cmd === 'next') forward();
@@ -949,6 +951,34 @@
   window.addEventListener('load', function () { renderMermaid(false); fit(slides[cur]); });
   fromHash(true);
   if (role === 'thumb') go(cur, 'end', true);
+  /* remote clicker: big Next and Prev for a phone, where the deck is, what
+     comes next, and the time since the clicker opened */
+  var clk = null, clkStart = Date.now();
+  function clickerState(m) {
+    if (!clk) return;
+    clk.pos.textContent = (m.i + 1) + ' / ' + m.n + (m.kmax ? '  \u00b7  step ' + m.k + '/' + m.kmax : '');
+    clk.title.textContent = m.title || '';
+    clk.next.textContent = m.label || '';
+  }
+  if (role === 'clicker') {
+    var box = document.createElement('div');
+    box.id = 'si-clicker';
+    box.setAttribute('style', 'position:fixed;inset:0;z-index:2147483647;display:grid;grid-template-rows:auto 1fr 2fr;gap:3vmin;padding:max(4vmin,env(safe-area-inset-top)) 4vmin max(4vmin,env(safe-area-inset-bottom));background:var(--si-bg);color:var(--si-fg);font-family:var(--si-font-body);touch-action:manipulation;user-select:none;-webkit-user-select:none');
+    box.innerHTML = '<div style="display:grid;gap:1vmin"><div style="display:flex;justify-content:space-between;color:var(--si-muted);font-variant-numeric:tabular-nums;font-size:4.5vmin"><span data-c="pos">\u2026</span><span data-c="time">00:00</span></div>' +
+      '<div data-c="title" style="font:var(--si-heading-weight) 6vmin/1.2 var(--si-font-heading)"></div><div data-c="next" style="color:var(--si-muted);font-size:4vmin"></div></div>' +
+      '<button type="button" data-c="prev" style="font:600 6vmin var(--si-font-body);border:2px solid var(--si-line);border-radius:var(--si-radius);background:var(--si-surface);color:var(--si-fg)">\u2039 Prev</button>' +
+      '<button type="button" data-c="nextbtn" style="font:700 9vmin var(--si-font-body);border:0;border-radius:var(--si-radius);background:var(--si-accent);color:var(--si-on-accent)">Next \u203a</button>';
+    document.body.appendChild(box);
+    var q = function (k) { return box.querySelector('[data-c="' + k + '"]'); };
+    clk = { pos: q('pos'), title: q('title'), next: q('next') };
+    var send = function (c) { post({ type: 'cmd', cmd: c }); try { navigator.vibrate && navigator.vibrate(15); } catch (e) {} };
+    q('prev').addEventListener('click', function () { send('prev'); });
+    q('nextbtn').addEventListener('click', function () { send('next'); });
+    var tm = q('time');
+    setInterval(function () { var s = Math.floor((Date.now() - clkStart) / 1000); tm.textContent = (s < 600 ? '0' : '') + Math.floor(s / 60) + ':' + (s % 60 < 10 ? '0' : '') + s % 60; }, 500);
+    tm.addEventListener('click', function () { clkStart = Date.now(); });
+    post({ type: 'cmd', cmd: 'hello' });
+  }
   /* remote draw pad: the pen is always on; prev/next buttons drive the deck */
   if (role === 'draw' && draw) {
     toggleDraw(true);

@@ -174,7 +174,8 @@ pass. The steps that matter:
 - **`si play --remote`** (DONE, see `docs/remote.md`): a keyed second
   listener for a tablet: `tp` (teleprompter) and `draw` (pen pad) roles, synced
   through a server relay (SSE + POST); the transport is injected only in play.
-  Next: a phone `clicker` role; HTTPS or a pairing code for untrusted networks.
+  The phone `clicker` role is in (v1.11.0). Next: HTTPS or a pairing code for
+  untrusted networks.
 - **`si play` terminal drawer** (DONE, v0.6.0, see `docs/terminal.md`): a
   bottom→middle HUD with multiple tabs to run local commands during demos
   (`docker ps`, `cockroach start-single-node`, `cockroach sql`). Shipped as full
@@ -205,8 +206,8 @@ pass. The steps that matter:
 - SVG helpers: `data-move` along a path, counters that tick between states,
   `data-grow` bars. (The `si check` SVG lint — `<` in `<style>`, missing
   viewBox — is done.)
-- Speaker view extras: notes from a separate file, rehearsal timings saved
-  per slide.
+- Speaker view extras: notes from a separate file. (Rehearsal timings per
+  slide and pace against the last run are in.)
 - Replace the remaining Python deck builder workflows (fully Python-free).
 - `si play` QR code for opening the deck on a phone on the same network. (Done:
   `si play --addr 0.0.0.0` prints a LAN URL + QR.)
