@@ -114,4 +114,19 @@ Body with a ==phrase==.
 
 ---
 
+## A code show
+
+```go id=send window=mac title="send.go" numbers backdrop=ocean step="Once"
+func send() error { return post() }
+```
+<!-- callout: 1 one try at=40,-20 -->
+
+```go id=send window=mac title="send.go" numbers backdrop=ocean hl=2
+func send() error {
+	return retry(post)
+}
+```
+
+---
+
 # The end

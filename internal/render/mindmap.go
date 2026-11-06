@@ -44,6 +44,9 @@ type mmCode struct {
 	Text  string `json:"text"` // for search
 	Lines int    `json:"lines"`
 	Cols  int    `json:"cols"`
+	// a window: ```go window=mac title="retry.go" under a topic
+	Window string `json:"window,omitempty"`
+	Title  string `json:"title,omitempty"`
 }
 
 type mmMap struct {
@@ -163,7 +166,12 @@ func (p *mmParser) items(list *ast.List, src []byte, dir string) []*mmNode {
 				if name == "" {
 					name = "code"
 				}
-				n.Kids = append(n.Kids, &mmNode{T: name + " code", Code: &mmCode{Lang: lang, HTML: highlight(body, lang), Text: body, Lines: len(lines), Cols: cols}})
+				c := &mmCode{Lang: lang, HTML: highlight(body, lang), Text: body, Lines: len(lines), Cols: cols}
+				if b.Info != nil {
+					a := fenceAttrs(string(b.Info.Segment.Value(src)))
+					c.Window, c.Title = a["window"], a["title"]
+				}
+				n.Kids = append(n.Kids, &mmNode{T: name + " code", Code: c})
 			}
 		}
 		if labelled || len(n.Kids) > 0 {

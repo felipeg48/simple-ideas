@@ -242,7 +242,7 @@ export function MapEditor(p: {
 }
 
 /** Field is a text input that writes its value back on Enter or when it loses focus. */
-function Field(p: { id: string; label: string; value: string; placeholder?: string; list?: string; onSet(v: string): void }) {
+export function Field(p: { id: string; label: string; value: string; placeholder?: string; list?: string; onSet(v: string): void }) {
   const [v, setV] = useState(p.value);
   useEffect(() => setV(p.value), [p.value]);
   const commit = () => { if (v.trim() !== p.value) p.onSet(v.trim()); };

@@ -338,3 +338,61 @@ func slug(s string) string {
 	}
 	return "show"
 }
+
+// Source is an article holding only the code windows of text (a fence with
+// window= or id=; shows with the same id, on one page or across slides,
+// joined in order), with look's front matter (theme, fonts, accent, mode).
+// only keeps one show: its id, or window-N for the Nth block without one.
+// It returns the source and the number of shows in it.
+func Source(text string, look map[string]string, only string) (string, int) {
+	lines := strings.Split(text, "\n")
+	var order []string
+	byID := map[string][]string{}
+	for i, sh := range Shows(text) {
+		if _, w := sh.Steps[0].Attrs["window"]; !w && sh.ID == "" {
+			continue
+		}
+		id := sh.ID
+		if id == "" {
+			id = fmt.Sprintf("window-%d", i+1)
+		}
+		if only != "" && id != only {
+			continue
+		}
+		if _, seen := byID[id]; !seen {
+			order = append(order, id)
+		}
+		for _, st := range sh.Steps {
+			byID[id] = append(byID[id], strings.Join(lines[st.Start:st.Last+1], "\n"))
+		}
+	}
+	return article(look, order, byID), len(order)
+}
+
+// ShowSource is the article of one show (the Studio's Window view preview).
+func ShowSource(text string, sh Show, look map[string]string) string {
+	lines := strings.Split(text, "\n")
+	var steps []string
+	for _, st := range sh.Steps {
+		steps = append(steps, strings.Join(lines[st.Start:st.Last+1], "\n"))
+	}
+	return article(look, []string{"show"}, map[string][]string{"show": steps})
+}
+
+func article(look map[string]string, order []string, byID map[string][]string) string {
+	var b strings.Builder
+	b.WriteString("---\ntype: article\ntitle: Code\n")
+	for _, k := range []string{"theme", "fonts", "accent", "mode"} {
+		if v := look[k]; v != "" {
+			fmt.Fprintf(&b, "%s: %s\n", k, v)
+		}
+	}
+	b.WriteString("---\n\n")
+	for i, id := range order {
+		if i > 0 {
+			b.WriteString("\n\nThe next window.\n\n") // text between shows keeps two shows apart
+		}
+		b.WriteString(strings.Join(byID[id], "\n\n"))
+	}
+	return b.String()
+}

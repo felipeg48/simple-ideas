@@ -75,6 +75,7 @@
 .si-mm-chip-badge rect{fill:color-mix(in srgb,var(--si-mm-c) 22%,var(--si-mm-surface))}
 .si-mm-chip-more rect{fill:var(--si-mm-c)}.si-mm-node .si-mm-chip-more text{fill:var(--si-mm-bg)}
 .si-mm-node.si-mm-code .si-mm-shape{fill:color-mix(in srgb,var(--si-mm-fg) 6%,var(--si-mm-surface));stroke:var(--si-mm-line)}
+.si-mm-bar{fill:color-mix(in srgb,var(--si-mm-fg) 10%,var(--si-mm-surface))}
 .si-mm-node.si-mm-code text.si-mm-lang{fill:var(--si-mm-muted);font:600 10px var(--si-mm-mono);letter-spacing:.06em;text-transform:uppercase}
 .si-mm-pre{color:var(--si-mm-fg)}
 .si-mm-pre .si-tk-k,.si-mm-pre .si-tk-m{color:var(--si-mm-accent)}.si-mm-pre .si-tk-s,.si-mm-pre .si-tk-f,.si-mm-pre .si-tk-y{color:var(--si-mm-3)}.si-mm-pre .si-tk-n,.si-mm-pre .si-tk-v{color:var(--si-mm-2)}.si-mm-pre .si-tk-c{color:var(--si-mm-muted)}

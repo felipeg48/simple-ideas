@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/codeshow"
 	"html"
 	"image/color"
 	"math"
@@ -29,6 +31,7 @@ type blk struct {
 
 // textRenderer turns markdown into terminal lines for one width.
 type textRenderer struct {
+	coN   int // callouts drawn since the last code block
 	pal   Palette
 	dir   string // base for images
 	w     int
@@ -77,6 +80,10 @@ func (r *textRenderer) body(markdown string) []blk {
 		n := nodes[i]
 		if hb, ok := n.(*ast.HTMLBlock); ok {
 			raw := blockText(hb, r.src)
+			if notes := r.callouts(raw); notes != nil { // a code window's callouts: numbered notes under it
+				add(blk{lines: notes})
+				continue
+			}
 			name, val, isDir := deck.ParseDirective(raw)
 			if !isDir {
 				if t := strings.Join(strings.Fields(stripTags(raw)), " "); t != "" {
@@ -346,6 +353,7 @@ func (r *textRenderer) fence(f *ast.FencedCodeBlock) []string {
 	}
 	lang, attrs := fenceAttrs(info)
 	code := blockText(f, r.src)
+	r.coN = 0
 	switch lang {
 	case "stage":
 		return r.stage(code)
@@ -382,6 +390,9 @@ func (r *textRenderer) code(code, lang string, attrs map[string]string) []string
 		start = s
 	}
 	_, nums := attrs["linenos"]
+	if _, ok := attrs["numbers"]; ok {
+		nums = true
+	}
 	numW := len(strconv.Itoa(start + len(lines)))
 	inner := r.w - 4
 	var body []string
@@ -407,8 +418,40 @@ func (r *textRenderer) code(code, lang string, attrs map[string]string) []string
 		w = max(w, ansi.StringWidth(b))
 	}
 	title := attrs["title"]
+	if win := attrs["window"]; win == "mac" { // a code window: its title bar in the box's top line
+		title = "● ● ●  " + title
+	} else if win == "terminal" {
+		title = "$ " + firstNonEmpty(title, "terminal")
+	}
 	w = max(w, ansi.StringWidth(title)+4)
 	return r.box(title, body, w, r.pal.Line)
+}
+
+// callouts renders <!-- callout: LINE text --> lines as numbered notes, or nil.
+func (r *textRenderer) callouts(raw string) []string {
+	var out []string
+	for _, l := range strings.Split(strings.TrimSpace(raw), "\n") {
+		c, ok, err := codeshow.ParseCallout(l)
+		if !ok || err != nil {
+			return nil
+		}
+		r.coN++
+		mark := "●"
+		if r.coN <= len(circled) {
+			mark = string(circled[r.coN-1])
+		}
+		out = append(out, r.wrap(r.st().Foreground(r.pal.Accent).Render(mark)+" "+r.st().Foreground(r.pal.Muted).Render(fmt.Sprintf("line %d", c.Line))+"  "+r.st().Render(c.Text), r.w)...)
+	}
+	return out
+}
+
+func firstNonEmpty(v ...string) string {
+	for _, s := range v {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
 }
 
 // hlTokens turns si's highlighted HTML into ANSI colours.

@@ -83,3 +83,14 @@ func TestApply(t *testing.T) {
 		t.Errorf("id: %v %s", err, out)
 	}
 }
+
+func TestSource(t *testing.T) {
+	text := "# T\n\n---\n\n## A\n\n```go id=r window=mac\na()\n```\n<!-- callout: 1 one -->\n\n---\n\n## B\n\n```go id=r window=mac\na()\nb()\n```\n\n```sh window=terminal\nls\n```\n\n```go\nplain()\n```\n"
+	src, n := Source(text, map[string]string{"theme": "paper"}, "")
+	if n != 2 || strings.Count(src, "id=r") != 2 || !strings.Contains(src, "callout: 1 one") || strings.Contains(src, "plain()") || !strings.Contains(src, "theme: paper") {
+		t.Fatalf("%d\n%s", n, src)
+	}
+	if _, n := Source(text, nil, "r"); n != 1 {
+		t.Errorf("only r: %d shows", n)
+	}
+}

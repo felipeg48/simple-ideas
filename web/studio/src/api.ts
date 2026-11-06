@@ -63,6 +63,10 @@ export const api = {
   build: (pdf: boolean) => call<{ code: number; output: string; url: string }>("POST", "build", { pdf }),
   /** mindmap redraws a mind map from text (a page, or the ```mindmap fence holding line), applying op first if given. */
   mindmap: (path: string, text: string, line: number, op: unknown) => call<any>("POST", "mindmap", { path, text, line, op }),
+  /** codewin redraws the code window (or show) holding line, applying op first if given. */
+  codewin: (path: string, text: string, line: number, op: unknown) => call<any>("POST", "codewin", { path, text, line, op }),
+  /** codewinExport runs si code on the saved file: png, svg or gif next to it. */
+  codewinExport: (path: string, format: string, id: string) => call<{ code: number; output: string }>("POST", "codewin/export", { path, format, id }),
   starter: (kind: Kind, path: string, title: string) =>
     call<{ created: string[]; open: string }>("POST", "starter", { kind, path, title }),
 };

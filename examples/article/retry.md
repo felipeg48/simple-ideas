@@ -102,7 +102,15 @@ return result                                        # <3>
 > bank.
 
 Thirty seconds covers the bank's batch window: we measured 21 seconds at the
-99th percentile. A second timeout is returned as it is, and the customer sees
+99th percentile. The test that guards the rule runs a hundred times before
+every release:
+
+```sh window=terminal title="checkout"
+go test ./payments -run TestRetryKeepsTheKey -count=100
+ok  	northwind/payments	3.214s
+```
+
+A second timeout is returned as it is, and the customer sees
 "still checking", not "failed".
 
 ## What we measured

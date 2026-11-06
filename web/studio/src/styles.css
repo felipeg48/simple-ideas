@@ -656,3 +656,13 @@ button.link { color: var(--blue); text-decoration: underline; text-underline-off
 .ed-host:has(.mapx) { container-type: inline-size; }
 /* a narrow editor pane: the panels go under the canvas, which keeps the full width */
 @container (max-width: 760px) { .mapx { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 3fr) minmax(0, 2fr); } .mapx-side { border-left: 0; border-top: 1px solid var(--line); } }
+/* the Window view (code windows): steps, callouts, exports */
+.cwx-steps, .cwx-notes { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.cwx-steps li, .cwx-notes li { display: flex; gap: 6px; align-items: center; }
+.cwx-steps li .field, .cwx-notes li .field { flex: 1; min-width: 0; }
+.cwx-notes li .field:first-of-type { flex: none; width: 3.6em; }
+.cwx-steps label:empty, .cwx-notes label:empty { display: none; }
+.cwx-steps .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.cwx-add { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+.cwx-add .field { flex: 1; min-width: 8em; }
+.cwx-out { margin: 8px 0 0; white-space: pre-wrap; font: 12px var(--mono, ui-monospace, monospace); color: var(--mute); }

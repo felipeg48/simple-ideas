@@ -69,7 +69,9 @@ const TALK_ORIGINAL = readFileSync(TALK, "utf8");
 const LABOPS = join(root, "lab-ops.json");
 const MAP = join(root, "thursday.md");
 const MAP_ORIGINAL = readFileSync(MAP, "utf8");
-const reset = () => { writeFileSync(MAP, MAP_ORIGINAL); writeFileSync(ONE, ORIGINAL); writeFileSync(RB, RB_ORIGINAL); writeFileSync(TALK, TALK_ORIGINAL); rmSync(LABOPS, { force: true }); };
+const CODE = join(root, "code.md");
+const CODE_ORIGINAL = readFileSync(CODE, "utf8");
+const reset = () => { writeFileSync(CODE, CODE_ORIGINAL); writeFileSync(MAP, MAP_ORIGINAL); writeFileSync(ONE, ORIGINAL); writeFileSync(RB, RB_ORIGINAL); writeFileSync(TALK, TALK_ORIGINAL); rmSync(LABOPS, { force: true }); };
 async function openRunbook(page) {
   await openFile(page, "labs/runbook.json");
   await page.waitForSelector(".rb-view .rb-entry");
@@ -479,6 +481,35 @@ tests["map editor: Tab adds a child, rename, undo"] = async function () {
     await ctx.close();
     reset();
     await sleep(800); // let autosave settle before the next pass
+  }
+};
+
+tests["window view: style, callout, undo"] = async function () {
+  for (const [theme, size] of [["light", { width: 1440, height: 900 }], ["dark", { width: 820, height: 1180 }]]) {
+    const { ctx, page } = await open(theme, size);
+    if (size.width < 1000) await page.click(".nav-toggle");
+    await openFile(page, "code.md");
+    await page.click('.cm-line:has-text("send()")');
+    await page.click(".rb-mode button:has-text('Window')");
+    const f = await (await page.waitForSelector(".cwx iframe")).contentFrame();
+    await until(() => f.$(".si-cw.si-cw-on .si-cw-l"), 8000, "the window is drawn");
+    await page.selectOption("#cw-window", "windows");
+    await until(() => readFileSync(CODE, "utf8").split("window=windows").length === 3, 6000, "both steps saved with window=windows");
+    const g = await (await page.waitForSelector(".cwx iframe")).contentFrame();
+    await until(() => g.$('.si-cw[data-window="windows"] .si-cw-ctl'), 6000, "the preview follows");
+    await page.fill("#cw-new-text", "the entry point");
+    await page.click(".cwx button:has-text('Add callout')");
+    await until(() => readFileSync(CODE, "utf8").includes("<!-- callout: 1 the entry point -->"), 6000, "the callout saved");
+    await page.screenshot({ path: join(out, `window-editor-${theme}-${size.width}.png`) });
+    await page.click(".cwx .insp-head");
+    await page.keyboard.press("ControlOrMeta+z");
+    await until(() => !readFileSync(CODE, "utf8").includes("callout:"), 6000, "undo removed the callout");
+    await page.click(".rb-mode button:has-text('Text')");
+    const text = await page.textContent(".cm-content");
+    if (text.includes("callout:") || !text.includes("window=windows")) throw new Error("the text view does not follow the window: " + text);
+    await ctx.close();
+    reset();
+    await sleep(800);
   }
 };
 

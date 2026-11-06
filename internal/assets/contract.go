@@ -379,7 +379,7 @@ var Hooks = []Hook{
 	{`.si-mm-svg, .si-mm-edges, .si-mm-nodes, .si-mm-anim, .si-mm-dragging`, "the drawing, its groups of lines and topics, grow-in animation, panning or moving"},
 	{`.si-mm-node, .si-mm-root, .si-mm-lv2, .si-mm-shape, .si-mm-hit, .si-mm-uline`, "a topic (the central one, deeper ones), its box, the hit area and line of an underline topic"},
 	{`.si-mm-chip, .si-mm-chip-link, .si-mm-chip-href, .si-mm-chip-badge, .si-mm-chip-more`, "chips after a topic: map › (drill-down), a page or slide link, a badge, +N folded"},
-	{`.si-mm-code, .si-mm-lang, .si-mm-pre, .si-mm-sticky`, "a code topic (its language label and highlighted text), a sticky note"},
+	{`.si-mm-code, .si-mm-lang, .si-mm-pre, .si-mm-bar, .si-mm-sticky`, "a code topic (its language label, highlighted text, and its title bar when it is a window=), a sticky note"},
 	{`.si-mm-edge, .si-mm-tap, .si-mm-note, .si-mm-flow`, "a line (tapered, to a sticky note) and its flow overlay"},
 	{`.si-mm-hide, .si-mm-step`, "a branch waiting for its build step (```mindmap steps), and the hidden step marks that drive it"},
 	{`.si-mm-sel, .si-mm-drop-in, .si-mm-drop-before, .si-mm-drop-after, .si-mm-ghost, .si-mm-rename`, "the map editor (Studio): the selected topic, drop targets while dragging, the dragged copy, the rename box"},

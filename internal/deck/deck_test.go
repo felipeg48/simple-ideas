@@ -54,6 +54,12 @@ func TestParse(t *testing.T) {
 			problems: []string{"missing title"},
 		},
 		{
+			name:   "a code window callout is a known directive",
+			files:  map[string]string{"d.md": "# Deck\n\n```go window=mac\na()\n```\n<!-- callout: 1 one call -->\n"},
+			kinds:  "t",
+			titles: "Deck",
+		},
+		{
 			name:     "unknown directive",
 			files:    map[string]string{"d.md": "# Deck\n\n<!-- transmogrify: yes -->\n"},
 			kinds:    "t",

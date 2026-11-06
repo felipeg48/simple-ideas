@@ -145,7 +145,14 @@ Three changes, none of them expensive. Left, what we did before; right, what we 
 - A second decline is final: the customer gets a message, not silence
 - The key makes a double charge impossible
 
-```go
+```go id=charge window=mac title="charge.go" step="Before #4711"
+// one try: a timeout became a "payment failed" email
+func charge(ctx context.Context, o Order) error {
+	return payments.Charge(ctx, o.Total, "order-"+o.ID)
+}
+```
+
+```go id=charge window=mac title="charge.go" step="After #4711" hl=3-8
 // retry once; the key makes a second charge a no-op
 func charge(ctx context.Context, o Order) error {
 	key := "order-" + o.ID
@@ -157,9 +164,11 @@ func charge(ctx context.Context, o Order) error {
 	return err
 }
 ```
+<!-- callout: 3 The order id is the idempotency key -->
+<!-- callout: 6 Thirty seconds: the bank's batch is done by then -->
 
 Notes: (1 min)
-The code is short on purpose. The idempotency key is the order id, so the bank treats the retry as the same request: no double charge even if the first call did go through.
+Before the change, checkout called the bank once, and a timeout became a failed-payment email. [CLICK] After order 4711 it waits thirty seconds and tries again with the same key. The idempotency key is the order id, so the bank treats the retry as the same request: no double charge even if the first call did go through.
 
 ---
 

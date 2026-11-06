@@ -20,6 +20,7 @@ import { clear, restore, scoped, stash } from "./buffers";
 import { eolOf, toLF, withEol } from "./eol";
 import { Icon } from "./navigator";
 import { MapEditor, isMindmapPage, mindmapFenceAt } from "./map-editor";
+import { WindowEditor, codeFenceAt } from "./window-editor";
 import { RunbookEditor } from "./runbook-editor";
 import { EMPTY_RB, isRunbookText, parseRunbook, serializeRunbook, type Runbook } from "./runbook";
 import { siMarkdown } from "./si-lang";
@@ -184,6 +185,8 @@ export function Editor(p: Props) {
   const rerender = () => bump((n) => n + 1);
   const fenceLine = useRef(0); // the ```mindmap fence under the cursor (its opening line), 0: none
   const [fenceEdit, setFenceEdit] = useState<{ path: string; line: number } | null>(null);
+  const codeLine = useRef(0); // the code block under the cursor (its opening line), 0: none
+  const [winEdit, setWinEdit] = useState<{ path: string; line: number } | null>(null);
 
   const text = (d: Doc) => (cur.current === d.path && view.current ? view.current.state.doc.toString() : d.state.doc.toString());
   const status = (d: Doc) =>
@@ -248,6 +251,8 @@ export function Editor(p: Props) {
       if (u.selectionSet && cur.current === path && isMarkdownKind(kind)) {
         const f = mindmapFenceAt(u.state.doc.toString(), u.state.doc.lineAt(u.state.selection.main.head).number);
         if (f !== fenceLine.current) { fenceLine.current = f; rerender(); }
+        const c = codeFenceAt(u.state.doc.toString(), u.state.doc.lineAt(u.state.selection.main.head).number);
+        if (c !== codeLine.current) { codeLine.current = c; rerender(); }
       }
       if (u.selectionSet || u.docChanged) {
         const h = u.state.selection.main.head, l = u.state.doc.lineAt(h);
@@ -421,6 +426,7 @@ export function Editor(p: Props) {
   const mmPage = !!d && isMindmapPage(body);
   const fenceOn = !!d && !mmPage && fenceEdit?.path === d.path && mindmapFenceAt(body, fenceEdit.line) === fenceEdit.line;
   const mapOn = (mmPage && mapView(d!.path) === "map") || fenceOn;
+  const winOn = !!d && !mapOn && winEdit?.path === d.path && codeFenceAt(body, winEdit.line) > 0;
   /** editMap puts the map editor's new text into the editor as one undoable change. */
   function editMap(next: string) {
     const v = view.current;
@@ -491,6 +497,19 @@ export function Editor(p: Props) {
           </div>
         </div>
       )}
+      {!mmPage && !fenceOn && d && isMarkdownKind(p.kind) && (winOn || codeLine.current > 0) && (
+        <div class="rb-bar">
+          <span class="rb-kind"><Icon name="terminal" />Code block</span>
+          <div class="seg rb-mode" role="group" aria-label="Code block view">
+            <button class={winOn ? "on" : ""} aria-pressed={winOn} onClick={() => setWinEdit({ path: d.path, line: codeLine.current || winEdit!.line })}>Window</button>
+            <button class={winOn ? "" : "on"} aria-pressed={!winOn} onClick={() => { setWinEdit(null); requestAnimationFrame(() => view.current?.requestMeasure()); }}>Text</button>
+          </div>
+        </div>
+      )}
+      {winOn && (
+        <WindowEditor path={d!.path} text={body} line={winEdit!.line} setText={editMap}
+          undo={(r) => view.current && (r ? redo : undo)(view.current)} />
+      )}
       {mapOn && (
         <MapEditor path={d!.path} text={body} line={fenceOn ? fenceEdit!.line : 0}
           images={p.files?.images ?? []} mapFiles={p.files?.maps ?? []} decks={p.files?.decks ?? []}
@@ -500,7 +519,7 @@ export function Editor(p: Props) {
         <RunbookEditor text={text(d!)} edit={editRunbook} toJson={(l, c) => showJson(d!.path, l, c)}
           undo={(r) => view.current && (r ? redo : undo)(view.current)} />
       )}
-      <div class="ed-cm" ref={host} hidden={!d || visual || mapOn} />
+      <div class="ed-cm" ref={host} hidden={!d || visual || mapOn || winOn} />
     </div>
   );
 }

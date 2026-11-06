@@ -5,10 +5,7 @@ import (
 	"image"
 	"image/color"
 	"image/gif"
-	"strings"
 	"testing"
-
-	"github.com/felipeg48/simple-ideas/internal/deck"
 )
 
 func TestEncodeGIF(t *testing.T) {
@@ -32,16 +29,5 @@ func TestEncodeGIF(t *testing.T) {
 	}
 	if r, _, _, _ := g.Image[1].At(5, 5).RGBA(); r>>8 > 60 {
 		t.Errorf("the second frame should stay blue, red=%d", r>>8)
-	}
-}
-
-func TestWindowSource(t *testing.T) {
-	text := "# T\n\n---\n\n## A\n\n```go id=r window=mac\na()\n```\n<!-- callout: 1 one -->\n\n---\n\n## B\n\n```go id=r window=mac\na()\nb()\n```\n\n```sh window=terminal\nls\n```\n\n```go\nplain()\n```\n"
-	src, n := windowSource(text, deck.Meta{Theme: "paper"}, "")
-	if n != 2 || strings.Count(src, "id=r") != 2 || !strings.Contains(src, "callout: 1 one") || strings.Contains(src, "plain()") || !strings.Contains(src, "theme: paper") {
-		t.Fatalf("%d\n%s", n, src)
-	}
-	if _, n := windowSource(text, deck.Meta{}, "r"); n != 1 {
-		t.Errorf("--id r: %d shows", n)
 	}
 }

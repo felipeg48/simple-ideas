@@ -49,48 +49,6 @@ type codeExport struct {
 
 var codeExportRE = regexp.MustCompile(`(?s)<pre id="si-code-export"[^>]*>(.*?)</pre>`)
 
-// windowSource is a document holding only the file's windows, same-id
-// shows joined in order, with the file's look (theme, fonts, accent, mode).
-func windowSource(text string, m deck.Meta, only string) (string, int) {
-	lines := strings.Split(text, "\n")
-	var order []string
-	byID := map[string][]string{}
-	n := 0
-	for i, sh := range codeshow.Shows(text) {
-		a := sh.Steps[0].Attrs
-		if _, w := a["window"]; !w && sh.ID == "" {
-			continue
-		}
-		id := sh.ID
-		if id == "" {
-			id = fmt.Sprintf("window-%d", i+1)
-		}
-		if only != "" && id != only {
-			continue
-		}
-		if _, seen := byID[id]; !seen {
-			order = append(order, id)
-		}
-		for _, st := range sh.Steps {
-			byID[id] = append(byID[id], strings.Join(lines[st.Start:st.Last+1], "\n"))
-			n++
-		}
-	}
-	var b strings.Builder
-	b.WriteString("---\ntype: article\ntitle: Code\n")
-	for k, v := range map[string]string{"theme": m.Theme, "fonts": m.Fonts, "accent": m.Accent, "mode": m.Mode} {
-		if v != "" {
-			fmt.Fprintf(&b, "%s: %s\n", k, v)
-		}
-	}
-	b.WriteString("---\n\n")
-	for _, id := range order {
-		b.WriteString(strings.Join(byID[id], "\n\n"))
-		b.WriteString("\n\nThe next window.\n\n")
-	}
-	return b.String(), len(order)
-}
-
 func runCode(path string, o *options, stdout, stderr io.Writer) int {
 	if !o.png && !o.svg && !o.gif {
 		return usageErr(stderr, "code needs --png, --svg or --gif")
@@ -105,7 +63,8 @@ func runCode(path string, o *options, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "si: %v\n", err)
 		return exitProblems
 	}
-	src, shows := windowSource(string(raw), d0.Meta, o.showID)
+	m := d0.Meta
+	src, shows := codeshow.Source(string(raw), map[string]string{"theme": m.Theme, "fonts": m.Fonts, "accent": m.Accent, "mode": m.Mode}, o.showID)
 	if shows == 0 {
 		fmt.Fprintf(stderr, "si: %s has no code window%s (a fence with window= or id=)\n", path, map[bool]string{true: " " + o.showID, false: ""}[o.showID != ""])
 		return exitProblems

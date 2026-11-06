@@ -35,6 +35,7 @@ type Topic struct {
 // Code is a fenced code block under a topic.
 type Code struct {
 	Lang string `json:"lang"`
+	Info string `json:"info,omitempty"` // the rest of the fence line: window=mac title="…"
 	Text string `json:"text"`
 }
 
@@ -77,7 +78,7 @@ var (
 	attrRE    = regexp.MustCompile(`\s*\{([^{}]*)\}\s*$`)
 	imgRE     = regexp.MustCompile(`!\[([^\]]*)\]\(([^)\s]+)\)`)
 	posRE     = regexp.MustCompile(`^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$`)
-	fenceRE   = regexp.MustCompile("^(\\s*)(```+|~~~+)\\s*([\\w+-]*)")
+	fenceRE   = regexp.MustCompile("^(\\s*)(```+|~~~+)\\s*([\\w+-]*)(.*)$")
 	frontKey  = regexp.MustCompile(`^([\w-]+)\s*:`)
 	blankLine = func(s string) bool { return strings.TrimSpace(s) == "" }
 )
@@ -252,7 +253,7 @@ func readFence(lines []string, i int, f []string) (*Topic, int) {
 	if name == "" {
 		name = "code"
 	}
-	return &Topic{Text: name + " code", Code: &Code{Lang: lang, Text: strings.Join(body, "\n")}}, i
+	return &Topic{Text: name + " code", Code: &Code{Lang: lang, Info: strings.TrimRight(f[4], " \t"), Text: strings.Join(body, "\n")}}, i
 }
 
 // byteIndent is the byte offset of the n-th column of indentation.
@@ -388,7 +389,7 @@ func writeTopics(out *[]string, ts []*Topic, indent int) {
 	pad := strings.Repeat(" ", indent)
 	for _, t := range ts {
 		if t.Code != nil {
-			*out = append(*out, pad+"```"+t.Code.Lang)
+			*out = append(*out, pad+"```"+t.Code.Lang+t.Code.Info)
 			for _, l := range strings.Split(t.Code.Text, "\n") {
 				if l == "" {
 					*out = append(*out, "")

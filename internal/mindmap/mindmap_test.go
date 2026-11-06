@@ -154,3 +154,10 @@ func mustSheets(t *testing.T, x []byte) []byte {
 	}
 	return []byte(back.String())
 }
+
+func TestCodeWindowRoundTrip(t *testing.T) {
+	src := "# Plan\n\n- Retry\n  ```go window=mac title=\"retry.go\"\n  for try := 1; try <= 5; try++ {}\n  ```\n"
+	if got := Parse(src).String(); got != src {
+		t.Fatalf("round trip:\n%q\n%q", src, got)
+	}
+}
