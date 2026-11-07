@@ -2219,7 +2219,9 @@ exports next to the file. The editor completes code block options after
 block's line numbers after `<!-- callout: `. Every change is
 written into the Markdown as one undoable edit. `si play --terminal` shows a
 window's title (`● ● ●  retry.go` for `mac`) in its box and the callouts as
-numbered notes; a show's steps are shown one under the other.
+numbered notes; a show advances one step per build (→), with the step in the
+box title (`retry.go · 2/4 Back off`) and that step's callouts, and the
+`--notes` teleprompter counts them like any build.
 
 Examples: `examples/code/retry.md` (a four-step show on a backdrop, a Windows
 window with C# and a `.csproj`, a terminal), the showcase slide "The retry

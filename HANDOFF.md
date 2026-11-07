@@ -8,7 +8,18 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 - **Idea being refined (not started; likely a separate project, not part of si):**
   the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
-- **Latest release: v2.1.1: staying current, completions, step code, saved callout drags, 3D on phones.**
+- **Latest release: v2.2.0: terminal code shows, five languages, shared three.js, real-pointer tests.**
+  `tui/text.go` `show()`: fences with the same id in a row become one box; each extra step is a build (`visible()`),
+  the title gets " · k/N name", the shown step's callouts follow. `render/highlight.go`: hcl (tf, terraform, tfvars),
+  protobuf (proto), graphql (gql, $vars), fsharp (fs, fsx; (* *) comments, no call colouring), elixir (ex, exs; :atoms);
+  names in `langNames`, include detection in deck `extLang` and `codeshow.LangOf`. `si build --share-assets` (or
+  `--no-inline-media`): `Options.SharedAssets` + per-page `AssetPrefix` (guide pages by depth) link
+  `_si/three.min.js` + orbit controls, written once by `render.WriteShared` (with three's license); the example maps
+  2.1 MB → 1.5 MB. `web/studio/e2e/pointer.e2e.mjs` (npm run e2e runs it too): page.mouse on built pages with
+  SwiftShader: click a 3D pill opens its card, double-click Payment drills in, drag a 2D topic moves only it, drag a
+  callout moves it. It found and fixed a callout drag that started from the unclamped place (codewin.js now starts
+  from where the note is drawn).
+- **v2.1.1: staying current, completions, step code, saved callout drags, 3D on phones.**
   `desktop/update.go`: `pickSi` runs an installed si (~/.bin, ~/bin, ~/go/bin, Homebrew, PATH) when newer than
   the bundled one (About says so); `latestRelease` asks the GitHub API at most once a day (cache in
   ~/Library/Caches/si-studio/release.json, 3 s timeout, silent offline) and the app adds "Update Available — vX"

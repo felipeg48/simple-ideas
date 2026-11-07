@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc --noEmit && node build.mjs",
     "test": "vitest run",
-    "e2e": "node e2e/studio.e2e.mjs"
+    "e2e": "node e2e/studio.e2e.mjs && node e2e/pointer.e2e.mjs",
+    "e2e:pointer": "node e2e/pointer.e2e.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "6.20.4",

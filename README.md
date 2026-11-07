@@ -94,6 +94,11 @@ self-contained HTML files you can mail, host or open from a USB stick.
   options, include options and callout lines; a step's code is edited inside
   the Window view; a callout dragged in `si play` keeps its place in the
   Markdown; 3D mind maps on a phone start closer and offer a List view.
+- **v2.2.0:** in `si play --terminal` a code show advances one step per click,
+  with its title and callouts; Terraform/HCL, Protobuf, GraphQL, F# and Elixir
+  are highlighted; `si build --share-assets` writes three.js once for a folder
+  of 3D maps instead of into every page; pointer tests click, double-click and
+  drag like a person on 3D maps, 2D maps and code windows.
 - **In the terminal (v1.7):** `si play talk.md --terminal` presents a deck in
   the terminal itself, in the theme's colours, with block-letter titles, builds,
   code, tables, cards and pictures in half-block pixels; `--notes` in a second

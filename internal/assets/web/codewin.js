@@ -160,7 +160,7 @@
       }
       put();
       var drag = null;
-      b.addEventListener('pointerdown', function (e) { e.stopPropagation(); drag = { x: e.clientX, y: e.clientY, at: (n.at || [wr + 24 - a.x, (k % 2 ? 1 : -1) * Math.max(bh, 30)]).slice() }; b.setPointerCapture(e.pointerId); });
+      b.addEventListener('pointerdown', function (e) { e.stopPropagation(); /* start from where the note is drawn (it may sit clamped to the edge) */ drag = { x: e.clientX, y: e.clientY, at: [parseFloat(b.style.left) - a.x, parseFloat(b.style.top) + bh / 2 - a.y] }; b.setPointerCapture(e.pointerId); });
       b.addEventListener('pointermove', function (e) { if (!drag) return; n.at = [Math.round(drag.at[0] + e.clientX - drag.x), Math.round(drag.at[1] + e.clientY - drag.y)]; put(); });
       b.addEventListener('pointerup', function () {
         if (!drag) return; drag = null;

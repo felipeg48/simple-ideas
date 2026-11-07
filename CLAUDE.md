@@ -213,8 +213,9 @@ pass. The steps that matter:
   callouts, drag to place, exports). v2.1.1: fence-option completion, a step's
   code edited inside the Window view, callout drags saved by si play
   (POST /_si/callout), the desktop app's newer-si choice and release check, 3D
-  maps on phones (closer Fit, List tool). Next: a show's steps as builds in the
-  terminal (they are stacked today), MP4 export.
+  maps on phones (closer Fit, List tool). v2.2.0: a show's steps are builds in
+  the terminal; `--share-assets`; real-pointer tests (web/studio/e2e/pointer.e2e.mjs).
+  Next: MP4 export.
 - **Mind maps** (v1.12.0 DONE, RULES.md §24, spec
   `docs/superpowers/specs/2026-11-06-mind-maps.md`): `type: mindmap` pages and
   the ```` ```mindmap ```` fence; four layouts, four line styles, three node
