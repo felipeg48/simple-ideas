@@ -1,14 +1,15 @@
 name: docs-site
 
 # The si docs site (docs/site, generated from RULES.md and the manual by
-# `make docs-site`) on GitHub Pages, rebuilt on every push to main and tag.
+# `make docs-site`) on GitHub Pages, rebuilt on every push to main. Tags are
+# not a trigger: the github-pages environment only deploys from main, and a
+# tag run would cancel the main run of the same commit.
 # It stays off until the repo owner turns Pages on (Settings ▸ Pages ▸ Source:
 # GitHub Actions) and sets the repository variable SI_PAGES to `on`; until
 # then every run is skipped, never failed (README, v2.3.1).
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   workflow_dispatch:
 
 permissions:
