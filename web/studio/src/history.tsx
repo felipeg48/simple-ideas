@@ -115,7 +115,7 @@ export function History(p: { active: string | null; restore(path: string, text: 
             )}
           </>
         )}
-        <div class="dialog-actions"><button class="btn" type="button" onClick={p.onClose}>Close</button></div>
+        <div class="dialog-actions"><button class="btn" type="button" onClick={p.onClose} autoFocus>Close</button></div>
       </div>
     </div>
   );

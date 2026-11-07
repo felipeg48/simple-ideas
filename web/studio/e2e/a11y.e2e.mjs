@@ -136,6 +136,12 @@ for (const t of themes) for (const type of ["article", "deck"]) for (const dark 
     await run("take the tour");
     await audit("studio: tour" + mode, p, { exclude: ["iframe"] });
     await p.keyboard.press("Escape");
+    for (const [q, name] of [["history:", "history"], ["review:", "review"], ["about si", "about"]]) {
+      await run(q);
+      await audit(`studio: ${name}` + mode, p, { exclude: ["iframe"] });
+      await p.keyboard.press("Escape");
+      await p.waitForTimeout(200);
+    }
     await ctx.close();
   }
   srv.kill();

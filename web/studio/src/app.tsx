@@ -209,6 +209,8 @@ export function App() {
     const key = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") { e.preventDefault(); void ctl.current?.flush(); }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); e.stopPropagation(); setPaletteOpen((o) => !o); }
+      // Escape closes a dialog even when the keyboard is not inside it (a dialog handles its own Escape otherwise)
+      if (e.key === "Escape" && !(e.target as Element | null)?.closest?.(".dialog")) setDialog(null);
     };
     addEventListener("keydown", key, true); // capture: before the editor's own Mod-k
     // ⌘K and ⌘S pressed while a same-origin frame (map editor, code window,

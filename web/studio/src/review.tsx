@@ -55,7 +55,7 @@ export function Review(p: { active: string | null; onClose(): void }) {
           ))}
           {cs && !shown.length && <li class="mute">{p.active ? "No open comments on this file." : "Open a file to see its comments."}</li>}
         </ul>
-        <div class="dialog-actions"><button class="btn" type="button" onClick={p.onClose}>Close</button></div>
+        <div class="dialog-actions"><button class="btn" type="button" onClick={p.onClose} autoFocus>Close</button></div>
       </div>
     </div>
   );
