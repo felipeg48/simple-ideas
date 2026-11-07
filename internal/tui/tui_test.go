@@ -250,3 +250,20 @@ func TestTeleprompterFollowsABrowserDeck(t *testing.T) {
 	}
 	t.Error("the deck never got next")
 }
+
+func TestCodeShowStepsAreBuilds(t *testing.T) {
+	d := testDeck(t, "# T\n\n---\n\n## Retry\n\n```go id=r window=mac title=retry.go step=\"One try\"\nsend()\n```\n<!-- callout: 1 Only once -->\n\n```go id=r window=mac title=retry.go step=\"Five tries\"\nfor i := 0; i < 5; i++ {\n\tsend()\n}\n```\n<!-- callout: 1 The loop -->\n\n```go id=r window=mac title=retry.go\nretry(send)\n```\n")
+	for k, want := range []string{"1/3 One try", "2/3 Five tries", "3/3"} {
+		s, steps := Slide(d, 1, k, 80, 30, Palette{})
+		p := plain(s)
+		if steps != 2 || !strings.Contains(p, "retry.go · "+want) {
+			t.Errorf("k=%d: steps=%d, want title %q:\n%s", k, steps, want, p)
+		}
+		if k == 0 && (!strings.Contains(p, "Only once") || strings.Contains(p, "The loop") || strings.Contains(p, "retry(send)")) {
+			t.Errorf("step 1 shows only its own code and callouts:\n%s", p)
+		}
+		if k == 1 && (!strings.Contains(p, "The loop") || strings.Contains(p, "Only once")) {
+			t.Errorf("step 2 shows its callouts:\n%s", p)
+		}
+	}
+}

@@ -32,6 +32,7 @@ type blk struct {
 // textRenderer turns markdown into terminal lines for one width.
 type textRenderer struct {
 	coN   int // callouts drawn since the last code block
+	stepTag string // a code show's position for the next code box title: " · 2/4 Back off"
 	pal   Palette
 	dir   string // base for images
 	w     int
@@ -133,6 +134,27 @@ func (r *textRenderer) body(markdown string) []blk {
 			r.tokens = nil
 			continue
 		}
+		if f, ok := n.(*ast.FencedCodeBlock); ok && !step && !stepsList {
+			if steps, notes, next := r.show(nodes, i, f); len(steps) > 1 { // a code show: one build step per extra step
+				shown := 0
+				for k := 1; k < len(steps); k++ {
+					if visible() {
+						shown = k
+					}
+				}
+				_, attrs := fenceAttrs(fenceInfo(steps[shown], r.src))
+				r.stepTag = fmt.Sprintf(" · %d/%d", shown+1, len(steps))
+				if name := attrs["step"]; name != "" {
+					r.stepTag += " " + name
+				}
+				add(blk{lines: r.fence(steps[shown]), media: true})
+				if lines := r.callouts(notes[shown]); lines != nil {
+					add(blk{lines: lines})
+				}
+				i = next - 1
+				continue
+			}
+		}
 		if step || stepsList {
 			if stepsList && len(r.tokens) > 0 { // steps: ops on a block that is not a list: one step
 				r.pendingOps = r.tokens[0]
@@ -149,6 +171,44 @@ func (r *textRenderer) body(markdown string) []blk {
 		}
 	}
 	return out
+}
+
+// show collects a code show starting at nodes[i]: the fences in a row with the
+// same id=, each with the callouts right after it; next is the first node after it.
+func (r *textRenderer) show(nodes []ast.Node, i int, f *ast.FencedCodeBlock) (steps []*ast.FencedCodeBlock, notes []string, next int) {
+	_, attrs := fenceAttrs(fenceInfo(f, r.src))
+	id := attrs["id"]
+	steps, notes = []*ast.FencedCodeBlock{f}, []string{""}
+	if id == "" {
+		return steps, notes, i + 1
+	}
+	j := i + 1
+	for ; j < len(nodes); j++ {
+		if hb, ok := nodes[j].(*ast.HTMLBlock); ok {
+			raw := blockText(hb, r.src)
+			if c, ok, _ := codeshow.ParseCallout(strings.SplitN(strings.TrimSpace(raw), "\n", 2)[0]); ok && c.Line > 0 {
+				notes[len(notes)-1] += raw + "\n"
+				continue
+			}
+			break
+		}
+		g, ok := nodes[j].(*ast.FencedCodeBlock)
+		if !ok {
+			break
+		}
+		if _, a := fenceAttrs(fenceInfo(g, r.src)); a["id"] != id {
+			break
+		}
+		steps, notes = append(steps, g), append(notes, "")
+	}
+	return steps, notes, j
+}
+
+func fenceInfo(f *ast.FencedCodeBlock, src []byte) string {
+	if f.Info == nil {
+		return ""
+	}
+	return string(f.Info.Segment.Value(src))
 }
 
 // endsGroup reports whether a node ends a cards group: a ## heading, a ---,
@@ -414,6 +474,8 @@ func (r *textRenderer) code(code, lang string, attrs map[string]string) []string
 	if title == "" && lang != "" {
 		title = render.LangName(lang)
 	}
+	title += r.stepTag
+	r.stepTag = ""
 	if win := attrs["window"]; win == "mac" { // a code window: its title bar in the box's top line
 		title = "● ● ●  " + title
 	} else if win == "terminal" {
