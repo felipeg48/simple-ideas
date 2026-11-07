@@ -52,6 +52,10 @@ func TestApply(t *testing.T) {
 	if !strings.Contains(out, "window=mac title=retry.go\n") {
 		t.Errorf("set-step: %s", out)
 	}
+	out = apply(src, Op{Kind: "set-code", Step: 1, Text: "func send() error {\n\treturn retry(post)\n}\n"})
+	if s := Shows(out); len(s[0].Steps) != 2 || s[0].Steps[1].Code != "func send() error {\n\treturn retry(post)\n}" || !strings.Contains(out, "One attempt at=60,-40") {
+		t.Errorf("set-code: %s", out)
+	}
 	out = apply(src, Op{Kind: "move-callout", Index: 0, At: []int{10, 20}})
 	if !strings.Contains(out, "<!-- callout: 2 One attempt at=10,20 -->") {
 		t.Errorf("move: %s", out)

@@ -142,12 +142,101 @@ function valueOptions(rules: Rules, name: string, typed: string): Completion[] {
   return [];
 }
 
+// Fence lines: languages after ```, then options (code windows, or a mind map's).
+const FENCE_LANGS = ["go", "csharp", "java", "javascript", "typescript", "python", "bash", "sql", "yaml", "json", "xml", "html", "css",
+  "rust", "kotlin", "c", "cpp", "php", "ruby", "swift", "scala", "powershell", "dockerfile", "toml", "mermaid", "stage", "mindmap"];
+type OptTable = Record<string, { values?: string[]; flag?: boolean; detail: string }>;
+const CODE_OPTS: OptTable = {
+  window: { values: ["mac", "windows", "terminal", "none"], detail: "draw the block as a window" },
+  title: { detail: "the window or card title: title=\"retry.go\"" },
+  theme: { values: ["auto", "night", "paper", "dusk"], detail: "the window's code colours" },
+  backdrop: { values: ["dusk", "ocean", "mint", "graphite", "none"], detail: "the background around the window" },
+  numbers: { flag: true, detail: "line numbers" },
+  hl: { detail: "highlighted lines: hl=2,4-6" },
+  id: { detail: "blocks with the same id= are one show" },
+  step: { detail: "this step's name in a show" },
+  transition: { values: ["morph", "fade", "slide"], detail: "how a show moves between steps" },
+};
+const MAP_OPTS: OptTable = {
+  layout: { values: ["map", "right", "org", "radial"], detail: "how branches are laid out" },
+  lines: { values: ["curved", "straight", "orthogonal", "tapered"], detail: "the lines between topics" },
+  nodes: { values: ["box", "pill", "underline"], detail: "the shape of topics" },
+  theme: { values: ["auto", "harbor", "blueprint", "ink", "garden"], detail: "the map's look" },
+  view: { values: ["2d", "3d"], detail: "start in 2D or 3D" },
+  camera: { values: ["iso", "perspective"], detail: "the 3D camera" },
+  floors: { values: ["on", "off"], detail: "linked maps hover above in 3D" },
+  kind: { values: ["blocks", "bricks", "toy"], detail: "the 3D look" },
+  steps: { flag: true, detail: "on a slide, one branch per click" },
+  flow: { values: ["on", "off"], detail: "dots flowing along the lines" },
+};
+const INCLUDE_OPTS: OptTable = {
+  title: { detail: "the code card's title: title=NuGet.config" },
+  lang: { values: FENCE_LANGS.filter((l) => !["mermaid", "stage", "mindmap"].includes(l)), detail: "the language, when the file name does not tell" },
+};
+
+/** fenceOpens reports whether line n starts a fenced block (not closes one). */
+function fenceOpens(doc: Text, n: number): boolean {
+  let open = false;
+  for (let i = 1; i < n; i++) if (/^\s*(`{3,}|~{3,})/.test(doc.line(i).text)) open = !open;
+  return !open;
+}
+
+/** optionsAt completes `name` or `name=value` for the last word typed after the fixed part of a line. */
+function optionsAt(table: OptTable, token: string, pos: number): CompletionResult | null {
+  const eq = token.indexOf("=");
+  if (eq >= 0) {
+    const vals = table[token.slice(0, eq)]?.values;
+    return vals ? { from: pos - (token.length - eq - 1), options: opts(vals, "enum"), validFor: /^[\w-]*$/ } : null;
+  }
+  return {
+    from: pos - token.length,
+    options: Object.entries(table).map(([label, o]) => ({ label, type: "property", detail: o.detail, apply: o.flag ? label : `${label}=` })),
+    validFor: /^[\w-]*$/,
+  };
+}
+
+/** blockLines: the lines of the fenced block that ends just above line n (for callout line numbers). */
+function blockLines(doc: Text, n: number): string[] {
+  let end = 0;
+  for (let i = n - 1; i >= 1; i--) {
+    const t = doc.line(i).text;
+    if (/^\s*(`{3,}|~{3,})\s*$/.test(t)) { end = i; break; }
+    if (!/^\s*<!--\s*callout:/.test(t) && t.trim() !== "") return [];
+  }
+  if (!end) return [];
+  for (let i = end - 1; i >= 1; i--) if (/^\s*(`{3,}|~{3,})/.test(doc.line(i).text)) {
+    const out: string[] = [];
+    for (let k = i + 1; k < end; k++) out.push(doc.line(k).text);
+    return out;
+  }
+  return [];
+}
+
 export function siCompletions(rules: Rules) {
   const names = Object.keys(rules.directives).sort();
   return (ctx: CompletionContext): CompletionResult | null => {
     const line = ctx.state.doc.lineAt(ctx.pos);
     const before = line.text.slice(0, ctx.pos - line.from);
+    const fence = /^\s*(?:`{3,}|~{3,})([\w#+.-]*)(.*)$/.exec(before);
+    if (fence && fenceOpens(ctx.state.doc, line.number)) {
+      if (fence[2] === "") {
+        if (!fence[1] && !ctx.explicit) return null;
+        return { from: ctx.pos - fence[1].length, options: opts(FENCE_LANGS, "type"), validFor: /^[\w#+.-]*$/ };
+      }
+      if (!/^\s/.test(fence[2])) return null;
+      const token = /(\S*)$/.exec(fence[2])![1];
+      return optionsAt(fence[1].toLowerCase() === "mindmap" ? MAP_OPTS : CODE_OPTS, token, ctx.pos);
+    }
     let m = /<!--\s*([\w-]+)\s*:(.*?)([^\s·,]*)$/.exec(before);
+    if (m && (m[1] === "include" || m[1] === "code") && /\S\s/.test(m[2]) && !(m[2] + m[3]).includes("-->"))
+      return optionsAt(INCLUDE_OPTS, m[3], ctx.pos);
+    if (m && m[1] === "callout" && !(m[2] + m[3]).includes("-->")) {
+      if (/^\s*$/.test(m[2])) {
+        const lines = blockLines(ctx.state.doc, line.number);
+        return lines.length ? { from: ctx.pos - m[3].length, options: lines.map((t, i) => ({ label: String(i + 1), type: "constant", detail: t.trim().slice(0, 60) })), validFor: /^\d*$/ } : null;
+      }
+      return /^\s*\d+\s+\S/.test(m[2]) ? { from: ctx.pos - m[3].length, options: [{ label: "at=", type: "property", detail: "where the note sits: at=dx,dy from the line end" }], validFor: /^[\w=]*$/ } : null;
+    }
     if (m && rules.directives[m[1]] && !(m[2] + m[3]).includes("-->")) {
       const options = valueOptions(rules, m[1], m[2] + m[3]);
       if (options.length) return { from: ctx.pos - m[3].length, options, validFor: /^[^\s·,]*$/ };

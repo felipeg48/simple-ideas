@@ -85,3 +85,28 @@ describe("highlight marks", () => {
     expect([...text.matchAll(HL_RE)].map((m) => m[0])).toEqual(["==to keep==", "==two=="]);
   });
 });
+
+describe("fence, include and callout completion", () => {
+  it("offers languages right after ``` on an opening fence, not a closing one", async () => {
+    expect(await complete("```cs")).toContain("csharp");
+    expect(await complete("```go\nx\n```")).toEqual([]);
+  });
+  it("offers code window options and their values", async () => {
+    expect(await complete("```go ")).toEqual(expect.arrayContaining(["window", "title", "numbers", "id", "transition"]));
+    expect(await complete("```go window=")).toEqual(["mac", "windows", "terminal", "none"]);
+    expect(await complete("```go numbers backdrop=")).toContain("graphite");
+  });
+  it("offers mind map options after ```mindmap", async () => {
+    expect(await complete("```mindmap ")).toEqual(expect.arrayContaining(["layout", "view", "kind", "steps", "flow"]));
+    expect(await complete("```mindmap kind=")).toEqual(["blocks", "bricks", "toy"]);
+  });
+  it("offers title= and lang= after an include path, and languages for lang=", async () => {
+    expect(await complete("<!-- include: ../code/NuGet.config ")).toEqual(["title", "lang"]);
+    expect(await complete("<!-- include: ../code/NuGet.config lang=")).toContain("xml");
+  });
+  it("offers the block's line numbers after callout:, then at=", async () => {
+    const doc = "```go window=mac\nfunc a() {\n\treturn\n}\n```\n<!-- callout: ";
+    expect(await complete(doc)).toEqual(["1", "2", "3"]);
+    expect(await complete("```go\nx\n```\n<!-- callout: 1 Note ")).toEqual(["at="]);
+  });
+});

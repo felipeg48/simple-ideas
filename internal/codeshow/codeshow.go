@@ -262,7 +262,7 @@ func fenceAt(lines []string, i int) (Step, bool) {
 // Op is one edit from the Window view. Step indexes the show's steps; Index
 // a callout of that step.
 type Op struct {
-	Kind  string `json:"kind"` // set, set-step, add-step, del-step, move-step, add-callout, edit-callout, move-callout, del-callout
+	Kind  string `json:"kind"` // set, set-step, set-code, add-step, del-step, move-step, add-callout, edit-callout, move-callout, del-callout
 	Step  int    `json:"step"`
 	Index int    `json:"index"`
 	Field string `json:"field,omitempty"`
@@ -296,6 +296,9 @@ func Apply(text string, line int, op Op) (string, int, error) {
 		}
 	case "set-step": // one step's own option: title, hl, step (its name)
 		setInfo(st, SetAttr(st.Info, op.Field, op.Value))
+	case "set-code": // one step's code, typed in the Window view
+		body := strings.Split(strings.TrimRight(op.Text, "\n"), "\n")
+		lines = append(lines[:st.Start+1], append(body, lines[st.End:]...)...)
 	case "add-callout", "edit-callout", "move-callout", "del-callout":
 		if op.Kind != "add-callout" && (op.Index < 0 || op.Index >= len(st.Callouts)) {
 			return text, line, errors.New("no such callout")

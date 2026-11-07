@@ -8,6 +8,41 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { api, type Problem } from "./api";
 import { resolvedTheme } from "./theme";
 import { Field } from "./map-editor";
+import { EditorState } from "@codemirror/state";
+import { EditorView, keymap, lineNumbers } from "@codemirror/view";
+import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
+
+/** StepCode: a small code editor for one step; a pause in typing (or leaving it) writes the code back. */
+function StepCode(p: { code: string; label: string; onCommit(code: string): void }) {
+  const host = useRef<HTMLDivElement>(null);
+  const view = useRef<EditorView | null>(null);
+  const commit = useRef(p.onCommit);
+  commit.current = p.onCommit;
+  const sent = useRef(p.code);
+  useEffect(() => {
+    let timer = 0;
+    const flush = () => { clearTimeout(timer); const v = view.current?.state.doc.toString(); if (v !== undefined && v !== sent.current) { sent.current = v; commit.current(v); } };
+    view.current = new EditorView({
+      parent: host.current!,
+      state: EditorState.create({
+        doc: p.code,
+        extensions: [lineNumbers(), history(), keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+          EditorView.contentAttributes.of({ "aria-label": p.label }),
+          EditorView.updateListener.of((u) => { if (u.docChanged) { clearTimeout(timer); timer = window.setTimeout(flush, 700); } }),
+          EditorView.domEventHandlers({ blur: () => { flush(); } })],
+      }),
+    });
+    return () => { flush(); view.current?.destroy(); view.current = null; };
+  }, []);
+  // the step changed outside (undo, the text view, another step): show it, unless it is what was just sent
+  useEffect(() => {
+    const v = view.current;
+    if (!v || p.code === v.state.doc.toString()) return;
+    sent.current = p.code;
+    v.dispatch({ changes: { from: 0, to: v.state.doc.length, insert: p.code } });
+  }, [p.code]);
+  return <div class="cwx-code" ref={host} />;
+}
 
 interface Callout { line: number; text: string; at?: [number, number] }
 interface Step { start: number; lang: string; info: string; attrs: Record<string, string>; code: string; callouts: Callout[] | null }
@@ -159,8 +194,9 @@ export function WindowEditor(p: { path: string; text: string; line: number; setT
           </ol>
           <div class="mapx-actions">
             <button class="btn" onClick={() => { op({ kind: "add-step", step: sel }); go(sel + 1); }}>Add a step</button>
-            <span class="mute">a copy of step {sel + 1}: change its code in the text</span>
+            <span class="mute">a copy of step {sel + 1}</span>
           </div>
+          {step && <StepCode key={sel + ":" + (resp?.line ?? 0)} code={step.code} label={"Code of step " + (sel + 1)} onCommit={(code) => op({ kind: "set-code", step: sel, text: code })} />}
         </section>
         <section class="insp">
           <div class="insp-head"><b>Callouts</b><span class="mute">step {sel + 1}</span></div>

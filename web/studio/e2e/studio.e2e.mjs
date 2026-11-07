@@ -513,6 +513,27 @@ tests["window view: style, callout, undo"] = async function () {
   }
 };
 
+tests["window view: edit a step's code, undo"] = async function () {
+  const { ctx, page } = await open("light", { width: 1440, height: 900 });
+  await openFile(page, "code.md");
+  await page.click('.cm-line:has-text("send()")');
+  await page.click(".rb-mode button:has-text('Window')");
+  await page.waitForSelector(".cwx iframe");
+  await page.click(".cwx-steps li:nth-child(2) button[aria-pressed]");
+  const code = page.locator('.cwx-code .cm-content[aria-label="Code of step 2"]');
+  await code.waitFor();
+  await page.click('.cwx-code .cm-line:has-text("retry()")');
+  await page.keyboard.press("End");
+  await page.keyboard.type(" // again");
+  await until(() => readFileSync(CODE, "utf8").includes("retry() // again"), 6000, "the step's code saved");
+  if (readFileSync(CODE, "utf8").split("// again").length !== 2) throw new Error("only step 2 should change");
+  await page.click(".cwx .insp-head");
+  await page.keyboard.press("ControlOrMeta+z");
+  await until(() => !readFileSync(CODE, "utf8").includes("// again"), 6000, "undo restored the code");
+  await until(async () => !(await page.textContent(".cwx-code .cm-content")).includes("// again"), 6000, "the step editor follows undo");
+  await ctx.close();
+};
+
 let failed = 0;
 for (const [name, fn] of Object.entries(tests)) {
   if (process.env.ONLY && !name.includes(process.env.ONLY)) continue; // ONLY=generator npm run e2e
