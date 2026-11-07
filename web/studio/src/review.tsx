@@ -4,9 +4,13 @@
 import { useEffect, useState } from "preact/hooks";
 
 interface Reply { name: string; text: string; time: string }
-interface Comment { id: string; anchor: string; name: string; text: string; time: string; resolved?: boolean; replies?: Reply[] }
+interface Comment { id: string; anchor: string; quote?: string; name: string; text: string; time: string; resolved?: boolean; replies?: Reply[] }
 
-const where = (a: string) => a === "page" ? "The page" : a.startsWith("slide:") ? "Slide " + a.slice(6) : "Section " + a.slice(8).replace(/-/g, " ");
+// a comment sits on a slide, a section or the page, optionally pinned to one block in it (/b4-1a2b3c)
+const where = (anchor: string) => {
+  const a = anchor.split("/")[0];
+  return a === "page" ? "The page" : a.startsWith("slide:") ? "Slide " + a.slice(6) : "Section " + a.slice(8).replace(/-/g, " ");
+};
 
 async function post(path: string, body: unknown) {
   const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -46,6 +50,7 @@ export function Review(p: { active: string | null; onClose(): void }) {
             <li class={c.resolved ? "done" : ""}>
               <div class="rev-head"><b>{where(c.anchor)}</b><span class="mute">{c.name} · {c.time.slice(0, 16).replace("T", " ")}</span>
                 <button class="btn" type="button" onClick={() => act("/_si/review/resolve", { id: c.id, resolved: !c.resolved })}>{c.resolved ? "Reopen" : "Resolve"}</button></div>
+              {c.quote && <q class="rev-quote">{c.quote}</q>}
               <p>{c.text}</p>
               {(c.replies || []).map((r) => <div class="rev-reply"><b>{r.name}</b> <span>{r.text}</span></div>)}
               <form class="rev-form" onSubmit={(e) => { e.preventDefault(); const t = (draft[c.id] || "").trim(); if (t) void act("/_si/review/reply", { id: c.id, name, text: t }).then(() => setDraft({ ...draft, [c.id]: "" })); }}>

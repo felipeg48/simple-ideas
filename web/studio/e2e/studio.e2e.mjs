@@ -618,11 +618,17 @@ tests["review: a reviewer comments through a review link, the Studio sees it liv
     const reviewer = await (await browser.newContext()).newPage();
     await reviewer.goto(link.replace("/?k=", "/talk.html?k="));
     await reviewer.click(".rv-btn");
+    // pin the comment to a block of the slide: click it while the box is open
+    const blk = await reviewer.$(".si-slide.si-current h1, .si-slide.si-current h2, .si-slide.si-current p");
+    if (!blk) throw new Error("no block on the reviewer's slide");
+    { await blk.click(); await until(async () => (await reviewer.textContent(".rv-where")).includes("“"), 3000, "the block is picked"); }
     await reviewer.fill(".rv-box input", "Ana");
     await reviewer.fill(".rv-box textarea", "Open with the promise, then the numbers.");
     await reviewer.click(".rv-box button[type=submit]");
     await until(async () => (await reviewer.textContent(".rv-box")).includes("Open with the promise"), 6000, "the reviewer sees the comment");
     await until(async () => (await page.textContent(".review")).includes("Open with the promise"), 8000, "the Studio sees it live");
+    if (!/"anchor": "slide:\d+\/b\d+-[0-9a-f]{6}"/.test(readFileSync(join(root, ".si/review/talk.md.json"), "utf8"))) throw new Error("the comment is not pinned to its block");
+    if (!(await page.$(".review .rev-quote"))) throw new Error("the Studio does not show the pinned block's text");
     await page.click(".review .rev-head button:has-text('Resolve')");
     await until(() => readFileSync(join(root, ".si/review/talk.md.json"), "utf8").includes('"resolved": true'), 6000, "resolved in .si/review/talk.md.json");
     await page.screenshot({ path: join(out, "review.png") });

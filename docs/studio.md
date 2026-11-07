@@ -270,7 +270,13 @@ be a hex hash. Commits use your own git identity.
 (the port + 2, any interface; `--review-addr` picks another) for people on
 your network. It serves the decks and documents read-only with a **Comments**
 button: a reviewer writes a name and a note on the current slide (or the
-section at the top of the page) and sees the others'. Comments are stored in
+section at the top of the page) and sees the others'. With the comment box
+open, clicking a paragraph, a list item, code, a figure or a heading pins the
+note to that block (an amber outline shows the pick; "Comment on the whole
+slide instead" undoes it); pinned notes show as numbered amber pins beside
+their block, and the Review panel quotes the block. A pin is stored as the
+block's position and a hash of its text (`slide:3/b2-1a2b3c`), so it falls back
+to its slide or section when that block is rewritten. Comments are stored in
 `.si/review/<page>.json` next to the sources. **Review** in the Studio's top
 bar (or ⌘K → Review) lists the open file's comments live (SSE, also when the
 review link runs in another si), with reply, resolve and reopen.

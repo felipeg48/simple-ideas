@@ -57,9 +57,16 @@ func TestReviewListener(t *testing.T) {
 	}
 	var c1 Comment
 	json.Unmarshal([]byte(body), &c1)
+	pinned := `{"page":"talk.md","anchor":"slide:1/b2-a1b2c3","quote":"` + strings.Repeat("q", 200) + `","name":"Ana","text":"This bullet."}`
+	code2, body2 := do("POST", "/_si/review", ts.URL, pinned)
+	var cp Comment
+	if code2 != 200 || json.Unmarshal([]byte(body2), &cp) != nil || cp.Anchor != "slide:1/b2-a1b2c3" || len(cp.Quote) != 120 {
+		t.Fatalf("a comment pinned to a block: %d %s", code2, body2)
+	}
 	for _, bad := range []string{
 		`{"page":"../x.md","anchor":"page","name":"A","text":"t"}`,
 		`{"page":"talk.md","anchor":"slide:1;x","name":"A","text":"t"}`,
+		`{"page":"talk.md","anchor":"slide:1/b2-zzzzzz","name":"A","text":"t"}`,
 		`{"page":"talk.md","anchor":"page","name":"","text":"t"}`,
 		`{"page":"talk.md","anchor":"page","name":"A","text":"` + strings.Repeat("x", 2001) + `"}`,
 	} {
@@ -73,7 +80,7 @@ func TestReviewListener(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, ".si", "review", "talk.md.json")); err != nil {
 		t.Fatalf("stored next to the sources: %v", err)
 	}
-	if cs := s.reviews().load("talk.md"); len(cs) != 1 || cs[0].Text != "Say <b>why</b> first." {
+	if cs := s.reviews().load("talk.md"); len(cs) != 2 || cs[0].Text != "Say <b>why</b> first." {
 		t.Fatalf("stored as written (the page shows it with textContent): %+v", cs)
 	}
 
@@ -99,7 +106,7 @@ func TestReviewListener(t *testing.T) {
 	if code, _ := call("POST", "/_si/review/resolve", "evil.example", `{"page":"talk.md","id":"`+c1.ID+`","resolved":false}`); code != http.StatusForbidden {
 		t.Errorf("a rebinding host: %d", code)
 	}
-	if cs := s.reviews().load("talk.md"); len(cs) != 1 || !cs[0].Resolved || len(cs[0].Replies) != 1 {
+	if cs := s.reviews().load("talk.md"); len(cs) != 2 || !cs[0].Resolved || len(cs[0].Replies) != 1 {
 		t.Errorf("stored: %+v", cs)
 	}
 }
