@@ -9,6 +9,11 @@
 .si-mm-main{block-size:100%}
 .si-mindmap.si-mm-on .si-mm-list{display:none}
 .si-mm-list{padding:1em 1.5em;overflow:auto;block-size:100%;box-sizing:border-box}
+/* a phone in 3D can read the map as its list (the List tool) */
+.si-mm-tools [data-a="list"]{display:none}
+@media (max-width:640px) and (orientation:portrait){.si-mindmap.si-mm-is3d .si-mm-tools [data-a="list"]{display:inline-block}}
+.si-mindmap.si-mm-on.si-mm-listview .si-mm-list{display:block;position:absolute;inset:0;z-index:2;padding-block-end:4em;background:var(--si-mm-bg);color:var(--si-mm-fg)}
+.si-mindmap.si-mm-listview .si-mm-tools{z-index:3}
 .si-mindmap .si-mm-svg{display:block;inline-size:100%;block-size:100%;max-inline-size:none;touch-action:none;cursor:grab;transition:opacity .22s ease;user-select:none;-webkit-user-select:none}
 .si-mm-svg.si-mm-dragging,.si-mm-svg.si-mm-dragging .si-mm-node{cursor:grabbing}
 .si-mm-node{cursor:pointer;outline:none}

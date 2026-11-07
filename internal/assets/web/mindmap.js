@@ -99,7 +99,7 @@
     var has3d = !!window.SIMindmap3D, persp = this.opt('camera') === 'perspective', KINDS = { blocks: 'Blocks', bricks: 'Bricks', toy: 'Toy' };
     tools.innerHTML = '<button type="button" data-a="find" title="Find' + (this.full ? ' (/)' : '') + '">Find</button>' +
       (this.full ? '<button type="button" data-a="play" aria-pressed="false" title="Play: one branch at a time">Play</button>' : '') +
-      (has3d ? '<button type="button" data-a="view" aria-pressed="false" title="Show the map in 3D or 2D">3D</button><button type="button" data-a="cam" title="Switch the 3D camera">' + (persp ? 'Isometric' : 'Perspective') + '</button><button type="button" data-a="kind" title="The 3D look: blocks, bricks or toy (click for the next)">' + (KINDS[this.opt('kind')] || 'Blocks') + '</button>' : '') +
+      (has3d ? '<button type="button" data-a="view" aria-pressed="false" title="Show the map in 3D or 2D">3D</button><button type="button" data-a="cam" title="Switch the 3D camera">' + (persp ? 'Isometric' : 'Perspective') + '</button><button type="button" data-a="kind" title="The 3D look: blocks, bricks or toy (click for the next)">' + (KINDS[this.opt('kind')] || 'Blocks') + '</button><button type="button" data-a="list" aria-pressed="false" title="Read the map as a list">List</button>' : '') +
       '<button type="button" data-a="in" aria-label="Zoom in">+</button><button type="button" data-a="out" aria-label="Zoom out">−</button><button type="button" data-a="fit">Fit</button><button type="button" data-a="tidy" title="Put moved topics back">Tidy</button>';
     el.appendChild(tools);
     this.playBtn = tools.querySelector('[data-a="play"]');
@@ -108,6 +108,7 @@
       var b = e.target.closest('button'); if (!b) return;
       var a = b.getAttribute('data-a'), w = svg.clientWidth, hh = svg.clientHeight, d3 = self.is3d && self.d3;
       if (a === 'view') self.set3d(!self.is3d);
+      else if (a === 'list') { var on = self.el.classList.toggle('si-mm-listview'); b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'Map' : 'List'; }
       else if (a === 'cam' && self.d3) { self.d3.setCam(self.d3.cam === 'iso' ? 'persp' : 'iso'); b.textContent = self.d3.cam === 'iso' ? 'Perspective' : 'Isometric'; }
       else if (a === 'kind' && self.d3) { var order = ['blocks', 'bricks', 'toy'], next = order[(order.indexOf(self.d3.kind) + 1) % 3]; self.d3.setKind(next); b.textContent = KINDS[next]; }
       else if (d3 && (a === 'in' || a === 'out')) d3.zoom(a === 'in' ? 0.8 : 1.25);

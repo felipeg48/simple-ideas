@@ -588,10 +588,14 @@
     }, done);
   };
   function boxOf(objs) { var b = new THREE.Box3(); objs.forEach(function (o) { b.expandByObject(o); }); return b; }
-  /* a portrait screen (a phone) frames the main map only, a little tighter, floors left above it */
+  /* a portrait screen (a phone) frames the central topic and its first ring, closer; pan or Fit again for the rest */
   P.fit = function (ms) {
-    var portrait = (this.box.clientWidth || 1) < (this.box.clientHeight || 1) * 0.8;
-    this.fly(portrait && this.main ? boxOf([this.main]).expandByScalar(-0.4) : boxOf([this.world]), ms === undefined ? 700 : ms);
+    var portrait = (this.box.clientWidth || 1) < (this.box.clientHeight || 1) * 0.8, box;
+    if (portrait && this.main) {
+      var ring = this.main.userData.all.filter(function (n) { return n.dd <= 1 && n.holder; }).map(function (n) { return n.holder; });
+      box = ring.length ? boxOf(ring).expandByScalar(0.3) : boxOf([this.main]);
+    } else box = boxOf([this.world]);
+    this.fly(box, ms === undefined ? 700 : ms);
   };
   P.zoom = function (f) {
     if (this.camera === this.ortho) { this.camera.zoom = Math.max(0.2, Math.min(8, this.camera.zoom / f)); this.camera.updateProjectionMatrix(); }
