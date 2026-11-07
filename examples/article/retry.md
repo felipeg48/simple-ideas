@@ -8,6 +8,8 @@ theme: studio
 footer: Northwind Logistics engineering
 year: 2026
 copyright: Northwind Logistics
+tags: payments, reliability, go
+canonical: https://northwind.example/engineering/one-retry
 ---
 
 # One retry fixed nine in ten night-time declines

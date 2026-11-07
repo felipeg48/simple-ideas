@@ -72,6 +72,12 @@ Usage:
   si code <file.md> [--id show] [--png [--scale 2]] [--svg] [--gif] [-o dir]
         code windows and shows: one <file>-<id>-<n>.png / .svg per step (window,
         backdrop and callouts) and <file>-<id>.gif, the whole show animated
+  si publish <file.md> --to linkedin|devto|hashnode [--url URL] [--base-url URL] [--canonical URL] [--public] [--copy] [--yes]
+        a deck to LinkedIn as a document post (its PDF), an article as a LinkedIn link
+        post or to dev.to / Hashnode; a dry run that prints the requests unless --yes
+  si publish login linkedin|devto|hashnode [--token T] [--client-id ID --client-secret S] [--url blog]
+  si publish logout [linkedin|devto|hashnode]
+        store or forget a login (in your config dir, mode 0600; see docs/publish.md)
   si mindmap import <file.opml|.mm|.xmind|.mmd> [-o out.md]
         turn an OPML, FreeMind, XMind or Mermaid mindmap file into a mind map page
   si mindmap export <map.md> --to opml|freemind|xmind|mermaid [--map id] [-o file|-]
@@ -186,6 +192,10 @@ type options struct {
 	to, mapID                                    string  // si mindmap export --to, --map
 	gif                                          bool    // si code --gif
 	showID                                       string  // si code --id
+	url, token, clientID, clientSecret           string  // si publish
+	canonical, baseURL                           string  // si publish
+	yes, copy, public, mp4                       bool    // si publish --yes/--copy/--public; --mp4
+	port                                         int     // si publish login linkedin: the loopback redirect port
 	css                                          multi
 	args                                         []string
 }
@@ -220,6 +230,17 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.mapID, "map", "", "")
 	fl.BoolVar(&o.gif, "gif", false, "")
 	fl.StringVar(&o.showID, "id", "", "")
+	fl.StringVar(&o.url, "url", "", "")
+	fl.StringVar(&o.token, "token", "", "")
+	fl.StringVar(&o.clientID, "client-id", "", "")
+	fl.StringVar(&o.clientSecret, "client-secret", "", "")
+	fl.StringVar(&o.canonical, "canonical", "", "")
+	fl.StringVar(&o.baseURL, "base-url", "", "")
+	fl.BoolVar(&o.yes, "yes", false, "")
+	fl.BoolVar(&o.copy, "copy", false, "")
+	fl.BoolVar(&o.public, "public", false, "")
+	fl.BoolVar(&o.mp4, "mp4", false, "")
+	fl.IntVar(&o.port, "port", 8723, "")
 	fl.BoolVar(&o.write, "write", false, "")
 	fl.BoolVar(&o.terminal, "terminal", false, "")
 	fl.BoolVar(&o.notes, "notes", false, "")
@@ -388,6 +409,8 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		return selfUpdate(stdout, stderr)
 	case "mindmap":
 		return runMindmap(rest, o, stdout, stderr)
+	case "publish":
+		return runPublish(rest, o, stdout, stderr)
 	case "code":
 		if len(rest) != 1 {
 			return usageErr(stderr, "code needs one <file.md> with code windows (--png, --svg, --gif)")

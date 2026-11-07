@@ -11,6 +11,7 @@ watermark: Confidential
 watermark-opacity: 0.05
 runbook: runbook.json
 demos: demos/
+linkedin: One order, five hand-offs, and a promise that still lands on Thursday. The talk from our operations review, slide by slide. #logistics #reliability
 ---
 
 # The Thursday Promise

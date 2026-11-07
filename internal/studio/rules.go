@@ -61,6 +61,9 @@ var help = map[string]string{
 	"edit-url":          "base of the Edit this page link",
 	"repo":              "the default repo for code: and diff:",
 	"watermark-opacity": "watermark opacity (default 0.06)",
+	"linkedin":          "si publish: the text of the LinkedIn post",
+	"tags":              "si publish: comma-separated tags for dev.to and Hashnode",
+	"canonical":         "si publish: the article's original URL",
 	// mind maps (type: mindmap)
 	"lines":              "mind map lines: curved, straight, orthogonal or tapered",
 	"nodes":              "mind map topics: box, pill or underline",

@@ -101,6 +101,7 @@ lang: en
 | `edit-url` | URL | none | guides: base of the "Edit this page" link (§20) |
 | `header`, `footer-page` | `off` | on | a guide page without the guide's `_header.md` / `_footer.md` (§20) |
 | `repo` | `OWNER/REPO`, a github.com URL, or a local clone folder | none | the default repo of `code:` and `diff:` (§13) |
+| `linkedin`, `tags`, `canonical` | text; comma-separated tags; a URL | none | `si publish` (§26): the LinkedIn post text, dev.to / Hashnode tags, the article's original URL |
 
 An included module's own front matter is ignored; the including deck decides.
 
@@ -2227,3 +2228,43 @@ Examples: `examples/code/retry.md` (a four-step show on a backdrop, a Windows
 window with C# and a `.csproj`, a terminal), the showcase slide "The retry
 rule" (two steps, one click), and a terminal window in
 `examples/article/retry.md`.
+
+## 26. Publishing
+
+`si publish` posts a deck to LinkedIn as a document post (the deck as PDF,
+which the feed shows as a swipeable carousel) and an article to LinkedIn as a
+link post, or to dev.to or Hashnode. It is a **dry run** that prints the exact
+requests unless you add `--yes`.
+
+```markdown
+---
+title: The Thursday Promise
+description: How one order crosses five hand-offs and still arrives on Thursday.
+linkedin: Our checkout keeps a promise across five hand-offs. Here is how, in 22 slides. #logistics #retries
+tags: go, reliability, payments
+canonical: https://northwind.dev/talks/thursday
+---
+```
+
+```bash
+si publish talk.md --to linkedin                 # dry run
+si publish talk.md --to linkedin --yes           # renders the PDF, uploads, posts
+si publish article.md --to devto --base-url https://northwind.dev/retry --yes   # a draft; --public publishes
+si publish article.md --to linkedin --url https://northwind.dev/retry --yes
+si publish article.md --to linkedin --copy       # rich text for LinkedIn's article editor
+si publish login linkedin --client-id ID --client-secret SECRET   # or --token
+si publish logout
+```
+
+- The post text is `linkedin:`, else `description:`, else the title.
+- An article's body is its Markdown with includes expanded and the title
+  heading dropped; relative links and images become absolute against
+  `--base-url` (si warns about each relative image without it).
+- `tags:` go to dev.to (the first four) and Hashnode; `canonical:` (or
+  `--canonical`) becomes `canonical_url` / `originalArticleURL`, and is the
+  link of a LinkedIn link post when `--url` is not given.
+- Logins are stored in your config dir with mode 0600, never in the repo.
+  LinkedIn logins last 60 days; the Hashnode API needs a Pro plan.
+
+Details, scopes and the exact requests: `docs/publish.md`.
+
