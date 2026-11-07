@@ -70,7 +70,8 @@ Usage:
         write one self-contained HTML file per deck plus index.html
         --pdf also renders each deck to pdfs/<name>.pdf and adds a PDF badge to the index tiles
         --mp4 [--dwell 3] also films each deck to <name>.mp4 (1080p): every slide and build
-        step, held for its share of (N min) or --dwell seconds, dissolving into the next
+        step, held for its share of (N min) or --dwell seconds, and the transitions and
+        canvas morphs as they move (--dissolve: stills dissolving into each other)
   si [build] <map.md> [--svg] [--png [--scale 2]] [--pdf] [--mp4]
         mind map pages: every map as <name>-<id>.svg / .png (2D, theme and watermark
         baked in), pdfs/<name>.pdf with one page per map (map › links work), and
@@ -215,6 +216,7 @@ type options struct {
 	url, token, clientID, clientSecret           string  // si publish
 	canonical, baseURL                           string  // si publish
 	yes, copy, public, mp4                       bool    // si publish --yes/--copy/--public; --mp4
+	dissolve                                     bool    // --mp4 --dissolve: stills that dissolve, not the filmed motion
 	port                                         int     // si publish login linkedin: the loopback redirect port
 	css                                          multi
 	args                                         []string
@@ -261,6 +263,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.copy, "copy", false, "")
 	fl.BoolVar(&o.public, "public", false, "")
 	fl.BoolVar(&o.mp4, "mp4", false, "")
+	fl.BoolVar(&o.dissolve, "dissolve", false, "")
 	fl.BoolVar(&o.budget, "budget", false, "")
 	fl.BoolVar(&o.review, "review", false, "")
 	fl.StringVar(&o.reviewAddr, "review-addr", "", "")
@@ -625,6 +628,17 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 				mp4 := func() error { return exportMindmapMP4(chrome, dest, out, d.Name, o.scale, stdout) }
 				if d.Meta.MapView == "3d" {
 					mp4 = func() error { return exportMindmap3DMP4(chrome, dest, out, d.Name, stdout) }
+					if !o.dissolve {
+						mp4 = func() error {
+							n, err := exportMindmap3DMotion(chrome, dest, out, d.Name)
+							if err != nil {
+								fmt.Fprintf(stderr, "si: %s: filming the motion failed (%v); falling back to --dissolve\n", d.Name, err)
+								return exportMindmap3DMP4(chrome, dest, out, d.Name, stdout)
+							}
+							fmt.Fprintf(stdout, "  %-28s (mp4, 3D Play in motion, %d views, %d KB)\n", d.Name+".mp4", n, fileKB(filepath.Join(out, d.Name+".mp4")))
+							return nil
+						}
+					}
 				}
 				if err := mp4(); err != nil {
 					fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
@@ -633,9 +647,27 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			}
 		}
 		if chrome != "" && o.mp4 && !d.IsDoc() { // the deck as a video: every slide and build step
-			if err := exportDeckMP4(chrome, dest, out, d, o.dwell, stdout); err != nil {
-				fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
-				failed = true
+			err := fmt.Errorf("dissolve")
+			if !o.dissolve {
+				page, _ := os.ReadFile(dest)
+				info := &deckInfo{name: d.Name, steps: slideSteps(string(page)), minutes: func(i int) float64 {
+					if i < len(d.Slides) {
+						return d.Slides[i].Minutes
+					}
+					return 0
+				}}
+				var n int
+				if n, err = exportDeckMotion(chrome, dest, out, info, o.dwell); err == nil {
+					fmt.Fprintf(stdout, "  %-28s (mp4, in motion, %d views, %d KB)\n", d.Name+".mp4", n, fileKB(filepath.Join(out, d.Name+".mp4")))
+				} else {
+					fmt.Fprintf(stderr, "si: %s: filming the motion failed (%v); falling back to --dissolve\n", d.Name, err)
+				}
+			}
+			if err != nil {
+				if err := exportDeckMP4(chrome, dest, out, d, o.dwell, stdout); err != nil {
+					fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
+					failed = true
+				}
 			}
 		}
 		if chrome != "" && o.pdf && !d.IsDoc() { // the slides PDF does not apply to a document (print it from the browser)

@@ -89,3 +89,17 @@ func TestDeckVideoPlan(t *testing.T) {
 		t.Error("hold: dwell wins, then the slide's minutes over its views (at least 1 s), else 3 s")
 	}
 }
+
+func TestOn30TakesTheLastShotBeforeEachFrame(t *testing.T) {
+	shots := []stamped{{"a", 0}, {"b", 0.05}, {"c", 0.09}, {"d", 0.2}}
+	got := on30(shots, 0.2)
+	if len(got) != 6 {
+		t.Fatalf("0.2 s at 30 fps is 6 frames, got %d", len(got))
+	}
+	want := []string{"a", "a", "b", "c", "c", "c"} // frames at 0, .033, .067, .1, .133, .167
+	for i, f := range got {
+		if f.PNG != want[i] || f.Dur != 1.0/videoFPS {
+			t.Errorf("frame %d = %s %.3f, want %s", i, f.PNG, f.Dur, want[i])
+		}
+	}
+}
