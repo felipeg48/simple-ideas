@@ -4,7 +4,7 @@
 // (which cannot reach parent directories) can reach them.
 package docs
 
-import _ "embed"
+import "embed"
 
 // Rules is RULES.md, printed by `si rules` and `si --export rules`.
 //
@@ -21,3 +21,11 @@ var AgentRules string
 //
 //go:embed reference/user-manual.md
 var Manual string
+
+// Site is the hand-written part of the docs site (si --export docs-site):
+// its settings, home page and examples page; the rules pages are generated
+// from RULES.md so they never drift.
+//
+//go:embed all:site
+var Site embed.FS
+

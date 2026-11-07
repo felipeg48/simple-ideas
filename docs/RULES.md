@@ -573,6 +573,7 @@ references shared assets as `../images/...`.
   tokens; no runtime script, and motion pauses under reduced motion. Use
   `mermaid` for dense graphs instead.
 
+  ````markdown
   ```stage
   dir: LR                              # LR (default) or TB
   Read --> Cache
@@ -581,6 +582,9 @@ references shared assets as `../images/...`.
   dot Read..Fast 2s                    # a dot loops along the route Read->Fast
   flow Read..Disk                      # marching dashes along a route
   ```
+  ````
+
+  (The `#` notes explain the lines; leave them out of a real fence.)
 
   Nodes appear in first-seen order; `dot`/`flow A..B [dur]` take the shortest
   route A→B. Labels do not wrap: a long one (`Q[Matching queue]`) is set

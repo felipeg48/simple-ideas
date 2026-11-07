@@ -8,6 +8,7 @@
 /out/
 /html/
 /si-example/
+/dist/
 
 # editors and OS
 .DS_Store

@@ -1,7 +1,7 @@
 BIN := bin/si
 INSTALL_DIR ?= $(HOME)/.bin
 
-.PHONY: build test install play-example examples check fmt clean studio-ui studio-e2e desktop-mac
+.PHONY: docs-site build test install play-example examples check fmt clean studio-ui studio-e2e desktop-mac
 
 build:
 	go build -o $(BIN) ./cmd/si
@@ -53,3 +53,10 @@ studio-e2e: build
 # si Studio.app for macOS (universal), into desktop/dist; needs Xcode command line tools
 desktop-mac:
 	desktop/build-mac.sh
+
+# the docs site, built with si from RULES.md (generated pages) into dist/docs-site
+docs-site:
+	rm -rf dist/docs-site-src dist/docs-site
+	go run ./cmd/si --export docs-site --output dist/docs-site-src
+	go run ./cmd/si build dist/docs-site-src --output dist/docs-site
+

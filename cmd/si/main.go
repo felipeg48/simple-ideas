@@ -35,6 +35,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/assets"
 	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
+	"github.com/felipeg48/simple-ideas/internal/docsite"
 	"github.com/felipeg48/simple-ideas/internal/render"
 	"github.com/felipeg48/simple-ideas/internal/serve"
 	"github.com/felipeg48/simple-ideas/internal/studio"
@@ -107,13 +108,15 @@ Usage:
         print the markdown rules (RULES.md)
   si theme list
         list the built-in themes (name, display name, aliases) for --theme / theme:
-  si --export css-rules|rules|conf|example|themes|agent-rules [--output <path>]
+  si --export css-rules|rules|conf|example|themes|agent-rules|docs-site [--output <path>]
         css-rules: starter stylesheet with every --si-* token and .si-* hook
         rules:     RULES.md
         conf:      a starter si.conf with the default keys and features
         example:   an example to copy from (default output: ./si-example); --type picks it:
                    deck (default; also slides, mindmap: the showcase with its mind maps), article, guide (also tutorial), lab, book (also reference), demo, site, all
         themes:    one sample deck per built-in theme (default: ./si-themes)
+        docs-site: the si docs site source (rules pages generated from RULES.md, the manual,
+                   live examples; default: ./si-docs-site); then si build it
         agent-rules: CLAUDE.md + AGENTS.md telling a coding agent how to write si decks
                    (default: the current dir; -o - prints it; never overwrites)
 
@@ -1018,6 +1021,18 @@ func export(o *options, stdout, stderr io.Writer) int {
 		return write(assets.StarterCSS())
 	case "rules":
 		return write(docs.Rules)
+	case "docs-site":
+		out := o.output
+		if out == "" {
+			out = "si-docs-site"
+		}
+		n, err := docsite.Generate(out)
+		if err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitProblems
+		}
+		fmt.Fprintf(stdout, "si: wrote the docs site to %s (%d rules pages); build it with: si build %s --output <dir>\n", out, n, out)
+		return exitOK
 	case "conf":
 		return write(config.Default)
 	case "example":
