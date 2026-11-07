@@ -116,6 +116,17 @@ self-contained HTML files you can mail, host or open from a USB stick.
   publishes the docs site to GitHub Pages once Pages is on (Settings ▸ Pages ▸
   Source: GitHub Actions) and the repository variable `SI_PAGES` is `on`
   (`gh variable set SI_PAGES --body on`).
+- **v2.5.0:** a logo (the Stack, `docs/brand/`) on the app icon, the Studio
+  and the docs site; Help and **About** in the Studio, the desktop app and
+  `si --version --verbose` point to https://simple-ideas.org/; **Report a
+  Problem / Request a Feature** open GitHub issue forms with the version, mode
+  and OS filled in (`si report [--feature]`); the desktop build signs with a
+  self-signed identity when you have one (`make desktop-cert`); `--mp4` films
+  the real motion (transitions, canvas morphs, 3D camera flights; `--dissolve`
+  for stills); review comments pin to a paragraph, bullet, code block or
+  figure; the map editor edits in 3D; History, Review and About are in the
+  accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
+  `version:` and a picture-plus-name `logo:`.
 - **v2.4.0:** the Studio's **History** panel (changed files and their diff,
   commit, a file's earlier versions with restore; git); **review links**
   (`si serve . --review`): reviewers on your network comment on slides and

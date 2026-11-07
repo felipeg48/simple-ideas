@@ -198,6 +198,12 @@ Not everything is a slide deck. Pick the type by what the reader does:
 - **Publishing** (RULES.md §26): `linkedin:` (the post text), `tags:`,
   `canonical:` and `cover:` (a link post's picture) in front matter feed `si publish`; it is a dry run unless `--yes`.
   Never run it with `--yes` for the author.
+- **Sites** take opt-in branding in `_site.md`: `logo: brand/mark.svg Name` (a
+  picture with the name), `favicon:`, `touch-icon:`, `og-image:` (an https URL)
+  and `version: v1.2.0 → <release notes URL>`. Never add si's own logo to a
+  page you build for someone.
+- Problems with si itself: `si report` prints a prefilled GitHub issue link;
+  `si --version --verbose` shows the build, links and credits.
 - `si --export example --type guide` (or `article`, `lab`, `book`, `all`)
   writes a working example to copy from.
 

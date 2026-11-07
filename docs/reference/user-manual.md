@@ -258,12 +258,16 @@ si migrate <src>           # an AI migration prompt for an existing deck
   document post, its PDF swipeable in the feed; an article goes to LinkedIn as a
   link, or to dev.to or Hashnode. Always a dry run first; `--yes` sends.
 - **Get reviews:** `si serve . --review` prints a keyed link for people on
-  your network: they leave comments on slides and sections, and the Studio's
+  your network: they leave comments on slides, sections or one paragraph,
+  bullet or figure (click it to pin the note), and the Studio's
   Review panel shows them live, to reply and resolve. **History** in the Studio
   shows what changed, commits, and restores earlier versions (git).
 - **Film it:** `--mp4` on `si code`, on a mind map build (in 3D when the map
   is) and on a deck build (every slide and step, `--dwell 2` for a teaser)
-  writes video that plays anywhere, made with ffmpeg if it is installed.
+  writes video that plays anywhere, with the transitions and morphs as they
+  move, made with ffmpeg if it is installed.
+- **Tell us:** Help ▸ Report a Problem (or `si report`) opens an issue with
+  your version filled in; the rules and examples live on simple-ideas.org.
 - **Start fast:** an empty folder in the Studio opens a gallery of starters
   with live thumbnails, and a six-stop tour of the window.
 

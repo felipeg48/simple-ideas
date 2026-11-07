@@ -8,6 +8,22 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 - **Idea being refined (not started; likely a separate project, not part of si):**
   the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
+- **v2.5.0 (committed, not tagged; the main thread releases it):** the Stack
+  logo (`docs/brand/`, `desktop/icon/gen.go` → `AppIcon.icns`, Studio favicon and
+  header, docs site logo/favicon/touch icon/og:image); `internal/brand` (site URL,
+  issue URLs, credits, build info) used by `si --version --verbose`, `si report
+  [--feature] [--open]`, the Studio's About dialog and Help commands (`#si-about`
+  JSON, `window.siStudio.about/help`), the desktop Help menu (Documentation, Rules,
+  Manual, Release Notes, Report a Problem…, Request a Feature…) and About (the
+  Studio's, with the binary in use); `.github/ISSUE_TEMPLATE/{bug,feature,config}.yml`;
+  docs site Help menu + `_footer.md` with the issue links and a version badge
+  (`version:` site key, from cmd/si's version; `TestDocsSiteShowsThisVersion`);
+  new front matter keys `favicon:`, `touch-icon:`, `og-image:` (opt-in, users'
+  pages carry no si branding) and `logo: picture.svg Name`; `make desktop-cert`
+  + build-mac.sh self-signed signing (falls back to ad-hoc); real-motion `--mp4`
+  (`cmd/si/motion.go`; `--dissolve` and automatic fallback); review pins on
+  blocks (`slide:3/b2-1a2b3c`, `quote`); map editor in 3D; History/Review/About in
+  the a11y e2e (dialogs take focus; Escape closes from outside).
 - **Latest release: v2.4.1: the docs site's feature pages.** The site (https://simple-ideas.org/, GitHub Pages with a custom domain)
   is titled "Write Markdown or AsciiDoc, present anything". Home: six main-feature cards (Decks, Articles, Tutorials
   and guides, Mind maps, Books, Code windows and shows) and eight secondary ones; menus Features, Examples, Rules,

@@ -99,7 +99,10 @@ what you chose.
 | `examples/` | showcase deck, included appendix, `assets/journey.svg` canvas, media, `css/harbor.css` theme, one example per document type (`article/`, `guide/`, `book/`, `demos/`, `site/`); embedded for `si new` and `--export example --type` |
 | `docs/screenshots/` | headless screenshots referenced by the README |
 | `internal/tui/` | si in the terminal: `slide.go` + `text.go` (the deck as text and colour: layouts, builds, code, tables, cards), `font.go` (block letters), `image.go` (half-block pixels), `palette.go` (theme tokens), `play.go` (`si play --terminal`, `--dump`), `notes.go` (the `--notes` teleprompter), `sync.go` (the local socket between them), `studio.go` (`si --terminal [dir]`: files, preview, problems, overlays, modes), `lab.go` (Lab mode), `pictures.go` (Kitty / iTerm2 pictures); see `docs/terminal-studio.md` |
-| `desktop/` | si Studio.app for macOS: its own module; `main.go` (starts/stops `si --web` per folder), `app_darwin.m` (Cocoa + WebKit windows and menus), `build-mac.sh` (universal bundle + zip, `make desktop-mac`) |
+| `desktop/` | si Studio.app for macOS: its own module; `main.go` (starts/stops `si --web` per folder; `helpJS`: the Help menu and About run through `window.siStudio`), `app_darwin.m` (Cocoa + WebKit windows and menus), `build-mac.sh` (universal bundle + zip, `make desktop-mac`; signs with the self-signed "simple-ideas Self-Signed" identity when present, `make desktop-cert` creates it), `icon/gen.go` (the Stack app icon, `make desktop-icon`) |
+| `internal/brand/` | what si says about itself, in one place: the docs site URL (`Site`), the repo, Help pages, `IssueURL` (Report a Problem / Request a Feature, issue forms in `.github/ISSUE_TEMPLATE/`), credits, build info; read by the CLI (`si --version --verbose`, `si report`), the Studio (`#si-about` JSON) and the docs site generator |
+| `docs/brand/` | the Stack logo set (mark, mono, favicon, app tiles, wordmark, social card); embedded as `docs.Brand` for the docs site |
+| `cmd/si/motion.go` | real-motion `--mp4`: headless Chrome over the DevTools pipe (stdlib), page slowed (Animation domain + a JS clock shim), screenshots stamped and resampled to 30 fps |
 
 ## Run and test
 
@@ -183,6 +186,11 @@ pass. The steps that matter:
 
 ## Roadmap ideas
 
+- **Brand, Help, About, Report a Problem** (DONE, v2.5.0): the Stack logo,
+  `internal/brand` as the one place for links and credits, GitHub issue forms,
+  `si report`; real-motion `--mp4`; review pins on blocks; 3D map editing.
+  Next: Developer ID signing + notarisation (needs the founder's Apple account),
+  the desktop app on Windows and Linux.
 - **`si play --remote`** (DONE, see `docs/remote.md`): a keyed second
   listener for a tablet: `tp` (teleprompter) and `draw` (pen pad) roles, synced
   through a server relay (SSE + POST); the transport is injected only in play.
