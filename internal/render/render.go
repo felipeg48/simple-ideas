@@ -784,7 +784,7 @@ func (dr *deckRenderer) reload(b *bytes.Buffer) {
 
 // PositionJS passes a terminal teleprompter's commands (next, prev, go) to the
 // deck: si play / si serve only, like the reload client, never in a built deck.
-const PositionJS = `<script>(function(){if(!window.EventSource||/[?&]si-view=/.test(location.search))return;var es=new EventSource('/_si/position/events?page='+encodeURIComponent(location.pathname));es.addEventListener('cmd',function(e){try{if(window.SI&&SI.cmd)SI.cmd(JSON.parse(e.data))}catch(x){}});})();</script>` + "\n"
+const PositionJS = `<script>window.SI_LIVE=true;(function(){if(!window.EventSource||/[?&]si-view=/.test(location.search))return;var es=new EventSource('/_si/position/events?page='+encodeURIComponent(location.pathname));es.addEventListener('cmd',function(e){try{if(window.SI&&SI.cmd)SI.cmd(JSON.parse(e.data))}catch(x){}});})();</script>` + "\n"
 
 const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <span class="si-controls">

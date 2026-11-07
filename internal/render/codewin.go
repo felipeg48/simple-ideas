@@ -32,6 +32,7 @@ var (
 type cwNote struct {
 	Line int     `json:"line"`
 	HTML string  `json:"html"`
+	Src  string  `json:"src"` // the callout's text as written: si play finds it again to save a drag
 	At   *[2]int `json:"at,omitempty"`
 }
 
@@ -104,7 +105,7 @@ func (dr *deckRenderer) codeWindows(doc ast.Node, src []byte, sc *slideCtx) {
 					dr.problem(sc, "%v", err)
 					continue
 				}
-				notes = append(notes, cwNote{Line: co.Line, HTML: dr.inline(co.Text), At: co.At})
+				notes = append(notes, cwNote{Line: co.Line, HTML: dr.inline(co.Text), Src: co.Text, At: co.At})
 			}
 			if !all {
 				cur, curID = nil, ""

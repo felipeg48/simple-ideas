@@ -14,7 +14,7 @@ func TestCodeWindows(t *testing.T) {
 	if len(res.Problems) > 0 || strings.Count(h, `<figure class="si-cw"`) != 1 || !strings.Contains(h, `data-window="mac"`) || !strings.Contains(h, `data-numbers`) || !strings.Contains(h, `data-cw-nav`) {
 		t.Fatalf("document: %s", problemsText(res))
 	}
-	if !strings.Contains(h, `"notes":[{"line":1,"html":"one call","at":[40,-20]}]`) || !strings.Contains(h, `"hl":[2]`) || !strings.Contains(h, `"name":"One"`) || !strings.Contains(h, "si code windows:") {
+	if !strings.Contains(h, `"notes":[{"line":1,"html":"one call","src":"one call","at":[40,-20]}]`) || !strings.Contains(h, `"hl":[2]`) || !strings.Contains(h, `"name":"One"`) || !strings.Contains(h, "si code windows:") {
 		t.Errorf("data or script missing")
 	}
 	if strings.Contains(h, "callout:") {

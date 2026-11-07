@@ -164,8 +164,9 @@
       b.addEventListener('pointermove', function (e) { if (!drag) return; n.at = [Math.round(drag.at[0] + e.clientX - drag.x), Math.round(drag.at[1] + e.clientY - drag.y)]; put(); });
       b.addEventListener('pointerup', function () {
         if (!drag) return; drag = null;
-        /* the Studio's Window view writes the place back as at= */
+        /* the Studio's Window view writes the place back as at=; so does si play, for a page open on its own */
         if (window.parent !== window) window.parent.postMessage({ type: 'si-cw-callout', show: self.index, step: self.k, index: k, at: n.at }, '*');
+        else if (window.SI_LIVE && window.fetch) fetch('/_si/callout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: location.pathname, line: n.line, text: n.src, at: n.at }) }).catch(function () {});
       });
       b.addEventListener('click', function (e) { e.stopPropagation(); });
     });
