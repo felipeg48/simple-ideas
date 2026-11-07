@@ -1,0 +1,45 @@
+name: docs-site
+
+# The si docs site (docs/site, generated from RULES.md and the manual by
+# `make docs-site`) on GitHub Pages, rebuilt on every push to main and tag.
+# It stays off until the repo owner turns Pages on (Settings ▸ Pages ▸ Source:
+# GitHub Actions) and sets the repository variable SI_PAGES to `on`; until
+# then every run is skipped, never failed (README, v2.3.1).
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: ${{ vars.SI_PAGES == 'on' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: make docs-site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/docs-site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

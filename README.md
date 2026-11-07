@@ -107,6 +107,13 @@ self-contained HTML files you can mail, host or open from a USB stick.
   (one page per RULES.md section, live examples on the home page); the Studio
   opens an empty folder with a start gallery of live starter thumbnails and a
   skippable tour.
+- **v2.3.1:** the desktop Help menu opens the start gallery and the tour;
+  `--mp4` also films decks (every slide and step; `--dwell` for a teaser) and 3D
+  mind map Play; a LinkedIn link post carries a picture (`cover:`); ⌘K reaches
+  the Studio from the map editor and previews; `.github/workflows/pages.yml`
+  publishes the docs site to GitHub Pages once Pages is on (Settings ▸ Pages ▸
+  Source: GitHub Actions) and the repository variable `SI_PAGES` is `on`
+  (`gh variable set SI_PAGES --body on`).
 - **In the terminal (v1.7):** `si play talk.md --terminal` presents a deck in
   the terminal itself, in the theme's colours, with block-letter titles, builds,
   code, tables, cards and pictures in half-block pixels; `--notes` in a second
