@@ -53,6 +53,9 @@ func TestStartAndStop(t *testing.T) {
 
 func TestStartReportsAFailure(t *testing.T) {
 	t.Setenv("PATH", t.TempDir()) // no si anywhere
+	installed := installedSi
+	installedSi = func() []string { return nil }
+	defer func() { installedSi = installed }()
 	if _, err := start(t.TempDir()); err == nil || !strings.Contains(err.Error(), "si binary") {
 		t.Errorf("want a clear error without si: %v", err)
 	}

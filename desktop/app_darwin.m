@@ -7,6 +7,7 @@
 extern char *goOpenFolder(char *path);
 extern void goCloseURL(char *url);
 extern void goShutdown(void);
+extern char *goStatus(void);
 
 static NSString *const kLastFolder = @"lastFolder";
 static NSString *const kRecent = @"recentFolders"; // newest first, at most ten
@@ -21,6 +22,22 @@ static NSString *const kRecent = @"recentFolders"; // newest first, at most ten
 @end
 
 static NSMutableArray<SIWindow *> *windows;
+static NSDictionary *siStatus; // goStatus: the si in use, and a newer release if there is one
+
+// bannerJS: a small "update available" note in the Studio window; its link opens the
+// release page in the browser (an external page, see isExternal).
+static NSString *bannerJS(void) {
+	NSString *tag = siStatus[@"update"], *url = siStatus[@"url"];
+	if (tag.length == 0 || url.length == 0) return nil;
+	NSData *d = [NSJSONSerialization dataWithJSONObject:@[tag, url] options:0 error:nil];
+	NSString *args = [[NSString alloc] initWithData:d encoding:NSUTF8StringEncoding];
+	return [NSString stringWithFormat:@"(function(a){if(document.getElementById('si-update'))return;var b=document.createElement('div');b.id='si-update';"
+	        "b.setAttribute('role','status');b.style.cssText='position:fixed;right:14px;bottom:14px;z-index:99999;font:500 13px system-ui;background:#1f2937;color:#fff;"
+	        "padding:9px 12px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center';"
+	        "var l=document.createElement('a');l.href=a[1];l.textContent='Download';l.style.color='#93c5fd';var x=document.createElement('button');x.setAttribute('aria-label','Dismiss');x.textContent='×';x.style.cssText='all:unset;cursor:pointer;opacity:.7';"
+	        "b.textContent='si '+a[0].replace(/^v/,'')+' is available';b.appendChild(l);b.appendChild(x);"
+	        "x.onclick=function(){b.remove()};document.body.appendChild(b)})(%@);", args];
+}
 
 // isExternal: a web page of another site, which opens in the default browser. Everything
 // else stays in the app: the Studio (loopback), and windows with no address yet, like
@@ -169,6 +186,42 @@ static NSMenu *submenu(NSMenu *bar, NSString *title) {
 	if (dir) [self openPath:dir];
 	else if (windows.count == 0) [self openFolder:nil];
 	[NSApp activateIgnoringOtherApps:YES];
+	[self checkStatus];
+}
+
+// checkStatus asks Go which si runs and whether a newer release is out (it may
+// wait up to 3 s for GitHub, so off the main thread), then updates menu and windows.
+- (void)checkStatus {
+	dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+		char *r = goStatus();
+		NSData *d = [NSData dataWithBytes:r length:strlen(r)];
+		free(r);
+		NSDictionary *s = [NSJSONSerialization JSONObjectWithData:d options:0 error:nil];
+		dispatch_async(dispatch_get_main_queue(), ^{
+			siStatus = s;
+			NSString *tag = s[@"update"];
+			if (tag.length) {
+				NSMenu *app = NSApp.mainMenu.itemArray.firstObject.submenu;
+				NSMenuItem *it = item([NSString stringWithFormat:@"Update Available — %@", tag], @selector(openUpdate:), @"");
+				it.target = self;
+				[app insertItem:it atIndex:1];
+				NSString *js = bannerJS();
+				for (SIWindow *w in windows)
+					if (w.studioURL) [w.web evaluateJavaScript:js completionHandler:nil];
+			}
+		});
+	});
+}
+
+- (void)openUpdate:(id)sender {
+	NSString *url = siStatus[@"url"];
+	if (url.length) [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:url]];
+}
+
+- (void)showAbout:(id)sender {
+	NSString *v = siStatus[@"si"] ?: @"", *note = siStatus[@"note"] ?: @"";
+	NSString *text = [NSString stringWithFormat:@"Runs si %@%@", v, note.length ? [@"\n" stringByAppendingString:note] : @""];
+	[NSApp orderFrontStandardAboutPanelWithOptions:@{NSAboutPanelOptionCredits: [[NSAttributedString alloc] initWithString:text]}];
 }
 
 // a folder dropped on the Dock icon, or opened with `open -a "si Studio" folder`
@@ -210,6 +263,8 @@ static NSMenu *submenu(NSMenu *bar, NSString *title) {
 	[[NSUserDefaults standardUserDefaults] setObject:recent forKey:kRecent];
 	WKWebViewConfiguration *cfg = [WKWebViewConfiguration new];
 	cfg.websiteDataStore = [WKWebsiteDataStore defaultDataStore];
+	NSString *js = bannerJS();
+	if (js) [cfg.userContentController addUserScript:[[WKUserScript alloc] initWithSource:js injectionTime:WKUserScriptInjectionTimeAtDocumentEnd forMainFrameOnly:YES]];
 	NSSize size = NSScreen.mainScreen ? NSMakeSize(NSScreen.mainScreen.visibleFrame.size.width * 0.9, NSScreen.mainScreen.visibleFrame.size.height * 0.9)
 	                                  : NSMakeSize(1440, 900);
 	SIWindow *w = [SIWindow windowWithConfiguration:cfg size:size title:[NSString stringWithFormat:@"si Studio — %@", path.lastPathComponent]];
@@ -264,7 +319,9 @@ static NSMenu *submenu(NSMenu *bar, NSString *title) {
 - (void)buildMenu {
 	NSMenu *bar = [NSMenu new];
 	NSMenu *app = submenu(bar, @"si Studio");
-	[app addItem:item(@"About si Studio", @selector(orderFrontStandardAboutPanel:), @"")];
+	NSMenuItem *about = item(@"About si Studio", @selector(showAbout:), @"");
+	about.target = self;
+	[app addItem:about];
 	[app addItem:[NSMenuItem separatorItem]];
 	[app addItem:item(@"Hide si Studio", @selector(hide:), @"h")];
 	NSMenuItem *others = item(@"Hide Others", @selector(hideOtherApplications:), @"h");

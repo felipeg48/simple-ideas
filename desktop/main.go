@@ -18,6 +18,7 @@ import "C"
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -128,18 +129,45 @@ func stop(cmd *exec.Cmd) {
 	}
 }
 
-// siPath is the si binary inside the app bundle, else the one on PATH.
+// siPath is the si binary inside the app bundle, unless an installed si is
+// newer (see pickSi); siVersion and siNote describe the choice.
 func siPath() (string, error) {
+	bundled := ""
 	if exe, err := os.Executable(); err == nil {
 		p := filepath.Join(filepath.Dir(exe), "si")
 		if _, err := os.Stat(p); err == nil {
-			return p, nil
+			bundled = p
 		}
 	}
-	if p, err := exec.LookPath("si"); err == nil {
-		return p, nil
+	p, v, note := pickSi(bundled, installedSi(), versionOf)
+	if p == "" {
+		return "", errors.New("the si binary is missing from the app bundle")
 	}
-	return "", errors.New("the si binary is missing from the app bundle")
+	statusMu.Lock()
+	siVersion, siNote = v, note
+	statusMu.Unlock()
+	return p, nil
+}
+
+var (
+	statusMu          sync.Mutex
+	siVersion, siNote string
+)
+
+// goStatus is the si in use and, at most once a day, whether a newer release
+// is out: JSON {"si","path","note","update","url"} for the menu, About and banner.
+//
+//export goStatus
+func goStatus() *C.char {
+	p, _ := siPath()
+	statusMu.Lock()
+	s := map[string]string{"si": siVersion, "path": p, "note": siNote}
+	statusMu.Unlock()
+	if r := latestRelease(releaseCache(), time.Now(), fetchRelease); r.Tag != "" && newer(r.Tag, s["si"]) {
+		s["update"], s["url"] = r.Tag, r.URL
+	}
+	b, _ := json.Marshal(s)
+	return C.CString(string(b))
 }
 
 // loginPath is the PATH of the user's login shell: an app started from Finder
