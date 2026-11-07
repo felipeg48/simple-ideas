@@ -101,7 +101,7 @@ lang: en
 | `edit-url` | URL | none | guides: base of the "Edit this page" link (§20) |
 | `header`, `footer-page` | `off` | on | a guide page without the guide's `_header.md` / `_footer.md` (§20) |
 | `repo` | `OWNER/REPO`, a github.com URL, or a local clone folder | none | the default repo of `code:` and `diff:` (§13) |
-| `linkedin`, `tags`, `canonical` | text; comma-separated tags; a URL | none | `si publish` (§26): the LinkedIn post text, dev.to / Hashnode tags, the article's original URL |
+| `linkedin`, `tags`, `canonical`, `cover` | text; comma-separated tags; a URL; a picture | none | `si publish` (§26): the LinkedIn post text, dev.to / Hashnode tags, the article's original URL, the picture of a LinkedIn link post |
 
 An included module's own front matter is ignored; the including deck decides.
 
@@ -2275,6 +2275,10 @@ si publish logout
 - `tags:` go to dev.to (the first four) and Hashnode; `canonical:` (or
   `--canonical`) becomes `canonical_url` / `originalArticleURL`, and is the
   link of a LinkedIn link post when `--url` is not given.
+- A LinkedIn link post carries a picture: `cover:` (a PNG, JPEG or GIF next
+  to the article, e.g. `cover: ../assets/dusk.jpg`), else the article's first
+  local picture. si uploads it through LinkedIn's Images API first; the dry
+  run shows that request and the `thumbnail` it attaches.
 - Logins are stored in your config dir with mode 0600, never in the repo.
   LinkedIn logins last 60 days; the Hashnode API needs a Pro plan.
 

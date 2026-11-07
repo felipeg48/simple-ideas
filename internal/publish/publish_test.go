@@ -93,6 +93,48 @@ func TestLinkedInLinkPostAndErrors(t *testing.T) {
 	}
 }
 
+func TestLinkedInLinkPostThumbnail(t *testing.T) {
+	png := []byte("\x89PNG fake")
+	var srv *httptest.Server
+	var post map[string]any
+	steps := []string{}
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		steps = append(steps, r.Method+" "+r.URL.Path)
+		switch {
+		case r.URL.Path == "/rest/images" && r.URL.Query().Get("action") == "initializeUpload":
+			json.NewEncoder(w).Encode(map[string]any{"value": map[string]string{"uploadUrl": srv.URL + "/up", "image": "urn:li:image:I9"}})
+		case r.URL.Path == "/up":
+			got, _ := io.ReadAll(r.Body)
+			if !bytes.Equal(got, png) || r.Header.Get("Content-Type") != "image/png" {
+				t.Errorf("upload: %q %s", got, r.Header.Get("Content-Type"))
+			}
+			w.WriteHeader(201)
+		case r.URL.Path == "/rest/posts":
+			json.NewDecoder(r.Body).Decode(&post)
+			w.Header().Set("x-restli-id", "urn:li:share:8")
+			w.WriteHeader(201)
+		}
+	}))
+	defer srv.Close()
+	l := &LinkedIn{API: srv.URL, Token: "t", Person: "urn:li:person:x"}
+	if _, err := l.Publish(context.Background(), Post{Text: "Read", URL: "https://example.com/a", LinkTitle: "A", Thumb: png, ThumbName: "cover.png", ThumbType: "image/png"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(steps, ",") != "POST /rest/images,PUT /up,POST /rest/posts" {
+		t.Errorf("steps: %v", steps)
+	}
+	if art := post["content"].(map[string]any)["article"].(map[string]any); art["thumbnail"] != "urn:li:image:I9" {
+		t.Errorf("thumbnail: %v", art)
+	}
+	var dry bytes.Buffer
+	if _, err := l.Publish(context.Background(), Post{Text: "Read", URL: "https://example.com/a", ThumbName: "cover.png"}, &dry); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(dry.String(), "/rest/images?action=initializeUpload") || !strings.Contains(dry.String(), `"thumbnail"`) {
+		t.Errorf("dry run does not show the picture:\n%s", dry.String())
+	}
+}
+
 func TestDryRunSendsNothing(t *testing.T) {
 	hits := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { hits++ }))

@@ -31,7 +31,8 @@ func TestPublishDryRun(t *testing.T) {
 		t.Errorf("devto dry run:\n%s", out.String())
 	}
 	out.Reset()
-	if code := run([]string{"publish", filepath.Join(ex, "article", "retry.md"), "--to", "linkedin"}, &out, &errb); code != 0 || !strings.Contains(out.String(), `"source": "https://northwind.example/engineering/one-retry"`) {
+	if code := run([]string{"publish", filepath.Join(ex, "article", "retry.md"), "--to", "linkedin"}, &out, &errb); code != 0 || !strings.Contains(out.String(), `"source": "https://northwind.example/engineering/one-retry"`) ||
+		!strings.Contains(out.String(), "/rest/images?action=initializeUpload") || !strings.Contains(out.String(), `"thumbnail": "urn:li:image:from-initializeUpload"`) {
 		t.Errorf("an article with canonical: goes to LinkedIn as a link post: %d %s", code, out.String())
 	}
 	bare := filepath.Join(t.TempDir(), "a.md")

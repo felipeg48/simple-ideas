@@ -30,7 +30,11 @@ heading dropped. Relative links and images become absolute against
 output you deployed); without it si warns about every relative image.
 
 Front matter keys: `linkedin:` (the post text), `tags:` (comma-separated),
-`canonical:` (the original URL).
+`canonical:` (the original URL), `cover:` (the picture of a LinkedIn link
+post; default: the article's first local PNG, JPEG or GIF). The picture goes
+up through the Images API (`POST /rest/images?action=initializeUpload`, then
+a `PUT` of the bytes) and the post's `content.article.thumbnail` is its
+`urn:li:image:…`.
 
 ## LinkedIn (checked 2026-11-07)
 

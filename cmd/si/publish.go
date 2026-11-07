@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"os"
@@ -83,6 +84,14 @@ func runPublish(rest []string, o *options, stdout, stderr io.Writer) int {
 				return usageErr(stderr, "an article goes to LinkedIn as a link post: give its public address with --url (or canonical: in the front matter)")
 			}
 			p.URL, p.LinkTitle, p.LinkDesc = canonical, d.Title(), d.Meta.Description
+			if f := coverFile(d); f != "" {
+				if raw, err := os.ReadFile(f); err == nil {
+					p.Thumb, p.ThumbName, p.ThumbType = raw, filepath.Base(f), mime.TypeByExtension(strings.ToLower(filepath.Ext(f)))
+					fmt.Fprintf(stdout, "(picture: %s)\n\n", f)
+				} else {
+					fmt.Fprintf(stderr, "si: cover %s: %v\n", f, err)
+				}
+			}
 		} else {
 			p.DocTitle = d.Title() + ".pdf"
 			if o.yes {
@@ -191,6 +200,33 @@ var (
 // articleFor is the Markdown sent to dev.to / Hashnode: the body with its
 // includes expanded, the title heading dropped, relative links and images
 // made absolute against base (warnings when there is no base).
+// coverFile is the picture of a LinkedIn link post: cover: in the front
+// matter, else the article's first local picture (PNG, JPEG or GIF; LinkedIn
+// takes no others). "" for none.
+func coverFile(d *deck.Deck) string {
+	ok := func(f string) bool {
+		switch strings.ToLower(filepath.Ext(f)) {
+		case ".png", ".jpg", ".jpeg", ".gif":
+			return true
+		}
+		return false
+	}
+	if c := strings.TrimSpace(d.Meta.Cover); c != "" {
+		if !filepath.IsAbs(c) {
+			c = filepath.Join(filepath.Dir(d.Path), c)
+		}
+		return c
+	}
+	for _, s := range d.Slides {
+		for _, g := range mdURLRE.FindAllStringSubmatch(s.Body, -1) {
+			if strings.HasPrefix(g[1], "!") && !schemeRE.MatchString(g[2]) && ok(g[2]) {
+				return filepath.Join(s.Dir, filepath.FromSlash(g[2]))
+			}
+		}
+	}
+	return ""
+}
+
 func articleFor(d *deck.Deck, base, canonical string) (publish.Article, []string) {
 	var parts []string
 	for _, s := range d.Slides {

@@ -64,6 +64,7 @@ var help = map[string]string{
 	"linkedin":          "si publish: the text of the LinkedIn post",
 	"tags":              "si publish: comma-separated tags for dev.to and Hashnode",
 	"canonical":         "si publish: the article's original URL",
+	"cover":             "si publish: the picture of a LinkedIn link post (default: the article's first picture)",
 	// mind maps (type: mindmap)
 	"lines":              "mind map lines: curved, straight, orthogonal or tapered",
 	"nodes":              "mind map topics: box, pill or underline",

@@ -51,6 +51,9 @@ type Post struct {
 	URL       string
 	LinkTitle string
 	LinkDesc  string
+	Thumb     []byte // a link post's picture (PNG, JPEG or GIF), uploaded first
+	ThumbName string // its file name, for the dry run
+	ThumbType string // its MIME type
 }
 
 // Publish creates the post and returns its id (urn:li:share:…). With dry != nil
@@ -70,7 +73,7 @@ func (l *LinkedIn) Publish(ctx context.Context, p Post, dry io.Writer) (string, 
 	}
 	switch {
 	case p.PDF != nil || p.DocTitle != "":
-		doc, err := l.uploadDocument(ctx, p.PDF, dry)
+		doc, err := l.upload(ctx, "documents", "document", p.PDF, "application/pdf", dry)
 		if err != nil {
 			return "", err
 		}
@@ -79,6 +82,13 @@ func (l *LinkedIn) Publish(ctx context.Context, p Post, dry io.Writer) (string, 
 		art := map[string]any{"source": p.URL, "title": p.LinkTitle}
 		if p.LinkDesc != "" {
 			art["description"] = p.LinkDesc
+		}
+		if p.Thumb != nil || p.ThumbName != "" {
+			img, err := l.upload(ctx, "images", "image", p.Thumb, firstOr(p.ThumbType, "image/png"), dry)
+			if err != nil {
+				return "", err
+			}
+			art["thumbnail"] = img
 		}
 		body["content"] = map[string]any{"article": art}
 	}
@@ -94,38 +104,42 @@ func (l *LinkedIn) Publish(ctx context.Context, p Post, dry io.Writer) (string, 
 	return h.Get("X-Restli-Id"), nil
 }
 
-// uploadDocument registers a document (initializeUpload), PUTs the PDF to the
-// upload URL and returns the document URN.
-func (l *LinkedIn) uploadDocument(ctx context.Context, pdf []byte, dry io.Writer) (string, error) {
-	req, raw, err := jsonReq("POST", l.API+"/rest/documents?action=initializeUpload",
+// upload registers a document or an image (the Documents or Images API,
+// initializeUpload), PUTs the bytes to the upload URL and returns the URN.
+func (l *LinkedIn) upload(ctx context.Context, api, field string, data []byte, ctype string, dry io.Writer) (string, error) {
+	req, raw, err := jsonReq("POST", l.API+"/rest/"+api+"?action=initializeUpload",
 		map[string]any{"initializeUploadRequest": map[string]any{"owner": l.Person}})
 	if err != nil {
 		return "", err
 	}
 	l.sign(req)
-	out, _, err := do(ctx, req, raw, dry, `{"value":{"uploadUrl":"https://www.linkedin.com/dms-uploads/upload-url-from-initializeUpload","document":"urn:li:document:from-initializeUpload"}}`)
+	out, _, err := do(ctx, req, raw, dry, `{"value":{"uploadUrl":"https://www.linkedin.com/dms-uploads/upload-url-from-initializeUpload","`+field+`":"urn:li:`+field+`:from-initializeUpload"}}`)
 	if err != nil {
 		return "", err
 	}
 	var init struct {
-		Value struct {
-			UploadURL string `json:"uploadUrl"`
-			Document  string `json:"document"`
-		} `json:"value"`
+		Value map[string]string `json:"value"`
 	}
-	if err := json.Unmarshal(out, &init); err != nil || init.Value.UploadURL == "" {
+	if err := json.Unmarshal(out, &init); err != nil || init.Value["uploadUrl"] == "" || init.Value[field] == "" {
 		return "", fmt.Errorf("linkedin: no upload URL in %s", strings.TrimSpace(string(out)))
 	}
-	put, err := http.NewRequest("PUT", init.Value.UploadURL, nil)
+	put, err := http.NewRequest("PUT", init.Value["uploadUrl"], nil)
 	if err != nil {
 		return "", err
 	}
 	put.Header.Set("Authorization", "Bearer "+l.Token)
-	put.Header.Set("Content-Type", "application/pdf")
-	if _, _, err := do(ctx, put, pdf, dry, ""); err != nil {
+	put.Header.Set("Content-Type", ctype)
+	if _, _, err := do(ctx, put, data, dry, ""); err != nil {
 		return "", err
 	}
-	return init.Value.Document, nil
+	return init.Value[field], nil
+}
+
+func firstOr(s, def string) string {
+	if s == "" {
+		return def
+	}
+	return s
 }
 
 // escapeLittle escapes the characters LinkedIn's "little" text format reads
