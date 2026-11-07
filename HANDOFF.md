@@ -8,7 +8,27 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 - **Idea being refined (not started; likely a separate project, not part of si):**
   the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
-- **Latest release: v2.2.1: quality (no new features).**
+- **Latest release: v2.3.0: publish, video, docs site, Studio first run.**
+  - `si publish` (`cmd/si/publish.go`, `internal/publish/`): LinkedIn document post
+    (deck → PDF via `si build --pdf` → Documents API initializeUpload → PUT → Posts
+    API), link post (article, `--url` or `canonical:`), `--copy` (textutil RTF +
+    pbcopy), dev.to (draft unless `--public`), Hashnode (GraphQL; needs a Pro plan).
+    Dry run unless `--yes`; logins in `os.UserConfigDir()/si/publish.json` (0600,
+    `SI_PUBLISH_CONFIG` overrides); LinkedIn login = loopback OAuth on
+    `http://localhost:8723/callback` or `--token`. New front matter: `linkedin`,
+    `tags`, `canonical`. Never tested against real services (httptest only).
+  - MP4 (`cmd/si/video.go`): frames → hard-linked 30 fps PNG sequence → ffmpeg
+    (H.264, yuv420p, faststart); `si code --mp4`, `si build map.md --mp4` (runtime
+    `#si-export-play`: overview, each branch dimmed, tweened zoom). Concat-demuxer
+    durations drifted on the last frame, hence the sequence.
+  - Docs site (`internal/docsite`, `docs/site/`, `si --export docs-site`,
+    `make docs-site`): 26 rules pages from RULES.md (CommonMark fence-aware split),
+    the manual as a deck, live showcase embed. RULES §13's stage example is now
+    shown as code (its `#` notes are not valid stage syntax).
+  - Studio: start gallery (`gallery.tsx`, `GET api/gallery/{kind}` renders starters
+    in a temp dir, cached) and tour (`tour.tsx`); starters `mindmap3d`, `codeshow`
+    (also `si new --type`); `e2e/start.e2e.mjs`; a11y audits both.
+- **v2.2.1: quality (no new features).**
   - **Security:** the play terminal endpoints (`/_si/term/api/*`) and `/_si/callout` go through
     `serve.localOnly`: a loopback Host and the same Origin. Before, any web page open in the
     browser could blind-POST a shell tab and keystrokes to 127.0.0.1 (no CORS preflight for a

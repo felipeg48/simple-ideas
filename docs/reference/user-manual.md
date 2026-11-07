@@ -240,7 +240,9 @@ si play <dir>              # serve with live reload (--dev: in-place hot reload)
 si build <dir> --pdf       # self-contained HTML (+ PDF)
 si check <dir>             # validate; exit 1 on a problem
 si new <name>              # scaffold a deck (the showcase, every rule)
-si new <name> --type article   # a small starter: deck, article, guide, book, site, page, lab, demo
+si new <name> --type article   # a small starter: deck, article, guide, book, site, page, lab, demo, mindmap, mindmap3d, codeshow
+si publish talk.md --to linkedin   # a dry run of the post; --yes sends it (also devto, hashnode)
+si code show.md --mp4      # a code show as video (si build map.md --mp4: a mind map's Play; needs ffmpeg)
 si fix <dir> [--write]     # raw-HTML components (hl, pill, lockup, cards) into si syntax
 si new-canvas <name>       # scaffold an animated canvas
 si manual --slides         # this manual
@@ -250,9 +252,36 @@ si migrate <src>           # an AI migration prompt for an existing deck
 
 ---
 
+## Share it
+
+- **Post it:** `si publish talk.md --to linkedin` turns the deck into a
+  document post, its PDF swipeable in the feed; an article goes to LinkedIn as a
+  link, or to dev.to or Hashnode. Always a dry run first; `--yes` sends.
+- **Film it:** `--mp4` on `si code` and on a mind map build writes video
+  that plays anywhere, made with ffmpeg if it is installed.
+- **Start fast:** an empty folder in the Studio opens a gallery of starters
+  with live thumbnails, and a six-stop tour of the window.
+
+Notes: (1 min)
+When the talk is done, it does not have to stay on your laptop. si
+publish posts the deck to LinkedIn as a document people swipe through, and
+sends an article to dev.to or Hashnode; it always shows you the requests
+before it sends anything. Code shows and mind maps become short videos. And
+when you open an empty folder in the Studio, a gallery shows what you can
+start from, with a tour of the window if you want one. [CLICK]
+
+Points:
+- Publish: dry run by default, `--yes` to send; logins in the config dir, never the repo
+- MP4 needs ffmpeg; si says how to install it
+- Gallery + tour: first run, or ⌘K any time
+
+---
+
 ## Where to go next
 
 - **`si rules`** — the complete, authoritative directive reference
+- `make docs-site` — the rules as a browsable site, built with si itself
+- `docs/publish.md` — LinkedIn, dev.to and Hashnode: logins, scopes, requests
 - `docs/stage-diagrams.md` — the stage flow DSL
 - `docs/authoring-canvases.md` — hand-authored animated canvases
 - `docs/timer-animations.md` — the break-timer animation layer

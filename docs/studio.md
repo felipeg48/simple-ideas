@@ -241,6 +241,25 @@ mind map key or option, the maps of the file, Add a map). Topics of a map
 inlined from another file are shown read-only. The status bar counts maps and
 topics. Keys and drags: RULES.md §24, *Editing in the Studio*.
 
+## First run: the start gallery and the tour
+
+A workspace with nothing si can open shows the **start gallery**
+(`web/studio/src/gallery.tsx`): eight starters (a talk, a course lab, a
+tutorial, an article, a site, a 2D and a 3D mind map, a code show), each with a
+live thumbnail. `GET /_si/studio/api/gallery/{kind}` writes the starter into a
+temporary folder, renders it like any file and caches the page; nothing lands
+in the workspace until **Create**, which goes through the usual starter path
+(`POST /_si/studio/api/starter`, never overwriting). ⌘K → *Start gallery* and
+the welcome screen open it any time.
+
+After the first file the **tour** (`web/studio/src/tour.tsx`) runs once: six
+stops (files, Write with Map / Window views, preview, Rehearse and Present,
+Build, ⌘K), a ring around each part and a note beside it; Next / Back / Skip,
+← → and Esc. Done or skipped is remembered (`localStorage`, `si-tour-done`);
+⌘K → *Take the tour* replays it. `e2e/start.e2e.mjs` covers the empty
+folder → gallery → 3D mind map → Map view → tour → skip path; the a11y check
+audits both.
+
 ## Known limits
 
 - The bundle is about 700 KB (240 KB gzipped); most of it is CodeMirror. About 120 KB is the HTML / JavaScript / CSS grammar Markdown highlighting pulls in for raw HTML; dropping it would need a custom Markdown language. Not worth it on a loopback app today.

@@ -2096,7 +2096,7 @@ Example: `examples/mindmap/` (three linked maps: `thursday.md` in 3D with
 its linked maps as floors, `payments.md` with two maps in one file,
 `warehouse.md` in 2D, `org` layout with `orthogonal` lines), and the article
 `examples/article/retry.md` has a fence.
-`si new ideas --type mindmap` writes a starter.
+`si new ideas --type mindmap` writes a starter (`--type mindmap3d` one that starts in 3D).
 
 ## 25. Code windows and code shows
 

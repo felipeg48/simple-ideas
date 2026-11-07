@@ -99,6 +99,14 @@ self-contained HTML files you can mail, host or open from a USB stick.
   are highlighted; `si build --share-assets` writes three.js once for a folder
   of 3D maps instead of into every page; pointer tests click, double-click and
   drag like a person on 3D maps, 2D maps and code windows.
+- **v2.3.0:** `si publish` posts a deck to LinkedIn as a document post (its
+  PDF, a swipeable carousel in the feed) and an article as a LinkedIn link or to
+  dev.to / Hashnode, always as a dry run first (`--yes` sends; see
+  `docs/publish.md`); `--mp4` films a code show or a mind map's Play (needs
+  ffmpeg); `make docs-site` builds the rules into a browsable site with si itself
+  (one page per RULES.md section, live examples on the home page); the Studio
+  opens an empty folder with a start gallery of live starter thumbnails and a
+  skippable tour.
 - **In the terminal (v1.7):** `si play talk.md --terminal` presents a deck in
   the terminal itself, in the theme's colours, with block-letter titles, builds,
   code, tables, cards and pictures in half-block pixels; `--notes` in a second

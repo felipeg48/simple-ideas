@@ -83,7 +83,9 @@ what you chose.
 
 | Path | What |
 |---|---|
-| `cmd/si/main.go` | CLI: GNU-style flag parsing (interspersed, long flags), commands play, build, check, new, rules, `--export`; `cmd/si/mindmap.go`: mind map exports (`--svg`, `--png`, `--pdf` through headless Chrome and the runtime's `#si-export`) and `si mindmap import/export`; `cmd/si/code.go`: `si code` (code window exports: PNG/SVG per step, an animated GIF of a show, frames from the runtime's `#si-code-export`) |
+| `cmd/si/main.go` | CLI: GNU-style flag parsing (interspersed, long flags), commands play, build, check, new, rules, `--export`; `cmd/si/mindmap.go`: mind map exports (`--svg`, `--png`, `--pdf` through headless Chrome and the runtime's `#si-export`) and `si mindmap import/export`; `cmd/si/code.go`: `si code` (code window exports: PNG/SVG per step, an animated GIF of a show, frames from the runtime's `#si-code-export`); `cmd/si/video.go`: `--mp4` (frames from headless Chrome, a 30 fps image sequence encoded by ffmpeg if installed; mind map Play frames from `#si-export-play`); `cmd/si/publish.go`: `si publish` (dry run unless `--yes`), `login` / `logout` |
+| `internal/publish/` | `si publish` clients, stdlib only: LinkedIn (Documents + Posts API, 3-legged OAuth with a loopback redirect, `/v2/userinfo`), dev.to (Forem API), Hashnode (GraphQL); one request builder for dry run and send (secrets masked); logins in the config dir, 0600; tests against `httptest` fakes only; see `docs/publish.md` |
+| `internal/docsite/` | `si --export docs-site`: the docs site source, one page per numbered RULES.md section (fence-aware split, `§N` and contents links rewritten), the manual as a deck, the showcase for the home page's live embed; `docs/site/` holds the hand-written pages (`_site.md`, home, examples); `make docs-site` builds it into `dist/docs-site` |
 | `internal/codeshow/` | code windows in Markdown text, by lines: `Shows` / `ShowAt` (fences with `window=` or `id=`, same-id runs, their `<!-- callout: -->` lines), `Apply` (the Window view's ops), `Source` (an article of only the windows, for exports and the Studio preview) |
 | `internal/mindmap/` | the mind map Markdown model for editors and converters: `Parse` / `String` (round trip, unknown text kept), `Apply` (the map editor's ops), `FenceAt` / `SetInfo` (fences), `Import` / `Export` (OPML, FreeMind, XMind, Mermaid). The renderer keeps its own reader for drawing |
 | `internal/deck/` | parse a deck: front matter, includes (cycle check), `---` split, headings, `Notes: (N min)`, slide directives; `media.go` validates background and image options; `guide.go` parses a guide's `_nav.md` (`ParseWith` gives pages the guide's settings). No HTML. |
@@ -93,7 +95,7 @@ what you chose.
 | `web/studio/` | Studio front-end source (Preact + TS + CodeMirror 6, esbuild, vitest, Playwright e2e); bundle committed to `internal/assets/web/studio/assets/` via `make studio-ui` |
 | `internal/config/` | optional `si.conf` (flat `key: value`, stdlib): default theme, `keys.*` command remaps, `feature.*` on/off; injected into the deck as `window.SI_CONFIG`, read by `deck.js` |
 | `internal/assets/` | embedded web files (`web/layout.css` unlayered mechanics, `web/theme.css` looks, `web/deck/*.js` runtime (one file per feature, joined in name order into one script), `web/doc.css` + `web/doc.js` lab documents (`type: lab`), `web/presenter.html` teleprompter, `web/mindmap.js` + `web/mindmap.css` mind maps: layout, lines, drill-down, search, Play; `web/codewin.js` + `web/codewin.css` code windows: chrome, backdrops, callouts, the morph between steps, `#si-code-export`; `web/mindmap3d.js` the 3D view on vendored `web/three.min.js` + `web/three-orbitcontrols.js`, inlined only with a 3D map) and `contract.go` (tokens, hooks, theme values, starter CSS) |
-| `docs/docs.go` | embeds RULES.md + reference/user-manual.md + agent-rules.md for `si rules` / `si manual` / `si --export agent-rules` (in `docs/` so go:embed can reach them; no `.go` at the repo root) |
+| `docs/docs.go` | embeds RULES.md + reference/user-manual.md + agent-rules.md for `si rules` / `si manual` / `si --export agent-rules`, and `docs/site/` for the docs site (in `docs/` so go:embed can reach them; no `.go` at the repo root) |
 | `examples/` | showcase deck, included appendix, `assets/journey.svg` canvas, media, `css/harbor.css` theme, one example per document type (`article/`, `guide/`, `book/`, `demos/`, `site/`); embedded for `si new` and `--export example --type` |
 | `docs/screenshots/` | headless screenshots referenced by the README |
 | `internal/tui/` | si in the terminal: `slide.go` + `text.go` (the deck as text and colour: layouts, builds, code, tables, cards), `font.go` (block letters), `image.go` (half-block pixels), `palette.go` (theme tokens), `play.go` (`si play --terminal`, `--dump`), `notes.go` (the `--notes` teleprompter), `sync.go` (the local socket between them), `studio.go` (`si --terminal [dir]`: files, preview, problems, overlays, modes), `lab.go` (Lab mode), `pictures.go` (Kitty / iTerm2 pictures); see `docs/terminal-studio.md` |
@@ -238,14 +240,17 @@ pass. The steps that matter:
   in the 3D tools (never call bricks by a toy brand name). Next: a
   phone layout for 3D (portrait maps are small), the visual builder in 3D,
   exports of the 3D view.
-- **Publishing (`si publish`, planned):** Medium is out (no new API tokens).
-  LinkedIn via "Share on LinkedIn" (`w_member_social`, one-time loopback OAuth
-  login, token ~60 days, stdlib only): a deck becomes a PDF document post
-  (carousel) with text from `linkedin:` / `description:` / `Points:`; an article
-  becomes a link post (`--url`); `--copy` puts rich text on the clipboard for
-  LinkedIn's article editor (no articles API). Always a dry run unless `--yes`.
-  Full articles: dev.to, Hashnode, Ghost or WordPress (real APIs). Check the
-  current LinkedIn API docs before building.
+- **Publishing (`si publish`, DONE v2.3.0, see `docs/publish.md`):** LinkedIn
+  document posts (a deck's PDF) and link posts, `--copy` rich text for the
+  article editor, dev.to and Hashnode articles; always a dry run unless `--yes`.
+  Next: Ghost and WordPress; a thumbnail for LinkedIn link posts (Images API);
+  re-check the `Linkedin-Version` header each year (LinkedIn sunsets versions).
+- **Video (DONE v2.3.0):** `--mp4` for code shows and a mind map's Play
+  (ffmpeg optional). Next: a deck's canvas and build steps as video; 3D Play.
+- **Docs site (DONE v2.3.0):** `make docs-site`. Next: publish it (GitHub Pages
+  from the release workflow).
+- **Studio first run (DONE v2.3.0):** start gallery + tour. Next: the desktop
+  app's Help menu opening them.
 - More themes; `theme:` from a remote URL (the CSS-file path and the
   `si --export themes` gallery already exist).
 - SVG helpers: `data-move` along a path, counters that tick between states,
