@@ -7,6 +7,7 @@ favicon: brand/favicon.svg
 touch-icon: brand/apple-touch-icon.png
 og-image: https://simple-ideas.org/brand/social-card.png
 cta: Get si → download.md
+version: v$SI_VERSION → https://github.com/felipeg48/simple-ideas/releases/tag/v$SI_VERSION
 theme: studio
 footer: simple-ideas
 ---

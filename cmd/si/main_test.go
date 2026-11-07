@@ -360,3 +360,19 @@ func TestCheckBudget(t *testing.T) {
 		t.Errorf("a 3D page uses budget.3d: %s", msg)
 	}
 }
+
+func TestDocsSiteShowsThisVersion(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "site")
+	if code := run([]string{"--export", "docs-site", "--output", out}, io.Discard, io.Discard); code != 0 {
+		t.Fatalf("export docs-site exited %d", code)
+	}
+	site, _ := os.ReadFile(filepath.Join(out, "_site.md"))
+	dl, _ := os.ReadFile(filepath.Join(out, "download.md"))
+	badge := "version: v" + version + " → https://github.com/felipeg48/simple-ideas/releases/tag/v" + version
+	if !strings.Contains(string(site), badge) {
+		t.Errorf("_site.md has no %q", badge)
+	}
+	if !strings.Contains(string(dl), "**v"+version+"**") || strings.Contains(string(site)+string(dl), "$SI_") {
+		t.Error("the Download page names this version, and no placeholder is left")
+	}
+}

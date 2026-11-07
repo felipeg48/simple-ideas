@@ -131,6 +131,10 @@ func linkRefs(body string, pages map[string]string) string {
 }
 
 // Generate writes the docs site source into dst (which must be empty or new).
+// Version is si's version (cmd/si sets it before Generate): the site shows it
+// as a badge beside the logo and on the Download page, never hand-written.
+var Version = "dev"
+
 func Generate(dst string) (pages int, err error) {
 	if entries, err := os.ReadDir(dst); err == nil && len(entries) > 0 {
 		return 0, fmt.Errorf("%s exists and is not empty", dst)
@@ -157,7 +161,8 @@ func Generate(dst string) (pages int, err error) {
 	}
 	// the site's own files; $SI_BUG_URL / $SI_FEATURE_URL are the issue forms
 	// (internal/brand), so the site, the CLI and the Studio link the same place
-	links := strings.NewReplacer("$SI_BUG_URL", brand.IssueURL(false, "", "built page", ""), "$SI_FEATURE_URL", brand.IssueURL(true, "", "built page", ""))
+	links := strings.NewReplacer("$SI_BUG_URL", brand.IssueURL(false, "", "built page", ""), "$SI_FEATURE_URL", brand.IssueURL(true, "", "built page", ""),
+		"$SI_VERSION", strings.TrimPrefix(Version, "v"))
 	err = fs.WalkDir(docs.Site, "site", func(p string, e fs.DirEntry, err error) error {
 		if err != nil || e.IsDir() {
 			return err

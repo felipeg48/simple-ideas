@@ -1664,6 +1664,7 @@ theme: studio
 | `touch-icon:` | the home-screen icon (`apple-touch-icon`), an image path |
 | `og-image:` | the picture link previews show (`og:image`, `twitter:card`), an absolute `https://` URL |
 | `cta:` | `Label → page` (or `→ https://…`, `→ #modal`): the highlighted button |
+| `version:` | a badge beside the logo, e.g. `v2.5.0 → https://…/releases/tag/v2.5.0` (the link is optional) |
 | `title: off` | on a page: no `<h1>` (a home page that opens with its own content) |
 
 `favicon:`, `touch-icon:` and `og-image:` also work in any deck's or document's

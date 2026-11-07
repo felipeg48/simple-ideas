@@ -109,6 +109,18 @@ func (dr *deckRenderer) siteNav(g *deck.Guide, page string) string {
 	} else if l != "" {
 		logo = html.EscapeString(l)
 	}
+	if v := strings.TrimSpace(g.Meta.Version); v != "" { // version: v2.5.0 → release notes
+		label, href, ok := strings.Cut(v, "→")
+		if !ok {
+			label, href, _ = strings.Cut(v, "->")
+		}
+		label, href = strings.TrimSpace(label), strings.TrimSpace(href)
+		if href != "" {
+			logo += fmt.Sprintf(`</a><a class="si-site-version" href="%s" title="Release notes">%s`, html.EscapeString(href), html.EscapeString(label))
+		} else {
+			logo += fmt.Sprintf(`<span class="si-site-version">%s</span>`, html.EscapeString(label))
+		}
+	}
 	cta := ""
 	if c := strings.TrimSpace(g.Meta.CTA); c != "" {
 		label, href, ok := strings.Cut(c, "→")

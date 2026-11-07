@@ -1185,6 +1185,7 @@ func export(o *options, stdout, stderr io.Writer) int {
 		if out == "" {
 			out = "si-docs-site"
 		}
+		docsite.Version = version
 		n, err := docsite.Generate(out)
 		if err != nil {
 			fmt.Fprintf(stderr, "si: %v\n", err)

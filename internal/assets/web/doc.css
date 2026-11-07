@@ -450,6 +450,8 @@ pre.si-code :is(.si-diff-hunk,.si-diff-meta) .si-ln{display:none}
 .si-site-links a[aria-current="page"],.si-site-group[data-current]>.si-site-group-t{color:var(--si-accent)!important;font-weight:600}
 .si-site-group-t::after{content:" \25BE";font-size:.8em}
 .si-site-drop{background:var(--si-surface);border:1px solid var(--si-line);border-radius:var(--si-radius);box-shadow:0 1rem 2.4rem rgb(0 0 0 / .14)}
+.si-site-version{align-self:center;margin-inline-start:.5rem;padding:.1rem .45rem;border-radius:99px;border:1px solid var(--si-line);font:600 .72rem/1.4 var(--si-font-mono);color:var(--si-muted)!important;text-decoration:none;white-space:nowrap}
+@media (max-width:40em){.si-site-version{display:none}}
 .si-site-cta{padding:.55rem .95rem;border-radius:.5rem;background:var(--si-accent);color:var(--si-on-accent)!important;font-weight:650;font-size:.9rem;text-decoration:none;white-space:nowrap}
 .si-site-menu>summary{list-style:none;cursor:pointer;padding:.4rem .75rem;border:1px solid var(--si-line);border-radius:.45rem;font-size:.9rem}
 .si-site-menu>summary::-webkit-details-marker{display:none}

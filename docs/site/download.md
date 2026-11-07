@@ -5,6 +5,9 @@ description: The si binary for macOS, Linux and Windows, and si Studio for the M
 
 # Download
 
+The latest si is **v$SI_VERSION**:
+[release notes](https://github.com/felipeg48/simple-ideas/releases/tag/v$SI_VERSION).
+
 ## The si binary
 
 Pick your system on the
