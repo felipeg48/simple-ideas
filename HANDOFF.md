@@ -8,7 +8,26 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 - **Idea being refined (not started; likely a separate project, not part of si):**
   the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
-- **Latest release: v2.3.1: v2.3.0's gaps closed.**
+- **Latest release: v2.4.0: History, review links, budgets, map clipboard, terminal editing.**
+  - Studio History (`internal/studio/git.go`, `web/studio/src/history.tsx`): `git/status|diff|log|show`
+    GET and `git/commit|restore|init` POST; git with fixed args and no shell in the workspace root,
+    paths through `resolve` and after `--`, revisions must be hex. Restore in the UI goes through
+    `EditorCtl.edit` (one undoable edit). Go test with a temp repo; e2e (init → commit → edit → diff →
+    commit → history → restore → undo).
+  - Review links (`internal/serve/review.go`, `web/studio/src/review.tsx`): `--review [--review-addr]` on
+    play/serve, keyed listener (port + 2) serving pages with `ReviewJS` (no dot paths, no `/_si/*` but
+    events/review); comments in `.si/review/<page>.json`; reviewer POSTs need this Origin; loopback author
+    routes (list, events, reply, resolve) behind `localOnly`; SSE also polls file mtimes so another si's
+    writes show live. Go test (key, origin, limits, blocked paths, author vs rebinding host); e2e
+    (reviewer comments → Studio sees it live → resolve).
+  - `si check --budget` / `budget.page`, `budget.3d` in si.conf (config.Budget); CI checks 4 example folders.
+  - Map editor: multi-select (⌘/Ctrl/Shift-click), ⌘C ⌘X (`copy` via the API → clipboard, then
+    `delete-many`), paste event → `paste` op (Markdown list under the topic); `mindmap.Branches`.
+  - Terminal Studio (`internal/tui/edit.go`): focused mind map preview is an editable tree; `:` has
+    window style / numbers / title per code block.
+  - Not done: History and Review dialogs are not in the axe suite yet; review anchors are slide/section
+    (not paragraph); 3D editing in the map editor.
+- **v2.3.1: v2.3.0's gaps closed.**
   - Desktop: Help ▸ Start Gallery / Take the Tour run `window.siStudio.gallery()/.tour()`
     (set by app.tsx; `#gallery` / `#tour` open them on load) via `goHelpJS` (main.go, tested).
   - `si build deck.md --mp4 [--dwell N]` (video.go `exportDeckMP4`): one Chrome screenshot per
