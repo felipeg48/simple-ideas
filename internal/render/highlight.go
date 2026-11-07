@@ -56,6 +56,17 @@ var keywords = map[string]string{
 	"powershell": "function param if elseif else foreach for while do switch return try catch finally throw begin process end",
 	"dockerfile": "from run cmd label expose env add copy entrypoint volume user workdir arg onbuild stopsignal healthcheck shell as",
 	"xml":        "",
+	"hcl": "resource data variable output locals module provider terraform backend required_providers for_each count " +
+		"depends_on lifecycle dynamic content for in if true false null",
+	"protobuf": "syntax package import option message enum service rpc returns stream repeated optional required map oneof " +
+		"reserved extend double float int32 int64 uint32 uint64 sint32 sint64 fixed32 fixed64 sfixed32 sfixed64 bool string bytes true false",
+	"graphql": "query mutation subscription fragment on type interface union enum input scalar schema extend directive " +
+		"implements true false null",
+	"fsharp": "let mutable rec and if then else elif match with function fun type of module namespace open member override " +
+		"abstract interface inherit new yield return async task do done for to downto while in try finally raise not true false " +
+		"null use when as begin end struct val static private public internal",
+	"elixir": "def defp defmodule defstruct defmacro defprotocol defimpl do end fn if else unless case cond with when in " +
+		"import alias require use quote unquote receive after try catch rescue raise true false nil and or not",
 }
 
 var aliases = map[string]string{
@@ -67,16 +78,18 @@ var aliases = map[string]string{
 	"csproj": "xml", "fsproj": "xml", "vbproj": "xml", "props": "xml", "targets": "xml", "nuspec": "xml", "resx": "xml",
 	"xaml": "xml", "svg": "xml", "plist": "xml", "pom": "xml", "xsd": "xml", "xsl": "xml", "xslt": "xml", "wsdl": "xml",
 	"htm": "html", "xhtml": "html", "vue": "html",
+	"tf": "hcl", "terraform": "hcl", "tfvars": "hcl", "proto": "protobuf", "proto3": "protobuf", "gql": "graphql",
+	"fs": "fsharp", "f#": "fsharp", "fsx": "fsharp", "ex": "elixir", "exs": "elixir",
 }
 
 var (
-	hashComment  = map[string]bool{"bash": true, "python": true, "yaml": true, "toml": true, "ruby": true, "powershell": true, "dockerfile": true}
+	hashComment  = map[string]bool{"bash": true, "python": true, "yaml": true, "toml": true, "ruby": true, "powershell": true, "dockerfile": true, "graphql": true, "elixir": true}
 	slashComment = map[string]bool{"go": true, "javascript": true, "java": true, "rust": true, "kotlin": true, "css": true, "json": true,
-		"csharp": true, "c": true, "cpp": true, "php": true, "swift": true, "scala": true}
+		"csharp": true, "c": true, "cpp": true, "php": true, "swift": true, "scala": true, "protobuf": true}
 	markup  = map[string]bool{"html": true, "xml": true} // tags as keywords, attribute names as keys
-	noCalls = map[string]bool{"bash": true, "yaml": true, "toml": true, "json": true, "css": true, "dockerfile": true, "powershell": true}
+	noCalls = map[string]bool{"fsharp": true, "bash": true, "yaml": true, "toml": true, "json": true, "css": true, "dockerfile": true, "powershell": true}
 	typed   = map[string]bool{"csharp": true, "java": true, "go": true, "kotlin": true, "swift": true, "scala": true,
-		"javascript": true, "cpp": true, "rust": true, "php": true}
+		"javascript": true, "cpp": true, "rust": true, "php": true, "protobuf": true, "graphql": true, "fsharp": true, "elixir": true}
 	hlCache sync.Map
 )
 
@@ -92,6 +105,10 @@ func langRE(lang string) *regexp.Regexp {
 		parts = append(parts, `(?P<c>//.*|/\*[\s\S]*?\*/)`)
 	case lang == "sql":
 		parts = append(parts, `(?P<c>--.*)`)
+	case lang == "hcl":
+		parts = append(parts, `(?P<c>#.*|//.*|/\*[\s\S]*?\*/)`)
+	case lang == "fsharp":
+		parts = append(parts, `(?P<c>//.*|\(\*[\s\S]*?\*\))`)
 	case markup[lang]:
 		parts = append(parts, `(?P<c><!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>)`, `(?P<m><\?[\s\S]*?\?>|<![A-Za-z][^>]*>)`)
 	}
@@ -101,6 +118,15 @@ func langRE(lang string) *regexp.Regexp {
 	}
 	if markup[lang] {
 		parts = append(parts, `(?P<k></?[A-Za-z][\w:.-]*|/?>)`, `(?P<y>[A-Za-z_:][\w:.-]*=)`)
+	}
+	if lang == "hcl" { // attribute = value
+		parts = append(parts, `(?P<y>(?m:^[ \t]*[\w-]+[ \t]*=))`)
+	}
+	if lang == "graphql" {
+		parts = append(parts, `(?P<v>\$[A-Za-z_]\w*)`)
+	}
+	if lang == "elixir" { // atoms
+		parts = append(parts, `(?P<v>:[a-z_]\w*[?!]?)`)
 	}
 	if lang == "yaml" || lang == "toml" {
 		parts = append(parts, `(?P<y>(?m:^[ \t]*-?[ \t]*[\w.\-/]+[ \t]*[:=]))`)

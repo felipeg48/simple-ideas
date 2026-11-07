@@ -18,6 +18,17 @@ func TestHighlightLanguages(t *testing.T) {
 		{"cpp", `std::vector<int> v; // ok`, `<span class="si-tk-k">int</span>`},
 		{"ruby", `def go # hi`, `<span class="si-tk-c"># hi</span>`},
 		{"golang", `func main() {}`, `<span class="si-tk-k">func</span>`},
+		{"tf", `resource "aws_s3_bucket" "logs" { # the bucket`, `<span class="si-tk-k">resource</span>`},
+		{"hcl", `  bucket = var.name`, `<span class="si-tk-y">  bucket =</span>`},
+		{"hcl", `// note`, `<span class="si-tk-c">// note</span>`},
+		{"proto", `message Order { repeated string items = 1; }`, `<span class="si-tk-k">message</span>`},
+		{"proto", `message Order {}`, `<span class="si-tk-t">Order</span>`},
+		{"gql", `query Orders($first: Int) { orders }`, `<span class="si-tk-v">$first</span>`},
+		{"graphql", `# a comment`, `<span class="si-tk-c"># a comment</span>`},
+		{"fs", `let total = List.sum xs (* sum *)`, `<span class="si-tk-c">(* sum *)</span>`},
+		{"fsharp", `let mutable x = 1`, `<span class="si-tk-k">mutable</span>`},
+		{"exs", `defmodule Shop do`, `<span class="si-tk-k">defmodule</span>`},
+		{"ex", `{:ok, order}`, `<span class="si-tk-v">:ok</span>`},
 	}
 	csharp := "builder.Services.AddCockroachDB(config, pipeline =>\n{\n    pipeline.UseRetry();        // retry on 40001 with exponential backoff\n    // pipeline.UseCircuitBreaker();\n});"
 	for _, want := range []string{`<span class="si-tk-f">AddCockroachDB</span>(`, `<span class="si-tk-f">UseRetry</span>()`, `<span class="si-tk-t">Services</span>`,

@@ -212,7 +212,9 @@ var langNames = map[string]string{"bash": "Shell", "sh": "Shell", "shell": "Shel
 	"toml": "TOML", "xml": "XML", "csproj": "XML", "fsproj": "XML", "vbproj": "XML", "props": "XML", "targets": "XML", "nuspec": "XML",
 	"resx": "XML", "xaml": "XML", "svg": "SVG", "pom": "XML", "html": "HTML", "htm": "HTML", "css": "CSS", "dockerfile": "Dockerfile",
 	"docker": "Dockerfile", "powershell": "PowerShell", "ps1": "PowerShell", "pwsh": "PowerShell", "php": "PHP", "swift": "Swift",
-	"scala": "Scala", "diff": "Diff", "patch": "Diff", "mermaid": "Mermaid"}
+	"scala": "Scala", "diff": "Diff", "patch": "Diff", "mermaid": "Mermaid",
+	"hcl": "HCL", "tf": "Terraform", "terraform": "Terraform", "tfvars": "Terraform", "proto": "Protobuf", "protobuf": "Protobuf", "proto3": "Protobuf",
+	"graphql": "GraphQL", "gql": "GraphQL", "fs": "F#", "fsx": "F#", "elixir": "Elixir", "ex": "Elixir", "exs": "Elixir"}
 
 // langName is how a language is written for a reader: csharp → C#, js → JavaScript.
 func langName(lang string) string {

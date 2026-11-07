@@ -144,7 +144,8 @@ function valueOptions(rules: Rules, name: string, typed: string): Completion[] {
 
 // Fence lines: languages after ```, then options (code windows, or a mind map's).
 const FENCE_LANGS = ["go", "csharp", "java", "javascript", "typescript", "python", "bash", "sql", "yaml", "json", "xml", "html", "css",
-  "rust", "kotlin", "c", "cpp", "php", "ruby", "swift", "scala", "powershell", "dockerfile", "toml", "mermaid", "stage", "mindmap"];
+  "rust", "kotlin", "c", "cpp", "php", "ruby", "swift", "scala", "powershell", "dockerfile", "toml", "hcl", "protobuf", "graphql",
+  "fsharp", "elixir", "mermaid", "stage", "mindmap"];
 type OptTable = Record<string, { values?: string[]; flag?: boolean; detail: string }>;
 const CODE_OPTS: OptTable = {
   window: { values: ["mac", "windows", "terminal", "none"], detail: "draw the block as a window" },

@@ -131,6 +131,8 @@ func LangOf(name string) string {
 		"ps1": "powershell", "sql": "sql", "yml": "yaml", "yaml": "yaml", "toml": "toml", "json": "json", "css": "css",
 		"html": "html", "htm": "html", "xml": "xml", "csproj": "xml", "fsproj": "xml", "vbproj": "xml", "props": "xml",
 		"targets": "xml", "nuspec": "xml", "resx": "xml", "xaml": "xml", "svg": "xml", "plist": "xml", "config": "xml",
+		"tf": "hcl", "hcl": "hcl", "proto": "protobuf", "graphql": "graphql", "gql": "graphql", "fs": "fsharp", "fsx": "fsharp",
+		"ex": "elixir", "exs": "elixir",
 	}[base[i+1:]]
 }
 

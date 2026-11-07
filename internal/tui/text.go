@@ -31,15 +31,15 @@ type blk struct {
 
 // textRenderer turns markdown into terminal lines for one width.
 type textRenderer struct {
-	coN   int // callouts drawn since the last code block
+	coN     int    // callouts drawn since the last code block
 	stepTag string // a code show's position for the next code box title: " · 2/4 Back off"
-	pal   Palette
-	dir   string // base for images
-	w     int
-	maxH  int       // tallest an image may be (rows)
-	k     int       // build steps shown: a block of step n shows when n <= k
-	steps int       // build steps counted so far
-	pics  *Pictures // real pictures (Kitty / iTerm2), nil for half blocks
+	pal     Palette
+	dir     string // base for images
+	w       int
+	maxH    int       // tallest an image may be (rows)
+	k       int       // build steps shown: a block of step n shows when n <= k
+	steps   int       // build steps counted so far
+	pics    *Pictures // real pictures (Kitty / iTerm2), nil for half blocks
 	// canvases: their state on this slide (by the path the directive names),
 	// the state they come from (a tween while p < 1), and the time
 	opts *SlideOpts

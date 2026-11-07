@@ -38,7 +38,8 @@ var extLang = map[string]string{
 	".cpp": "cpp", ".cc": "cpp", ".cs": "csharp", ".php": "php", ".swift": "swift", ".scala": "scala",
 	".sh": "bash", ".bash": "bash", ".zsh": "bash", ".ps1": "powershell", ".sql": "sql",
 	".yml": "yaml", ".yaml": "yaml", ".json": "json", ".toml": "toml", ".xml": "xml", ".html": "html", ".css": "css",
-	".tf": "hcl", ".hcl": "hcl", ".proto": "protobuf", ".graphql": "graphql", ".conf": "text", ".txt": "text",
+	".tf": "hcl", ".hcl": "hcl", ".tfvars": "hcl", ".proto": "protobuf", ".graphql": "graphql", ".gql": "graphql",
+	".fs": "fsharp", ".fsx": "fsharp", ".ex": "elixir", ".exs": "elixir", ".conf": "text", ".txt": "text",
 }
 
 var tagMarkRE = regexp.MustCompile(`\b(tag|end)::([\w.-]+)\[\]`)

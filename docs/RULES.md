@@ -552,7 +552,8 @@ references shared assets as `../images/...`.
 - Fenced code with a language gets a small built-in highlighter (Go, Python,
   JavaScript/TypeScript, Java, Kotlin, C# (`csharp`, `cs`, `c#`), C, C++,
   PHP, Ruby, Swift, Scala, Rust, SQL, YAML, TOML, JSON, Bash, PowerShell,
-  Dockerfile, CSS, HTML, XML (also `csproj`, `props`, `xaml`, `svg`, `pom`,
+  Dockerfile, Terraform/HCL (`hcl`, `tf`), Protobuf (`proto`), GraphQL (`gql`),
+  F# (`fsharp`, `fs`), Elixir (`ex`, `exs`), CSS, HTML, XML (also `csproj`, `props`, `xaml`, `svg`, `pom`,
   `nuspec`: tags, attributes, comments)) and a language label written as a
   reader expects it (C#, JavaScript, Shell, XML…). Keywords, strings,
   comments and numbers are coloured, and so are calls (the name before a `(`)
