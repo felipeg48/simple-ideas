@@ -164,7 +164,7 @@ func goStatus() *C.char {
 	s := map[string]string{"si": siVersion, "path": p, "note": siNote}
 	statusMu.Unlock()
 	if r := latestRelease(releaseCache(), time.Now(), fetchRelease); r.Tag != "" && newer(r.Tag, s["si"]) {
-		s["update"], s["url"] = r.Tag, r.URL
+		s["update"], s["url"] = r.Tag, releasePage(r)
 	}
 	b, _ := json.Marshal(s)
 	return C.CString(string(b))

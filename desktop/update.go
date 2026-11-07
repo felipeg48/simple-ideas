@@ -164,6 +164,16 @@ func fetchRelease() (release, error) {
 	return release{Tag: v.Tag, URL: v.URL}, nil
 }
 
+// releasePage is the page the update banner opens: the release's own page when
+// it is on github.com, else the latest-release page (the app hands this URL to
+// the browser, so a tampered cache or response must not pick any other site).
+func releasePage(r release) string {
+	if strings.HasPrefix(r.URL, "https://github.com/felipeg48/simple-ideas/") {
+		return r.URL
+	}
+	return "https://github.com/felipeg48/simple-ideas/releases/latest"
+}
+
 func releaseCache() string {
 	dir, err := os.UserCacheDir()
 	if err != nil {

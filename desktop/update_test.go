@@ -58,3 +58,16 @@ func TestLatestReleaseIsCachedForADay(t *testing.T) {
 		t.Errorf("offline keeps the last answer: %+v", r)
 	}
 }
+
+func TestReleasePageStaysOnGitHub(t *testing.T) {
+	for url, want := range map[string]string{
+		"https://github.com/felipeg48/simple-ideas/releases/tag/v2.2.1": "https://github.com/felipeg48/simple-ideas/releases/tag/v2.2.1",
+		"https://evil.example/si.dmg":                                   "https://github.com/felipeg48/simple-ideas/releases/latest",
+		"file:///Applications/Calculator.app":                           "https://github.com/felipeg48/simple-ideas/releases/latest",
+		"":                                                              "https://github.com/felipeg48/simple-ideas/releases/latest",
+	} {
+		if got := releasePage(release{Tag: "v9", URL: url}); got != want {
+			t.Errorf("%q: %q", url, got)
+		}
+	}
+}
