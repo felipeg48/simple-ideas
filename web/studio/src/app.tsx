@@ -7,6 +7,7 @@ import { BuildDialog } from "./build-dialog";
 import { type Mode, ModeView } from "./modes";
 import { type Command, Palette } from "./palette";
 import { NewDialog } from "./new-dialog";
+import { History } from "./history";
 import { Gallery } from "./gallery";
 import { Tour, tourDone } from "./tour";
 import { Inspector } from "./inspector";
@@ -302,6 +303,9 @@ export function App() {
     open(r.open);
   };
   const [tourOn, setTourOn] = useState(false);
+  const showHistory = () => setDialog(
+    <History active={active} onClose={() => { setDialog(null); void refresh(); }}
+      restore={(path, text) => !!ctl.current?.edit(path, () => text)} />);
   const showGallery = () => setDialog(
     <Gallery dir={active && active.includes("/") ? active.slice(0, active.lastIndexOf("/")) : ""}
       ok={async (k, path, title) => { await onStarter(k, path, title); if (!tourDone()) setTimeout(() => setTourOn(true), 400); }}
@@ -339,6 +343,7 @@ export function App() {
     { id: "new", label: "New slides, article, guide, site…", icon: "plus", run: () => setDialog(
       <NewDialog dir={active && active.includes("/") ? active.slice(0, active.lastIndexOf("/")) : ""} ok={onStarter} onClose={() => setDialog(null)} />) },
     { id: "build", label: "Build the folder to HTML…", icon: "braces", run: () => setDialog(<BuildDialog onClose={() => setDialog(null)} />) },
+    { id: "history", label: "History: changes, commit, earlier versions (git)…", icon: "braces", run: showHistory },
     { id: "gallery", label: "Start gallery: pick something to make", icon: "plus", run: showGallery },
     { id: "tour", label: "Take the tour of the Studio", icon: "play", run: startTour },
     { id: "problems", label: "Show problems", icon: "warn", run: () => setProblemsOpen(true) },
@@ -422,6 +427,7 @@ export function App() {
           <button class="btn build-btn" title="Build the folder to self-contained HTML" onClick={() => setDialog(<BuildDialog onClose={() => setDialog(null)} />)}>
             <Icon name="braces" />Build
           </button>
+          <button class="btn history-btn" title="History: what changed, commit, earlier versions (git)" onClick={showHistory}>History</button>
           <a class={"btn btn-pri" + (deck ? "" : " disabled")} aria-disabled={!deck}
             href={deck ? pageURL(deck) + (slide ? "#" + slide : "") : undefined} target="_blank" rel="noopener"
             title={deck ? (isSlides(deck.kind) ? `Play ${deck.title} in a new tab` : `Open ${deck.title} in a new tab`) : "Nothing to play"}>

@@ -699,3 +699,22 @@ button.link { color: var(--blue); text-decoration: underline; text-underline-off
 .tour-k { font-size: 11px; color: var(--mute); letter-spacing: .04em; }
 @media (prefers-reduced-motion: reduce) { .tour-ring, .tour-note { transition: none; } }
 
+
+/* History (git) */
+.history { width: min(980px, calc(100vw - 32px)); }
+.hist-tabs { display: flex; gap: 4px; margin: 4px 0 10px; }
+.hist-tabs button { font: inherit; font-size: 12px; padding: 5px 10px; border-radius: 7px; border: 1px solid var(--line-2); background: transparent; color: var(--fg); cursor: pointer; }
+.hist-tabs button.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.hist-body { display: grid; grid-template-columns: minmax(180px, 260px) minmax(0, 1fr); gap: 10px; max-height: 60vh; }
+.hist-files, .hist-log { list-style: none; margin: 0; padding: 0; overflow: auto; max-height: 52vh; border: 1px solid var(--line-2); border-radius: 8px; }
+.hist-files li, .hist-log li { display: flex; align-items: center; gap: 6px; padding: 2px 6px; }
+.hist-files li.on, .hist-log li.on { background: var(--hover); }
+.hist-files button, .hist-log button { flex: 1; min-width: 0; text-align: left; font: inherit; font-size: 12px; background: none; border: 0; color: var(--fg); cursor: pointer; padding: 4px 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; gap: 6px; align-items: baseline; }
+.hist-log button { flex-direction: column; align-items: flex-start; gap: 1px; }
+.hist-st { font: 700 10px var(--mono); width: 14px; text-align: center; border-radius: 3px; color: var(--on-accent); background: var(--mute); }
+.hist-st.st-modified { background: var(--accent); } .hist-st.st-added, .hist-st.st-untracked { background: var(--green); } .hist-st.st-deleted { background: var(--red); }
+.hist-diff { margin: 0; overflow: auto; max-height: 52vh; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--ed-bg); font: 12px/1.5 var(--mono); white-space: pre; }
+.hist-diff .add { color: var(--green); } .hist-diff .del { color: var(--red); } .hist-diff .hunk { color: var(--mute); }
+.hist-commit { grid-column: 1 / -1; display: flex; gap: 8px; }
+.hist-rev { display: grid; gap: 8px; align-content: start; min-width: 0; }
+@media (max-width: 760px) { .hist-body { grid-template-columns: minmax(0, 1fr); } }

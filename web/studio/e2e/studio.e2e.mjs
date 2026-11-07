@@ -21,7 +21,7 @@ const ORIGINAL = readFileSync(ONE, "utf8");
 // .zshrc takes seconds): zsh reads its rc files from an empty ZDOTDIR here
 const zdot = mkdtempSync(join(tmpdir(), "si-e2e-zdot-"));
 const srv = spawn(si, ["--web", root, "--addr", "127.0.0.1:0", "--no-open"],
-  { stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, SHELL: "/bin/zsh", ZDOTDIR: zdot } });
+  { stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, SHELL: "/bin/zsh", ZDOTDIR: zdot, GIT_AUTHOR_NAME: "E2E", GIT_AUTHOR_EMAIL: "e2e@example.com", GIT_COMMITTER_NAME: "E2E", GIT_COMMITTER_EMAIL: "e2e@example.com" } });
 const url = await new Promise((res, rej) => {
   let buf = "";
   const t = setTimeout(() => rej(new Error("no URL from si --web: " + buf)), 10000);
@@ -567,6 +567,39 @@ tests["window view: edit a step's code, undo"] = async function () {
   await until(() => !readFileSync(CODE, "utf8").includes("// again"), 6000, "undo restored the code");
   await until(async () => !(await page.textContent(".cwx-code .cm-content")).includes("// again"), 6000, "the step editor follows undo");
   await ctx.close();
+};
+
+tests["history: start a repo, commit, see a change, restore a version"] = async function () {
+  const { ctx, page } = await open("light");
+  await openFile(page, "talk.md");
+  await page.waitForSelector(".cm-content");
+  await page.click(".history-btn");
+  await page.click(".history button:has-text('Start a repository here')");
+  await until(async () => (await page.textContent(".history .hist-tabs")).includes("Changes ("), 6000, "the repo started, every file is a change");
+  await page.fill(".history .hist-commit input", "Start");
+  await page.click(".history .hist-commit button");
+  await until(async () => (await page.textContent(".history")).includes("Committed"), 8000, "the first commit");
+  await page.click(".history button:has-text('Close')");
+  await setText(page, TALK_ORIGINAL.replace(/\n*$/, "\n\nA line from the e2e.\n"));
+  await until(() => readFileSync(TALK, "utf8").includes("A line from the e2e."), 6000, "the edit saved");
+  await page.click(".history-btn");
+  await until(async () => (await page.textContent(".history .hist-files")).includes("talk.md"), 6000, "talk.md is changed");
+  await page.click(".history .hist-files button:has-text('talk.md')");
+  await until(async () => (await page.textContent(".history .hist-diff")).includes("+A line from the e2e."), 6000, "the diff shows the new line");
+  await page.fill(".history .hist-commit input", "Add a line");
+  await page.click(".history .hist-commit button");
+  await until(async () => (await page.textContent(".history")).includes("Committed"), 8000, "the second commit");
+  await page.click(".history .hist-tabs button:has-text('History of')");
+  await until(async () => (await page.$$(".history .hist-log li")).length === 2, 6000, "the file's history lists both commits");
+  await page.click(".history .hist-log button:has-text('Start')");
+  await page.click(".history button:has-text('Restore this version')");
+  await until(async () => !(await page.textContent(".cm-content")).includes("A line from the e2e."), 6000, "restore puts the old text in the editor");
+  await page.screenshot({ path: join(out, "history.png") });
+  await page.click(".history button:has-text('Close')");
+  await page.keyboard.press("ControlOrMeta+z");
+  await until(async () => (await page.textContent(".cm-content")).includes("A line from the e2e."), 6000, "undo takes the restore back");
+  await ctx.close();
+  rmSync(join(root, ".git"), { recursive: true, force: true });
 };
 
 let failed = 0;

@@ -247,6 +247,23 @@ clipboard's list. The editor draws the map in 2D, also for a `view: 3d` page
 (its preview pane shows 3D). Keys and drags: RULES.md §24, *Editing in the
 Studio*.
 
+## History (git)
+
+**History** in the top bar (or ⌘K → History) shows the workspace's git: the
+changed files with their diff (a new file is all additions), a commit of the
+ticked files with a message, and the open file's history (`git log --follow`,
+the last 50 commits). Click a version to read it; **Restore this version** puts
+its text into the editor as one ordinary edit (⌘Z takes it back; autosave writes
+it). A folder that is not a repository offers **Start a repository here**
+(`git init`); without git on the computer the panel says so.
+
+The calls are `GET /api/git/status`, `git/diff?path=`, `git/log?path=`,
+`git/show?path=&rev=` and `POST git/commit`, `git/restore`, `git/init`
+(`internal/studio/git.go`): git runs with fixed arguments and no shell, in the
+workspace root; paths go through the same confinement as every file call
+(nothing outside the workspace, no dot paths) and after `--`; a revision must
+be a hex hash. Commits use your own git identity.
+
 ## First run: the start gallery and the tour
 
 A workspace with nothing si can open shows the **start gallery**

@@ -49,6 +49,7 @@ func (a *api) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET "+apiPrefix+"mmcanvas", a.mmcanvas)
 	mux.HandleFunc("POST "+apiPrefix+"codewin", a.codewin)
 	mux.HandleFunc("POST "+apiPrefix+"codewin/export", a.codewinExport)
+	a.gitRoutes(mux)
 }
 
 func etagOf(b []byte) string {
