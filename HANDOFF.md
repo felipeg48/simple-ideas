@@ -3,12 +3,37 @@
 Read this, then `FEATURE.md`, then `CLAUDE.md`. This is a Go CLI (`si`) that turns
 Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
-## Current state (2026-11-05)
+## Current state (2026-11-07)
 
-- **Idea being refined (not started; likely a separate project, not part of si):**
-  the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
-  Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
-- **v2.5.0 (committed, not tagged; the main thread releases it):** the Stack
+- **Session wrap-up (2026-11-07), read first:**
+  - **Released and installed:** v2.5.0 (tag pushed, `si --version` 2.5.0, CI + release + docs-site runs green).
+  - **Website:** https://simple-ideas.org (GitHub Pages from `.github/workflows/pages.yml`, repo
+    variable `SI_PAGES=on`, Pages source "GitHub Actions", custom domain set with
+    `gh api -X PUT repos/felipeg48/simple-ideas/pages -f cname=simple-ideas.org`, HTTPS enforced,
+    Let's Encrypt cert for apex + www, auto-renewed). DNS at Squarespace: 4 A `@` →
+    185.199.108–111.153, 4 AAAA `@` → 2606:50c0:8000–8003::153, CNAME `www` → felipeg48.github.io,
+    TXT `_github-pages-challenge-felipeg48` (domain verified). Squarespace only published records
+    after delete + re-add; check with `dig @nsc1.squarespacedns.com`, not the sandboxed resolver
+    (run dig with the sandbox disabled). If a record looks right in the panel but `dig` disagrees,
+    re-add it. The www CNAME was once saved as `.github.com` (browser autofill).
+  - **Founder's browser "Not Secure"** after HTTPS went live: incognito and phone were fine; his
+    profile runs the CSS Peeper extension (Plasmo/React inspector, injects into every page, sends
+    analytics). Not an si problem; suggested disabling it to test.
+  - **Process notes:** the auto-mode classifier refuses background agents that push/tag/release
+    on their own and parallel worktree agents that merge to main; run agents as "commit locally
+    only", then the main thread runs the gate, pushes, tags, installs. It also refused killing
+    processes we did not clearly own.
+  - **Next (v2.5.1):** the a11y e2e harness leaves `si --web` servers running (seen: two
+    `si --web /var/folders/…/si-a11y-studio-*` processes) — make it kill them in a finally/teardown;
+    docs-site rules pages lack the favicon/footer; a direct test for a 3D pill click selecting in
+    the map editor. Founder to run `make desktop-cert` once and open the desktop app (icon, Help
+    menu, About, update banner never seen on screen). `si publish` needs his LinkedIn app
+    client id/secret, dev.to key, Hashnode token.
+  - **Separate projects:** Retake (screen demo recorder) lives in `~/Progs/AI/retake-app`
+    (CLAUDE.md there); the old spec is `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md`.
+  - **Notifications:** in this repo the agent is "Ideas": `say "Ideas needs your input"` before
+    asking, `say "Ideas finished"` at the very end (saved in auto-memory).
+- **v2.5.0 (released 2026-11-07):** the Stack
   logo (`docs/brand/`, `desktop/icon/gen.go` → `AppIcon.icns`, Studio favicon and
   header, docs site logo/favicon/touch icon/og:image); `internal/brand` (site URL,
   issue URLs, credits, build info) used by `si --version --verbose`, `si report
