@@ -51,6 +51,7 @@ async function open(theme, size = { width: 1440, height: 900 }) {
 }
 async function openFile(page, path) {
   const sel = `.row-main[title="${path}"]`;
+  await page.waitForSelector(`.row-main[title="${path.split("/")[0]}"]`); // the tree has loaded (else a folder click may close it)
   if (!(await page.$(sel))) await page.click(`.row-main[title="${path.split("/")[0]}"]`);
   await page.click(sel);
 }
@@ -110,17 +111,26 @@ const tests = {
     const { ctx, page } = await open("dark");
     await openFile(page, "sections/one.md");
     await page.waitForSelector(".cm-content");
-    // block saves so the text can only survive through the localStorage stash (a crash before the save lands)
-    const block = (r) => (r.request().method() === "PUT" ? r.abort() : r.continue());
+    // block saves so the text can only survive through the localStorage stash (a crash before the save lands).
+    // Saves stay blocked through the reload: unblocking earlier let the unload flush (visibilitychange)
+    // save for real whenever the 700 ms autosave had not fired yet, and then there was nothing to restore.
+    let blocked = 0;
+    const block = (r) => (r.request().method() === "PUT" ? (blocked++, r.abort()) : r.continue());
     await page.route("**/*", block);
     await setText(page, "## Unsaved survivor\n");
-    await sleep(1000);
-    await page.unroute("**/*", block);
+    await until(() => blocked > 0, 5000, "the autosave tried to save");
     await page.reload();
     await page.waitForSelector(".app");
-    if (!(await page.$(".banner-info"))) await openFile(page, "sections/one.md");
+    // the reopened tab restores by itself; otherwise open the file once the tree has loaded
+    // (opening it before the tree was there toggled the folder closed)
+    const restored = await page.waitForSelector(".banner-info", { timeout: 3000 }).catch(() => null);
+    if (!restored) {
+      await page.waitForSelector('.row-main[title="sections"]');
+      await openFile(page, "sections/one.md");
+    }
     await page.waitForSelector(".banner-info:has-text('Unsaved changes restored')", { timeout: 6000 });
     await until(async () => (await page.textContent(".cm-content")).includes("Unsaved survivor"), 3000, "text restored");
+    await page.unroute("**/*", block);
     await ctx.close();
   },
   async "deleted on disk keeps unsaved text"() {
