@@ -57,7 +57,7 @@ contract — a terminal is always dark and monospace regardless of the deck them
 | Capability | `cmd/si/main.go` | `srv.Terminal = ta.IP.IsLoopback()` after `net.Listen` |
 | Page flag | `internal/render/render.go` | `Options.Terminal` → `SI_CONFIG.terminal` (false for build/export) |
 | Config | `internal/config/config.go` | `keys.terminal` (`` ` ``) + `feature.terminal` |
-| Lazy hook | `internal/assets/web/deck.js` | on `` ` ``, lazy-loads the runtime, then `window.siTerm.toggle()` |
+| Lazy hook | `internal/assets/web/deck/05-annotate-keys.js` | on `` ` ``, lazy-loads the runtime, then `window.siTerm.toggle()` |
 | Drawer UI | `internal/assets/web/term/term.js` | tabbed xterm drawer; styles self-contained |
 | Vendored | `internal/assets/web/term/` | `xterm.js`, `xterm.css`, `addon-fit.js` |
 

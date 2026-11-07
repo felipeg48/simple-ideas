@@ -29,7 +29,7 @@ format, see `si rules` / `RULES.md` and `docs/reference/user-manual.md`.
 | `internal/render/` | Deck → HTML. `markdown.go` (goldmark + AST transform for body directives and fenced code: code highlight, `mermaid`, `stage`), `svg.go` (canvas inlining, id prefixing, state resolution, helper CSS, `lintSVG`), `stage.go` (the `stage` generator), `media.go` (data URIs / copy / backgrounds / figures), `highlight.go`, `css.go`, `render.go` (page assembly, theme/animation resolution, index) |
 | `internal/serve/` | `si play`: on-the-fly render, static files, SSE live reload, mtime watcher |
 | `internal/config/` | Optional `si.conf` (flat `key: value`, stdlib): default theme, `keys.*`, `feature.*`, `timer.*`. Injected as `window.SI_CONFIG`. |
-| `internal/assets/` | Embedded web files (`web/layout.css`, `web/theme.css`, `web/deck.js`, `web/presenter.html`, `web/anim/*.js`) and `contract.go` (tokens, hooks, theme values, animation lookup) |
+| `internal/assets/` | Embedded web files (`web/layout.css`, `web/theme.css`, `web/deck/*.js` (joined into one runtime), `web/presenter.html`, `web/anim/*.js`) and `contract.go` (tokens, hooks, theme values, animation lookup) |
 | `examples/` | The showcase deck + night-shift sample, embedded for `si new` / `--export example` |
 | `docs/` | Authoring guides (stage, canvases, timer animations) and this reference |
 | `rules.go` | Embeds RULES.md (`si rules`) and the user manual (`si manual`) |
@@ -68,7 +68,7 @@ background brightness overlay, and SVG packets.
    in `transform` in `internal/render/markdown.go` (applies to the next block).
 3. CSS: mechanics in `web/layout.css`, looks in `web/theme.css`; any new `--si-*`
    token or `.si-*` class goes into `Tokens` / `Hooks` in `contract.go`.
-4. Runtime: `web/deck.js` (and `web/presenter.html` if the teleprompter needs it).
+4. Runtime: `web/deck/` (one file per feature) (and `web/presenter.html` if the teleprompter needs it).
 5. Tests: a case in `deck_test.go`, a use in `internal/render/testdata/deck.md`
    (then `-update` the golden file and read the diff), an assertion in
    `render_test.go` if it emits CSS.

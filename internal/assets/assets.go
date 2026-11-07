@@ -23,8 +23,31 @@ var ThemeLooksCSS string
 
 // DeckJS is the deck runtime.
 //
-//go:embed web/deck.js
-var DeckJS string
+// It lives in web/deck/ as one file per feature (core and steps, navigation
+// and overview, modes and find, presenter and code tabs, annotate, the
+// terminal hook and keys, media and print), joined in name order into one script: the parts are pieces of one
+// function, so the joined text is exactly the runtime the page gets.
+var DeckJS = joinParts(deckFS, "web/deck")
+
+//go:embed web/deck/*.js
+var deckFS embed.FS
+
+// joinParts concatenates the files of dir in name order.
+func joinParts(fsys embed.FS, dir string) string {
+	ents, err := fs.ReadDir(fsys, dir)
+	if err != nil {
+		panic(err)
+	}
+	var b strings.Builder
+	for _, e := range ents { // ReadDir returns names sorted
+		raw, err := fs.ReadFile(fsys, dir+"/"+e.Name())
+		if err != nil {
+			panic(err)
+		}
+		b.Write(raw)
+	}
+	return b.String()
+}
 
 // MindmapCSS and MindmapJS draw mind maps (a `type: mindmap` page or a
 // ```mindmap fence): layouts, lines, drill-down, search and Play.
