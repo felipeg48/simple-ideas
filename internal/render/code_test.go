@@ -32,7 +32,7 @@ func TestCodeLinesAndCallouts(t *testing.T) {
 		`<span class="si-code-title">App.java</span>`,
 		`<span class="si-line"><span class="si-ln" data-n="10"></span>`,
 		`<span class="si-line si-hl"><span class="si-ln" data-n="11"></span>`,
-		`<span class="si-co" data-co="1" aria-label="callout 1"></span>`,
+		`<span class="si-co" data-co="1" role="img" aria-label="callout 1"></span>`,
 		`<ol class="si-callouts"><li data-co="1">`,
 	} {
 		if !strings.Contains(h, want) {

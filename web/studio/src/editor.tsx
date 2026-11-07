@@ -259,7 +259,7 @@ export function Editor(p: Props) {
         props.current.onCursor(l.number, h - l.from + 1);
       }
     });
-    d.state = EditorState.create({ doc: content, extensions: extensions(kind, props.current.rules, onUpdate) });
+    d.state = EditorState.create({ doc: content, extensions: [extensions(kind, props.current.rules, onUpdate), EditorView.contentAttributes.of({ "aria-label": "Text of " + path })] });
     return d;
   }
 

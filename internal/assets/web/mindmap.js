@@ -342,11 +342,10 @@
   /* ---------- topics ---------- */
   M.nodeSVG = function (n) {
     var L = lv(n.d), x = n.x - n.w / 2, y = n.y - n.h / 2, cls = n.d === 0 ? 'si-mm-root' : 'si-mm-lv' + Math.min(n.d, 2), self = this;
-    var label = n.code ? (n.code.lang || 'code') + ' code' : n.t;
-    if (n.link) label += ', opens the ' + this.maps[n.link].title + ' map';
-    else if (n.kids && n.kids.length) label += n.collapsed ? ', folded' : ', open';
+    /* named by what it shows (its text and chips, map › for a linked map); open or folded is aria-expanded */
+    var state = !n.link && n.kids && n.kids.length ? ' aria-expanded="' + !n.collapsed + '"' : '';
     var s = '<g class="si-mm-node ' + cls + (n.code ? ' si-mm-code' : '') + (n.sticky ? ' si-mm-sticky' : '') + '" data-id="' + n.id + '"' + (n.d > 0 ? ' data-top="' + n.top + '"' : '') +
-      ' tabindex="0" role="button" aria-label="' + esc(label) + '" style="--si-mm-c:var(--si-mm-' + (n.branch + 1) + ');--i:' + n.i + '">';
+      ' tabindex="0" role="button"' + state + ' style="--si-mm-c:var(--si-mm-' + (n.branch + 1) + ');--i:' + n.i + '">';
     if (n.code) {
       s += '<rect class="si-mm-shape" x="' + f1(x) + '" y="' + f1(y) + '" width="' + f1(n.w) + '" height="' + f1(n.h) + '" rx="9"/>';
       var bar = n.code.window && n.code.window !== 'none' ? 18 : 0;

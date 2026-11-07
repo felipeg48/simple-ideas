@@ -4,7 +4,7 @@
 @layer si.theme{
 body{font-family:var(--si-font-body);line-height:1.45}
 .si-inner{line-height:1.45}
-a{color:var(--si-accent);text-underline-offset:.16em;text-decoration-thickness:.06em}
+a{color:color-mix(in srgb,var(--si-accent) 75%,var(--si-fg));text-underline-offset:.16em;text-decoration-thickness:.06em}
 .si-heading{font-family:var(--si-font-heading);font-weight:var(--si-heading-weight);letter-spacing:var(--si-heading-tracking);
   text-transform:var(--si-heading-case);line-height:1.08;margin:0 0 .55em;text-wrap:balance}
 h1.si-heading{font-size:var(--si-h1-size)}
@@ -66,8 +66,8 @@ pre.si-code .si-diff-meta{color:var(--si-muted);font-weight:600}
 pre.si-code :is(.si-diff-add,.si-diff-del,.si-diff-ctx,.si-diff-hunk,.si-diff-meta) .si-ln::before{min-width:3.2ch;margin-right:.8ch}
 pre.si-code :is(.si-diff-hunk,.si-diff-meta) .si-ln{display:none}
 
-.si-tk-c{color:var(--si-muted);font-style:italic}.si-tk-s{color:var(--si-accent-2)}.si-tk-k{color:var(--si-accent);font-weight:600}
-.si-tk-n{color:var(--si-warn)}.si-tk-f{color:color-mix(in srgb,var(--si-accent) 60%,var(--si-fg))}.si-tk-t{color:var(--si-ok)}.si-tk-v{color:var(--si-warn)}.si-tk-m{color:var(--si-accent);font-weight:700}.si-tk-y{color:var(--si-accent-2)}
+.si-tk-c{color:color-mix(in srgb,var(--si-muted) 80%,var(--si-fg));font-style:italic}.si-tk-s{color:color-mix(in srgb,var(--si-accent-2) 80%,var(--si-fg))}.si-tk-k{color:color-mix(in srgb,var(--si-accent) 72%,var(--si-fg));font-weight:600}
+.si-tk-n{color:color-mix(in srgb,var(--si-warn) 68%,var(--si-fg))}.si-tk-f{color:color-mix(in srgb,var(--si-accent) 60%,var(--si-fg))}.si-tk-t{color:color-mix(in srgb,var(--si-ok) 72%,var(--si-fg))}.si-tk-v{color:color-mix(in srgb,var(--si-warn) 68%,var(--si-fg))}.si-tk-m{color:color-mix(in srgb,var(--si-accent) 72%,var(--si-fg));font-weight:700}.si-tk-y{color:var(--si-accent-2)}
 .si-body table{border-collapse:collapse;width:100%;font-size:.86em;margin:.4em 0 .8em}
 .si-body th,.si-body td{padding:.45em .75em;border-bottom:1px solid var(--si-line);text-align:left;vertical-align:top}
 .si-body th{background:var(--si-surface-2);font-weight:650}

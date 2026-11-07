@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc --noEmit && node build.mjs",
     "test": "vitest run",
-    "e2e": "node e2e/studio.e2e.mjs && node e2e/pointer.e2e.mjs",
+    "e2e": "node e2e/studio.e2e.mjs && node e2e/pointer.e2e.mjs && node e2e/a11y.e2e.mjs",
+    "e2e:a11y": "node e2e/a11y.e2e.mjs",
     "e2e:pointer": "node e2e/pointer.e2e.mjs"
   },
   "dependencies": {
@@ -23,6 +24,7 @@
     "preact": "11.1.0"
   },
   "devDependencies": {
+    "axe-core": "4.14.0",
     "esbuild": "0.28.2",
     "playwright": "^1.49.1",
     "typescript": "7.0.2",

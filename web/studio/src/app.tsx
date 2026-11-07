@@ -72,10 +72,11 @@ const nextTheme: Record<ThemeMode, ThemeMode> = { system: "light", light: "dark"
 const themeLabel: Record<ThemeMode, string> = { system: "System", light: "Light", dark: "Dark" };
 
 /** Split is a draggable, keyboard-adjustable divider between two panes. */
-function Split(p: { label: string; onMove(dx: number): void }) {
+function Split(p: { label: string; now: number; min: number; max: number; onMove(dx: number): void }) {
   const last = useRef(0);
   return (
     <div class="split" role="separator" aria-orientation="vertical" aria-label={p.label} tabIndex={0}
+      aria-valuenow={p.now} aria-valuemin={p.min} aria-valuemax={p.max}
       onPointerDown={(e) => {
         last.current = e.clientX;
         e.currentTarget.setPointerCapture(e.pointerId);
@@ -392,20 +393,20 @@ export function App() {
       <div class={"body" + (view === "focus" ? " focus" : "") + (navOpen ? " nav-open" : "")} style={{ "--cols": cols }} hidden={mode !== "write"}>
         <Navigator tree={tree} decks={decks} active={active} dirty={dirty} onOpen={(n) => open(n.path)}
           onCreate={onCreate} onRename={onRename} onDelete={onDelete} onRunbook={onRunbook} onStarter={onStarter} />
-        <Split label="Resize navigator" onMove={(dx) => setLayout((l) => ({ ...l, nav: Math.min(480, Math.max(180, l.nav + dx)) }))} />
+        <Split label="Resize navigator" now={layout.nav} min={180} max={480} onMove={(dx) => setLayout((l) => ({ ...l, nav: Math.min(480, Math.max(180, l.nav + dx)) }))} />
         <div class={"work" + (problemsOpen ? " with-problems" : "")}>
           {view === "board" && <Storyboard check={check} current={slide} title={deck?.title ?? ""} url={deck && isSlides(deck.kind) ? pageURL(deck) : null} onGo={(f, l) => { setView("edit"); open(f, l); }} />}
           {/* the editor stays mounted under the storyboard, so open files keep their state */}
           <div class={"panes" + (view === "focus" ? " focus" : "")} ref={panes} style={{ "--pcols": paneCols }} hidden={view === "board"}>
             <section class="ed" aria-label="Editor">
-              <div class="tabs" role="tablist" aria-label="Open files">
+              <div class="tabs" role="group" aria-label="Open files">
                 {tabs.map((t) => {
                   const st = status[t];
                   return (
                     <div class={"tab" + (t === active ? " on" : "") + (missing.has(t) ? " gone" : "")} key={t}
                       title={missing.has(t) ? t + " (deleted on disk)" : t}
                       onAuxClick={(e) => e.button === 1 && void closeTab(t)}>
-                      <button role="tab" aria-selected={t === active} class="tab-main" onClick={() => setActive(t)}>
+                      <button aria-current={t === active ? "true" : undefined} class="tab-main" onClick={() => setActive(t)}>
                         <Icon name={kindOf(t)} class={"k-" + kindOf(t)} />{baseName(t)}
                       </button>
                       <button class={"tab-x" + (st?.dirty || st?.conflict ? " dirty" : "")} aria-label={`Close ${baseName(t)}`}
@@ -428,7 +429,7 @@ export function App() {
                 {!active && <Welcome decks={decks} name={tree?.name} onOpen={(p) => open(p)} />}
               </div>
             </section>
-            <Split label="Resize preview" onMove={(dx) => {
+            <Split label="Resize preview" now={Math.round(layout.prev * 100)} min={20} max={75} onMove={(dx) => {
               const w = panes.current?.clientWidth || 1;
               setLayout((l) => ({ ...l, prev: Math.min(0.75, Math.max(0.2, l.prev - dx / w)) }));
             }} />

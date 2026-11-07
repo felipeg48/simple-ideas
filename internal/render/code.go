@@ -134,7 +134,7 @@ func (dr *deckRenderer) codeHTML(body, lang string, attrs map[string]string, cal
 		}
 		b.WriteString(l)
 		for _, n := range marks[i] {
-			fmt.Fprintf(&b, `<span class="si-co" data-co="%s" aria-label="callout %s"></span>`, n, n)
+			fmt.Fprintf(&b, `<span class="si-co" data-co="%s" role="img" aria-label="callout %s"></span>`, n, n)
 		}
 		b.WriteString("</span>")
 		if i < len(lines)-1 {

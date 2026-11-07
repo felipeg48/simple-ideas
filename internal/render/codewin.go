@@ -188,7 +188,7 @@ func (dr *deckRenderer) cwFence(sh *cwShow) string {
 	fmt.Fprintf(&b, ` aria-label="%s">`, html.EscapeString(firstNonEmpty(title, "Code")))
 	b.WriteString(`<div class="si-cw-stage"><div class="si-cw-win">`)
 	b.WriteString(cwChrome(win, title))
-	b.WriteString(`<div class="si-cw-body"><div class="si-cw-code"></div></div></div></div>`)
+	b.WriteString(`<div class="si-cw-body" tabindex="0" role="region" aria-label="Code"><div class="si-cw-code"></div></div></div></div>`)
 	data, _ := json.Marshal(map[string]any{"steps": sh.steps})
 	fmt.Fprintf(&b, `<script type="application/json" class="si-cw-data">%s</script>`, data)
 	b.WriteString(`<div class="si-cw-steps">`)

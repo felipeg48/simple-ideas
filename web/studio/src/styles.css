@@ -14,7 +14,7 @@
   --ink: #e9eef5;
   --ink-2: #c9d4e3;
   --mute: #8b9bb2;
-  --gutter: #46566e;
+  --gutter: #727f91;
   --accent: #ff7b33;
   --accent-2: #e8590c;
   --accent-ink: #ff9a5c;
@@ -40,7 +40,7 @@
   --syn-strong: #c792ea;
   --syn-link: #6aa8f0;
   --syn-string: #ecc48d;
-  --syn-comment: #6f8a8a;
+  --syn-comment: #7a9696;
   --syn-quote: #a6b4c8;
   --syn-punct: #ff9a5c;
   --syn-number: #f78c6c;
@@ -66,14 +66,14 @@
   --ink: #141c2b;
   --ink-2: #2c3a50;
   --mute: #566379;
-  --gutter: #a3adbd;
+  --gutter: #6d747f;
   --accent: #f26b1d;
   --accent-2: #d9550a;
   --accent-ink: #b84a06;
   --on-accent: #ffffff;
   --accent-soft: rgba(242, 107, 29, .12);
   --blue: #2f6fd0;
-  --green: #12804a;
+  --green: #0f7643;
   --red: #cf2e2e;
   --yellow: #8f6400;
   --violet: #6d4fd0;
