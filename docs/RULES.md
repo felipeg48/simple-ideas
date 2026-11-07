@@ -2112,8 +2112,9 @@ Import never overwrites a file.
 `si play talk.md --terminal` and `si --terminal` draw a mind map (a fence on a
 slide, or a mind map page in the preview) as a tree: `✲` the central topic,
 `├─ └─` its branches, `→ target` for links, `[badge]`, `▨` a picture, `✎` a
-sticky note, `‹go›` a code topic. The terminal Studio shows the tree read-only:
-`e` opens the file in `$EDITOR`.
+sticky note, `‹go›` a code topic. In the terminal Studio, focus the preview
+(Tab) to edit the tree: ↑ ↓ pick a topic, Enter renames, `c` adds a child, `o`
+a sibling, `x` deletes, `[` `]` move it; `e` still opens the file in `$EDITOR`.
 
 ### What si check reports
 
@@ -2265,7 +2266,9 @@ written into the Markdown as one undoable edit. `si play --terminal` shows a
 window's title (`● ● ●  retry.go` for `mac`) in its box and the callouts as
 numbered notes; a show advances one step per build (→), with the step in the
 box title (`retry.go · 2/4 Back off`) and that step's callouts, and the
-`--notes` teleprompter counts them like any build.
+`--notes` teleprompter counts them like any build. In the terminal Studio
+(`si --terminal`), `:` offers every code block's window style, line numbers
+and title, written into the fence line the same way.
 
 Examples: `examples/code/retry.md` (a four-step show on a backdrop, a Windows
 window with C# and a `.csproj`, a terminal), the showcase slide "The retry

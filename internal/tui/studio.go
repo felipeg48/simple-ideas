@@ -88,6 +88,8 @@ type studioModel struct {
 	status  string
 	newKind string
 	field   string // the inspector field being edited
+	mmSel   int    // the selected row of a mind map page's editable tree (edit.go)
+	cwLine  int    // the code window whose title the prompt edits
 	lab     *labState
 }
 
@@ -360,6 +362,9 @@ func (m *studioModel) key(msg tea.KeyPressMsg) tea.Cmd {
 			}
 		}
 	case 1:
+		if ok, cmd := m.mmKey(k); ok {
+			return cmd
+		}
 		switch k {
 		case "right", "l", "space", "pgdown":
 			if m.isSlides() {
@@ -668,6 +673,7 @@ func (m *studioModel) commands() []item {
 		{"Inspector", "i", func(m *studioModel) tea.Cmd { m.openInspector(); return nil }},
 		{"Check the workspace again", "r", func(m *studioModel) tea.Cmd { return m.check() }},
 	}
+	cmds = append(cmds, m.windowCommands()...)
 	var files []item
 	var walk func(n studio.Node)
 	walk = func(n studio.Node) {
@@ -757,6 +763,12 @@ func (m *studioModel) overlayKey(msg tea.KeyPressMsg) tea.Cmd {
 			m.overlay = ""
 			if m.field != "" && m.input.prompt == m.field+": " {
 				defer func() { m.field = "" }()
+				switch m.field {
+				case "topic":
+					return m.mmRename(v)
+				case "window title":
+					return m.windowSet(m.cwLine, "title", v)
+				}
 				return m.setField(v)
 			}
 			return m.createStarter(v)
@@ -1033,6 +1045,11 @@ func (m *studioModel) docLines(w, h int) []string {
 	}
 	if desc := m.d.Meta.Description; desc != "" {
 		out = append(out, st.Foreground(m.pal.Muted).Render(desc))
+	}
+	if m.d.IsMindmap() && m.focus == 1 { // a focused mind map page: the tree to edit (edit.go)
+		out = append(out, m.mmLines(w)...)
+		m.scroll = max(0, min(max(min(m.scroll, m.mmSel), m.mmSel+3-h+1), len(out)-1))
+		return out[min(m.scroll, len(out)):]
 	}
 	for i, s := range m.d.Slides {
 		r := &textRenderer{pal: m.pal, dir: s.Dir, w: w, maxH: h / 2, k: 1 << 30}

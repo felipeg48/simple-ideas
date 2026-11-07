@@ -88,6 +88,13 @@ The Studio as a keyboard app, the twin of `si --web [dir]`.
 - **Present:** hands the terminal to `si play --terminal` until you quit it;
   inside tmux the teleprompter opens in a pane beside.
 - **Lab:** see below.
+- **Mind maps:** with the preview focused, a mind map page becomes an editable
+  tree: ↑ ↓ pick a topic, Enter renames it, `c` adds a child, `o` a sibling, `x`
+  deletes, `[` `]` move it among its siblings. Every edit is written through
+  the same writer as the web Studio's Map view.
+- **Code windows:** `:` lists, for every code block of the previewed file, its
+  window style (macOS, Windows, Terminal, None), line numbers on/off and its
+  title, written into the fence line like the web Studio's Window view.
 
 ## Lab (`4`)
 
