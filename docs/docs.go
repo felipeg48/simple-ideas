@@ -28,3 +28,9 @@ var Manual string
 //
 //go:embed all:site
 var Site embed.FS
+
+// Brand is the simple-ideas logo set (docs/brand): the docs site and the
+// Studio show it; si never adds it to pages people build.
+//
+//go:embed brand
+var Brand embed.FS

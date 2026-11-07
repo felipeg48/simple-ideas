@@ -1,7 +1,7 @@
 BIN := bin/si
 INSTALL_DIR ?= $(HOME)/.bin
 
-.PHONY: docs-site build test install play-example examples check fmt clean studio-ui studio-e2e desktop-mac
+.PHONY: docs-site build test install play-example examples check fmt clean studio-ui studio-e2e desktop-mac desktop-icon desktop-cert
 
 build:
 	go build -o $(BIN) ./cmd/si
@@ -54,9 +54,19 @@ studio-e2e: build
 desktop-mac:
 	desktop/build-mac.sh
 
+# desktop/AppIcon.icns from desktop/icon/gen.go (the Stack mark); macOS only (sips, iconutil)
+desktop-icon:
+	cd desktop && rm -rf /tmp/si-icon.iconset && mkdir /tmp/si-icon.iconset && go run icon/gen.go /tmp/si-icon.png && \
+	for s in 16 32 128 256 512; do sips -z $$s $$s /tmp/si-icon.png --out /tmp/si-icon.iconset/icon_$${s}x$${s}.png >/dev/null && \
+	sips -z $$((s*2)) $$((s*2)) /tmp/si-icon.png --out /tmp/si-icon.iconset/icon_$${s}x$${s}@2x.png >/dev/null; done && \
+	iconutil -c icns /tmp/si-icon.iconset -o AppIcon.icns
+
 # the docs site, built with si from RULES.md (generated pages) into dist/docs-site
 docs-site:
 	rm -rf dist/docs-site-src dist/docs-site
 	go run ./cmd/si --export docs-site --output dist/docs-site-src
 	go run ./cmd/si build dist/docs-site-src --output dist/docs-site --share-assets
 
+# a self-signed code-signing identity in your login keychain, once, for desktop-mac
+desktop-cert:
+	desktop/make-cert.sh

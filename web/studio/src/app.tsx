@@ -10,6 +10,7 @@ import { NewDialog } from "./new-dialog";
 import { History } from "./history";
 import { Review } from "./review";
 import { Gallery } from "./gallery";
+import { About, Mark, help } from "./about";
 import { Tour, tourDone } from "./tour";
 import { Inspector } from "./inspector";
 import { Storyboard } from "./storyboard";
@@ -314,7 +315,8 @@ export function App() {
       onClose={() => setDialog(null)} />);
   // the desktop app's Help menu calls these; #gallery and #tour links open them too
   const startTour = () => { setMode("write"); setView("edit"); setTourOn(true); };
-  (window as unknown as { siStudio: object }).siStudio = { gallery: showGallery, tour: startTour };
+  const showAbout = (binary?: { path?: string; note?: string }) => setDialog(<About binary={binary} onClose={() => setDialog(null)} />);
+  (window as unknown as { siStudio: object }).siStudio = { gallery: showGallery, tour: startTour, about: showAbout, help };
   const hashed = useRef(false);
   useEffect(() => {
     if (!tree || hashed.current) return;
@@ -349,6 +351,12 @@ export function App() {
     { id: "review", label: "Review: comments from a review link…", icon: "braces", run: showReview },
     { id: "gallery", label: "Start gallery: pick something to make", icon: "plus", run: showGallery },
     { id: "tour", label: "Take the tour of the Studio", icon: "play", run: startTour },
+    { id: "help-docs", label: "Help: Documentation (simple-ideas.org)", icon: "external", run: () => help("docs") },
+    { id: "help-rules", label: "Help: Rules", icon: "external", run: () => help("rules") },
+    { id: "help-manual", label: "Help: Manual", icon: "external", run: () => help("manual") },
+    { id: "report", label: "Report a Problem…", icon: "warn", run: () => help("report") },
+    { id: "feature", label: "Request a Feature…", icon: "plus", run: () => help("feature") },
+    { id: "about", label: "About si", icon: "system", run: () => showAbout() },
     { id: "problems", label: "Show problems", icon: "warn", run: () => setProblemsOpen(true) },
     { id: "theme", label: "Switch light / dark", icon: "moon", run: () => { const t = nextTheme[theme]; setTheme(t); applyTheme(t); } },
     ...(deck ? [{ id: "open-live", label: `Open ${deck.title} in a new tab`, icon: "external" as IconName, run: () => window.open(pageURL(deck), "_blank", "noopener") }] : []),
@@ -395,7 +403,7 @@ export function App() {
       <header class="top">
         <div class="top-left">
         <button class="icon-btn nav-toggle" aria-expanded={navOpen} aria-label="Files" title="Files" onClick={() => setNavOpen((o) => !o)}><Icon name="dir" /></button>
-        <div class="brand"><span class="logo" aria-hidden="true">si</span><span>Studio</span></div>
+        <div class="brand"><Mark class="logo-mark" /><span>Studio</span></div>
         <div class="crumbs" title={active || ""}>
           <span class="ws"><Icon name="dir" />{tree?.name ?? "…"}</span>
           {active && active.split("/").map((seg, i, a) => (
@@ -515,7 +523,7 @@ function Welcome(p: { decks: DeckInfo[]; name?: string; onOpen(path: string): vo
   return (
     <div class="welcome">
       <div class="welcome-card">
-        <span class="logo big" aria-hidden="true">si</span>
+        <Mark size={56} class="logo-mark" />
         <h1>{p.name ?? "si Studio"}</h1>
         <p class="mute">{p.decks.length ? "Pick something to write." : "Nothing here yet: start from the gallery, or create a Markdown file in the navigator."}</p>
         <div class="welcome-actions">

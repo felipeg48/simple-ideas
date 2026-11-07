@@ -18,7 +18,21 @@ the app in Finder, choose **Open**, then **Open** again, or run:
 xattr -dr com.apple.quarantine "/Applications/si Studio.app"
 ```
 
-You can also sign it with your own identity: `codesign --force --deep -s "Developer ID Application: …" "si Studio.app"`.
+Builds are signed with a self-signed identity, "simple-ideas Self-Signed",
+when the machine that builds has it: `make desktop-cert` creates it once in
+your login keychain (the key stays there; nothing is committed), and `make
+desktop-mac` then signs with it, falling back to ad-hoc signing when it is
+missing. A stable identity lets macOS keep the permissions it granted the app
+across updates; it does not make the app "from an identified developer", so a
+downloaded copy still needs the first-open step above. Set
+`SI_SIGN_IDENTITY` to sign with another identity, e.g. a Developer ID.
+
+The Help menu opens the docs site (Documentation, Rules, Manual, Release
+Notes), Report a Problem… and Request a Feature… (GitHub issue forms with the
+version, "desktop app" and the OS filled in), the start gallery and the tour.
+About si Studio shows the Studio's About: version, build, the si binary in use,
+links and the open-source parts si is built with. The links live in one place,
+si's `internal/brand`.
 
 ## Use
 
@@ -58,7 +72,7 @@ You can also sign it with your own identity: `codesign --force --deep -s "Develo
 | Shell, UI | `desktop/app_darwin.m` | Cocoa windows and menus, one WKWebView per window; new windows for `window.open` / `target=_blank`; alerts and confirms; external links to the browser |
 | Shell, processes | `desktop/main.go` | per folder, starts the bundled `si --web <folder> --no-open --addr 127.0.0.1:0` (in its own process group, with the login shell's PATH: an app started from Finder gets a bare PATH), reads the Studio URL it prints, stops it when the window closes or the app quits |
 | Bundle | `desktop/build-mac.sh`, `Info.plist`, `AppIcon.icns` | builds `si` and the shell for arm64 and amd64, `lipo`s them, writes the bundle, ad-hoc signs it (Apple silicon runs no unsigned code), zips it |
-| Icon | `desktop/icon/gen.go` | draws the icon (`go run desktop/icon/gen.go icon.png`, then `iconutil`) |
+| Icon | `desktop/icon/gen.go` | draws the Stack mark on a dark squircle; `make desktop-icon` writes `AppIcon.icns` |
 
 The desktop shell is its own Go module (`desktop/go.mod`): the si module keeps
 no cgo and no new dependency, and `go test ./...` at the root does not build it.

@@ -121,7 +121,7 @@ Not everything is a slide deck. Pick the type by what the reader does:
 | do hands-on work on one page | a lab | `type: lab`, `## Step N:` headings |
 | look things up, read cover to cover | a book | a guide folder whose `_nav.md` says `type: book`: parts, chapters, appendices |
 | run a live demo (the presenter) | a demo script | `type: demo`, `> Say:` lines, every command followed by its expected output |
-| browse several kinds of content | a site | a folder with `_site.md` (a `navigator:`, a menu list), plain pages, plus articles, talks and guide folders |
+| browse several kinds of content | a site | a folder with `_site.md` (a `navigator:`, a menu list; `logo:`, `favicon:`, `touch-icon:`, `og-image:` are opt-in branding), plain pages, plus articles, talks and guide folders |
 | show code changing, step by step, in a window | a code show | fences with `window=mac` and the same `id=`, one per step, `<!-- callout: LINE text -->` after a fence |
 | explore a topic and how its parts connect | a mind map | `type: mindmap`, a `# Title`, then a nested list of topics; or a ```` ```mindmap ```` fence on a slide or in a document; `view: 3d` (or `view=3d`) for pills on a floor with linked maps as floors above; `kind: bricks` (studded bricks) or `kind: toy` (cartoon island) for other 3D looks |
 

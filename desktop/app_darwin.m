@@ -235,6 +235,12 @@ static NSMenu *submenu(NSMenu *bar, NSString *title) {
 }
 - (void)showGallery:(id)sender { [self helpJS:helpScript("gallery")]; }
 - (void)showTour:(id)sender { [self helpJS:helpScript("tour")]; }
+- (void)showDocs:(id)sender { [self helpJS:helpScript("docs")]; }
+- (void)showRules:(id)sender { [self helpJS:helpScript("rules")]; }
+- (void)showManual:(id)sender { [self helpJS:helpScript("manual")]; }
+- (void)showReleases:(id)sender { [self helpJS:helpScript("releases")]; }
+- (void)reportProblem:(id)sender { [self helpJS:helpScript("report")]; }
+- (void)requestFeature:(id)sender { [self helpJS:helpScript("feature")]; }
 
 - (void)openUpdate:(id)sender {
 	NSString *url = siStatus[@"url"];
@@ -242,6 +248,7 @@ static NSMenu *submenu(NSMenu *bar, NSString *title) {
 }
 
 - (void)showAbout:(id)sender {
+	for (SIWindow *w in windows) if (w.studioURL) { [self helpJS:helpScript("about")]; return; } // the Studio's About: links, credits
 	NSString *v = siStatus[@"si"] ?: @"", *note = siStatus[@"note"] ?: @"";
 	NSString *text = [NSString stringWithFormat:@"Runs si %@%@", v, note.length ? [@"\n" stringByAppendingString:note] : @""];
 	[NSApp orderFrontStandardAboutPanelWithOptions:@{NSAboutPanelOptionCredits: [[NSAttributedString alloc] initWithString:text]}];
@@ -396,6 +403,18 @@ static NSMenu *submenu(NSMenu *bar, NSString *title) {
 	NSMenuItem *tour = item(@"Take the Tour", @selector(showTour:), @"");
 	tour.target = self;
 	[help addItem:tour];
+	[help addItem:[NSMenuItem separatorItem]];
+	struct { NSString *title; SEL sel; } links[] = {
+		{@"si Documentation", @selector(showDocs:)}, {@"Rules", @selector(showRules:)}, {@"Manual", @selector(showManual:)},
+		{@"Release Notes", @selector(showReleases:)}, {nil, nil},
+		{@"Report a Problem…", @selector(reportProblem:)}, {@"Request a Feature…", @selector(requestFeature:)},
+	};
+	for (size_t i = 0; i < sizeof links / sizeof links[0]; i++) {
+		if (!links[i].title) { [help addItem:[NSMenuItem separatorItem]]; continue; }
+		NSMenuItem *it = item(links[i].title, links[i].sel, @"");
+		it.target = self;
+		[help addItem:it];
+	}
 	NSApp.helpMenu = help;
 
 	NSApp.mainMenu = bar;

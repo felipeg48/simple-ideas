@@ -203,9 +203,17 @@ code, kbd { font-family: var(--mono); font-size: .92em; }
   background: var(--top); border-bottom: 1px solid var(--line); backdrop-filter: blur(20px); position: relative; z-index: 5; }
 .top-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: -.01em; font-size: 13px; }
-.logo { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; font: 800 12px/1 var(--mono); letter-spacing: -.04em;
-  color: #fff; background: linear-gradient(135deg, #ff9a4d, var(--accent) 45%, #c2410c); box-shadow: 0 2px 10px var(--accent-soft), inset 0 1px 0 rgba(255, 255, 255, .35); }
-.logo.big { width: 52px; height: 52px; border-radius: 14px; font-size: 22px; }
+.logo-mark { flex: none; display: block; }
+.about { width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 64px); overflow: auto; }
+.about-head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+.about-head h2 { margin: 0; font-size: 18px; }
+.about-head p { margin: 2px 0 0; }
+.about h3 { margin: 14px 0 6px; font-size: 13px; }
+.about p { margin: 8px 0; line-height: 1.5; }
+.about-ver { font-weight: 600; }
+.about-bin { font-size: 12px; word-break: break-all; }
+.about-links { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.about-credits { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 13px; }
 .crumbs { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12px; color: var(--mute); white-space: nowrap; overflow: hidden; }
 .crumbs .ws { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 7px; background: var(--field); border: 1px solid var(--line); color: var(--ink-2); }
 .crumbs .ws .ico { width: 14px; height: 14px; color: var(--blue); }

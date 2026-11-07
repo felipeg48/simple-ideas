@@ -1,0 +1,33 @@
+name: Request a feature
+description: Something you want si to do.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What you want to do
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: The talk, tutorial or page you are making, and what gets in the way today.
+  - type: textarea
+    id: example
+    attributes:
+      label: Example
+      description: The Markdown you would like to write, or a sketch or mockup.
+      render: markdown
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Where
+      multiple: true
+      options:
+        - CLI
+        - si play (browser)
+        - web Studio
+        - desktop app
+        - terminal
+        - built page

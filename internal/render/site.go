@@ -93,9 +93,18 @@ func (dr *deckRenderer) siteNav(g *deck.Guide, page string) string {
 		menu.WriteString(link(it))
 	}
 	logo := html.EscapeString(g.Meta.Title)
-	if l := strings.TrimSpace(g.Meta.Logo); l != "" && deck.IsImagePath(l) {
-		if uri, ok := dr.media(g.Dir, l, nil); ok {
-			logo = fmt.Sprintf(`<img src="%s" alt="%s">`, uri, html.EscapeString(g.Meta.Title))
+	l := strings.TrimSpace(g.Meta.Logo)
+	img, text, _ := strings.Cut(l, " ") // "mark.svg simple-ideas": the picture, then the name beside it
+	if l != "" && deck.IsImagePath(img) {
+		if uri, ok := dr.media(g.Dir, img, nil); ok {
+			alt := g.Meta.Title
+			if text = strings.TrimSpace(text); text != "" {
+				alt = ""
+			}
+			logo = fmt.Sprintf(`<img src="%s" alt="%s">`, uri, html.EscapeString(alt))
+			if text != "" {
+				logo += "<span>" + html.EscapeString(text) + "</span>"
+			}
 		}
 	} else if l != "" {
 		logo = html.EscapeString(l)

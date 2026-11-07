@@ -16,6 +16,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/brand"
 	"html"
 	"io"
 	"io/fs"
@@ -110,7 +111,11 @@ Usage:
         download the latest release binary for this OS/arch (checksum-verified) and
         replace the running si; needs write access to si's install directory
   si rules
-        print the markdown rules (RULES.md)
+        print the markdown rules (RULES.md); every rule, the manual and live examples
+        are on https://simple-ideas.org/
+  si report [--feature] [--open]
+        print (or open) a new GitHub issue for a problem, or with --feature for an idea,
+        with the version and OS filled in
   si theme list
         list the built-in themes (name, display name, aliases) for --theme / theme:
   si --export css-rules|rules|conf|example|themes|agent-rules|docs-site [--output <path>]
@@ -147,7 +152,7 @@ Flags (GNU style, before or after the path):
       --pdf             build: also render each deck to pdfs/<name>.pdf and link it from the index tiles (needs headless Chrome)
       --export <what>   css-rules, rules, conf, example, themes or agent-rules
   -h, --help            this help
-      --version         print the version
+      --version         print the version (--version --verbose: build, links, credits)
 
 Example:
   si --css css/ --output html/ md/
@@ -188,7 +193,7 @@ type options struct {
 	remoteAddr                                   string
 	siteOld                                      string // the old --site <text>, now --site-title
 	remote                                       remoteFlag
-	open, help, ver                              bool
+	open, help, ver, verbose, feature            bool
 	noInline, pdf, slides, dev, web, noOpen      bool
 	share                                        bool // --share-assets
 	write                                        bool // si fix --write
@@ -268,6 +273,8 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.help, "help", false, "")
 	fl.BoolVar(&o.help, "h", false, "")
 	fl.BoolVar(&o.ver, "version", false, "")
+	fl.BoolVar(&o.verbose, "verbose", false, "")
+	fl.BoolVar(&o.feature, "feature", false, "")
 	fl.Var(&o.css, "css", "")
 	fl.StringVar(&o.theme, "theme", "", "")
 	fl.StringVar(&o.conf, "conf", "", "")
@@ -311,7 +318,7 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	if o.ver {
-		fmt.Fprintln(stdout, "si", version)
+		printVersion(stdout, o.verbose)
 		return exitOK
 	}
 	deck.Offline = o.offline
@@ -366,7 +373,14 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		fmt.Fprint(stdout, usage)
 		return exitOK
 	case "version":
-		fmt.Fprintln(stdout, "si", version)
+		printVersion(stdout, o.verbose)
+		return exitOK
+	case "report":
+		u := brand.IssueURL(o.feature, version, "CLI", brand.OS())
+		fmt.Fprintln(stdout, u)
+		if o.open {
+			openBrowser(u)
+		}
 		return exitOK
 	case "rules":
 		fmt.Fprint(stdout, docs.Rules)
@@ -997,7 +1011,7 @@ func web(dir string, o *options, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	tok := studio.NewToken()
-	st, err := studio.New(dir, studio.Options{CSS: o.css, Theme: o.theme, Conf: o.conf, Title: o.title, Token: tok, Addr: ln.Addr().String(),
+	st, err := studio.New(dir, studio.Options{CSS: o.css, Theme: o.theme, Conf: o.conf, Title: o.title, Token: tok, Addr: ln.Addr().String(), Version: version,
 		Run: func(args []string, out io.Writer) int { return run(args, out, out) }})
 	if err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
@@ -1682,4 +1696,23 @@ func playTerminal(src string, o *options, stdout, stderr io.Writer) int {
 func isDir(p string) bool {
 	fi, err := os.Stat(p)
 	return err == nil && fi.IsDir()
+}
+
+// printVersion is `si --version`; verbose adds the build, the links and the
+// open-source parts si is built with (the About of the CLI).
+func printVersion(w io.Writer, verbose bool) {
+	fmt.Fprintln(w, "si", version)
+	if !verbose {
+		return
+	}
+	commit, date := brand.Build()
+	fmt.Fprintf(w, "%s\n%s\n\n%s\n\n", brand.Name, brand.Tagline, brand.About)
+	if commit != "" {
+		fmt.Fprintf(w, "build      %s %s\n", commit, date)
+	}
+	fmt.Fprintf(w, "website    %s\ngithub     %s\nreport     si report\nreleases   %s\n\nbuilt with\n", brand.Site, brand.Repo, brand.Pages["releases"])
+	for _, c := range brand.Credits {
+		fmt.Fprintf(w, "  %-11s %-8s %s\n", c.Name, c.License, c.Note)
+	}
+	fmt.Fprintf(w, "\n%s · %s\n", brand.Copyright, brand.License)
 }

@@ -2,7 +2,10 @@
 title: simple-ideas
 description: Markdown or AsciiDoc in, decks, articles, tutorials, books, mind maps and code shows out. Every rule of si, with the examples running in the page.
 navigator: topbar
-logo: si
+logo: brand/mark.svg simple-ideas
+favicon: brand/favicon.svg
+touch-icon: brand/apple-touch-icon.png
+og-image: https://simple-ideas.org/brand/social-card.png
 cta: Get si → download.md
 theme: studio
 footer: simple-ideas
@@ -27,3 +30,7 @@ footer: simple-ideas
 - [Rules](rules/)
 - [Manual](manual.md)
 - [Download](download.md)
+- Help
+  - [Report a problem]($SI_BUG_URL)
+  - [Request a feature]($SI_FEATURE_URL)
+  - [GitHub](https://github.com/felipeg48/simple-ideas)

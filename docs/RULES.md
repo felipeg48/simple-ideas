@@ -1656,9 +1656,25 @@ theme: studio
 | Key | What |
 |---|---|
 | `navigator:` | `topbar` (default: logo left, menu, call to action right), `topbar-centred` (menu left, logo centred), `mega` (sections open as wide panels), `sidebar` (a sticky column on the left). On narrow screens every navigator folds its menu behind a **Menu** button. |
-| `logo:` | text, or an image path (inlined like any image) |
+| `logo:` | text, or an image path (inlined like any image); an image followed by text (`logo: brand/mark.svg simple-ideas`) shows the picture with the name beside it |
+| `favicon:` | the browser tab icon, an image path (inlined); without it pages carry no icon |
+| `touch-icon:` | the home-screen icon (`apple-touch-icon`), an image path |
+| `og-image:` | the picture link previews show (`og:image`, `twitter:card`), an absolute `https://` URL |
 | `cta:` | `Label → page` (or `→ https://…`, `→ #modal`): the highlighted button |
 | `title: off` | on a page: no `<h1>` (a home page that opens with its own content) |
+
+`favicon:`, `touch-icon:` and `og-image:` also work in any deck's or document's
+front matter. si never adds an icon or branding of its own to pages you build.
+
+```markdown
+---
+title: Northwind docs
+logo: brand/mark.svg Northwind
+favicon: brand/favicon.svg
+touch-icon: brand/touch.png
+og-image: https://docs.northwind.example/brand/card.png
+---
+```
 | `header: off` / `footer-page: off` | on a page: leave out `_header.md` / `_footer.md` |
 
 An item without a link (`- Writing` above) is a menu section: its children

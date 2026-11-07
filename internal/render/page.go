@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -140,8 +142,8 @@ func (dr *deckRenderer) head(b *bytes.Buffer) string {
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="generator" content="simple-ideas">
-<link rel="icon" href="data:,">
 `)
+	dr.icons(b)
 	title := plain(dr.d.Title())
 	if g := dr.opt.Guide; g != nil && g.Meta.Title != "" && g.Meta.Title != title {
 		title += " · " + g.Meta.Title
@@ -321,3 +323,39 @@ const DevReloadJS = `<script>(function(){
 })();</script>
 <style>#si-dev-error{position:fixed;left:1rem;right:1rem;bottom:1rem;z-index:9999;max-height:60vh;overflow:auto;white-space:pre-wrap;background:#7f1d1d;color:#fff;padding:1rem 1.2rem;border-radius:.5rem;font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;box-shadow:0 10px 40px rgba(0,0,0,.45)}</style>
 ` + "\n"
+
+// icons writes the tab icon (favicon:, else none, so a built page shows no
+// browser default request), the home-screen icon (touch-icon:) and the link
+// preview picture (og-image:, an absolute URL). They are opt-in: si puts no
+// branding of its own on the pages people build.
+func (dr *deckRenderer) icons(b *bytes.Buffer) {
+	m := dr.d.Meta
+	asset := func(v string) string {
+		dir := filepath.Dir(dr.d.Path)
+		if g := dr.opt.Guide; g != nil && !filepath.IsAbs(v) {
+			if _, err := os.Stat(filepath.Join(dir, v)); err != nil {
+				dir = g.Dir
+			}
+		}
+		if uri, ok := dr.media(dir, v, nil); ok {
+			return uri
+		}
+		dr.problem(nil, "missing file: %s", v)
+		return ""
+	}
+	icon := "data:,"
+	if v := strings.TrimSpace(m.Favicon); v != "" {
+		if u := asset(v); u != "" {
+			icon = u
+		}
+	}
+	fmt.Fprintf(b, "<link rel=\"icon\" href=\"%s\">\n", html.EscapeString(icon))
+	if v := strings.TrimSpace(m.TouchIcon); v != "" {
+		if u := asset(v); u != "" {
+			fmt.Fprintf(b, "<link rel=\"apple-touch-icon\" href=\"%s\">\n", html.EscapeString(u))
+		}
+	}
+	if v := strings.TrimSpace(m.OGImage); v != "" {
+		fmt.Fprintf(b, "<meta property=\"og:image\" content=\"%s\">\n<meta name=\"twitter:card\" content=\"summary_large_image\">\n", html.EscapeString(v))
+	}
+}

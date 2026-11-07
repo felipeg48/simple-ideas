@@ -170,14 +170,24 @@ func goStatus() *C.char {
 	return C.CString(string(b))
 }
 
-// helpJS is the script the Help menu runs in a Studio window: the web Studio
-// sets window.siStudio.gallery and .tour; before it has loaded, the hash makes
-// it open the same thing on load.
+// helpJS is the script the Help menu runs in a Studio window. The web Studio
+// sets window.siStudio: gallery and tour (before it has loaded, the hash opens
+// them on load), help (the docs site pages and the issue forms, whose links
+// live in si's internal/brand) and about (with the si binary this app runs).
 func helpJS(cmd string) string {
-	if cmd != "gallery" && cmd != "tour" {
-		return ""
+	switch cmd {
+	case "gallery", "tour":
+		return `if(window.siStudio){siStudio.` + cmd + `()}else{location.hash="` + cmd + `"}`
+	case "docs", "rules", "manual", "releases", "report", "feature":
+		return `if(window.siStudio){siStudio.help("` + cmd + `",true)}`
+	case "about":
+		p, _ := siPath()
+		statusMu.Lock()
+		b, _ := json.Marshal(map[string]string{"path": p, "note": siNote})
+		statusMu.Unlock()
+		return `if(window.siStudio){siStudio.about(` + string(b) + `)}`
 	}
-	return `if(window.siStudio){siStudio.` + cmd + `()}else{location.hash="` + cmd + `"}`
+	return ""
 }
 
 //export goHelpJS

@@ -518,3 +518,22 @@ func TestAcemqThemeSelfContained(t *testing.T) {
 		t.Error("an acemq lab embeds the fonts")
 	}
 }
+
+func TestIconsAreOptIn(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "f.svg"), []byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"/>`), 0o644)
+	p := filepath.Join(dir, "a.md")
+	os.WriteFile(p, []byte("---\ntype: article\nfavicon: f.svg\ntouch-icon: f.svg\nog-image: https://example.org/card.png\n---\n# A\n\nText.\n"), 0o644)
+	_, page := renderLab(t, p, Options{})
+	for _, want := range []string{`<link rel="icon" href="data:image/svg+xml;base64,`, `<link rel="apple-touch-icon" href="data:image/svg+xml`, `<meta property="og:image" content="https://example.org/card.png">`} {
+		if !strings.Contains(page, want) {
+			t.Errorf("missing %s", want)
+		}
+	}
+	q := filepath.Join(dir, "b.md")
+	os.WriteFile(q, []byte("---\ntype: article\n---\n# B\n"), 0o644)
+	_, page = renderLab(t, q, Options{})
+	if !strings.Contains(page, `<link rel="icon" href="data:,">`) || strings.Contains(page, "og:image") || strings.Contains(page, "apple-touch-icon") {
+		t.Error("without the keys a page carries no icon and no preview picture")
+	}
+}

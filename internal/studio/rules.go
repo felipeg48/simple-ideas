@@ -48,6 +48,9 @@ var help = map[string]string{
 	"description":       "the one-sentence lede and card text",
 	"navigator":         "a site's menu: topbar, topbar-centred, mega or sidebar",
 	"cta":               "a site's highlighted button: Label → page",
+	"favicon":           "the browser tab icon: an image file (none by default)",
+	"touch-icon":        "the home-screen icon (apple-touch-icon): an image file",
+	"og-image":          "the link preview picture (og:image): an https:// URL",
 	"watermark":         "a faint mark on every slide or page: text or an image",
 	"runbook":           "the JSON cheat-sheet in the si play terminal",
 	"demos":             "demo scripts for the si play ▶ Demos panel (files or folders)",
@@ -99,7 +102,7 @@ var values = map[string][]string{
 }
 
 // paths are the directives and keys whose value is a workspace path.
-var paths = []string{"include", "svg", "embed", "slides", "code", "runbook", "demos", "logo", "watermark", "theme"}
+var paths = []string{"include", "svg", "embed", "slides", "code", "runbook", "demos", "logo", "watermark", "theme", "favicon", "touch-icon"}
 
 func (a *api) rules(w http.ResponseWriter, r *http.Request) {
 	v := map[string][]string{"theme": assets.ThemeNames()}

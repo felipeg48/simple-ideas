@@ -7,6 +7,7 @@ package docsite
 
 import (
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/brand"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -154,7 +155,24 @@ func Generate(dst string) (pages int, err error) {
 			return write(filepath.ToSlash(filepath.Join(to, rel)), string(raw))
 		})
 	}
-	if err := copyFS(docs.Site, "site", "", func(string) bool { return false }); err != nil {
+	// the site's own files; $SI_BUG_URL / $SI_FEATURE_URL are the issue forms
+	// (internal/brand), so the site, the CLI and the Studio link the same place
+	links := strings.NewReplacer("$SI_BUG_URL", brand.IssueURL(false, "", "built page", ""), "$SI_FEATURE_URL", brand.IssueURL(true, "", "built page", ""))
+	err = fs.WalkDir(docs.Site, "site", func(p string, e fs.DirEntry, err error) error {
+		if err != nil || e.IsDir() {
+			return err
+		}
+		raw, err := fs.ReadFile(docs.Site, p)
+		if err != nil {
+			return err
+		}
+		return write(strings.TrimPrefix(p, "site/"), links.Replace(string(raw)))
+	})
+	if err != nil {
+		return 0, err
+	}
+	// the logo, favicon and link-preview card (docs/brand)
+	if err := copyFS(docs.Brand, "brand", "brand", func(p string) bool { return strings.HasSuffix(p, ".md") }); err != nil {
 		return 0, err
 	}
 	// the examples si ships, built as live pages of the site (the feature pages

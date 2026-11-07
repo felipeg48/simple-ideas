@@ -68,6 +68,12 @@ func TestHelpJS(t *testing.T) {
 	if !strings.Contains(helpJS("tour"), "siStudio.tour()") {
 		t.Error("tour")
 	}
+	if got := helpJS("report"); got != `if(window.siStudio){siStudio.help("report",true)}` {
+		t.Errorf("report: %s", got)
+	}
+	if !strings.Contains(helpJS("about"), "siStudio.about({") {
+		t.Errorf("about: %s", helpJS("about"))
+	}
 	if helpJS("alert(1)") != "" {
 		t.Error("only known commands")
 	}
