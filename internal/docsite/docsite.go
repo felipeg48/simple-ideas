@@ -1,7 +1,8 @@
 // Package docsite writes the si docs site (si --export docs-site): a site
 // whose Rules section is generated from RULES.md, one page per numbered
-// section, so the site cannot drift from the rules; the manual and the
-// examples ride along, and the home page runs live examples.
+// section, so the site cannot drift from the rules; the manual rides along,
+// the examples si ships become live pages, one feature page per kind of
+// document shows them with their Markdown, and the home page runs live examples.
 package docsite
 
 import (
@@ -156,12 +157,20 @@ func Generate(dst string) (pages int, err error) {
 	if err := copyFS(docs.Site, "site", "", func(string) bool { return false }); err != nil {
 		return 0, err
 	}
-	// the files the home page's live deck needs, in a folder the site does not list
-	keep := func(p string) bool {
+	// the examples si ships, built as live pages of the site (the feature pages
+	// embed them and show their Markdown)
+	skip := func(p string) bool {
 		top, _, _ := strings.Cut(p, "/")
-		return p == "showcase.md" || p == "appendix.md" || p == "runbook.json" || p == "si.conf" || top == "assets" || top == "css" || top == "demos"
+		return p == "embed.go" || p == "order-lab.md" || top == "night-shift" || top == "site"
 	}
-	if err := copyFS(examples.FS, ".", "_examples", func(p string) bool { return !keep(p) }); err != nil {
+	if err := copyFS(examples.FS, ".", "live", skip); err != nil {
+		return 0, err
+	}
+	// a site page is a document unless it says it is a deck; the appendix is
+	// included into the talk, not a page of the site
+	showcase := strings.Replace(mustRead("showcase.md"), "---\n", "---\ntype: deck\n", 1)
+	showcase = strings.ReplaceAll(showcase, "](appendix.md)", "](https://github.com/felipeg48/simple-ideas/blob/main/examples/appendix.md)")
+	if err := write("live/showcase.md", showcase); err != nil {
 		return 0, err
 	}
 	if err := write("manual.md", strings.Replace(docs.Manual, "---\n", "---\ntype: deck\n", 1)); err != nil {
@@ -184,6 +193,13 @@ func Generate(dst string) (pages int, err error) {
 	if err := write("rules/_nav.md", nav.String()); err != nil {
 		return 0, err
 	}
+	bySec := map[string]Section{}
+	for _, s := range secs {
+		bySec[s.N] = s
+	}
+	if err := writeFeatures(write, bySec); err != nil {
+		return 0, err
+	}
 	overview := "---\ntitle: The rules\n---\n\n# The rules\n\n" + linkRefs(stripH1(intro), refs) + "\n\n## Sections\n\n"
 	for _, s := range secs {
 		overview += fmt.Sprintf("- [%s. %s](%s.md)\n", s.N, s.Title, s.Slug)
@@ -192,6 +208,14 @@ func Generate(dst string) (pages int, err error) {
 		return 0, err
 	}
 	return len(secs) + 1, nil
+}
+
+func mustRead(p string) string {
+	raw, err := fs.ReadFile(examples.FS, p)
+	if err != nil {
+		panic(err) // an embedded example is missing: a build error, not a user error
+	}
+	return string(raw)
 }
 
 func stripH1(s string) string {

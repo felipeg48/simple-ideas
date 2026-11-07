@@ -1,17 +1,52 @@
 ---
-title: Write Markdown, present anything
-description: si turns plain Markdown into fluid slide decks, articles, tutorials, sites, mind maps and code shows: one self-contained HTML file each, no build server, no lock-in.
+title: Write Markdown or AsciiDoc, present anything
+description: si turns plain Markdown or AsciiDoc into fluid slide decks, articles, tutorials, books, mind maps and code shows: one self-contained HTML file each, no build server, no lock-in.
 ---
 
-You write a Markdown file. si gives you back a deck that fills any screen, a
-teleprompter that scrolls with you, an article with a table of contents, a
-mind map you can fly into, or a code window whose lines glide from one step
-to the next. One file in, one HTML file out, and it still opens from a USB
-stick in ten years.
+You write a Markdown or AsciiDoc file. si gives you back a deck that fills any
+screen, a teleprompter that scrolls with you, an article with a table of
+contents, a tutorial with steps you can tick, a book with an index, a mind map
+you can fly into, or a code window whose lines glide from one step to the
+next. One file in, one HTML file out, and it still opens from a USB stick in
+ten years.
+
+## What you can make
+
+<!-- cards: 3 -->
+
+### Decks · talks · hi
+
+Talks that fill any screen, with build steps, animated canvases and a
+teleprompter. [See decks](features/decks.md)
+
+### Articles · posts · teal
+
+One readable page with a table of contents, code, callouts and mind maps in
+the text. [See articles](features/articles.md)
+
+### Tutorials and guides · courses · ok
+
+A folder of pages with a sidebar, numbered steps and a runbook, in Markdown or
+AsciiDoc. [See guides](features/guides.md)
+
+### Mind maps · 2D and 3D · orange
+
+A nested list you can fold, search and fly into, as boxes, bricks or toys.
+[See mind maps](features/mindmaps.md)
+
+### Books · references · teal
+
+Chapters, numbered figures and tables, an index and a glossary, printed as one
+volume. [See books](features/books.md)
+
+### Code windows and shows · code · hi
+
+Code in a macOS, Windows or terminal window, with callouts and lines that
+glide between steps. [See code](features/code.md)
 
 ## A deck, live
 
-<!-- embed: _examples/showcase.md 1-3 -->
+<!-- embed: live/showcase.md 1-3 -->
 
 ## A mind map, live
 
@@ -49,8 +84,52 @@ func send(order Order) error {
 }
 ```
 
+## Around them
+
+<!-- cards: 4 -->
+
+### Studio · web and desktop
+
+Write, preview, rehearse and present in the browser or the Mac app, with a
+map editor and a code window builder.
+
+### Terminal · si play --terminal
+
+The same deck in the terminal, with real pictures, animated canvases and a
+teleprompter in a second pane.
+
+### Presenting · teleprompter and remote
+
+Timers, pace against your last run, mirror, and a phone as clicker, draw pad
+or teleprompter.
+
+### Exports · PDF PNG SVG GIF MP4
+
+Every deck, map and code show as a file you can send, print or post.
+
+### Publish · LinkedIn, dev.to, Hashnode
+
+A deck becomes a carousel post, an article a post or a full article, always a
+dry run first.
+
+### Themes and fonts · your look
+
+Built-in themes, your own CSS, fonts from Google, Bunny, Fontshare or a file,
+inlined at build time.
+
+### Sites · many pages
+
+A folder becomes a site with a navigator, cards, embeds and search, decks and
+articles side by side.
+
+### Checks · si check
+
+Broken links, missing files, click cues that do not match, and pages over
+their size budget.
+
 ## Where to go next
 
+- [The features](features/decks.md): each kind of document with its example running and the Markdown behind it.
 - [The rules](rules/): every directive, front matter key and fence option, each with an example.
 - [The manual](manual.md): the same, as a deck you can present.
-- [Examples](examples.md): the files behind the pages above, to copy from.
+- [Download](download.md): the `si` binary and the Mac app.

@@ -1,6 +1,8 @@
 package docsite
 
 import (
+	"github.com/felipeg48/simple-ideas/internal/deck"
+	"github.com/felipeg48/simple-ideas/internal/render"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -33,7 +35,7 @@ func TestEveryRulesSectionHasAPage(t *testing.T) {
 			t.Errorf("section %s: page or nav entry missing", s.N)
 		}
 	}
-	for _, f := range []string{"_site.md", "index.md", "examples.md", "manual.md", "rules/index.md", "_examples/showcase.md", "_examples/assets/dusk.jpg"} {
+	for _, f := range []string{"_site.md", "index.md", "examples.md", "manual.md", "rules/index.md", "download.md", "live/showcase.md", "live/assets/dusk.jpg", "live/guide/_nav.md", "live/book/_nav.md"} {
 		if _, err := os.Stat(filepath.Join(dst, f)); err != nil {
 			t.Errorf("missing %s", f)
 		}
@@ -51,5 +53,32 @@ func TestSplitAndRefs(t *testing.T) {
 	got := linkRefs(secs[1].Body, map[string]string{"1": "01-one"})
 	if got != "back to [§1](01-one.md) and `§1`" {
 		t.Errorf("refs: %q", got)
+	}
+}
+
+// Every main feature has a page in the menu, and the page, with its live
+// example and the Markdown read from examples/, renders without problems.
+func TestEveryFeatureHasAWorkingPage(t *testing.T) {
+	dst := filepath.Join(t.TempDir(), "site")
+	if _, err := Generate(dst); err != nil {
+		t.Fatal(err)
+	}
+	menu, _ := os.ReadFile(filepath.Join(dst, "_site.md"))
+	for _, f := range Features {
+		p := filepath.Join(dst, "features", f.Slug+".md")
+		if !strings.Contains(string(menu), "(features/"+f.Slug+".md)") {
+			t.Errorf("%s is not in the site menu", f.Slug)
+		}
+		d, err := deck.ParseWith(p, deck.Meta{Type: "page"}) // a site page
+		if err != nil {
+			t.Fatalf("%s: %v", f.Slug, err)
+		}
+		res := render.Deck(d, render.Options{})
+		for _, pr := range append(d.Problems, res.Problems...) {
+			t.Errorf("%s: %s", f.Slug, pr.Msg)
+		}
+		if !strings.Contains(string(res.HTML), "## The Markdown behind it") && !strings.Contains(string(res.HTML), "The Markdown behind it") {
+			t.Errorf("%s: no source section", f.Slug)
+		}
 	}
 }

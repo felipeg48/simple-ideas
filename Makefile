@@ -58,5 +58,5 @@ desktop-mac:
 docs-site:
 	rm -rf dist/docs-site-src dist/docs-site
 	go run ./cmd/si --export docs-site --output dist/docs-site-src
-	go run ./cmd/si build dist/docs-site-src --output dist/docs-site
+	go run ./cmd/si build dist/docs-site-src --output dist/docs-site --share-assets
 
