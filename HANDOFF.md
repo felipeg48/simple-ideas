@@ -8,7 +8,17 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 - **Idea being refined (not started; likely a separate project, not part of si):**
   the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
-- **Latest release: v2.4.0: History, review links, budgets, map clipboard, terminal editing.**
+- **Latest release: v2.4.1: the docs site's feature pages.** The site (https://simple-ideas.org/, GitHub Pages with a custom domain)
+  is titled "Write Markdown or AsciiDoc, present anything". Home: six main-feature cards (Decks, Articles, Tutorials
+  and guides, Mind maps, Books, Code windows and shows) and eight secondary ones; menus Features, Examples, Rules,
+  Manual, Download. `internal/docsite/features.go` writes one page per feature from `examples/` (live example, its
+  Markdown, options, commands, rules links); the examples are copied to `live/` and built as site pages
+  (`live/guide/`, `live/book/` as nested guide/book). `TestEveryFeatureHasAWorkingPage`. Two fixes found on the way:
+  `<!-- embed: x.md full -->` (and `#section`) now makes the page load the mind map, 3D and code window runtimes the
+  embedded body needs (`dr.adopt`, `TestEmbedFullLoadsRuntimes`; before, those parts were inert), and a guide/site
+  link to a deck's slide (`deck.md#7`, `#7.2`) is no longer reported as a missing anchor. `make docs-site` uses
+  `--share-assets`.
+- **v2.4.0: History, review links, budgets, map clipboard, terminal editing.**
   - Studio History (`internal/studio/git.go`, `web/studio/src/history.tsx`): `git/status|diff|log|show`
     GET and `git/commit|restore|init` POST; git with fixed args and no shell in the workspace root,
     paths through `resolve` and after `--`, revisions must be hex. Restore in the UI goes through

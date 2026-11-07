@@ -6,6 +6,8 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/felipeg48/simple-ideas)](https://goreportcard.com/report/github.com/felipeg48/simple-ideas)
 [![License](https://img.shields.io/github/license/felipeg48/simple-ideas)](LICENSE)
 
+**Docs, features and live examples: [simple-ideas.org](https://simple-ideas.org/)**
+
 `si` turns markdown into animated slide decks that fill any screen. Write the
 talk in markdown, run `si play` to present it with live reload, or build
 self-contained HTML files you can mail, host or open from a USB stick.
