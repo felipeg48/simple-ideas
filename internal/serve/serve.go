@@ -74,7 +74,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /_si/position", s.pos.post)
 	mux.HandleFunc("POST /_si/position/cmd", s.pos.command)
 	mux.HandleFunc("GET /_si/position/events", s.pos.events)
-	mux.HandleFunc("POST /_si/callout", s.callout) // loopback only: never on the remote listener
+	mux.HandleFunc("POST /_si/callout", localOnly(s.callout)) // writes files: never on the remote listener
 	if s.Remote {
 		mux.HandleFunc("GET /_si/remote/events", s.relay.events)
 		mux.HandleFunc("POST /_si/remote/send", s.relay.send)
@@ -85,11 +85,11 @@ func (s *Server) Handler() http.Handler {
 		mux.Handle("/_si/term/assets/", http.StripPrefix("/_si/term/assets/", http.FileServer(http.FS(assets.TermFS))))
 		// Method-restricted: a GET (link, <img>, navigation) never starts or
 		// drives a shell; only the drawer's fetch POSTs do. out is the stream.
-		mux.HandleFunc("POST /_si/term/api/new", s.term.newTab)
-		mux.HandleFunc("GET /_si/term/api/out", s.term.out)
-		mux.HandleFunc("POST /_si/term/api/in", s.term.in)
-		mux.HandleFunc("POST /_si/term/api/resize", s.term.resize)
-		mux.HandleFunc("POST /_si/term/api/close", s.term.close)
+		mux.HandleFunc("POST /_si/term/api/new", localOnly(s.term.newTab))
+		mux.HandleFunc("GET /_si/term/api/out", localOnly(s.term.out))
+		mux.HandleFunc("POST /_si/term/api/in", localOnly(s.term.in))
+		mux.HandleFunc("POST /_si/term/api/resize", localOnly(s.term.resize))
+		mux.HandleFunc("POST /_si/term/api/close", localOnly(s.term.close))
 	}
 	static := http.FileServer(http.Dir(s.dir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

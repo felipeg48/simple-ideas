@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"strings"
 	"sync"
 )
 
@@ -50,6 +52,35 @@ func (p *positions) publish(e posEvent) {
 			}
 		}
 	}
+}
+
+// localOnly guards the endpoints that run a shell or write files. The request
+// must name a loopback host (a DNS-rebinding page names its own host, even when
+// that host resolves to 127.0.0.1) and come from the same origin (any other
+// site's page can still send a blind POST to 127.0.0.1, which the browser lets
+// through without a CORS preflight).
+func localOnly(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !loopbackHost(r.Host) || !sameOrigin(r) {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		h(w, r)
+	}
+}
+
+// loopbackHost reports whether a Host header names this machine's loopback.
+func loopbackHost(hostport string) bool {
+	h := hostport
+	if host, _, err := net.SplitHostPort(hostport); err == nil {
+		h = host
+	}
+	h = strings.Trim(h, "[]")
+	if strings.EqualFold(h, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(h)
+	return ip != nil && ip.IsLoopback()
 }
 
 // sameOrigin refuses a POST that a page from another site sends to the loopback server.

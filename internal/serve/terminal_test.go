@@ -130,3 +130,36 @@ func TestTerminalEchoRoundTrip(t *testing.T) {
 		t.Errorf("close: status %d, want 204", cl.StatusCode)
 	}
 }
+
+// TestTerminalRefusesOtherSites: another site's page (a blind POST from any tab
+// in the browser) and a DNS-rebinding host (evil.example resolving to
+// 127.0.0.1) must never start or drive a shell.
+func TestTerminalRefusesOtherSites(t *testing.T) {
+	ts := newTermServer(t, true)
+	h := ts.Config.Handler
+	try := func(method, path, host, origin string) int {
+		req := httptest.NewRequest(method, path, strings.NewReader("echo hi\r"))
+		req.Host = host
+		if origin != "" {
+			req.Header.Set("Origin", origin)
+		}
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	for _, c := range []struct{ method, path, host, origin string }{
+		{"POST", "/_si/term/api/new", "127.0.0.1:7070", "https://evil.example"},
+		{"POST", "/_si/term/api/in?id=1", "127.0.0.1:7070", "https://evil.example"},
+		{"POST", "/_si/term/api/new", "evil.example:7070", "http://evil.example:7070"},
+		{"GET", "/_si/term/api/out?id=1", "evil.example:7070", ""},
+		{"POST", "/_si/callout", "evil.example:7070", "http://evil.example:7070"},
+		{"POST", "/_si/term/api/new", "192.168.1.20:7070", "http://192.168.1.20:7070"},
+	} {
+		if code := try(c.method, c.path, c.host, c.origin); code != http.StatusForbidden {
+			t.Errorf("%s %s Host %s Origin %q: %d, want 403", c.method, c.path, c.host, c.origin, code)
+		}
+	}
+	if code := try("POST", "/_si/term/api/new", "localhost:7070", "http://localhost:7070"); code != http.StatusOK {
+		t.Errorf("the drawer's own POST: %d", code)
+	}
+}
