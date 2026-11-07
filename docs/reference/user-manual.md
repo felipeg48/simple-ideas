@@ -257,8 +257,9 @@ si migrate <src>           # an AI migration prompt for an existing deck
 - **Post it:** `si publish talk.md --to linkedin` turns the deck into a
   document post, its PDF swipeable in the feed; an article goes to LinkedIn as a
   link, or to dev.to or Hashnode. Always a dry run first; `--yes` sends.
-- **Film it:** `--mp4` on `si code` and on a mind map build writes video
-  that plays anywhere, made with ffmpeg if it is installed.
+- **Film it:** `--mp4` on `si code`, on a mind map build (in 3D when the map
+  is) and on a deck build (every slide and step, `--dwell 2` for a teaser)
+  writes video that plays anywhere, made with ffmpeg if it is installed.
 - **Start fast:** an empty folder in the Studio opens a gallery of starters
   with live thumbnails, and a six-stop tour of the window.
 

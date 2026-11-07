@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -74,5 +75,17 @@ func TestEncodeMP4(t *testing.T) {
 				t.Errorf("duration %v, want about 1.5 s", v)
 			}
 		}
+	}
+}
+
+func TestDeckVideoPlan(t *testing.T) {
+	page := `<section class="si-slide" data-i="0"><h1>T</h1></section>` +
+		`<section class="si-slide"><span data-step="1"></span><span data-step="3"></span></section>` +
+		`<section class="si-slide"></section>`
+	if got := fmt.Sprint(slideSteps(page)); got != "[0 3 0]" {
+		t.Errorf("steps: %s", got)
+	}
+	if stepHold(2, 4, 0) != 30 || stepHold(0, 1, 0) != 3 || stepHold(2, 4, 1.5) != 1.5 || stepHold(0.01, 4, 0) != 1 {
+		t.Error("hold: dwell wins, then the slide's minutes over its views (at least 1 s), else 3 s")
 	}
 }

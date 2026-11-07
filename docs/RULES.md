@@ -834,6 +834,17 @@ callouts are written the same way.
   `aspect`, every step revealed, canvases in their final state. `si build --pdf`
   writes a `<name>.pdf` next to each deck using headless Chrome (needs Chrome or
   Chromium installed; without it, HTML is still written).
+- **Video**: `si build talk.md --mp4` films the deck to `<name>.mp4` (1920×1080,
+  H.264): every slide and every build step as the audience sees it, each held
+  for its share of the slide's `(N min)` (else 3 s), dissolving into the next
+  in 0.4 s. `--dwell 2` holds every view 2 s instead, for a short teaser:
+
+  ```bash
+  si build talk.md --mp4 --dwell 2   # talk.mp4: a 2 s look at every slide and step
+  ```
+
+  It needs headless Chrome and ffmpeg (`brew install ffmpeg`). The canvas morph
+  and the slide transition become a dissolve between two still views.
 - **Open on a phone**: run `si play <dir> --addr 0.0.0.0:7070` to serve on your
   network; `si play` then prints a LAN URL and a QR code to scan. (The default
   address is loopback-only, so it prints the `--addr` hint instead.)
@@ -2060,7 +2071,10 @@ topics and watermark; the PDF also has the linked maps, and a `map ›` topic
 there jumps to its page. They need headless Chrome, like `--pdf` for decks.
 `--mp4` films Play: the overview, then each first-level branch with the rest
 dimmed (2.5 s each, a short zoom between), and the overview again; it also
-needs ffmpeg (`brew install ffmpeg`), an optional tool like Chrome.
+needs ffmpeg (`brew install ffmpeg`), an optional tool like Chrome. A
+`view: 3d` page is filmed in 3D: each Play view is rendered by Chrome's
+software WebGL in the page's kind, camera and theme, held 2.5 s and
+dissolving into the next.
 
 ### Other mind map tools
 

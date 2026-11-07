@@ -67,10 +67,13 @@ Usage:
   si [build] <dir|file.md> [--output html/] [--css <dir|file.css>]... [--no-inline-media] [--pdf]
         write one self-contained HTML file per deck plus index.html
         --pdf also renders each deck to pdfs/<name>.pdf and adds a PDF badge to the index tiles
+        --mp4 [--dwell 3] also films each deck to <name>.mp4 (1080p): every slide and build
+        step, held for its share of (N min) or --dwell seconds, dissolving into the next
   si [build] <map.md> [--svg] [--png [--scale 2]] [--pdf] [--mp4]
         mind map pages: every map as <name>-<id>.svg / .png (2D, theme and watermark
         baked in), pdfs/<name>.pdf with one page per map (map › links work), and
-        <name>.mp4: the first map's Play as video (--mp4 needs ffmpeg)
+        <name>.mp4: the first map's Play as video, in 3D when the page is view: 3d
+        (--mp4 needs ffmpeg)
   si code <file.md> [--id show] [--png [--scale 2]] [--svg] [--gif] [--mp4] [-o dir]
         code windows and shows: one <file>-<id>-<n>.png / .svg per step (window,
         backdrop and callouts) and <file>-<id>.gif / .mp4, the whole show animated
@@ -193,6 +196,7 @@ type options struct {
 	noInstructor                                 bool    // si build: leave type: demo scripts out (a participant build)
 	svg, png                                     bool    // si build: mind map pages also as SVG / PNG
 	scale                                        float64 // si build --png: device pixels per CSS pixel
+	dwell                                        float64 // si build deck.md --mp4: seconds on every slide view
 	to, mapID                                    string  // si mindmap export --to, --map
 	gif                                          bool    // si code --gif
 	showID                                       string  // si code --id
@@ -230,6 +234,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.svg, "svg", false, "")
 	fl.BoolVar(&o.png, "png", false, "")
 	fl.Float64Var(&o.scale, "scale", 2, "")
+	fl.Float64Var(&o.dwell, "dwell", 0, "")
 	fl.StringVar(&o.to, "to", "", "")
 	fl.StringVar(&o.mapID, "map", "", "")
 	fl.BoolVar(&o.gif, "gif", false, "")
@@ -582,10 +587,20 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 				entry.PDF = rel
 			}
 			if o.mp4 {
-				if err := exportMindmapMP4(chrome, dest, out, d.Name, o.scale, stdout); err != nil {
+				mp4 := func() error { return exportMindmapMP4(chrome, dest, out, d.Name, o.scale, stdout) }
+				if d.Meta.MapView == "3d" {
+					mp4 = func() error { return exportMindmap3DMP4(chrome, dest, out, d.Name, stdout) }
+				}
+				if err := mp4(); err != nil {
 					fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
 					failed = true
 				}
+			}
+		}
+		if chrome != "" && o.mp4 && !d.IsDoc() { // the deck as a video: every slide and build step
+			if err := exportDeckMP4(chrome, dest, out, d, o.dwell, stdout); err != nil {
+				fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
+				failed = true
 			}
 		}
 		if chrome != "" && o.pdf && !d.IsDoc() { // the slides PDF does not apply to a document (print it from the browser)

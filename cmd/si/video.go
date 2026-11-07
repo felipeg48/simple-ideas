@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"image"
+	"image/color"
+	"image/draw"
+	"image/png"
 	"io"
 	"os"
 	"os/exec"
@@ -12,6 +16,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/felipeg48/simple-ideas/internal/deck"
 )
 
 // MP4 exports (si code --mp4, si build map.md --mp4): headless Chrome renders
@@ -157,5 +163,193 @@ func exportMindmapMP4(chrome, htmlPath, out, name string, scale float64, stdout 
 		size = st.Size()
 	}
 	fmt.Fprintf(stdout, "  %-28s (mp4, %d frames, %d KB)\n", name+".mp4", len(video), size/1024)
+	return nil
+}
+
+// crossfade adds n frames (each one frame long at 30 fps) blending a into b,
+// so a cut between two screenshots becomes a short dissolve.
+func crossfade(a, b, dir string, n int, tag string) ([]videoFrame, error) {
+	ia, err := readPNG(a)
+	if err != nil {
+		return nil, err
+	}
+	ib, err := readPNG(b)
+	if err != nil {
+		return nil, err
+	}
+	r := ia.Bounds()
+	if ib.Bounds() != r {
+		return nil, nil // sizes differ: a cut
+	}
+	enc := png.Encoder{CompressionLevel: png.BestSpeed}
+	var out []videoFrame
+	for i := 1; i < n; i++ {
+		dst := image.NewRGBA(r)
+		draw.Draw(dst, r, ia, r.Min, draw.Src)
+		draw.DrawMask(dst, r, ib, r.Min, image.NewUniform(color.Alpha{uint8(255 * i / n)}), image.Point{}, draw.Over)
+		p := filepath.Join(dir, fmt.Sprintf("%s-x%02d.png", tag, i))
+		f, err := os.Create(p)
+		if err != nil {
+			return nil, err
+		}
+		err = enc.Encode(f, dst)
+		f.Close()
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, videoFrame{PNG: p, Dur: 1.0 / videoFPS})
+	}
+	return out, nil
+}
+
+// withFades holds each shot for its time and dissolves into the next one.
+func withFades(shots []videoFrame, dir string) ([]videoFrame, error) {
+	var out []videoFrame
+	for i, s := range shots {
+		out = append(out, s)
+		if i+1 < len(shots) {
+			x, err := crossfade(s.PNG, shots[i+1].PNG, dir, 12, fmt.Sprintf("s%03d", i))
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, x...)
+		}
+	}
+	return out, nil
+}
+
+var (
+	slideSplitRE = regexp.MustCompile(`<section class="si-slide`)
+	dataStepRE   = regexp.MustCompile(`data-step="(\d+)"`)
+)
+
+// slideSteps is the number of build steps of every slide of a built deck.
+func slideSteps(page string) []int {
+	parts := slideSplitRE.Split(page, -1)
+	var steps []int
+	for _, p := range parts[1:] {
+		n := 0
+		for _, m := range dataStepRE.FindAllStringSubmatch(p, -1) {
+			var k int
+			fmt.Sscan(m[1], &k)
+			n = max(n, k)
+		}
+		steps = append(steps, n)
+	}
+	return steps
+}
+
+// stepHold is how long one view of a slide stays: dwell when given, else the
+// slide's (N min) shared by its views, else 3 s.
+func stepHold(minutes float64, views int, dwell float64) float64 {
+	switch {
+	case dwell > 0:
+		return dwell
+	case minutes > 0:
+		return max(1, minutes*60/float64(views))
+	}
+	return 3
+}
+
+// exportDeckMP4 writes <name>.mp4: every slide and build step as the audience
+// sees it (1920×1080), each held for stepHold, dissolving into the next.
+func exportDeckMP4(chrome, htmlPath, out string, d *deck.Deck, dwell float64, stdout io.Writer) error {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		return fmt.Errorf("%s", ffmpegHint)
+	}
+	page, err := os.ReadFile(htmlPath)
+	if err != nil {
+		return err
+	}
+	abs, _ := filepath.Abs(htmlPath)
+	steps := slideSteps(string(page))
+	tmp, err := os.MkdirTemp("", "si-deckvid-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmp)
+	var shots []videoFrame
+	for i, n := range steps {
+		minutes := 0.0
+		if i < len(d.Slides) {
+			minutes = d.Slides[i].Minutes
+		}
+		for k := 0; k <= n; k++ {
+			p := filepath.Join(tmp, fmt.Sprintf("shot%03d-%02d.png", i, k))
+			if err := chromeRun(chrome, "--screenshot="+p, "--window-size=1920,1080", "--hide-scrollbars", "--virtual-time-budget=2500",
+				fmt.Sprintf("file://%s#%d.%d", filepath.ToSlash(abs), i+1, k)); err != nil {
+				return fmt.Errorf("slide %d.%d: %v", i+1, k, err)
+			}
+			shots = append(shots, videoFrame{PNG: p, Dur: stepHold(minutes, n+1, dwell)})
+		}
+	}
+	video, err := withFades(shots, tmp)
+	if err != nil {
+		return err
+	}
+	dest := filepath.Join(out, d.Name+".mp4")
+	if err := encodeMP4(video, dest); err != nil {
+		return err
+	}
+	fmt.Fprintf(stdout, "  %-28s (mp4, %d views, %d KB)\n", d.Name+".mp4", len(shots), fileKB(dest))
+	return nil
+}
+
+func fileKB(p string) int64 {
+	if st, err := os.Stat(p); err == nil {
+		return st.Size() / 1024
+	}
+	return 0
+}
+
+var play3DRE = regexp.MustCompile(`<pre[^>]*id="si-play3d"[^>]*>(\d+)</pre>`)
+
+// exportMindmap3DMP4 writes <name>.mp4 for a map that starts in 3D: its Play
+// (the overview, then each branch with the rest dimmed), each view rendered by
+// Chrome's software WebGL, held 2.5 s and dissolving into the next.
+func exportMindmap3DMP4(chrome, htmlPath, out, name string, stdout io.Writer) error {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		return fmt.Errorf("%s", ffmpegHint)
+	}
+	abs, _ := filepath.Abs(htmlPath)
+	gl := []string{"--headless=new", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--hide-scrollbars", "--window-size=1600,1000"}
+	url := func(k int) string { return fmt.Sprintf("file://%s#si-play3d-%d", filepath.ToSlash(abs), k) }
+	run := func(args ...string) ([]byte, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+		defer cancel()
+		return exec.CommandContext(ctx, chrome, append(append([]string{}, gl...), args...)...).CombinedOutput()
+	}
+	dom, err := run("--virtual-time-budget=8000", "--dump-dom", url(0))
+	if err != nil {
+		return fmt.Errorf("chrome: %v", err)
+	}
+	m := play3DRE.FindSubmatch(dom)
+	if m == nil {
+		return fmt.Errorf("the page did not start its 3D Play (no WebGL?)")
+	}
+	var n int
+	fmt.Sscan(string(m[1]), &n)
+	tmp, err := os.MkdirTemp("", "si-play3d-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmp)
+	var shots []videoFrame
+	for k := 0; k < n; k++ {
+		p := filepath.Join(tmp, fmt.Sprintf("v%02d.png", k))
+		if msg, err := run("--virtual-time-budget=8000", "--screenshot="+p, url(k)); err != nil {
+			return fmt.Errorf("view %d: %v %s", k, err, strings.TrimSpace(string(msg)))
+		}
+		shots = append(shots, videoFrame{PNG: p, Dur: 2.5})
+	}
+	video, err := withFades(shots, tmp)
+	if err != nil {
+		return err
+	}
+	dest := filepath.Join(out, name+".mp4")
+	if err := encodeMP4(video, dest); err != nil {
+		return err
+	}
+	fmt.Fprintf(stdout, "  %-28s (mp4, 3D Play, %d views, %d KB)\n", name+".mp4", n, fileKB(dest))
 	return nil
 }

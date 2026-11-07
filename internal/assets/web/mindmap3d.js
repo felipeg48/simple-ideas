@@ -12,7 +12,8 @@
 (function () {
   'use strict';
   if (!window.THREE || !THREE.OrbitControls) return;
-  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* #si-play3d-K (si build --mp4) films still views: no motion either */
+  var reduce = (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) || /^#si-play3d-/.test(location.hash);
   var S = 200; /* texture pixels per world unit */
   var LV = [{ fs: 60, fw: 700, d: 1.4, h: 0.95, pad: 46 }, { fs: 46, fw: 600, d: 1.02, h: 0.62, pad: 34 }, { fs: 38, fw: 500, d: 0.82, h: 0.36, pad: 28 }];
   var HG = 1.25, GAP = 0.42, FH = 20;

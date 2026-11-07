@@ -699,6 +699,21 @@
       var play = function () { try { exportPlay(first.siMindmap); } catch (e) { var p = document.createElement('pre'); p.id = 'si-export-error'; p.textContent = String(e); document.body.appendChild(p); } };
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(play); else play();
     }
+    /* #si-play3d-K: view K of a 3D map's Play, still, for si build --mp4 */
+    var p3 = /^#si-play3d-(\d+)$/.exec(location.hash);
+    if (p3 && first) {
+      var still = function () {
+        var d3 = first.siMindmap.is3d && first.siMindmap.d3, pre = document.createElement('pre');
+        pre.hidden = true;
+        if (!d3) { pre.id = 'si-export-error'; pre.textContent = 'no 3D view'; document.body.appendChild(pre); return; }
+        first.querySelectorAll('.si-mm-tools').forEach(function (t) { t.style.display = 'none'; });
+        d3.tour = { k: 0 };
+        d3.tourGo(+p3[1]);
+        pre.id = 'si-play3d'; pre.textContent = String(d3.steps().length);
+        document.body.appendChild(pre);
+      };
+      (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { setTimeout(still, 300); });
+    }
     if (location.hash === '#si-export' && first) {
       var go = function () { try { exportAll(first.siMindmap); } catch (e) { var p = document.createElement('pre'); p.id = 'si-export-error'; p.textContent = String(e); document.body.appendChild(p); } };
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(go); else go();
