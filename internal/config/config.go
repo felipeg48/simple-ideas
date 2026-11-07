@@ -76,7 +76,31 @@ type Config struct {
 	Features    map[string]bool   // feature -> enabled
 	Timer       TimerConfig       // break-timer presets, unit and animation
 	Links       []Link            // links.<label>: <url>, searchable from find (/), in file order
+	Budget      Budget            // budget.page / budget.3d: si check fails on bigger pages
 	Warnings    []string          // unknown keys / bad values, for the caller to report
+}
+
+// Budget is the largest a built page may be, in KB (0: not set).
+type Budget struct{ Page, ThreeD int }
+
+// Set reports whether si.conf sets any budget.
+func (b Budget) Set() bool { return b.Page > 0 || b.ThreeD > 0 }
+
+// sizeKB reads "900", "900 KB", "1.5 MB" as kilobytes.
+func sizeKB(v string) (int, bool) {
+	v = strings.ToUpper(strings.TrimSpace(v))
+	mul := 1.0
+	switch {
+	case strings.HasSuffix(v, "MB"):
+		v, mul = strings.TrimSpace(strings.TrimSuffix(v, "MB")), 1024
+	case strings.HasSuffix(v, "KB"):
+		v = strings.TrimSpace(strings.TrimSuffix(v, "KB"))
+	}
+	var f float64
+	if _, err := fmt.Sscanf(v, "%g", &f); err != nil || f <= 0 {
+		return 0, false
+	}
+	return int(f*mul + 0.5), true
 }
 
 // Link is one links.<label>: <url> line: a page outside the build that find (/) offers.
@@ -206,6 +230,15 @@ func Parse(r io.Reader) *Config {
 				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: links.<label>: <url> needs a label and a URL", ln))
 			} else {
 				c.Links = append(c.Links, Link{Label: label, URL: v})
+			}
+		case k == "budget.page", k == "budget.3d":
+			kb, ok := sizeKB(v)
+			if !ok {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: %s wants a size like 900 KB or 1.5 MB, got %q", ln, k, v))
+			} else if k == "budget.page" {
+				c.Budget.Page = kb
+			} else {
+				c.Budget.ThreeD = kb
 			}
 		case strings.HasPrefix(k, "keys."):
 			c.setKey(strings.TrimPrefix(k, "keys."), v, ln)

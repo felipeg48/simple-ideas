@@ -9,6 +9,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -87,8 +88,9 @@ Usage:
         turn an OPML, FreeMind, XMind or Mermaid mindmap file into a mind map page
   si mindmap export <map.md> --to opml|freemind|xmind|mermaid [--map id] [-o file|-]
         write a mind map in another format (XMind: every map, one sheet each)
-  si check <dir|file.md>
-        validate decks: title, directives, assets, includes; exit 1 on a problem
+  si check <dir|file.md> [--budget]
+        validate decks: title, directives, assets, includes; exit 1 on a problem;
+        --budget (or budget.page / budget.3d in si.conf) also fails pages over 1 MB (3D: 1.5 MB)
   si new <name> [--type deck|article|guide|book|site|page|lab|demo|mindmap|mindmap3d|codeshow]
         scaffold <name>/ with a deck that uses every rule; with --type, a small
         starter of that type (<name>.md, or a <name>/ folder for guide, book and
@@ -197,6 +199,7 @@ type options struct {
 	svg, png                                     bool    // si build: mind map pages also as SVG / PNG
 	scale                                        float64 // si build --png: device pixels per CSS pixel
 	dwell                                        float64 // si build deck.md --mp4: seconds on every slide view
+	budget                                       bool    // si check --budget: fail pages over the size budget
 	to, mapID                                    string  // si mindmap export --to, --map
 	gif                                          bool    // si code --gif
 	showID                                       string  // si code --id
@@ -249,6 +252,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.copy, "copy", false, "")
 	fl.BoolVar(&o.public, "public", false, "")
 	fl.BoolVar(&o.mp4, "mp4", false, "")
+	fl.BoolVar(&o.budget, "budget", false, "")
 	fl.IntVar(&o.port, "port", 8723, "")
 	fl.BoolVar(&o.write, "write", false, "")
 	fl.BoolVar(&o.terminal, "terminal", false, "")
@@ -388,7 +392,18 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		if len(rest) != 1 {
 			return usageErr(stderr, "check needs one <dir|file.md>")
 		}
-		return check(rest[0], stdout, stderr)
+		dir := rest[0]
+		if st, err := os.Stat(dir); err == nil && !st.IsDir() {
+			dir = filepath.Dir(dir)
+		}
+		b := config.Load(o.conf, filepath.Join(dir, "si.conf")).Budget
+		if o.budget && b.Page == 0 {
+			b.Page = defaultBudget.Page
+		}
+		if o.budget && b.ThreeD == 0 {
+			b.ThreeD = defaultBudget.ThreeD
+		}
+		return check(rest[0], b, stdout, stderr)
 	case "new":
 		if len(rest) != 1 {
 			return usageErr(stderr, "new needs a <name>")
@@ -653,7 +668,23 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	return exitOK
 }
 
-func check(src string, stdout, stderr io.Writer) int {
+// defaultBudget is si check --budget without budget.* in si.conf: 1 MB for a
+// page, 1.5 MB for one that draws a 3D map (three.js inlined).
+var defaultBudget = config.Budget{Page: 1024, ThreeD: 1536}
+
+// overBudget is the problem of a page bigger than its budget, or "".
+func overBudget(html []byte, b config.Budget) string {
+	limit, key := b.Page, "budget.page"
+	if bytes.Contains(html, []byte(`data-view="3d"`)) && b.ThreeD > 0 {
+		limit, key = b.ThreeD, "budget.3d"
+	}
+	if kb := len(html) / 1024; limit > 0 && kb > limit {
+		return fmt.Sprintf("the built page is %d KB, over its budget of %d KB (%s in si.conf; --no-inline-media or smaller pictures help)", kb, limit, key)
+	}
+	return ""
+}
+
+func check(src string, budget config.Budget, stdout, stderr io.Writer) int {
 	if g, ok := guideAt(src); ok {
 		return checkGuides([]*deck.Guide{g}, 0, stdout, stderr)
 	}
@@ -677,6 +708,10 @@ func check(src string, stdout, stderr io.Writer) int {
 		res := render.Deck(d, render.Options{})
 		for _, p := range res.Problems {
 			fmt.Fprintf(stderr, "%s\n", p)
+			n++
+		}
+		if msg := overBudget(res.HTML, budget); msg != "" {
+			fmt.Fprintf(stderr, "%s: %s\n", f, msg)
 			n++
 		}
 		for _, w := range res.Warnings {

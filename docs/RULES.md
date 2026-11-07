@@ -1264,6 +1264,23 @@ value is a warning printed to the terminal, never a failed build.
 
 Warnings (exit 0): inlined files above 2 MB; slide or body directives in a lab.
 
+**Size budgets.** `si check --budget` also fails a page whose built HTML is
+over its budget: 1 MB for a page, 1.5 MB for a page that draws a 3D mind map
+(three.js is inlined). `budget.*` in `si.conf` sets the limits and turns the
+check on without the flag:
+
+```
+budget.page: 900 KB     # any page
+budget.3d: 1.5 MB       # a page with a 3D mind map
+```
+
+```bash
+si check talk/ --budget   # talk.md: the built page is 1340 KB, over its budget of 1024 KB
+```
+
+Building with `--no-inline-media` (pictures and video beside the page) is the
+usual fix.
+
 ## 18. Lab documents
 
 `type: lab` in the front matter turns the file into one readable guide page,

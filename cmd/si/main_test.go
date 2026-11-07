@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"github.com/felipeg48/simple-ideas/internal/config"
 	"io"
 	"os"
 	"path/filepath"
@@ -339,5 +340,23 @@ func TestMindmapImportExport(t *testing.T) {
 	}
 	if code := run([]string{"mindmap", "import", mmd}, &out, &errb); code == 0 {
 		t.Fatal("import overwrote plan.md")
+	}
+}
+
+func TestCheckBudget(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "talk.md"), []byte("# Talk\n\n---\n\n## One\n\nText.\n"), 0o644)
+	var out, errb bytes.Buffer
+	if code := run([]string{"check", dir, "--budget"}, &out, &errb); code != 0 {
+		t.Fatalf("a small deck is under the default budget: %d %s", code, errb.String())
+	}
+	os.WriteFile(filepath.Join(dir, "si.conf"), []byte("budget.page: 10 KB\n"), 0o644)
+	out.Reset()
+	errb.Reset()
+	if code := run([]string{"check", dir}, &out, &errb); code != exitProblems || !strings.Contains(errb.String(), "over its budget of 10 KB (budget.page") {
+		t.Errorf("si.conf budget.page turns the check on: %d %s", code, errb.String())
+	}
+	if msg := overBudget([]byte(`<div data-view="3d">`+strings.Repeat("x", 3000)), config.Budget{Page: 1, ThreeD: 5}); msg != "" {
+		t.Errorf("a 3D page uses budget.3d: %s", msg)
 	}
 }

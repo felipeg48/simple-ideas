@@ -88,3 +88,13 @@ func TestLinks(t *testing.T) {
 		t.Errorf("an empty label warns: %v", c.Warnings)
 	}
 }
+
+func TestParseBudget(t *testing.T) {
+	c := Parse(strings.NewReader("budget.page: 900 KB\nbudget.3d: 1.5 MB\n"))
+	if c.Budget.Page != 900 || c.Budget.ThreeD != 1536 || !c.Budget.Set() || len(c.Warnings) != 0 {
+		t.Errorf("budget: %+v %v", c.Budget, c.Warnings)
+	}
+	if c := Parse(strings.NewReader("budget.page: big\n")); len(c.Warnings) != 1 || c.Budget.Set() {
+		t.Errorf("a bad size warns: %+v %v", c.Budget, c.Warnings)
+	}
+}
