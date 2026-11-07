@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/felipeg48/simple-ideas/internal/assets"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 )
 
@@ -170,5 +171,25 @@ func TestCardsOnSlidesAndInDocuments(t *testing.T) {
 	}
 	if hs := string(res.HTML); !strings.Contains(hs, `<div class="si-cards cards si-step"`) && !strings.Contains(hs, `si-step`) || !strings.Contains(hs, `<div class="si-cell card hi">`) {
 		t.Errorf("slide cards: %s", hs[strings.Index(hs, "si-cards")-80:strings.Index(hs, "si-cards")+200])
+	}
+}
+
+// An embedded document's mind maps and code windows keep working: the page
+// that embeds it loads their runtimes.
+func TestEmbedFullLoadsRuntimes(t *testing.T) {
+	dir := t.TempDir()
+	other := "---\ntype: article\ntitle: Other\n---\n# Other\n\n```mindmap view=3d\n# M\n\n- a\n```\n\n```go window=mac\nfunc f() {}\n```\n"
+	host := "---\ntype: article\ntitle: Host\n---\n# Host\n\n<!-- embed: other.md full -->\n"
+	os.WriteFile(filepath.Join(dir, "other.md"), []byte(other), 0o644)
+	os.WriteFile(filepath.Join(dir, "host.md"), []byte(host), 0o644)
+	d, err := deck.Parse(filepath.Join(dir, "host.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := string(Deck(d, Options{}).HTML)
+	for name, js := range map[string]string{"mindmap": assets.MindmapJS, "3D": assets.Mindmap3DJS, "code window": assets.CodewinJS} {
+		if !strings.Contains(out, js[:200]) {
+			t.Errorf("the embedding page does not load the %s runtime", name)
+		}
 	}
 }

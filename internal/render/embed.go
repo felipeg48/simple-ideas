@@ -116,6 +116,7 @@ func (dr *deckRenderer) embed(val string, s *deck.Slide, sc *slideCtx) string {
 		return dr.embedSlides(val, s, sc)
 	}
 	res := Deck(d, Options{Media: MediaInline, Theme: dr.opt.Theme, Config: dr.opt.Config})
+	dr.adopt(res.body)
 	switch {
 	case frag != "":
 		sec := sectionHTML(res.body, frag)
@@ -211,4 +212,19 @@ func sectionHTML(body, id string) string {
 		rest = rest[:loc[0]+3]
 	}
 	return rest
+}
+
+// adopt makes this page load the runtimes an embedded document's body needs:
+// that body was rendered by its own renderer, so its mind maps and code
+// windows would otherwise stay inert here.
+func (dr *deckRenderer) adopt(body string) {
+	if strings.Contains(body, `class="si-mindmap"`) {
+		dr.mindmap = true
+		if strings.Contains(body, ` data-view="3d"`) {
+			dr.mindmap3d = true
+		}
+	}
+	if strings.Contains(body, `<figure class="si-cw"`) {
+		dr.codewin = true
+	}
 }

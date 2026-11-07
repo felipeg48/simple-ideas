@@ -235,8 +235,9 @@ func RenderGuide(g *deck.Guide, opt Options) (pages []GuidePage, problems, warni
 }
 
 var (
-	idAttrRE = regexp.MustCompile(`\sid="([^"]+)"`)
-	hrefRE   = regexp.MustCompile(`<a\b[^>]*\shref="([^"]+)"`)
+	slideHashRE = regexp.MustCompile(`^\d+(?:\.\d+)?$`)
+	idAttrRE    = regexp.MustCompile(`\sid="([^"]+)"`)
+	hrefRE      = regexp.MustCompile(`<a\b[^>]*\shref="([^"]+)"`)
 )
 
 // checkGuideLinks finds links between the pages of a guide that point at a
@@ -244,7 +245,9 @@ var (
 // links to other files (images, PDFs, outside URLs), are not checked here.
 func checkGuideLinks(pages []GuidePage, skip []string) []deck.Problem {
 	ids := map[string]map[string]bool{}
+	decks := map[string]bool{} // a deck's slides are #3 and #3.2: the runtime reads them from the hash
 	for _, p := range pages {
+		decks[p.Rel] = p.Deck != nil && !p.Deck.IsDoc()
 		set := map[string]bool{}
 		for _, m := range idAttrRE.FindAllStringSubmatch(string(p.Result.HTML), -1) {
 			set[html.UnescapeString(m[1])] = true
@@ -284,7 +287,7 @@ func checkGuideLinks(pages []GuidePage, skip []string) []deck.Problem {
 			switch {
 			case !ok:
 				out = append(out, deck.Problem{File: deck.Rel(p.File), Msg: fmt.Sprintf("link to %s: no such page in the guide", strings.TrimSuffix(path, ".html")+".md")})
-			case frag != "" && !set[frag]:
+			case frag != "" && !set[frag] && !(decks[target] && slideHashRE.MatchString(frag)):
 				out = append(out, deck.Problem{File: deck.Rel(p.File), Msg: fmt.Sprintf("link to %s#%s: no such anchor on that page", strings.TrimSuffix(target, ".html")+".md", frag)})
 			}
 		}
