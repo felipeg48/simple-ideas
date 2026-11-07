@@ -28,4 +28,3 @@ var Manual string
 //
 //go:embed all:site
 var Site embed.FS
-

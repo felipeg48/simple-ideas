@@ -25,10 +25,10 @@ type Section struct {
 }
 
 var (
-	secRE  = regexp.MustCompile(`^## (\d+)\. (.+)$`)
-	refRE  = regexp.MustCompile(`§(\d+)\b`)
+	secRE    = regexp.MustCompile(`^## (\d+)\. (.+)$`)
+	refRE    = regexp.MustCompile(`§(\d+)\b`)
 	anchorRE = regexp.MustCompile(`\]\(#(\d+)-[^)]*\)`)
-	fenceR = regexp.MustCompile("^ {0,3}(`{3,}|~{3,})(.*)$")
+	fenceR   = regexp.MustCompile("^ {0,3}(`{3,}|~{3,})(.*)$")
 )
 
 // fenceStep follows CommonMark fences: an opening fence (a backtick fence's
