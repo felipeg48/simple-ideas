@@ -291,6 +291,16 @@ export function App() {
     <Gallery dir={active && active.includes("/") ? active.slice(0, active.lastIndexOf("/")) : ""}
       ok={async (k, path, title) => { await onStarter(k, path, title); if (!tourDone()) setTimeout(() => setTourOn(true), 400); }}
       onClose={() => setDialog(null)} />);
+  // the desktop app's Help menu calls these; #gallery and #tour links open them too
+  const startTour = () => { setMode("write"); setView("edit"); setTourOn(true); };
+  (window as unknown as { siStudio: object }).siStudio = { gallery: showGallery, tour: startTour };
+  const hashed = useRef(false);
+  useEffect(() => {
+    if (!tree || hashed.current) return;
+    hashed.current = true;
+    if (location.hash === "#gallery") showGallery();
+    else if (location.hash === "#tour") startTour();
+  }, [tree]);
   // first run: a folder with nothing si can open gets the start gallery
   const greeted = useRef(false);
   useEffect(() => {
@@ -315,7 +325,7 @@ export function App() {
       <NewDialog dir={active && active.includes("/") ? active.slice(0, active.lastIndexOf("/")) : ""} ok={onStarter} onClose={() => setDialog(null)} />) },
     { id: "build", label: "Build the folder to HTML…", icon: "braces", run: () => setDialog(<BuildDialog onClose={() => setDialog(null)} />) },
     { id: "gallery", label: "Start gallery: pick something to make", icon: "plus", run: showGallery },
-    { id: "tour", label: "Take the tour of the Studio", icon: "play", run: () => { setMode("write"); setView("edit"); setTourOn(true); } },
+    { id: "tour", label: "Take the tour of the Studio", icon: "play", run: startTour },
     { id: "problems", label: "Show problems", icon: "warn", run: () => setProblemsOpen(true) },
     { id: "theme", label: "Switch light / dark", icon: "moon", run: () => { const t = nextTheme[theme]; setTheme(t); applyTheme(t); } },
     ...(deck ? [{ id: "open-live", label: `Open ${deck.title} in a new tab`, icon: "external" as IconName, run: () => window.open(pageURL(deck), "_blank", "noopener") }] : []),

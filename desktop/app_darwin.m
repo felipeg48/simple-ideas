@@ -8,6 +8,7 @@ extern char *goOpenFolder(char *path);
 extern void goCloseURL(char *url);
 extern void goShutdown(void);
 extern char *goStatus(void);
+extern char *goHelpJS(char *cmd);
 
 static NSString *const kLastFolder = @"lastFolder";
 static NSString *const kRecent = @"recentFolders"; // newest first, at most ten
@@ -26,6 +27,13 @@ static NSDictionary *siStatus; // goStatus: the si in use, and a newer release i
 
 // bannerJS: a small "update available" note in the Studio window; its link opens the
 // release page in the browser (an external page, see isExternal).
+static NSString *helpScript(const char *cmd) {
+	char *r = goHelpJS((char *)cmd);
+	NSString *s = [NSString stringWithUTF8String:r];
+	free(r);
+	return s;
+}
+
 static NSString *bannerJS(void) {
 	NSString *tag = siStatus[@"update"], *url = siStatus[@"url"];
 	if (tag.length == 0 || url.length == 0) return nil;
@@ -213,6 +221,21 @@ static NSMenu *submenu(NSMenu *bar, NSString *title) {
 	});
 }
 
+// helpJS runs a Studio command (window.siStudio, set by the web Studio) in the
+// front window, or in the first Studio window when no Studio window is in front.
+- (void)helpJS:(NSString *)js {
+	SIWindow *target = nil;
+	for (SIWindow *w in windows) {
+		if (!w.studioURL) continue;
+		if (!target || w.window == NSApp.keyWindow) target = w;
+	}
+	if (!target) { [self openFolder:nil]; return; }
+	[target.window makeKeyAndOrderFront:nil];
+	[target.web evaluateJavaScript:js completionHandler:nil];
+}
+- (void)showGallery:(id)sender { [self helpJS:helpScript("gallery")]; }
+- (void)showTour:(id)sender { [self helpJS:helpScript("tour")]; }
+
 - (void)openUpdate:(id)sender {
 	NSString *url = siStatus[@"url"];
 	if (url.length) [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:url]];
@@ -365,6 +388,15 @@ static NSMenu *submenu(NSMenu *bar, NSString *title) {
 	[win addItem:item(@"Minimize", @selector(performMiniaturize:), @"m")];
 	[win addItem:item(@"Zoom", @selector(performZoom:), @"")];
 	NSApp.windowsMenu = win;
+
+	NSMenu *help = submenu(bar, @"Help");
+	NSMenuItem *gallery = item(@"Start Gallery", @selector(showGallery:), @"");
+	gallery.target = self;
+	[help addItem:gallery];
+	NSMenuItem *tour = item(@"Take the Tour", @selector(showTour:), @"");
+	tour.target = self;
+	[help addItem:tour];
+	NSApp.helpMenu = help;
 
 	NSApp.mainMenu = bar;
 }

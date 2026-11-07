@@ -60,3 +60,15 @@ func TestStartReportsAFailure(t *testing.T) {
 		t.Errorf("want a clear error without si: %v", err)
 	}
 }
+
+func TestHelpJS(t *testing.T) {
+	if got := helpJS("gallery"); got != `if(window.siStudio){siStudio.gallery()}else{location.hash="gallery"}` {
+		t.Errorf("gallery: %s", got)
+	}
+	if !strings.Contains(helpJS("tour"), "siStudio.tour()") {
+		t.Error("tour")
+	}
+	if helpJS("alert(1)") != "" {
+		t.Error("only known commands")
+	}
+}

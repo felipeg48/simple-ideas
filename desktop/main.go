@@ -170,6 +170,19 @@ func goStatus() *C.char {
 	return C.CString(string(b))
 }
 
+// helpJS is the script the Help menu runs in a Studio window: the web Studio
+// sets window.siStudio.gallery and .tour; before it has loaded, the hash makes
+// it open the same thing on load.
+func helpJS(cmd string) string {
+	if cmd != "gallery" && cmd != "tour" {
+		return ""
+	}
+	return `if(window.siStudio){siStudio.` + cmd + `()}else{location.hash="` + cmd + `"}`
+}
+
+//export goHelpJS
+func goHelpJS(cmd *C.char) *C.char { return C.CString(helpJS(C.GoString(cmd))) }
+
 // loginPath is the PATH of the user's login shell: an app started from Finder
 // gets only /usr/bin:/bin:/usr/sbin:/sbin, and the terminal, Build --pdf and
 // demos need docker, brew tools and the like.

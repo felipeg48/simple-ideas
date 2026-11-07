@@ -32,6 +32,9 @@ You can also sign it with your own identity: `codesign --force --deep -s "Develo
 - The teleprompter window, **Play** and **Open in a new tab** open as app
   windows; links to other sites open in your browser.
 - **Present ▸ Full screen** puts the deck on the whole screen.
+- **Help ▸ Start Gallery** opens the starter gallery and **Help ▸ Take the
+  Tour** the Studio tour in the front window (the same as ⌘K ▸ Start gallery /
+  Take the tour; a Studio URL ending in `#gallery` or `#tour` opens them too).
 - Safari's Web Inspector can inspect the app (Safari ▸ Develop ▸ si Studio).
 
 ## Staying current
