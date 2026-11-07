@@ -61,6 +61,11 @@ var ThreeJS string
 //go:embed web/three-orbitcontrols.js
 var ThreeOrbitJS string
 
+// ThreeLicense is three.js's MIT license, written beside the shared copy.
+//
+//go:embed web/THREE-LICENSE
+var ThreeLicense string
+
 // DocCSS styles a lab document (type: lab): unlayered page mechanics plus
 // its looks in the si.theme layer, all reading the --si-* tokens.
 //

@@ -125,7 +125,8 @@ Flags (GNU style, before or after the path):
       --no-instructor   build: leave the instructor demo scripts (type: demo) out of a participant build
       --open            play: open the browser
       --dev             play: hot reload — morph changed slides in place (keeps the current slide, step and overview)
-      --no-inline-media build: copy images and videos next to the HTML instead of data URIs
+      --no-inline-media build: copy images and videos next to the HTML instead of data URIs (also shares three.js, as below)
+      --share-assets    build: write three.js once into _si/ beside the pages and link it, instead of inlining it into every page with a 3D mind map
       --pdf             build: also render each deck to pdfs/<name>.pdf and link it from the index tiles (needs headless Chrome)
       --export <what>   css-rules, rules, conf, example, themes or agent-rules
   -h, --help            this help
@@ -172,6 +173,7 @@ type options struct {
 	remote                                       remoteFlag
 	open, help, ver                              bool
 	noInline, pdf, slides, dev, web, noOpen      bool
+	share                                        bool // --share-assets
 	write                                        bool // si fix --write
 	terminal, notes                              bool // si play --terminal [--notes]; si --terminal
 	dump                                         int  // si play --terminal --dump N
@@ -209,6 +211,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.web, "web", false, "")
 	fl.BoolVar(&o.noOpen, "no-open", false, "")
 	fl.BoolVar(&o.noInline, "no-inline-media", false, "")
+	fl.BoolVar(&o.share, "share-assets", false, "")
 	fl.BoolVar(&o.pdf, "pdf", false, "")
 	fl.BoolVar(&o.svg, "svg", false, "")
 	fl.BoolVar(&o.png, "png", false, "")
@@ -459,7 +462,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	for _, w := range cfg.Warnings {
 		fmt.Fprintf(stderr, "si.conf: %s\n", w)
 	}
-	failed := false
+	failed, sharedDone := false, false
 	chrome := ""
 	if o.pdf || o.svg || o.png {
 		if chrome = findChrome(); chrome == "" {
@@ -499,7 +502,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 		if o.noInline {
 			mode = render.MediaCopy
 		}
-		ro := render.Options{UserCSS: css, Media: mode, Theme: o.theme, Config: cfg, Pages: pages}
+		ro := render.Options{UserCSS: css, Media: mode, Theme: o.theme, Config: cfg, Pages: pages, SharedAssets: o.share || o.noInline}
 		for k, j := range labs {
 			if j == i {
 				if k > 0 {
@@ -523,6 +526,13 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 				fmt.Fprintf(stderr, "si: %v\n", err)
 				failed = true
 			}
+		}
+		if render.UsesShared(res.HTML) && !sharedDone {
+			if err := render.WriteShared(out); err != nil {
+				fmt.Fprintf(stderr, "si: %v\n", err)
+				failed = true
+			}
+			sharedDone = true
 		}
 		dest := filepath.Join(out, d.Name+".html")
 		if err := os.WriteFile(dest, res.HTML, 0o644); err != nil {
@@ -1067,7 +1077,7 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 	if o.noInline {
 		mode = render.MediaCopy
 	}
-	ro := render.Options{UserCSS: css, Media: mode, Theme: o.theme, Config: cfg}
+	ro := render.Options{UserCSS: css, Media: mode, Theme: o.theme, Config: cfg, SharedAssets: o.share || o.noInline}
 	chrome := ""
 	if o.pdf && g.IsBook() {
 		if chrome = findChrome(); chrome == "" {
@@ -1092,6 +1102,12 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 		}
 		for _, m := range p.Result.Media {
 			if err := copyFile(m.Src, filepath.Join(filepath.Dir(dest), filepath.FromSlash(m.Rel))); err != nil {
+				fmt.Fprintf(stderr, "si: %v\n", err)
+				ok = false
+			}
+		}
+		if render.UsesShared(p.Result.HTML) {
+			if err := render.WriteShared(out); err != nil {
 				fmt.Fprintf(stderr, "si: %v\n", err)
 				ok = false
 			}

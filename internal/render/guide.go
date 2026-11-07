@@ -205,6 +205,7 @@ func RenderGuide(g *deck.Guide, opt Options) (pages []GuidePage, problems, warni
 				problems = append(problems, deck.Problem{File: deck.Rel(f), Msg: "a book's index.html is its cover: name this page preface.md (or anything but index.md)"})
 			}
 		}
+		opt.AssetPrefix = strings.Repeat("../", strings.Count(guideRel(g, f), "/"))
 		res := Deck(d, opt)
 		problems = append(problems, res.Problems...)
 		warnings = append(warnings, res.Warnings...)

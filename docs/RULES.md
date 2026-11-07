@@ -1975,7 +1975,13 @@ same in every kind.
 
 The 3D view uses three.js (r128, MIT), inlined into the page like everything
 else (no network): about 620 KB, only on pages that have a map starting in 3D.
-Pages with 2D maps only stay small and show no 3D button. A browser without
+Pages with 2D maps only stay small and show no 3D button. A folder or site
+with several 3D maps can carry three.js once: `si build maps/ --share-assets`
+(and `--no-inline-media`, which already puts files beside the pages) writes it
+to `_si/three.min.js` next to the pages and links it, so each 3D page is about
+600 KB smaller (the example maps: 2.1 MB → 1.5 MB); those pages then need the
+`_si/` folder beside them. Without the flag every page stays one
+self-contained file. A browser without
 WebGL shows the map in 2D with a short note. Reduced motion skips the grow-in,
 the flow and the camera flights.
 

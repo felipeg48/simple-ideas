@@ -547,10 +547,34 @@ func Mindmap(d *deck.Deck, opt Options) Result {
 // before it when a map on the page starts in 3D (2D-only pages stay small).
 func (dr *deckRenderer) mindmapScripts() string {
 	js := ""
-	if dr.mindmap3d {
+	if dr.mindmap3d && dr.opt.SharedAssets {
+		p := html.EscapeString(dr.opt.AssetPrefix + ShareDir)
+		js = `<script src="` + p + `/three.min.js"></script>` + "\n" + `<script src="` + p + `/three-orbitcontrols.js"></script>` + "\n<script>\n" + assets.Mindmap3DJS + "</script>\n"
+	} else if dr.mindmap3d {
 		js = "<script>\n" + assets.ThreeJS + "\n" + assets.ThreeOrbitJS + "\n" + assets.Mindmap3DJS + "</script>\n"
 	}
 	return js + "<script>\n" + assets.MindmapJS + "</script>\n"
+}
+
+// ShareDir is the folder of the shared libraries in a build's output.
+const ShareDir = "_si"
+
+// UsesShared reports whether a page links the shared libraries.
+func UsesShared(page []byte) bool { return bytes.Contains(page, []byte(ShareDir+`/three.min.js"`)) }
+
+// WriteShared writes the shared libraries into out/_si (once per build).
+func WriteShared(out string) error {
+	dir := filepath.Join(out, ShareDir)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(dir, "three.min.js"), []byte(assets.ThreeJS), 0o644); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(dir, "three-orbitcontrols.js"), []byte(assets.ThreeOrbitJS), 0o644); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, "LICENSE-three.txt"), []byte(assets.ThreeLicense), 0o644)
 }
 
 // mmBuild parses one mind map for the Studio's map editor: the page itself,

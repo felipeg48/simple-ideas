@@ -44,6 +44,13 @@ type Options struct {
 	UserCSS []Stylesheet
 	// Media says how images, videos and background files are referenced.
 	Media MediaMode
+	// SharedAssets (si build --share-assets, or --no-inline-media) links the
+	// large libraries of a folder or site build (three.js for 3D mind maps)
+	// from ShareDir, written once, instead of inlining them into every page;
+	// a page then needs that folder beside it. AssetPrefix is set per page
+	// ("../" for each folder level below the build's root).
+	SharedAssets bool
+	AssetPrefix  string
 	// Theme overrides the deck's `theme:` front matter; empty keeps it.
 	Theme string
 	// Config is an optional si.conf: default theme, key remaps, feature toggles.

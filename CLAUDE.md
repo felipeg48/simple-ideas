@@ -19,7 +19,8 @@ what you chose.
    820×1180 (portrait) and 3840×2160. `TestLayoutHasNoFixedCanvas` guards the
    obvious regressions.
 2. **Self-contained output.** One deck = one HTML file: CSS, JS, SVGs, images,
-   video inlined (or copied with `--no-inline-media`). The only network
+   video inlined (or copied with `--no-inline-media`; `--share-assets` likewise
+   writes three.js once into `_si/` beside the pages, opt-in only). The only network
    resource allowed is the pinned Mermaid script, and only for decks with a
    Mermaid fence. (three.js for 3D mind maps is inlined, not fetched: see the
    v1.13.0 exception under #8.)

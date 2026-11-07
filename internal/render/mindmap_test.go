@@ -207,3 +207,29 @@ func TestMindmapEditCanvas(t *testing.T) {
 		t.Error("the canvas must carry the editor script and data-edit")
 	}
 }
+
+func TestMindmap3DSharedAssets(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "m.md")
+	os.WriteFile(p, []byte("---\ntype: mindmap\nview: 3d\n---\n# M\n\n- a\n"), 0o644)
+	d, err := deck.Parse(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := Deck(d, Options{SharedAssets: true, AssetPrefix: "../"}).HTML
+	if !UsesShared(h) || !strings.Contains(string(h), `<script src="../_si/three.min.js"></script>`) || strings.Contains(string(h), "Copyright 2010-2021 Three.js Authors") {
+		t.Error("shared: three.js is linked from ../_si, not inlined")
+	}
+	if !strings.Contains(string(h), "SIMindmap3D") {
+		t.Error("mindmap3d.js stays inlined")
+	}
+	out := t.TempDir()
+	if err := WriteShared(out); err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range []string{"three.min.js", "three-orbitcontrols.js", "LICENSE-three.txt"} {
+		if st, err := os.Stat(filepath.Join(out, "_si", f)); err != nil || st.Size() == 0 {
+			t.Errorf("%s missing", f)
+		}
+	}
+}
