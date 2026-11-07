@@ -2070,6 +2070,12 @@ between the Markdown and the map; Map is the default for a mind map page, and
 a new map from New → Mind map opens there. In any other file, put the cursor
 in a ```` ```mindmap ```` fence and press Map in the bar that appears.
 
+The editor's 2D / 3D button edits in 3D too: click a pill to select it (it
+stands lifted), and Tab, Enter, Delete, Space, F2 or typing work as in 2D
+(renaming opens a box at the top of the canvas). Moving a topic to another
+parent is done in 2D or through the topic panel's "what it opens" fields; in 3D
+there is no drag to reparent.
+
 | Do | What it writes |
 |---|---|
 | click a topic | selects it (↑ ↓ ← → move the selection; Esc clears it) |

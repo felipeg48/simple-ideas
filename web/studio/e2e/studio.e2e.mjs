@@ -29,7 +29,7 @@ const url = await new Promise((res, rej) => {
   srv.stdout.on("data", on); srv.stderr.on("data", on);
 });
 
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const until = async (fn, ms = 5000, what = "condition") => {
   const end = Date.now() + ms;
@@ -514,6 +514,26 @@ tests["map editor: multi-select, copy, cut, paste"] = async function () {
   await page.keyboard.press("ControlOrMeta+z");
   await page.keyboard.press("ControlOrMeta+z");
   await until(() => readFileSync(MAP, "utf8").startsWith(MAP_ORIGINAL.split("- Checkout")[0]) && readFileSync(MAP, "utf8").includes("\n- Checkout"), 6000, "undo twice brings the cut branches back");
+  await ctx.close();
+  reset();
+  await sleep(800);
+};
+
+tests["map editor in 3D: select, add a child, rename"] = async function () {
+  const { ctx, page } = await open("light");
+  await openFile(page, "thursday.md");
+  const f = await (await page.waitForSelector(".mapx iframe")).contentFrame();
+  await until(() => f.$('.si-mm-node[data-id="r.2"]'), 8000, "the map is drawn");
+  await f.click('.si-mm-tools [data-a="view"]');
+  await until(() => f.$(".si-mm-3d canvas, .si-mindmap canvas"), 15000, "the editor's canvas switched to 3D");
+  await f.click(".si-mindmap canvas", { position: { x: 5, y: 5 } }).catch(() => {}); // keyboard into the frame
+  await page.keyboard.press("Tab"); // selects the central topic
+  await page.keyboard.press("Tab"); // a child under it
+  await until(() => readFileSync(MAP, "utf8").includes("- New topic"), 6000, "Tab added a child in 3D");
+  await page.keyboard.type("Rehearsal");
+  await page.keyboard.press("Enter");
+  await until(() => readFileSync(MAP, "utf8").includes("- Rehearsal"), 6000, "typing renamed it in 3D");
+  if (!(await f.evaluate(() => document.querySelector(".si-mindmap").siMindmap.is3d))) throw new Error("still in 3D after the edits");
   await ctx.close();
   reset();
   await sleep(800);

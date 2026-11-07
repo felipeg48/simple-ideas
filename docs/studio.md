@@ -224,7 +224,9 @@ Studio reads a workspace the way `si check` and `si serve` do:
 
 A mind map page opens in **Map** view (the bar above the editor switches to
 **Text**); in any other file, a ```` ```mindmap ```` fence under the cursor
-offers **Map** too. The canvas is the real runtime (`internal/assets/web/mindmap.js`)
+offers **Map** too (2D or 3D: the canvas page carries three.js, so the 2D / 3D
+button works on any map; in 3D a click selects a pill and the keys work as in
+2D, without drag-to-reparent). The canvas is the real runtime (`internal/assets/web/mindmap.js`)
 plus `mindmap-edit.js`, served by `GET /_si/studio/api/mmcanvas?path=&line=`
 in an iframe. Clicks, keys and drags there become ops sent to the UI with
 `postMessage` (`si-mm-op`); the UI posts them with the editor's current text to

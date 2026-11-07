@@ -639,6 +639,7 @@ func MindmapCanvas(d *deck.Deck, body, info string, opt Options) []byte {
 	dr.userAndMode(&b, modeAttr)
 	b.WriteString("</head>\n<body class=\"si-doc si-mm-page\" data-si-doc=\"mindmap\">\n<main class=\"si-mm-main\">\n")
 	b.WriteString(strings.Replace(p.component(o, start, true), `<div class="si-mindmap"`, `<div class="si-mindmap" data-edit`, 1))
-	b.WriteString("</main>\n<script>\n" + assets.MindmapJS + "</script>\n<script>\n" + assets.MindmapEditJS + "</script>\n</body>\n</html>\n")
+	dr.mindmap3d = true // the editor can switch any map to 3D (a loopback page of si --web, never built)
+	b.WriteString("</main>\n" + dr.mindmapScripts() + "<script>\n" + assets.MindmapEditJS + "</script>\n</body>\n</html>\n")
 	return b.Bytes()
 }

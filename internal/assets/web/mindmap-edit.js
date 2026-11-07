@@ -4,7 +4,9 @@
    reparent (its top or bottom edge: before or after it), Shift-drag moves it
    freely (Alt-drag: its branch), Alt+↑/↓ reorders, Space folds; ⌘/Shift-click
    selects more, ⌘C ⌘X copy or cut the branches as a Markdown list, ⌘V pastes
-   one under the selected topic. Every edit
+   one under the selected topic. In 3D the same keys work on the selected
+   pill (click one to select it; renaming opens a box at the top), and
+   reparenting is through the Studio's panel. Every edit
    goes to the Studio as an op (postMessage); the Studio has Go rewrite the
    Markdown and sends the new maps back. The canvas never writes text itself. */
 (function () {
@@ -31,9 +33,20 @@
 
   function mark() {
     svg.querySelectorAll('.si-mm-sel').forEach(function (g) { g.classList.remove('si-mm-sel'); });
+    var picked = {};
     if (sel && sel.map === mm.st.map) {
-      [sel.id].concat(many).forEach(function (id) { var g = gOf(id); if (g) g.classList.add('si-mm-sel'); });
+      [sel.id].concat(many).forEach(function (id) { picked[id] = true; var g = gOf(id); if (g) g.classList.add('si-mm-sel'); });
     }
+    /* in 3D the selected pills stand lifted */
+    var d3 = mm.is3d && mm.d3, all = d3 && d3.main && d3.main.userData && d3.main.userData.all;
+    (all || []).forEach(function (n) { if (n.mesh) n.mesh.userData.lift = picked[n.id] ? 0.3 : 0; });
+  }
+  /* 3D: a click on a pill of this map selects it (the viewer's card is for reading) */
+  var P3 = window.SIMindmap3D && window.SIMindmap3D.prototype;
+  if (P3 && !P3.editPatched) {
+    P3.editPatched = true;
+    var openCard = P3.openCard;
+    P3.openCard = function (mapId, n) { if (mapId !== this.st.map) return openCard.call(this, mapId, n); select(n.id); };
   }
   var prevPaint = mm.onPaint;
   mm.onPaint = function () { if (prevPaint) prevPaint.call(mm); mark(); };
@@ -86,6 +99,7 @@
     if (this.lastLayout !== lay) { first = true; this.lastLayout = lay; }
     this.paint(false);
     if (first) this.setVB(this.fitBox(this.cur.all));
+    if (this.is3d && this.d3) { this.d3.rebuild(false); mark(); }
   };
 
   window.addEventListener('message', function (e) {
@@ -107,8 +121,9 @@
   var box = null;
   function rename(id, first) {
     var g = gOf(id), n = node(id);
-    if (!g || !n || n.code || !own()) return;
+    if ((!g && !mm.is3d) || !n || n.code || !own()) return;
     var r = (g.querySelector('.si-mm-shape, .si-mm-hit') || g).getBoundingClientRect();
+    if (mm.is3d || !r.width) r = { left: Math.max(8, innerWidth / 2 - 150), top: 52, width: 300, height: 36 }; /* 3D: a box at the top */
     box = document.createElement('input');
     box.className = 'si-mm-rename'; box.value = first !== undefined ? first : n.t;
     box.setAttribute('aria-label', 'Topic text');
