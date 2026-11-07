@@ -2048,11 +2048,15 @@ are edited in their own file.
 si build map.md --svg              # every map: map-<id>.svg (standalone, fonts inside)
 si build map.md --png --scale 3    # map-<id>.png at 3× (default 2×)
 si build map.md --pdf              # pdfs/map.pdf: one page per map, sized to it
+si build map.md --mp4              # map.mp4: the first map's Play, branch by branch (needs ffmpeg)
 ```
 
 Exports draw the 2D map (a `view: 3d` map too), with its theme, lines, moved
 topics and watermark; the PDF also has the linked maps, and a `map ›` topic
 there jumps to its page. They need headless Chrome, like `--pdf` for decks.
+`--mp4` films Play: the overview, then each first-level branch with the rest
+dimmed (2.5 s each, a short zoom between), and the overview again; it also
+needs ffmpeg (`brew install ffmpeg`), an optional tool like Chrome.
 
 ### Other mind map tools
 
@@ -2197,6 +2201,7 @@ block does not have and a callout with no window above it.
 si code retry.md --png --scale 2   # retry-retry-1.png … one per step, backdrop and callouts included
 si code retry.md --svg             # retry-retry-1.svg … (fonts embedded)
 si code retry.md --gif             # retry-retry.gif, the whole show: 2.2 s per step, a short morph between
+si code retry.md --mp4             # retry-retry.mp4, the same show as H.264 video (needs ffmpeg)
 si code talk.md --id charge --gif -o out/   # one show of a deck (its id), into out/
 ```
 
@@ -2204,7 +2209,10 @@ Files are named `<file>-<id>-<step>`; a window without an id is
 `window-<n>`, counting the file's windows from 1. A show split across
 slides exports as one show. Exports need Chrome or Chromium (headless). The
 GIF uses one shared 256-colour palette, and the morph is drawn as five frames
-between steps.
+between steps. The MP4 (`--mp4`, at `--scale`, 30 fps, H.264, yuv420p,
+faststart: it plays in browsers and posts to social sites) needs ffmpeg on the
+PATH (`brew install ffmpeg`, `apt install ffmpeg`); si says so when it is
+missing.
 
 ### In the Studio and the terminal
 

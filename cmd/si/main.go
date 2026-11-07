@@ -66,12 +66,13 @@ Usage:
   si [build] <dir|file.md> [--output html/] [--css <dir|file.css>]... [--no-inline-media] [--pdf]
         write one self-contained HTML file per deck plus index.html
         --pdf also renders each deck to pdfs/<name>.pdf and adds a PDF badge to the index tiles
-  si [build] <map.md> [--svg] [--png [--scale 2]] [--pdf]
+  si [build] <map.md> [--svg] [--png [--scale 2]] [--pdf] [--mp4]
         mind map pages: every map as <name>-<id>.svg / .png (2D, theme and watermark
-        baked in), and pdfs/<name>.pdf with one page per map (map › links work)
-  si code <file.md> [--id show] [--png [--scale 2]] [--svg] [--gif] [-o dir]
+        baked in), pdfs/<name>.pdf with one page per map (map › links work), and
+        <name>.mp4: the first map's Play as video (--mp4 needs ffmpeg)
+  si code <file.md> [--id show] [--png [--scale 2]] [--svg] [--gif] [--mp4] [-o dir]
         code windows and shows: one <file>-<id>-<n>.png / .svg per step (window,
-        backdrop and callouts) and <file>-<id>.gif, the whole show animated
+        backdrop and callouts) and <file>-<id>.gif / .mp4, the whole show animated
   si publish <file.md> --to linkedin|devto|hashnode [--url URL] [--base-url URL] [--canonical URL] [--public] [--copy] [--yes]
         a deck to LinkedIn as a document post (its PDF), an article as a LinkedIn link
         post or to dev.to / Hashnode; a dry run that prints the requests unless --yes
@@ -413,7 +414,7 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		return runPublish(rest, o, stdout, stderr)
 	case "code":
 		if len(rest) != 1 {
-			return usageErr(stderr, "code needs one <file.md> with code windows (--png, --svg, --gif)")
+			return usageErr(stderr, "code needs one <file.md> with code windows (--png, --svg, --gif, --mp4)")
 		}
 		return runCode(rest[0], o, stdout, stderr)
 	case "build":
@@ -487,9 +488,9 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	failed, sharedDone := false, false
 	chrome := ""
-	if o.pdf || o.svg || o.png {
+	if o.pdf || o.svg || o.png || o.mp4 {
 		if chrome = findChrome(); chrome == "" {
-			fmt.Fprintln(stderr, "si: --pdf, --svg and --png need Google Chrome/Chromium; none found — writing HTML only")
+			fmt.Fprintln(stderr, "si: --pdf, --svg, --png and --mp4 need Google Chrome/Chromium; none found — writing HTML only")
 		}
 	}
 	var entries []render.IndexEntry
@@ -576,6 +577,12 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 				failed = true
 			} else if rel != "" {
 				entry.PDF = rel
+			}
+			if o.mp4 {
+				if err := exportMindmapMP4(chrome, dest, out, d.Name, o.scale, stdout); err != nil {
+					fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
+					failed = true
+				}
 			}
 		}
 		if chrome != "" && o.pdf && !d.IsDoc() { // the slides PDF does not apply to a document (print it from the browser)

@@ -626,13 +626,19 @@
 
   /* ---------- export: a standalone SVG of one map (si build --svg/--png/--pdf) ---------- */
   var PROPS = ['fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-opacity', 'stroke-linecap', 'stroke-linejoin', 'stroke-dasharray', 'opacity', 'font-family', 'font-size', 'font-weight', 'font-style', 'letter-spacing', 'text-transform', 'display', 'color', 'white-space'];
-  M.exportSVG = function (id, linkTo) {
+  M.exportSVG = function (id, linkTo, opts) {
     var keep = { map: this.st.map, reveal: this.reveal };
     this.st.map = id; this.reveal = null;
-    var r = this.render(), b = this.fitBox(r.all);
+    var r = this.render(), full = this.fitBox(r.all), b = full;
+    opts = opts || {};
+    if (opts.box) { /* a Play frame: this part of the map, at the whole map's size */
+      var k = Math.max(opts.box.w / full.w, opts.box.h / full.h), cx = opts.box.x + opts.box.w / 2, cy = opts.box.y + opts.box.h / 2;
+      b = { x: cx - full.w * k / 2, y: cy - full.h * k / 2, w: full.w * k, h: full.h * k };
+    }
     var tmp = document.createElementNS(NS, 'svg');
     tmp.setAttribute('class', 'si-mm-svg'); tmp.style.position = 'absolute'; tmp.style.left = '-99999px';
     tmp.innerHTML = r.html; this.el.appendChild(tmp);
+    if (opts.top != null) tmp.querySelectorAll('[data-top]').forEach(function (e) { if (e.getAttribute('data-top') !== String(opts.top)) e.classList.add('si-mm-dim'); });
     var src = tmp.querySelectorAll('*'), out = tmp.cloneNode(true), dst = out.querySelectorAll('*');
     for (var i = 0; i < src.length; i++) {
       var cs = getComputedStyle(src[i]), st = '';
@@ -659,10 +665,25 @@
     out.removeAttribute('class'); out.removeAttribute('style');
     out.setAttribute('xmlns', NS); out.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
     out.setAttribute('viewBox', [b.x, b.y, b.w, b.h].map(f1).join(' '));
-    out.setAttribute('width', Math.round(b.w)); out.setAttribute('height', Math.round(b.h));
+    out.setAttribute('width', Math.round(full.w)); out.setAttribute('height', Math.round(full.h));
     this.st.map = keep.map; this.reveal = keep.reveal;
-    return { id: id, title: this.maps[id].title, w: Math.round(b.w), h: Math.round(b.h), svg: new XMLSerializer().serializeToString(out) };
+    return { id: id, title: this.maps[id].title, w: Math.round(full.w), h: Math.round(full.h), svg: new XMLSerializer().serializeToString(out) };
   };
+  /* #si-export-play: the first map's Play as frames (si build --mp4): the
+     overview, each branch with the rest dimmed, tweened frames between */
+  function exportPlay(mm) {
+    var id = mm.st.map, r = mm.render(), full = mm.fitBox(r.all), out = [], N = 8;
+    var steps = [null].concat(vis(r.root).filter(function (n) { return !n.sticky; })).concat([null]);
+    var boxes = steps.map(function (t) { return t ? mm.fitBox(r.all.filter(function (n) { return n.d > 0 && n.top === t.top; })) : full; });
+    function lerp(a, b, p) { return { x: a.x + (b.x - a.x) * p, y: a.y + (b.y - a.y) * p, w: a.w + (b.w - a.w) * p, h: a.h + (b.h - a.h) * p }; }
+    function frame(t, box, hold) { var f = mm.exportSVG(id, null, { top: t ? t.top : null, box: box }); return { svg: f.svg, w: f.w, h: f.h, hold: hold }; }
+    steps.forEach(function (t, k) {
+      if (k > 0) for (var i = 1; i < N; i++) { var p = i / N; p = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2; out.push(frame(steps[k], lerp(boxes[k - 1], boxes[k], p), false)); }
+      out.push(frame(t, boxes[k], true));
+    });
+    var pre = document.createElement('pre'); pre.id = 'si-export-play'; pre.hidden = true; pre.textContent = JSON.stringify(out);
+    document.body.appendChild(pre);
+  }
   /* #si-export: every map of the page as SVG, in a <pre> that si build reads back */
   function exportAll(mm) {
     var own = [].concat(mm.order || Object.keys(mm.maps)), out = [];
@@ -674,6 +695,10 @@
   function start() {
     document.querySelectorAll('.si-mindmap').forEach(function (el) { if (!el.siMindmap) el.siMindmap = new Mindmap(el); });
     var first = document.querySelector('.si-mindmap[data-full]');
+    if (location.hash === '#si-export-play' && first) {
+      var play = function () { try { exportPlay(first.siMindmap); } catch (e) { var p = document.createElement('pre'); p.id = 'si-export-error'; p.textContent = String(e); document.body.appendChild(p); } };
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(play); else play();
+    }
     if (location.hash === '#si-export' && first) {
       var go = function () { try { exportAll(first.siMindmap); } catch (e) { var p = document.createElement('pre'); p.id = 'si-export-error'; p.textContent = String(e); document.body.appendChild(p); } };
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(go); else go();

@@ -50,8 +50,14 @@ type codeExport struct {
 var codeExportRE = regexp.MustCompile(`(?s)<pre id="si-code-export"[^>]*>(.*?)</pre>`)
 
 func runCode(path string, o *options, stdout, stderr io.Writer) int {
-	if !o.png && !o.svg && !o.gif {
-		return usageErr(stderr, "code needs --png, --svg or --gif")
+	if !o.png && !o.svg && !o.gif && !o.mp4 {
+		return usageErr(stderr, "code needs --png, --svg, --gif or --mp4")
+	}
+	if o.mp4 {
+		if _, err := exec.LookPath("ffmpeg"); err != nil {
+			fmt.Fprintf(stderr, "si: %s\n", ffmpegHint)
+			return exitProblems
+		}
 	}
 	raw, err := os.ReadFile(path)
 	if err != nil {
@@ -109,6 +115,7 @@ func runCode(path string, o *options, stdout, stderr io.Writer) int {
 		base := name + "-" + ex.ID
 		var frames []image.Image
 		var delays []int
+		var video []videoFrame
 		for i, f := range ex.Frames {
 			if f.Hold && o.svg {
 				p := filepath.Join(out, fmt.Sprintf("%s-%d.svg", base, f.Step))
@@ -126,6 +133,14 @@ func runCode(path string, o *options, stdout, stderr io.Writer) int {
 				}
 				fmt.Fprintf(stdout, "  %-32s (png, %d × %d)\n", filepath.Base(p), int(float64(f.W)*o.scale), int(float64(f.H)*o.scale))
 			}
+			if o.mp4 {
+				p := filepath.Join(tmp, fmt.Sprintf("v%03d.png", i))
+				if err := svgToPNG(chrome, tmp, f, o.scale, p); err != nil {
+					fmt.Fprintf(stderr, "si: mp4 frame: %v\n", err)
+					return exitProblems
+				}
+				video = append(video, videoFrame{PNG: p, Dur: map[bool]float64{true: 2.2, false: 0.06}[f.Hold]})
+			}
 			if o.gif {
 				p := filepath.Join(tmp, fmt.Sprintf("f%d.png", i))
 				if err := svgToPNG(chrome, tmp, f, 1, p); err != nil {
@@ -140,6 +155,15 @@ func runCode(path string, o *options, stdout, stderr io.Writer) int {
 				frames = append(frames, img)
 				delays = append(delays, map[bool]int{true: 220, false: 6}[f.Hold])
 			}
+		}
+		if o.mp4 {
+			p := filepath.Join(out, base+".mp4")
+			if err := encodeMP4(video, p); err != nil {
+				fmt.Fprintf(stderr, "si: mp4: %v\n", err)
+				return exitProblems
+			}
+			st, _ := os.Stat(p)
+			fmt.Fprintf(stdout, "  %-32s (mp4, %d steps, %d frames, %d KB)\n", base+".mp4", ex.Steps, len(video), st.Size()/1024)
 		}
 		if o.gif {
 			data, err := encodeGIF(frames, delays)
