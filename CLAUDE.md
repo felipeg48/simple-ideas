@@ -243,14 +243,15 @@ pass. The steps that matter:
 - **Publishing (`si publish`, DONE v2.3.0, see `docs/publish.md`):** LinkedIn
   document posts (a deck's PDF) and link posts, `--copy` rich text for the
   article editor, dev.to and Hashnode articles; always a dry run unless `--yes`.
-  Next: Ghost and WordPress; a thumbnail for LinkedIn link posts (Images API);
-  re-check the `Linkedin-Version` header each year (LinkedIn sunsets versions).
-- **Video (DONE v2.3.0):** `--mp4` for code shows and a mind map's Play
-  (ffmpeg optional). Next: a deck's canvas and build steps as video; 3D Play.
-- **Docs site (DONE v2.3.0):** `make docs-site`. Next: publish it (GitHub Pages
-  from the release workflow).
-- **Studio first run (DONE v2.3.0):** start gallery + tour. Next: the desktop
-  app's Help menu opening them.
+  A link post's picture (`cover:`, Images API) is in (v2.3.1).
+  Next: Ghost and WordPress; re-check the `Linkedin-Version` header each year (LinkedIn sunsets versions).
+- **Video (DONE v2.3.0/v2.3.1):** `--mp4` for code shows, a mind map's Play
+  (3D too) and decks (every slide and step, dissolves, `--dwell`). Next: real
+  motion (the canvas morph frame by frame through a scripted browser).
+- **Docs site (DONE v2.3.0):** `make docs-site`; `.github/workflows/pages.yml`
+  deploys it once the owner turns Pages on and sets `SI_PAGES=on`.
+- **Studio first run (DONE v2.3.0):** start gallery + tour; the desktop Help
+  menu opens them (v2.3.1).
 - More themes; `theme:` from a remote URL (the CSS-file path and the
   `si --export themes` gallery already exist).
 - SVG helpers: `data-move` along a path, counters that tick between states,

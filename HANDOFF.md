@@ -8,7 +8,26 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 - **Idea being refined (not started; likely a separate project, not part of si):**
   the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
-- **Latest release: v2.3.0: publish, video, docs site, Studio first run.**
+- **Latest release: v2.3.1: v2.3.0's gaps closed.**
+  - Desktop: Help ▸ Start Gallery / Take the Tour run `window.siStudio.gallery()/.tour()`
+    (set by app.tsx; `#gallery` / `#tour` open them on load) via `goHelpJS` (main.go, tested).
+  - `si build deck.md --mp4 [--dwell N]` (video.go `exportDeckMP4`): one Chrome screenshot per
+    slide view (`#N.k`, 1920×1080), held `stepHold` (dwell, else minutes / views, else 3 s), 12-frame
+    crossfades (`withFades`). 3D maps (`view: 3d`): `#si-play3d-K` makes mindmap.js show Play view K
+    still (mindmap3d.js treats it as reduced motion) and report the count in `<pre id="si-play3d">`;
+    `exportMindmap3DMP4` shoots each with SwiftShader WebGL. Encodes checked with ffprobe: appendix
+    5 views 8.97 s, showcase 37 views 35.4 s at --dwell 0.6, thursday 3D 5 views 13.97 s 1600×1000.
+  - `cover:` front matter (else the first local picture) → LinkedIn Images API upload → the link post's
+    `content.article.thumbnail` (`LinkedIn.upload` now serves documents and images).
+  - Pages: `.github/workflows/pages.yml` (skipped until `vars.SI_PAGES == 'on'`; the owner must turn
+    Pages on, Source: GitHub Actions — enabling it was left to the owner, it creates a public site).
+  - Studio ⌘K root causes: (1) keys pressed in a same-origin frame (map editor, window preview,
+    preview) never reached the Studio's window listener — app.tsx now hooks every frame's keydown
+    on load and forwards ⌘K/⌘S; (2) mindmap-edit.js `select()` focused a topic for every selection
+    the Studio pushed (each `si-mm-data`), stealing focus from the palette — quiet selections focus
+    only when the frame already has focus. start e2e now types for real (20/20), and its thumbnail
+    check polls instead of a fixed wait.
+- **v2.3.0: publish, video, docs site, Studio first run.**
   - `si publish` (`cmd/si/publish.go`, `internal/publish/`): LinkedIn document post
     (deck → PDF via `si build --pdf` → Documents API initializeUpload → PUT → Posts
     API), link post (article, `--url` or `canonical:`), `--copy` (textutil RTF +
