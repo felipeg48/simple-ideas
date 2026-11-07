@@ -443,6 +443,8 @@
       }
       mesh.castShadow = true; mesh.receiveShadow = true;
       var holder = new THREE.Group(); holder.position.set(n.x, 0, n.z);
+      /* the 3D size of this topic: n.w/n.d/n.h belong to whichever view laid it out last (2D repaints them) */
+      holder.userData.size = { w: n.w, d: n.d, h: n.h };
       if (n.sticky) holder.rotation.y = 0.07;
       holder.add(mesh); group.add(holder);
       mesh.userData = { node: n, map: id, holder: holder, lift: 0, outline: mesh.userData.outline };

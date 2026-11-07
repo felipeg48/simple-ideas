@@ -27,7 +27,7 @@ async function page(file, size = { width: 1440, height: 900 }) {
 const pillAt = (p, title) => p.evaluate((title) => {
   const d = document.querySelector(".si-mindmap").siMindmap.d3;
   const n = d.main.userData.all.find((x) => x.t === title);
-  const v = new THREE.Vector3(); n.holder.getWorldPosition(v); v.y += 0.4; // about the top face (n.h is the 2D size)
+  const v = new THREE.Vector3(); n.holder.getWorldPosition(v); v.y += n.holder.userData.size.h; // the top face
   v.project(d.camera);
   const r = d.renderer.domElement.getBoundingClientRect();
   return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height };
