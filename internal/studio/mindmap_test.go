@@ -44,3 +44,13 @@ func mustJSON(v any) []byte {
 	b, _ := json.Marshal(v)
 	return b
 }
+
+func TestMindmapCopy(t *testing.T) {
+	f := newFx(t)
+	page := "---\ntype: mindmap\ntitle: Plan\n---\n# Plan\n\n- One\n  - Two\n- Three\n"
+	f.put("plan.md", page)
+	code, m := f.do("POST", "mindmap", mindmapReq{Path: "plan.md", Text: page, Op: &mindmap.Op{Kind: "copy", Paths: [][]int{{0}, {1}}}})
+	if code != 200 || m["copy"] != "- One\n  - Two\n- Three\n" || m["text"] != nil {
+		t.Fatalf("copy: %d %v", code, m)
+	}
+}

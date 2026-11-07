@@ -2,7 +2,9 @@
    rendered by si --web with ?si-edit): select a topic, Tab adds a child, Enter
    a sibling, Delete removes, F2 or typing renames, drag onto a topic to
    reparent (its top or bottom edge: before or after it), Shift-drag moves it
-   freely (Alt-drag: its branch), Alt+↑/↓ reorders, Space folds. Every edit
+   freely (Alt-drag: its branch), Alt+↑/↓ reorders, Space folds; ⌘/Shift-click
+   selects more, ⌘C ⌘X copy or cut the branches as a Markdown list, ⌘V pastes
+   one under the selected topic. Every edit
    goes to the Studio as an op (postMessage); the Studio has Go rewrite the
    Markdown and sends the new maps back. The canvas never writes text itself. */
 (function () {
@@ -16,6 +18,7 @@
   if (!mm) return;
   var M = window.SIMindmap.prototype, svg = mm.svg, parent = window.parent;
   var sel = null; // { map: id, id: 'r.0.1' }
+  var many = []; // more selected topics (⌘/Ctrl- or Shift-click), on sel's map
   el.classList.add('si-mm-editing');
 
   function post(m) { parent.postMessage(m, '*'); }
@@ -28,12 +31,15 @@
 
   function mark() {
     svg.querySelectorAll('.si-mm-sel').forEach(function (g) { g.classList.remove('si-mm-sel'); });
-    if (sel && sel.map === mm.st.map) { var g = gOf(sel.id); if (g) g.classList.add('si-mm-sel'); }
+    if (sel && sel.map === mm.st.map) {
+      [sel.id].concat(many).forEach(function (id) { var g = gOf(id); if (g) g.classList.add('si-mm-sel'); });
+    }
   }
   var prevPaint = mm.onPaint;
   mm.onPaint = function () { if (prevPaint) prevPaint.call(mm); mark(); };
 
-  function select(id, quiet) {
+  function select(id, quiet, keep) {
+    if (!keep) many = [];
     sel = id === null ? null : { map: mm.st.map, id: id };
     mark();
     if (sel) {
@@ -137,7 +143,7 @@
     var id = g.getAttribute('data-id'), n = node(id);
     var chip = e.target.closest('.si-mm-chip');
     if (chip && chip.getAttribute('data-chip') === 'link') { mm.act(g, chip); return; }
-    drag = { id: id, n: n, x: e.clientX, y: e.clientY, moved: false, free: e.shiftKey ? 'pos' : e.altKey ? 'bpos' : null, vb: mm.vb };
+    drag = { id: id, n: n, x: e.clientX, y: e.clientY, moved: false, free: e.shiftKey ? 'pos' : e.altKey ? 'bpos' : null, vb: mm.vb, multi: e.shiftKey || e.metaKey || e.ctrlKey };
     if (drag.free && n && n.d > 0) drag.start = n[drag.free] ? { x: n[drag.free].x, y: n[drag.free].y } : { x: 0, y: 0 };
     svg.setPointerCapture && svg.setPointerCapture(e.pointerId);
   }, true);
@@ -195,6 +201,14 @@
       else op({ kind: 'move', path: pathOf(d.id), to: tp.slice(0, -1), index: tp[tp.length - 1] + (t.zone === 'after' ? 1 : 0) });
       return;
     }
+    if (d.multi && sel && sel.map === mm.st.map && d.id !== 'r') { /* add it to the selection, or take it out */
+      var at = many.indexOf(d.id);
+      if (d.id === sel.id) { if (many.length) { var next = many.shift(); select(next, true, true); } }
+      else if (at >= 0) many.splice(at, 1);
+      else many.push(d.id);
+      mark();
+      return;
+    }
     var now = performance.now(), dbl = lastClick.id === d.id && now - lastClick.t < 400;
     lastClick = { t: now, id: d.id };
     select(d.id);
@@ -215,6 +229,15 @@
     if (box || /input|textarea|select/i.test(e.target.tagName)) return;
     var mod = e.metaKey || e.ctrlKey, k = e.key;
     if (mod && (k === 'z' || k === 'Z' || k === 'y')) { e.preventDefault(); post({ type: 'si-mm-undo', redo: k === 'y' || e.shiftKey }); return; }
+    if (mod && (k === 'c' || k === 'x') && sel) { /* copy / cut the selected branches as a Markdown list */
+      var paths = [sel.id].concat(many).filter(function (id) { return id !== 'r'; }).map(pathOf);
+      if (!paths.length) return;
+      e.preventDefault();
+      if (k === 'x' && !own()) { op({ kind: 'delete-many', paths: paths }); return; }
+      post({ type: 'si-mm-copy', map: mapIndex(mm.st.map), paths: paths, cut: k === 'x' });
+      if (k === 'x') many = [];
+      return;
+    }
     if (mod) return;
     if (k === '/' ) return; /* search stays */
     if (!sel && /^(Tab|Enter|Delete|Backspace|F2|Arrow\w+| )$/.test(k)) { e.preventDefault(); select('r'); return; }
@@ -243,6 +266,15 @@
     var b = e.target.closest('[data-a="tidy"]');
     if (b) { e.stopImmediatePropagation(); op({ kind: 'tidy', path: [] }); }
   }, true);
+
+  /* paste a copied branch (or any Markdown list) under the selected topic */
+  document.addEventListener('paste', function (e) {
+    if (box || /input|textarea/i.test((e.target && e.target.tagName) || '')) return;
+    var text = e.clipboardData && e.clipboardData.getData('text/plain');
+    if (!text || !/^\s*[-*+] /m.test(text)) return;
+    e.preventDefault();
+    op({ kind: 'paste', path: sel ? pathOf(sel.id) : [], text: text });
+  });
 
   /* the canvas pane changes size with the Studio's panes: keep the whole map in view */
   if (window.ResizeObserver) {

@@ -1,6 +1,7 @@
 package mindmap
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -159,5 +160,30 @@ func TestCodeWindowRoundTrip(t *testing.T) {
 	src := "# Plan\n\n- Retry\n  ```go window=mac title=\"retry.go\"\n  for try := 1; try <= 5; try++ {}\n  ```\n"
 	if got := Parse(src).String(); got != src {
 		t.Fatalf("round trip:\n%q\n%q", src, got)
+	}
+}
+
+func TestCopyCutPaste(t *testing.T) {
+	src := "# Plan\n\n- A\n  - A1 {badge=x}\n  - A2\n- B\n- C → #other\n"
+	d := Parse(src)
+	got, err := d.Branches(0, [][]int{{2}, {0}, {0, 1}}) // A2 lies inside A: once
+	if err != nil || got != "- A\n  - A1 {badge=x}\n  - A2\n- C → #other\n" {
+		t.Fatalf("copy: %q %v", got, err)
+	}
+	if _, err := d.Apply(Op{Kind: "delete-many", Paths: [][]int{{0, 1}, {0}, {2}}}); err != nil {
+		t.Fatal(err)
+	}
+	if s := d.String(); s != "# Plan\n\n- B\n" {
+		t.Fatalf("cut:\n%s", s)
+	}
+	sel, err := d.Apply(Op{Kind: "paste", Path: []int{0}, Text: got})
+	if err != nil || fmt.Sprint(sel.Path) != "[0 0]" {
+		t.Fatalf("paste: %v %v", sel, err)
+	}
+	if s := d.String(); s != "# Plan\n\n- B\n  - A\n    - A1 {badge=x}\n    - A2\n  - C → #other\n" {
+		t.Fatalf("paste under B:\n%s", s)
+	}
+	if _, err := d.Apply(Op{Kind: "paste", Text: "just words"}); err == nil {
+		t.Error("pasting text that is not a list is refused")
 	}
 }

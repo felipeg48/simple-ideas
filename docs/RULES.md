@@ -2061,6 +2061,9 @@ in a ```` ```mindmap ```` fence and press Map in the bar that appears.
 | Shift-drag / Alt-drag | places the topic (`{pos=x,y}`) / its branch (`{branch-pos=x,y}`) freely |
 | Space | folds or opens the branch (`{collapsed}`) |
 | Tidy | removes every `pos=` and `branch-pos=` of the map |
+| ⌘-click / Ctrl-click / Shift-click | adds a topic to the selection, or takes it out |
+| ⌘C / ⌘X | copies / cuts the selected branches as a Markdown list (`- Checkout` / `  - Cart & address` …) to the clipboard |
+| ⌘V | pastes a Markdown list (a copy from any map or file, or a list typed anywhere) under the selected topic |
 | ⌘Z / Ctrl+Z, ⇧⌘Z / Ctrl+Y | undo / redo (the editor's own history) |
 
 The topic panel edits the text, the badge, what it opens (`#map`, a mind map

@@ -494,6 +494,31 @@ tests["map editor: Tab adds a child, rename, undo"] = async function () {
   }
 };
 
+tests["map editor: multi-select, copy, cut, paste"] = async function () {
+  const { ctx, page } = await open("light");
+  await ctx.grantPermissions(["clipboard-read", "clipboard-write"], { origin: new URL(url).origin });
+  await openFile(page, "thursday.md");
+  const f = await (await page.waitForSelector(".mapx iframe")).contentFrame();
+  await until(() => f.$('.si-mm-node[data-id="r.2"]'), 8000, "the map is drawn");
+  await f.click('.si-mm-node[data-id="r.0"]');
+  await f.click('.si-mm-node[data-id="r.2"]', { modifiers: ["Shift"] });
+  if ((await f.$$(".si-mm-sel")).length !== 2) throw new Error("Shift-click selects a second topic");
+  await page.keyboard.press("ControlOrMeta+c");
+  const clip = await until(async () => { const t = await page.evaluate(() => navigator.clipboard.readText()); return t.startsWith("- Checkout") && t.includes("- Delivery") ? t : null; }, 5000, "⌘C puts both branches on the clipboard as a Markdown list");
+  await page.keyboard.press("ControlOrMeta+x");
+  await until(() => { const t = readFileSync(MAP, "utf8"); return !t.includes("- Checkout") && !t.includes("- Delivery"); }, 6000, "⌘X cut both branches from the file");
+  await until(async () => !(await f.$('.si-mm-node[data-id="r.1"]')), 5000, "the map redrawn");
+  await f.click('.si-mm-node[data-id="r.0"]'); // Warehouse
+  await f.evaluate((text) => { const dt = new DataTransfer(); dt.setData("text/plain", text); document.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt })); }, clip);
+  await until(() => /- Warehouse[\s\S]*\n  - Checkout\n[\s\S]*\n  - Delivery\n/.test(readFileSync(MAP, "utf8")), 6000, "⌘V pasted both under Warehouse");
+  await page.keyboard.press("ControlOrMeta+z");
+  await page.keyboard.press("ControlOrMeta+z");
+  await until(() => readFileSync(MAP, "utf8").startsWith(MAP_ORIGINAL.split("- Checkout")[0]) && readFileSync(MAP, "utf8").includes("\n- Checkout"), 6000, "undo twice brings the cut branches back");
+  await ctx.close();
+  reset();
+  await sleep(800);
+};
+
 tests["window view: style, callout, undo"] = async function () {
   for (const [theme, size] of [["light", { width: 1440, height: 900 }], ["dark", { width: 820, height: 1180 }]]) {
     const { ctx, page } = await open(theme, size);

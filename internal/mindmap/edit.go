@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -22,6 +23,7 @@ type Op struct {
 	X      float64 `json:"x,omitempty"`
 	Y      float64 `json:"y,omitempty"`
 	Branch bool    `json:"branch,omitempty"` // pos: move the branch (branch-pos=)
+	Paths  [][]int `json:"paths,omitempty"`  // delete-many, copy: several topics (a multi-selection)
 }
 
 // Sel is the topic to select after an edit.
@@ -102,6 +104,36 @@ func (d *Doc) Apply(op Op) (Sel, error) {
 		return sel, err
 	}
 	switch op.Kind {
+	case "delete-many": // a cut: every selected branch, the deepest and last first
+		ps := topmost(op.Paths)
+		sort.Slice(ps, func(a, b int) bool { return later(ps[a], ps[b]) })
+		for _, p := range ps {
+			l, i, err := list(m, p)
+			if err != nil {
+				return sel, err
+			}
+			*l = append((*l)[:i], (*l)[i+1:]...)
+		}
+		if len(ps) > 0 {
+			sel.Path = clone(ps[len(ps)-1][:len(ps[len(ps)-1])-1])
+		}
+		return sel, nil
+	case "paste": // Markdown list text (a copy, or any list) as children of the topic
+		l, err := kids(m, op.Path)
+		if err != nil {
+			return sel, err
+		}
+		var add []*Topic
+		for _, pm := range Parse(strings.TrimSpace(op.Text) + "\n").Maps() {
+			add = append(add, pm.Topics...)
+		}
+		if len(add) == 0 {
+			return sel, errors.New("nothing to paste: copy topics, or a Markdown list")
+		}
+		first := len(*l)
+		*l = append(*l, add...)
+		sel.Path = clone(op.Path, first)
+		return sel, nil
 	case "add-child":
 		l, err := kids(m, op.Path)
 		if err != nil {
@@ -229,6 +261,55 @@ func (d *Doc) Apply(op Op) (Sel, error) {
 		return sel, errors.New("unknown edit " + op.Kind)
 	}
 	return sel, nil
+}
+
+// Branches is the Markdown list of the topics at paths (a copy): each with its
+// branch, a topic inside another selected one only once.
+func (d *Doc) Branches(mapI int, paths [][]int) (string, error) {
+	m, err := d.mapAt(mapI)
+	if err != nil {
+		return "", err
+	}
+	ps := topmost(paths)
+	sort.Slice(ps, func(a, b int) bool { return later(ps[b], ps[a]) })
+	var ts []*Topic
+	for _, p := range ps {
+		l, i, err := list(m, p)
+		if err != nil {
+			return "", err
+		}
+		ts = append(ts, (*l)[i])
+	}
+	var out []string
+	writeTopics(&out, ts, 0)
+	return strings.Join(out, "\n") + "\n", nil
+}
+
+// topmost drops the paths inside another path of the list, and duplicates.
+func topmost(paths [][]int) [][]int {
+	var out [][]int
+	for i, p := range paths {
+		inside := len(p) == 0
+		for j, q := range paths {
+			if i != j && len(q) <= len(p) && equal(q, p[:len(q)]) && (len(q) < len(p) || j < i) {
+				inside = true
+			}
+		}
+		if !inside {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// later orders paths so that deleting in that order never shifts the next one.
+func later(a, b []int) bool {
+	for i := 0; i < len(a) && i < len(b); i++ {
+		if a[i] != b[i] {
+			return a[i] > b[i]
+		}
+	}
+	return len(a) > len(b)
 }
 
 func orNew(s string) string {

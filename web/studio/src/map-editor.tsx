@@ -12,7 +12,7 @@ export interface MapTopic {
   target?: string; code?: { lang: string; text: string }; kids?: MapTopic[];
 }
 export interface MapModel { title: string; id?: string; heading: boolean; topics: MapTopic[] }
-export interface MapOp { kind: string; map?: number; path?: number[]; text?: string; field?: string; value?: string; to?: number[]; index?: number; x?: number; y?: number; branch?: boolean }
+export interface MapOp { kind: string; map?: number; path?: number[]; paths?: number[][]; text?: string; field?: string; value?: string; to?: number[]; index?: number; x?: number; y?: number; branch?: boolean }
 interface Resp {
   text: string; data: unknown; opts: Record<string, string>; problems: Problem[];
   maps: MapModel[]; front: Record<string, string>; fence: boolean; fenceLine?: number;
@@ -123,6 +123,7 @@ export function MapEditor(p: {
       else if (m.type === "si-mm-op") void run(m.op);
       else if (m.type === "si-mm-select") setSel({ map: m.map, path: m.path, readonly: m.readonly });
       else if (m.type === "si-mm-undo") props.current.undo(!!m.redo);
+      else if (m.type === "si-mm-copy") void copy(m.map, m.paths, !!m.cut);
     };
     addEventListener("message", onMsg);
     return () => removeEventListener("message", onMsg);
@@ -131,6 +132,16 @@ export function MapEditor(p: {
   // the canvas follows the Studio's light / dark choice, like the preview
   const syncMode = () => { try { frame.current?.contentDocument?.documentElement.setAttribute("data-si-mode", resolvedTheme()); } catch { /* not loaded */ } };
   useEffect(() => { addEventListener("si-theme", syncMode); return () => removeEventListener("si-theme", syncMode); }, []);
+  // ⌘C / ⌘X in the canvas: Go writes the branches as a Markdown list; the
+  // clipboard gets it (⌘V in any map, or any editor, pastes it), a cut then deletes
+  const copy = async (map: number, paths: number[][], cut: boolean) => {
+    const cur = props.current;
+    try {
+      const r = await api.mindmap(cur.path, last.current.text || cur.text, line.current, { kind: "copy", map, paths }) as unknown as { copy: string };
+      await navigator.clipboard.writeText(r.copy).catch(() => undefined);
+      if (cut) await run({ kind: "delete-many", map, paths });
+    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+  };
   const opOn = (o: MapOp) => void run({ map: sel.map, path: sel.path ?? [], ...o });
   const topic = resp && sel.path ? at(resp.maps, sel.map, sel.path) : null;
   const map = resp?.maps[sel.map];

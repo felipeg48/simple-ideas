@@ -46,6 +46,15 @@ func (a *api) mindmap(w http.ResponseWriter, r *http.Request) {
 		src = f.Body
 	}
 	doc := mindmap.Parse(src)
+	if req.Op != nil && req.Op.Kind == "copy" { // the selected branches as a Markdown list; nothing changes
+		text, err := doc.Branches(req.Op.Map, req.Op.Paths)
+		if err != nil {
+			fail(w, http.StatusUnprocessableEntity, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"copy": text})
+		return
+	}
 	var sel *mindmap.Sel
 	if req.Op != nil {
 		if inFence && req.Op.Kind == "meta" {

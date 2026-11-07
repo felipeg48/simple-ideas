@@ -239,7 +239,13 @@ Panels: the selected topic (text, badge, what it opens, picture and alt text,
 sticky, folded, a code topic's language and code) and the page or fence (every
 mind map key or option, the maps of the file, Add a map). Topics of a map
 inlined from another file are shown read-only. The status bar counts maps and
-topics. Keys and drags: RULES.md §24, *Editing in the Studio*.
+topics. Several topics can be selected (⌘/Shift-click); ⌘C asks
+`/api/mindmap` for op `copy` (`internal/mindmap` `Branches`: the branches as a
+Markdown list, nothing written) and puts it on the clipboard, ⌘X then sends
+`delete-many`, and a paste event in the canvas sends `paste` with the
+clipboard's list. The editor draws the map in 2D, also for a `view: 3d` page
+(its preview pane shows 3D). Keys and drags: RULES.md §24, *Editing in the
+Studio*.
 
 ## First run: the start gallery and the tour
 
