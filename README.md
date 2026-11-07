@@ -114,6 +114,14 @@ self-contained HTML files you can mail, host or open from a USB stick.
   publishes the docs site to GitHub Pages once Pages is on (Settings ▸ Pages ▸
   Source: GitHub Actions) and the repository variable `SI_PAGES` is `on`
   (`gh variable set SI_PAGES --body on`).
+- **v2.4.0:** the Studio's **History** panel (changed files and their diff,
+  commit, a file's earlier versions with restore; git); **review links**
+  (`si serve . --review`): reviewers on your network comment on slides and
+  sections, the Studio's Review panel follows them live; `si check --budget`
+  (and `budget.*` in si.conf) fails pages over 1 MB (3D maps 1.5 MB), and CI
+  checks the examples; the map editor selects several topics and copies, cuts
+  and pastes branches as Markdown lists; the terminal Studio edits mind map
+  trees and code window looks.
 - **In the terminal (v1.7):** `si play talk.md --terminal` presents a deck in
   the terminal itself, in the theme's colours, with block-letter titles, builds,
   code, tables, cards and pictures in half-block pixels; `--notes` in a second

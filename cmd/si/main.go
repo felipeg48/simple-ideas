@@ -142,6 +142,8 @@ Flags (GNU style, before or after the path):
       --dev             play: hot reload — morph changed slides in place (keeps the current slide, step and overview)
       --no-inline-media build: copy images and videos next to the HTML instead of data URIs (also shares three.js, as below)
       --share-assets    build: write three.js once into _si/ beside the pages and link it, instead of inlining it into every page with a 3D mind map
+      --review          play, serve: a keyed link (port + 2) where reviewers on your network leave comments on slides and sections
+      --review-addr <host:port> the --review address (default 0.0.0.0, the port + 2)
       --pdf             build: also render each deck to pdfs/<name>.pdf and link it from the index tiles (needs headless Chrome)
       --export <what>   css-rules, rules, conf, example, themes or agent-rules
   -h, --help            this help
@@ -200,6 +202,8 @@ type options struct {
 	scale                                        float64 // si build --png: device pixels per CSS pixel
 	dwell                                        float64 // si build deck.md --mp4: seconds on every slide view
 	budget                                       bool    // si check --budget: fail pages over the size budget
+	review                                       bool    // si serve / si play --review: a keyed listener for reviewers' comments
+	reviewAddr                                   string  // --review-addr
 	to, mapID                                    string  // si mindmap export --to, --map
 	gif                                          bool    // si code --gif
 	showID                                       string  // si code --id
@@ -253,6 +257,8 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.public, "public", false, "")
 	fl.BoolVar(&o.mp4, "mp4", false, "")
 	fl.BoolVar(&o.budget, "budget", false, "")
+	fl.BoolVar(&o.review, "review", false, "")
+	fl.StringVar(&o.reviewAddr, "review-addr", "", "")
 	fl.IntVar(&o.port, "port", 8723, "")
 	fl.BoolVar(&o.write, "write", false, "")
 	fl.BoolVar(&o.terminal, "terminal", false, "")
@@ -813,6 +819,15 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		}
 		remote = rs
 	}
+	var review *http.Server
+	if o.review {
+		rs, code := startReview(srv, ln.Addr(), o, stdout, stderr)
+		if rs == nil {
+			ln.Close()
+			return code
+		}
+		review = rs
+	}
 	url := "http://" + ln.Addr().String() + "/"
 	cmdName := "si play"
 	if o.serveMode {
@@ -847,6 +862,9 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		defer c()
 		if remote != nil {
 			remote.Shutdown(sctx)
+		}
+		if review != nil {
+			review.Shutdown(sctx)
 		}
 		hs.Shutdown(sctx)
 	}()
@@ -913,6 +931,51 @@ func startRemote(srv *serve.Server, main net.Addr, o *options, stdout, stderr io
 	go func() {
 		if err := rs.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			fmt.Fprintf(stderr, "si: --remote: %v\n", err)
+		}
+	}()
+	return rs, exitOK
+}
+
+// startReview opens the --review listener (default: every interface, the
+// main port + 2): pages read-only with a comment box, behind a per-run key.
+func startReview(srv *serve.Server, main net.Addr, o *options, stdout, stderr io.Writer) (*http.Server, int) {
+	addr := o.reviewAddr
+	if addr == "" {
+		port := 0
+		if ta, ok := main.(*net.TCPAddr); ok && ta.Port > 0 {
+			port = ta.Port + 2
+		}
+		addr = fmt.Sprintf("0.0.0.0:%d", port)
+	}
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		fmt.Fprintf(stderr, "si: --review: %v (pick another with --review-addr)\n", err)
+		return nil, exitProblems
+	}
+	var raw [16]byte
+	if _, err := rand.Read(raw[:]); err != nil {
+		fmt.Fprintf(stderr, "si: --review: %v\n", err)
+		return nil, exitProblems
+	}
+	key := hex.EncodeToString(raw[:])
+	host := lanIP()
+	ta, _ := ln.Addr().(*net.TCPAddr)
+	if ta != nil && !ta.IP.IsUnspecified() {
+		host = ta.IP.String()
+	}
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	u := fmt.Sprintf("http://%s/?k=%s", net.JoinHostPort(host, strconv.Itoa(ta.Port)), key)
+	fmt.Fprintf(stdout, "  review link (same network, keyed; plain HTTP, so share it on a trusted network):\n  %s\n", u)
+	if qr, err := qrString(u); err == nil {
+		fmt.Fprint(stdout, qr)
+	}
+	fmt.Fprintf(stdout, "  comments land in .si/review/ and in the Studio's Review panel\n")
+	rs := &http.Server{Handler: srv.ReviewHandler(key), ReadHeaderTimeout: 10 * time.Second}
+	go func() {
+		if err := rs.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			fmt.Fprintf(stderr, "si: --review: %v\n", err)
 		}
 	}()
 	return rs, exitOK

@@ -41,6 +41,8 @@ type Server struct {
 	clients map[chan struct{}]bool
 	term    *termHub
 	relay   *relay
+	rev     *reviews // review comments (review.go)
+	revOnce sync.Once
 }
 
 // New prepares a server for root.
@@ -75,6 +77,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /_si/position/cmd", s.pos.command)
 	mux.HandleFunc("GET /_si/position/events", s.pos.events)
 	mux.HandleFunc("POST /_si/callout", localOnly(s.callout)) // writes files: never on the remote listener
+	s.authorRoutes(mux)                                       // review comments: read, follow, reply, resolve (loopback)
 	if s.Remote {
 		mux.HandleFunc("GET /_si/remote/events", s.relay.events)
 		mux.HandleFunc("POST /_si/remote/send", s.relay.send)

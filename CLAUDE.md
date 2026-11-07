@@ -252,6 +252,12 @@ pass. The steps that matter:
   deploys it once the owner turns Pages on and sets `SI_PAGES=on`.
 - **Studio first run (DONE v2.3.0):** start gallery + tour; the desktop Help
   menu opens them (v2.3.1).
+- **v2.4.0 (DONE):** Studio History (git, `internal/studio/git.go`), review
+  links (`--review`, `internal/serve/review.go`, comments in `.si/review/`),
+  `si check --budget`, map editor multi-select + copy/cut/paste, terminal
+  Studio editing (`internal/tui/edit.go`). Next: review comments pinned to a
+  paragraph (not only slide/section); History branches and pull/push; 3D
+  editing in the map editor.
 - More themes; `theme:` from a remote URL (the CSS-file path and the
   `si --export themes` gallery already exist).
 - SVG helpers: `data-move` along a path, counters that tick between states,

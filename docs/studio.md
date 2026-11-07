@@ -264,6 +264,24 @@ workspace root; paths go through the same confinement as every file call
 (nothing outside the workspace, no dot paths) and after `--`; a revision must
 be a hex hash. Commits use your own git identity.
 
+## Review (comments from a review link)
+
+`si serve . --review` (or `si play talk.md --review`) prints a keyed link
+(the port + 2, any interface; `--review-addr` picks another) for people on
+your network. It serves the decks and documents read-only with a **Comments**
+button: a reviewer writes a name and a note on the current slide (or the
+section at the top of the page) and sees the others'. Comments are stored in
+`.si/review/<page>.json` next to the sources. **Review** in the Studio's top
+bar (or ⌘K → Review) lists the open file's comments live (SSE, also when the
+review link runs in another si), with reply, resolve and reopen.
+
+Security, like `--remote`: a 128-bit key per run (cookie, `HttpOnly`,
+`SameSite=Strict`); reviewers' POSTs must carry this listener's Origin; names
+up to 60 and texts up to 2000 characters, at most 500 comments a page; pages are
+shown with `textContent`, never as HTML; the review listener serves no dot
+paths and none of play's endpoints (position, terminal, callout), and only the
+author (loopback) can resolve. Plain HTTP: use a network you trust.
+
 ## First run: the start gallery and the tour
 
 A workspace with nothing si can open shows the **start gallery**

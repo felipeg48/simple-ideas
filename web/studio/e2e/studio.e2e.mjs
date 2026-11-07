@@ -602,6 +602,38 @@ tests["history: start a repo, commit, see a change, restore a version"] = async 
   rmSync(join(root, ".git"), { recursive: true, force: true });
 };
 
+tests["review: a reviewer comments through a review link, the Studio sees it live and resolves it"] = async function () {
+  const rv = spawn(si, ["serve", root, "--review", "--addr", "127.0.0.1:0", "--review-addr", "127.0.0.1:0"], { stdio: ["ignore", "pipe", "pipe"] });
+  try {
+    const link = await new Promise((res, rej) => {
+      let buf = "";
+      const t = setTimeout(() => rej(new Error("no review link: " + buf)), 10000);
+      const on = (d) => { buf += d; const m = buf.match(/(http:\/\/\S+\?k=[0-9a-f]+)/); if (m) { clearTimeout(t); res(m[1]); } };
+      rv.stdout.on("data", on); rv.stderr.on("data", on);
+    });
+    const { ctx, page } = await open("light");
+    await openFile(page, "talk.md");
+    await page.click(".review-btn");
+    await until(async () => (await page.textContent(".review")).includes("No open comments"), 6000, "the Review panel, empty");
+    const reviewer = await (await browser.newContext()).newPage();
+    await reviewer.goto(link.replace("/?k=", "/talk.html?k="));
+    await reviewer.click(".rv-btn");
+    await reviewer.fill(".rv-box input", "Ana");
+    await reviewer.fill(".rv-box textarea", "Open with the promise, then the numbers.");
+    await reviewer.click(".rv-box button[type=submit]");
+    await until(async () => (await reviewer.textContent(".rv-box")).includes("Open with the promise"), 6000, "the reviewer sees the comment");
+    await until(async () => (await page.textContent(".review")).includes("Open with the promise"), 8000, "the Studio sees it live");
+    await page.click(".review .rev-head button:has-text('Resolve')");
+    await until(() => readFileSync(join(root, ".si/review/talk.md.json"), "utf8").includes('"resolved": true'), 6000, "resolved in .si/review/talk.md.json");
+    await page.screenshot({ path: join(out, "review.png") });
+    await reviewer.context().close();
+    await ctx.close();
+  } finally {
+    rv.kill();
+    rmSync(join(root, ".si"), { recursive: true, force: true });
+  }
+};
+
 let failed = 0;
 for (const [name, fn] of Object.entries(tests)) {
   if (process.env.ONLY && !name.includes(process.env.ONLY)) continue; // ONLY=generator npm run e2e
