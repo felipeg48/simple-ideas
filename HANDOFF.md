@@ -8,7 +8,37 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 - **Idea being refined (not started; likely a separate project, not part of si):**
   the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
-- **Latest release: v2.2.0: terminal code shows, five languages, shared three.js, real-pointer tests.**
+- **Latest release: v2.2.1: quality (no new features).**
+  - **Security:** the play terminal endpoints (`/_si/term/api/*`) and `/_si/callout` go through
+    `serve.localOnly`: a loopback Host and the same Origin. Before, any web page open in the
+    browser could blind-POST a shell tab and keystrokes to 127.0.0.1 (no CORS preflight for a
+    text/plain POST), and a DNS-rebinding host passed the Origin check. `TestTerminalRefusesOtherSites`.
+    The desktop update banner opens only this project's GitHub release page (`releasePage`).
+  - **Flaky e2e fixed:** "reload keeps unsaved text" unblocked saves before the reload, so the
+    unload flush (visibilitychange) saved for real whenever the 700 ms autosave had not fired;
+    and `openFile` clicked a folder before the tree loaded (closing it). 20/20 alone, 3/3 full runs.
+  - **Accessibility:** `web/studio/e2e/a11y.e2e.mjs` (axe-core 4.14.0, dev dependency, injected by
+    the harness only) audits 45 views: slides, an article, a guide page, 2D and 3D maps, a code
+    window article, the teleprompter, every built-in theme light and dark, and the Studio (Write,
+    Map, Window); it fails on any serious or critical violation and runs in `npm run e2e`.
+    Before: 22 of 45 failed (87 nodes: contrast 49, aria-required-attr 12, label-content-name-mismatch 10,
+    aria-prohibited-attr 6, aria-required-children 6, scrollable-region-focusable 2, aria-input-field-name 2).
+    After: 0. Fixes: code token, link, nav and callout-title colours are the token mixed 20-32% toward
+    `--si-fg` (darker in light, lighter in dark, every theme); mind map topics are named by what
+    they show and carry `aria-expanded`; callout marks `role="img"`; the code window body is a
+    focusable region; Studio: editor label, splitter values, the tab row a group, gutter/comment/green contrast.
+  - **3D sizes:** each topic's holder keeps its 3D size (`holder.userData.size`); the 2D view
+    rewrites the shared `n.w/n.d/n.h`. The pointer test aims at the real top face.
+  - **Files split:** `web/deck.js` → `web/deck/01-core.js … 06-media.js`, joined in name order into
+    `assets.DeckJS` (byte-identical, checked with cmp); `render.go` → `render.go` (deck, slides),
+    `page.go`, `theme.go`, `index.go`, `chrome.go` (same declarations and code; golden unchanged).
+  - **Review notes (not changed):** `/_si/position` and `/_si/position/cmd` stay same-origin only
+    (navigation, used by LAN-opened decks); a missing Origin is allowed (non-browser local clients);
+    the Studio export passes `--id <id>` to the in-process CLI (an id starting with `-` would be
+    misread; ids come from the user's own file); callout and topic text is the author's Markdown
+    with raw HTML allowed, the same trust as any deck; 2D and 3D share topic objects (x, w, h) and
+    each recomputes them when it draws; maps never tear down their observers (a page never removes a map).
+- **v2.2.0: terminal code shows, five languages, shared three.js, real-pointer tests.**
   `tui/text.go` `show()`: fences with the same id in a row become one box; each extra step is a build (`visible()`),
   the title gets " · k/N name", the shown step's callouts follow. `render/highlight.go`: hcl (tf, terraform, tfvars),
   protobuf (proto), graphql (gql, $vars), fsharp (fs, fsx; (* *) comments, no call colouring), elixir (ex, exs; :atoms);
