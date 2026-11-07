@@ -30,9 +30,13 @@ try {
   check(cards.length === 8 && cards.some((c) => c.includes("A 3D mind map")) && cards.some((c) => c.includes("A code show")), `empty folder → start gallery with 8 starters (${cards.length})`);
   // the thumbnails are rendered pages
   const thumbs = await page.$$eval(".gal-thumb iframe", (fs) => fs.map((f) => f.getAttribute("src")));
-  const deckFrame = page.frames().find((f) => f.url().includes("/gallery/deck"));
-  await page.waitForTimeout(1500);
-  const deckText = deckFrame ? await deckFrame.evaluate(() => document.body.textContent) : "";
+  // the frames render server-side on first use (a cold cache takes a while): poll, do not guess
+  let deckText = "";
+  for (let i = 0; i < 40 && !deckText.includes("Your title here"); i++) {
+    const deckFrame = page.frames().find((f) => f.url().includes("/gallery/deck"));
+    deckText = deckFrame ? await deckFrame.evaluate(() => document.body.textContent).catch(() => "") : "";
+    if (!deckText.includes("Your title here")) await page.waitForTimeout(250);
+  }
   check(thumbs.length === 8 && deckText.includes("Your title here"), "every card has a live thumbnail (the deck's shows its title)");
   await page.screenshot({ path: new URL("./out/start-gallery.png", import.meta.url).pathname });
   await page.click(".gal:has-text('A 3D mind map')");
@@ -52,11 +56,11 @@ try {
   await page.waitForTimeout(1200);
   check(await page.$(".tour") === null && await page.$(".dialog.gallery") === null, "after a reload: no gallery (the folder has a file) and no tour (skipped is remembered)");
   // ⌘K → the tour again, and Esc skips it
-  await page.click(".brand"); // focus the Studio, not the map's frame
+  await page.frameLocator("iframe[title='Mind map editor']").locator("svg.si-mm-svg, canvas").first().click({ position: { x: 5, y: 5 } }); // the keyboard in the map's frame
   await page.keyboard.press("ControlOrMeta+K");
-  await page.waitForSelector(".palette input, [role=dialog] input", { timeout: 4000 });
-  await page.fill(".palette-in", "take the tour"); // the map's frame may hold the keyboard focus
-  await page.press(".palette-in", "Enter");
+  await page.waitForSelector(".palette-in:focus", { timeout: 4000 }); // focused even though the map's frame had the keyboard
+  await page.keyboard.type("take the tour");
+  await page.keyboard.press("Enter");
   await page.waitForSelector(".tour-note");
   await page.keyboard.press("Escape");
   check(await page.$(".tour") === null, "⌘K → Take the tour, Esc skips it");

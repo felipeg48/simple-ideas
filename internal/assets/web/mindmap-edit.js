@@ -38,7 +38,9 @@
     mark();
     if (sel) {
       var g = gOf(id);
-      if (g) g.focus({ preventScroll: true });
+      /* a selection pushed by the Studio (quiet) must not pull the keyboard
+         into this frame while the user types elsewhere (the ⌘K palette) */
+      if (g && (!quiet || document.hasFocus())) g.focus({ preventScroll: true });
       var n = node(id);
       if (n) { /* keep it on screen */
         var vb = mm.vb, pad = 30;

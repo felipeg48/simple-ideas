@@ -208,7 +208,22 @@ export function App() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); e.stopPropagation(); setPaletteOpen((o) => !o); }
     };
     addEventListener("keydown", key, true); // capture: before the editor's own Mod-k
-    return () => removeEventListener("keydown", key, true);
+    // ⌘K and ⌘S pressed while a same-origin frame (map editor, code window,
+    // preview) has the keyboard reach the Studio too: the frame's document
+    // would otherwise keep them
+    const fwd = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      if (!(e.metaKey || e.ctrlKey) || (k !== "k" && k !== "s")) return;
+      e.preventDefault(); e.stopPropagation();
+      key(new KeyboardEvent("keydown", { key: e.key, metaKey: e.metaKey, ctrlKey: e.ctrlKey }));
+    };
+    const hook = (e: Event) => {
+      const f = e.target;
+      if (!(f instanceof HTMLIFrameElement)) return;
+      try { f.contentWindow?.addEventListener("keydown", fwd, true); } catch { /* another origin */ }
+    };
+    document.addEventListener("load", hook, true); // load does not bubble; capture sees every frame
+    return () => { removeEventListener("keydown", key, true); document.removeEventListener("load", hook, true); };
   }, []);
 
   // the open deck's own check (slides, minutes) when the preview moves to another deck
