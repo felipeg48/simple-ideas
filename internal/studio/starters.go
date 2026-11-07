@@ -10,9 +10,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/felipeg48/simple-ideas/internal/deck"
+	"github.com/felipeg48/simple-ideas/internal/render"
 )
 
 // Starters are the small files "New…" writes: one file for a deck, article,
@@ -47,7 +49,7 @@ func starterFiles(kind string) map[string]string {
 var ErrStarterExists = errors.New("exists")
 
 // StarterKinds are the kinds WriteStarter knows.
-var StarterKinds = []string{"deck", "article", "lab", "demo", "page", "guide", "book", "site", "mindmap"}
+var StarterKinds = []string{"deck", "article", "lab", "demo", "page", "guide", "book", "site", "mindmap", "mindmap3d", "codeshow"}
 
 // WriteStarter writes the starter for kind at abs (a .md file, or a folder for
 // guide, book and site), never overwriting. A page or folder made inside a
@@ -154,4 +156,52 @@ func (a *api) starter(w http.ResponseWriter, r *http.Request) {
 		linked = a.rel(linked)
 	}
 	writeJSON(w, http.StatusCreated, map[string]any{"created": created, "open": a.rel(open), "linked": linked})
+}
+
+// galleryCache holds each starter rendered once, for the start gallery's
+// live thumbnails.
+var galleryCache sync.Map
+
+// gallery renders a starter (kind) as a page for a thumbnail: the starter is
+// written into a temporary folder and rendered like any file; a folder kind
+// shows its first page.
+func (a *api) gallery(w http.ResponseWriter, r *http.Request) {
+	kind := r.PathValue("kind")
+	if len(starterFiles(kind)) == 0 {
+		fail(w, http.StatusNotFound, "unknown kind "+kind)
+		return
+	}
+	if h, ok := galleryCache.Load(kind); ok {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write(h.([]byte))
+		return
+	}
+	tmp, err := os.MkdirTemp("", "si-gallery-")
+	if err != nil {
+		fail(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer os.RemoveAll(tmp)
+	target := filepath.Join(tmp, "preview")
+	if !starterFolder(kind) {
+		target += ".md"
+	}
+	_, open, _, err := WriteStarter(kind, target, "Your title here", tmp)
+	if err != nil {
+		fail(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	def := deck.Meta{Type: "deck"}
+	if starterFolder(kind) {
+		def.Type = "page"
+	}
+	d, err := deck.ParseWith(open, def)
+	if err != nil {
+		fail(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	res := render.Deck(d, render.Options{Media: render.MediaInline})
+	galleryCache.Store(kind, res.HTML)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write(res.HTML)
 }

@@ -86,7 +86,7 @@ Usage:
         write a mind map in another format (XMind: every map, one sheet each)
   si check <dir|file.md>
         validate decks: title, directives, assets, includes; exit 1 on a problem
-  si new <name> [--type deck|article|guide|book|site|page|lab|demo|mindmap]
+  si new <name> [--type deck|article|guide|book|site|page|lab|demo|mindmap|mindmap3d|codeshow]
         scaffold <name>/ with a deck that uses every rule; with --type, a small
         starter of that type (<name>.md, or a <name>/ folder for guide, book and
         site), added to the menu of the guide or site it is created in
@@ -1441,7 +1441,7 @@ func guideKindOf(g *deck.Guide) string {
 // newStarter writes a small starter of one type (si new <name> --type <kind>).
 func newStarter(name, kind string, stdout, stderr io.Writer) int {
 	kind = strings.ToLower(kind)
-	if alias, ok := map[string]string{"slides": "deck", "tutorial": "guide", "reference": "book"}[kind]; ok {
+	if alias, ok := map[string]string{"slides": "deck", "tutorial": "guide", "reference": "book", "mindmap-3d": "mindmap3d", "code": "codeshow"}[kind]; ok {
 		kind = alias
 	}
 	folder := kind == "guide" || kind == "book" || kind == "site"

@@ -129,6 +129,13 @@ for (const t of themes) for (const type of ["article", "deck"]) for (const dark 
     const win = await p.$("button:has-text('Window')");
     if (win) { await win.click(); await p.waitForTimeout(700); }
     await audit("studio: window" + mode, p, { exclude: ["iframe"] });
+    const run = async (q) => { await p.click(".brand"); await p.keyboard.press("ControlOrMeta+K"); await p.fill(".palette-in", q); await p.press(".palette-in", "Enter"); await p.waitForTimeout(700); };
+    await run("start gallery");
+    await audit("studio: start gallery" + mode, p, { exclude: ["iframe"] });
+    await p.keyboard.press("Escape");
+    await run("take the tour");
+    await audit("studio: tour" + mode, p, { exclude: ["iframe"] });
+    await p.keyboard.press("Escape");
     await ctx.close();
   }
   srv.kill();

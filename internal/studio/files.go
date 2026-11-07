@@ -39,6 +39,7 @@ func (a *api) routes(mux *http.ServeMux) {
 	mux.HandleFunc("POST "+apiPrefix+"create", a.create)
 	mux.HandleFunc("POST "+apiPrefix+"rename", a.rename)
 	mux.HandleFunc("POST "+apiPrefix+"starter", a.starter)
+	mux.HandleFunc("GET "+apiPrefix+"gallery/{kind}", a.gallery)
 	mux.HandleFunc("GET "+apiPrefix+"checkall", a.checkAll)
 	mux.HandleFunc("POST "+apiPrefix+"build", a.build)
 	mux.HandleFunc("GET "+apiPrefix+"decks", a.decks)

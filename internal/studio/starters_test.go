@@ -2,6 +2,8 @@ package studio
 
 import (
 	"fmt"
+	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
@@ -10,7 +12,7 @@ func TestStartersPassTheCheck(t *testing.T) {
 	f := newFx(t)
 	for kind, path := range map[string]string{
 		"deck": "talk.md", "article": "post.md", "lab": "lab.md", "demo": "demo.md", "page": "page.md",
-		"guide": "guide", "book": "book", "site": "site",
+		"guide": "guide", "book": "book", "site": "site", "mindmap3d": "map3d.md", "codeshow": "show.md",
 	} {
 		code, m := f.do("POST", "starter", map[string]string{"kind": kind, "path": path})
 		if code != 201 {
@@ -56,5 +58,27 @@ func TestStarterJoinsTheSiteMenu(t *testing.T) {
 	_, c := f.do("GET", "checkall", nil)
 	if ps := fmt.Sprint(c["problems"]); strings.Contains(ps, "queues") || strings.Contains(ps, "handbook") {
 		t.Errorf("new pages check clean: %s", ps)
+	}
+}
+
+// The start gallery's thumbnails: every starter renders as a page; nothing
+// lands in the workspace.
+func TestGalleryRendersEveryStarter(t *testing.T) {
+	f := newFx(t)
+	for _, kind := range StarterKinds {
+		rec := httptest.NewRecorder()
+		f.mux.ServeHTTP(rec, httptest.NewRequest("GET", "/_si/studio/api/gallery/"+kind, nil))
+		titled := starterFolder(kind) || strings.Contains(rec.Body.String(), "Your title here") // a folder shows its first page
+		if rec.Code != 200 || !titled || !strings.Contains(rec.Header().Get("Content-Type"), "text/html") {
+			t.Errorf("%s: %d %.120s", kind, rec.Code, rec.Body.String())
+		}
+	}
+	rec := httptest.NewRecorder()
+	f.mux.ServeHTTP(rec, httptest.NewRequest("GET", "/_si/studio/api/gallery/nope", nil))
+	if rec.Code != 404 {
+		t.Errorf("unknown kind: %d", rec.Code)
+	}
+	if entries, _ := os.ReadDir(f.root); len(entries) != 0 {
+		t.Errorf("the gallery wrote into the workspace: %v", entries)
 	}
 }

@@ -67,7 +67,7 @@ export const api = {
   codewin: (path: string, text: string, line: number, op: unknown) => call<any>("POST", "codewin", { path, text, line, op }),
   /** codewinExport runs si code on the saved file: png, svg or gif next to it. */
   codewinExport: (path: string, format: string, id: string) => call<{ code: number; output: string }>("POST", "codewin/export", { path, format, id }),
-  starter: (kind: Kind, path: string, title: string) =>
+  starter: (kind: string, path: string, title: string) =>
     call<{ created: string[]; open: string }>("POST", "starter", { kind, path, title }),
 };
 

@@ -7,6 +7,8 @@ import { BuildDialog } from "./build-dialog";
 import { type Mode, ModeView } from "./modes";
 import { type Command, Palette } from "./palette";
 import { NewDialog } from "./new-dialog";
+import { Gallery } from "./gallery";
+import { Tour, tourDone } from "./tour";
 import { Inspector } from "./inspector";
 import { Storyboard } from "./storyboard";
 import { setDirective } from "./inspector-edit";
@@ -278,12 +280,25 @@ export function App() {
     await refresh();
     if (!dir) open(path);
   };
-  const onStarter = async (kind: Kind, path: string, title: string) => {
+  const onStarter = async (kind: string, path: string, title: string) => {
     let r;
     try { r = await api.starter(kind, path, title); } catch (e) { throw new Error(why(e, "create")); }
     await refresh();
     open(r.open);
   };
+  const [tourOn, setTourOn] = useState(false);
+  const showGallery = () => setDialog(
+    <Gallery dir={active && active.includes("/") ? active.slice(0, active.lastIndexOf("/")) : ""}
+      ok={async (k, path, title) => { await onStarter(k, path, title); if (!tourDone()) setTimeout(() => setTourOn(true), 400); }}
+      onClose={() => setDialog(null)} />);
+  // first run: a folder with nothing si can open gets the start gallery
+  const greeted = useRef(false);
+  useEffect(() => {
+    if (!tree || greeted.current) return;
+    greeted.current = true;
+    const docs = [...nodes.values()].some((n) => n.kind !== "dir" && n.kind !== "image" && n.kind !== "other" && n.kind !== "css" && n.kind !== "json" && n.kind !== "svg");
+    if (!docs) showGallery();
+  }, [tree]);
   // the slide under the cursor, and the inspector's edits written into its lines
   const curSlide = check && slide ? check.slides.find((s) => s.index === slide) ?? null : null;
   const setSlideDirective = (name: string, value: string) => {
@@ -299,6 +314,8 @@ export function App() {
     { id: "new", label: "New slides, article, guide, site…", icon: "plus", run: () => setDialog(
       <NewDialog dir={active && active.includes("/") ? active.slice(0, active.lastIndexOf("/")) : ""} ok={onStarter} onClose={() => setDialog(null)} />) },
     { id: "build", label: "Build the folder to HTML…", icon: "braces", run: () => setDialog(<BuildDialog onClose={() => setDialog(null)} />) },
+    { id: "gallery", label: "Start gallery: pick something to make", icon: "plus", run: showGallery },
+    { id: "tour", label: "Take the tour of the Studio", icon: "play", run: () => { setMode("write"); setView("edit"); setTourOn(true); } },
     { id: "problems", label: "Show problems", icon: "warn", run: () => setProblemsOpen(true) },
     { id: "theme", label: "Switch light / dark", icon: "moon", run: () => { const t = nextTheme[theme]; setTheme(t); applyTheme(t); } },
     ...(deck ? [{ id: "open-live", label: `Open ${deck.title} in a new tab`, icon: "external" as IconName, run: () => window.open(pageURL(deck), "_blank", "noopener") }] : []),
@@ -377,7 +394,7 @@ export function App() {
             onClick={() => { const t = nextTheme[theme]; setTheme(t); applyTheme(t); }}>
             <Icon name={theme === "system" ? "system" : theme === "light" ? "sun" : "moon"} />
           </button>
-          <button class="btn" title="Build the folder to self-contained HTML" onClick={() => setDialog(<BuildDialog onClose={() => setDialog(null)} />)}>
+          <button class="btn build-btn" title="Build the folder to self-contained HTML" onClick={() => setDialog(<BuildDialog onClose={() => setDialog(null)} />)}>
             <Icon name="braces" />Build
           </button>
           <a class={"btn btn-pri" + (deck ? "" : " disabled")} aria-disabled={!deck}
@@ -426,7 +443,7 @@ export function App() {
                     <span class="imgmeta">{active}</span>
                   </div>
                 )}
-                {!active && <Welcome decks={decks} name={tree?.name} onOpen={(p) => open(p)} />}
+                {!active && <Welcome decks={decks} name={tree?.name} onOpen={(p) => open(p)} onGallery={showGallery} onTour={() => setTourOn(true)} />}
               </div>
             </section>
             <Split label="Resize preview" now={Math.round(layout.prev * 100)} min={20} max={75} onMove={(dx) => {
@@ -454,17 +471,22 @@ export function App() {
         cursor={textPath ? cursor : null} kind={activeKind} doc={active ? status[active] ?? null : null} slide={slide}
         onProblems={() => setProblemsOpen((o) => !o)} />
       {dialog}
+      {tourOn && <Tour onClose={() => setTourOn(false)} />}
     </div>
   );
 }
 
-function Welcome(p: { decks: DeckInfo[]; name?: string; onOpen(path: string): void }): JSX.Element {
+function Welcome(p: { decks: DeckInfo[]; name?: string; onOpen(path: string): void; onGallery(): void; onTour(): void }): JSX.Element {
   return (
     <div class="welcome">
       <div class="welcome-card">
         <span class="logo big" aria-hidden="true">si</span>
         <h1>{p.name ?? "si Studio"}</h1>
-        <p class="mute">{p.decks.length ? "Pick something to write." : "Nothing here yet. Create a Markdown file in the navigator."}</p>
+        <p class="mute">{p.decks.length ? "Pick something to write." : "Nothing here yet: start from the gallery, or create a Markdown file in the navigator."}</p>
+        <div class="welcome-actions">
+          <button class="btn btn-pri" onClick={p.onGallery}><Icon name="plus" />Start gallery</button>
+          <button class="btn" onClick={p.onTour}><Icon name="play" />Take the tour</button>
+        </div>
         {p.decks.length > 0 && (
           <ul class="deck-list">
             {p.decks.map((d) => (
