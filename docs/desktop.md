@@ -34,6 +34,20 @@ You can also sign it with your own identity: `codesign --force --deep -s "Develo
 - **Present ▸ Full screen** puts the deck on the whole screen.
 - Safari's Web Inspector can inspect the app (Safari ▸ Develop ▸ si Studio).
 
+## Staying current
+
+- **A newer si wins.** The app runs the si inside it, unless an si you
+  installed is newer: `~/.bin/si`, `~/bin/si`, `~/go/bin/si`,
+  `/opt/homebrew/bin/si`, `/usr/local/bin/si` or the one on PATH. **About si
+  Studio** says which one runs ("using si 2.2.0 from ~/.bin/si, newer than the
+  one in the app").
+- **New releases.** Once a day at launch the app asks GitHub for the latest
+  release (3 seconds at most, silent when offline; the answer is cached in
+  `~/Library/Caches/si-studio/release.json`). When it is newer than the si in
+  use, the app menu gets **Update Available — vX.Y.Z** and the Studio window a
+  small note with a **Download** link; both open the release page in your
+  browser. Installing is up to you: unzip and replace the app.
+
 ## How it works
 
 | Piece | File | What |

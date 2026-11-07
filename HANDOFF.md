@@ -8,7 +8,18 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 - **Idea being refined (not started; likely a separate project, not part of si):**
   the screen demo recorder, see `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md` (native
   Mac apps, Swift companion app, narration-driven timing, tests; 8 open questions).
-- **Latest release: v2.1.0: code windows and code shows.** `internal/render/codewin.go` groups fences with
+- **Latest release: v2.1.1: staying current, completions, step code, saved callout drags, 3D on phones.**
+  `desktop/update.go`: `pickSi` runs an installed si (~/.bin, ~/bin, ~/go/bin, Homebrew, PATH) when newer than
+  the bundled one (About says so); `latestRelease` asks the GitHub API at most once a day (cache in
+  ~/Library/Caches/si-studio/release.json, 3 s timeout, silent offline) and the app adds "Update Available — vX"
+  and a banner in the Studio window. Studio `si-lang.ts`: completions after ```lang (code window options and
+  values; mind map options after ```mindmap), `title=`/`lang=` after an include path, callout line numbers.
+  Window view: a CodeMirror editor per step (`codeshow` op `set-code`). `serve/callout.go`: POST /_si/callout
+  (loopback Handler only, same-origin) finds a callout by line+text in the page's file or any .md under the
+  served folder and rewrites `at=` with `codeshow.Apply`; codewin.js sends it when `window.SI_LIVE` (set by
+  PositionJS, live pages only) and the page is not in a frame. 3D on a portrait phone: Fit frames the root and
+  first ring; a List tool (`.si-mm-listview`) shows the fallback list.
+- **v2.1.0: code windows and code shows.** `internal/render/codewin.go` groups fences with
   `window=` / `id=` (and their `<!-- callout: -->` lines, now a known directive, also in documents) into shows and
   writes a figure with each step's highlighted lines as JSON; `web/codewin.js` draws the chrome (mac / windows /
   terminal / none), the backdrop, the lines (morph keyed by text + occurrence), callouts (dot, wire, draggable note;

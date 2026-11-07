@@ -191,7 +191,8 @@ Not everything is a slide deck. Pick the type by what the reader does:
   on a slide each extra step is a click (one `[CLICK]` each), and the same id on
   consecutive slides morphs between them. Keep each step small (what changed is
   the point) and use callouts for the why, not to repeat the code.
-  `si code file.md --png --svg --gif` exports them.
+  `si code file.md --png --svg --gif` exports them. Leave `at=` out unless the
+  author placed the note: dragging it in `si play` or the Studio writes it.
 - `si --export example --type guide` (or `article`, `lab`, `book`, `all`)
   writes a working example to copy from.
 

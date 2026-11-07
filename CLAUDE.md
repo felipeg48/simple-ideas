@@ -209,9 +209,11 @@ pass. The steps that matter:
   documents get ← → Play, slides get one build step per extra step and a
   slide-to-slide morph (deck.js canvasKey `cw:<id>`); mind map code topics take
   `window=`; `si code --png --svg --gif`; the Studio's Window view (look, steps,
-  callouts, drag to place, exports). Next: a show's steps as builds in the
-  terminal (they are stacked today), fence-option completion in the editor,
-  editing a step's code inside the Window view, MP4 export.
+  callouts, drag to place, exports). v2.1.1: fence-option completion, a step's
+  code edited inside the Window view, callout drags saved by si play
+  (POST /_si/callout), the desktop app's newer-si choice and release check, 3D
+  maps on phones (closer Fit, List tool). Next: a show's steps as builds in the
+  terminal (they are stacked today), MP4 export.
 - **Mind maps** (v1.12.0 DONE, RULES.md §24, spec
   `docs/superpowers/specs/2026-11-06-mind-maps.md`): `type: mindmap` pages and
   the ```` ```mindmap ```` fence; four layouts, four line styles, three node

@@ -89,6 +89,11 @@ self-contained HTML files you can mail, host or open from a USB stick.
   in pandoc form (```{.xml title="x"}```) reads right; the title's extension names
   the language. Code is coloured more like an editor: calls and type names too,
   and labels read C#, JavaScript, Shell instead of CSHARP.
+- **v2.1.1:** the desktop app runs a newer si you installed and tells you when a
+  new release is out; the Studio editor completes code block and mind map
+  options, include options and callout lines; a step's code is edited inside
+  the Window view; a callout dragged in `si play` keeps its place in the
+  Markdown; 3D mind maps on a phone start closer and offer a List view.
 - **In the terminal (v1.7):** `si play talk.md --terminal` presents a deck in
   the terminal itself, in the theme's colours, with block-letter titles, builds,
   code, tables, cards and pictures in half-block pixels; `--notes` in a second

@@ -1978,6 +1978,11 @@ Pages with 2D maps only stay small and show no 3D button. A browser without
 WebGL shows the map in 2D with a short note. Reduced motion skips the grow-in,
 the flow and the camera flights.
 
+On a phone held upright, the 3D view starts closer, on the central topic and
+its first ring of branches; pan, zoom or Fit for the rest. Its **List** tool
+shows the map as the nested list it was written as, and **Map** brings the 3D
+view back.
+
 ### Looks
 
 Branch colours come from `--si-mm-1` … `--si-mm-5` (by default the theme's
@@ -2152,8 +2157,9 @@ fine, one per line) puts a numbered dot at the end of that code line and a
 note beside the window, joined by a dashed wire. The text takes inline
 Markdown. `at=dx,dy` is where the note sits, in pixels from the end of the
 line; without it the note goes to the right of the window. Drag a note to move
-it: in `si play` and a built page the move is local; in the Studio's Window
-view it is written back as `at=`.
+it: in `si play` and in the Studio's Window view the new place is written back
+into the Markdown as `at=` (si play finds the callout by its line and text, in
+the page's file or a file it includes); on a built page the move is local.
 
 ```markdown
 <!-- callout: 8 Declines are final: never retry a refused card. at=70,-64 -->
@@ -2197,8 +2203,13 @@ between steps.
 Put the cursor in a code block and choose **Window** in the bar above it: a
 preview of the window and panels for its look (window, theme, backdrop,
 transition, title, line numbers), its steps (name, order, add a step as a copy,
-delete) and its callouts (add one on a line, edit, delete, drag in the preview
-to place it), plus PNG, SVG and GIF exports next to the file. Every change is
+delete, and each step's code in a small editor) and its callouts (add one on a
+line, edit, delete, drag in the preview to place it), plus PNG, SVG and GIF
+exports next to the file. The editor completes code block options after
+```` ```go ```` (`window=`, `title=`, `theme=`, `backdrop=`, `numbers`, `hl=`,
+`id=`, `step=`, `transition=` and their values), mind map options after
+```` ```mindmap ````, `title=` and `lang=` after an include's path, and the
+block's line numbers after `<!-- callout: `. Every change is
 written into the Markdown as one undoable edit. `si play --terminal` shows a
 window's title (`● ● ●  retry.go` for `mac`) in its box and the callouts as
 numbered notes; a show's steps are shown one under the other.
