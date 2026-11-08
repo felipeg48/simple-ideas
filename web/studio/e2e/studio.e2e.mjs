@@ -22,6 +22,7 @@ const ORIGINAL = readFileSync(ONE, "utf8");
 const zdot = mkdtempSync(join(tmpdir(), "si-e2e-zdot-"));
 const srv = spawn(si, ["--web", root, "--addr", "127.0.0.1:0", "--no-open"],
   { stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, SHELL: "/bin/zsh", ZDOTDIR: zdot, GIT_AUTHOR_NAME: "E2E", GIT_AUTHOR_EMAIL: "e2e@example.com", GIT_COMMITTER_NAME: "E2E", GIT_COMMITTER_EMAIL: "e2e@example.com" } });
+process.on("exit", () => srv.kill()); // never leave si --web running when a step throws
 const url = await new Promise((res, rej) => {
   let buf = "";
   const t = setTimeout(() => rej(new Error("no URL from si --web: " + buf)), 10000);

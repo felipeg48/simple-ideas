@@ -105,6 +105,7 @@ for (const t of themes) for (const type of ["article", "deck"]) for (const dark 
   const root = mkdtempSync(join(tmpdir(), "si-a11y-studio-"));
   cpSync(new URL("./fixture", import.meta.url).pathname, root, { recursive: true });
   const srv = spawn(si, ["--web", root, "--addr", "127.0.0.1:0", "--no-open"], { stdio: ["ignore", "pipe", "pipe"] });
+  process.on("exit", () => srv.kill()); // a failed audit throws past srv.kill() below; never leave si --web running
   const url = await new Promise((res, rej) => {
     let buf = "";
     const t = setTimeout(() => rej(new Error("no URL from si --web")), 10000);

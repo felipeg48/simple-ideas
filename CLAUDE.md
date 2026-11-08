@@ -194,8 +194,10 @@ pass. The steps that matter:
 - **`si play --remote`** (DONE, see `docs/remote.md`): a keyed second
   listener for a tablet: `tp` (teleprompter) and `draw` (pen pad) roles, synced
   through a server relay (SSE + POST); the transport is injected only in play.
-  The phone `clicker` role is in (v1.11.0). Next: HTTPS or a pairing code for
-  untrusted networks.
+  The phone `clicker` role is in (v1.11.0); v2.5.1: a phone layout for `tp`,
+  reconnect after sleep, a wake lock where the browser allows it. Next: HTTPS
+  or a pairing code for untrusted networks (HTTPS would also give phones the
+  wake lock); a native iPhone clicker.
 - **`si play` terminal drawer** (DONE, v0.6.0, see `docs/terminal.md`): a
   bottom→middle HUD with multiple tabs to run local commands during demos
   (`docker ps`, `cockroach start-single-node`, `cockroach sql`). Shipped as full
@@ -225,7 +227,7 @@ pass. The steps that matter:
   (POST /_si/callout), the desktop app's newer-si choice and release check, 3D
   maps on phones (closer Fit, List tool). v2.2.0: a show's steps are builds in
   the terminal; `--share-assets`; real-pointer tests (web/studio/e2e/pointer.e2e.mjs).
-  Next: MP4 export.
+  MP4 export is in (v2.3.0).
 - **Mind maps** (v1.12.0 DONE, RULES.md §24, spec
   `docs/superpowers/specs/2026-11-06-mind-maps.md`): `type: mindmap` pages and
   the ```` ```mindmap ```` fence; four layouts, four line styles, three node
@@ -254,8 +256,8 @@ pass. The steps that matter:
   A link post's picture (`cover:`, Images API) is in (v2.3.1).
   Next: Ghost and WordPress; re-check the `Linkedin-Version` header each year (LinkedIn sunsets versions).
 - **Video (DONE v2.3.0/v2.3.1):** `--mp4` for code shows, a mind map's Play
-  (3D too) and decks (every slide and step, dissolves, `--dwell`). Next: real
-  motion (the canvas morph frame by frame through a scripted browser).
+  (3D too) and decks (every slide and step, dissolves, `--dwell`). Real motion
+  (`cmd/si/motion.go`) is in (v2.5.0).
 - **Docs site (DONE v2.3.0):** `make docs-site`; `.github/workflows/pages.yml`
   deploys it once the owner turns Pages on and sets `SI_PAGES=on`.
 - **Studio first run (DONE v2.3.0):** start gallery + tour; the desktop Help
@@ -263,9 +265,8 @@ pass. The steps that matter:
 - **v2.4.0 (DONE):** Studio History (git, `internal/studio/git.go`), review
   links (`--review`, `internal/serve/review.go`, comments in `.si/review/`),
   `si check --budget`, map editor multi-select + copy/cut/paste, terminal
-  Studio editing (`internal/tui/edit.go`). Next: review comments pinned to a
-  paragraph (not only slide/section); History branches and pull/push; 3D
-  editing in the map editor.
+  Studio editing (`internal/tui/edit.go`). Paragraph pins and 3D map editing
+  are in (v2.5.0). Next: History branches and pull/push.
 - More themes; `theme:` from a remote URL (the CSS-file path and the
   `si --export themes` gallery already exist).
 - SVG helpers: `data-move` along a path, counters that tick between states,

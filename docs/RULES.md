@@ -495,7 +495,7 @@ si play talk.md --remote --remote-addr 0.0.0.0:9000
 
 | Role | On the device | Drives the deck |
 |---|---|---|
-| `tp` | the teleprompter above: script, tabs, auto-scroll, clocks, previews, mirror | Prev / Next, keys |
+| `tp` | the teleprompter above: script, tabs, auto-scroll, clocks, previews, mirror; on a phone the script fills the screen (no previews, one clock line, big Prev / Next) | Prev / Next, keys |
 | `draw` | the current slide with the pen always on (Apple Pencil pressure works); Prev / Next in the pen bar | the strokes appear on the projected slide live; Prev / Next |
 | `clicker` | a phone remote: big Next and Prev, the slide and step (`2 / 22 · step 1/4`), its title, what comes next, and a stopwatch (tap it to reset) | Prev / Next |
 
@@ -505,7 +505,13 @@ si play talk.md --remote --remote-addr 0.0.0.0:9000
 - Pages sync through the server (server-sent events and small POSTs), the
   deck stays the source of truth, and a device that connects late jumps to
   the current slide. Ink is shared both ways in slide coordinates and clears
-  when the slide changes, like the local pen (`a`).
+  when the slide changes, like the local pen (`a`). A phone that slept or
+  left the browser reconnects when it is shown again and jumps to the
+  current slide.
+- A device page keeps its screen on (the browser's wake lock) where the
+  browser allows it: on `localhost` or HTTPS. Over plain HTTP on the LAN
+  (an iPhone or iPad at `http://192.168.…`) it cannot, so the page says so
+  for a few seconds: set Auto-Lock to Never for the talk.
 - The URL carries a random per-run key; the first visit stores it as a
   cookie, and anything without it gets 403. It is plain HTTP: use it on a
   network you trust.

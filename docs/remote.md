@@ -28,7 +28,9 @@ Scan it on the iPad; open the deck on the laptop as usual
 - **Relay** (`internal/serve/remote.go`): `POST /_si/remote/send` takes one
   JSON message; `GET /_si/remote/events` streams everyone else's (the sender
   is skipped by its client id). The last `state` per deck is replayed to a
-  new subscriber, so a late device jumps to the current slide. Both listeners
+  new subscriber, so a late device jumps to the current slide. A page that
+  was hidden for more than 5 s (a phone that slept) reopens its stream when
+  shown again, and so gets that state too. Both listeners
   share it; the loopback one needs no key.
 - **Messages**: `state` (deck → all: slide, step, notes, previews, mode),
   `cmd` (next, prev, first, last, hello → deck), `ink` / `erase` / `clear`
@@ -38,7 +40,9 @@ Scan it on the iPad; open the deck on the laptop as usual
   relay; the id dedupes).
 - **Pages**: the same deck HTML. `?role=tp` replaces the page with the
   teleprompter (the same `presenter.html`, with the relay instead of
-  BroadcastChannel); `?role=draw` follows the deck's state, keeps the pen on
+  BroadcastChannel; on a phone, portrait or landscape, the script fills the
+  screen: no previews, a compact clock line, big Prev / Next first in a
+  scrolling button row); `?role=draw` follows the deck's state, keeps the pen on
   and turns Prev / Next into commands; `?role=clicker` covers the slide with
   big Next / Prev buttons that send commands and shows the deck's state
   (position, title, the next label) and a stopwatch.
@@ -46,6 +50,14 @@ Scan it on the iPad; open the deck on the laptop as usual
   `si play --remote`, like the live-reload client. A built deck contains none
   of it, and the local presenter window keeps using BroadcastChannel (so it
   still works from `file://`).
+
+## Keeping the device awake
+
+`RelayJS` also asks for a screen wake lock (`navigator.wakeLock`) on a role
+page (`?role=tp|draw|clicker`), and takes it again whenever the page is shown
+or touched. Browsers grant it only in a secure context (`localhost` or
+HTTPS); a phone at `http://<LAN address>` has none, so the page shows a short
+hint instead: Settings › Display & Brightness › Auto-Lock › Never.
 
 ## Security
 

@@ -127,6 +127,12 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.5.1:** your phone as the remote: `si play talk.md --remote` gives an
+  iPhone a teleprompter laid out for its screen (the script fills it, big Prev /
+  Next) or the clicker; a phone that slept reconnects to the current slide, and
+  the page keeps the screen on where the browser allows it (else it says to set
+  Auto-Lock to Never); the docs site's rules pages carry the site's icon and
+  footer.
 - **v2.4.0:** the Studio's **History** panel (changed files and their diff,
   commit, a file's earlier versions with restore; git); **review links**
   (`si serve . --review`): reviewers on your network comment on slides and

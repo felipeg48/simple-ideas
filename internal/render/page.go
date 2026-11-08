@@ -269,9 +269,20 @@ const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 // BroadcastChannel-shaped object ({postMessage, onmessage}) over the relay
 // (POST /_si/remote/send, SSE /_si/remote/events). Play only, like
 // LiveReloadJS; deck.js copies the tag into the remote teleprompter page.
-const RelayJS = `<script id="si-relay">window.SI_RELAY=function(){var id=Math.random().toString(36).slice(2),c={onmessage:null};` +
-	`var es=new EventSource('/_si/remote/events?c='+id);es.onmessage=function(e){try{if(c.onmessage)c.onmessage({data:JSON.parse(e.data)})}catch(x){}};` +
-	`c.postMessage=function(m){fetch('/_si/remote/send?c='+id,{method:'POST',body:JSON.stringify(m),keepalive:true}).catch(function(){})};return c};</script>` + "\n"
+// A phone that slept or left the browser reopens the stream when it is shown
+// again (the relay replays the deck's last state), and a remote role page
+// (?role=tp|draw|clicker) holds a screen wake lock so the phone stays on.
+// The wake lock needs a secure context (localhost or HTTPS); a phone on
+// http://<LAN address> has none, so the page says how to keep it awake.
+const RelayJS = `<script id="si-relay">window.SI_RELAY=function(){var id=Math.random().toString(36).slice(2),c={onmessage:null},es=null,away=0;` +
+	`function open(){if(es)es.close();es=new EventSource('/_si/remote/events?c='+id);es.onmessage=function(e){try{if(c.onmessage)c.onmessage({data:JSON.parse(e.data)})}catch(x){}}}open();` +
+	`document.addEventListener('visibilitychange',function(){if(document.hidden){away=Date.now();return}if(es.readyState===2||(away&&Date.now()-away>5000))open();away=0});` +
+	`c.postMessage=function(m){fetch('/_si/remote/send?c='+id,{method:'POST',body:JSON.stringify(m),keepalive:true}).catch(function(){})};return c};` +
+	`(function(){if(!/[?&]role=/.test(location.search))return;if(!navigator.wakeLock){addEventListener('DOMContentLoaded',function(){if(document.getElementById('si-awake'))return;var t=document.createElement('div');t.id='si-awake';` +
+	`t.textContent='Keep this screen on: Settings › Display & Brightness › Auto-Lock › Never';t.setAttribute('style','position:fixed;left:50%;bottom:max(1rem,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147483647;max-width:min(90vw,30rem);padding:.6em .9em;border-radius:.6em;background:var(--si-fg,#111);color:var(--si-bg,#fff);font:14px/1.35 system-ui,sans-serif;text-align:center;pointer-events:none');` +
+	`document.body.appendChild(t);setTimeout(function(){t.remove()},8000)});return}var wl=null;function lock(){if(document.hidden||wl)return;wl={};` +
+	`navigator.wakeLock.request('screen').then(function(l){wl=l;l.addEventListener('release',function(){wl=null})}).catch(function(){wl=null})}` +
+	`lock();document.addEventListener('visibilitychange',lock);document.addEventListener('pointerdown',lock)})();</script>` + "\n"
 
 // LiveReloadJS reloads the page when si play reports a change; the URL hash
 // keeps the slide and step.

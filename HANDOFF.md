@@ -3,8 +3,21 @@
 Read this, then `FEATURE.md`, then `CLAUDE.md`. This is a Go CLI (`si`) that turns
 Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
-## Current state (2026-11-07)
+## Current state (2026-11-08)
 
+- **v2.5.1 (2026-11-08): the iPhone as a remote.** The `tp` teleprompter has a
+  phone layout (`presenter.html`, `(max-width:40rem),(max-height:30rem)`): script
+  full screen, previews hidden, one clock line, big Prev / Next first in a
+  swipeable button row; portrait wraps title / position / clocks. `RelayJS`
+  (`render/page.go`): a page hidden > 5 s reopens its EventSource when shown (the
+  relay replays the last state); role pages hold a screen wake lock, and where
+  there is none (plain HTTP on the LAN, so every phone at `http://192.168.…`)
+  show an 8 s hint to set Auto-Lock to Never. Clicker checked at iPhone SE / 13 /
+  13 landscape. e2e harnesses kill their `si --web` on process exit (no leaked
+  servers when a step throws). Docs site: `rules/` (its own guide) gets the
+  favicon, touch icon, og:image and footer. Next: HTTPS (or a pairing code) for
+  `--remote`, which would also give phones a real wake lock; a native iPhone
+  clicker (volume buttons); a direct test for a 3D pill click in the map editor.
 - **Session wrap-up (2026-11-07), read first:**
   - **Released and installed:** v2.5.0 (tag pushed, `si --version` 2.5.0, CI + release + docs-site runs green).
   - **Website:** https://simple-ideas.org (GitHub Pages from `.github/workflows/pages.yml`, repo
@@ -16,18 +29,15 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
     after delete + re-add; check with `dig @nsc1.squarespacedns.com`, not the sandboxed resolver
     (run dig with the sandbox disabled). If a record looks right in the panel but `dig` disagrees,
     re-add it. The www CNAME was once saved as `.github.com` (browser autofill).
-  - **Founder's browser "Not Secure"** after HTTPS went live: incognito and phone were fine; his
-    profile runs the CSS Peeper extension (Plasmo/React inspector, injects into every page, sends
+  - **Founder's browser "Not Secure"** after HTTPS went live: incognito and phone were fine; the
+    founder's profile runs the CSS Peeper extension (Plasmo/React inspector, injects into every page, sends
     analytics). Not an si problem; suggested disabling it to test.
   - **Process notes:** the auto-mode classifier refuses background agents that push/tag/release
     on their own and parallel worktree agents that merge to main; run agents as "commit locally
     only", then the main thread runs the gate, pushes, tags, installs. It also refused killing
     processes we did not clearly own.
-  - **Next (v2.5.1):** the a11y e2e harness leaves `si --web` servers running (seen: two
-    `si --web /var/folders/…/si-a11y-studio-*` processes) — make it kill them in a finally/teardown;
-    docs-site rules pages lack the favicon/footer; a direct test for a 3D pill click selecting in
-    the map editor. Founder to run `make desktop-cert` once and open the desktop app (icon, Help
-    menu, About, update banner never seen on screen). `si publish` needs his LinkedIn app
+  - **Open:** founder to run `make desktop-cert` once and open the desktop app (icon, Help
+    menu, About, update banner never seen on screen). `si publish` needs the founder's LinkedIn app
     client id/secret, dev.to key, Hashnode token.
   - **Separate projects:** Retake (screen demo recorder) lives in `~/Progs/AI/retake-app`
     (CLAUDE.md there); the old spec is `docs/superpowers/specs/2026-11-06-screen-demo-recorder.md`.
@@ -49,7 +59,7 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
   (`cmd/si/motion.go`; `--dissolve` and automatic fallback); review pins on
   blocks (`slide:3/b2-1a2b3c`, `quote`); map editor in 3D; History/Review/About in
   the a11y e2e (dialogs take focus; Escape closes from outside).
-- **Latest release: v2.4.1: the docs site's feature pages.** The site (https://simple-ideas.org/, GitHub Pages with a custom domain)
+- **v2.4.1: the docs site's feature pages.** The site (https://simple-ideas.org/, GitHub Pages with a custom domain)
   is titled "Write Markdown or AsciiDoc, present anything". Home: six main-feature cards (Decks, Articles, Tutorials
   and guides, Mind maps, Books, Code windows and shows) and eight secondary ones; menus Features, Examples, Rules,
   Manual, Download. `internal/docsite/features.go` writes one page per feature from `examples/` (live example, its
@@ -76,8 +86,6 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
     `delete-many`), paste event → `paste` op (Markdown list under the topic); `mindmap.Branches`.
   - Terminal Studio (`internal/tui/edit.go`): focused mind map preview is an editable tree; `:` has
     window style / numbers / title per code block.
-  - Not done: History and Review dialogs are not in the axe suite yet; review anchors are slide/section
-    (not paragraph); 3D editing in the map editor.
 - **v2.3.1: v2.3.0's gaps closed.**
   - Desktop: Help ▸ Start Gallery / Take the Tour run `window.siStudio.gallery()/.tour()`
     (set by app.tsx; `#gallery` / `#tour` open them on load) via `goHelpJS` (main.go, tested).
@@ -485,36 +493,14 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
   `internal/assets/web/studio/assets/`, rebuild with `make studio-ui`, e2e with
   `make studio-e2e`). Spec: `docs/superpowers/specs/2026-10-28-si-studio-design.md`;
   plans 1/2a/2b in `docs/superpowers/plans/` are done and merged.
-- **Next up (Studio, toward v1.0.0):** Studio lab preview full width + cursor
-  scroll to section (deferred from plan 2b); plan 2c (inspector, Storyboard, ⌘K,
-  Build/PDF jobs); plan 3 (Rehearse/Present/Lab modes); plan 4 macOS Wails app;
-  plan 5 Windows/Linux + ConPTY. Order agreed: web + macOS first. Open source
-  (Apache 2.0), no code signing.
-- **Open polish from v0.9.1:** acemq extras ≈148 KB per deck (an SVG logo would
-  shrink it); generic class names (`.card`, `.tag`, `.y/.n`) may collide with user
-  CSS; lab pager follows file names (`overview.md` sorts after `lab-08`); no way to
-  exclude a top-level `.md` from `si build` except `_` prefix / front matter.
 - Older: v0.7.x runbook drawer (`runbook:` JSON → `si play` terminal drawer,
   RULES.md §14, `docs/terminal.md`); v0.6.5 Points/teleprompter tabs; v0.6.3
   `--dev` hot reload + lab slides; v0.6.2 footer/watermark; v0.6.1 topic overview;
   v0.6.0 terminal drawer (play + loopback only).
 
-## Non-negotiable rules (from CLAUDE.md — do not break without the founder)
+## Non-negotiable rules
 
-1. **Fluid & responsive, never fixed.** No fixed canvas; `cqi`/`clamp()`; SVGs by
-   `viewBox`; columns stack on narrow/portrait. `TestLayoutHasNoFixedCanvas` guards it.
-2. **Self-contained output.** One deck = one HTML file; only allowed network
-   resource is pinned Mermaid. (v0.6.0 terminal is a documented play-only
-   exception — a built deck never loads it.)
-3. **Every directive documented in RULES.md with an example, used in `examples/`.**
-4. **Example decks carry content, not instructions.**
-5. **Themes change tokens/looks, not layout.** Every `--si-*` token + `.si-*`
-   class is listed in `internal/assets/contract.go` — `TestContractCoversBuiltinCSS`
-   fails otherwise. Add new tokens/hooks there when you add CSS.
-6. **Teleprompter stays a real teleprompter.**
-7. **Go stdlib + goldmark only.** `gofmt`, `go vet ./...`, `go test ./...` green
-   before every commit. (v0.6.0 carves a play-only, loopback-only exception for
-   the terminal — `creack/pty` + bundled xterm.js; see CLAUDE.md rule #8.)
+In CLAUDE.md ("Non-negotiable rules"); do not break one without the founder.
 
 ## How to work
 
@@ -528,7 +514,7 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
   (`"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new
   --screenshot=out.png --window-size=1440,900 --virtual-time-budget=2000 file://…`)
   or a headless Playwright script. **Never the Playwright MCP browser tools.**
-  For deck JS, `node --check internal/assets/web/deck.js` catches syntax errors.
+  For deck JS, `for f in internal/assets/web/deck/*.js; do node --check $f; done` catches syntax errors.
 - **Commits:** plain messages, **no AI/Claude attribution** of any kind.
 - **Autonomy:** the founder wants full autonomy — pick sensible defaults, say what
   you chose, don't ask for confirmation on routine work. DO surface decisions that
@@ -574,5 +560,4 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Known minor issues / polish backlog
 
-- `rules.go` → moved to `docs/docs.go` already (embedder lives with the docs).
 - Roadmap ideas are in CLAUDE.md "Roadmap ideas".

@@ -56,6 +56,27 @@ body{overflow:hidden;height:100%}
   .pv-side{flex-direction:row;overflow:visible}.pv-side>div{flex:1 1 0;min-width:0}
   .pv-keys{display:none}
 }
+/* phone (portrait or landscape): the script fills the screen, no previews, one compact clock line, big Prev / Next */
+@media (max-width:40rem),(max-height:30rem){
+  body{overflow:hidden}
+  .pv{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;height:100dvh;min-height:0;gap:.4rem;
+    padding:max(.4rem,env(safe-area-inset-top)) max(.5rem,env(safe-area-inset-right)) max(.4rem,env(safe-area-inset-bottom)) max(.5rem,env(safe-area-inset-left))}
+  .pv-side,.pv-bar .sep,#nmins,#lastpace,#slideplan,#planned,.pv-clocks>span:has(#clock){display:none}
+  .pv-top{flex-wrap:nowrap;gap:.8rem;font-size:12px}
+  .pv-top b{flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:1.05em}
+  #pos{white-space:nowrap}
+  .pv-clocks{flex-wrap:nowrap;gap:.8rem;white-space:nowrap}.pv-clocks strong{font-size:1.25em}
+  .pv-prompt-head{padding:.3rem .5rem}
+  .pv-notes{padding:.8rem 1rem 40vh}
+  .pv-bar{flex-wrap:nowrap;overflow-x:auto;gap:.3rem}
+  .pv-bar button{flex:none;padding:.55em .7em}
+  .pv-bar #prev,.pv-bar #nextb{flex:1 0 4.5rem;padding:.75em .5em;font-weight:700}
+}
+@media (max-width:40rem) and (orientation:portrait){
+  .pv-top{flex-wrap:wrap;gap:.15rem .8rem}
+  .pv-top b{flex-basis:100%}
+  .pv-clocks{margin-left:0}
+}
 </style></head>
 <body>
 <div class="pv" id="pv">

@@ -10,6 +10,7 @@ import { join } from "node:path";
 const si = new URL("../../../bin/si", import.meta.url).pathname;
 const root = mkdtempSync(join(tmpdir(), "si-e2e-start-"));
 const srv = spawn(si, ["--web", root, "--addr", "127.0.0.1:0", "--no-open"], { stdio: ["ignore", "pipe", "pipe"] });
+process.on("exit", () => srv.kill()); // never leave si --web running when a step throws
 const url = await new Promise((res, rej) => {
   let buf = "";
   const t = setTimeout(() => rej(new Error("no URL from si --web: " + buf)), 10000);

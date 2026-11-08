@@ -205,7 +205,16 @@ func Generate(dst string) (pages int, err error) {
 		refs[s.N] = s.Slug
 	}
 	var nav strings.Builder
-	nav.WriteString("---\ntitle: The rules\ndescription: Every rule of the si Markdown format, one page per section, each with an example.\n---\n\n- [Overview](index.md)\n")
+	// rules/ is a guide of its own: it takes the site's icons and footer itself
+	nav.WriteString("---\ntitle: The rules\ndescription: Every rule of the si Markdown format, one page per section, each with an example.\n" +
+		"favicon: ../brand/favicon.svg\ntouch-icon: ../brand/apple-touch-icon.png\nog-image: https://simple-ideas.org/brand/social-card.png\n---\n\n- [Overview](index.md)\n")
+	footer, err := fs.ReadFile(docs.Site, "site/_footer.md")
+	if err != nil {
+		return 0, err
+	}
+	if err := write("rules/_footer.md", links.Replace(string(footer))); err != nil {
+		return 0, err
+	}
 	for _, s := range secs {
 		fmt.Fprintf(&nav, "- [%s. %s](%s.md)\n", s.N, s.Title, s.Slug)
 		page := fmt.Sprintf("---\ntitle: %s. %s\n---\n\n# %s. %s\n\n%s\n", s.N, yamlSafe(s.Title), s.N, s.Title, linkRefs(s.Body, refs))

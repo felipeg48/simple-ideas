@@ -35,7 +35,11 @@ func TestEveryRulesSectionHasAPage(t *testing.T) {
 			t.Errorf("section %s: page or nav entry missing", s.N)
 		}
 	}
-	for _, f := range []string{"_site.md", "index.md", "examples.md", "manual.md", "rules/index.md", "download.md", "live/showcase.md", "live/assets/dusk.jpg", "live/guide/_nav.md", "live/book/_nav.md"} {
+	// rules/ is its own guide: it carries the site's icons and footer itself
+	if !strings.Contains(string(nav), "favicon: ../brand/favicon.svg") || !strings.Contains(string(nav), "touch-icon: ../brand/apple-touch-icon.png") {
+		t.Error("rules/_nav.md lacks the site's favicon or touch icon")
+	}
+	for _, f := range []string{"_site.md", "index.md", "examples.md", "manual.md", "rules/index.md", "rules/_footer.md", "brand/favicon.svg", "brand/apple-touch-icon.png", "download.md", "live/showcase.md", "live/assets/dusk.jpg", "live/guide/_nav.md", "live/book/_nav.md"} {
 		if _, err := os.Stat(filepath.Join(dst, f)); err != nil {
 			t.Errorf("missing %s", f)
 		}
