@@ -72,6 +72,26 @@ func TestRemoteGateAndRoles(t *testing.T) {
 	}
 }
 
+// The short link a QR code carries (/tp?k=…) lands on the deck in that role
+// with no cookie yet; a role that is not enabled stays a 404.
+func TestRemoteShortRoleLink(t *testing.T) {
+	s, _ := remoteServer(t)
+	ts := httptest.NewServer(s.RemoteHandler("sekret", []string{"tp", "clicker"}))
+	defer ts.Close()
+	res, err := http.Get(ts.URL + "/clicker?k=sekret") // follows the redirect, no cookie jar
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	if res.StatusCode != http.StatusOK || res.Request.URL.Path != "/talk.html" || res.Request.URL.Query().Get("role") != "clicker" || !strings.Contains(string(b), `"remote":true`) {
+		t.Errorf("short link: %d at %s, want the deck as clicker", res.StatusCode, res.Request.URL)
+	}
+	if res, _ := http.Get(ts.URL + "/draw?k=sekret"); res.StatusCode != http.StatusNotFound {
+		t.Errorf("short link for a role that is not enabled: %d, want 404", res.StatusCode)
+	}
+}
+
 func TestRelayFansOutAndReplaysState(t *testing.T) {
 	s, _ := remoteServer(t)
 	ts := httptest.NewServer(s.Handler()) // loopback listener: relay without a key

@@ -11,6 +11,9 @@ si play decks/ --remote --remote-addr 0.0.0.0:9000
 ```
 
 `si play` prints one URL and QR code per role (for a folder: one picker URL).
+The role links are short (`http://<LAN address>:7071/clicker?k=<key>`, which
+redirects to the deck in that role) so the QR code stays small enough for a
+phone camera to read from the terminal.
 Scan it on the iPad; open the deck on the laptop as usual
 (`http://127.0.0.1:7070/`) and project that window.
 

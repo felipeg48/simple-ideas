@@ -5,6 +5,15 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-08)
 
+- **v2.5.2 (2026-11-08): QR codes that scan.** Every QR code `si play` ever
+  printed was unreadable: `cmd/si/qr.go` wrote the 15 format bits transposed
+  (the spec's (x, y) used as (row, column)). Found by decoding the printed codes
+  with macOS Vision (`VNDetectBarcodesRequest` in a Swift script); now all decode.
+  `TestQRFormatInfoPlacement` reads both format copies back from the printed
+  code. Remote role links are short (`/tp?k=…`, `/clicker?k=…`, a 302 to the
+  deck in that role; `TestRemoteShortRoleLink`) so they fit the encoder's
+  version 1-4 limit (78 bytes; `TestRemoteLinkFitsAQR`); before, a long link
+  silently printed no QR. `printQR` says why when there is none.
 - **v2.5.1 (2026-11-08): the iPhone as a remote.** The `tp` teleprompter has a
   phone layout (`presenter.html`, `(max-width:40rem),(max-height:30rem)`): script
   full screen, previews hidden, one clock line, big Prev / Next first in a

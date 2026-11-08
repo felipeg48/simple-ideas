@@ -127,6 +127,9 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.5.2:** the QR codes `si play` prints scan: they were unreadable
+  before (a layout bug in si's own encoder), and the `--remote` ones are now
+  short links (`/clicker?k=…`) that fit any address.
 - **v2.5.1:** your phone as the remote: `si play talk.md --remote` gives an
   iPhone a teleprompter laid out for its screen (the script fills it, big Prev /
   Next) or the clicker; a phone that slept reconnects to the current slide, and

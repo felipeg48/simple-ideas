@@ -54,3 +54,64 @@ func TestQRStringRenders(t *testing.T) {
 		t.Error("expected ANSI dark and light modules")
 	}
 }
+
+// The longest short remote link (any IPv4 address and port, the longest role,
+// a 128-bit hex key) must fit the QR codes qr.go makes.
+func TestRemoteLinkFitsAQR(t *testing.T) {
+	u := "http://255.255.255.255:65535/clicker?k=" + strings.Repeat("f", 32)
+	if _, err := qrString(u); err != nil {
+		t.Fatalf("%d-byte remote link: %v", len(u), err)
+	}
+}
+
+// The format information (EC level + mask) sits where a reader looks for it:
+// copy 1 down column 8 and along row 8 by the top-left finder, copy 2 split
+// between the other two finders. Read back from the printed code, both copies
+// must agree and be a valid level-L format word.
+func TestQRFormatInfoPlacement(t *testing.T) {
+	s, err := qrString("http://192.168.1.5:7071/clicker?k=" + strings.Repeat("a", 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m [][]bool
+	for _, line := range strings.Split(strings.TrimRight(s, "\n"), "\n") {
+		var row []bool
+		for _, cell := range strings.Split(line, "\x1b[0m")[:strings.Count(line, "\x1b[0m")] {
+			row = append(row, strings.HasPrefix(cell, "\x1b[40m"))
+		}
+		m = append(m, row)
+	}
+	const q = 2 // quiet zone
+	size := len(m) - 2*q
+	at := func(r, c int) bool { return m[r+q][c+q] }
+	var one, two int
+	set := func(f *int, i int, dark bool) {
+		if dark {
+			*f |= 1 << i
+		}
+	}
+	for i := 0; i <= 5; i++ {
+		set(&one, i, at(i, 8))
+	}
+	set(&one, 6, at(7, 8))
+	set(&one, 7, at(8, 8))
+	set(&one, 8, at(8, 7))
+	for i := 9; i < 15; i++ {
+		set(&one, i, at(8, 14-i))
+	}
+	for i := 0; i < 8; i++ {
+		set(&two, i, at(8, size-1-i))
+	}
+	for i := 8; i < 15; i++ {
+		set(&two, i, at(size-15+i, 8))
+	}
+	if one != two {
+		t.Fatalf("format copies differ: %015b vs %015b", one, two)
+	}
+	for mask := 0; mask < 8; mask++ {
+		if formatBits(mask) == one {
+			return
+		}
+	}
+	t.Fatalf("format word %015b is no level-L format", one)
+}

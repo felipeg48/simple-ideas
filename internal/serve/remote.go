@@ -23,6 +23,7 @@ import (
 	"html"
 	"io"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -143,6 +144,15 @@ func (s *Server) RemoteHandler(key string, roles []string) http.Handler {
 			http.NotFound(w, r) // no dotfiles (.git, .env) on the network
 		case p == "/" || p == "/index.html":
 			s.remotePicker(w, roles)
+		case allowed[strings.TrimPrefix(p, "/")]:
+			// the short link a QR code carries (/clicker?k=…): the deck page in that
+			// role, the key kept in the URL so no cookie is needed on the way
+			decks := s.RemoteDecks()
+			if len(decks) != 1 {
+				http.NotFound(w, r)
+				return
+			}
+			http.Redirect(w, r, decks[0]+"?role="+strings.TrimPrefix(p, "/")+"&k="+url.QueryEscape(r.URL.Query().Get("k")), http.StatusFound)
 		case strings.HasSuffix(p, ".html"):
 			md := filepath.Join(s.dir, filepath.FromSlash(strings.TrimSuffix(strings.TrimPrefix(p, "/"), ".html")+".md"))
 			role := r.URL.Query().Get("role")

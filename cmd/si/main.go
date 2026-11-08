@@ -44,7 +44,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "2.5.1"
+const version = "2.5.2"
 
 // Exit codes.
 const (
@@ -890,9 +890,7 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		} else if ip := lanIP(); ip != "" {
 			lan := fmt.Sprintf("http://%s:%d/", ip, ta.Port)
 			fmt.Fprintf(stdout, "  on your network: %s\n", lan)
-			if qr, err := qrString(lan); err == nil {
-				fmt.Fprint(stdout, qr)
-			}
+			printQR(stdout, lan)
 		}
 	}
 	stop := make(chan struct{})
@@ -960,18 +958,16 @@ func startRemote(srv *serve.Server, main net.Addr, o *options, stdout, stderr io
 	decks := srv.RemoteDecks()
 	if len(decks) == 1 {
 		for _, r := range o.remote.roles {
-			u := fmt.Sprintf("%s%s?role=%s&k=%s", base, strings.TrimPrefix(decks[0], "/"), r, key)
+			// the short link (/clicker?k=…) redirects to the deck in that role; it
+			// keeps the QR code small enough for any address and deck name
+			u := fmt.Sprintf("%s%s?k=%s", base, r, key)
 			fmt.Fprintf(stdout, "  %s: %s\n", serve.RemoteRoleNames[r], u)
-			if qr, err := qrString(u); err == nil {
-				fmt.Fprint(stdout, qr)
-			}
+			printQR(stdout, u)
 		}
 	} else {
 		u := base + "?k=" + key
 		fmt.Fprintf(stdout, "  pick a deck and a role (%s): %s\n", strings.Join(o.remote.roles, ", "), u)
-		if qr, err := qrString(u); err == nil {
-			fmt.Fprint(stdout, qr)
-		}
+		printQR(stdout, u)
 	}
 	rs := &http.Server{Handler: srv.RemoteHandler(key, o.remote.roles), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
@@ -1014,9 +1010,7 @@ func startReview(srv *serve.Server, main net.Addr, o *options, stdout, stderr io
 	}
 	u := fmt.Sprintf("http://%s/?k=%s", net.JoinHostPort(host, strconv.Itoa(ta.Port)), key)
 	fmt.Fprintf(stdout, "  review link (same network, keyed; plain HTTP, so share it on a trusted network):\n  %s\n", u)
-	if qr, err := qrString(u); err == nil {
-		fmt.Fprint(stdout, qr)
-	}
+	printQR(stdout, u)
 	fmt.Fprintf(stdout, "  comments land in .si/review/ and in the Studio's Review panel\n")
 	rs := &http.Server{Handler: srv.ReviewHandler(key), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
@@ -1748,4 +1742,15 @@ func printVersion(w io.Writer, verbose bool) {
 		fmt.Fprintf(w, "  %-11s %-8s %s\n", c.Name, c.License, c.Note)
 	}
 	fmt.Fprintf(w, "\n%s · %s\n", brand.Copyright, brand.License)
+}
+
+// printQR prints the QR code for u, or says why there is none (a URL too long
+// for the small codes qr.go makes), so a missing code is never a silent one.
+func printQR(w io.Writer, u string) {
+	qr, err := qrString(u)
+	if err != nil {
+		fmt.Fprintf(w, "  (no QR code: %v; type the link instead)\n", err)
+		return
+	}
+	fmt.Fprint(w, qr)
 }

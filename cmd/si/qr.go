@@ -121,8 +121,8 @@ func qrCodewords(s string) (qrVer, []byte, error) {
 		}
 		cw = append(cw, b)
 	}
-	for pad := []byte{0xEC, 0x11}; len(cw) < v.dataCW; {
-		cw = append(cw, pad[(len(cw)-0)%2])
+	for i := 0; len(cw) < v.dataCW; i++ { // pad bytes alternate, starting with 0xEC
+		cw = append(cw, []byte{0xEC, 0x11}[i%2])
 	}
 	return v, append(cw, rsEncode(cw, v.ecCW)...), nil
 }
@@ -272,7 +272,8 @@ func qrString(s string) (string, error) {
 	// write format info for the chosen mask
 	f := formatBits(best)
 	bit := func(i int) bool { return (f>>i)&1 == 1 }
-	put := func(r, c int, b bool) { m.mod[r*size+c] = b }
+	// the positions below are (x, y) = (column, row), as the spec lays them out
+	put := func(x, y int, b bool) { m.mod[y*size+x] = b }
 	for i := 0; i <= 5; i++ {
 		put(8, i, bit(i))
 	}
