@@ -71,6 +71,7 @@ var Directives = map[string]string{
 	"event":      "body",  // a countdown toast as a date nears
 	"embed":      "body",  // a deck, document or guide/book/site, framed, as a card, in full or one section
 	"logo":       "body",  // a logo lockup: [image] × partner name (slides, documents, sites)
+	"qr":         "body",  // a QR code for a link or text (slides, documents, sites)
 	"cards":      "body",  // the ### headings that follow become a grid of cards (slides, documents)
 	"layout":     "slide", // slide layout
 	"transition": "slide", // slide transition
@@ -959,5 +960,5 @@ func (d *Deck) checkDemoMinutes(lines []srcLine) {
 var durationRE = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*min`)
 
 // docDirectives are the directives a document uses (the rest are deck-only).
-var docDirectives = map[string]bool{"tabs": true, "callout": true, "slides": true, "alert": true, "badge": true, "logo": true, "cards": true, "accordion": true,
+var docDirectives = map[string]bool{"tabs": true, "callout": true, "slides": true, "alert": true, "badge": true, "logo": true, "qr": true, "cards": true, "accordion": true,
 	"modal": true, "end": true, "carousel": true, "event": true, "embed": true}

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/felipeg48/simple-ideas/internal/render"
 )
 
 func remoteServer(t *testing.T) (*Server, string) {
@@ -143,4 +145,28 @@ func TestRelayFansOutAndReplaysState(t *testing.T) {
 		t.Errorf("bad body: %d", r2.StatusCode)
 	}
 	r2.Body.Close()
+}
+
+// The q overlay's links carry the remote key: they go into the presenting
+// laptop's loopback page only, never into a page the remote listener serves.
+func TestRemoteQROnlyOnLoopback(t *testing.T) {
+	s, _ := remoteServer(t)
+	s.RemoteQR = &render.RemoteQR{Links: []render.RemoteLink{{Name: "Clicker", URL: "http://192.168.1.5:7071/clicker?k=sekret", SVG: "<svg></svg>"}}}
+	get := func(h http.Handler, path string) string {
+		ts := httptest.NewServer(h)
+		defer ts.Close()
+		res, err := http.Get(ts.URL + path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		b, _ := io.ReadAll(res.Body)
+		return string(b)
+	}
+	if body := get(s.Handler(), "/talk.html"); !strings.Contains(body, "window.SI_REMOTE_QR=") || !strings.Contains(body, "clicker?k=sekret") {
+		t.Error("the loopback page should carry the remote links for q")
+	}
+	if body := get(s.RemoteHandler("sekret", []string{"clicker"}), "/talk.html?role=clicker&k=sekret"); strings.Contains(body, "window.SI_REMOTE_QR=") || strings.Contains(body, "clicker?k=sekret") {
+		t.Error("a page on the remote listener must not carry the links")
+	}
 }

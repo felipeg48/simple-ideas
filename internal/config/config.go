@@ -22,7 +22,7 @@ import (
 )
 
 // Actions are the remappable single-key commands (keys.<action>).
-var Actions = []string{"overview", "presenter", "draw", "timer", "mode", "fullscreen", "find", "help", "terminal"}
+var Actions = []string{"overview", "presenter", "draw", "timer", "mode", "fullscreen", "find", "help", "terminal", "remote"}
 
 // Features are the toggleable features (feature.<name>).
 var Features = []string{"draw", "timer", "presenter", "overview", "find", "terminal"}
@@ -45,6 +45,7 @@ keys.fullscreen: f
 keys.find:       /
 keys.help:       ?
 keys.terminal:   ` + "`" + `          # backtick; play terminal drawer (si play on a loopback address only)
+keys.remote:     q          # si play --remote: the phone and tablet links as QR codes
 
 feature.draw:      on
 feature.timer:     on

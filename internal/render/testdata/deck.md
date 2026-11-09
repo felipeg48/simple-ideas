@@ -99,6 +99,8 @@ the answer
 
 <!-- badge: Prepared for Partner · Session 1 of 5 -->
 
+<!-- qr: https://example.com/slides · caption=The slides · size=small · dots -->
+
 Body with a ==phrase==.
 
 ---

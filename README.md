@@ -127,6 +127,14 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.6.0:** QR codes. `si qr https://…` writes a QR code as PNG, JPG, SVG
+  or PDF, for a link, any text, a Wi-Fi network (`--wifi`) or a contact
+  (`--vcard`), with your logo in the middle (`--logo`; a logo too big to scan
+  past is refused, with the size that fits), round dots (`--style dots`) and
+  your colours; `<!-- qr: https://… · caption=The slides -->` puts one on a
+  slide or page; `q` in `si play --remote` shows the phone links as codes on
+  the projected screen. si's own encoder now does every QR size (versions
+  1-40) at every error correction level, each checked by a real reader.
 - **v2.5.2:** the QR codes `si play` prints scan: they were unreadable
   before (a layout bug in si's own encoder), and the `--remote` ones are now
   short links (`/clicker?k=…`) that fit any address.

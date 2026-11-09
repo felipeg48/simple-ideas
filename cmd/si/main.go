@@ -38,13 +38,14 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/docsite"
+	"github.com/felipeg48/simple-ideas/internal/qr"
 	"github.com/felipeg48/simple-ideas/internal/render"
 	"github.com/felipeg48/simple-ideas/internal/serve"
 	"github.com/felipeg48/simple-ideas/internal/studio"
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "2.5.2"
+const version = "2.6.0"
 
 // Exit codes.
 const (
@@ -86,6 +87,13 @@ Usage:
   si publish login linkedin|devto|hashnode [--token T] [--client-id ID --client-secret S] [--url blog]
   si publish logout [linkedin|devto|hashnode]
         store or forget a login (in your config dir, mode 0600; see docs/publish.md)
+  si qr <text|URL|-> [-o name[.png|.jpg|.svg|.pdf]] [--png --jpg --svg --pdf | --type png,svg] [--terminal]
+        a QR code (default qr.png, 1024 px); --wifi SSID [--password P] [--security WPA|WEP]
+        and --vcard card.vcf encode a Wi-Fi network or a contact; --ec L|M|Q|H (default M,
+        raised when it fits), --style square|dots, --fg/--bg #rrggbb|none, --quiet 4,
+        --size 1024|5cm (pixels for PNG/JPG, print size for PDF, the SVG width),
+        --logo picture.png|.jpg|.svg [--logo-size 20] puts a picture in the middle (level H;
+        refused, with the size that fits, when the code could not be read)
   si mindmap import <file.opml|.mm|.xmind|.mmd> [-o out.md]
         turn an OPML, FreeMind, XMind or Mermaid mindmap file into a mind map page
   si mindmap export <map.md> --to opml|freemind|xmind|mermaid [--map id] [-o file|-]
@@ -218,6 +226,11 @@ type options struct {
 	yes, copy, public, mp4                       bool    // si publish --yes/--copy/--public; --mp4
 	dissolve                                     bool    // --mp4 --dissolve: stills that dissolve, not the filmed motion
 	port                                         int     // si publish login linkedin: the loopback redirect port
+	qrEC, qrLogo, qrStyle, qrFG, qrBG, qrName    string  // si qr
+	qrWifi, qrPassword, qrSecurity, qrVCard      string  // si qr --wifi / --vcard
+	qrLogoSize                                   float64 // si qr --logo-size, percent of the width
+	qrQuiet                                      int     // si qr --quiet, modules
+	qrJPG, qrECSet                               bool    // si qr --jpg; --ec given
 	css                                          multi
 	args                                         []string
 }
@@ -286,6 +299,19 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.siteOld, "site", "", "") // deprecated alias of --site-title; --site is kept for site features
 	fl.StringVar(&o.ai, "ai", "", "")
 	fl.BoolVar(&o.slides, "slides", false, "")
+	fl.StringVar(&o.qrEC, "ec", "M", "")
+	fl.StringVar(&o.qrLogo, "logo", "", "")
+	fl.Float64Var(&o.qrLogoSize, "logo-size", 20, "")
+	fl.StringVar(&o.qrStyle, "style", "square", "")
+	fl.StringVar(&o.qrFG, "fg", "", "")
+	fl.StringVar(&o.qrBG, "bg", "", "")
+	fl.StringVar(&o.qrName, "name", "", "")
+	fl.IntVar(&o.qrQuiet, "quiet", 4, "")
+	fl.BoolVar(&o.qrJPG, "jpg", false, "")
+	fl.StringVar(&o.qrWifi, "wifi", "", "")
+	fl.StringVar(&o.qrPassword, "password", "", "")
+	fl.StringVar(&o.qrSecurity, "security", "WPA", "")
+	fl.StringVar(&o.qrVCard, "vcard", "", "")
 	for {
 		if err := fl.Parse(argv); err != nil {
 			return nil, err
@@ -301,6 +327,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 		o.args = append(o.args, argv[0])
 		argv = argv[1:]
 	}
+	fl.Visit(func(f *flag.Flag) { o.qrECSet = o.qrECSet || f.Name == "ec" })
 	if o.siteOld != "" {
 		fmt.Fprintln(stderr, "si: warning: --site <text> is now --site-title <text>")
 		if o.title == "" {
@@ -458,6 +485,8 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		return runMindmap(rest, o, stdout, stderr)
 	case "publish":
 		return runPublish(rest, o, stdout, stderr)
+	case "qr":
+		return runQR(rest, o, stdout, stderr)
 	case "code":
 		if len(rest) != 1 {
 			return usageErr(stderr, "code needs one <file.md> with code windows (--png, --svg, --gif, --mp4)")
@@ -945,30 +974,41 @@ func startRemote(srv *serve.Server, main net.Addr, o *options, stdout, stderr io
 		return nil, exitProblems
 	}
 	key := hex.EncodeToString(raw[:])
-	host := lanIP()
+	hosts := lanIPs()
 	ta, _ := ln.Addr().(*net.TCPAddr)
 	if ta != nil && !ta.IP.IsUnspecified() {
-		host = ta.IP.String()
+		hosts = []string{ta.IP.String()}
 	}
-	if host == "" {
-		host = "127.0.0.1"
+	if len(hosts) == 0 {
+		hosts = []string{"127.0.0.1"}
 	}
-	base := fmt.Sprintf("http://%s/", net.JoinHostPort(host, strconv.Itoa(ta.Port)))
-	fmt.Fprintf(stdout, "  remote (same network, keyed link; plain HTTP, so use a trusted network):\n")
-	decks := srv.RemoteDecks()
-	if len(decks) == 1 {
+	port := strconv.Itoa(ta.Port)
+	base := fmt.Sprintf("http://%s/", net.JoinHostPort(hosts[0], port))
+	fmt.Fprintf(stdout, "  remote (same network, keyed link; plain HTTP, so use a trusted network; q on the deck shows these codes):\n")
+	rq := &render.RemoteQR{}
+	link := func(name, u string) {
+		fmt.Fprintf(stdout, "  %s: %s\n", name, u)
+		printQR(stdout, u)
+		if c, err := qr.Encode([]byte(u), qr.Options{Level: qr.M}); err == nil {
+			rq.Links = append(rq.Links, render.RemoteLink{Name: name, URL: u, SVG: c.SVG(qr.Style{Quiet: 2, Label: name + " link"}, "", "", "")})
+		}
+	}
+	if len(srv.RemoteDecks()) == 1 {
 		for _, r := range o.remote.roles {
 			// the short link (/clicker?k=…) redirects to the deck in that role; it
 			// keeps the QR code small enough for any address and deck name
-			u := fmt.Sprintf("%s%s?k=%s", base, r, key)
-			fmt.Fprintf(stdout, "  %s: %s\n", serve.RemoteRoleNames[r], u)
-			printQR(stdout, u)
+			link(serve.RemoteRoleNames[r], fmt.Sprintf("%s%s?k=%s", base, r, key))
 		}
 	} else {
-		u := base + "?k=" + key
-		fmt.Fprintf(stdout, "  pick a deck and a role (%s): %s\n", strings.Join(o.remote.roles, ", "), u)
-		printQR(stdout, u)
+		link("Pick a deck and a role ("+strings.Join(o.remote.roles, ", ")+")", base+"?k="+key)
 	}
+	if len(hosts) > 1 { // Wi-Fi, Ethernet, a VPN: the phone may only reach one of them
+		for _, h := range hosts[1:] {
+			rq.Also = append(rq.Also, net.JoinHostPort(h, port))
+		}
+		fmt.Fprintf(stdout, "  the same links also work with %s in place of %s (if the phone is on that network)\n", strings.Join(rq.Also, ", "), net.JoinHostPort(hosts[0], port))
+	}
+	srv.RemoteQR = rq
 	rs := &http.Server{Handler: srv.RemoteHandler(key, o.remote.roles), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
 		if err := rs.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -1084,18 +1124,40 @@ func openBrowser(url string) {
 // lanIP returns the host's first private non-loopback IPv4, for opening the deck
 // from another device on the same network. Empty if none is found.
 func lanIP() string {
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		return ""
+	if ips := lanIPs(); len(ips) > 0 {
+		return ips[0]
 	}
-	for _, a := range addrs {
-		if ipn, ok := a.(*net.IPNet); ok {
-			if ip := ipn.IP.To4(); ip != nil && !ip.IsLoopback() && ip.IsPrivate() {
-				return ip.String()
+	return ""
+}
+
+// lanIPs are this machine's IPv4 addresses a phone could reach, in interface
+// order (Wi-Fi or Ethernet first on a Mac): private ranges, then the shared
+// 100.64/10 range Tailscale and carrier networks use.
+func lanIPs() []string {
+	ifs, err := net.Interfaces()
+	if err != nil {
+		return nil
+	}
+	cgnat := &net.IPNet{IP: net.IPv4(100, 64, 0, 0), Mask: net.CIDRMask(10, 32)}
+	var private, shared []string
+	for _, i := range ifs {
+		if i.Flags&net.FlagUp == 0 || i.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+		addrs, _ := i.Addrs()
+		for _, a := range addrs {
+			ipn, ok := a.(*net.IPNet)
+			if !ok {
+				continue
+			}
+			if ip := ipn.IP.To4(); ip != nil && ip.IsPrivate() {
+				private = append(private, ip.String())
+			} else if ip != nil && cgnat.Contains(ip) {
+				shared = append(shared, ip.String())
 			}
 		}
 	}
-	return ""
+	return append(private, shared...)
 }
 
 // findChrome returns a path to a headless-capable Chromium browser, or "".
@@ -1742,15 +1804,4 @@ func printVersion(w io.Writer, verbose bool) {
 		fmt.Fprintf(w, "  %-11s %-8s %s\n", c.Name, c.License, c.Note)
 	}
 	fmt.Fprintf(w, "\n%s · %s\n", brand.Copyright, brand.License)
-}
-
-// printQR prints the QR code for u, or says why there is none (a URL too long
-// for the small codes qr.go makes), so a missing code is never a silent one.
-func printQR(w io.Writer, u string) {
-	qr, err := qrString(u)
-	if err != nil {
-		fmt.Fprintf(w, "  (no QR code: %v; type the link instead)\n", err)
-		return
-	}
-	fmt.Fprint(w, qr)
 }

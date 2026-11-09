@@ -104,6 +104,10 @@ var Tokens = []Token{
 	{"--si-mm-sticky", "mind maps: sticky note paper", "#ffe27a"},
 	{"--si-mm-sticky-fg", "mind maps: sticky note text", "#3d3000"},
 	{"--si-mm-height", "mind maps: height of an embedded map (slides: --si-figure-max)", "clamp(24em, 62vh, 48em)"},
+	// QR codes (<!-- qr: -->): dark on light in every theme, since an inverted code reads badly
+	{"--si-qr-fg", "QR codes: the modules", "#111"},
+	{"--si-qr-bg", "QR codes: the background and quiet zone", "#fff"},
+	{"--si-qr-size", "QR codes: the width (wins over size=small|medium|large)", "min(30cqi, 40cqb) on a slide, min(14rem, 60vw) in a document"},
 	// code windows (a fence with window= or id=); theme=night|paper|dusk set them all, auto reads the deck theme
 	{"--si-cw-bg", "code windows: the window and its code", "var(--si-surface)"},
 	{"--si-cw-bar", "code windows: the title bar or terminal tabs", "var(--si-surface-2)"},
@@ -273,6 +277,9 @@ var Hooks = []Hook{
 	{`.si-embed-from`, "embed: the From … link under embedded text"},
 	{`.si-pill-mark`, "badge on a slide: the coloured mark before the text"},
 	{`.si-lockup`, "logo: the lockup (logo × partner name)"},
+	{`.si-qr`, "qr: the figure (data-size: small, medium, large)"},
+	{`.si-qr-code`, "qr: the SVG code (modules in currentColor)"},
+	{`.si-qr-cap`, "qr: the caption"},
 	{`.si-lk-img`, "logo: the logo image"},
 	{`.si-lk-logo`, "logo: the theme's own logo (--si-brand-logo), when no image is given"},
 	{`.si-lk-x`, "logo: the bar between logo and partner"},

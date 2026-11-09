@@ -300,8 +300,10 @@ Notes: (1 min) Hands-on: open the sample workspace and send order #4711 through 
 
 Questions about order #4711, the retry rule or the returns desk are welcome.
 
+<!-- qr: https://simple-ideas.org/live/showcase.html · caption=These slides and the appendix · size=small · dots -->
+
 Notes: (2 min)
-Thank you. I am happy to take questions: about order #4711, the retry rule or the returns desk.
+Thank you. The code on the screen opens these slides and the appendix on your phone. I am happy to take questions: about order #4711, the retry rule or the returns desk.
 
 Points: Likely questions
 - Why only one retry: the fraud team asked for it

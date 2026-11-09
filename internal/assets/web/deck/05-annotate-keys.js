@@ -120,6 +120,37 @@
     else if (a === 'find') { if (feat.find) findShow(); }
     else if (a === 'help') toggleHelp();
     else if (a === 'terminal') toggleTerminal();
+    else if (a === 'remote') toggleRemoteQR();
+  }
+  /* the remote links as QR codes, for a phone or tablet in the room (si play --remote) */
+  var rqBox = null;
+  function toggleRemoteQR(on) {
+    if (!remoteQR) return;
+    if (!rqBox) {
+      rqBox = document.createElement('div');
+      rqBox.id = 'si-remote-qr';
+      rqBox.setAttribute('role', 'dialog');
+      rqBox.setAttribute('aria-label', 'Remote links');
+      rqBox.setAttribute('style', 'position:fixed;inset:0;z-index:2147483646;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:clamp(1rem,4vmin,3rem);padding:4vmin;overflow:auto;background:color-mix(in srgb,var(--si-bg) 97%,transparent);color:var(--si-fg);font-family:var(--si-font-body)');
+      var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+      var html = '';
+      remoteQR.links.forEach(function (l) {
+        html += '<figure style="margin:0;display:flex;flex-direction:column;align-items:center;gap:.6em;width:min(30vmin,80vw);min-width:12rem">' +
+          '<div style="width:100%;background:#fff;border-radius:.8em;padding:.4em;box-sizing:border-box">' + l.svg + '</div>' +
+          '<figcaption style="text-align:center;font-weight:600">' + esc(l.name) + '<br><span style="font:400 .72em/1.3 var(--si-font-mono);color:var(--si-muted);word-break:break-all">' + esc(l.url) + '</span></figcaption></figure>';
+      });
+      if (remoteQR.also && remoteQR.also.length) html += '<p style="flex-basis:100%;text-align:center;color:var(--si-muted);margin:0">Not on this network? The same links work with ' + esc(remoteQR.also.join(', ')) + '.</p>';
+      html += '<p style="flex-basis:100%;text-align:center;color:var(--si-muted);margin:0;font-size:.85em">q or Esc closes</p>';
+      rqBox.innerHTML = html;
+      rqBox.addEventListener('click', function () { toggleRemoteQR(false); });
+      document.body.appendChild(rqBox);
+      rqBox.hidden = true;
+    }
+    rqBox.hidden = on === undefined ? !rqBox.hidden : !on;
+  }
+  if (remoteQR && help) {
+    var _ht = help.querySelector('table');
+    if (_ht) { var _tr = document.createElement('tr'); _tr.innerHTML = '<td>' + cmd.remote + '</td><td>remote: the phone and tablet links as QR codes</td>'; _ht.appendChild(_tr); }
   }
   var actions = { next: forward, prev: backward, overview: function () { runCmd('overview'); }, draw: function () { runCmd('draw'); }, presenter: function () { runCmd('presenter'); }, find: function () { runCmd('find'); }, mode: toggleMode, help: function () { toggleHelp(); }, fullscreen: fullscreen };
   /* a disabled feature hides its toolbar button */
@@ -130,6 +161,7 @@
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     var tag = (document.activeElement && document.activeElement.tagName) || '';
     if (/INPUT|SELECT|TEXTAREA/.test(tag)) return;
+    if (rqBox && !rqBox.hidden && (e.key === 'Escape' || e.key === cmd.remote)) { e.preventDefault(); toggleRemoteQR(false); return; }
     if (deck.classList.contains('si-overview')) {
       if (e.key === 'Escape' || e.key === cmd.overview) { e.preventDefault(); overview(false); return; }
       if (e.key === 'Enter') { e.preventDefault(); var t = ovSel; overview(false); go(t, 0, true); return; }

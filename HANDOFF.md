@@ -3,7 +3,38 @@
 Read this, then `FEATURE.md`, then `CLAUDE.md`. This is a Go CLI (`si`) that turns
 Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
-## Current state (2026-11-08)
+## Current state (2026-11-09)
+
+- **v2.6.0 (2026-11-09): QR codes.** `internal/qr` (new; `cmd/si/qr.go` is
+  gone): byte mode, versions 1-40, levels L/M/Q/H (tables from ISO 18004 table
+  9), block interleaving with the short-block placeholder, version information
+  (v7+), all four mask penalty rules, a module→codeword map, `Cover` / `Hole`
+  (a centred picture is allowed when, per block, the hidden codewords stay
+  within 80 % of half its error correction: hidden modules are unknown errors,
+  not erasures), renderers `ANSI`, `SVG` (class mode for CSS colours),
+  `Image` (3x3 supersampled, logo box-scaled), `PDF` (hand-written, vector,
+  logo as an image XObject with an SMask). Tests: spec anchors (format words
+  for every level, capacities, version-information words), `TestGolden` (64
+  codes: versions 1-40 × 4 levels, module hashes in `testdata/golden.txt`),
+  `TestVision` (macOS, `QR_VISION=1`: every golden code, the dots style and
+  logo holes decoded by Apple Vision through `testdata/vision.swift`; refresh
+  the golden file with `QR_UPDATE=1` only after it passes). Found by Vision:
+  dots of radius 0.45 stopped reading above version 20, so dots are 0.5
+  (touching) and alignment/timing stay square. `si qr` (`cmd/si/qrcmd.go`):
+  `-o`/`--name`, `--png --jpg --svg --pdf` / `--type a,b` / the extension,
+  `--ec`, `--style square|dots`, `--fg/--bg` (contrast and inverted warnings),
+  `--quiet`, `--size` (px or cm/mm/in/pt), `--logo` (PNG/JPEG everywhere, SVG
+  into SVG only) + `--logo-size`, `--wifi/--password/--security`, `--vcard`,
+  `-` for stdin, `--terminal`; every output decoded by Vision end to end.
+  `<!-- qr: -->` (`render/qr.go`, slides and documents, RULES §23; tokens
+  `--si-qr-fg/-bg/-size`, hooks `.si-qr`, `.si-qr-code`, `.si-qr-cap`; dark on
+  light in every theme), used on the showcase's closing slide. `si play
+  --remote`: `q` overlay (`window.SI_REMOTE_QR`, loopback pages only,
+  `TestRemoteQROnlyOnLoopback`; `keys.remote`), and `lanIPs()` lists every
+  usable address (private, then 100.64/10) with the others printed and shown.
+  Skipped on purpose: a `share:` front matter key (a `qr` on the closing slide
+  does it). Next (v2.7.0): `si play --remote --https` with a local CA
+  (crypto/x509; the phone installs a profile once) and `--https=tailscale`.
 
 - **v2.5.2 (2026-11-08): QR codes that scan.** Every QR code `si play` ever
   printed was unreadable: `cmd/si/qr.go` wrote the 15 format bits transposed
@@ -523,7 +554,7 @@ In CLAUDE.md ("Non-negotiable rules"); do not break one without the founder.
   (`"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new
   --screenshot=out.png --window-size=1440,900 --virtual-time-budget=2000 file://…`)
   or a headless Playwright script. **Never the Playwright MCP browser tools.**
-  For deck JS, `for f in internal/assets/web/deck/*.js; do node --check $f; done` catches syntax errors.
+  For deck JS, `cat internal/assets/web/deck/*.js > /tmp/d.js && node --check /tmp/d.js` catches syntax errors (the files are fragments of one script, so check them joined).
 - **Commits:** plain messages, **no AI/Claude attribution** of any kind.
 - **Autonomy:** the founder wants full autonomy — pick sensible defaults, say what
   you chose, don't ask for confirmation on routine work. DO surface decisions that

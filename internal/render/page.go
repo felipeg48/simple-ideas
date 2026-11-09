@@ -90,6 +90,10 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	if opt.Remote {
 		b.WriteString(RelayJS)
 	}
+	if opt.Terminal && opt.RemoteQR != nil { // loopback play only: the links carry the key
+		j, _ := json.Marshal(opt.RemoteQR)
+		fmt.Fprintf(&b, "<script>window.SI_REMOTE_QR=%s;</script>\n", strings.ReplaceAll(string(j), "</", `<\/`))
+	}
 	// Runbook cheat-sheet: play-only + loopback-only, like the terminal it rides
 	// in. Never injected into a built deck (opt.Terminal is false for build).
 	if opt.Terminal && dr.runbookJSON != "" {

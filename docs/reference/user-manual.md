@@ -216,6 +216,7 @@ One inline SVG whose parts change state slide by slide:
 | `a` | draw over the slide |
 | `d` / `f` / `?` | light-dark / full screen / help |
 | `` ` `` | terminal drawer — run local commands live (`si play` on a loopback address only) |
+| `q` | `si play --remote`: the phone and tablet links as QR codes, on the projected screen |
 
 Open on a phone: `si play --addr 0.0.0.0:7070` prints a LAN URL + QR.
 
@@ -244,6 +245,7 @@ si new <name> --type article   # a small starter: deck, article, guide, book, si
 si publish talk.md --to linkedin   # a dry run of the post; --yes sends it (also devto, hashnode)
 si code show.md --mp4      # a code show as video (si build map.md --mp4: a mind map's Play; needs ffmpeg)
 si fix <dir> [--write]     # raw-HTML components (hl, pill, lockup, cards) into si syntax
+si qr https://… --png --svg --pdf  # a QR code file (--logo, --style dots, --wifi, --vcard)
 si new-canvas <name>       # scaffold an animated canvas
 si manual --slides         # this manual
 si rules                   # the full format reference
@@ -266,6 +268,9 @@ si migrate <src>           # an AI migration prompt for an existing deck
   is) and on a deck build (every slide and step, `--dwell 2` for a teaser)
   writes video that plays anywhere, with the transitions and morphs as they
   move, made with ffmpeg if it is installed.
+- **Point to it:** `<!-- qr: https://… · caption=The slides -->` puts a QR
+  code on a slide or page; `si qr https://… --logo mark.png --pdf` makes one as
+  a file for a poster or a badge.
 - **Tell us:** Help ▸ Report a Problem (or `si report`) opens an issue with
   your version filled in; the rules and examples live on simple-ideas.org.
 - **Start fast:** an empty folder in the Studio opens a gallery of starters
@@ -275,7 +280,8 @@ Notes: (1 min)
 When the talk is done, it does not have to stay on your laptop. si
 publish posts the deck to LinkedIn as a document people swipe through, and
 sends an article to dev.to or Hashnode; it always shows you the requests
-before it sends anything. Code shows and mind maps become short videos. And
+before it sends anything. A QR code on the last slide takes the room to the
+slides. Code shows and mind maps become short videos. And
 when you open an empty folder in the Studio, a gallery shows what you can
 start from, with a tour of the window if you want one. [CLICK]
 

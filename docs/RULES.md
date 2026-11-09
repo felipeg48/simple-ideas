@@ -493,6 +493,12 @@ si play talk.md --remote=tp                 # teleprompter only
 si play talk.md --remote --remote-addr 0.0.0.0:9000
 ```
 
+Press `q` on the deck (the laptop's window, the one you project) to show the
+same links as QR codes, big enough to scan from the room; `q` or Esc closes
+them (`keys.remote` in si.conf remaps it). When the laptop is on more than
+one network (Wi-Fi and Ethernet, or a VPN such as Tailscale), the other
+addresses are listed under the codes.
+
 | Role | On the device | Drives the deck |
 |---|---|---|
 | `tp` | the teleprompter above: script, tabs, auto-scroll, clocks, previews, mirror; on a phone the script fills the screen (no previews, one clock line, big Prev / Next) | Prev / Next, keys |
@@ -1699,7 +1705,7 @@ the whole folder. The index page title is `--site-title <text>` (the old
 
 Plugins are directives that work in every document (pages, articles, guides,
 books, labs, demos), so in every site. They are plain HTML plus a few lines of
-runtime; nothing is fetched. `badge`, `logo` and `cards` also work on slides;
+runtime; nothing is fetched. `badge`, `logo`, `qr` and `cards` also work on slides;
 the others, on a slide, are reported as a problem.
 Options follow the text after a `·`: `key=value`, or a kind word (`info`,
 `ok`, `warn`, `crit`). Any other `· part` stays in the text, so
@@ -1717,6 +1723,7 @@ Options follow the text after a `·`: `key=value`, or a kind word (`info`,
 | `badge: text · kind` | a status pill, same kinds; on a slide, the pill paragraph a cover or closing slide carries (AceMQ Pro styles it with its orange mark) |
 | `cards: 2` | the `###` headings that follow become a grid of cards (2, 3 or 4 columns, or as many as fit): `### Title · tag · colour`, colour one of `teal`, `orange`, `ok`, `crit`, `hi` (the highlighted card); the grid ends at the next `##`, `---` or directive; a `<!-- step -->` before it reveals the whole grid |
 | `logo: [image] × Partner · alt=Brand` | a logo lockup: the image (or, with none, the theme's own logo: `--si-brand-logo`, as in AceMQ Pro), a bar, and the partner's name; on slides and pages |
+| `qr: text or URL · caption=… · style=dots · logo=path · size=large · ec=H` | a QR code (below) |
 | `event: YYYY-MM-DDTHH:MM text · Label → link` | a corner toast with a live countdown, shown from two days before the time until it starts |
 | `accordion` | the `###` questions that follow become a one-open-at-a-time list; it ends at the next `##`, `---` or directive |
 | `modal: id` … `end` | the blocks up to `<!-- end -->` become a dialog; any `[link](#id)` (or the `cta:`) opens it, and so does a URL ending in `#id`. A document part ends at `##`, so use `###` headings inside a modal. |
@@ -1776,6 +1783,32 @@ On a cover slide:
 
 <!-- badge: Prepared for CACI · Session 1 of 5 -->
 ```
+
+### QR codes
+
+`<!-- qr: … -->` draws a QR code for a link or any text, on a slide or a page.
+It is an SVG made at build time (nothing is fetched, no script), sized by its
+container like any figure; on a slide it fits a square in either orientation.
+A web address is also a link, so a reader on a laptop can click it.
+
+```markdown
+## Everything from today
+
+<!-- qr: https://simple-ideas.org/rules/ · caption=simple-ideas.org/rules · size=large -->
+```
+
+| Option | What |
+|---|---|
+| `caption=text` | a line under the code |
+| `size=small\|medium\|large` | the width (default medium); `--si-qr-size` overrides it |
+| `style=dots` (or the word `dots`) | round modules and rounded finder squares; `square` is the default |
+| `logo=path/mark.svg` | a picture in the middle; the code switches to error correction H, and a picture too big to read past is a problem (`logo-size=20` is its share of the width, in percent) |
+| `ec=L\|M\|Q\|H` | error correction (default M, raised when it costs no size) |
+
+The code is dark on light in every theme (`--si-qr-fg`, default `#111`, on
+`--si-qr-bg`, default `#fff`): a light code on a dark ground is one many
+phones do not read. To make one as a file, see `si qr` in the manual
+(`si qr https://… --png --svg --pdf`).
 
 Example: `si --export example --type site` writes this site; `si serve
 si-example` serves it.

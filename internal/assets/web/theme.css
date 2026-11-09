@@ -167,6 +167,8 @@ pre.si-mermaid{background:none;border:0;text-align:center;margin:.4em 0;font-fam
    specificity (:where) so any theme's own .hl / .pill / .lockup wins */
 :where(.hl){background:linear-gradient(color-mix(in srgb,var(--si-accent) 30%,transparent),color-mix(in srgb,var(--si-accent) 30%,transparent)) 0 88%/100% .32em no-repeat;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding-inline:.04em}
 :where(.si-lockup){display:flex;align-items:center;gap:1em;margin-bottom:1.2em}
+:where(.si-qr) svg{color:var(--si-qr-fg,#111);background:var(--si-qr-bg,#fff);border-radius:.6em}
+:where(.si-qr-cap){font-size:.7em;color:var(--si-muted);text-align:center}
 :where(.si-lk-img){height:1.9em;width:auto;max-height:none;border-radius:0;box-shadow:none}
 :where(.si-lk-logo,.si-lk-logo+.si-lk-x){display:none}
 :where(.si-lk-x){width:2px;height:1.9em;background:var(--si-line)}

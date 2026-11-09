@@ -56,6 +56,10 @@ type Options struct {
 	// presenter state, commands and ink also travel over /_si/remote/*.
 	// Play only; a built deck keeps BroadcastChannel alone.
 	Remote bool
+	// RemoteQR is what the q key shows on the presenting laptop under
+	// si play --remote: the role links and their QR codes. Loopback play pages
+	// only (it carries the remote key), never the remote listener or a build.
+	RemoteQR *RemoteQR
 	// Pages are the other pages find (/) offers (see Pages); nil offers none.
 	Pages []Page
 	// Prev and Next link a lab to its neighbours built from the same
@@ -347,4 +351,17 @@ func Topics(d *deck.Deck) []int {
 		prevFile, prevSection = s.File, s.Kind == deck.KindSection
 	}
 	return out
+}
+
+// RemoteQR is the q overlay of si play --remote: one card per role link.
+type RemoteQR struct {
+	Links []RemoteLink `json:"links"`
+	Also  []string     `json:"also,omitempty"` // other addresses of this machine the links work on
+}
+
+// RemoteLink is one role (or the deck picker) and its QR code as SVG.
+type RemoteLink struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+	SVG  string `json:"svg"`
 }

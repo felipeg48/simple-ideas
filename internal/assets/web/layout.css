@@ -106,6 +106,12 @@ img,svg,video{max-width:100%}
 
 /* SVG canvases scale with their viewBox */
 .si-figure{margin:.5em 0;display:flex;justify-content:center;min-height:0;min-width:0}
+/* <!-- qr: --> on a slide: a square that fits the slide either way round */
+.si-qr{--_qr:var(--si-qr-size,min(30cqi,40cqb));margin:.5em auto;display:flex;flex-direction:column;align-items:center;gap:.4em;width:max-content;max-width:100%;min-width:0}
+.si-qr[data-size="small"]{--_qr:var(--si-qr-size,min(18cqi,26cqb))}
+.si-qr[data-size="large"]{--_qr:var(--si-qr-size,min(46cqi,60cqb))}
+.si-qr a,.si-qr svg{display:block;width:var(--_qr);max-width:100%;height:auto}
+.si-qr a svg{width:100%}
 /* figure caps follow --si-figure-max (the theme's room for a canvas under a
  * heading); the runtime lowers --_figfit before it shrinks the type when a
  * slide overflows, so a canvas plus bullets never runs into the footer */

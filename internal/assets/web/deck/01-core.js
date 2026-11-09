@@ -22,6 +22,9 @@
   /* ?si-view=thumb: a still picture of one slide (si --web storyboard): every
      build step shown, no sync, no live reload */
   if (!role && /[?&]si-view=thumb(?:&|$)/.test(location.search)) role = 'thumb';
+  /* si play --remote on the presenting laptop: q shows the role links as QR codes */
+  var remoteQR = !role && window.SI_REMOTE_QR && window.SI_REMOTE_QR.links && window.SI_REMOTE_QR.links.length ? window.SI_REMOTE_QR : null;
+  if (remoteQR) cmd.remote = 'q';
   if (cfg.keys) for (var _k in cfg.keys) if (cmd.hasOwnProperty(_k) && cfg.keys[_k]) cmd[_k] = cfg.keys[_k];
   var feat = { draw: true, timer: true, presenter: true, overview: true, find: true };
   if (cfg.features) for (var _f in cfg.features) if (feat.hasOwnProperty(_f)) feat[_f] = !!cfg.features[_f];
