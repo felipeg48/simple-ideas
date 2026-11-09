@@ -216,6 +216,7 @@ One inline SVG whose parts change state slide by slide:
 | `a` | draw over the slide |
 | `d` / `f` / `?` | light-dark / full screen / help |
 | `` ` `` | terminal drawer — run local commands live (`si play` on a loopback address only) |
+| ⌥ + finger | `si play --trackpad` (Mac): the trackpad is the display; hold Option and draw with one finger |
 | `q` | `si play --remote`: the phone and tablet links as QR codes, on the projected screen (`--https`: over HTTPS, so the phone stays awake) |
 
 Open on a phone: `si play --addr 0.0.0.0:7070` prints a LAN URL + QR.

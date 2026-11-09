@@ -78,6 +78,11 @@ them (`keys.remote` in si.conf remaps it). When the laptop is on more than
 one network (Wi-Fi and Ethernet, or a VPN such as Tailscale), the other
 addresses are listed under the codes.
 
+`si play talk.md --trackpad` (macOS) makes the Mac's trackpad a pen: the pad
+maps to the whole display the deck is on, a finger shows a dot, and holding
+⌥ Option while a finger moves draws (the cursor stays put meanwhile). It
+needs the `si-trackpad` helper next to `si`; see `docs/remote.md`.
+
 `--https` serves the remote pages over HTTPS, so the phone keeps its screen
 on and the notes are private on any network. si makes its own certificate
 authority once (it can only vouch for local addresses) and each phone trusts

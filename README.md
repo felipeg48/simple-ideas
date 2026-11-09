@@ -127,6 +127,10 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.10.0:** `si play talk.md --trackpad` (macOS): the Mac trackpad as a
+  pen. The pad maps to the whole display the deck is on; hold ⌥ Option and
+  draw with one finger. A small helper, `si-trackpad`, reads the trackpad
+  (`make install` builds it; the release has it for macOS).
 - **v2.9.1:** `si mcp` tool schemas every client accepts (Claude Code listed
   no tools with v2.9.0).
 - **v2.9.0:** `si mcp`, an MCP server for AI agents (stdio, MCP 2026-07-28
@@ -331,6 +335,7 @@ https://simple-ideas.org/agents.html
 | `si selfupdate` | download the latest release for your OS/arch (checksum-verified) and replace the running `si` |
 | `si qr <text\|URL> [-o name.png] [--png --jpg --svg --pdf] [--logo pic] [--style dots]` | a QR code file for a link, text, `--wifi` network or `--vcard` contact; a logo too big to scan past is refused (see [QR codes](https://simple-ideas.org/features/qr.html)) |
 | `si play <file.md> --remote --https[=tailscale]` | the phone and tablet pages over HTTPS; each phone trusts si's local certificate authority once (see [Present from your phone](https://simple-ideas.org/features/remote.html)) |
+| `si play <file.md> --trackpad` | macOS: the trackpad maps to the whole display; hold ⌥ Option and draw on the deck with one finger (needs `si-trackpad` next to `si`) |
 | `si ca [trust\|untrust]` | si's certificate authority for `--https`: where it is, its fingerprint; `trust` adds it to this computer's trusted certificates |
 | `si mcp [dir]` | an MCP server for AI agents on stdio (see [Use it with your AI agent](#use-it-with-your-ai-agent)) |
 | `si rules` | print RULES.md |

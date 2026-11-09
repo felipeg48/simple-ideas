@@ -5,6 +5,24 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.10.0 (2026-11-09): the Mac trackpad as a pen.** The founder asked for the
+  trackpad mapped to the whole monitor (not the window) and ⌥ Option held to
+  draw. `desktop/trackpad/main.go` (`si-trackpad`, cgo, darwin; `stub.go`
+  elsewhere): MultitouchSupport (private) contact frames → first finger in
+  contact (states 3–4) or near; Option via `CGEventSourceFlagsState`; cursor
+  frozen while Option is held; 60 Hz `pad` POSTs to `/_si/remote/send` with
+  `s` = `CGGetActiveDisplayList` bounds (global points, top-left). `si play
+  --trackpad` (`cmd/si/trackpad.go`) turns on the loopback relay without a
+  network listener, finds the helper next to si or on PATH, stops it with
+  SIGINT. Page: `padIn`/`padPoint` (display holding the window centre;
+  ponytail: page zoom 100 %, no chrome left of the page). Tested: the helper
+  finds the trackpad (the framework logs "Recognized … 30 cols X 22 rows"),
+  starts and stops with si play; synthetic pad messages draw an exact diagonal
+  (25 %→75 % of the window) as one stroke, with the dot. NOT tested: a real
+  finger (the founder's to try), gestures while Option is held, multi-display.
+  `make trackpad`, `make install` (macOS) installs it; build-mac.sh puts it in
+  the app and in `si-trackpad-<v>-macos.zip`, uploaded by release.yml.
+
 - **v2.9.1:** `claude mcp list` rejected v2.9.0's tools/list: `si_rules` sent
   `"required": null` (must be an array or absent); `obj` now omits it, and
   `TestMCPTools` checks every schema the way a client does. The headless

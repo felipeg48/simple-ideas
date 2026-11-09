@@ -1,7 +1,7 @@
 BIN := bin/si
 INSTALL_DIR ?= $(HOME)/.bin
 
-.PHONY: docs-site build test install play-example examples check fmt clean studio-ui studio-e2e desktop-mac desktop-icon desktop-cert
+.PHONY: trackpad docs-site build test install play-example examples check fmt clean studio-ui studio-e2e desktop-mac desktop-icon desktop-cert
 
 build:
 	go build -o $(BIN) ./cmd/si
@@ -15,6 +15,7 @@ install: build
 	@mkdir -p "$(INSTALL_DIR)"
 	@rm -f "$(INSTALL_DIR)/si" && cp "$(BIN)" "$(INSTALL_DIR)/si" # new inode: macOS kills a binary overwritten in place
 	@echo "installed $(INSTALL_DIR)/si"
+	@if [ "$$(uname)" = Darwin ]; then $(MAKE) -s trackpad && rm -f "$(INSTALL_DIR)/si-trackpad" && cp bin/si-trackpad "$(INSTALL_DIR)/si-trackpad" && echo "installed $(INSTALL_DIR)/si-trackpad"; fi
 	@case ":$$PATH:" in \
 	  *":$(INSTALL_DIR):"*) echo "$(INSTALL_DIR) is already on your PATH";; \
 	  *) rc="$$HOME/.bashrc"; case "$$SHELL" in *zsh) rc="$$HOME/.zshrc";; esac; \
@@ -49,6 +50,10 @@ clean:
 
 studio-e2e: build
 	cd web/studio && npm run e2e
+
+# si-trackpad (macOS): the trackpad as a pen for si play --trackpad; cgo, in the desktop module
+trackpad:
+	cd desktop && go build -o ../bin/si-trackpad ./trackpad
 
 # si Studio.app for macOS (universal), into desktop/dist; needs Xcode command line tools
 desktop-mac:

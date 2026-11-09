@@ -15,10 +15,12 @@ for arch in arm64 amd64; do
 	carch=$arch; [ "$arch" = amd64 ] && carch=x86_64
 	(cd .. && CGO_ENABLED=0 GOOS=darwin GOARCH=$arch go build -trimpath -ldflags "-s -w" -o "desktop/dist/si-$arch" ./cmd/si)
 	CGO_ENABLED=1 GOOS=darwin GOARCH=$arch CC="clang -arch $carch" go build -trimpath -ldflags "-s -w" -o "dist/shell-$arch" .
+	CGO_ENABLED=1 GOOS=darwin GOARCH=$arch CC="clang -arch $carch" go build -trimpath -ldflags "-s -w" -o "dist/trackpad-$arch" ./trackpad
 done
 lipo -create dist/si-arm64 dist/si-amd64 -output "$APP/Contents/MacOS/si"
 lipo -create dist/shell-arm64 dist/shell-amd64 -output "$APP/Contents/MacOS/si-studio"
-rm dist/si-arm64 dist/si-amd64 dist/shell-arm64 dist/shell-amd64
+lipo -create dist/trackpad-arm64 dist/trackpad-amd64 -output "$APP/Contents/MacOS/si-trackpad"
+rm dist/si-arm64 dist/si-amd64 dist/shell-arm64 dist/shell-amd64 dist/trackpad-arm64 dist/trackpad-amd64
 sed "s/__VERSION__/$VERSION/g" Info.plist > "$APP/Contents/Info.plist"
 cp AppIcon.icns "$APP/Contents/Resources/"
 IDENTITY=${SI_SIGN_IDENTITY:-simple-ideas Self-Signed}
@@ -28,4 +30,7 @@ else
 	codesign --force --deep --sign - "$APP" # ad-hoc: Apple silicon will not run unsigned code
 fi
 (cd dist && ditto -c -k --keepParent "si Studio.app" "si-Studio-$VERSION-macos.zip")
+# si-trackpad on its own, for si play --trackpad next to an installed si
+cp "$APP/Contents/MacOS/si-trackpad" dist/si-trackpad
+(cd dist && ditto -c -k si-trackpad "si-trackpad-$VERSION-macos.zip" && rm si-trackpad)
 echo "built desktop/dist/si Studio.app and desktop/dist/si-Studio-$VERSION-macos.zip"

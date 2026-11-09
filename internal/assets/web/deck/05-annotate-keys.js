@@ -42,6 +42,49 @@
       el.setAttribute('d', d); draw.appendChild(el);
     } else el.setAttribute('d', el.getAttribute('d') + d);
   }
+  /* si play --trackpad: the Mac trackpad is the whole display (si-trackpad
+     sends 0..1 across the pad and the displays' bounds in global points); a
+     dot follows the finger, and with Option held the finger draws, through
+     the same ink as the pen */
+  var padDot = null, padDrawing = false;
+  function padPoint(m) {
+    var cx = window.screenX + window.outerWidth / 2, cy = window.screenY + window.outerHeight / 2, s = null;
+    (m.s || []).forEach(function (r) { if (cx >= r[0] && cx < r[0] + r[2] && cy >= r[1] && cy < r[1] + r[3]) s = r; });
+    if (!s) s = (m.s && m.s[0]) || [0, 0, screen.width, screen.height];
+    // ponytail: assumes page zoom 100% (CSS px = display points) and no browser chrome left of the page
+    return [s[0] + m.x * s[2] - window.screenX, s[1] + m.y * s[3] - window.screenY - (window.outerHeight - window.innerHeight)];
+  }
+  function padIn(m) {
+    if (role || !draw) return;
+    var p = padPoint(m), x = p[0], y = p[1];
+    var inside = x >= 0 && y >= 0 && x < innerWidth && y < innerHeight;
+    if (!padDot) {
+      padDot = document.createElement('div');
+      padDot.id = 'si-pad-dot';
+      padDot.setAttribute('style', 'position:fixed;z-index:25;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;pointer-events:none;border:2px solid var(--si-accent);box-sizing:border-box');
+      document.body.appendChild(padDot);
+    }
+    padDot.hidden = !m.on || !inside;
+    padDot.style.left = x.toFixed(1) + 'px'; padDot.style.top = y.toFixed(1) + 'px';
+    padDot.style.background = m.d ? 'var(--si-accent)' : 'color-mix(in srgb, var(--si-accent) 20%, transparent)';
+    if (m.d && inside) {
+      if (!padDrawing) {
+        padDrawing = true;
+        curPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        curPath.id = 'si-ink-' + Math.random().toString(36).slice(2, 7) + (++inkSeq);
+        curPath.style.stroke = penColor;
+        curPath.setAttribute('stroke-width', penSize.toFixed(1));
+        curPath.setAttribute('d', 'M ' + x.toFixed(1) + ' ' + y.toFixed(1));
+        draw.appendChild(curPath);
+        inkW = penSize;
+      } else if (curPath) curPath.setAttribute('d', curPath.getAttribute('d') + ' L ' + x.toFixed(1) + ' ' + y.toFixed(1));
+      inkPush(x, y);
+    } else if (padDrawing) {
+      padDrawing = false;
+      if (curPath) { clearTimeout(inkTimer); inkFlush(); }
+      curPath = null;
+    }
+  }
   function cycleColor() { penColor = penColors[(penColors.indexOf(penColor) + 1) % penColors.length]; erasing = false; syncPenUI(); }
   function toggleEraser() { erasing = !erasing; syncPenUI(); }
   function syncPenUI() {

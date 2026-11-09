@@ -44,6 +44,9 @@ var (
 const fetchLimit = 5 << 20
 
 func fetchCacheDir() string {
+	if d := os.Getenv("SI_CACHE_DIR"); d != "" { // tests: a fresh cache, never the user's
+		return d
+	}
 	d, err := os.UserCacheDir()
 	if err != nil {
 		d = os.TempDir()
