@@ -189,6 +189,11 @@ pass. The steps that matter:
 
 ## Roadmap ideas
 
+- **Next five** (specs, 2026-11-09; the founder wants all, one at a time):
+  `docs/superpowers/specs/2026-11-09-next-five.md` indexes audience mode
+  (follow, polls, Q&A), handouts (`--handout`), record your talk
+  (`--mp4 --narration`, pace report), theme from a logo, two presenters
+  (`Notes[Name]:`).
 - **Menu-bar icon** (DONE, v2.12.0): si Studio.app's NSStatusItem lists
   running sessions from `<config dir>/si/sessions/<pid>.json`
   (`internal/serve/session.go`, written by si play / serve; `desktop/sessions.go`

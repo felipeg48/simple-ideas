@@ -5,6 +5,9 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **Specs for the next five features** (2026-11-09): `docs/superpowers/specs/2026-11-09-next-five.md`
+  and one spec each. Not started; the founder picks the order, one at a time.
+
 - **v2.13.0: `draw.hold` in si.conf** (the founder: the drawing key must be
   configurable). `config.DrawHold` (alt/option, shift, ctrl/control,
   meta/cmd/command, off/none; anything else warns and keeps alt), sent as
