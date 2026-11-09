@@ -25,9 +25,11 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
   The founder's first iPhone try still warned after installing the profile:
   Apple's own trust evaluation (`security verify-cert -c leaf -r ca -p ssl -s
   IP`, as iOS runs it) accepts the chain, so the cause is the full-trust switch
-  (Settings › General › About › Certificate Trust Settings). `si ca
+  (Settings › General › About › Certificate Trust Settings) — confirmed: with it on,
+  the iPhone opens the remote pages over HTTPS with no warning. `si ca
   [trust|untrust]` (`cmd/si/ca.go`) trusts it on the laptop (login keychain via
-  `security add-trusted-cert`; Windows `certutil -user`; Linux prints steps). Next:
+  `security add-trusted-cert`; Windows `certutil -user`; Linux prints steps). The loopback port (7070) stays HTTP on purpose: localhost
+  is already a secure context, and the authority does not cover `localhost`. Next:
   `--https` for `--review` too.
 
 - **v2.6.0 (2026-11-09): QR codes.** `internal/qr` (new; `cmd/si/qr.go` is
