@@ -42,11 +42,12 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/qr"
 	"github.com/felipeg48/simple-ideas/internal/render"
 	"github.com/felipeg48/simple-ideas/internal/serve"
+	"github.com/felipeg48/simple-ideas/internal/skill"
 	"github.com/felipeg48/simple-ideas/internal/studio"
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "2.7.0"
+const version = "2.8.0"
 
 // Exit codes.
 const (
@@ -142,6 +143,8 @@ Usage:
         docs-site: the si docs site source (rules pages generated from RULES.md, the manual,
                    live examples; default: ./si-docs-site); then si build it
         agent-rules: CLAUDE.md + AGENTS.md telling a coding agent how to write si decks
+        skill:     the si Agent Skill (SKILL.md + references/, default .claude/skills/si/); in Claude Code:
+                   /plugin marketplace add felipeg48/simple-ideas, then /plugin install si@simple-ideas
                    (default: the current dir; -o - prints it; never overwrites)
 
 Flags (GNU style, before or after the path):
@@ -166,7 +169,7 @@ Flags (GNU style, before or after the path):
       --review          play, serve: a keyed link (port + 2) where reviewers on your network leave comments on slides and sections
       --review-addr <host:port> the --review address (default 0.0.0.0, the port + 2)
       --pdf             build: also render each deck to pdfs/<name>.pdf and link it from the index tiles (needs headless Chrome)
-      --export <what>   css-rules, rules, conf, example, themes or agent-rules
+      --export <what>   css-rules, rules, conf, example, themes, agent-rules or skill
   -h, --help            this help
       --version         print the version (--version --verbose: build, links, credits)
 
@@ -1374,6 +1377,24 @@ func export(o *options, stdout, stderr io.Writer) int {
 		}
 		fmt.Fprintf(stdout, "si: wrote %s (for Claude Code and other coding agents)\n", strings.Join(wrote, " and "))
 		return exitOK
+	case "skill":
+		dir := o.output
+		if dir == "" {
+			dir = filepath.Join(".claude", "skills", "si")
+		}
+		for p, c := range skill.Files() {
+			f := filepath.Join(dir, filepath.FromSlash(p))
+			if err := os.MkdirAll(filepath.Dir(f), 0o755); err != nil {
+				fmt.Fprintf(stderr, "si: %v\n", err)
+				return exitProblems
+			}
+			if err := os.WriteFile(f, []byte(c), 0o644); err != nil {
+				fmt.Fprintf(stderr, "si: %v\n", err)
+				return exitProblems
+			}
+		}
+		fmt.Fprintf(stdout, "si: wrote the si skill to %s (SKILL.md and references/; run it again after updating si)\n", dir)
+		return exitOK
 	case "themes":
 		out := o.output
 		if out == "" {
@@ -1386,7 +1407,7 @@ func export(o *options, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "si: wrote %d theme sample decks to %s; try: si play %s\n", len(assets.ThemeNames()), out, out)
 		return exitOK
 	}
-	return usageErr(stderr, fmt.Sprintf("unknown --export %q (css-rules, rules, conf, example, themes, agent-rules)", o.export))
+	return usageErr(stderr, fmt.Sprintf("unknown --export %q (css-rules, rules, conf, example, themes, agent-rules, skill)", o.export))
 }
 
 // agentRules is the agent guide, stamped with the si version that wrote it.

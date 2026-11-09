@@ -132,6 +132,13 @@ A code on a slide, or as PNG, SVG or PDF with your logo in the middle.
 Broken links, missing files, click cues that do not match, and pages over
 their size budget.
 
+## Do you have an AI agent?
+
+Ask it for the talk. With the si skill it writes the Markdown, runs
+`si check`, fixes what it finds and looks at the result. In Claude Code:
+`/plugin marketplace add felipeg48/simple-ideas`, then
+`/plugin install si@simple-ideas`. [Codex, Cursor and the others](agents.md)
+
 ## Where to go next
 
 - [The features](features/decks.md): each kind of document with its example running and the Markdown behind it.

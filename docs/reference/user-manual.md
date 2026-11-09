@@ -275,6 +275,7 @@ si publish talk.md --to linkedin   # a dry run of the post; --yes sends it (also
 si code show.md --mp4      # a code show as video (si build map.md --mp4: a mind map's Play; needs ffmpeg)
 si fix <dir> [--write]     # raw-HTML components (hl, pill, lockup, cards) into si syntax
 si qr https://… --png --svg --pdf  # a QR code file (--logo, --style dots, --wifi, --vcard)
+si --export skill          # the si skill for your AI agent (Claude Code: /plugin install si@simple-ideas)
 si new-canvas <name>       # scaffold an animated canvas
 si manual --slides         # this manual
 si rules                   # the full format reference

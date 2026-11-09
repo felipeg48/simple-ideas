@@ -86,6 +86,7 @@ what you chose.
 | `cmd/si/main.go` | CLI: GNU-style flag parsing (interspersed, long flags), commands play, build, check, new, rules, `--export`; `cmd/si/mindmap.go`: mind map exports (`--svg`, `--png`, `--pdf` through headless Chrome and the runtime's `#si-export`) and `si mindmap import/export`; `cmd/si/code.go`: `si code` (code window exports: PNG/SVG per step, an animated GIF of a show, frames from the runtime's `#si-code-export`); `cmd/si/video.go`: `--mp4` (frames from headless Chrome, a 30 fps image sequence encoded by ffmpeg if installed; mind map Play frames from `#si-export-play`); `cmd/si/publish.go`: `si publish` (dry run unless `--yes`), `login` / `logout`; `cmd/si/qrcmd.go`: `si qr` and `printQR` (terminal codes) |
 | `internal/publish/` | `si publish` clients, stdlib only: LinkedIn (Documents + Posts API, 3-legged OAuth with a loopback redirect, `/v2/userinfo`), dev.to (Forem API), Hashnode (GraphQL); one request builder for dry run and send (secrets masked); logins in the config dir, 0600; tests against `httptest` fakes only; see `docs/publish.md` |
 | `internal/docsite/` | `si --export docs-site`: the docs site source, one page per numbered RULES.md section (fence-aware split, `§N` and contents links rewritten), the manual as a deck, the examples si ships as live pages (`live/`), and `features.go`: one feature page per main kind of document (decks, articles, guides, mind maps, books, code) with its live example, the Markdown read from `examples/`, options, commands and rules links; `docs/site/` holds the hand-written pages (`_site.md` with the Features and Examples menus, home, examples, download); `make docs-site` builds it into `dist/docs-site` with `--share-assets` |
+| `internal/skill/` | the si Agent Skill: `SKILL.md` (when to use si, the check-and-look loop, `docs/agent-rules.md`) and `references/` (one file per RULES.md section); `si --export skill`; the Claude Code plugin under `plugin/` is its output (`go test ./internal/skill -update`; `TestPluginInSync`), listed by `.claude-plugin/marketplace.json` (the `simple-ideas` marketplace) |
 | `internal/qr/` | the QR encoder (byte mode, versions 1-40, levels L/M/Q/H, `Cover`/`Hole` for a picture in the middle) and its renderers (ANSI, SVG, PNG/JPEG via `Image`, PDF); `testdata/golden.txt` pins 64 codes a real reader decoded (`QR_VISION=1 go test ./internal/qr` on macOS) |
 | `internal/codeshow/` | code windows in Markdown text, by lines: `Shows` / `ShowAt` (fences with `window=` or `id=`, same-id runs, their `<!-- callout: -->` lines), `Apply` (the Window view's ops), `Source` (an article of only the windows, for exports and the Studio preview) |
 | `internal/mindmap/` | the mind map Markdown model for editors and converters: `Parse` / `String` (round trip, unknown text kept), `Apply` (the map editor's ops), `FenceAt` / `SetInfo` (fences), `Import` / `Export` (OPML, FreeMind, XMind, Mermaid). The renderer keeps its own reader for drawing |
@@ -187,6 +188,10 @@ pass. The steps that matter:
 
 ## Roadmap ideas
 
+- **AI agents** (DONE, v2.8.0): the `si` skill, the Claude Code plugin
+  (`/plugin install si@simple-ideas`), `si --export skill`, docs page
+  `agents.md`. Next (v2.9.0): `si mcp`, a stdio MCP server (stdlib JSON-RPC):
+  check (problems as data), rules (one section), new, build, qr, screenshot.
 - **QR codes** (DONE, v2.6.0): `internal/qr`, `si qr` (PNG/JPG/SVG/PDF, logo,
   dots, Wi-Fi, vCard), `<!-- qr: -->`, the `q` overlay in `si play --remote`.
   v2.7.0: `si play --remote --https` (si's own name-constrained CA,

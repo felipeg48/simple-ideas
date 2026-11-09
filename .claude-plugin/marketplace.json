@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "simple-ideas",
+  "description": "si (simple-ideas): Markdown in, fluid slide decks, articles, guides, books, mind maps and code shows out.",
+  "owner": {
+    "name": "Felipe Gutierrez",
+    "url": "https://github.com/felipeg48"
+  },
+  "plugins": [
+    {
+      "name": "si",
+      "description": "Write slide decks, talks, articles, guides, books, mind maps and code shows in Markdown with si: the format, the check-and-look loop, and every rule on demand.",
+      "source": "./plugin",
+      "category": "productivity",
+      "homepage": "https://simple-ideas.org/agents.html"
+    }
+  ]
+}

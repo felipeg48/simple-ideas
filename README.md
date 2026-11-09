@@ -127,6 +127,11 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.8.0:** si for AI agents. The `si` skill (`SKILL.md` + one reference
+  file per rules section) as a Claude Code plugin
+  (`/plugin marketplace add felipeg48/simple-ideas`, `/plugin install
+  si@simple-ideas`) and as `si --export skill` for any agent with skills;
+  `AGENTS.md` for the others; https://simple-ideas.org/agents.html.
 - **v2.7.0:** `si play talk.md --remote --https`: the phone and tablet pages
   over HTTPS, so a phone keeps its screen on and the notes stay private on any
   network. si makes a certificate authority of its own once (it can only vouch

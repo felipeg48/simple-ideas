@@ -30,6 +30,7 @@ footer: simple-ideas
   - [A book](live/book/)
   - [The Thursday Promise, a 3D mind map](live/mindmap/thursday.md)
   - [The retry, a code show](live/code/retry.md)
+- [AI agents](agents.md)
 - [Rules](rules/)
 - [Manual](manual.md)
 - [Download](download.md)

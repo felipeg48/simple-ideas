@@ -5,6 +5,20 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.8.0 (2026-11-09): si for AI agents.** `internal/skill` makes the skill:
+  `SKILL.md` (quoted YAML description that triggers on decks/slides/talks/si
+  folders; the check-and-look loop; `docs/agent-rules.md`) and
+  `references/NN-slug.md` per RULES.md section (`docsite.Split`). Output: `si
+  --export skill [-o dir]` (default `.claude/skills/si/`) and `plugin/` (the
+  Claude Code plugin, version stamped from cmd/si; regenerate with `go test
+  ./internal/skill -update`; `TestPluginInSync` reads the version from
+  cmd/si/main.go), listed by `.claude-plugin/marketplace.json`. `claude plugin
+  validate .` passes. Tested for real: a headless `claude -p` in an empty
+  project with only the exported skill wrote a 4-slide deck with spoken notes,
+  points, big-number and a qr directive, ran `si check`, fixed a problem, built
+  it. Docs: `docs/site/agents.md` (top-level "AI agents" menu, home section),
+  manual, README, `brand.Pages["agents"]` + Studio Help. Next: `si mcp` (v2.9.0).
+
 - **v2.7.0 (2026-11-09): `--https` for `si play --remote`.**
   `internal/serve/tls.go`: `LoadCA` (ECDSA P-256, `<config dir>/si/ca/`,
   key 0600, `$SI_CA_DIR` for tests; name constraints: private + 100.64/10 +
