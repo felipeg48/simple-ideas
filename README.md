@@ -127,6 +127,8 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.9.1:** `si mcp` tool schemas every client accepts (Claude Code listed
+  no tools with v2.9.0).
 - **v2.9.0:** `si mcp`, an MCP server for AI agents (stdio, MCP 2026-07-28
   and earlier): `si_check` (problems as data), `si_rules`, `si_new`,
   `si_build`, `si_qr` and `si_screenshot` (the agent sees the slide); the

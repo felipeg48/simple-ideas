@@ -85,6 +85,16 @@ func TestMCPTools(t *testing.T) {
 	tools := map[string]func(json.RawMessage) (mcp.Result, error){}
 	for _, tl := range mcpTools(root) {
 		tools[tl.Name] = tl.Call
+		// what a client validates: an object schema whose required, if any, is a list
+		b, _ := json.Marshal(tl.Input)
+		var sch map[string]any
+		json.Unmarshal(b, &sch)
+		if r, ok := sch["required"]; sch["type"] != "object" || ok && r == nil {
+			t.Errorf("%s: inputSchema %s", tl.Name, b)
+		}
+		if _, ok := sch["required"].([]any); ok != (sch["required"] != nil) {
+			t.Errorf("%s: required must be an array: %s", tl.Name, b)
+		}
 	}
 	res, err := tools["si_check"](json.RawMessage(`{"path":"talk.md"}`))
 	st, _ := res.Structured.(map[string]any)

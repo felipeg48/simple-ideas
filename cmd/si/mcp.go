@@ -75,7 +75,11 @@ func mcpTools(root string) []mcp.Tool {
 	}
 	str := func(desc string) map[string]any { return map[string]any{"type": "string", "description": desc} }
 	obj := func(req []string, props map[string]any) map[string]any {
-		return map[string]any{"type": "object", "properties": props, "required": req}
+		o := map[string]any{"type": "object", "properties": props}
+		if len(req) > 0 { // "required" must be an array or absent, never null
+			o["required"] = req
+		}
+		return o
 	}
 	relTo := func(p string) string {
 		if r, err := filepath.Rel(root, p); err == nil {

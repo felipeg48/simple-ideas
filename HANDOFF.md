@@ -5,6 +5,11 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.9.1:** `claude mcp list` rejected v2.9.0's tools/list: `si_rules` sent
+  `"required": null` (must be an array or absent); `obj` now omits it, and
+  `TestMCPTools` checks every schema the way a client does. The headless
+  `--mcp-config` run had tolerated it, so check new MCP work with
+  `claude mcp list` too.
 - **v2.9.0 (2026-11-09): `si mcp`.** `internal/mcp` (protocol checked against
   the 2026-07-28 spec through Context7: stateless, `server/discover`, version
   in `_meta`, `-32022` UnsupportedProtocolVersionError, `resultType`,
