@@ -9,7 +9,7 @@
 | `p` or `Shift+S` | teleprompter window |
 | `t` | break timer HUD: pick minutes, countdown to project during a break |
 | `/` | find a slide: search titles and text, or type a number to jump |
-| `a` | draw: a pen layer over the slide (drag, or hold ⌥ Option / Alt and move: the cursor draws, no click) |
+| `a` | draw: a pen layer over the slide (drag, or hold ⌥ Option / Alt and move: the cursor draws, no click; si.conf `draw.hold` changes the key) |
 | `d` | light / dark (remembered) |
 | `f` | full screen |
 | `?` | key help |
@@ -46,7 +46,8 @@
 - **Draw** (`a`): a transient pen over the current slide, for circling or
   underlining as you talk. Drag to draw (mouse, touch, or pen — pen pressure
   varies the stroke), or hold ⌥ Option (Alt) and move: the cursor draws where
-  it goes, no click, so a trackpad draws with one finger; the toolbar picks the colour (accent, red, green, ink) and
+  it goes, no click, so a trackpad draws with one finger (`draw.hold` in
+  si.conf picks another key: shift, ctrl, meta, or off); the toolbar picks the colour (accent, red, green, ink) and
   the brush size (thin / medium / thick); `c` cycles colour, `e` erases strokes,
   `z` undoes the last, `x` clears all, `Esc` turns it off. Strokes use the theme
   colours and clear when you change slides; they are not saved and do not print.

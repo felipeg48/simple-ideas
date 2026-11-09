@@ -4,7 +4,7 @@
 // ../../bin/si (make build) into a temp folder. Run: npm run e2e:pointer
 import { chromium } from "playwright";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -14,6 +14,12 @@ const out = mkdtempSync(join(tmpdir(), "si-pointer-"));
 execFileSync(si, ["build", join(ex, "mindmap"), "-o", join(out, "mindmap")], { stdio: "ignore" });
 execFileSync(si, ["build", join(ex, "code"), "-o", join(out, "code")], { stdio: "ignore" });
 execFileSync(si, ["build", join(ex, "showcase.md"), "-o", join(out, "deck")], { stdio: "ignore" });
+// draw.hold in si.conf: Shift draws instead of Option
+const held = join(out, "held-src");
+mkdirSync(held, { recursive: true });
+writeFileSync(join(held, "talk.md"), "---\ntitle: Held\n---\n\n# Held\n\n---\n\n## Draw here\n\nA slide.\n");
+writeFileSync(join(held, "si.conf"), "draw.hold: shift\n");
+execFileSync(si, ["build", held, "-o", join(out, "held")], { stdio: "ignore" });
 
 const browser = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -47,6 +53,18 @@ const tests = {
     await p.mouse.move(1000, 700, { steps: 4 });
     const s = await strokes();
     if (s.length !== 1 || !s[0].startsWith("M 300 600") || !s[0].endsWith("900 650")) throw new Error("stroke " + s.length + ": " + (s[0] || "").slice(0, 30) + " … " + (s[0] || "").slice(-12));
+    if (p.errors.length) throw new Error(p.errors[0]);
+    await p.close();
+  },
+  "draw: si.conf draw.hold: shift makes Shift the drawing key, not Option": async () => {
+    const p = await page("held/talk.html#2");
+    await sleep(500);
+    const strokes = () => p.evaluate(() => document.querySelectorAll(".si-draw path").length);
+    await p.keyboard.press("a");
+    await p.mouse.move(200, 300); await p.keyboard.down("Alt"); await p.mouse.move(500, 350, { steps: 8 }); await p.keyboard.up("Alt");
+    if (await strokes()) throw new Error("Option drew although draw.hold is shift");
+    await p.mouse.move(200, 500); await p.keyboard.down("Shift"); await p.mouse.move(600, 520, { steps: 8 }); await p.keyboard.up("Shift");
+    if ((await strokes()) !== 1) throw new Error("Shift did not draw one stroke");
     if (p.errors.length) throw new Error(p.errors[0]);
     await p.close();
   },

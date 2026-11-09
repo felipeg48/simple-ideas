@@ -85,7 +85,11 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 			timer = map[string]any{"time": t.Times, "unit": t.Unit, "face": t.Face, "animations": names, "animKinds": kinds}
 		}
 	}
-	cfg, _ := json.Marshal(map[string]any{"keys": keys, "features": feats, "timer": timer, "terminal": opt.Terminal, "remote": opt.Remote, "pages": opt.Pages, "live": opt.LiveReload})
+	conf := map[string]any{"keys": keys, "features": feats, "timer": timer, "terminal": opt.Terminal, "remote": opt.Remote, "pages": opt.Pages, "live": opt.LiveReload}
+	if opt.Config != nil && opt.Config.DrawHold != "" {
+		conf["drawHold"] = opt.Config.DrawHold // si.conf draw.hold; the runtime defaults to alt
+	}
+	cfg, _ := json.Marshal(conf)
 	fmt.Fprintf(&b, "<script>window.SI_CONFIG=%s;</script>\n", cfg)
 	if opt.Remote {
 		b.WriteString(RelayJS)

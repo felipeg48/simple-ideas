@@ -73,7 +73,13 @@ page without it gets nothing.
 
 Press `a` (draw), then **hold ⌥ Option and move**: the cursor draws where it
 goes, no click needed, so a trackpad draws with one finger. Let go of Option
-to end the stroke. It only works in draw mode, in any browser and any deck
+to end the stroke. Another key suits you better? Put it in `si.conf` next to
+the deck:
+
+```text
+draw.hold: shift      # alt (⌥ Option, the default), shift, ctrl, meta (⌘ Command), or off
+```
+ It only works in draw mode, in any browser and any deck
 (`si play`, a built deck, offline), and the strokes travel to the
 teleprompter and a phone's draw pad like any other.
 

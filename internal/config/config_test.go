@@ -98,3 +98,14 @@ func TestParseBudget(t *testing.T) {
 		t.Errorf("a bad size warns: %+v %v", c.Budget, c.Warnings)
 	}
 }
+
+func TestDrawHold(t *testing.T) {
+	for v, want := range map[string]string{"alt": "alt", "Option": "alt", "shift": "shift", "control": "ctrl", "cmd": "meta", "off": "off"} {
+		if c := Parse(strings.NewReader("draw.hold: " + v + "\n")); c.DrawHold != want || len(c.Warnings) > 0 {
+			t.Errorf("draw.hold: %s → %q %v, want %q", v, c.DrawHold, c.Warnings, want)
+		}
+	}
+	if c := Parse(strings.NewReader("draw.hold: space\n")); c.DrawHold != "" || len(c.Warnings) != 1 {
+		t.Errorf("draw.hold: space should warn and keep the default: %q %v", c.DrawHold, c.Warnings)
+	}
+}

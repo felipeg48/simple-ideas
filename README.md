@@ -127,6 +127,8 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.13.0:** the key that draws with the cursor is yours to pick:
+  `draw.hold: shift` (or `alt`, the default, `ctrl`, `meta`, `off`) in si.conf.
 - **v2.12.0:** a menu-bar icon in si Studio for Mac: every running `si play`
   / `si serve` (from the app or a terminal) with Open in Browser,
   Teleprompter, Phone QR Codes…, Copy Link, Show in Finder and Stop; the app

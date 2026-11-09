@@ -77,22 +77,25 @@
     window.addEventListener('pointerup', dEnd);
     window.addEventListener('pointercancel', dEnd);
     /* in draw mode, holding Option (Alt) draws where the cursor goes, no
-       click: a trackpad draws with one finger; letting go of Option ends it */
+       click: a trackpad draws with one finger; letting go of it ends the
+       stroke. si.conf draw.hold picks the key: alt, shift, ctrl, meta, off */
+    var hold = { alt: ['altKey', 'Alt'], shift: ['shiftKey', 'Shift'], ctrl: ['ctrlKey', 'Control'], meta: ['metaKey', 'Meta'] }[cfg.drawHold || 'alt'];
+    var held = function (e) { return !!hold && !!e[hold[0]]; };
     var altStroke = false, lastX = -1, lastY = -1;
     window.addEventListener('pointermove', function (e) {
       if (e.pointerType === 'touch') return;
       lastX = e.clientX; lastY = e.clientY;
       if (!drawMode) return;
-      if (e.altKey && !drawing) { altStroke = true; dStart(e); }
-      else if (!e.altKey && altStroke) { altStroke = false; dEnd(); }
+      if (held(e) && !drawing) { altStroke = true; dStart(e); }
+      else if (!held(e) && altStroke) { altStroke = false; dEnd(); }
     });
     // the stroke starts where the cursor is the moment Option goes down
     window.addEventListener('keydown', function (e) {
-      if (e.key !== 'Alt' || !drawMode || drawing || lastX < 0) return;
+      if (!hold || e.key !== hold[1] || !drawMode || drawing || lastX < 0) return;
       altStroke = true;
       dStart({ clientX: lastX, clientY: lastY, pointerType: 'mouse', preventDefault: function () {} });
     });
-    window.addEventListener('keyup', function (e) { if (e.key === 'Alt' && altStroke) { altStroke = false; dEnd(); } });
+    window.addEventListener('keyup', function (e) { if (hold && e.key === hold[1] && altStroke) { altStroke = false; dEnd(); } });
     window.addEventListener('blur', function () { if (altStroke) { altStroke = false; dEnd(); } });
   }
   if (drawBar) {

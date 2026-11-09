@@ -797,7 +797,7 @@ callouts are written the same way.
 | `p` or `Shift+S` | teleprompter window |
 | `t` | break timer HUD: pick minutes, countdown to project during a break |
 | `/` | find a slide: search titles and text, or type a number to jump |
-| `a` | draw: a pen layer over the slide (drag, or hold ⌥ Option / Alt and move: the cursor draws, no click) |
+| `a` | draw: a pen layer over the slide (drag, or hold ⌥ Option / Alt and move: the cursor draws, no click; si.conf `draw.hold` changes the key) |
 | `d` | light / dark (remembered) |
 | `f` | full screen |
 | `?` | key help |
@@ -834,7 +834,8 @@ callouts are written the same way.
 - **Draw** (`a`): a transient pen over the current slide, for circling or
   underlining as you talk. Drag to draw (mouse, touch, or pen — pen pressure
   varies the stroke), or hold ⌥ Option (Alt) and move: the cursor draws where
-  it goes, no click, so a trackpad draws with one finger; the toolbar picks the colour (accent, red, green, ink) and
+  it goes, no click, so a trackpad draws with one finger (`draw.hold` in
+  si.conf picks another key: shift, ctrl, meta, or off); the toolbar picks the colour (accent, red, green, ink) and
   the brush size (thin / medium / thick); `c` cycles colour, `e` erases strokes,
   `z` undoes the last, `x` clears all, `Esc` turns it off. Strokes use the theme
   colours and clear when you change slides; they are not saved and do not print.
@@ -1244,6 +1245,7 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `theme: <name>` | default theme when a deck sets no `theme:` and there is no `--theme` |
 | `keys.<action>: <key>` | remap a command key |
 | `feature.<name>: off` | turn a feature off (its key stops working and its toolbar button is hidden) |
+| `draw.hold: shift` | the key you hold in draw mode to draw with the cursor, no click: `alt` (⌥ Option, the default), `shift`, `ctrl`, `meta` (⌘ Command), or `off` |
 | `links.<label>: <url>` | a page outside the build that find (`/`) offers, e.g. `links.Team wiki: https://wiki.example.com`; relative paths work too |
 | `timer.time: 10,15,30` | break-timer presets (default `5,10,15,20,30,45,60`) |
 | `timer.unit: seconds` | preset unit: `minutes` (default) or `seconds` |
@@ -1254,13 +1256,14 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 Nesting is written as dotted keys (`timer.animation.path`), not YAML.
 
 Remappable **actions**: `overview`, `presenter`, `draw`, `timer`, `find`,
-`mode`, `fullscreen`, `help`. Toggleable **features**: `draw`, `timer`,
+`mode`, `fullscreen`, `help`, `terminal`, `remote`. Toggleable **features**: `draw`, `timer`,
 `presenter`, `overview`, `find`.
 
 ```
 # si.conf — flat key: value, same style as front matter (not YAML)
 theme: crdb
 keys.draw: w          # draw with w instead of a
+draw.hold: shift      # in draw mode, hold Shift (not Option) to draw with the cursor
 feature.timer: off    # no break-timer HUD for these decks
 ```
 

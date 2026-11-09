@@ -47,6 +47,9 @@ keys.help:       ?
 keys.terminal:   ` + "`" + `          # backtick; play terminal drawer (si play on a loopback address only)
 keys.remote:     q          # si play --remote: the phone and tablet links as QR codes
 
+# draw (a): hold this key and move to draw with the cursor, no click
+draw.hold: alt         # alt (⌥ Option), shift, ctrl, meta (⌘ Command), or off
+
 feature.draw:      on
 feature.timer:     on
 feature.presenter: on
@@ -78,6 +81,7 @@ type Config struct {
 	Timer       TimerConfig       // break-timer presets, unit and animation
 	Links       []Link            // links.<label>: <url>, searchable from find (/), in file order
 	Budget      Budget            // budget.page / budget.3d: si check fails on bigger pages
+	DrawHold    string            // draw.hold: the key that draws with the cursor ("" = alt)
 	Warnings    []string          // unknown keys / bad values, for the caller to report
 }
 
@@ -240,6 +244,14 @@ func Parse(r io.Reader) *Config {
 				c.Budget.Page = kb
 			} else {
 				c.Budget.ThreeD = kb
+			}
+		case k == "draw.hold":
+			hold, ok := map[string]string{"alt": "alt", "option": "alt", "shift": "shift", "ctrl": "ctrl", "control": "ctrl",
+				"meta": "meta", "cmd": "meta", "command": "meta", "off": "off", "none": "off"}[strings.ToLower(v)]
+			if !ok {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: draw.hold wants alt, shift, ctrl, meta or off, got %q", ln, v))
+			} else {
+				c.DrawHold = hold
 			}
 		case strings.HasPrefix(k, "keys."):
 			c.setKey(strings.TrimPrefix(k, "keys."), v, ln)

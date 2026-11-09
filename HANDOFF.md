@@ -5,6 +5,14 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.13.0: `draw.hold` in si.conf** (the founder: the drawing key must be
+  configurable). `config.DrawHold` (alt/option, shift, ctrl/control,
+  meta/cmd/command, off/none; anything else warns and keeps alt), sent as
+  `SI_CONFIG.drawHold` only when set (golden unchanged); `05-annotate-keys.js`
+  maps it to the event flag and key name. Tests: `TestDrawHold`, pointer e2e
+  "draw.hold: shift makes Shift the drawing key, not Option". Docs: RULES §14
+  and §16, manual, site features/remote, `si --export conf`.
+
 - **v2.12.0: si Studio's menu-bar icon.** The founder asked for an icon to
   see where talks run, open them, quit; only while the app is open. `si play`
   / `si serve` write `<config dir>/si/sessions/<pid>.json` and remove it on
