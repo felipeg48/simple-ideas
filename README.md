@@ -127,6 +127,11 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.7.0:** `si play talk.md --remote --https`: the phone and tablet pages
+  over HTTPS, so a phone keeps its screen on and the notes stay private on any
+  network. si makes a certificate authority of its own once (it can only vouch
+  for local addresses) and each phone trusts it once, from a "first time" QR
+  code; `--https=tailscale` uses a real certificate for your Tailscale name.
 - **v2.6.0:** QR codes. `si qr https://…` writes a QR code as PNG, JPG, SVG
   or PDF, for a link, any text, a Wi-Fi network (`--wifi`) or a contact
   (`--vcard`), with your logo in the middle (`--logo`; a logo too big to scan

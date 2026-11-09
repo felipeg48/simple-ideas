@@ -499,6 +499,15 @@ them (`keys.remote` in si.conf remaps it). When the laptop is on more than
 one network (Wi-Fi and Ethernet, or a VPN such as Tailscale), the other
 addresses are listed under the codes.
 
+`--https` serves the remote pages over HTTPS, so the phone keeps its screen
+on and the notes are private on any network. si makes its own certificate
+authority once (it can only vouch for local addresses) and each phone trusts
+it once: scan the "first time on this phone" code, install the certificate,
+and turn on full trust (iPhone: Settings › General › About › Certificate
+Trust Settings). With Tailscale on the laptop and the phone,
+`--https=tailscale` uses a real certificate for the machine's `ts.net` name
+instead, with nothing to install. See `docs/remote.md`.
+
 | Role | On the device | Drives the deck |
 |---|---|---|
 | `tp` | the teleprompter above: script, tabs, auto-scroll, clocks, previews, mirror; on a phone the script fills the screen (no previews, one clock line, big Prev / Next) | Prev / Next, keys |

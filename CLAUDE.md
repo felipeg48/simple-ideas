@@ -189,8 +189,9 @@ pass. The steps that matter:
 
 - **QR codes** (DONE, v2.6.0): `internal/qr`, `si qr` (PNG/JPG/SVG/PDF, logo,
   dots, Wi-Fi, vCard), `<!-- qr: -->`, the `q` overlay in `si play --remote`.
-  Next (v2.7.0): `--https` for `--remote` with a local CA (`crypto/x509`, a
-  profile the phone trusts once) and `--https=tailscale`.
+  v2.7.0: `si play --remote --https` (si's own name-constrained CA,
+  `internal/serve/tls.go`, one port for HTTPS + the plain-HTTP setup page) and
+  `--https=tailscale`. Next: `--https` for `--review`.
 - **Brand, Help, About, Report a Problem** (DONE, v2.5.0): the Stack logo,
   `internal/brand` as the one place for links and credits, GitHub issue forms,
   `si report`; real-motion `--mp4`; review pins on blocks; 3D map editing.

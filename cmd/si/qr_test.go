@@ -48,3 +48,16 @@ func TestQRCommand(t *testing.T) {
 		t.Errorf("a 45 %% picture should be refused with the size that fits: %d %s", code, errb.String())
 	}
 }
+
+func TestTailscaleName(t *testing.T) {
+	name, err := tailscaleName([]byte(`{"BackendState":"Running","Self":{"DNSName":"felipes-mac.tail1234.ts.net."}}`))
+	if err != nil || name != "felipes-mac.tail1234.ts.net" {
+		t.Errorf("%q %v", name, err)
+	}
+	if _, err := tailscaleName([]byte(`{"BackendState":"Stopped","Self":{"DNSName":""}}`)); err == nil {
+		t.Error("a stopped Tailscale must be refused")
+	}
+	if _, err := tailscaleName([]byte(`{"BackendState":"Running","Self":{"DNSName":"mac."}}`)); err == nil || !strings.Contains(err.Error(), "MagicDNS") {
+		t.Errorf("no ts.net name should point at MagicDNS: %v", err)
+	}
+}

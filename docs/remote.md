@@ -64,7 +64,51 @@ Scan it on the iPad; open the deck on the laptop as usual
 page (`?role=tp|draw|clicker`), and takes it again whenever the page is shown
 or touched. Browsers grant it only in a secure context (`localhost` or
 HTTPS); a phone at `http://<LAN address>` has none, so the page shows a short
-hint instead: Settings › Display & Brightness › Auto-Lock › Never.
+hint instead: Settings › Display & Brightness › Auto-Lock › Never. With
+`--https` (below) the phone gets the lock.
+
+## HTTPS (`--https`)
+
+```bash
+si play talk.md --remote --https             # si's own certificate authority
+si play talk.md --remote --https=tailscale   # a real certificate for machine.tailnet.ts.net
+```
+
+**`--https`** (`internal/serve/tls.go`). si keeps a certificate authority of
+its own in `<config dir>/si/ca/` (macOS: `~/Library/Application
+Support/si/ca/`; `$SI_CA_DIR` overrides), made on first use: an ECDSA P-256
+key (file mode 0600) and a 10-year certificate whose **name constraints**
+allow only private and Tailscale addresses (10/8, 172.16/12, 192.168/16,
+100.64/10, 127/8, 169.254/16) and `.local` names. It cannot vouch for a
+public site, so even a leaked key cannot fake your bank. Each run signs a
+7-day certificate for the machine's current addresses (the shape Apple
+requires: names in the SAN, serverAuth, well under 825 days).
+
+The remote port speaks both: a connection that opens with a TLS handshake
+gets HTTPS (`SplitTLS` peeks at the first byte), any other gets plain HTTP,
+which serves only the one-time setup (`/ca`: the steps, `/ca.crt`: the
+certificate) and moves everything else to HTTPS. One port, one set of codes.
+
+On each phone, once: scan the "first time" code (also on the `q` overlay),
+download the certificate, then:
+
+- **iPhone / iPad:** Settings › Profile Downloaded › Install, then Settings ›
+  General › About › Certificate Trust Settings › turn on full trust.
+- **Android:** open the file, or Settings › Security › Encryption &
+  credentials › Install a certificate › CA certificate.
+
+Compare the SHA-256 fingerprint the phone shows with the one `si play`
+prints before trusting it: the download is plain HTTP, so on a network you
+do not trust, that comparison is what makes it safe. Remove it later in
+Settings › General › VPN & Device Management (iPhone) or Trusted credentials
+› User (Android); delete the folder to make a new authority.
+
+**`--https=tailscale`** (`cmd/si/tailscale.go`): with Tailscale running on
+the laptop and the phone, si asks `tailscale cert` for this machine's
+MagicDNS name (`machine.tailnet.ts.net`, a Let's Encrypt certificate through
+Tailscale; cached in `<cache dir>/si/tailscale/`). Nothing to install on the
+phone; the tailnet needs MagicDNS and HTTPS certificates on (admin console ›
+DNS).
 
 ## Security
 
@@ -74,7 +118,8 @@ hint instead: Settings › Display & Brightness › Auto-Lock › Never.
 - It serves the decks (always without the terminal drawer), files under the
   deck directory (no dotfiles), the relay and live reload, and the role
   picker. Roles not enabled with `--remote=` return 403.
-- Plain HTTP: anyone who can read your network traffic can read the key and
-  the notes. Use a network you trust (or your own hotspot).
+- Plain HTTP (no `--https`): anyone who can read your network traffic can
+  read the key and the notes. Use a network you trust, your own hotspot, or
+  `--https`.
 - The deck window stays on loopback, so the terminal drawer stays available
   and is never exposed.

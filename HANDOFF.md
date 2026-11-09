@@ -5,6 +5,25 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.7.0 (2026-11-09): `--https` for `si play --remote`.**
+  `internal/serve/tls.go`: `LoadCA` (ECDSA P-256, `<config dir>/si/ca/`,
+  key 0600, `$SI_CA_DIR` for tests; name constraints: private + 100.64/10 +
+  169.254/16 + 127/8 IPs and `.local`, so it cannot vouch for a public site),
+  `Leaf` (7 days, SAN, serverAuth), `SplitTLS` (one port: first byte 0x16 →
+  TLS, else plain HTTP), `CAHandler` (plain side: `/ca` steps + fingerprint,
+  `/ca.crt` DER as application/x-x509-ca-cert, else 301 to https).
+  `cmd/si/main.go` `httpsFlag` (`--https`, `--https=tailscale`; refused without
+  `--remote`), `startRemote` prints the fingerprint and a "first time" QR and
+  adds it to the `q` overlay. `cmd/si/tailscale.go`: `tailscale status --json`
+  → MagicDNS name, `tailscale cert` into `<cache>/si/tailscale/`. Tested:
+  `TestLocalCA` (8.8.8.8, example.com, bank.ts.net refused), `TestSplitTLS`,
+  `TestTailscaleName`; curl against a live run; headless Chrome on HTTPS is a
+  secure context with `navigator.wakeLock` and no hint, clicker ↔ deck sync over
+  TLS. NOT seen on a real device yet: iOS profile install + full trust with the
+  name-constrained authority, the actual wake lock (headless denies it), and
+  `--https=tailscale` (this Mac's tailscale CLI had no running daemon). Next:
+  `--https` for `--review` too.
+
 - **v2.6.0 (2026-11-09): QR codes.** `internal/qr` (new; `cmd/si/qr.go` is
   gone): byte mode, versions 1-40, levels L/M/Q/H (tables from ISO 18004 table
   9), block interleaving with the short-block placeholder, version information
