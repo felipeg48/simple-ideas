@@ -25,8 +25,15 @@ func startTrackpad(addr net.Addr, stdout io.Writer) (func(), error) {
 	}
 	bin := ""
 	if exe, err := os.Executable(); err == nil {
-		if p := filepath.Join(filepath.Dir(exe), "si-trackpad"); fileExists(p) {
-			bin = p
+		// si is often a symlink (~/bin/si -> ~/.bin/si): look beside the link and beside the real file
+		dirs := []string{filepath.Dir(exe)}
+		if real, err := filepath.EvalSymlinks(exe); err == nil {
+			dirs = append(dirs, filepath.Dir(real))
+		}
+		for _, d := range dirs {
+			if p := filepath.Join(d, "si-trackpad"); bin == "" && fileExists(p) {
+				bin = p
+			}
 		}
 	}
 	if bin == "" {

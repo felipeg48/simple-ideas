@@ -127,6 +127,8 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.10.1:** `--trackpad` finds `si-trackpad` beside a symlinked `si`
+  (`~/bin/si -> ~/.bin/si`).
 - **v2.10.0:** `si play talk.md --trackpad` (macOS): the Mac trackpad as a
   pen. The pad maps to the whole display the deck is on; hold ⌥ Option and
   draw with one finger. A small helper, `si-trackpad`, reads the trackpad
