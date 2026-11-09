@@ -75,7 +75,7 @@ decks with a teleprompter, articles, guides, books, mind maps, code shows.
 }
 
 // Plugin is the Claude Code plugin under plugin/: its manifest (stamped with
-// si's version) and the skill.
+// si's version), the skill, and the si mcp server (.mcp.json).
 func Plugin(version string) map[string]string {
 	files := map[string]string{
 		".claude-plugin/plugin.json": `{
@@ -89,7 +89,13 @@ func Plugin(version string) map[string]string {
   "keywords": ["slides", "presentation", "markdown", "teleprompter", "mind-map", "docs"]
 }
 `,
-		"README.md": "# si for Claude Code\n\nThe `si` skill: how to write decks and documents for si, the check-and-look\nloop, and every rule on demand. Generated from docs/agent-rules.md and\ndocs/RULES.md by `go test ./internal/skill -update`; do not edit by hand.\n\n```\n/plugin marketplace add felipeg48/simple-ideas\n/plugin install si@simple-ideas\n```\n\nThe si binary itself: https://simple-ideas.org/download.html\n",
+		".mcp.json": `{
+  "mcpServers": {
+    "si": { "command": "si", "args": ["mcp"] }
+  }
+}
+`,
+		"README.md": "# si for Claude Code\n\nThe `si` skill (how to write decks and documents for si, the check-and-look\nloop, every rule on demand) and the `si mcp` tools (si_check, si_rules,\nsi_new, si_build, si_qr, si_screenshot; they need `si` on your PATH). Generated from docs/agent-rules.md and\ndocs/RULES.md by `go test ./internal/skill -update`; do not edit by hand.\n\n```\n/plugin marketplace add felipeg48/simple-ideas\n/plugin install si@simple-ideas\n```\n\nThe si binary itself: https://simple-ideas.org/download.html\n",
 	}
 	for p, c := range Files() {
 		files["skills/si/"+p] = c

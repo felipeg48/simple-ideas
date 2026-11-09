@@ -87,6 +87,7 @@ what you chose.
 | `internal/publish/` | `si publish` clients, stdlib only: LinkedIn (Documents + Posts API, 3-legged OAuth with a loopback redirect, `/v2/userinfo`), dev.to (Forem API), Hashnode (GraphQL); one request builder for dry run and send (secrets masked); logins in the config dir, 0600; tests against `httptest` fakes only; see `docs/publish.md` |
 | `internal/docsite/` | `si --export docs-site`: the docs site source, one page per numbered RULES.md section (fence-aware split, `§N` and contents links rewritten), the manual as a deck, the examples si ships as live pages (`live/`), and `features.go`: one feature page per main kind of document (decks, articles, guides, mind maps, books, code) with its live example, the Markdown read from `examples/`, options, commands and rules links; `docs/site/` holds the hand-written pages (`_site.md` with the Features and Examples menus, home, examples, download); `make docs-site` builds it into `dist/docs-site` with `--share-assets` |
 | `internal/skill/` | the si Agent Skill: `SKILL.md` (when to use si, the check-and-look loop, `docs/agent-rules.md`) and `references/` (one file per RULES.md section); `si --export skill`; the Claude Code plugin under `plugin/` is its output (`go test ./internal/skill -update`; `TestPluginInSync`), listed by `.claude-plugin/marketplace.json` (the `simple-ideas` marketplace) |
+| `internal/mcp/` | a small MCP server (stdio, newline-delimited JSON-RPC, standard library): `server/discover` and `_meta` versions (2026-07-28), `initialize` for earlier clients, tools/list, tools/call; si's tools are in `cmd/si/mcp.go` (`si mcp [dir]`) |
 | `internal/qr/` | the QR encoder (byte mode, versions 1-40, levels L/M/Q/H, `Cover`/`Hole` for a picture in the middle) and its renderers (ANSI, SVG, PNG/JPEG via `Image`, PDF); `testdata/golden.txt` pins 64 codes a real reader decoded (`QR_VISION=1 go test ./internal/qr` on macOS) |
 | `internal/codeshow/` | code windows in Markdown text, by lines: `Shows` / `ShowAt` (fences with `window=` or `id=`, same-id runs, their `<!-- callout: -->` lines), `Apply` (the Window view's ops), `Source` (an article of only the windows, for exports and the Studio preview) |
 | `internal/mindmap/` | the mind map Markdown model for editors and converters: `Parse` / `String` (round trip, unknown text kept), `Apply` (the map editor's ops), `FenceAt` / `SetInfo` (fences), `Import` / `Export` (OPML, FreeMind, XMind, Mermaid). The renderer keeps its own reader for drawing |
@@ -190,8 +191,10 @@ pass. The steps that matter:
 
 - **AI agents** (DONE, v2.8.0): the `si` skill, the Claude Code plugin
   (`/plugin install si@simple-ideas`), `si --export skill`, docs page
-  `agents.md`. Next (v2.9.0): `si mcp`, a stdio MCP server (stdlib JSON-RPC):
-  check (problems as data), rules (one section), new, build, qr, screenshot.
+  `agents.md`. v2.9.0: `si mcp` (`internal/mcp`: stdlib JSON-RPC over stdio,
+  MCP 2026-07-28 stateless + `initialize` for older clients; tools in
+  `cmd/si/mcp.go`, confined to the served folder; in the plugin's `.mcp.json`).
+  Next: list the skill and the server in the public directories.
 - **QR codes** (DONE, v2.6.0): `internal/qr`, `si qr` (PNG/JPG/SVG/PDF, logo,
   dots, Wi-Fi, vCard), `<!-- qr: -->`, the `q` overlay in `si play --remote`.
   v2.7.0: `si play --remote --https` (si's own name-constrained CA,

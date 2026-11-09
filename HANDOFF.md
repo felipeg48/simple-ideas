@@ -5,6 +5,20 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.9.0 (2026-11-09): `si mcp`.** `internal/mcp` (protocol checked against
+  the 2026-07-28 spec through Context7: stateless, `server/discover`, version
+  in `_meta`, `-32022` UnsupportedProtocolVersionError, `resultType`,
+  `ttlMs`/`cacheScope`; `initialize` kept for clients still on 2025-xx).
+  `cmd/si/mcp.go`: si_check (runs the CLI in-process, parses `file:line: msg`
+  into structuredContent), si_rules (section by number/title/search),
+  si_new, si_build, si_qr, si_screenshot (build to a temp dir + headless
+  Chrome, PNG content); paths confined to the served folder; one CLI call at
+  a time (`mcpMu`). Tests: `TestProtocol`, `TestMCPTools`. Real client: a
+  headless `claude -p --mcp-config` session made a 3-slide deck using
+  si_rules ×3, si_new, si_check, si_screenshot; `si check` clean. The plugin
+  gained `.mcp.json` (`si mcp`). The plugin was installed for the founder from
+  GitHub (`claude plugin install si@simple-ideas`, user scope).
+
 - **v2.8.0 (2026-11-09): si for AI agents.** `internal/skill` makes the skill:
   `SKILL.md` (quoted YAML description that triggers on decks/slides/talks/si
   folders; the check-and-look loop; `docs/agent-rules.md`) and

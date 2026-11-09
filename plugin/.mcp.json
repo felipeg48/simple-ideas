@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "si": { "command": "si", "args": ["mcp"] }
+  }
+}

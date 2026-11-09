@@ -79,8 +79,33 @@ And it keeps si's two rules about notes: `Notes:` is what you say to the
 room, word for word, never stage directions; `Points:` is the short list for
 you (pace, emphasis, likely questions).
 
-## Next: an MCP server
+## The MCP server: si mcp
 
-`si mcp` (coming) will give agents tools instead of commands: check a deck
-and get the problems as data, read one rule, start from a starter, build,
-make a QR code, and see a slide as a picture.
+`si mcp` gives an agent tools instead of commands, in the folder it starts
+in (paths outside it are refused):
+
+| Tool | What it does |
+|---|---|
+| `si_check` | checks a file or folder; the problems come back as data (file, line, message) |
+| `si_rules` | one section of the format, by number, title word or search |
+| `si_new` | a starter: deck, article, guide, book, site, mindmap, codeshow, … |
+| `si_build` | self-contained HTML (and PDF) |
+| `si_qr` | a QR code file |
+| `si_screenshot` | a slide or page as a picture, light or dark, at any size: the agent sees what it made |
+
+The Claude Code plugin above already includes it. Elsewhere:
+
+```bash
+claude mcp add si -- si mcp          # Claude Code, without the plugin
+codex mcp add si -- si mcp           # Codex
+```
+
+Claude Desktop, Cursor and other MCP clients take the same JSON (use the
+full path to `si`, from `which si`, where the app does not see your PATH):
+
+```json
+{ "mcpServers": { "si": { "command": "si", "args": ["mcp"] } } }
+```
+
+It speaks MCP 2026-07-28 and the versions before it, over stdio; nothing
+listens on the network.

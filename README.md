@@ -127,6 +127,10 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.9.0:** `si mcp`, an MCP server for AI agents (stdio, MCP 2026-07-28
+  and earlier): `si_check` (problems as data), `si_rules`, `si_new`,
+  `si_build`, `si_qr` and `si_screenshot` (the agent sees the slide); the
+  Claude Code plugin includes it.
 - **v2.8.0:** si for AI agents. The `si` skill (`SKILL.md` + one reference
   file per rules section) as a Claude Code plugin
   (`/plugin marketplace add felipeg48/simple-ideas`, `/plugin install
@@ -270,6 +274,44 @@ NOTE: the token reaches payments and turns red.
 * 21:05: an automatic retry goes through
 ```
 
+## Use it with your AI agent
+
+si ships an Agent Skill (how to write si decks and documents, the
+check-and-look loop, every rule on demand) and an MCP server (`si mcp`). Both
+need the `si` binary on your PATH ([Install](#install)).
+
+**Claude Code: the plugin** (the skill and the MCP tools together):
+
+```text
+/plugin marketplace add felipeg48/simple-ideas
+/plugin install si@simple-ideas
+```
+
+**Any agent with skills:** `si --export skill` writes it into
+`.claude/skills/si/` (or `-o ~/.claude/skills/si` for every project).
+**Codex, Cursor, Copilot, Gemini CLI:** `si --export agent-rules` writes
+`AGENTS.md` and `CLAUDE.md`.
+
+**The MCP server**, without the plugin:
+
+```bash
+claude mcp add si -- si mcp      # Claude Code
+codex mcp add si -- si mcp       # Codex
+```
+
+Claude Desktop, Cursor and other MCP clients:
+
+```json
+{ "mcpServers": { "si": { "command": "si", "args": ["mcp"] } } }
+```
+
+(Use the full path from `which si` where the app does not see your PATH.)
+Tools: `si_check` (problems as data: file, line, message), `si_rules` (one
+section of the format), `si_new`, `si_build`, `si_qr`, `si_screenshot` (a
+slide as a picture, so the agent sees what it made). It works in the folder
+it starts in and refuses paths outside it. More:
+https://simple-ideas.org/agents.html
+
 ## Commands
 
 | Command | What it does |
@@ -285,10 +327,14 @@ NOTE: the token reaches payments and turns red.
 | `si migrate <dir\|file> [--ai "<cmd>"]` | print an editorial-migration prompt for an existing deck; `--ai "claude -p"` pipes it to an agent |
 | `si manual [--slides] [--pdf] [--out dir]` | render the built-in user manual as self-contained HTML (and PDF with `--pdf`) |
 | `si selfupdate` | download the latest release for your OS/arch (checksum-verified) and replace the running `si` |
+| `si qr <text\|URL> [-o name.png] [--png --jpg --svg --pdf] [--logo pic] [--style dots]` | a QR code file for a link, text, `--wifi` network or `--vcard` contact; a logo too big to scan past is refused (see [QR codes](https://simple-ideas.org/features/qr.html)) |
+| `si play <file.md> --remote --https[=tailscale]` | the phone and tablet pages over HTTPS; each phone trusts si's local certificate authority once (see [Present from your phone](https://simple-ideas.org/features/remote.html)) |
+| `si ca [trust\|untrust]` | si's certificate authority for `--https`: where it is, its fingerprint; `trust` adds it to this computer's trusted certificates |
+| `si mcp [dir]` | an MCP server for AI agents on stdio (see [Use it with your AI agent](#use-it-with-your-ai-agent)) |
 | `si rules` | print RULES.md |
 | `si --theme <name\|file.css\|url>` | override the theme: a built-in (`si theme list`: `studio`, `paper`, `mono`, `crdb`, `acemq`, `acemq-pro`; `"AceMQ Pro"` works too), a CSS file, or an `https://` URL |
 | `si theme list` | list the built-in themes: name, display name, aliases, summary |
-| `si --export css-rules\|rules\|conf\|example\|themes\|agent-rules [--output path]` | starter stylesheet · RULES.md · starter `si.conf` · the showcase decks · a sample deck per theme (a gallery) · `CLAUDE.md` + `AGENTS.md` for a deck project, so a coding agent writes decks the si way (teleprompter `Notes:` as spoken script, `Points:` as talking points; never overwrites, `-o -` prints) |
+| `si --export css-rules\|rules\|conf\|example\|themes\|agent-rules\|skill [--output path]` | `skill`: the si Agent Skill (`SKILL.md` + references, default `.claude/skills/si/`) · starter stylesheet · RULES.md · starter `si.conf` · the showcase decks · a sample deck per theme (a gallery) · `CLAUDE.md` + `AGENTS.md` for a deck project, so a coding agent writes decks the si way (teleprompter `Notes:` as spoken script, `Points:` as talking points; never overwrites, `-o -` prints) |
 
 Flags are GNU style and go before or after the path:
 `si --css css/ --output html/ md/` and `si md/ -o html/` both work.

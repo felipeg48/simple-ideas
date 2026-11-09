@@ -1,7 +1,8 @@
 # si for Claude Code
 
-The `si` skill: how to write decks and documents for si, the check-and-look
-loop, and every rule on demand. Generated from docs/agent-rules.md and
+The `si` skill (how to write decks and documents for si, the check-and-look
+loop, every rule on demand) and the `si mcp` tools (si_check, si_rules,
+si_new, si_build, si_qr, si_screenshot; they need `si` on your PATH). Generated from docs/agent-rules.md and
 docs/RULES.md by `go test ./internal/skill -update`; do not edit by hand.
 
 ```

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"image"
 	"image/png"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/felipeg48/simple-ideas/internal/mcp"
 	"github.com/felipeg48/simple-ideas/internal/qr"
 )
 
@@ -72,5 +74,37 @@ func TestCATrustCommand(t *testing.T) {
 	}
 	if args, manual := caTrustCommand("linux", true, "/x/si-local-ca.pem", ""); args != nil || !strings.Contains(manual, "update-ca-certificates") {
 		t.Errorf("linux: %q %q", args, manual)
+	}
+}
+
+// The MCP tools work inside the served folder only, return si check's
+// problems as data, and look rules up by number, title word or text.
+func TestMCPTools(t *testing.T) {
+	root := t.TempDir()
+	os.WriteFile(filepath.Join(root, "talk.md"), []byte("---\ntitle: x\n---\n\n# X\n\n<!-- layout: nope -->\n\nhi\n"), 0o644)
+	tools := map[string]func(json.RawMessage) (mcp.Result, error){}
+	for _, tl := range mcpTools(root) {
+		tools[tl.Name] = tl.Call
+	}
+	res, err := tools["si_check"](json.RawMessage(`{"path":"talk.md"}`))
+	st, _ := res.Structured.(map[string]any)
+	ps, _ := st["problems"].([]map[string]any)
+	if err != nil || st["ok"] != false || len(ps) != 1 || ps[0]["file"] != "talk.md" || ps[0]["line"] != 7 || !strings.Contains(ps[0]["message"].(string), "layout") {
+		t.Errorf("si_check: %v %+v", err, res.Structured)
+	}
+	if _, err := tools["si_check"](json.RawMessage(`{"path":"../../etc"}`)); err == nil || !strings.Contains(err.Error(), "outside") {
+		t.Errorf("a path outside the folder must be refused: %v", err)
+	}
+	if res, err := tools["si_rules"](json.RawMessage(`{"query":"<!-- qr:"}`)); err != nil || !strings.Contains(res.Text, "qr") {
+		t.Errorf("si_rules query: %v", err)
+	}
+	if res, _ := tools["si_rules"](json.RawMessage(`{}`)); !strings.Contains(res.Text, "1. ") {
+		t.Errorf("si_rules list: %q", res.Text)
+	}
+	if _, err := tools["si_new"](json.RawMessage(`{"name":"post","type":"article"}`)); err != nil {
+		t.Errorf("si_new: %v", err)
+	}
+	if res, _ := tools["si_check"](json.RawMessage(`{"path":"post.md"}`)); res.Structured.(map[string]any)["ok"] != true {
+		t.Errorf("a fresh starter should check clean: %s", res.Text)
 	}
 }
