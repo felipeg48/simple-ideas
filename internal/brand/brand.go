@@ -22,7 +22,8 @@ const (
 )
 
 // Pages of the docs site the Help menus open.
-var Pages = map[string]string{"docs": Site, "rules": Site + "rules/", "manual": Site + "manual.html", "releases": Repo + "/releases"}
+var Pages = map[string]string{"docs": Site, "rules": Site + "rules/", "manual": Site + "manual.html", "releases": Repo + "/releases",
+	"remote": Site + "features/remote.html", "qr": Site + "features/qr.html"}
 
 // Modes are the values of the issue forms' "mode" dropdown (.github/ISSUE_TEMPLATE).
 var Modes = []string{"CLI", "si play (browser)", "web Studio", "desktop app", "terminal", "built page"}

@@ -234,6 +234,35 @@ commands mid-demo (`docker ps`, `cockroach sql`, …). It exists only under
 
 ---
 
+## Present from your phone
+
+```bash
+si play talk.md --remote --https
+```
+
+**Once per laptop:** nothing; the first run makes its certificate authority
+(local addresses only, ten years, the key stays on the laptop).
+
+**Once per phone or tablet:** press `q`, scan *First time on this phone*,
+install the certificate, then on an iPhone turn on **Settings › General ›
+About › Certificate Trust Settings**. Optional on the laptop: `si ca trust`.
+
+**Every talk:** press `q`, scan the Clicker or Teleprompter code. The phone
+stays awake and the notes travel encrypted. With Tailscale on both:
+`--https=tailscale`, nothing to install.
+
+Notes: (1 min)
+Your phone can be the clicker and your iPad the teleprompter. The first time,
+each phone trusts this laptop once: scan the setup code, install the
+certificate, and switch on full trust. From then on, every talk is one scan. [CLICK]
+
+Points:
+- The trust switch on iPhone is the step people miss: without it Safari warns
+- One authority per laptop; a phone that trusts yours trusts no one else's
+- Full guide: simple-ideas.org/features/remote.html
+
+---
+
 ## The CLI
 
 ```bash

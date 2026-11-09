@@ -29,7 +29,11 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
   the iPhone opens the remote pages over HTTPS with no warning. `si ca
   [trust|untrust]` (`cmd/si/ca.go`) trusts it on the laptop (login keychain via
   `security add-trusted-cert`; Windows `certutil -user`; Linux prints steps). The loopback port (7070) stays HTTP on purpose: localhost
-  is already a secure context, and the authority does not cover `localhost`. Next:
+  is already a secure context, and the authority does not cover `localhost`.
+  Docs: `docs/site/features/remote.md` (Present from your phone: the one-time
+  setup per laptop and per phone, every talk, Tailscale, troubleshooting) and
+  `features/qr.md`, in the Features menu and home cards; a manual slide;
+  `brand.Pages` remote/qr + Studio ⌘K Help commands (next binary). Next:
   `--https` for `--review` too.
 
 - **v2.6.0 (2026-11-09): QR codes.** `internal/qr` (new; `cmd/si/qr.go` is

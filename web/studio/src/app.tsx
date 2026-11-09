@@ -356,6 +356,8 @@ export function App() {
     { id: "help-docs", label: "Help: Documentation (simple-ideas.org)", icon: "external", run: () => help("docs") },
     { id: "help-rules", label: "Help: Rules", icon: "external", run: () => help("rules") },
     { id: "help-manual", label: "Help: Manual", icon: "external", run: () => help("manual") },
+    { id: "help-remote", label: "Help: Present from your phone (one-time setup)", icon: "external", run: () => help("remote") },
+    { id: "help-qr", label: "Help: QR codes", icon: "external", run: () => help("qr") },
     { id: "report", label: "Report a Problem…", icon: "warn", run: () => help("report") },
     { id: "feature", label: "Request a Feature…", icon: "plus", run: () => help("feature") },
     { id: "about", label: "About si", icon: "system", run: () => showAbout() },

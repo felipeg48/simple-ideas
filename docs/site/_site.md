@@ -20,6 +20,8 @@ footer: simple-ideas
   - [Mind maps](features/mindmaps.md)
   - [Books](features/books.md)
   - [Code windows and shows](features/code.md)
+  - [Present from your phone](features/remote.md)
+  - [QR codes](features/qr.md)
 - Examples
   - [All examples](examples.md)
   - [The Thursday Promise, a deck](live/showcase.md)

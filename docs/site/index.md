@@ -98,10 +98,10 @@ map editor and a code window builder.
 The same deck in the terminal, with real pictures, animated canvases and a
 teleprompter in a second pane.
 
-### Presenting · teleprompter and remote
+### Presenting · from your phone
 
-Timers, pace against your last run, mirror, and a phone as clicker, draw pad
-or teleprompter.
+Your phone as the clicker, an iPad as the teleprompter, over HTTPS after a
+one-time setup. [Present from your phone](features/remote.md)
 
 ### Exports · PDF PNG SVG GIF MP4
 
@@ -121,6 +121,11 @@ inlined at build time.
 
 A folder becomes a site with a navigator, cards, embeds and search, decks and
 articles side by side.
+
+### QR codes · si qr
+
+A code on a slide, or as PNG, SVG or PDF with your logo in the middle.
+[See QR codes](features/qr.md)
 
 ### Checks · si check
 

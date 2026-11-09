@@ -39,7 +39,7 @@ var Features = []feature{
 			{"`Notes: (2 min)`", "the teleprompter script, with `[CLICK]` cues"},
 			{"`transition:`", "fade, slide, zoom, none"},
 		},
-		Commands: "si new talk                      # a starter deck\nsi play talk.md --open           # present, live reload, p for the teleprompter\nsi play talk.md --remote         # teleprompter, draw pad and clicker on your phone\nsi build talk.md --pdf --mp4     # one HTML file, plus a PDF and a video",
+		Commands: "si new talk                      # a starter deck\nsi play talk.md --open           # present, live reload, p for the teleprompter\nsi play talk.md --remote --https # teleprompter, draw pad and clicker on your phone (features/remote)\nsi build talk.md --pdf --mp4     # one HTML file, plus a PDF and a video",
 		Rules:    []string{"1", "3", "5", "9", "10", "11", "14"}},
 	{Slug: "articles", Title: "Articles",
 		Lede: "One readable page: a header, a table of contents, code with copy buttons, callouts, mind maps and code windows in the text.",
