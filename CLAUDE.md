@@ -78,9 +78,6 @@ what you chose.
    (`desktop/go.mod`) with cgo and Objective-C against Apple's Cocoa and WebKit
    frameworks (no third-party code). It bundles `si` and runs `si --web` per
    folder; the si module itself stays cgo-free. See `docs/desktop.md`.
-   `desktop/trackpad` (v2.10.0) is the `si-trackpad` helper for `si play
-   --trackpad`: cgo against Apple's private MultitouchSupport framework (no
-   third-party code), shipped in the app and as its own release zip.
 
 ## Layout of the code
 
@@ -192,10 +189,10 @@ pass. The steps that matter:
 
 ## Roadmap ideas
 
-- **Trackpad pen** (DONE, v2.10.0): `si play --trackpad`, `desktop/trackpad`
-  (`si-trackpad`), `pad` messages on the loopback relay, `padIn` in
-  `deck/05-annotate-keys.js`. Next: per-finger pressure as width, an eraser
-  gesture, the founder's feel tests.
+- **Draw with the cursor** (DONE, v2.11.0): in draw mode, Option (Alt) held
+  = the cursor draws (`deck/05-annotate-keys.js`; pointer e2e). v2.10's
+  absolute trackpad mapping (`si-trackpad`, MultitouchSupport) was removed
+  after the founder's feel test: the pen jumped away from the cursor.
 - **AI agents** (DONE, v2.8.0): the `si` skill, the Claude Code plugin
   (`/plugin install si@simple-ideas`), `si --export skill`, docs page
   `agents.md`. v2.9.0: `si mcp` (`internal/mcp`: stdlib JSON-RPC over stdio,

@@ -47,7 +47,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "2.10.1"
+const version = "2.11.0"
 
 // Exit codes.
 const (
@@ -162,8 +162,6 @@ Flags (GNU style, before or after the path):
       --addr <host:port> play address (default 127.0.0.1:7070)
       --remote[=tp,draw,clicker] play: a second, keyed listener for a tablet or phone on your network: tp = teleprompter, draw = draw pad, clicker = phone remote (default: all)
       --remote-addr <host:port> play: the --remote address (default 0.0.0.0, the play port + 1)
-      --trackpad        play (macOS): the trackpad maps to the whole display; hold ⌥ Option and draw with one finger
-                        (runs the si-trackpad helper, next to si or on your PATH)
       --https[=tailscale] play --remote: serve the remote pages over HTTPS, with si's own certificate authority
                         (each phone trusts it once, from the "first time" code) or a Tailscale certificate
       --offline         code: / diff: use the cache only (CI, a plane); fails on what was never fetched
@@ -267,7 +265,7 @@ type options struct {
 	qrLogoSize                                   float64 // si qr --logo-size, percent of the width
 	qrQuiet                                      int     // si qr --quiet, modules
 	qrJPG, qrECSet                               bool    // si qr --jpg; --ec given
-	trackpad                                     bool    // si play --trackpad: the Mac trackpad draws on the deck
+	trackpad                                     bool    // si play --trackpad: v2.10 only, now a note (Option draws in draw mode)
 	css                                          multi
 	args                                         []string
 }
@@ -922,7 +920,10 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	srv.Dev = o.dev
 	srv.Title = o.title
-	srv.Remote = len(o.remote.roles) > 0 || o.trackpad // --trackpad rides the relay on loopback
+	srv.Remote = len(o.remote.roles) > 0
+	if o.trackpad { // v2.10 only: the helper is gone, Option-drawing needs nothing
+		fmt.Fprintln(stderr, "si: --trackpad is no longer needed: press a (draw), then hold ⌥ Option and move to draw with the cursor")
+	}
 	if o.https != "" && len(o.remote.roles) == 0 {
 		return usageErr(stderr, "--https is for the --remote listener: si play talk.md --remote --https")
 	}
@@ -939,15 +940,6 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 			return code
 		}
 		remote = rs
-	}
-	if o.trackpad {
-		stopPad, err := startTrackpad(ln.Addr(), stdout)
-		if err != nil {
-			ln.Close()
-			fmt.Fprintf(stderr, "si: --trackpad: %v\n", err)
-			return exitProblems
-		}
-		defer stopPad()
 	}
 	var review *http.Server
 	if o.review {

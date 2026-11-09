@@ -499,11 +499,6 @@ them (`keys.remote` in si.conf remaps it). When the laptop is on more than
 one network (Wi-Fi and Ethernet, or a VPN such as Tailscale), the other
 addresses are listed under the codes.
 
-`si play talk.md --trackpad` (macOS) makes the Mac's trackpad a pen: the pad
-maps to the whole display the deck is on, a finger shows a dot, and holding
-⌥ Option while a finger moves draws (the cursor stays put meanwhile). It
-needs the `si-trackpad` helper next to `si`; see `docs/remote.md`.
-
 `--https` serves the remote pages over HTTPS, so the phone keeps its screen
 on and the notes are private on any network. si makes its own certificate
 authority once (it can only vouch for local addresses) and each phone trusts
@@ -802,7 +797,7 @@ callouts are written the same way.
 | `p` or `Shift+S` | teleprompter window |
 | `t` | break timer HUD: pick minutes, countdown to project during a break |
 | `/` | find a slide: search titles and text, or type a number to jump |
-| `a` | draw: a pen layer over the slide |
+| `a` | draw: a pen layer over the slide (drag, or hold ⌥ Option / Alt and move: the cursor draws, no click) |
 | `d` | light / dark (remembered) |
 | `f` | full screen |
 | `?` | key help |
@@ -838,7 +833,8 @@ callouts are written the same way.
 
 - **Draw** (`a`): a transient pen over the current slide, for circling or
   underlining as you talk. Drag to draw (mouse, touch, or pen — pen pressure
-  varies the stroke); the toolbar picks the colour (accent, red, green, ink) and
+  varies the stroke), or hold ⌥ Option (Alt) and move: the cursor draws where
+  it goes, no click, so a trackpad draws with one finger; the toolbar picks the colour (accent, red, green, ink) and
   the brush size (thin / medium / thick); `c` cycles colour, `e` erases strokes,
   `z` undoes the last, `x` clears all, `Esc` turns it off. Strokes use the theme
   colours and clear when you change slides; they are not saved and do not print.

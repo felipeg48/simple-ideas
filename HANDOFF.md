@@ -5,6 +5,20 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.11.0: draw with the cursor; the trackpad helper is gone.** The founder
+  tried v2.10's `--trackpad`: the dot showed all the time and the absolute
+  mapping put the pen far from the cursor ("it changes position not when I
+  want it"). Wanted: drawing only in draw mode, and the cursor itself drawing.
+  Now, in draw mode (`a`), holding ⌥ Option (Alt) draws where the cursor goes,
+  no click (`05-annotate-keys.js`: a pointermove listener starts/ends the
+  stroke on `e.altKey`, keydown Alt starts it at the last pointer position,
+  keyup Alt / blur end it). Pure browser: works in every deck. Removed:
+  `desktop/trackpad`, `cmd/si/trackpad.go`, the `pad` message, its release zip
+  and make targets; `--trackpad` prints that it is no longer needed. Test:
+  pointer e2e "draw: in draw mode, the cursor draws while Option is held, and
+  only then" (no ink outside draw mode, none without Option, one stroke from
+  exactly where Option went down).
+
 - **v2.10.0 (2026-11-09): the Mac trackpad as a pen.** The founder asked for the
   trackpad mapped to the whole monitor (not the window) and ⌥ Option held to
   draw. `desktop/trackpad/main.go` (`si-trackpad`, cgo, darwin; `stub.go`

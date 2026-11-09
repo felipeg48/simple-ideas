@@ -69,27 +69,13 @@ si play talk.md --remote=tp,clicker --https
 The code is new every run: the link carries a key made for that run, and a
 page without it gets nothing.
 
-## Draw with your Mac's trackpad
+## Draw with the cursor
 
-```bash
-si play talk.md --trackpad
-```
-
-The trackpad becomes the whole display the deck is on: the top-left corner
-of the pad is the top-left corner of the screen. A finger shows a dot where
-the pen would land; **hold ⌥ Option and draw with one finger**. While Option
-is held the cursor stays put, so your finger only draws. Lift the finger, or
-let go of Option, to end the stroke. Present the deck full screen and the
-pad covers exactly the slide. You do not press `a` first; everything a
-phone's draw pad does (strokes that clear on the next slide, shared with the
-teleprompter) works the same way.
-
-It needs `si-trackpad`, a small Mac helper that `make install` builds, the
-Mac app carries, and each release has as `si-trackpad-<version>-macos.zip`
-(put it next to `si`). It reads the trackpad through Apple's multitouch
-framework, which Apple does not document: it has been stable for years and
-many Mac apps use it, but a macOS update could break it. It works with
-`--remote` and `--https` at the same time.
+Press `a` (draw), then **hold ⌥ Option and move**: the cursor draws where it
+goes, no click needed, so a trackpad draws with one finger. Let go of Option
+to end the stroke. It only works in draw mode, in any browser and any deck
+(`si play`, a built deck, offline), and the strokes travel to the
+teleprompter and a phone's draw pad like any other.
 
 ## With Tailscale
 

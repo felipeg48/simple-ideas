@@ -121,24 +121,6 @@ Tailscale; cached in `<cache dir>/si/tailscale/`). Nothing to install on the
 phone; the tailnet needs MagicDNS and HTTPS certificates on (admin console ›
 DNS).
 
-## The Mac trackpad as a pen (`--trackpad`)
-
-`si play talk.md --trackpad` (macOS) starts `si-trackpad` (`desktop/trackpad`,
-cgo, in the desktop module so si stays cgo-free) and turns on the relay on
-loopback (no network listener unless `--remote` is given too). The helper
-reads finger positions (0..1 across the pad) from Apple's private
-MultitouchSupport framework, the Option key from CoreGraphics
-(`CGEventSourceFlagsState`), freezes the cursor while Option is held
-(`CGAssociateMouseAndMouseCursorPosition`), and posts at 60 Hz a `pad`
-message to `/_si/remote/send`: `on` (a finger near or on the pad), `t`
-(touching), `d` (touching with Option: draw), `x`, `y`, and `s`, every
-display's bounds in global points. The deck page (not a remote role) picks
-the display holding its window, maps the finger to its own viewport
-(`window.screenX/Y` and the browser chrome above the page), shows a dot, and
-draws through the same ink path as the pen, so strokes travel to every other
-page. `si play` stops the helper with SIGINT, and the helper gives the cursor
-back on SIGINT and SIGTERM.
-
 ## Security
 
 - The remote listener requires a random 128-bit key per run: the printed URL

@@ -13,6 +13,7 @@ const ex = new URL("../../../examples/", import.meta.url).pathname;
 const out = mkdtempSync(join(tmpdir(), "si-pointer-"));
 execFileSync(si, ["build", join(ex, "mindmap"), "-o", join(out, "mindmap")], { stdio: "ignore" });
 execFileSync(si, ["build", join(ex, "code"), "-o", join(out, "code")], { stdio: "ignore" });
+execFileSync(si, ["build", join(ex, "showcase.md"), "-o", join(out, "deck")], { stdio: "ignore" });
 
 const browser = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -34,6 +35,21 @@ const pillAt = (p, title) => p.evaluate((title) => {
 }, title);
 
 const tests = {
+  "draw: in draw mode, the cursor draws while Option is held, and only then": async () => {
+    const p = await page("deck/showcase.html#2");
+    await sleep(600);
+    const strokes = () => p.evaluate(() => [...document.querySelectorAll(".si-draw path")].map((e) => e.getAttribute("d")));
+    await p.keyboard.down("Alt"); await p.mouse.move(200, 200); await p.mouse.move(600, 300, { steps: 8 }); await p.keyboard.up("Alt");
+    if ((await strokes()).length) throw new Error("Option drew outside draw mode");
+    await p.keyboard.press("a"); await p.mouse.move(600, 500, { steps: 8 });
+    if ((await strokes()).length) throw new Error("moving without Option drew");
+    await p.mouse.move(300, 600); await p.keyboard.down("Alt"); await p.mouse.move(900, 650, { steps: 12 }); await p.keyboard.up("Alt");
+    await p.mouse.move(1000, 700, { steps: 4 });
+    const s = await strokes();
+    if (s.length !== 1 || !s[0].startsWith("M 300 600") || !s[0].endsWith("900 650")) throw new Error("stroke " + s.length + ": " + (s[0] || "").slice(0, 30) + " … " + (s[0] || "").slice(-12));
+    if (p.errors.length) throw new Error(p.errors[0]);
+    await p.close();
+  },
   "3D: a click on a pill opens its card": async () => {
     const p = await page("mindmap/thursday.html");
     await sleep(3500);
