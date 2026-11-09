@@ -61,3 +61,16 @@ func TestTailscaleName(t *testing.T) {
 		t.Errorf("no ts.net name should point at MagicDNS: %v", err)
 	}
 }
+
+func TestCATrustCommand(t *testing.T) {
+	args, _ := caTrustCommand("darwin", true, "/x/si-local-ca.pem", "si local CA (mac)")
+	if len(args) == 0 || args[0] != "security" || args[1] != "add-trusted-cert" || args[len(args)-1] != "/x/si-local-ca.pem" || !strings.HasSuffix(args[len(args)-2], "login.keychain-db") {
+		t.Errorf("macOS trust: %q", args)
+	}
+	if args, _ := caTrustCommand("darwin", false, "/x/si-local-ca.pem", "si local CA (mac)"); args[1] != "delete-certificate" || args[3] != "si local CA (mac)" {
+		t.Errorf("macOS untrust: %q", args)
+	}
+	if args, manual := caTrustCommand("linux", true, "/x/si-local-ca.pem", ""); args != nil || !strings.Contains(manual, "update-ca-certificates") {
+		t.Errorf("linux: %q %q", args, manual)
+	}
+}

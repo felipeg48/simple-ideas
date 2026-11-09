@@ -97,6 +97,17 @@ download the certificate, then:
 - **Android:** open the file, or Settings › Security › Encryption &
   credentials › Install a certificate › CA certificate.
 
+Installing the profile is not enough on an iPhone: until full trust is on
+(the second step), Safari still says "This Connection Is Not Private". Apple's
+trust engine accepts si's certificates (checked with `security verify-cert`,
+the same evaluation iOS runs), so that warning means the switch is off.
+
+On the laptop itself, `si ca trust` adds the authority to the login keychain
+(macOS asks for your password; Safari and Chrome read it, Firefox keeps its
+own list), so the remote pages open as secure there too; `si ca untrust`
+takes it out, and `si ca` shows where it is and its fingerprint. On Windows it
+runs `certutil -user`; on Linux it prints the commands (they need root).
+
 Compare the SHA-256 fingerprint the phone shows with the one `si play`
 prints before trusting it: the download is plain HTTP, so on a network you
 do not trust, that comparison is what makes it safe. Remove it later in

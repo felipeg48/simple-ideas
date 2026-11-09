@@ -21,7 +21,13 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
   secure context with `navigator.wakeLock` and no hint, clicker ↔ deck sync over
   TLS. NOT seen on a real device yet: iOS profile install + full trust with the
   name-constrained authority, the actual wake lock (headless denies it), and
-  `--https=tailscale` (this Mac's tailscale CLI had no running daemon). Next:
+  `--https=tailscale` (this Mac's tailscale CLI had no running daemon).
+  The founder's first iPhone try still warned after installing the profile:
+  Apple's own trust evaluation (`security verify-cert -c leaf -r ca -p ssl -s
+  IP`, as iOS runs it) accepts the chain, so the cause is the full-trust switch
+  (Settings › General › About › Certificate Trust Settings). `si ca
+  [trust|untrust]` (`cmd/si/ca.go`) trusts it on the laptop (login keychain via
+  `security add-trusted-cert`; Windows `certutil -user`; Linux prints steps). Next:
   `--https` for `--review` too.
 
 - **v2.6.0 (2026-11-09): QR codes.** `internal/qr` (new; `cmd/si/qr.go` is

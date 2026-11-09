@@ -504,7 +504,8 @@ on and the notes are private on any network. si makes its own certificate
 authority once (it can only vouch for local addresses) and each phone trusts
 it once: scan the "first time on this phone" code, install the certificate,
 and turn on full trust (iPhone: Settings › General › About › Certificate
-Trust Settings). With Tailscale on the laptop and the phone,
+Trust Settings; without that switch Safari still warns). `si ca trust` does
+the same on the laptop. With Tailscale on the laptop and the phone,
 `--https=tailscale` uses a real certificate for the machine's `ts.net` name
 instead, with nothing to install. See `docs/remote.md`.
 

@@ -95,6 +95,10 @@ Usage:
         --size 1024|5cm (pixels for PNG/JPG, print size for PDF, the SVG width),
         --logo picture.png|.jpg|.svg [--logo-size 20] puts a picture in the middle (level H;
         refused, with the size that fits, when the code could not be read)
+  si ca [trust|untrust]
+        si's certificate authority for si play --remote --https: where it is and its fingerprint;
+        trust adds it to this computer's trusted certificates (macOS asks for your password),
+        so this laptop's browser shows the remote pages as secure too; untrust takes it out
   si mindmap import <file.opml|.mm|.xmind|.mmd> [-o out.md]
         turn an OPML, FreeMind, XMind or Mermaid mindmap file into a mind map page
   si mindmap export <map.md> --to opml|freemind|xmind|mermaid [--map id] [-o file|-]
@@ -511,6 +515,8 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		return runPublish(rest, o, stdout, stderr)
 	case "qr":
 		return runQR(rest, o, stdout, stderr)
+	case "ca":
+		return runCA(rest, stdout, stderr)
 	case "code":
 		if len(rest) != 1 {
 			return usageErr(stderr, "code needs one <file.md> with code windows (--png, --svg, --gif, --mp4)")
