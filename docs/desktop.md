@@ -92,3 +92,28 @@ the zip to the release.
 
 - Windows and Linux desktop builds (`si --web` works there today).
 - Choosing the display for Present (use the green full-screen button or drag the window).
+
+## The menu-bar icon
+
+While si Studio is open, a stack icon sits in the menu bar. Its menu lists
+every `si play` and `si serve` running on this Mac, started from the app or a
+terminal, as `talk.md   127.0.0.1:7070`. Each one has:
+
+- **Open in Browser**: the deck (or the index for a folder)
+- **Teleprompter**: the deck's teleprompter in the browser (`?si-view=tp`)
+- **Phone QR Codes…**: with `--remote`, the phone links as codes (`/_si/qr`,
+  served on loopback only, since the links carry the key)
+- **Copy Link**, **Show in Finder**
+- **Stop**: stops that `si play` the way Ctrl+C does
+
+Then **Open Folder in si Studio…** and **Quit si Studio**. Closing the last
+window no longer quits the app; Quit (here or ⌘Q) does. The app does not
+start at login.
+
+How it knows: each `si play` / `si serve` writes
+`<config dir>/si/sessions/<pid>.json` (pid, folder or deck, loopback URL,
+the QR page) and deletes it when it stops (`internal/serve/session.go`); the
+app reads them when the menu opens, skips non-loopback ones, and deletes the
+files of sessions whose process is gone (`desktop/sessions.go`). Stop only
+ever signals a listed session.
+

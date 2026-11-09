@@ -170,3 +170,39 @@ func TestRemoteQROnlyOnLoopback(t *testing.T) {
 		t.Error("a page on the remote listener must not carry the links")
 	}
 }
+
+// A session lists itself for the Mac app and unlists on the way out; the
+// phone-code page is served on loopback only (it carries the remote key).
+func TestSessionAndQRPage(t *testing.T) {
+	t.Setenv("SI_SESSIONS_DIR", t.TempDir())
+	unlist, err := WriteSession(Session{PID: 4242, Kind: "play", Src: "/x", URL: "http://127.0.0.1:7070/"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir, _ := SessionsDir()
+	if _, err := os.Stat(filepath.Join(dir, "4242.json")); err != nil {
+		t.Fatal("session file missing")
+	}
+	unlist()
+	if _, err := os.Stat(filepath.Join(dir, "4242.json")); err == nil {
+		t.Fatal("session file left behind")
+	}
+	s, _ := remoteServer(t)
+	s.RemoteQR = &render.RemoteQR{Links: []render.RemoteLink{{Name: "Clicker", URL: "http://192.168.1.5:7071/clicker?k=sekret", SVG: "<svg></svg>"}}}
+	ts := httptest.NewServer(s.Handler())
+	defer ts.Close()
+	res, err := http.Get(ts.URL + "/_si/qr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	if res.StatusCode != 200 || !strings.Contains(string(b), "clicker?k=sekret") {
+		t.Errorf("qr page: %d", res.StatusCode)
+	}
+	req, _ := http.NewRequest("GET", ts.URL+"/_si/qr", nil)
+	req.Host = "evil.example:7070" // DNS rebinding: not a loopback host
+	if res, err := http.DefaultClient.Do(req); err == nil && res.StatusCode == 200 {
+		t.Error("the qr page must refuse a non-loopback Host")
+	}
+}

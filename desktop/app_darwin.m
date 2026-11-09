@@ -9,6 +9,8 @@ extern void goCloseURL(char *url);
 extern void goShutdown(void);
 extern char *goStatus(void);
 extern char *goHelpJS(char *cmd);
+extern char *goSessions(void);
+extern int goStopSession(int pid);
 
 static NSString *const kLastFolder = @"lastFolder";
 static NSString *const kRecent = @"recentFolders"; // newest first, at most ten
@@ -23,6 +25,8 @@ static NSString *const kRecent = @"recentFolders"; // newest first, at most ten
 @end
 
 static NSMutableArray<SIWindow *> *windows;
+static NSStatusItem *statusItem; // the menu-bar icon: running si play / si serve sessions
+static NSMenu *statusMenu;
 static NSDictionary *siStatus; // goStatus: the si in use, and a newer release if there is one
 
 // bannerJS: a small "update available" note in the Studio window; its link opens the
@@ -179,6 +183,7 @@ static NSMenu *submenu(NSMenu *bar, NSString *title) {
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)n {
+	[self buildStatusItem];
 	if (windows.count) { [NSApp activateIgnoringOtherApps:YES]; return; }
 	NSArray<NSString *> *args = NSProcessInfo.processInfo.arguments;
 	NSString *dir = nil;
@@ -270,7 +275,7 @@ static NSMenu *submenu(NSMenu *bar, NSString *title) {
 	p.message = @"Choose a folder of decks, documents or a site";
 	p.prompt = @"Open";
 	if ([p runModal] == NSModalResponseOK) [self openPath:p.URL.path];
-	else if (windows.count == 0 && !sender) [NSApp terminate:nil];
+	// cancelled with no window: the app stays, in the menu bar, until Quit
 }
 
 - (void)openPath:(NSString *)path {
@@ -303,8 +308,91 @@ static NSMenu *submenu(NSMenu *bar, NSString *title) {
 	[w.web loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:res]]];
 }
 
+// the menu-bar icon keeps the app useful with no window: it quits from its menu
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)app {
+	return NO;
+}
+
+// the Dock icon clicked with no window open: choose a folder
+- (BOOL)applicationShouldHandleReopen:(NSApplication *)app hasVisibleWindows:(BOOL)visible {
+	if (!visible && windows.count == 0) [self openFolder:self];
 	return YES;
+}
+
+- (void)buildStatusItem {
+	statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
+	NSImage *img = [NSImage imageWithSystemSymbolName:@"rectangle.stack" accessibilityDescription:@"si"];
+	img.template = YES;
+	statusItem.button.image = img;
+	statusItem.button.toolTip = @"si: running talks";
+	statusMenu = [[NSMenu alloc] initWithTitle:@"si"];
+	statusMenu.delegate = self; // filled from the running sessions each time it opens
+	statusItem.menu = statusMenu;
+}
+
+static NSMenuItem *action(NSMenu *m, NSString *title, SEL sel, id target, id obj) {
+	NSMenuItem *it = item(title, sel, @"");
+	it.target = target;
+	it.representedObject = obj;
+	[m addItem:it];
+	return it;
+}
+
+// the menu-bar menu: one entry per running si play / si serve (from the
+// session files; Go drops the ones whose process is gone), then Open, Quit
+- (void)fillStatusMenu:(NSMenu *)menu {
+	[menu removeAllItems];
+	char *r = goSessions();
+	NSData *d = [NSData dataWithBytes:r length:strlen(r)];
+	free(r);
+	NSArray *ss = [NSJSONSerialization JSONObjectWithData:d options:0 error:nil];
+	if (![ss isKindOfClass:[NSArray class]]) ss = @[];
+	NSMenuItem *head = item(ss.count == 0 ? @"No talks running" : ss.count == 1 ? @"1 talk running" : [NSString stringWithFormat:@"%lu talks running", (unsigned long)ss.count], nil, @"");
+	head.enabled = NO;
+	[menu addItem:head];
+	if (ss.count == 0) {
+		NSMenuItem *hint = item(@"Start one in a terminal: si play talk.md", nil, @"");
+		hint.enabled = NO;
+		[menu addItem:hint];
+	}
+	for (NSDictionary *s in ss) {
+		NSString *src = s[@"src"] ?: @"", *url = s[@"url"] ?: @"", *deck = s[@"deck"], *qr = s[@"qr"];
+		NSURL *u = [NSURL URLWithString:url];
+		NSString *title = [NSString stringWithFormat:@"%@   %@:%@", src.lastPathComponent, u.host ?: @"", u.port ?: @""];
+		NSMenuItem *it = item(title, nil, @"");
+		it.toolTip = [NSString stringWithFormat:@"si %@ %@", s[@"kind"] ?: @"play", src];
+		NSMenu *sub = [[NSMenu alloc] initWithTitle:title];
+		action(sub, @"Open in Browser", @selector(openSessionURL:), self, deck.length ? deck : url);
+		if (deck.length) action(sub, @"Teleprompter", @selector(openSessionURL:), self, [deck stringByAppendingString:@"?si-view=tp"]);
+		if (qr.length) action(sub, @"Phone QR Codes…", @selector(openSessionURL:), self, qr);
+		action(sub, @"Copy Link", @selector(copySessionLink:), self, deck.length ? deck : url);
+		action(sub, @"Show in Finder", @selector(showSessionInFinder:), self, src);
+		[sub addItem:[NSMenuItem separatorItem]];
+		action(sub, @"Stop", @selector(stopSession:), self, s[@"pid"]);
+		it.submenu = sub;
+		[menu addItem:it];
+	}
+	[menu addItem:[NSMenuItem separatorItem]];
+	action(menu, @"Open Folder in si Studio…", @selector(openFolder:), self, nil);
+	[menu addItem:item(@"Quit si Studio", @selector(terminate:), @"")];
+}
+
+- (void)openSessionURL:(NSMenuItem *)sender {
+	NSURL *u = [NSURL URLWithString:sender.representedObject];
+	if (u) [[NSWorkspace sharedWorkspace] openURL:u];
+}
+
+- (void)copySessionLink:(NSMenuItem *)sender {
+	[[NSPasteboard generalPasteboard] clearContents];
+	[[NSPasteboard generalPasteboard] setString:sender.representedObject forType:NSPasteboardTypeString];
+}
+
+- (void)showSessionInFinder:(NSMenuItem *)sender {
+	[[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:@[[NSURL fileURLWithPath:sender.representedObject]]];
+}
+
+- (void)stopSession:(NSMenuItem *)sender {
+	goStopSession([sender.representedObject intValue]);
 }
 
 - (void)applicationWillTerminate:(NSNotification *)n {
@@ -312,7 +400,9 @@ static NSMenu *submenu(NSMenu *bar, NSString *title) {
 }
 
 // Open Recent: the folders opened last, newest first; missing ones are skipped.
+// (The menu-bar menu shares this delegate.)
 - (void)menuNeedsUpdate:(NSMenu *)menu {
+	if (menu == statusMenu) { [self fillStatusMenu:menu]; return; }
 	[menu removeAllItems];
 	NSArray<NSString *> *recent = [[NSUserDefaults standardUserDefaults] arrayForKey:kRecent] ?: @[];
 	for (NSString *path in recent) {

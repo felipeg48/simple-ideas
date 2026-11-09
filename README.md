@@ -127,6 +127,10 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.12.0:** a menu-bar icon in si Studio for Mac: every running `si play`
+  / `si serve` (from the app or a terminal) with Open in Browser,
+  Teleprompter, Phone QR Codes…, Copy Link, Show in Finder and Stop; the app
+  stays in the menu bar after its last window closes.
 - **v2.11.0:** draw with the cursor: in draw mode (`a`), hold ⌥ Option (Alt)
   and move, and the cursor draws where it goes, no click; a trackpad draws with
   one finger. It replaces v2.10's `--trackpad` helper (absolute mapping felt

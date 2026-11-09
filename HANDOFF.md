@@ -5,6 +5,21 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.12.0: si Studio's menu-bar icon.** The founder asked for an icon to
+  see where talks run, open them, quit; only while the app is open. `si play`
+  / `si serve` write `<config dir>/si/sessions/<pid>.json` and remove it on
+  exit (`serve.WriteSession`; `$SI_SESSIONS_DIR` for tests); with `--remote`
+  the loopback-only `GET /_si/qr` shows the phone codes. `app_darwin.m`:
+  NSStatusItem (SF Symbol `rectangle.stack`, template), menu filled in
+  `menuNeedsUpdate` from `goSessions` (`desktop/sessions.go`: loopback URLs
+  only, dead pids' files deleted); per session Open in Browser, Teleprompter
+  (`?si-view=tp`), Phone QR Codes…, Copy Link, Show in Finder, Stop
+  (`goStopSession`: SIGINT, listed pids only); Open Folder…, Quit. The app no
+  longer quits on its last window; the Dock icon reopens the folder picker.
+  Tests: `TestSessionAndQRPage` (si), `TestSessions` (desktop). The menu itself
+  was NOT seen on screen (no windows on the founder's screen): the founder's to
+  check. The founder confirmed Option-drawing works on the trackpad (v2.11.0).
+
 - **v2.11.0: draw with the cursor; the trackpad helper is gone.** The founder
   tried v2.10's `--trackpad`: the dot showed all the time and the absolute
   mapping put the pen far from the cursor ("it changes position not when I

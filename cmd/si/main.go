@@ -47,7 +47,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "2.11.0"
+const version = "2.12.0"
 
 // Exit codes.
 const (
@@ -968,6 +968,17 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stdout, "  on your network: %s\n", lan)
 			printQR(stdout, lan)
 		}
+	}
+	// the Mac app's menu-bar icon lists running sessions from these files
+	sess := serve.Session{PID: os.Getpid(), Kind: strings.Fields(cmdName)[1], Src: absPath(src), URL: url, Started: time.Now()}
+	if decks := srv.RemoteDecks(); len(decks) == 1 {
+		sess.Deck = url + strings.TrimPrefix(decks[0], "/")
+	}
+	if srv.RemoteQR != nil {
+		sess.QR = url + "_si/qr"
+	}
+	if unlist, err := serve.WriteSession(sess); err == nil {
+		defer unlist()
 	}
 	stop := make(chan struct{})
 	go srv.Watch(stop)
@@ -1924,4 +1935,11 @@ func printVersion(w io.Writer, verbose bool) {
 		fmt.Fprintf(w, "  %-11s %-8s %s\n", c.Name, c.License, c.Note)
 	}
 	fmt.Fprintf(w, "\n%s · %s\n", brand.Copyright, brand.License)
+}
+
+func absPath(p string) string {
+	if a, err := filepath.Abs(p); err == nil {
+		return a
+	}
+	return p
 }

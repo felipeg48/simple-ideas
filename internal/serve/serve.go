@@ -78,6 +78,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /_si/position/cmd", s.pos.command)
 	mux.HandleFunc("GET /_si/position/events", s.pos.events)
 	mux.HandleFunc("POST /_si/callout", localOnly(s.callout)) // writes files: never on the remote listener
+	mux.HandleFunc("GET /_si/qr", localOnly(s.qrPage))        // the --remote links as codes: carries the key, loopback only
 	s.authorRoutes(mux)                                       // review comments: read, follow, reply, resolve (loopback)
 	if s.Remote {
 		mux.HandleFunc("GET /_si/remote/events", s.relay.events)

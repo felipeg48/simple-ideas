@@ -189,6 +189,11 @@ pass. The steps that matter:
 
 ## Roadmap ideas
 
+- **Menu-bar icon** (DONE, v2.12.0): si Studio.app's NSStatusItem lists
+  running sessions from `<config dir>/si/sessions/<pid>.json`
+  (`internal/serve/session.go`, written by si play / serve; `desktop/sessions.go`
+  reads them, drops dead pids); `GET /_si/qr` (loopback) shows the phone codes.
+  Only while the app is open (no login item), by the founder's choice.
 - **Draw with the cursor** (DONE, v2.11.0): in draw mode, Option (Alt) held
   = the cursor draws (`deck/05-annotate-keys.js`; pointer e2e). v2.10's
   absolute trackpad mapping (`si-trackpad`, MultitouchSupport) was removed
