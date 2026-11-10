@@ -53,6 +53,7 @@ func (a *api) routes(mux *http.ServeMux) {
 	mux.HandleFunc("POST "+apiPrefix+"theme", a.themeEdit)
 	mux.HandleFunc("POST "+apiPrefix+"theme/new", a.themeNew)
 	mux.HandleFunc("POST "+apiPrefix+"theme/use", a.themeUse)
+	mux.HandleFunc("POST "+apiPrefix+"theme/logo", a.themeLogo)
 	a.gitRoutes(mux)
 }
 

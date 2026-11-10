@@ -261,5 +261,43 @@ func mcpThemeTools(in func(string) (string, error), si func(...string) (string, 
 				}
 				return mcp.Result{Text: out}, nil
 			}},
+		{Name: "si_theme_from_logo", Title: "Make a theme from a logo",
+			Description: "A theme from a logo's colours (a PNG, JPEG, GIF or SVG in the folder, up to 8 MiB): the brand colour becomes the accent, a second one accent-2, backgrounds and text are neutrals tinted with the accent's hue, light and dark, and every text/background pair passes WCAG AA (colours moved for contrast are noted in the file's header). Written to themes/<name>.css (or path); use: true also sets it in si.conf. Look at it with si_theme_preview, then pick fonts.",
+			Input: obj([]string{"logo"}, map[string]any{"logo": str("the logo file"), "name": str("the theme's name (default: from the file name)"),
+				"accent": str("a hex colour to keep as the accent; the logo gives the rest"), "path": str("the .css file (default themes/<name>.css)"),
+				"use": map[string]any{"type": "boolean", "description": "also write theme: into si.conf"}}),
+			Call: func(raw json.RawMessage) (mcp.Result, error) {
+				var a struct {
+					Logo, Name, Accent, Path string
+					Use                      bool
+				}
+				json.Unmarshal(raw, &a)
+				logo, err := in(a.Logo)
+				if err != nil {
+					return mcp.Result{}, err
+				}
+				root, _ := in(".")
+				dest := filepath.Join(root, "themes")
+				if a.Path != "" {
+					if dest, err = in(a.Path); err != nil {
+						return mcp.Result{}, err
+					}
+				}
+				args := []string{"theme", "from", logo, "-o", dest}
+				if a.Name != "" {
+					args = append(args, "--name", a.Name)
+				}
+				if a.Accent != "" {
+					args = append(args, "--accent", a.Accent)
+				}
+				if a.Use {
+					args = append(args, "--use", "--conf", filepath.Join(root, "si.conf"))
+				}
+				out, code := si(args...)
+				if code != exitOK {
+					return mcp.Result{}, fmt.Errorf("%s", out)
+				}
+				return mcp.Result{Text: out}, nil
+			}},
 	}
 }

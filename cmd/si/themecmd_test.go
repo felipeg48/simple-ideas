@@ -53,6 +53,18 @@ func TestMCPThemeTools(t *testing.T) {
 	if b, _ := os.ReadFile(filepath.Join(root, "si.conf")); !strings.Contains(string(b), "themes/acme.css") {
 		t.Errorf("si.conf: %s", b)
 	}
+	// a theme from a logo, then checked: no issue
+	os.WriteFile(filepath.Join(root, "brand.svg"), []byte(`<svg><rect fill="#e4572e"/><rect fill="#1d3a8a"/></svg>`), 0o644)
+	if _, err := tools["si_theme_from_logo"](json.RawMessage(`{"logo":"../brand.svg"}`)); err == nil {
+		t.Error("a logo outside the folder was read")
+	}
+	if _, err = tools["si_theme_from_logo"](json.RawMessage(`{"logo":"brand.svg","name":"Logo Co"}`)); err != nil {
+		t.Fatal(err)
+	}
+	res, _ = tools["si_theme_check"](json.RawMessage(`{"path":"themes/logo-co.css"}`))
+	if res.Structured.(map[string]any)["passes"] != true {
+		t.Errorf("from logo: %s", res.Text)
+	}
 	if findChrome() == "" {
 		return
 	}

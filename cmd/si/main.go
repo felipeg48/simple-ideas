@@ -153,6 +153,8 @@ Usage:
         W3C Design Tokens JSON with --format dtcg
   si theme import <file.css|file.tokens.json|https://…> [-o <dir>] [--use]
         check a theme and copy it into themes/ (or <dir>); --use also writes theme: into si.conf
+  si theme from <logo.png|jpg|gif|svg> [-o <dir|file.css>] [--name N] [--accent '#hex'] [--use]
+        a theme from a logo's colours, light and dark, every pair WCAG AA; themes/<name>.css
   si --export css-rules|rules|conf|example|themes|agent-rules|docs-site [--output <path>]
         css-rules: starter stylesheet with every --si-* token and .si-* hook
         rules:     RULES.md
@@ -314,6 +316,7 @@ type options struct {
 	tunnel                                       bool    // si play --tunnel: the audience side on a temporary public address
 	format                                       string  // si theme export --format css|dtcg
 	use                                          bool    // si theme import --use: write theme: into si.conf
+	accent                                       string  // si theme from --accent: keep this colour
 	css                                          multi
 	args                                         []string
 }
@@ -404,6 +407,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.tunnel, "tunnel", false, "")
 	fl.StringVar(&o.format, "format", "", "")
 	fl.BoolVar(&o.use, "use", false, "")
+	fl.StringVar(&o.accent, "accent", "", "")
 	for {
 		if err := fl.Parse(argv); err != nil {
 			return nil, err
