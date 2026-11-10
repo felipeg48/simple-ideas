@@ -224,7 +224,7 @@ func (s *Script) settings(fm map[string]string, line func(string) int) {
 	s.Title, s.App, s.Setup, s.Voice, s.Viewport, s.Style = fm["title"], fm["app"], fm["setup"], fm["voice"], fm["viewport"], fm["voice-style"]
 	s.Stop, s.Shell = fm["stop"], fm["shell"]
 	if s.App == "" {
-		s.problem(line("app"), "a web demo needs app: (a URL, or a folder of the app next to the script)")
+		s.problem(line("app"), "a web demo needs app: (a URL, a folder of the app next to the script, or none for a terminal-only demo)")
 	}
 	s.W, s.H = 1440, 900
 	if err := s.SetViewport(s.Viewport); err != nil {

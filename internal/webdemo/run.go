@@ -155,7 +155,7 @@ func Run(s *Script, o Options) (*Report, error) {
 	var ver struct{ Product string }
 	c.CallIn("", "Browser.getVersion", nil, &ver)
 	c.OnEvent(r.event)
-	rep := &Report{Script: filepath.Base(s.Path), Title: s.Title, App: r.mask(base), Viewport: fmt.Sprintf("%dx%d", s.W, s.H),
+	rep := &Report{Script: filepath.Base(s.Path), Title: s.Title, App: r.mask(firstOf(base, s.App)), Viewport: fmt.Sprintf("%dx%d", s.W, s.H),
 		Chrome: ver.Product, SI: o.SI, Date: time.Now().Format(time.RFC3339)}
 	if rep.Title == "" {
 		rep.Title = s.Name
@@ -264,6 +264,9 @@ func (r *runner) voiceLines() error {
 // the app: folder (stopped by the returned func).
 func serveApp(s *Script) (string, func(), error) {
 	app := s.App
+	if app == "none" { // a terminal-only demo
+		return "", func() {}, nil
+	}
 	if strings.Contains(app, "://") {
 		return strings.TrimRight(app, "/"), func() {}, nil
 	}

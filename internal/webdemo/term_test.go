@@ -155,6 +155,9 @@ func TestCheckScenes(t *testing.T) {
 	if s := Parse("/x/s.md", "---\ntype: demo\napp: http://x\nstart: ./a as x\nstart: ./b as x\nstart:  · wait 2s\nstart: ./c · wait for soon\n---\n## F\n- wait 1s\n"); len(s.Problems) != 3 {
 		t.Errorf("bad starts: %v", s.Problems)
 	}
+	if s := Parse("/x/s.md", "---\ntype: demo\napp: none\n---\n## A\n- go /\n## B\n- terminal \"T\"\n- browser\n"); len(s.Problems) != 3 {
+		t.Errorf("app: none: %v", s.Problems)
+	}
 }
 
 func TestStripper(t *testing.T) {
@@ -474,6 +477,13 @@ func TestTerminalFailure(t *testing.T) {
 	}
 	if b, _ := os.ReadFile(filepath.Join(out, "slow.log")); string(b) != "up\n" {
 		t.Errorf("slow.log: %q", b)
+	}
+	// app: none, a terminal-only demo
+	only := filepath.Join(dir, "only.md")
+	os.WriteFile(only, []byte("---\ntype: demo\napp: none\nshell: sh\n---\n## T\n- terminal \"T\"\n- run \"echo fine\" · wait\n- expect output \"fine\"\n"), 0o644)
+	s, _ = ParseFile(only)
+	if rep, err := Run(s, Options{Chrome: chrome, Log: &log}); err != nil || !rep.OK() {
+		t.Errorf("app: none: %v\n%s", err, log.String())
 	}
 	if pids, _ := exec.Command("pgrep", "-f", "sleep 301").Output(); len(pids) > 0 {
 		for _, pid := range strings.Fields(string(pids)) {

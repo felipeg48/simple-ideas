@@ -316,9 +316,14 @@ func (s *Script) checkScenes(f *Feature) {
 		known[p.Name] = true
 	}
 	term := "" // the current terminal ("" = the browser)
+	if first := firstStep(f); s.App == "none" && first != nil && first.Kind != "terminal" {
+		s.problem(first.Line, `with app: none (a terminal-only demo) a feature begins with terminal "Name"`)
+	}
 	for _, b := range f.Blocks {
 		for _, st := range b.Steps {
 			switch {
+			case s.App == "none" && (st.Kind == "browser" || (inBrowser[st.Kind] && term == "")):
+				s.problem(st.Line, "%q: app: none has no browser (a terminal-only demo)", st.Text)
 			case st.Kind == "terminal":
 				term = st.Name
 			case st.Kind == "browser":
