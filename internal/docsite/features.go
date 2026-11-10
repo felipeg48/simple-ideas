@@ -237,6 +237,11 @@ from a laptop, a projector or §file://§.
 | Shift+R | in the teleprompter: **record** your voice with the slide timings (under §si play§) |
 | §d§ · §f§ · §?§ | light or dark · full screen · every key |
 
+**Presenting.** Your phone as the clicker, a tablet as the teleprompter or a
+pen pad, over HTTPS: [Presenting](remote.md). The room follows on their
+phones, votes in polls, answers in a word cloud and sends you questions:
+[Audience](audience.md).
+
 **Draw with the trackpad.** In draw mode, hold ⌥ Option (Alt) and move: the
 cursor draws where it goes, no click needed, so one finger on the trackpad
 circles a number on the slide. Let go of Option and the cursor moves without

@@ -1852,8 +1852,9 @@ The code is dark on light in every theme (`--si-qr-fg`, default `#111`, on
 phones do not read. To make one as a file, see `si qr` in the manual
 (`si qr https://… --png --svg --pdf`).
 
-Example: `si --export example --type site` writes this site; `si serve
-si-example` serves it.
+Start one with `si new mysite --type site` (or `--type website`): `_site.md`,
+a home page and an about page. Example: `si --export example --type site`
+writes this site; `si serve si-example` serves it.
 
 ## 24. Mind maps
 

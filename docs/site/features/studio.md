@@ -65,7 +65,7 @@ Nothing goes to a server.
 ## In the terminal
 
 Prefer the keyboard? `si --terminal .` is the same Studio as a terminal app:
-see [si in the terminal](terminal.md).
+see [Terminal](terminal.md).
 
 ## The rules
 

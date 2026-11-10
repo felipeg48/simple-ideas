@@ -1,9 +1,9 @@
 ---
-title: si in the terminal
+title: Terminal
 description: Present, rehearse and write in a terminal, over SSH or in tmux: block-letter titles, animated canvases, real pictures, a teleprompter in a second pane, and the Studio as a keyboard app.
 ---
 
-# si in the terminal
+# Terminal
 
 Everything you present in a browser, in a terminal: on a server over SSH, in
 tmux, on a machine with no desktop, or simply because you live there. The

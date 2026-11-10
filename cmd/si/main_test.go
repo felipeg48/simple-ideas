@@ -292,7 +292,7 @@ func TestNewWithTypeAndFix(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
 	var out, errb bytes.Buffer
-	if code := run([]string{"new", "harbor", "--type", "site"}, &out, &errb); code != 0 {
+	if code := run([]string{"new", "harbor", "--type", "website"}, &out, &errb); code != 0 { // website: an alias of site
 		t.Fatalf("new site: %d %s", code, errb.String())
 	}
 	if code := run([]string{"new", "harbor/queues", "--type", "article"}, &out, &errb); code != 0 {

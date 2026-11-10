@@ -47,7 +47,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "2.28.0"
+const version = "2.28.1"
 
 // Exit codes.
 const (
@@ -118,7 +118,7 @@ Usage:
   si check <dir|file.md> [--budget]
         validate decks: title, directives, assets, includes; exit 1 on a problem;
         --budget (or budget.page / budget.3d in si.conf) also fails pages over 1 MB (3D: 1.5 MB)
-  si new <name> [--type deck|article|guide|book|site|page|lab|demo|mindmap|mindmap3d|codeshow]
+  si new <name> [--type deck|article|guide|book|site|website|page|lab|demo|mindmap|mindmap3d|codeshow]
         scaffold <name>/ with a deck that uses every rule; with --type, a small
         starter of that type (<name>.md, or a <name>/ folder for guide, book and
         site), added to the menu of the guide or site it is created in
@@ -1760,7 +1760,7 @@ func scaffold(name string, stdout, stderr io.Writer) int {
 // exampleKinds maps --type (and its aliases) to an example set.
 var exampleKinds = map[string]string{"": "deck", "deck": "deck", "slides": "deck", "article": "article",
 	"guide": "guide", "guides": "guide", "tutorial": "guide", "tutorials": "guide", "lab": "lab",
-	"book": "book", "reference": "book", "demo": "demo", "site": "site", "all": "all", "mindmap": "deck", "mindmaps": "deck"}
+	"book": "book", "reference": "book", "demo": "demo", "site": "site", "website": "site", "all": "all", "mindmap": "deck", "mindmaps": "deck"}
 
 // writeExampleKind writes one example set into dir (which must not exist or
 // be empty): deck = the showcase decks (today's export), article = the article
@@ -1964,7 +1964,7 @@ func guideKindOf(g *deck.Guide) string {
 // newStarter writes a small starter of one type (si new <name> --type <kind>).
 func newStarter(name, kind string, stdout, stderr io.Writer) int {
 	kind = strings.ToLower(kind)
-	if alias, ok := map[string]string{"slides": "deck", "tutorial": "guide", "reference": "book", "mindmap-3d": "mindmap3d", "code": "codeshow"}[kind]; ok {
+	if alias, ok := map[string]string{"slides": "deck", "tutorial": "guide", "reference": "book", "mindmap-3d": "mindmap3d", "code": "codeshow", "website": "site"}[kind]; ok {
 		kind = alias
 	}
 	folder := kind == "guide" || kind == "book" || kind == "site"

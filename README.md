@@ -128,6 +128,9 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.28.1:** `si new <name> --type website` (an alias of `site`); the docs
+  site's Features menu is keywords only, with a Website page, Studio in the
+  top bar, and Presenting and Audience inside Decks.
 - **v2.28.0:** record your talk: **● Record** in the teleprompter keeps your
   voice and the slide timings (`.si/recordings/`); `si build --narration latest`
   makes the narrated video, paced as you spoke; `si rehearse` reports planned

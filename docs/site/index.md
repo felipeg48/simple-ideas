@@ -121,12 +121,17 @@ map editor and a code window builder. [The Studio](features/studio.md)
 ### Terminal · si play --terminal
 
 The same deck in the terminal, with real pictures, animated canvases and a
-teleprompter in a second pane. [si in the terminal](features/terminal.md)
+teleprompter in a second pane. [Terminal](features/terminal.md)
 
 ### Presenting · from your phone
 
 Your phone as the clicker, an iPad as the teleprompter, over HTTPS after a
 one-time setup. [Present from your phone](features/remote.md)
+
+### Website · si new --type website
+
+A folder of Markdown becomes a whole site: a menu, pages, posts, talks and
+guides inside it, ready to upload anywhere. [Website](features/website.md)
 
 ### Your audience · polls and questions
 
