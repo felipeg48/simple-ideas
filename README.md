@@ -21,6 +21,7 @@ Fluid on every screen, one self-contained HTML file each, with a real teleprompt
 <a href="https://simple-ideas.org/examples.html">Live examples</a> ·
 <a href="https://simple-ideas.org/rules/">The rules</a> ·
 <a href="https://simple-ideas.org/themes.html">Themes</a> ·
+<a href="FEATURES.md">Every feature</a> ·
 <a href="CHANGELOG.md">Changelog</a>
 </p>
 

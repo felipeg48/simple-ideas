@@ -1,0 +1,178 @@
+# si: every feature
+
+`si` turns Markdown (or AsciiDoc) into talks, articles, guides, books, mind
+maps, code shows and whole websites: fluid on every screen, one
+self-contained HTML file each. This is the complete list; the site shows each
+one with pictures and live examples: **[simple-ideas.org](https://simple-ideas.org/)**.
+What changed in each release: [CHANGELOG.md](CHANGELOG.md). The format, with
+an example for every rule: [RULES.md](docs/RULES.md).
+
+## Writing
+
+- **Markdown or AsciiDoc** (`.md`, `.adoc`): AsciiDoc is converted (headers,
+  sections, lists, tables, source blocks with si's options, callouts,
+  admonitions, includes, links) and every feature works the same.
+- **One format, many documents:** `type: deck` (default), `article`, `page`,
+  `lab`, `demo`, `mindmap`; folders with `_nav.md` (guide, or `type: book`) or
+  `_site.md` (website).
+- **Starters:** `si new <name> --type deck|article|guide|book|website|page|lab|demo|mindmap|mindmap3d|codeshow`,
+  joined to the menu of the guide or site they land in; `si new-canvas` for an
+  animated SVG.
+- **Includes:** `<!-- include: sections/02-payment.md -->`, code from files by
+  lines or tags, and code from GitHub permalinks; cycle-checked.
+- **`si check`:** every problem with its file and line (directives, options,
+  missing files, links and anchors, `[CLICK]` counts, canvases, budgets);
+  `si fix` turns raw HTML into si syntax; `si migrate` prints an editorial
+  migration prompt for an existing deck.
+
+## Decks
+
+- **Fluid slides:** no fixed canvas; type and layouts reflow from a phone to a
+  4K projector, in portrait too.
+- **Layouts:** `center`, `two-col`, `split`, `quote`, `big-number`, `image`;
+  columns, cards, eyebrows, highlighter (`==text==`), badges and logos.
+- **Build steps:** `<!-- step -->`, `<!-- steps -->`, reveal list items one
+  by one.
+- **Animated SVG canvas:** one picture whose parts appear, fail, recover and
+  move slide after slide (`<!-- svg: journey.svg +declined -->`); helpers
+  for show/hide, alerts, flows, packets, growing bars, ticking counters.
+- **Diagrams:** ```` ```stage ```` animated flows, ```` ```mermaid ````,
+  ```` ```mindmap ```` on a slide, tables, highlighted code with callouts and
+  tabs.
+- **Media:** colour, gradient, image and muted video backgrounds with
+  overlays; sized, aligned, captioned and full-bleed images; web fonts inlined.
+- **Transitions:** fade, slide, zoom; the canvas and code windows morph
+  between slides.
+
+## Presenting
+
+- **`si play`:** live reload on every save; the URL keeps your slide.
+- **Keys:** overview `o`, find `/` (slides, other pages, `links.*`), draw `a`
+  (drag, or hold ⌥ Option and move: the cursor draws; colours, sizes, undo),
+  break timer `t` (digital or analog, animations), light/dark `d`, full
+  screen `f`, help `?`; every key remappable in `si.conf`.
+- **Teleprompter** (`p`): the `Notes:` script in large type, `[CLICK]` cues,
+  auto-scroll at your speed, mirror, notes only, slide and total clocks with
+  pace against your last run, previews of now and next, the `Points:` tab;
+  works from `file://`.
+- **Two or more presenters:** `speakers:` and `Notes[Name]:` /
+  `Points[Name]:`: a teleprompter each, cue lines for the others, a hand-over
+  banner, each speaker's own clock; `speakers.control: turn`.
+- **Record your talk:** **● Record** in the teleprompter keeps your voice and
+  the slide timings; `si build --narration latest` makes the narrated video,
+  `si rehearse` reports planned vs spoken per slide and words per minute.
+- **Terminal drawer** (`` ` ``, `si play` on loopback): real shells beside the
+  slides, a runbook of commands, demo scripts with Copy and Run.
+
+## From your phone
+
+- **`si play --remote`:** a phone clicker, a tablet teleprompter (one per
+  speaker), a draw pad; codes on the deck with `q`; reconnect after sleep.
+- **`--https`:** si's own local certificate authority (each phone trusts it
+  once), or `--https=tailscale`; the phone stays awake. `si ca trust|untrust`.
+- **Si Studio.app menu bar:** every running `si play` on the Mac, with its
+  phone codes.
+
+## Your audience
+
+- **`si play --audience`:** the room follows the slides on their phones (their
+  own key: slides only, never your notes); `<!-- qr: audience -->` puts the
+  code on a slide.
+- **Live polls:** `<!-- poll: id · a · b · multiple · hidden -->`: phones vote,
+  the bars grow on the slide; `hidden` reveals on your next click.
+- **Word clouds:** `<!-- cloud: id -->`: a few words from each phone, sized by
+  count; hide any word from the teleprompter.
+- **Questions:** *Ask a question* on every phone; a Q&A tab in your
+  teleprompter, *Show on screen* on the slide.
+- **`--tunnel`:** the same on a video call, through a temporary public HTTPS
+  link; results saved to `.si/audience/` (`audience.save: off` keeps nothing).
+- **Reviews:** `si serve . --review [--https]`: colleagues comment on slides,
+  sections or one paragraph; replies and resolve in the Studio.
+
+## Documents
+
+- **Articles:** a lede, reading time, a contents column, code with copy
+  buttons, callouts, tables, embedded slides.
+- **Guides:** a sidebar, breadcrumbs, Previous / Next, reading progress,
+  checked links and anchors; labs with steps and checks.
+- **Books:** a cover, parts and chapters, numbered figures and tables,
+  cross-references, an index, a one-file edition and PDF.
+- **Demo scripts:** facts, `> Say:` lines, commands with expected output.
+- **Plugins:** alerts, badges, logos, QR codes, event countdowns, accordions,
+  modals, carousels, cards, tabs, `embed:` (cards, sections, whole documents,
+  live slides).
+
+## Websites
+
+- A folder with `_site.md`: a navigator (`topbar`, `topbar-centred`, `mega`,
+  `sidebar`), a call to action, search, favicon and link previews, footer;
+  pages, articles, talks, guides and books inside it. `si new <name> --type website`.
+
+## Mind maps
+
+- A nested list becomes a map: layouts `map`, `right`, `org`, `radial`; line,
+  topic and map styles; badges, pictures, sticky notes, code, links to slides,
+  drill-down into other maps, folding, search, Play.
+- **3D:** pills on a floor, linked maps as glass floors, fly-in, three kinds.
+- **Import / export:** OPML, FreeMind, XMind, Mermaid; SVG, PNG, PDF, MP4.
+
+## Code
+
+- Code windows (macOS, Windows, terminal, none) with titles, themes,
+  backdrops, line numbers, highlighted lines, numbered callouts placed by hand.
+- **Code shows:** steps that morph into each other, on slides and in
+  documents; `si code` exports PNG, SVG, GIF and MP4.
+
+## Themes
+
+- Nine built-in themes, each in light and dark: `studio`, `paper`, `mono`,
+  `slate`, `twilight`, `forest`, `sunrise`, `neon`, `newsprint`.
+- **Your own:** a CSS file of `--si-*` tokens; `/* si theme: Name · extends
+  twilight */`; `si theme check` (values, contrast in light and dark),
+  `si theme export|import` (CSS or W3C Design Tokens); a theme from a URL;
+  your CSS in its own cascade layer.
+
+## Output
+
+- **One self-contained HTML file** per page (CSS, JS, images, video, fonts
+  inlined); works offline, from a USB stick; `--share-assets` for sites.
+- **`--pdf`**, **`--handout[=slides|lines|points|notes]`**, **`--mp4`** (the
+  real motion, or `--dissolve`; `--narration` for your voice).
+- **`si publish`:** LinkedIn (a deck as a swipeable document post, an article
+  as a link post), dev.to, Hashnode, Ghost, WordPress; always a dry run unless
+  `--yes`.
+- **`si qr`:** PNG, JPG, SVG or PDF codes, a logo in the middle, dots, Wi-Fi
+  networks and contacts.
+
+## Studio
+
+- **`si --web [dir]`** or **si Studio.app** (macOS): files, an editor that
+  completes directives, a live preview at Fit, 16:9, phone, portrait and 4K,
+  `si check` as you type; Write, Rehearse, Present and Lab modes; ⌘K.
+- **Views:** the Map editor (drag, reparent, 2D and 3D), the Window view for
+  code, the Theme view (make a theme with live preview and contrast checks).
+- **History** (git: diff, commit, earlier versions, branches, pull, push) and
+  **Review** (comments from a review link).
+- **`si --terminal [dir]`:** the Studio as a keyboard app: preview, storyboard,
+  inspector, mind map editing, Lab with tmux panes.
+
+## Terminal
+
+- **`si play --terminal`:** the deck in a terminal: block-letter titles,
+  layouts, animated canvases, real pictures (Kitty, iTerm2) or half-blocks;
+  `--notes [--speaker NAME]` for the teleprompter in a second pane.
+
+## AI agents
+
+- **The si skill and plugin** (`/plugin install si@simple-ideas`),
+  `si --export skill`, `si --export agent-rules` (AGENTS.md, CLAUDE.md).
+- **`si mcp`:** check, rules, new, build, QR, a screenshot of a slide, and
+  theme tools, confined to the folder it serves.
+
+## Built to last
+
+- Go standard library plus goldmark; nothing fetched at run time except the
+  pinned Mermaid script for decks that use it.
+- Loopback by default; keys for every network listener; confined file access
+  in the Studio and the MCP server.
+- `si selfupdate` (checksum-verified), `si report` for issues, `si manual`.
