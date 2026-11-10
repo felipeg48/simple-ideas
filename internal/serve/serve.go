@@ -164,7 +164,7 @@ func (s *Server) deckPage(w http.ResponseWriter, md string, term, audience bool)
 	}
 	cfg := config.Load(s.Conf, filepath.Join(s.dir, "si.conf"))
 	for _, w := range cfg.Warnings {
-		log.Printf("si.conf: %s", w)
+		log.Printf("%s", w)
 	}
 	// The terminal drawer shows only when the capability is on (loopback play)
 	// and the feature is not explicitly disabled in si.conf.

@@ -280,7 +280,9 @@ Not everything is a slide deck. Pick the type by what the reader does:
   the viewer must read (a demo login), and `pronounce: word = how to say it`
   for names the voice gets wrong. Leave `voice:` out unless the author asks for
   one (si picks Kokoro af_heart, else the computer's voice); never put an API
-  key in the script.
+  key in the script or in a project si.conf (si ignores it there): the author
+  runs `si voice login openai|elevenlabs`. Kokoro installs with `si voice
+  install kokoro`; `si voice say "line" --voice kokoro:af_heart` tries a voice.
 - **Web demos with a terminal** (RULES.md §27, Terminals and programs): a
   server the app needs goes in front matter `start: <command> · wait for
   "ready text"` (or `· wait for port N`), never in a `run` step of a feature

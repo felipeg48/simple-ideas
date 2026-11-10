@@ -3,6 +3,20 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.37.0:** `si voice`: `si voice install kokoro` sets Kokoro up in one
+  command (a Python venv with kokoro-onnx 0.6.1 and the two model files,
+  SHA-256 checked, in the user cache; idempotent; `--dir`; `si voice uninstall
+  kokoro`), and si uses that venv on its own. `si voice say "text"` speaks a
+  line aloud like macOS `say` (cached; `-o` saves a WAV; an engine that cannot
+  speak falls back to the computer's voice with a note); `si voice list
+  [engine]`. API keys: `si voice login openai|elevenlabs` asks without echo and
+  keeps the key in a new user-level si.conf (`<config dir>/si/si.conf`, 0600),
+  `si voice logout` removes it; environment variables still win; a key in a
+  project si.conf is ignored and `si check` warns with file and line. The user
+  si.conf is read before the project's (project values win). `voice:` and
+  `voice.style:` in si.conf set the default voice and tone of `si demo run`.
+  `si doctor` shows Kokoro's venv and files and whether each cloud key is set.
+  si.conf warnings now carry their file.
 - **v2.36.1:** web demos: a terminal command that must fail, `run "…" ·
   exit 1` or `· fails` (any non-zero status), passes only when it does. Fixed:
   `run … · wait` after a `run` that was not waited for read the earlier

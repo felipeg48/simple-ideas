@@ -1,6 +1,7 @@
 package webdemo
 
 import (
+	"archive/zip"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
@@ -14,9 +15,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
+	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/tools"
 )
 
@@ -114,15 +117,36 @@ func (v Voice) Ready() string {
 			}
 		}
 	case "elevenlabs":
-		if os.Getenv("ELEVENLABS_API_KEY") == "" {
-			return "voice: elevenlabs needs ELEVENLABS_API_KEY in the environment (elevenlabs.io, Profile › API keys)"
+		if k, _ := config.APIKey("elevenlabs"); k == "" {
+			return "voice: elevenlabs needs an API key (elevenlabs.io, Profile › API keys): si voice login elevenlabs, or ELEVENLABS_API_KEY in the environment"
 		}
 	case "openai":
-		if os.Getenv("OPENAI_API_KEY") == "" {
-			return "voice: openai needs OPENAI_API_KEY in the environment (platform.openai.com › API keys)"
+		if k, _ := config.APIKey("openai"); k == "" {
+			return "voice: openai needs an API key (platform.openai.com › API keys): si voice login openai, or OPENAI_API_KEY in the environment"
 		}
 	}
 	return ""
+}
+
+// KokoroVoices are the English voices in Kokoro's voices file (dir/voices-v1.0.bin,
+// a zip of <name>.npy), or a built-in list when it cannot be read; si speaks
+// American (a…) and British (b…) English.
+func KokoroVoices(dir string) (names []string, fromFile bool) {
+	if z, err := zip.OpenReader(filepath.Join(dir, "voices-v1.0.bin")); err == nil {
+		defer z.Close()
+		for _, f := range z.File {
+			if n := strings.TrimSuffix(f.Name, ".npy"); n != f.Name && (n[0] == 'a' || n[0] == 'b') {
+				names = append(names, n)
+			}
+		}
+		if len(names) > 0 {
+			sort.Strings(names)
+			return names, true
+		}
+	}
+	return strings.Fields(`af_alloy af_aoede af_bella af_heart af_jessica af_kore af_nicole af_nova af_river af_sarah af_sky
+		am_adam am_echo am_eric am_fenrir am_liam am_michael am_onyx am_puck am_santa
+		bf_alice bf_emma bf_isabella bf_lily bm_daniel bm_fable bm_george bm_lewis`), false
 }
 
 // Line is one voiced Say: line in the cache.
@@ -145,6 +169,11 @@ var (
 	openaiURL = "https://api.openai.com"
 )
 
+// Path is where text voiced by v is (or will be) in the cache.
+func (sy *Synth) Path(v Voice, text string) string {
+	return filepath.Join(sy.Cache, cacheKey(v, text)+".wav")
+}
+
 // Voice voices every text (already Spoken) with v and returns, per text, its
 // WAV and length. new counts the lines that were not in the cache.
 func (sy *Synth) Voice(v Voice, texts []string) (lines map[string]Line, new int, err error) {
@@ -157,7 +186,7 @@ func (sy *Synth) Voice(v Voice, texts []string) (lines map[string]Line, new int,
 		if _, seen := lines[t]; seen || strings.TrimSpace(t) == "" {
 			continue
 		}
-		p := filepath.Join(sy.Cache, cacheKey(v, t)+".wav")
+		p := sy.Path(v, t)
 		if secs, err := wavSeconds(p); err == nil && secs > 0 {
 			lines[t] = Line{p, secs}
 			continue
@@ -233,10 +262,11 @@ func (sy *Synth) engine(v Voice, texts, raw []string, tmp string) error {
 			fmt.Fprintf(sy.log(), "  voice %d/%d (%s)\n", i+1, len(texts), v.Engine)
 			var req *http.Request
 			var err error
+			key, _ := config.APIKey(v.Engine)
 			if v.Engine == "openai" {
-				req, err = openaiRequest(v, t, os.Getenv("OPENAI_API_KEY"))
+				req, err = openaiRequest(v, t, key)
 			} else {
-				req, err = elevenRequest(v, t, os.Getenv("ELEVENLABS_API_KEY"))
+				req, err = elevenRequest(v, t, key)
 			}
 			if err != nil {
 				return err

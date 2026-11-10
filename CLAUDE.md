@@ -203,6 +203,12 @@ pass. The steps that matter:
   chapters, callouts, `--captions`, voice engines local and cloud) and runs as a
   test (`si demo test`, report, JUnit). Phases: test mode, video, voice, the
   manual with videos, then Retake's CLAUDE.md gets the shared script format.
+  **`si voice`** (DONE v2.37.0, `cmd/si/voice.go`, `internal/tools/kokoro.go`):
+  `install kokoro` (venv + kokoro-onnx 0.6.1 + SHA-256-pinned models in the
+  user cache), `say` (plays like macOS say, falls back to system), `list`,
+  `login|logout` (keys only in the user si.conf `<config dir>/si/si.conf`,
+  0600; a project si.conf key is ignored with a warning; `config.APIKey`);
+  `voice:` / `voice.style:` in si.conf. Next: a Windows run of install.
   **With a terminal** (spec `2026-11-10-web-demos-terminal.md`, DONE v2.36.0
   except `split`): `start:`/`stop:`/`shell:`, `terminal`/`run`/`expect
   output`/`browser`, `start … as NAME`/`stop NAME`; `internal/webdemo/

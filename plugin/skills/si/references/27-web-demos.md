@@ -141,16 +141,38 @@ It writes into `demo-out/<script>/` (or `-o dir`):
 |---|---|---|
 | `kokoro` | open source (Apache 2.0), local, natural: si's own voice | `af_heart` |
 | `system` | the computer's own: `say` on macOS, espeak-ng on Linux, Windows' voices | the system's (`system:Samantha`) |
-| `elevenlabs` | cloud, `ELEVENLABS_API_KEY` in the environment | a voice id (`elevenlabs:21m00Tcm4TlvDq8ikWAM`) |
-| `openai` | cloud, `OPENAI_API_KEY`; `gpt-4o-mini-tts`, a tone from `voice-style: calm, friendly` | `alloy` |
+| `elevenlabs` | cloud, an API key (`si voice login elevenlabs`) | a voice id (`elevenlabs:21m00Tcm4TlvDq8ikWAM`) |
+| `openai` | cloud, an API key (`si voice login openai`); `gpt-4o-mini-tts`, a tone from `voice-style: calm, friendly` | `alloy` |
 
-Without `voice:`, si uses `kokoro:af_heart` when Kokoro is installed, else
-`system`. Kokoro runs as a program: `python3 -m pip install kokoro-onnx` and the
-model files `kokoro-v1.0.onnx` and `voices-v1.0.bin` in the folder `si doctor`
-names (or `SI_KOKORO_DIR`; `SI_KOKORO_PYTHON` picks the Python). Each line is
-cached by its engine, voice, style and words (in the user cache folder), so a
-re-run only voices the lines that changed; a cloud call sends nothing but the
-`Say:` text.
+Which voice: `--voice`, else the script's `voice:`, else `voice:` in the
+`si.conf` beside the script, else `voice:` in your own si.conf (§16), else
+`kokoro:af_heart` when Kokoro is installed, else `system`. The tone likewise:
+`voice-style:` in the script, else `voice.style:` in a si.conf.
+
+Kokoro installs with one command:
+
+```
+si voice install kokoro
+```
+
+It makes a Python venv with `kokoro-onnx` in the folder `si doctor` names
+(`<user cache>/si/kokoro`, or `SI_KOKORO_DIR`) and downloads the model files
+`kokoro-v1.0.onnx` and `voices-v1.0.bin` (about 350 MB, checked by SHA-256).
+It needs Python 3.10 to 3.13 and changes nothing else on the computer; run it
+again to repair, `si voice uninstall kokoro` to remove it. si uses that venv
+on its own (`SI_KOKORO_PYTHON` picks another Python).
+
+The cloud engines need an API key. `si voice login openai` (or `elevenlabs`)
+asks for it without echo and keeps it in your own si.conf, readable by you
+only; `si voice logout openai` removes it. `OPENAI_API_KEY` and
+`ELEVENLABS_API_KEY` in the environment still win. A key is never read from a
+project's si.conf, which goes to git (§16).
+
+Try a voice before a take: `si voice say "Every order, one journey" --voice
+kokoro:bf_emma` says the line aloud (`-o line.wav` saves it), and `si voice list
+kokoro` lists the voices. Each line is cached by its engine, voice, style and
+words (in the user cache folder), so a re-run only voices the lines that
+changed; a cloud call sends nothing but the `Say:` text.
 
 `pronounce: word = how to say it` (several lines, or pairs split by `;`)
 changes what the voice says, whole words in any case; the captions keep the

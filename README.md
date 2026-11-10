@@ -241,7 +241,7 @@ lists them all, found or not, with the command for your computer.
 | cloudflared | `si play --tunnel` | `brew install cloudflared` | [pkg.cloudflare.com](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) | `winget install --id Cloudflare.cloudflared` |
 | Tailscale | `--https=tailscale` | `brew install --cask tailscale` | `curl -fsSL https://tailscale.com/install.sh \| sh` | `winget install Tailscale.Tailscale` |
 | GitHub CLI | code from private GitHub repos | `brew install gh` | `sudo apt install gh` | `winget install GitHub.cli` |
-| Kokoro | `si demo run`'s natural local voice | `python3 -m pip install kokoro-onnx` + [two model files](https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.0) | the same | `python -m pip install kokoro-onnx` + the files |
+| Kokoro | `si demo run`'s natural local voice | `si voice install kokoro` | `si voice install kokoro` | `si voice install kokoro` |
 | eSpeak NG | `si demo run`'s computer voice on Linux | not needed (`say`) | `sudo apt install espeak-ng` | not needed |
 
 Fedora and Arch commands are on each feature page of

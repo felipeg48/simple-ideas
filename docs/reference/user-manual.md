@@ -346,7 +346,10 @@ You get one video per feature, one with chapters for YouTube, captions, and
 a page that lists it all. [CLICK]
 
 Points:
-- Kokoro is si's own voice; without it, the computer's voice
+- Kokoro is si's own voice: `si voice install kokoro`, one command; without it, the computer's voice
+- Try a voice aloud: `si voice say "Hello" --voice kokoro:bf_emma`; `si voice list`
+- Cloud keys: `si voice login openai` keeps the key in your own si.conf, never the project's
+- `voice:` in si.conf sets the default voice
 - Cloud voices send only the Say: text; lines are cached, re-runs re-voice only changes
 - A failing step ends that clip and lands in the report
 - Needs Chrome and ffmpeg: `si doctor`
