@@ -299,6 +299,45 @@ written) and answers with the text, the file's own and the effective values
 CodeMirror as one change, so Undo, autosave and the Text view behave as for
 typing. A picker or slider sends its last value after a short pause.
 
+## Animations: the Motion view
+
+An `.svg` file gets a **Motion | Text** bar (remembered per file; Motion by
+default for an empty file or one that already has frames). Make a new file
+`anim/<name>.svg` in the file tree, open it, and **Start a blank board**
+writes a 16:9 board; any other SVG opens as it is, so you can animate a
+drawing you already have.
+
+- **Board** (left): the SVG itself, drawn in the frame being edited (in a
+  shadow root, scripts and `on…` handlers removed). Click a shape to select
+  it (an unnamed shape gets a name first: `data-part="rect3"`); drag it to
+  move it in this frame. Positions are in the SVG's own `viewBox` units, never
+  screen pixels, so the picture scales with the slide.
+- **Frames**: a strip of frames; **Add a frame** copies the frame you are on,
+  **Delete** removes it (the rest are renamed in order), **▶ Play** runs them
+  in turn. Frame 1 is the picture as it starts.
+- **Into frame N**: how long the move into that frame takes and its easing
+  (ease, linear, ease-in-out, spring, snap).
+- **Part**: right, down, size and turn of the selected part in this frame, its
+  colour (the theme's tokens, so it follows light, dark and the deck's theme)
+  and *Hidden in this frame*; **Add a box / circle / text / line**, **Delete**.
+- **Use it on a slide**: the lines that put it on a slide, ready to copy:
+  `<!-- svg: anim/x.svg frame1 -->` and one `<!-- step: -frameN-1 +frameN -->`
+  per later frame (RULES.md §10).
+
+What it writes is an ordinary canvas: parts carry `data-part`, and one block
+in the SVG's `<style>`, between `/* si motion: frame1 frame2 … */` and
+`/* si motion end */`, holds a rule per frame and part
+(`[data-state~="frame2"] [data-part="token"]{transform:translate(310px,0)}`)
+and per frame timing. Everything else in the file is kept as written. Every
+change is an op: `POST /_si/studio/api/motion {path, text, op}` applies it
+with `internal/motion` and answers with the new text, the frames and parts,
+and the slide lines; the text goes into CodeMirror as one change, so Undo,
+autosave and the Text view behave as for typing. Nothing in this path reads
+or writes files.
+
+Not yet: paths a part follows (`data-move`), a stagger for groups, inserting
+straight into a slide (copy the lines instead), New… › Animation.
+
 ## History (git)
 
 **History** in the top bar (or ⌘K → History) shows the workspace's git: the

@@ -22,6 +22,7 @@ import { Icon } from "./navigator";
 import { MapEditor, isMindmapPage, mindmapFenceAt } from "./map-editor";
 import { WindowEditor, codeFenceAt } from "./window-editor";
 import { ThemeEditor } from "./theme-editor";
+import { MotionEditor, isMotionFile } from "./motion-editor";
 import { isThemeFile } from "./theme-tokens";
 import { RunbookEditor } from "./runbook-editor";
 import { EMPTY_RB, isRunbookText, parseRunbook, serializeRunbook, type Runbook } from "./runbook";
@@ -79,6 +80,13 @@ const themeView = (path: string): "theme" | "text" => {
   try { return localStorage.getItem(themeKey(path)) === "text" ? "text" : "theme"; } catch { return "theme"; }
 };
 const setThemeView = (path: string, v: "theme" | "text") => { try { localStorage.setItem(themeKey(path), v); } catch { /* best effort */ } };
+// the Motion / Text choice for an .svg file, remembered per file (Motion when it is an animation or empty)
+const motionKey = (path: string) => scoped("si-studio-motionview:" + path);
+const motionView = (path: string, text: string): "motion" | "text" => {
+  try { const v = localStorage.getItem(motionKey(path)); if (v === "motion" || v === "text") return v; } catch { /* best effort */ }
+  return !text.trim() || text.includes("/* si motion:") ? "motion" : "text";
+};
+const setMotionView = (path: string, v: "motion" | "text") => { try { localStorage.setItem(motionKey(path), v); } catch { /* best effort */ } };
 // a file that becomes a runbook while you type (or starts empty) keeps the JSON view until you pick Visual
 const keepJson = (path: string) => { try { if (localStorage.getItem(viewKey(path)) === null) setRbView(path, "json"); } catch { /* best effort */ } };
 // the Visual toggle is offered for runbook-shaped JSON and for an empty file
@@ -438,6 +446,9 @@ export function Editor(p: Props) {
   const cssBody = d && p.kind === "css" ? text(d) : "";
   const themeFile = !!d && isThemeFile(cssBody);
   const themeOn = themeFile && themeView(d!.path) === "theme";
+  const svgFile = !!d && isMotionFile(d.path);
+  const svgBody = svgFile ? text(d!) : "";
+  const motionOn = svgFile && motionView(d!.path, svgBody) === "motion";
   /** editMap puts the map editor's new text into the editor as one undoable change. */
   function editMap(next: string) {
     const v = view.current;
@@ -526,6 +537,18 @@ export function Editor(p: Props) {
           </div>
         </div>
       )}
+      {svgFile && (
+        <div class="rb-bar">
+          <span class="rb-kind"><Icon name="svg" />Animation</span>
+          <div class="seg rb-mode" role="group" aria-label="SVG view">
+            <button class={motionOn ? "on" : ""} aria-pressed={motionOn} onClick={() => { setMotionView(d!.path, "motion"); rerender(); }}>Motion</button>
+            <button class={motionOn ? "" : "on"} aria-pressed={!motionOn} onClick={() => { setMotionView(d!.path, "text"); rerender(); requestAnimationFrame(() => view.current?.requestMeasure()); }}>Text</button>
+          </div>
+        </div>
+      )}
+      {motionOn && (
+        <MotionEditor path={d!.path} text={svgBody} setText={editMap} undo={(r) => view.current && (r ? redo : undo)(view.current)} />
+      )}
       {themeOn && (
         <ThemeEditor path={d!.path} text={cssBody} setText={editMap} undo={(r) => view.current && (r ? redo : undo)(view.current)} />
       )}
@@ -542,7 +565,7 @@ export function Editor(p: Props) {
         <RunbookEditor text={text(d!)} edit={editRunbook} toJson={(l, c) => showJson(d!.path, l, c)}
           undo={(r) => view.current && (r ? redo : undo)(view.current)} />
       )}
-      <div class="ed-cm" ref={host} hidden={!d || visual || mapOn || winOn || themeOn} />
+      <div class="ed-cm" ref={host} hidden={!d || visual || mapOn || winOn || themeOn || motionOn} />
     </div>
   );
 }
