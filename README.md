@@ -448,6 +448,12 @@ See [CLAUDE.md](CLAUDE.md) and the
 [developer reference](docs/reference/developer-reference.md) for the code layout
 and how to add a directive, theme, canvas helper or timer animation.
 
+## Support si
+
+si is free and open source. If it saves you time, you can
+[buy me a coffee](https://buymeacoffee.com/felipeg48): it pays for the
+time, and maybe one day for a hosted relay.
+
 ## License
 
 Licensed under the Apache License, Version 2.0 — see [LICENSE](LICENSE).
