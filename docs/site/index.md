@@ -84,6 +84,31 @@ func send(order Order) error {
 }
 ```
 
+And one that explains itself as it goes:
+
+```python id=quote window=mac title="quote.py" theme=night backdrop=dusk numbers transition=morph step="A flat price"
+def quote(parcel):
+    return 4.90
+```
+<!-- callout: 2 Every parcel costs the same. at=60,-40 -->
+
+```python id=quote window=mac title="quote.py" theme=night backdrop=dusk numbers transition=morph step="By weight" hl=2
+def quote(parcel):
+    price = 4.90 + 0.80 * parcel.kg
+    return round(price, 2)
+```
+<!-- callout: 2 Each kilo adds 80 cents. at=60,-46 -->
+
+```python id=quote window=mac title="quote.py" theme=night backdrop=dusk numbers transition=morph step="Rush orders" hl=3-4
+def quote(parcel):
+    price = 4.90 + 0.80 * parcel.kg
+    if parcel.rush:
+        price *= 1.5
+    return round(price, 2)
+```
+<!-- callout: 3 Same-day delivery: half again. at=140,6 -->
+<!-- callout: 5 Rounded once, at the end. at=50,36 -->
+
 ## Around them
 
 <!-- cards: 4 -->
