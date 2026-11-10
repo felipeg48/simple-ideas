@@ -127,6 +127,10 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.19.0:** remote audiences: `si play talk.md --tunnel` puts the audience
+  side (follow along, polls, questions) on a temporary public HTTPS link
+  (Cloudflare's free quick tunnel, `cloudflared`) for a talk on a video call;
+  only the audience side, gone when `si play` stops.
 - **v2.18.0:** questions from the room: under `si play --audience` every
   phone can ask; questions land in a Q&A tab on your teleprompter (never on the
   other phones), *Show on screen* puts one over the slide; votes and
@@ -359,6 +363,7 @@ https://simple-ideas.org/agents.html
 | `si selfupdate` | download the latest release for your OS/arch (checksum-verified) and replace the running `si` |
 | `si qr <text\|URL> [-o name.png] [--png --jpg --svg --pdf] [--logo pic] [--style dots]` | a QR code file for a link, text, `--wifi` network or `--vcard` contact; a logo too big to scan past is refused (see [QR codes](https://simple-ideas.org/features/qr.html)) |
 | `si play <file.md> --audience` | the room follows the talk on their phones: their own key, slides only, never your notes; `<!-- qr: audience -->` puts the code on a slide, `<!-- poll: … -->` asks them, with live bars; their questions reach your teleprompter's Q&A tab |
+| `si play <file.md> --tunnel` | the audience side on a temporary public HTTPS link (Cloudflare quick tunnel; `brew install cloudflared`), for a remote audience on a video call; gone when `si play` stops |
 | `si play <file.md> --remote --https[=tailscale]` | the phone and tablet pages over HTTPS; each phone trusts si's local certificate authority once (see [Present from your phone](https://simple-ideas.org/features/remote.html)) |
 | `si ca [trust\|untrust]` | si's certificate authority for `--https`: where it is, its fingerprint; `trust` adds it to this computer's trusted certificates |
 | `si mcp [dir]` | an MCP server for AI agents on stdio (see [Use it with your AI agent](#use-it-with-your-ai-agent)) |

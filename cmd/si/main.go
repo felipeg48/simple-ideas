@@ -47,7 +47,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "2.18.0"
+const version = "2.19.0"
 
 // Exit codes.
 const (
@@ -164,6 +164,8 @@ Flags (GNU style, before or after the path):
       --addr <host:port> play address (default 127.0.0.1:7070)
       --remote[=tp,draw,clicker] play: a second, keyed listener for a tablet or phone on your network: tp = teleprompter, draw = draw pad, clicker = phone remote (default: all)
       --remote-addr <host:port> play: the --remote address (default 0.0.0.0, the play port + 1)
+      --tunnel          play: --audience over a temporary public HTTPS address (Cloudflare quick tunnel; needs
+                        cloudflared), for a remote audience on a video call; only the audience side, gone at exit
       --audience        play: the room follows the talk on their phones (a separate key; no notes, no control);
                         <!-- qr: audience --> on a slide shows the code; works with --remote and --https
       --https[=tailscale] play --remote: serve the remote pages over HTTPS, with si's own certificate authority
@@ -294,6 +296,7 @@ type options struct {
 	qrJPG, qrECSet                               bool    // si qr --jpg; --ec given
 	trackpad                                     bool    // si play --trackpad: v2.10 only, now a note (Option draws in draw mode)
 	audience                                     bool    // si play --audience: the room follows the talk on their phones
+	tunnel                                       bool    // si play --tunnel: the audience side on a temporary public address
 	css                                          multi
 	args                                         []string
 }
@@ -379,6 +382,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.qrVCard, "vcard", "", "")
 	fl.BoolVar(&o.trackpad, "trackpad", false, "")
 	fl.BoolVar(&o.audience, "audience", false, "")
+	fl.BoolVar(&o.tunnel, "tunnel", false, "")
 	for {
 		if err := fl.Parse(argv); err != nil {
 			return nil, err
@@ -980,6 +984,9 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	srv.Dev = o.dev
 	srv.Title = o.title
+	if o.tunnel {
+		o.audience = true // the tunnel carries the audience side
+	}
 	srv.Remote = len(o.remote.roles) > 0 || o.audience
 	if o.trackpad { // v2.10 only: the helper is gone, Option-drawing needs nothing
 		fmt.Fprintln(stderr, "si: --trackpad is no longer needed: press a (draw), then hold ⌥ Option and move to draw with the cursor")
@@ -1000,6 +1007,24 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 			return code
 		}
 		remote = rs
+	}
+	if o.tunnel && remote != nil {
+		pub, stopTunnel, err := startTunnel(srv, stderr)
+		if err != nil {
+			ln.Close()
+			fmt.Fprintf(stderr, "si: --tunnel: %v\n", err)
+			return exitProblems
+		}
+		defer stopTunnel()
+		u := pub + "/a?k=" + srv.AudienceKey
+		fmt.Fprintf(stdout, "  audience anywhere (a temporary public address, gone when si play stops; paste it in the call's chat):\n  %s\n", u)
+		printQR(stdout, u)
+		if c, err := qr.Encode([]byte(u), qr.Options{Level: qr.M}); err == nil && srv.RemoteQR != nil {
+			srv.RemoteQR.Links = append(srv.RemoteQR.Links, render.RemoteLink{Name: "Audience, anywhere", URL: u, SVG: c.SVG(qr.Style{Quiet: 2, Label: "audience link, anywhere"}, "", "", "")})
+			// the code on the slide is the one that works for everyone
+			srv.RemoteQR.Audience = &render.RemoteLink{Name: "Audience", URL: u,
+				SVG: c.SVG(qr.Style{Quiet: 2, BG: qr.Transparent, Class: "si-qr-code", Label: "QR code: follow the talk"}, "", "", "")}
+		}
 	}
 	var review *http.Server
 	if o.review {

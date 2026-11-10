@@ -5,6 +5,20 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.19.0: `si play --tunnel` for remote audiences.** `cmd/si/tunnel.go`:
+  `AudienceOnlyHandler` (audience key and routes only) on a loopback port,
+  `cloudflared tunnel --url` (found on PATH or Homebrew), the trycloudflare
+  address read from its stderr; the link printed, in the `q` overlay and in
+  `<!-- qr: audience -->`. Found with a real tunnel: quick tunnels carry no
+  server-sent events (the stream connected and stayed silent), so audience
+  pages fall back to polling `GET /_si/audience/now` after 4 s silent; streams
+  also got `no-transform`, `X-Accel-Buffering: no` and a 20 s heartbeat. Real
+  test from outside: follow (#1 → #2), a vote (deck 0,0,1, viewer 0,0,1), a
+  question; presenter routes 404 through the tunnel; cloudflared exits with
+  si play. `TestAudienceOnlyHandler`. Not done: hosted relay (founder: later,
+  if donations allow). The founder is setting up Buy Me a Coffee for a
+  donate link (GitHub FUNDING.yml + site) — waiting for the URL.
+
 - **v2.18.0: Q&A (audience mode phase 3).** `serve/qa.go`: `ask` (tidy text ≤ 500,
   name ≤ 40, one per voter per 20 s, 200 open max), `set` (open, shown,
   answered, hidden; one shown at a time), `questions` messages (presenter pages

@@ -301,8 +301,7 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-store")
+	sseHeaders(w)
 	ch := make(chan struct{}, 1)
 	s.mu.Lock()
 	s.clients[ch] = true

@@ -284,7 +284,10 @@ const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 // The wake lock needs a secure context (localhost or HTTPS); a phone on
 // http://<LAN address> has none, so the page says how to keep it awake.
 const RelayJS = `<script id="si-relay">window.SI_RELAY=function(){var id=Math.random().toString(36).slice(2),c={onmessage:null},es=null,away=0;` +
-	`function open(){if(es)es.close();es=new EventSource('/_si/remote/events?c='+id);es.onmessage=function(e){try{if(c.onmessage)c.onmessage({data:JSON.parse(e.data)})}catch(x){}}}open();` +
+	`function open(){if(es)es.close();es=new EventSource('/_si/remote/events?c='+id);es.onmessage=function(e){got=1;try{if(c.onmessage)c.onmessage({data:JSON.parse(e.data)})}catch(x){}}}open();` +
+	// an audience page with no stream after 4 s (a Cloudflare quick tunnel carries none) asks once a second
+	`var got=0;if(/[?&]role=audience(&|$)/.test(location.search))setTimeout(function(){if(got)return;es.close();es={readyState:1,close:function(){}};` +
+	`setInterval(function(){fetch('/_si/audience/now',{cache:'no-store'}).then(function(r){return r.json()}).then(function(a){a.forEach(function(m){if(c.onmessage)c.onmessage({data:m})})}).catch(function(){})},1200)},4000);` +
 	`document.addEventListener('visibilitychange',function(){if(document.hidden){away=Date.now();return}if(es.readyState===2||(away&&Date.now()-away>5000))open();away=0});` +
 	`c.postMessage=function(m){fetch('/_si/remote/send?c='+id,{method:'POST',body:JSON.stringify(m),keepalive:true}).catch(function(){})};return c};` +
 	`(function(){if(!/[?&]role=(tp|draw|clicker)(&|$)/.test(location.search))return;if(!navigator.wakeLock){addEventListener('DOMContentLoaded',function(){if(document.getElementById('si-awake'))return;var t=document.createElement('div');t.id='si-awake';` +

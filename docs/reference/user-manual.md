@@ -252,6 +252,7 @@ About › Certificate Trust Settings**. Optional on the laptop: `si ca trust`.
 (`<!-- qr: audience -->` on a slide): slides only, never your notes;
 `<!-- poll: id · a · b -->` lets them vote, live bars on your screen; they
 ask questions from their phones into the teleprompter's Q&A tab (`3`).
+On a video call: `--tunnel` gives them a temporary public link instead.
 
 **Every talk:** press `q`, scan the Clicker or Teleprompter code. The phone
 stays awake and the notes travel encrypted. With Tailscale on both:

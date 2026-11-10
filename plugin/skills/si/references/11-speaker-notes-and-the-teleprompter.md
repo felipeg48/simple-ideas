@@ -107,6 +107,16 @@ sees the results after voting. Late phones get the current counts. Without
 `si play --audience` (a built deck, a document) the poll is the plain list of
 its options. Votes are kept in memory for the run.
 
+**A remote audience (`--tunnel`).** For a talk on a video call, `si play
+talk.md --tunnel` puts the audience side on a temporary public HTTPS address
+through Cloudflare's free quick tunnel (install `cloudflared` once:
+`brew install cloudflared`). Paste the printed link in the call's chat, or
+show `<!-- qr: audience -->`, which then carries that link. Only the audience
+side is reachable there (never your teleprompter or controls); votes and
+questions still live on your laptop, and the address is gone when `si play`
+stops. A quick tunnel carries no event stream, so audience pages there ask
+for the current slide about once a second.
+
 **Questions from the room.** Under `--audience` every phone has an *Ask a
 question* button (500 characters, an optional name, one question per phone
 every 20 seconds). Questions go to you only, never to the other phones: a

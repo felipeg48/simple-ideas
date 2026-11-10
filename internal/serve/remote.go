@@ -27,6 +27,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/felipeg48/simple-ideas/internal/deck"
 )
@@ -86,8 +87,7 @@ func (h *relay) stream(w http.ResponseWriter, r *http.Request, filter func([]byt
 		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-store")
+	sseHeaders(w)
 	ch := make(chan []byte, 256)
 	h.mu.Lock()
 	h.subs[ch] = r.URL.Query().Get("c")
@@ -114,10 +114,15 @@ func (h *relay) stream(w http.ResponseWriter, r *http.Request, filter func([]byt
 		}
 	}
 	fl.Flush()
+	beat := time.NewTicker(20 * time.Second) // proxies (a --tunnel) close a silent stream
+	defer beat.Stop()
 	for {
 		select {
 		case <-r.Context().Done():
 			return
+		case <-beat.C:
+			fmt.Fprint(w, ": ping\n\n")
+			fl.Flush()
 		case m := <-ch:
 			if m = pass(m); m != nil {
 				fmt.Fprintf(w, "data: %s\n\n", m)
@@ -263,6 +268,21 @@ func admit(w http.ResponseWriter, r *http.Request, key, cookie string) bool {
 	return err == nil && ok(c.Value)
 }
 
+// AudienceOnlyHandler is the audience side alone, behind the audience key:
+// what si play --tunnel puts on the internet, so nothing of the presenter's
+// (teleprompter, clicker, draw pad, controls) is reachable from there.
+func (s *Server) AudienceOnlyHandler() http.Handler {
+	aud := s.audienceHandler()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Referrer-Policy", "no-referrer")
+		if s.AudienceKey == "" || !admit(w, r, s.AudienceKey, audienceCookie) {
+			http.Error(w, "si: open the audience link (it carries the key)", http.StatusForbidden)
+			return
+		}
+		aud.ServeHTTP(w, r)
+	})
+}
+
 // audienceHandler is what an audience phone may reach (si play --audience):
 // the deck in the audience role, rendered without Notes: and Points:, its
 // files, and the filtered stream of where the talk is. Nothing it sends is
@@ -271,6 +291,7 @@ func (s *Server) audienceHandler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/_si/events", s.events)
 	mux.HandleFunc("GET /_si/remote/events", s.relay.audienceEvents)
+	mux.HandleFunc("GET /_si/audience/now", s.audienceNow)
 	mux.HandleFunc("POST /_si/audience/vote", s.vote)
 	mux.HandleFunc("POST /_si/audience/ask", s.ask)
 	static := http.FileServer(http.Dir(s.dir))
@@ -367,4 +388,34 @@ li b{flex:1 1 12rem}a{padding:.55rem 1rem;border-radius:.5rem;background:color-m
 	}
 	b.WriteString("</ul></body></html>")
 	io.WriteString(w, b.String())
+}
+
+// audienceNow is GET /_si/audience/now: where the talk is and the poll
+// counts, as the audience may see them: what an audience page asks about once
+// a second when no event stream reaches it (a Cloudflare quick tunnel does
+// not carry server-sent events).
+func (s *Server) audienceNow(w http.ResponseWriter, r *http.Request) {
+	s.relay.mu.Lock()
+	var out []json.RawMessage
+	for _, m := range s.relay.last {
+		if v := audienceView(m); v != nil {
+			out = append(out, v)
+		}
+	}
+	s.relay.mu.Unlock()
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	if out == nil {
+		out = []json.RawMessage{}
+	}
+	json.NewEncoder(w).Encode(out)
+}
+
+// sseHeaders marks an event stream so no proxy on the way (a Cloudflare
+// tunnel, nginx) compresses or buffers it: without no-transform, a tunnel
+// held every event back.
+func sseHeaders(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-store, no-transform")
+	w.Header().Set("X-Accel-Buffering", "no")
 }

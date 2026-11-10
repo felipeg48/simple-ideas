@@ -86,6 +86,21 @@ every page through the relay (kept as `poll:<id>` for late joiners);
 `audienceView` passes it. Counts and bars show only where a room can vote
 (`data-live`: an audience phone, or the deck of `si play --audience`).
 
+### Remote audiences (`--tunnel`)
+
+`si play --tunnel` (implies `--audience`; `cmd/si/tunnel.go`) serves
+`Server.AudienceOnlyHandler` (the audience key and routes only) on a loopback
+port and runs `cloudflared tunnel --no-autoupdate --url http://127.0.0.1:<port>`,
+reading the `https://<words>.trycloudflare.com` address from its output
+(40 s timeout); the printed link, the `q` overlay and `<!-- qr: audience -->`
+use it. Quick tunnels do not carry server-sent events: audience pages that
+get nothing on the stream within 4 s poll `GET /_si/audience/now` (the last
+state and poll messages through `audienceView`) every 1.2 s. Streams send
+`Cache-Control: no-store, no-transform`, `X-Accel-Buffering: no` and a
+heartbeat comment every 20 s. `si play` stops cloudflared on exit
+(SIGINT, then kill after 3 s). A new quick-tunnel name can take ~10 s to
+resolve in DNS.
+
 ### Questions
 
 `POST /_si/audience/ask {text, name, voter}` (audience mux; `serve/qa.go`):

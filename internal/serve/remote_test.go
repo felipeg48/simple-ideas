@@ -352,3 +352,29 @@ func TestQA(t *testing.T) {
 		t.Errorf("asking is the audience's route only: %d", c)
 	}
 }
+
+// What --tunnel puts on the internet is the audience side alone: the presenter
+// key opens nothing there.
+func TestAudienceOnlyHandler(t *testing.T) {
+	s, _ := remoteServer(t)
+	s.AudienceKey = "aud"
+	ts := httptest.NewServer(s.AudienceOnlyHandler())
+	defer ts.Close()
+	c := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	code := func(p string) int {
+		res, err := c.Get(ts.URL + p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res.Body.Close()
+		return res.StatusCode
+	}
+	if got := code("/a?k=aud"); got != http.StatusFound {
+		t.Errorf("audience link: %d", got)
+	}
+	for _, p := range []string{"/talk.html?role=tp&k=presenter", "/tp?k=presenter", "/talk.html?role=tp&k=aud", "/_si/qr?k=aud", "/a"} {
+		if got := code(p); got == 200 || got == http.StatusFound {
+			t.Errorf("%s must not open over the tunnel (%d)", p, got)
+		}
+	}
+}

@@ -94,6 +94,19 @@ phones; *Show on screen* puts one at the foot of your slide (Esc takes it
 off). When you stop `si play`, the votes and questions are saved beside your
 talk in `.si/audience/`.
 
+## A remote audience, on a video call
+
+```bash
+si play talk.md --tunnel        # once: brew install cloudflared
+```
+
+si prints a temporary public link (`https://<words>.trycloudflare.com/a?k=…`):
+paste it in the call's chat, or show the `<!-- qr: audience -->` slide, which
+now carries it. People anywhere follow the slides, vote and ask questions,
+exactly like the room. Only the audience side is on the internet, never your
+teleprompter or controls; everything stays on your laptop, and the link is
+gone when you stop `si play`.
+
 ## Draw with the cursor
 
 Press `a` (draw), then **hold ⌥ Option and move**: the cursor draws where it

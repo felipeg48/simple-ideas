@@ -203,7 +203,9 @@ pass. The steps that matter:
   v2.17.0: polls (`render/poll.go`, `serve/poll.go`, `/_si/audience/vote`,
   `poll` relay messages). v2.18.0: Q&A (`serve/qa.go`, `/_si/audience/ask`,
   `/_si/qa`, teleprompter Q&A tab, `.si-qa-show`, results saved on exit).
-  Next: a way for remote audiences (Zoom) to reach it.
+  v2.19.0: `--tunnel` (Cloudflare quick tunnel to `AudienceOnlyHandler`;
+  polling fallback `/_si/audience/now` since quick tunnels carry no SSE). The
+  founder ruled out a hosted relay on simple-ideas.org for now (cost).
 - **Themes** (v2.15.0): six new built-ins (slate, twilight, forest, sunrise,
   neon, newsprint; `TestNewThemesContrast`: WCAG AA in light and dark); the
   docs site's Themes page is generated from `assets.Themes`
