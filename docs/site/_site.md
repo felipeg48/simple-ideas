@@ -17,6 +17,7 @@ footer: simple-ideas
   - [Decks](features/decks.md)
     - [Presenting](features/remote.md)
     - [Audience](features/audience.md)
+    - [Try it, as the room does](features/audience-demo.md)
   - [Articles](features/articles.md)
   - [Guides](features/guides.md)
   - [Mind Maps](features/mindmaps.md)

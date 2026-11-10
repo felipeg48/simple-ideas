@@ -105,7 +105,7 @@ func (l *liveExamples) result(dir string) func(string) string {
 		if pageLinkRE.MatchString(md) { // a menu or contents of pages that are not there
 			return ""
 		}
-		md = audienceQRRE.ReplaceAllString(md, "<!-- qr: "+brand.Site+"features/audience.html") // a live link only under si play --audience: a sample here
+		md = audienceQRRE.ReplaceAllString(md, "<!-- qr: "+brand.Site+"features/audience-demo.html") // a live link only under si play --audience: a sample here
 		forms := []string{asLivePage(md)}
 		if !strings.HasPrefix(md, "---\n") { // slides, or a document's part (alert, carousel)
 			forms = append(forms, "---\ntitle: Example\ntype: article\n---\n\n"+md)

@@ -30,6 +30,9 @@ never your `Notes:` or `Points:`, and they cannot change the slide or reach
 your teleprompter (their key is not yours). Press **q** on the deck and the
 code fills the screen. In a built deck the code is simply left out.
 
+Scan the code in the example above with your phone (or [open it
+here](audience-demo.md)) to try what the room sees.
+
 ## Live polls
 
 ```markdown
