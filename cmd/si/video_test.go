@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/tools"
 	"image"
 	"image/color"
 	"image/png"
@@ -36,7 +37,7 @@ func TestFFmpegArgs(t *testing.T) {
 
 func TestEncodeMP4(t *testing.T) {
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		if err := encodeMP4([]videoFrame{{"x.png", 1}}, "out.mp4"); err == nil || !strings.Contains(err.Error(), "brew install ffmpeg") {
+		if err := encodeMP4([]videoFrame{{"x.png", 1}}, "out.mp4"); err == nil || !strings.Contains(err.Error(), ffmpegTool().How()) { // this computer's own install line
 			t.Errorf("without ffmpeg the error should say how to install it: %v", err)
 		}
 		t.Skip("ffmpeg not installed")
@@ -103,3 +104,5 @@ func TestOn30TakesTheLastShotBeforeEachFrame(t *testing.T) {
 		}
 	}
 }
+
+func ffmpegTool() tools.Tool { t, _ := tools.Get("ffmpeg"); return t }
