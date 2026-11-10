@@ -12,7 +12,7 @@ func TestStartersPassTheCheck(t *testing.T) {
 	f := newFx(t)
 	for kind, path := range map[string]string{
 		"deck": "talk.md", "article": "post.md", "lab": "lab.md", "demo": "demo.md", "page": "page.md",
-		"guide": "guide", "book": "book", "site": "site", "mindmap3d": "map3d.md", "codeshow": "show.md",
+		"guide": "guide", "book": "book", "site": "site", "resume": "cv", "portfolio": "folio", "landing": "launch", "mindmap3d": "map3d.md", "codeshow": "show.md",
 	} {
 		code, m := f.do("POST", "starter", map[string]string{"kind": kind, "path": path})
 		if code != 201 {
@@ -26,7 +26,7 @@ func TestStartersPassTheCheck(t *testing.T) {
 		if ps := fmt.Sprint(c["problems"]); ps != "[]" {
 			t.Errorf("%s starter has problems: %s", kind, ps)
 		}
-		if want := map[string]string{"page": "page", "site": "page", "book": "book"}[kind]; want != "" && c["kind"] != want {
+		if want := map[string]string{"page": "page", "site": "page", "resume": "page", "landing": "page", "book": "book"}[kind]; want != "" && c["kind"] != want {
 			t.Errorf("%s: kind %v", kind, c["kind"]) // what the Studio shows it as
 		}
 	}
@@ -68,7 +68,7 @@ func TestGalleryRendersEveryStarter(t *testing.T) {
 	for _, kind := range StarterKinds {
 		rec := httptest.NewRecorder()
 		f.mux.ServeHTTP(rec, httptest.NewRequest("GET", "/_si/studio/api/gallery/"+kind, nil))
-		titled := starterFolder(kind) || strings.Contains(rec.Body.String(), "Your title here") // a folder shows its first page
+		titled := StarterFolder(kind) || strings.Contains(rec.Body.String(), "Your title here") // a folder shows its first page
 		if rec.Code != 200 || !titled || !strings.Contains(rec.Header().Get("Content-Type"), "text/html") {
 			t.Errorf("%s: %d %.120s", kind, rec.Code, rec.Body.String())
 		}

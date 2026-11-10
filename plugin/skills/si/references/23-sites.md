@@ -37,6 +37,7 @@ theme: studio
 | `cta:` | `Label → page` (or `→ https://…`, `→ #modal`): the highlighted button |
 | `version:` | a badge beside the logo, e.g. `v2.5.0 → https://…/releases/tag/v2.5.0` (the link is optional) |
 | `title: off` | on a page: no `<h1>` (a home page that opens with its own content) |
+| `cta:` on a page | a large button under that page's title and description, same `Label → page` form (a landing page's hero); hidden on paper |
 
 `favicon:`, `touch-icon:` and `og-image:` also work in any deck's or document's
 front matter. si never adds an icon or branding of its own to pages you build.
@@ -80,7 +81,7 @@ Options follow the text after a `·`: `key=value`, or a kind word (`info`,
 |---|---|
 | `alert: text · kind · until=YYYY-MM-DD` | a dismissible band; the reader's dismissal is remembered in that browser; hidden after `until`. Kinds: `info` (default), `ok`, `warn`, `crit`. |
 | `badge: text · kind` | a status pill, same kinds; on a slide, the pill paragraph a cover or closing slide carries |
-| `cards: 2` | the `###` headings that follow become a grid of cards (2, 3 or 4 columns, or as many as fit): `### Title · tag · colour`, colour one of `teal`, `orange`, `ok`, `crit`, `hi` (the highlighted card); the grid ends at the next `##`, `---` or directive; a `<!-- step -->` before it reveals the whole grid |
+| `cards: 2` | the `###` headings that follow become a grid of cards (2, 3 or 4 columns, or as many as fit): `### Title · tag · colour` (the title may be a link, `### [Dock board](work/dock.md) · Client`), colour one of `teal`, `orange`, `ok`, `crit`, `hi` (the highlighted card); the grid ends at the next `##`, `---` or directive; a `<!-- step -->` before it reveals the whole grid |
 | `logo: [image] × Partner · alt=Brand` | a logo lockup: the image (or, with none, the theme's own logo: `--si-brand-logo`), a bar, and the partner's name; on slides and pages |
 | `cloud: id · hidden` | a word cloud of the room's short answers under `si play --audience` (`hidden`: on the next click) |
 | `poll: id · option · option … · multiple · hidden` | a live poll the room answers on their phones under `si play --audience` (`hidden`: results on the next click); elsewhere the list of options (above) |
@@ -175,3 +176,30 @@ phones do not read. To make one as a file, see `si qr` in the manual
 Start one with `si new mysite --type site` (or `--type website`): `_site.md`,
 a home page and an about page. Example: `si --export example --type site`
 writes this site; `si serve si-example` serves it.
+
+### Start from a kind
+
+`--kind` (or the kind as the `--type`) starts a website made for one job,
+with real content to replace:
+
+```bash
+si new marta --type website --kind resume     # or: si new marta --type resume
+si new tomas --type portfolio
+si new dockside --type landing
+```
+
+| Kind | What you get |
+|---|---|
+| `resume` | `index.md`: name, title, contact lines, experience, skills, education, set to print on A4 or Letter (the navigator and buttons stay off the paper; print the page or save it as PDF from the browser); `projects.md` (cards) and `about.md` |
+| `portfolio` | a home with project cards, each with a picture (`images/*.svg`) and a linked title; one `type: article` case study per project under `work/`; `about.md` |
+| `landing` | a product page: a hero with a page `cta:` button, features as cards, results as a table, questions as an accordion, a QR code, a `#demo` modal opened by the navigator's `cta:`; `pricing.md` and `_footer.md` |
+
+A landing page's hero is its title, its `description:` and its own `cta:`:
+
+```markdown
+---
+title: Every van, every door, one screen
+description: Dockside plans your loading docks minute by minute.
+cta: Start a free 30-day trial → pricing
+---
+```

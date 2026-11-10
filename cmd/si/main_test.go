@@ -320,6 +320,40 @@ func TestNewWithTypeAndFix(t *testing.T) {
 	}
 }
 
+// Website kinds: each starter is written, checks clean and builds; --kind
+// goes with --type website (or alone), and --type resume works directly.
+func TestNewWebsiteKinds(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	for name, args := range map[string][]string{
+		"cv":     {"--type", "website", "--kind", "resume"},
+		"folio":  {"--kind", "portfolio"},
+		"launch": {"--type", "landing"},
+	} {
+		var out, errb bytes.Buffer
+		if code := run(append([]string{"new", name}, args...), &out, &errb); code != 0 {
+			t.Fatalf("new %s %v: %d %s", name, args, code, errb.String())
+		}
+		if code := run([]string{"check", name}, &out, &errb); code != 0 {
+			t.Errorf("%s checks clean: %s %s", name, out.String(), errb.String())
+		}
+		if code := run([]string{"build", name, "-o", filepath.Join("out", name)}, &out, &errb); code != 0 {
+			t.Errorf("%s builds: %s", name, errb.String())
+		}
+		if _, err := os.Stat(filepath.Join(dir, "out", name, "index.html")); err != nil {
+			t.Errorf("%s: no index.html: %v", name, err)
+		}
+	}
+	page, _ := os.ReadFile(filepath.Join(dir, "out", "launch", "index.html"))
+	if !strings.Contains(string(page), `<p class="si-page-cta"><a class="si-site-cta" href="pricing.html">`) {
+		t.Error("a page's own cta: is a button under its title")
+	}
+	var out, errb bytes.Buffer
+	if code := run([]string{"new", "x", "--type", "deck", "--kind", "resume"}, &out, &errb); code == 0 {
+		t.Error("--kind goes with --type website only")
+	}
+}
+
 func TestMindmapImportExport(t *testing.T) {
 	dir := t.TempDir()
 	mmd := filepath.Join(dir, "plan.mmd")

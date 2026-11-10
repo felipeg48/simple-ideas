@@ -121,9 +121,11 @@ Usage:
         validate decks: title, directives, assets, includes; exit 1 on a problem;
         --budget (or budget.page / budget.3d in si.conf) also fails pages over 1 MB (3D: 1.5 MB)
   si new <name> [--type deck|article|guide|book|site|website|page|lab|demo|mindmap|mindmap3d|codeshow]
+        [--kind resume|portfolio|landing]
         scaffold <name>/ with a deck that uses every rule; with --type, a small
         starter of that type (<name>.md, or a <name>/ folder for guide, book and
-        site), added to the menu of the guide or site it is created in
+        site), added to the menu of the guide or site it is created in; a website
+        starts from a kind with --type website --kind resume (or --type resume)
   si fix <dir|file.md>... [--write]
         turn raw-HTML components into si syntax: <span class="hl"> into ==text==,
         the pill into <!-- badge -->, the logo lockup into <!-- logo -->, simple card
@@ -276,6 +278,7 @@ func (m *multi) Set(v string) error { *m = append(*m, v); return nil }
 type options struct {
 	output, addr, export, theme, conf, title, ai string
 	kind                                         string // --type of --export example
+	siteKind                                     string // si new --type website --kind resume|portfolio|landing
 	remoteAddr                                   string
 	siteOld                                      string // the old --site <text>, now --site-title
 	remote                                       remoteFlag
@@ -337,6 +340,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.Var(&o.handout, "handout", "")
 	fl.StringVar(&o.export, "export", "", "")
 	fl.StringVar(&o.kind, "type", "", "")
+	fl.StringVar(&o.siteKind, "kind", "", "")
 	fl.BoolVar(&o.offline, "offline", false, "")
 	fl.BoolVar(&o.noInstructor, "no-instructor", false, "")
 	fl.BoolVar(&o.open, "open", false, "")
@@ -557,6 +561,14 @@ func run(argv []string, stdout, stderr io.Writer) int {
 	case "new":
 		if len(rest) != 1 {
 			return usageErr(stderr, "new needs a <name>")
+		}
+		if o.siteKind != "" { // --kind resume alone means a website of that kind
+			switch strings.ToLower(o.kind) {
+			case "", "site", "website":
+				o.kind = o.siteKind
+			default:
+				return usageErr(stderr, "--kind goes with --type website")
+			}
 		}
 		if o.kind != "" {
 			return newStarter(rest[0], o.kind, stdout, stderr)
@@ -1998,7 +2010,7 @@ func newStarter(name, kind string, stdout, stderr io.Writer) int {
 	if alias, ok := map[string]string{"slides": "deck", "tutorial": "guide", "reference": "book", "mindmap-3d": "mindmap3d", "code": "codeshow", "website": "site"}[kind]; ok {
 		kind = alias
 	}
-	folder := kind == "guide" || kind == "book" || kind == "site"
+	folder := studio.StarterFolder(kind)
 	path := strings.TrimSuffix(name, "/")
 	if !folder && !strings.HasSuffix(strings.ToLower(path), ".md") {
 		path += ".md"

@@ -28,7 +28,7 @@ try {
   await page.goto(url);
   await page.waitForSelector(".dialog.gallery", { timeout: 8000 });
   const cards = await page.$$eval(".gal", (b) => b.map((x) => x.textContent));
-  check(cards.length === 8 && cards.some((c) => c.includes("A 3D mind map")) && cards.some((c) => c.includes("A code show")), `empty folder → start gallery with 8 starters (${cards.length})`);
+  check(cards.length === 11 && cards.some((c) => c.includes("A landing page")) && cards.some((c) => c.includes("A 3D mind map")) && cards.some((c) => c.includes("A code show")), `empty folder → start gallery with 11 starters (${cards.length})`);
   // the thumbnails are rendered pages
   const thumbs = await page.$$eval(".gal-thumb iframe", (fs) => fs.map((f) => f.getAttribute("src")));
   // the frames render server-side on first use (a cold cache takes a while): poll, do not guess
@@ -38,7 +38,7 @@ try {
     deckText = deckFrame ? await deckFrame.evaluate(() => document.body.textContent).catch(() => "") : "";
     if (!deckText.includes("Your title here")) await page.waitForTimeout(250);
   }
-  check(thumbs.length === 8 && deckText.includes("Your title here"), "every card has a live thumbnail (the deck's shows its title)");
+  check(thumbs.length === 11 && deckText.includes("Your title here"), "every card has a live thumbnail (the deck's shows its title)");
   await page.screenshot({ path: new URL("./out/start-gallery.png", import.meta.url).pathname });
   await page.click(".gal:has-text('A 3D mind map')");
   await page.fill(".gal-form input", "Launch plan");

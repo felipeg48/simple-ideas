@@ -121,18 +121,7 @@ func (dr *deckRenderer) siteNav(g *deck.Guide, page string) string {
 			logo += fmt.Sprintf(`<span class="si-site-version">%s</span>`, html.EscapeString(label))
 		}
 	}
-	cta := ""
-	if c := strings.TrimSpace(g.Meta.CTA); c != "" {
-		label, href, ok := strings.Cut(c, "→")
-		if !ok {
-			label, href, _ = strings.Cut(c, "->")
-		}
-		label, href = strings.TrimSpace(label), strings.TrimSpace(href)
-		if href != "" && !strings.Contains(href, ":") && !strings.HasPrefix(href, "#") {
-			href = pageHref(page, filepath.Join(g.Dir, filepath.FromSlash(strings.TrimSuffix(href, ".md")+".md")))
-		}
-		cta = fmt.Sprintf(`<a class="si-site-cta" href="%s">%s</a>`, html.EscapeString(href), html.EscapeString(label))
-	}
+	cta := ctaLink(g.Meta.CTA, g.Dir, page)
 	tools := `<button type="button" class="si-doc-search" data-si-action="search" title="Search (/)" aria-label="Search">` + searchIconSVG + `<span>Search</span><kbd>/</kbd></button>` +
 		`<button type="button" class="si-doc-mode" data-si-action="mode" title="Light / dark (d)" aria-label="Light / dark">` + modeIconSVG + `</button>`
 	return fmt.Sprintf(`<header class="si-site-nav" data-nav="%s"><div class="si-site-in"><a class="si-site-logo" href="%s">%s</a>`+
@@ -148,6 +137,24 @@ func fileExists(p string) bool {
 
 // sitePage writes the body of a site page: _header.md, the navigator, the
 // page (title, lede, byline, body), the contents for an article, _footer.md.
+// ctaLink renders a cta: value, "Label → page" (or → https://…, → #modal),
+// as the highlighted button; a page path is relative to dir.
+func ctaLink(c, dir, page string) string {
+	c = strings.TrimSpace(c)
+	if c == "" {
+		return ""
+	}
+	label, href, ok := strings.Cut(c, "→")
+	if !ok {
+		label, href, _ = strings.Cut(c, "->")
+	}
+	label, href = strings.TrimSpace(label), strings.TrimSpace(href)
+	if href != "" && !strings.Contains(href, ":") && !strings.HasPrefix(href, "#") {
+		href = pageHref(page, filepath.Join(dir, filepath.FromSlash(strings.TrimSuffix(href, ".md")+".md")))
+	}
+	return fmt.Sprintf(`<a class="si-site-cta" href="%s">%s</a>`, html.EscapeString(href), html.EscapeString(label))
+}
+
 func (dr *deckRenderer) sitePage(b *strings.Builder, body, lede, metaHTML, tocHTML string) {
 	g, d, m := dr.opt.Guide, dr.d, dr.d.Meta
 	if m.Header != "off" {
@@ -165,6 +172,9 @@ func (dr *deckRenderer) sitePage(b *strings.Builder, body, lede, metaHTML, tocHT
 	fmt.Fprintf(b, "<div class=\"si-doc-layout\" data-layout=\"%s\">\n<main class=\"si-doc-body\">\n", layout)
 	if m.Title != "off" {
 		fmt.Fprintf(b, "<h1 class=\"si-doc-title\">%s</h1>\n%s%s", dr.inline(d.Title()), lede, metaHTML)
+	}
+	if c := ctaLink(m.CTA, filepath.Dir(d.Path), d.Path); c != "" { // a page's own cta: a button under its title
+		b.WriteString("<p class=\"si-page-cta\">" + c + "</p>\n")
 	}
 	b.WriteString(body)
 	b.WriteString("</main>\n")

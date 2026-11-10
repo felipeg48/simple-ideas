@@ -172,12 +172,12 @@ func TestBadgeKeepsItsDotAndWorksOnSlides(t *testing.T) {
 }
 
 func TestCardsOnSlidesAndInDocuments(t *testing.T) {
-	body := "<!-- cards: 2 -->\n\n### High availability · In seconds · teal\n\nOne cluster.\n\n### Disaster recovery · orange\n\nTwo sites.\n\n## After\n"
+	body := "<!-- cards: 2 -->\n\n### High availability · In seconds · teal\n\nOne cluster.\n\n### [Disaster recovery](dr.md) · orange\n\nTwo sites.\n\n## After\n"
 	h := string(renderDoc(t, body).HTML)
 	for _, want := range []string{
 		`<div class="si-cards cards c2">`,
 		`<div class="si-cell card teal">`, `<span class="si-card-tag tag teal">In seconds</span><h4>High availability</h4>`,
-		`<div class="si-cell card orange">`, `<h4>Disaster recovery</h4>`,
+		`<div class="si-cell card orange">`, `<h4><a href="dr.html">Disaster recovery</a></h4>`, // a title can be a link
 	} {
 		if !strings.Contains(h, want) {
 			t.Errorf("document lacks %q", want)
