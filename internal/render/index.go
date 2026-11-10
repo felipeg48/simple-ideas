@@ -31,9 +31,13 @@ type IndexEntry struct {
 
 // Index renders the deck index page.
 func Index(title string, entries []IndexEntry, opt Options) []byte {
-	theme := assets.CanonicalTheme(opt.Theme)
-	if _, ok := assets.Themes[theme]; !ok {
-		theme = "studio" // the index page's own theme; follows --theme / the decks, else studio
+	// the index page's own theme: follows --theme / the decks (a built-in, a
+	// .css file or a URL), else studio
+	theme, themeCSS, err := ThemeLayer(opt.Theme, "")
+	if err != nil {
+		theme, themeCSS = "studio", assets.ThemeCSS("studio")
+	} else if _, ok := assets.Themes[theme]; !ok && theme != "custom" {
+		theme, themeCSS = "studio", assets.ThemeCSS("studio")
 	}
 	var b bytes.Buffer
 	fmt.Fprintf(&b, "<!doctype html>\n<html lang=\"en\" data-si-theme=\"%s\">\n<head>\n<meta charset=\"utf-8\">\n", theme)
@@ -42,7 +46,7 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 <link rel="icon" href="data:,">
 `)
 	fmt.Fprintf(&b, "<title>%s</title>\n<style>\n%s*,*::before,*::after{box-sizing:border-box}\nbody{margin:0;background:var(--si-bg);color:var(--si-fg)}\n%s%s</style>\n",
-		html.EscapeString(title), assets.LayerOrder, assets.ThemeCSS(theme), assets.ThemeLooksCSS)
+		html.EscapeString(title), assets.LayerOrder, themeCSS, assets.ThemeLooksCSS)
 	if css := UserCSS(opt.UserCSS); css != "" {
 		b.WriteString("<style>\n" + css + "</style>\n")
 	}

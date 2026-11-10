@@ -107,3 +107,37 @@ func TestURLThemeUnreachable(t *testing.T) {
 		t.Error("should fall back to studio")
 	}
 }
+
+// A theme file with "extends <built-in>" in its header gets that theme's
+// tokens first and its own after; without the header nothing is underneath.
+func TestCSSFileThemeExtends(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "acme.css"), []byte("/* si theme: Acme · extends paper */\n:root { --si-accent: #e4572e; }\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "bare.css"), []byte(":root { --si-accent: #e4572e; }\n"), 0o644)
+	h := string(renderMD(t, dir, "---\ntitle: t\ntheme: acme.css\n---\n# Hi\n").HTML)
+	paper, mine := strings.Index(h, "--si-bg:#fbf7ee"), strings.Index(h, "--si-accent: #e4572e")
+	if paper < 0 || mine < paper || !strings.Contains(h, "--si-h1-size:") {
+		t.Errorf("extends: paper at %d, the file at %d", paper, mine)
+	}
+	if h := string(renderMD(t, dir, "---\ntitle: t\ntheme: bare.css\n---\n# Hi\n").HTML); strings.Contains(h, "--si-h1-size:") {
+		t.Error("a theme file without the header got built-in tokens")
+	}
+	os.WriteFile(filepath.Join(dir, "bad.css"), []byte("/* si theme: X · extends nope */\n:root{}\n"), 0o644)
+	if res := renderMD(t, dir, "---\ntitle: t\ntheme: bad.css\n---\n# Hi\n"); len(res.Problems) != 1 {
+		t.Errorf("extends nope: %v", res.Problems)
+	}
+}
+
+// The index page follows a .css theme too.
+func TestIndexCSSTheme(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "acme.css")
+	os.WriteFile(p, []byte("/* si theme: Acme · extends forest */\n:root { --si-accent: #e4572e; }\n"), 0o644)
+	h := string(Index("x", nil, Options{Theme: p}))
+	if !strings.Contains(h, `data-si-theme="custom"`) || !strings.Contains(h, "--si-accent: #e4572e") || !strings.Contains(h, "Georgia") {
+		t.Error("index page does not follow the .css theme")
+	}
+	if h := string(Index("x", nil, Options{Theme: "nope"})); !strings.Contains(h, `data-si-theme="studio"`) {
+		t.Error("unknown theme should fall back to studio")
+	}
+}

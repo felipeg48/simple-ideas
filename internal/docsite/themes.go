@@ -10,7 +10,7 @@ import (
 // unlisted are built-in themes made for client work: they stay in si but are
 // not shown on the site (their names are other companies' trademarks; see
 // TRADEMARKS.md).
-var unlisted = map[string]bool{"crdb": true, "acemq": true, "acemq-pro": true}
+var unlisted = assets.UnlistedThemes
 
 // themesPage is the site's Themes page, made from the built-in theme list so
 // it cannot drift: each theme's name, what it is, and its picture
