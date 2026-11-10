@@ -191,6 +191,12 @@ pass. The steps that matter:
 
 ## Roadmap ideas
 
+- **v3.0.0: web demos** (spec `docs/superpowers/specs/2026-11-10-web-demos.md`,
+  decided with the founder 2026-11-10, not built): one `type: demo` script with
+  `app: <url>` makes narrated videos of a web app (per feature and one with
+  chapters, callouts, `--captions`, voice engines local and cloud) and runs as a
+  test (`si demo test`, report, JUnit). Phases: test mode, video, voice, the
+  manual with videos, then Retake's CLAUDE.md gets the shared script format.
 - **On hold until a user asks for it** (the founder, 2026-11-10; do not build
   before a real request):
   - **PowerPoint / Google Slides export.** Google Slides has no file format of
