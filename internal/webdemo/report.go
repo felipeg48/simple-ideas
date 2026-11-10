@@ -53,6 +53,7 @@ type StepResult struct {
 	Candidates []string `json:"closest,omitempty"`
 	Shot       string   `json:"screenshot,omitempty"` // relative to the report folder
 	Note       string   `json:"note,omitempty"`
+	Output     string   `json:"output,omitempty"` // a failed terminal or program step: its last 40 lines
 }
 
 func (r *Report) count() {
@@ -153,6 +154,7 @@ figure{margin:.6em 0 .2em 1.9em}
 figure img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:.4em}
 figcaption{color:var(--muted);font-size:.9em}
 a{color:var(--accent)}
+.out{margin:0;padding:.6em .8em;max-height:24em;overflow:auto;background:#0f1420;color:#d8dee9;border-radius:.4em;font:.85em/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}
 .log{margin:.8em 0 0;color:var(--bad)}
 .log ul{margin:.2em 0 0;padding-left:1.2em}
 </style></head><body><main>
@@ -164,7 +166,7 @@ a{color:var(--accent)}
 {{if .What}}<p class="what">{{.What}}</p>{{end}}
 <ol>{{range .Steps}}<li>
 <div class="row"><span class="mark {{.Status}}">{{if eq .Status "passed"}}✓{{else if eq .Status "failed"}}✗{{else}}–{{end}}</span><code>{{.Text}}</code><span class="t">{{if .Line}}line {{.Line}} · {{end}}{{if ne .Status "skipped"}}{{secs .Seconds}}{{else}}skipped{{end}}</span></div>
-{{if eq .Status "failed"}}<dl>{{if .Expected}}<dt>expected</dt><dd>{{.Expected}}</dd>{{end}}<dt>found</dt><dd>{{.Found}}</dd>{{if .Candidates}}<dt>closest</dt><dd>{{range $i, $c := .Candidates}}{{if $i}}, {{end}}<code>{{$c}}</code>{{end}}</dd>{{end}}</dl>{{end}}
+{{if eq .Status "failed"}}<dl>{{if .Expected}}<dt>expected</dt><dd>{{.Expected}}</dd>{{end}}<dt>found</dt><dd>{{.Found}}</dd>{{if .Candidates}}<dt>closest</dt><dd>{{range $i, $c := .Candidates}}{{if $i}}, {{end}}<code>{{$c}}</code>{{end}}</dd>{{end}}{{if .Output}}<dt>output</dt><dd><pre class="out">{{.Output}}</pre></dd>{{end}}</dl>{{end}}
 {{if .Img}}<figure><img src="{{.Img}}" alt="the page after: {{.Text}}"><figcaption>{{.Shot}}</figcaption></figure>{{end}}
 </li>{{end}}</ol>
 {{if or .Errors .Requests}}<div class="log">{{if .Errors}}<strong>Console errors</strong><ul>{{range .Errors}}<li><code>{{.}}</code></li>{{end}}</ul>{{end}}{{if .Requests}}<strong>Failed requests</strong><ul>{{range .Requests}}<li><code>{{.}}</code></li>{{end}}</ul>{{end}}</div>{{end}}
@@ -230,6 +232,9 @@ func (r *Report) JUnit() ([]byte, error) {
 			}
 			if st.Shot != "" {
 				fmt.Fprintf(&b, "screenshot: %s\n", st.Shot)
+			}
+			if st.Output != "" {
+				fmt.Fprintf(&b, "output (last lines):\n%s\n", st.Output)
 			}
 			msg := st.Text + ": " + st.Found
 			if st.Expected != "" {

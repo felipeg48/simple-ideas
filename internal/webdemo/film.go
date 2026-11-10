@@ -38,6 +38,7 @@ type take struct {
 	block  time.Time // when the block now running started
 	length float64   // how long its narration needs
 	last   time.Time // when the last step ended
+	noted  time.Time // when the last note went up
 }
 
 // liveNote is a note on screen: until (zero) the end of its block, or a time.
@@ -116,8 +117,9 @@ func (r *runner) roll() error {
 	r.claim()
 	r.mu.Lock()
 	tk.t0, tk.on, tk.last = time.Now(), true, time.Now()
+	r.film = r.c.Session
 	r.mu.Unlock()
-	return r.c.Call("Page.startScreencast", map[string]any{"format": "jpeg", "quality": 90, "maxWidth": r.s.W, "maxHeight": r.s.H, "everyNthFrame": 1}, nil)
+	return r.screencast()
 }
 
 // onFrame keeps a screencast frame (called on the reader goroutine: it hands
@@ -128,7 +130,7 @@ func (r *runner) onFrame(params json.RawMessage) {
 		return
 	}
 	at := time.Since(tk.t0).Seconds()
-	session := r.session
+	session := r.film
 	tk.wg.Add(1)
 	go func() {
 		defer tk.wg.Done()
@@ -156,7 +158,7 @@ func (r *runner) onFrame(params json.RawMessage) {
 func (r *runner) cut() float64 {
 	tk := r.tk
 	d := time.Since(tk.t0).Seconds()
-	r.c.Call("Page.stopScreencast", nil, nil)
+	r.c.CallIn(r.film, "Page.stopScreencast", nil, nil)
 	r.mu.Lock()
 	tk.on = false
 	r.mu.Unlock()
@@ -220,6 +222,7 @@ func (r *runner) note(st *Step) {
 		n.until = time.Now().Add(st.For)
 	}
 	tk.notes = append(tk.notes, n)
+	tk.noted = time.Now()
 	r.showNote(n, false)
 }
 
@@ -244,7 +247,11 @@ func (r *runner) showNote(n *liveNote, again bool) {
 		text = "$" + n.step.Value.Var
 	}
 	t, _ := json.Marshal(text)
-	r.js(`__siDemo.note(%d,%s,%q,%g,%t)`, n.id, t, n.step.Pos, ms, anchored)
+	pos := n.step.Pos
+	if pos == "" && n.step.AtLine {
+		pos = "bottom" // under a terminal line, not over the rest of it
+	}
+	r.js(`__siDemo.note(%d,%s,%q,%g,%t)`, n.id, t, pos, ms, anchored)
 }
 
 // expire forgets notes whose time is up (the page removes them itself).
@@ -290,6 +297,9 @@ func (r *runner) pace(i, n int) {
 func (r *runner) endBlock() {
 	tk := r.tk
 	time.Sleep(time.Until(tk.block.Add(time.Duration(tk.length * float64(time.Second)))))
+	if len(tk.notes) > 0 { // a note put up late in its block still gets read
+		time.Sleep(time.Until(tk.noted.Add(1800 * time.Millisecond)))
+	}
 	keep := tk.notes[:0]
 	for _, n := range tk.notes {
 		if n.until.IsZero() {

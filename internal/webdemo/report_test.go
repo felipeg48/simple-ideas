@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -118,6 +120,17 @@ func TestExamples(t *testing.T) {
 	}
 	if strings.Contains(log.String(), "shop-demo") {
 		t.Error("the password was printed")
+	}
+	// broker.md: a broker started by start:, terminals, a workload; go run
+	// builds the example's broker
+	if _, err := exec.LookPath("go"); err == nil && runtime.GOOS != "windows" {
+		broker := run("broker.md")
+		if !broker.OK() || broker.Passed != 3 {
+			t.Errorf("broker.md: %d passed, %d failed\n%s", broker.Passed, broker.Failed, log.String())
+		}
+		if portOpen(7310) || portOpen(7311) {
+			t.Error("a broker outlived the run")
+		}
 	}
 	broken := run("broken.md")
 	if broken.OK() || len(broken.Features) != 1 {

@@ -10,12 +10,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/felipeg48/simple-ideas/internal/cdp"
@@ -45,6 +46,7 @@ type Options struct {
 type failure struct {
 	expected, found string
 	candidates      []string
+	output          string // a terminal's or a program's last lines
 }
 
 func (f *failure) Error() string { return f.found }
@@ -65,6 +67,23 @@ type runner struct {
 	tk      *take           // the feature being filmed (run)
 	lines   map[*Block]Line // each Say: line voiced (run)
 	timeout time.Duration   // how long a step waits for its element
+
+	// terminals and background programs (runterm.go)
+	ctx      string // the feature's browser context
+	app      string // the app page's session
+	home     bool   // the app page has loaded the app
+	film     string // the page whose frames the take keeps
+	srv      *termServer
+	rc       string // si's shell prompt files
+	pm       sync.Mutex
+	terms    map[string]*term // this feature's terminals
+	allTerms []*term
+	cur      *term            // the terminal in front (nil: the browser)
+	procs    map[string]*proc // programs by name
+	all      []*proc
+	local    []*proc // this feature's start steps
+	quiet    []quietCheck
+	down     sync.Once
 }
 
 // Run runs the script's features as tests and returns the report. An error
@@ -73,10 +92,30 @@ func Run(s *Script, o Options) (*Report, error) {
 	if len(s.Problems) > 0 {
 		return nil, fmt.Errorf("%s", s.Problems[0])
 	}
-	r := &runner{s: s, o: o, timeout: s.Timeout}
+	r := &runner{s: s, o: o, timeout: s.Timeout, terms: map[string]*term{}, procs: map[string]*proc{}}
 	if o.Log == nil {
 		r.o.Log = io.Discard
 	}
+	defer r.shutdown() // terminals and programs never outlive the run, even on a panic
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	quit := make(chan struct{})
+	defer func() { signal.Stop(sig); close(quit) }()
+	go func() {
+		select {
+		case <-sig: // Ctrl-C: stop what the run started, then go
+			fmt.Fprintln(r.o.Log, "interrupted: stopping the terminals and programs")
+			r.shutdown()
+			r.pm.Lock()
+			c := r.c
+			r.pm.Unlock()
+			if c != nil {
+				c.Close()
+			}
+			os.Exit(130)
+		case <-quit:
+		}
+	}()
 	if o.Video {
 		// a take fails fast: a long wait would be seconds of nothing in the video
 		r.timeout = min(s.Timeout, 3*time.Second)
@@ -99,6 +138,7 @@ func Run(s *Script, o Options) (*Report, error) {
 			}
 		}
 	}
+	r.secrets = append(r.secrets, commandSecrets(s)...)
 	if o.Out != "" {
 		if err := os.MkdirAll(filepath.Join(o.Out, "shots"), 0o755); err != nil {
 			return nil, err
@@ -109,7 +149,9 @@ func Run(s *Script, o Options) (*Report, error) {
 		return nil, err
 	}
 	defer c.Close()
+	r.pm.Lock()
 	r.c = c
+	r.pm.Unlock()
 	var ver struct{ Product string }
 	c.CallIn("", "Browser.getVersion", nil, &ver)
 	c.OnEvent(r.event)
@@ -125,8 +167,29 @@ func Run(s *Script, o Options) (*Report, error) {
 	if len(r.features()) == 0 {
 		return nil, fmt.Errorf("no feature named %q in %s", o.Feature, filepath.Base(s.Path))
 	}
+	// start: programs, for the whole run; when one does not come up, every
+	// feature fails with its last lines
+	var down *StepResult
+	for _, p := range s.Starts {
+		fmt.Fprintf(r.o.Log, "start: %s\n", r.mask(p.Cmd))
+		t := time.Now()
+		if err := r.startProgram(p.Name, p.Cmd, p.Ready, p.Within, false); err != nil {
+			sr := StepResult{Line: p.Line, Text: "start: " + p.Cmd, Kind: "start", Status: "failed", Seconds: time.Since(t).Seconds(), Found: r.mask(err.Error())}
+			var fe *failure
+			if errors.As(err, &fe) {
+				sr.Expected, sr.Found, sr.Output = r.mask(fe.expected), r.mask(fe.found), fe.output
+			}
+			r.line(sr)
+			down = &sr
+			break
+		}
+	}
 	var clips []*clip
 	for _, f := range r.features() {
+		if down != nil {
+			rep.Features = append(rep.Features, FeatureResult{Name: f.Name, What: f.What, Line: f.Line, Status: "failed", Steps: []StepResult{*down}})
+			continue
+		}
 		fr, cl := r.feature(f)
 		if cl != nil {
 			clips = append(clips, cl)
@@ -231,12 +294,16 @@ func (r *runner) mask(s string) string {
 func (r *runner) event(e cdp.Event) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	if e.Method == "Page.screencastFrame" { // the scene in front: the app or a terminal
+		if e.Session == r.film {
+			r.onFrame(e.Params)
+		}
+		return
+	}
 	if e.Session != r.session {
 		return
 	}
 	switch e.Method {
-	case "Page.screencastFrame":
-		r.onFrame(e.Params)
 	case "Page.frameStartedLoading":
 		r.loading++
 	case "Page.frameStoppedLoading":
@@ -345,6 +412,8 @@ func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
 		return fail(StepResult{Text: "open a browser context", Status: "failed", Found: err.Error()})
 	}
 	defer r.c.CallIn("", "Target.disposeBrowserContext", map[string]any{"browserContextId": ctx.BrowserContextID}, nil)
+	defer r.endFeature() // its terminals and start steps' programs, before its context goes
+	r.ctx = ctx.BrowserContextID
 	r.mu.Lock()
 	r.errs, r.reqs, r.urls, r.loading = nil, nil, map[string]string{}, 0
 	r.mu.Unlock()
@@ -354,6 +423,7 @@ func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
 	r.mu.Lock()
 	r.session = r.c.Session
 	r.mu.Unlock()
+	r.app, r.home = r.c.Session, false
 	for _, m := range []string{"Page.enable", "Runtime.enable", "Network.enable"} {
 		if err := r.c.Call(m, nil, nil); err != nil {
 			return fail(StepResult{Text: m, Status: "failed", Found: err.Error()})
@@ -364,14 +434,23 @@ func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
 			return fail(StepResult{Text: "film the page", Status: "failed", Found: err.Error()})
 		}
 	}
-	if err := r.navigate(r.base + "/"); err != nil {
-		return fail(StepResult{Text: "open " + r.base, Status: "failed", Found: err.Error()})
-	}
-	if r.tk != nil {
-		if err := r.roll(); err != nil {
-			return fail(StepResult{Text: "film the page", Status: "failed", Found: err.Error()})
+	// a feature that begins in a terminal loads the app at its first browser
+	// step (the app may be what the terminal starts)
+	if first := firstStep(f); first != nil && first.Kind == "terminal" {
+		if err := r.terminal(first); err != nil { // opened (and filmed) before the first Say:
+			return fail(StepResult{Line: first.Line, Text: first.Text, Status: "failed", Found: r.mask(err.Error())})
 		}
-		time.Sleep(800 * time.Millisecond) // the page, before anything moves
+	} else {
+		r.home = true
+		if err := r.navigate(r.base + "/"); err != nil {
+			return fail(StepResult{Text: "open " + r.base, Status: "failed", Found: err.Error()})
+		}
+		if r.tk != nil {
+			if err := r.roll(); err != nil {
+				return fail(StepResult{Text: "film the page", Status: "failed", Found: err.Error()})
+			}
+			time.Sleep(800 * time.Millisecond) // the page, before anything moves
+		}
 	}
 	failed := false
 	for _, b := range f.Blocks {
@@ -408,9 +487,12 @@ func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
 				sr.Status = "failed"
 				var fe *failure
 				if errors.As(err, &fe) {
-					sr.Expected, sr.Found, sr.Candidates = r.mask(fe.expected), r.mask(fe.found), fe.candidates
+					sr.Expected, sr.Found, sr.Candidates, sr.Output = r.mask(fe.expected), r.mask(fe.found), fe.candidates, fe.output
 				} else {
 					sr.Found = r.mask(err.Error())
+				}
+				if sr.Output == "" && r.cur != nil {
+					sr.Output = r.cur.out.tail(40)
 				}
 				if png, err := r.c.Screenshot(); err == nil {
 					sr.Shot = r.save(f.Name, "failed", png)
@@ -418,11 +500,21 @@ func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
 			}
 			r.line(sr)
 			fr.Steps = append(fr.Steps, sr)
+			if st.Kind == "expect-no-output" && sr.Status == "passed" {
+				r.quiet[len(r.quiet)-1].idx = len(fr.Steps) - 1
+			}
+		}
+		if i, fe := r.checkQuiet(); fe != nil && !failed {
+			failed, fr.Status = true, "failed"
+			sr := &fr.Steps[i]
+			sr.Status, sr.Expected, sr.Found, sr.Output = "failed", fe.expected, fe.found, fe.output
+			r.line(*sr)
 		}
 		if r.tk != nil && !failed {
 			r.endBlock()
 		}
 	}
+	r.c.Session = r.app // the cards and captions are drawn in the app's tab
 	if r.tk != nil {
 		time.Sleep(time.Second) // the end (or the failure), held
 		d := r.cut()
@@ -448,6 +540,15 @@ func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
 	return fr, cl
 }
 
+func firstStep(f *Feature) *Step {
+	for _, b := range f.Blocks {
+		if len(b.Steps) > 0 {
+			return b.Steps[0]
+		}
+	}
+	return nil
+}
+
 func (r *runner) line(sr StepResult) {
 	mark := map[string]string{"passed": "✓", "failed": "✗", "skipped": "-"}[sr.Status]
 	fmt.Fprintf(r.o.Log, "  %s %s  %.2fs\n", mark, sr.Text, sr.Seconds)
@@ -463,14 +564,9 @@ func (r *runner) line(sr StepResult) {
 	}
 }
 
-// shell runs setup: in dir.
+// shell runs setup: and stop: in dir.
 func shell(cmd, dir string) (string, error) {
-	c := exec.Command("sh", "-c", cmd)
-	if runtime.GOOS == "windows" {
-		c = exec.Command("cmd", "/C", cmd)
-	}
-	c.Dir = dir
-	out, err := c.CombinedOutput()
+	out, err := shellCmd(cmd, dir).CombinedOutput()
 	return string(out), err
 }
 
@@ -581,8 +677,11 @@ func (r *runner) locate(l Locator, want string, scroll bool) (found, error) {
 
 // until retries try every 100 ms up to the timeout; try returns done, or the
 // failure to report when time runs out.
-func (r *runner) until(try func() (bool, error)) error {
-	end := time.Now().Add(r.timeout)
+func (r *runner) until(try func() (bool, error)) error { return r.untilFor(r.timeout, try) }
+
+// untilFor is until with its own timeout.
+func (r *runner) untilFor(d time.Duration, try func() (bool, error)) error {
+	end := time.Now().Add(d)
 	for {
 		done, err := try()
 		if done {
@@ -657,6 +756,14 @@ func (r *runner) value(v Value) (string, error) {
 
 // step runs one step; it returns a screenshot's path when it took one.
 func (r *runner) step(st *Step) (string, error) {
+	switch st.Kind {
+	case "terminal", "browser", "run", "expect-output", "expect-no-output", "waitfor-output", "start", "stop", "expect-proc":
+		return "", r.termStep(st)
+	case "press", "note":
+		if r.cur != nil && (st.Kind == "press" || st.AtLine) {
+			return "", r.termStep(st)
+		}
+	}
 	switch st.Kind {
 	case "go":
 		return "", r.navigate(r.resolve(st.Value.Text))

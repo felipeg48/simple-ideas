@@ -28,6 +28,9 @@ type Script struct {
 	W, H      int
 	Timeout   time.Duration // how long a step waits for its element or condition
 	Setup     string        // a shell command run before each feature, in the script's folder
+	Starts    []*Program    // start: programs run in the background for the whole run
+	Stop      string        // stop: a tear-down command run at the end
+	Shell     string        // shell: the shell of terminal steps ("" = $SHELL, else sh)
 	Voice     string        // engine:voice as written ("" = the default voice)
 	Style     string        // voice-style: a tone for engines that take one (openai)
 	Pronounce []Pronounce   // pronounce: word = how to say it
@@ -97,6 +100,15 @@ type Step struct {
 	Wait   time.Duration // wait Ns
 	For    time.Duration // note … · for 3s
 	Pos    string        // note … · position right
+	AtLine bool          // note … at line "text": Target.Name is a terminal line's text
+
+	// terminals and background programs
+	Name   string            // terminal "Name", start … as NAME, stop NAME, expect output of NAME, expect NAME running
+	Opts   map[string]string // terminal options: window, title, theme, backdrop, size
+	Block  bool              // run … · wait, stop NAME · wait
+	Within time.Duration     // · within 30s
+	Ready  Ready             // start …: what to wait for before going on
+	Code   int               // expect NAME exited N
 }
 
 // Problem is an error or warning at a line of the script.
@@ -121,7 +133,8 @@ type Pronounce struct{ Word, Say string }
 var Viewports = map[string][2]int{"phone": {400, 800}, "tablet": {820, 1180}, "desktop": {1440, 900}}
 
 // StepWords are the step names, for messages and docs.
-var StepWords = []string{"go", "click", "type", "press", "select", "check", "uncheck", "hover", "scroll to", "wait", "wait for", "note", "expect", "screenshot"}
+var StepWords = []string{"go", "click", "type", "press", "select", "check", "uncheck", "hover", "scroll to", "wait", "wait for", "note", "expect", "screenshot",
+	"terminal", "run", "browser", "start", "stop"}
 
 // IsWebDemo reports whether a Markdown or AsciiDoc source is a web demo:
 // `type: demo` with an `app:` in its front matter.
@@ -209,6 +222,7 @@ func (s *Script) warn(line int, format string, a ...any) {
 // settings applies the front matter (line: where to report a bad value).
 func (s *Script) settings(fm map[string]string, line func(string) int) {
 	s.Title, s.App, s.Setup, s.Voice, s.Viewport, s.Style = fm["title"], fm["app"], fm["setup"], fm["voice"], fm["viewport"], fm["voice-style"]
+	s.Stop, s.Shell = fm["stop"], fm["shell"]
 	if s.App == "" {
 		s.problem(line("app"), "a web demo needs app: (a URL, or a folder of the app next to the script)")
 	}
@@ -301,9 +315,11 @@ func Parse(path, src string) *Script {
 		}
 		return 1
 	})
-	for i := 1; i < start; i++ { // pronounce: may be given more than once
+	for i := 1; i < start; i++ { // pronounce: and start: may be given more than once
 		if m := metaRE.FindStringSubmatch(strings.TrimSpace(lines[i])); m != nil && m[1] == "pronounce" {
 			s.pronounce(m[2], i+1)
+		} else if m != nil && m[1] == "start" {
+			s.start(m[2], i+1)
 		}
 	}
 	var f *Feature
@@ -401,6 +417,7 @@ func (s *Script) finish() {
 		if n == 0 {
 			s.warn(f.Line, "feature %q has no steps", f.Name)
 		}
+		s.checkScenes(f)
 	}
 }
 
@@ -453,6 +470,9 @@ func ParseStep(line string) (*Step, error) {
 		}
 	case "wait":
 		if f, r := cutWord(rest); f == "for" {
+			if o, _ := cutWord(r); o == "output" {
+				return outputStep(st, "waitfor-output", r)
+			}
 			st.Kind = "waitfor"
 			if st.Target, rest, err = locator(r); err != nil || rest != "" {
 				return nil, bad(`%q: wait for needs one "text" or element`)
@@ -465,14 +485,20 @@ func ParseStep(line string) (*Step, error) {
 		}
 		st.Kind, st.Wait = "wait", d
 	case "note":
-		parts := strings.Split(rest, "·")
+		parts := clauses(rest)
 		st.Kind = "note"
 		var r string
 		if st.Value, r, err = value(parts[0]); err != nil {
 			return nil, bad(`%q: write note "text" at "Element"`)
 		}
 		if at, r2 := cutWord(r); at == "at" {
-			if st.Target, r, err = locator(r2); err != nil {
+			if ln, r3 := cutWord(r2); ln == "line" && strings.HasPrefix(r3, `"`) {
+				var name string
+				if name, r, err = quoted(r3); err != nil || name == "" {
+					return nil, bad(`%q: write note "text" at line "text in the terminal"`)
+				}
+				st.Target, st.AtLine = Locator{Name: name}, true
+			} else if st.Target, r, err = locator(r2); err != nil {
 				return nil, bad(`%q: note … at needs one element`)
 			}
 		}
@@ -505,6 +531,8 @@ func ParseStep(line string) (*Step, error) {
 		st.Kind, st.Value.Text = "screenshot", unquote(rest)
 	case "expect":
 		return expect(st, rest)
+	case "terminal", "browser", "run", "start", "stop":
+		return termStep(st, word, rest)
 	default:
 		return nil, fmt.Errorf("unknown step %q (steps: %s)", st.Text, strings.Join(StepWords, ", "))
 	}
@@ -526,11 +554,21 @@ func expect(st *Step, rest string) (*Step, error) {
 		}
 		st.Kind, st.Value.Text = "expect-url", unquote(r)
 	case "no":
+		if o, _ := cutWord(r); o == "output" {
+			return outputStep(st, "expect-no-output", r)
+		}
 		if r != "errors" {
-			return nil, fmt.Errorf("%q: write expect no errors", st.Text)
+			return nil, fmt.Errorf(`%q: write expect no errors (or expect no output "text")`, st.Text)
 		}
 		st.Kind = "expect-errors"
+	case "output":
+		return outputStep(st, "expect-output", rest)
 	default:
+		if nameRE.MatchString(w) {
+			if ok, err := procState(st, r); ok {
+				return st, err
+			}
+		}
 		st.Kind = "expect-state"
 		if st.Target, r, err = locator(rest); err != nil {
 			return nil, fmt.Errorf(`%q: expect text "…", expect url /path, expect "Element" visible|hidden|disabled|enabled|checked|unchecked, or expect no errors`, st.Text)
@@ -696,8 +734,10 @@ func namedKey(p string) (keyDef, bool) {
 // blocks of steps written as in Markdown.
 type jsonScript struct {
 	Type, Title, App, Viewport, Timeout, Setup, Voice string
+	Stop, Shell                                       string
 	Style                                             string   `json:"voice-style"`
 	Pronounce                                         []string `json:"pronounce"`
+	Start                                             []string `json:"start"`
 	Features                                          []struct {
 		Name   string `json:"name"`
 		What   string `json:"what"`
@@ -726,7 +766,7 @@ func ParseJSON(path string, raw []byte) (*Script, error) {
 		}
 		return 0
 	}
-	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "setup": j.Setup, "voice": j.Voice, "voice-style": j.Style}
+	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "setup": j.Setup, "voice": j.Voice, "voice-style": j.Style, "stop": j.Stop, "shell": j.Shell}
 	s.settings(fm, func(key string) int {
 		if k := strings.Index(src, `"`+key+`"`); k >= 0 {
 			return strings.Count(src[:k], "\n") + 1
@@ -735,6 +775,9 @@ func ParseJSON(path string, raw []byte) (*Script, error) {
 	})
 	for _, p := range j.Pronounce {
 		s.pronounce(p, lineOf(p))
+	}
+	for _, p := range j.Start {
+		s.start(p, lineOf(p))
 	}
 	pos = 0
 	for _, jf := range j.Features {

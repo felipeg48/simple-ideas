@@ -219,6 +219,10 @@ func (dr *deckRenderer) cwFence(sh *cwShow) string {
 	return b.String()
 }
 
+// WindowChrome is a code window's bar (mac, windows, terminal; "" for none):
+// web demos frame their terminals with it.
+func WindowChrome(win, title string) string { return cwChrome(win, title) }
+
 func cwChrome(win, title string) string {
 	t := html.EscapeString(title)
 	switch win {
