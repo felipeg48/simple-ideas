@@ -55,11 +55,16 @@ func commandSecrets(s *Script) []string {
 // ready.
 func (r *runner) startProgram(name, cmd string, rd Ready, within time.Duration, local bool) error {
 	t := time.Now()
+	r.pm.Lock() // held while it starts: a shutdown never misses it
+	if r.stopping {
+		r.pm.Unlock()
+		return errStopping
+	}
 	p, err := startProc(name, cmd, r.s.Dir(), logPath(r.o.Out, name), r.mask)
 	if err != nil {
+		r.pm.Unlock()
 		return &failure{expected: name + " starts", found: err.Error()}
 	}
-	r.pm.Lock()
 	r.procs[name] = p
 	r.all = append(r.all, p)
 	if local {
@@ -91,7 +96,8 @@ func (r *runner) shutdown() {
 			r.line(sr)
 		}
 		r.pm.Lock()
-		terms, procs := r.allTerms, r.all
+		r.stopping = true
+		terms, procs, srv, rc := r.allTerms, r.all, r.srv, r.rc
 		r.pm.Unlock()
 		var wg sync.WaitGroup
 		for _, t := range terms {
@@ -103,11 +109,11 @@ func (r *runner) shutdown() {
 			go func() { defer wg.Done(); p.stop() }()
 		}
 		wg.Wait()
-		if r.srv != nil {
-			r.srv.close()
+		if srv != nil {
+			srv.close()
 		}
-		if r.rc != "" {
-			os.RemoveAll(r.rc)
+		if rc != "" {
+			os.RemoveAll(rc)
 		}
 	})
 }
@@ -161,34 +167,49 @@ func (r *runner) screencast() error {
 	return r.c.Call("Page.startScreencast", map[string]any{"format": "jpeg", "quality": 90, "maxWidth": r.s.W, "maxHeight": r.s.H, "everyNthFrame": 1}, nil)
 }
 
+var errStopping = fmt.Errorf("the run is stopping")
+
+// openTerm starts a terminal's shell (and, the first time, the page server
+// and si's prompt files); the lock keeps a shutdown from missing it.
+func (r *runner) openTerm(st *Step) (*term, error) {
+	r.pm.Lock()
+	defer r.pm.Unlock()
+	if r.stopping {
+		return nil, errStopping
+	}
+	if r.srv == nil {
+		dir, err := os.MkdirTemp("", "si-shell-")
+		if err != nil {
+			return nil, err
+		}
+		r.rc = dir
+		if err := shellRC(dir); err != nil {
+			return nil, err
+		}
+		if r.srv, err = newTermServer(); err != nil {
+			return nil, err
+		}
+	}
+	t, err := openShell(st.Name, r.s.Shell, r.s.Dir(), r.rc, r.mask)
+	if err != nil {
+		return nil, err
+	}
+	t.opts = st.Opts
+	r.terms[st.Name] = t
+	r.allTerms = append(r.allTerms, t)
+	r.srv.add(t)
+	return t, nil
+}
+
 // terminal opens a terminal (or brings it back): a shell, and its page in a
 // tab of its own.
 func (r *runner) terminal(st *Step) error {
 	t := r.terms[st.Name]
 	if t == nil {
-		if r.srv == nil {
-			dir, err := os.MkdirTemp("", "si-shell-")
-			if err != nil {
-				return err
-			}
-			r.rc = dir
-			if err := shellRC(dir); err != nil {
-				return err
-			}
-			if r.srv, err = newTermServer(); err != nil {
-				return err
-			}
-		}
 		var err error
-		if t, err = openShell(st.Name, r.s.Shell, r.s.Dir(), r.rc, r.mask); err != nil {
+		if t, err = r.openTerm(st); err != nil {
 			return err
 		}
-		t.opts = st.Opts
-		r.pm.Lock()
-		r.terms[st.Name] = t
-		r.allTerms = append(r.allTerms, t)
-		r.pm.Unlock()
-		r.srv.add(t)
 		prev := r.c.Session
 		if _, err := r.c.OpenPage(r.ctx, r.s.W, r.s.H); err != nil {
 			return err

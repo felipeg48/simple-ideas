@@ -81,6 +81,7 @@ type runner struct {
 	cur      *term            // the terminal in front (nil: the browser)
 	procs    map[string]*proc // programs by name
 	all      []*proc
+	stopping bool    // shutdown has begun: nothing new starts
 	local    []*proc // this feature's start steps
 	quiet    []quietCheck
 	down     sync.Once
