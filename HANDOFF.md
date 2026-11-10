@@ -5,6 +5,13 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.29.0: two presenters.** Voices parsed in `deck.voices` (`Slide.Voices`,
+  speaking order; plain `Notes:` = first speaker; `Slide.Notes/Points` keep the
+  joined text). A part starts at the click count of the parts before it
+  (`data-step` on `.si-voice`); who speaks = the part starting on this step,
+  else the last begun: same rule in presenter.html `turn()` and narration.go
+  `voiceAt`. e2e `web/studio/e2e/speakers.e2e.mjs`. Next: per-speaker notes in
+  the Studio inspector.
 - **v2.28.0: record your talk.** Teleprompter ● Record (Shift+R; shown only when
   `GET /_si/record` answers, i.e. si play on loopback): MediaRecorder chunks
   every 2 s to `POST /_si/record/chunk`, marks on each view (`/mark`, audio

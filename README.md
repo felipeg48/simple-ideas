@@ -128,6 +128,10 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.29.0:** two presenters: `speakers:` + `Notes[Name]:` / `Points[Name]:`; a
+  teleprompter per speaker (picker, cue lines for the others, a → hand-over
+  banner, your own clock), `speakers.control: turn`, one remote teleprompter
+  code per speaker, `--notes --speaker`, handout labels, `si rehearse` per speaker.
 - **v2.28.1:** `si new <name> --type website` (an alias of `site`); the docs
   site's Features menu is keywords only, with a Website page, Studio in the
   top bar, and Presenting and Audience inside Decks.
