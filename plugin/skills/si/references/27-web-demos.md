@@ -11,7 +11,7 @@ with chapters, captions and the report.
 ---
 type: demo
 title: Northwind Shop, from sign-in to receipt
-app: app                # a URL, or the app's folder next to the script
+app: app                # a URL (a ?token=… is kept), or the app's folder next to the script
 viewport: desktop       # 1440x900; also phone (400x800), tablet (820x1180), WxH
 timeout: 5s             # how long a step waits for its element
 setup: ./seed.sh        # optional: run before each feature, in the script's folder
@@ -57,6 +57,7 @@ Say: A test card goes through in a second.
 | `go /path` (or a full URL) | open a page of the app and wait for it to load |
 | `click "Pay"` | a real mouse click at the element's centre |
 | `type "text" into "Field"` · `type $VAR into "Field"` | replace the field's text; `$VAR` comes from the environment and is never printed (`••••` in the report) |
+| `type "text"` | type where the focus is, replacing nothing: after a `click` in an editor, `press End`, then `type ", live"`. Inside quotes only `\"` and `\\` are escapes, so a shell command's `\n` stays as written |
 | `press Enter` · `press cmd+k` | a key or a shortcut (alt, ctrl, cmd, shift) |
 | `select "Express" in "Shipping"` | an option of a `<select>` (or a listbox) |
 | `check "Gift wrap"` · `uncheck …` | a checkbox or switch |

@@ -31,7 +31,9 @@ Both exceptions are contained because Studio is loopback only (see Security).
 - **Loopback only.** `si --web` refuses any non-loopback `--addr`
   ("si --web is loopback-only in this version"). The Studio exposes file writes
   and a shell terminal, so a reachable address would be remote code execution.
-- **Token to cookie.** Each launch generates a random token. The opened URL
+- **Token to cookie.** Each launch generates a random token (a script that
+  must know the URL in advance, such as a web demo, sets `SI_STUDIO_TOKEN` to
+  a value of 32 characters or more; still loopback only). The opened URL
   carries it once; the gateway swaps it for an `HttpOnly`, `SameSite=Strict`
   cookie named `si_studio_PORT` and every other request needs that cookie. The
   port in the name keeps two Studios on different ports from overwriting each

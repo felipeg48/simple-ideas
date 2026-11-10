@@ -18,7 +18,14 @@ binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
   sped up, captions and chapters follow the shorter video (`--fast-forward
   5s`, `--no-fast-forward`). `--no-captions` skips the captions videos;
   `--captions` still runs and does nothing. Web demos keep backslashes in
-  quoted step values except `\"` and `\\`.
+  quoted step values except `\"` and `\\`. Also: `type "text"` with no field types where the focus is
+  (an editor) instead of replacing a field; an `app:` with a query (the
+  Studio's `?token=`) opens as written; `SI_STUDIO_TOKEN` (32+ characters,
+  still loopback only) fixes the Studio's token for scripts; `si theme list`
+  lists only the nine public themes. Six demo scripts of si itself in
+  `docs/demos/` (decks, presenting, the Studio, themes, mind maps, the
+  terminal).
+
 - **v2.37.0:** `si voice`: `si voice install kokoro` sets Kokoro up in one
   command (a Python venv with kokoro-onnx 0.6.1 and the two model files,
   SHA-256 checked, in the user cache; idempotent; `--dir`; `si voice uninstall
