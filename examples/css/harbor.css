@@ -1,4 +1,5 @@
-/* Harbor: an example brand theme for simple-ideas.
+/* si theme: Harbor · extends studio
+ * An example brand theme for simple-ideas: theme: css/harbor.css, or
  *   si play --css examples/css/harbor.css examples
  *   si --css examples/css/ --output html/ examples
  * Themes set tokens and looks; the fluid layout stays built in.
@@ -11,9 +12,10 @@
   --si-surface: #fffaf0;
   --si-surface-2: #e7e0d1;
   --si-line: #d4cab6;
-  --si-accent: #e4572e;
+  --si-accent: #d2461a;
   --si-accent-2: #17607d;
   --si-on-accent: #ffffff;
+  --si-warn: #c47900;
   --si-font-heading: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --si-heading-weight: 700;
   --si-heading-tracking: -0.015em;

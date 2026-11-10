@@ -49,6 +49,10 @@ func (a *api) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET "+apiPrefix+"mmcanvas", a.mmcanvas)
 	mux.HandleFunc("POST "+apiPrefix+"codewin", a.codewin)
 	mux.HandleFunc("POST "+apiPrefix+"codewin/export", a.codewinExport)
+	mux.HandleFunc("GET "+apiPrefix+"theme/spec", a.themeSpec)
+	mux.HandleFunc("POST "+apiPrefix+"theme", a.themeEdit)
+	mux.HandleFunc("POST "+apiPrefix+"theme/new", a.themeNew)
+	mux.HandleFunc("POST "+apiPrefix+"theme/use", a.themeUse)
 	a.gitRoutes(mux)
 }
 

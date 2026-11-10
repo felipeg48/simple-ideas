@@ -15,6 +15,7 @@ import (
 
 	"github.com/felipeg48/simple-ideas/internal/assets"
 	"github.com/felipeg48/simple-ideas/internal/deck"
+	"github.com/felipeg48/simple-ideas/internal/themefile"
 )
 
 // resolveAnim resolves the configured break-timer animation(s) into dr.anims.
@@ -70,6 +71,10 @@ func (dr *deckRenderer) resolveOneAnim(name, dir string) {
 // build-time only; a file theme's relative url()s are inlined like --css files). A read/fetch error is a deck problem and falls back to studio.
 func (dr *deckRenderer) resolveTheme() {
 	defer dr.resolveFonts() // fonts: sets tokens on top of whichever theme won
+	if dr.opt.ThemeCSS != "" {
+		dr.themeName, dr.themeCSS = "custom", dr.opt.ThemeCSS
+		return
+	}
 	theme := dr.opt.Theme
 	if theme == "" {
 		theme = dr.d.Meta.Theme
@@ -77,38 +82,75 @@ func (dr *deckRenderer) resolveTheme() {
 	if theme == "" && dr.opt.Config != nil {
 		theme = dr.opt.Config.Theme
 	}
+	var err error
+	dr.themeName, dr.themeCSS, err = ThemeLayer(theme, filepath.Dir(dr.d.Path))
+	if err != nil {
+		dr.problems = append(dr.problems, deck.Problem{File: dr.d.Path, Msg: err.Error()})
+	}
+}
+
+// ThemeLayer returns the name ("custom" for a file or URL) and the si.theme
+// layer CSS of a theme: a built-in name, a .css file (relative to cwd, then
+// dir) or an http(s):// URL; "" is studio. A theme file whose header says
+// "si theme: Name · extends <built-in>" gets that built-in's tokens first,
+// the file after (it wins); without the header nothing is underneath. On a
+// read or fetch error it returns studio and the error.
+func ThemeLayer(theme, dir string) (name, css string, err error) {
 	if theme == "" {
 		theme = "studio"
 	}
-	if strings.HasPrefix(theme, "http://") || strings.HasPrefix(theme, "https://") {
-		css, err := fetchThemeCSS(theme)
-		if err != nil {
-			dr.problems = append(dr.problems, deck.Problem{File: dr.d.Path, Msg: fmt.Sprintf("theme: cannot fetch %s: %v", theme, err)})
-			dr.themeName, dr.themeCSS = "studio", assets.ThemeCSS("studio")
-			return
+	var raw string
+	switch {
+	case strings.HasPrefix(theme, "http://") || strings.HasPrefix(theme, "https://"):
+		if raw, err = fetchThemeCSS(theme); err != nil {
+			return "studio", assets.ThemeCSS("studio"), fmt.Errorf("theme: cannot fetch %s: %v", theme, err)
 		}
-		dr.themeName, dr.themeCSS = "custom", "@layer si.theme{\n"+css+"\n}\n"
-		return
+	case strings.HasSuffix(strings.ToLower(theme), ".css"):
+		p := ThemePath(theme, dir)
+		b, rerr := os.ReadFile(p)
+		if rerr != nil {
+			return "studio", assets.ThemeCSS("studio"), fmt.Errorf("theme: cannot read %s: %v", theme, rerr)
+		}
+		raw = inlineURLs(filepath.Dir(p), string(b))
+	default:
+		name = assets.CanonicalTheme(theme)
+		return name, assets.ThemeCSS(name), nil
 	}
-	if strings.HasSuffix(strings.ToLower(theme), ".css") {
-		p := theme
-		if !filepath.IsAbs(p) {
-			if _, err := os.Stat(p); err != nil {
-				p = filepath.Join(filepath.Dir(dr.d.Path), theme)
-			}
-		}
-		raw, err := os.ReadFile(p)
-		if err != nil {
-			dr.problems = append(dr.problems, deck.Problem{File: dr.d.Path, Msg: fmt.Sprintf("theme: cannot read %s: %v", theme, err)})
-			dr.themeName, dr.themeCSS = "studio", assets.ThemeCSS("studio")
-			return
-		}
-		dr.themeName = "custom"
-		dr.themeCSS = "@layer si.theme{\n" + inlineURLs(filepath.Dir(p), string(raw)) + "\n}\n"
-		return
+	css, err = ThemeFileLayer(raw)
+	if err != nil {
+		err = fmt.Errorf("theme: %s %v", theme, err)
 	}
-	dr.themeName = assets.CanonicalTheme(theme)
-	dr.themeCSS = assets.ThemeCSS(dr.themeName)
+	return "custom", css, err
+}
+
+// ThemeFileLayer is the si.theme layer of a theme file's text: the built-in
+// its header extends (if any), then the file.
+func ThemeFileLayer(raw string) (css string, err error) {
+	var base string
+	if ext := themefile.Parse(raw).Extends; ext != "" {
+		if _, ok := assets.Themes[assets.CanonicalTheme(ext)]; ok {
+			base = assets.ThemeCSS(ext)
+		} else {
+			err = fmt.Errorf("extends %s, which is not a built-in theme (see si theme list)", ext)
+		}
+	}
+	return base + "@layer si.theme{\n" + raw + "\n}\n", err
+}
+
+// InlineURLs inlines the relative url()s of css (resolved against dir) as
+// data URIs, as a theme file gets at build: `si theme export` uses it.
+func InlineURLs(dir, css string) string { return inlineURLs(dir, css) }
+
+// ThemePath resolves a .css theme path: as given when it exists (or is
+// absolute), else relative to dir.
+func ThemePath(theme, dir string) string {
+	if filepath.IsAbs(theme) {
+		return theme
+	}
+	if _, err := os.Stat(theme); err == nil || dir == "" {
+		return theme
+	}
+	return filepath.Join(dir, theme)
 }
 
 // fetchThemeCSS downloads a theme stylesheet at build time and caches it for an

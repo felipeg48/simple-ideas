@@ -178,6 +178,8 @@ func helpJS(cmd string) string {
 	switch cmd {
 	case "gallery", "tour":
 		return `if(window.siStudio){siStudio.` + cmd + `()}else{location.hash="` + cmd + `"}`
+	case "newTheme": // File › New Theme…
+		return `if(window.siStudio){siStudio.newTheme()}`
 	case "docs", "rules", "manual", "releases", "report", "feature":
 		return `if(window.siStudio){siStudio.help("` + cmd + `",true)}`
 	case "about":

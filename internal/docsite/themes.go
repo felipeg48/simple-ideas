@@ -10,7 +10,7 @@ import (
 // unlisted are built-in themes made for client work: they stay in si but are
 // not shown on the site (their names are other companies' trademarks; see
 // TRADEMARKS.md).
-var unlisted = map[string]bool{"crdb": true, "acemq": true, "acemq-pro": true}
+var unlisted = assets.UnlistedThemes
 
 // themesPage is the site's Themes page, made from the built-in theme list so
 // it cannot drift: each theme's name, what it is, and its picture
@@ -55,8 +55,14 @@ same slide of the [showcase](live/showcase.md) in that theme.
 	b.WriteString(tick.Replace(`## Your own
 
 A theme is a CSS file of §--si-*§ tokens: §theme: brand.css§ (or an §https://§
-address). §si --export css-rules§ writes a starter with every token and what
-it does; see [Styling](rules/15-styling-themes-and-your-own-css.md).
+address). Start it with §/* si theme: Brand · extends paper */§ and it sets
+only what it changes; the built-in fills in the rest. The easiest way is the
+Studio's Theme view (§si --web§, then ⌘K › New theme): colours light and dark,
+fonts and sizes beside a live deck, with contrast checks that fix a failing
+pair. §si theme export§ and §si theme import§ share a theme as one CSS file or
+as W3C Design Tokens (§--format dtcg§). §si --export css-rules§ writes a starter
+with every token and what it does; see
+[Styling](rules/15-styling-themes-and-your-own-css.md).
 `))
 	return b.String()
 }

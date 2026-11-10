@@ -77,6 +77,12 @@ export const api = {
   gitPull: () => call<{ ok: boolean }>("POST", "git/pull", {}),
   gitPush: () => call<{ ok: boolean }>("POST", "git/push", {}),
   codewinExport: (path: string, format: string, id: string) => call<{ code: number; output: string }>("POST", "codewin/export", { path, format, id }),
+  /** themeSpec: token groups, tokens with their kind, the built-in themes' values. */
+  themeSpec: () => call<any>("GET", "theme/spec"),
+  /** theme applies op (a token's value in a mode, or the name / extends) to a theme file's text; back come the text, values, checks and the preview. */
+  theme: (path: string, text: string, op: unknown) => call<any>("POST", "theme", { path, text, op }),
+  themeNew: (name: string, from: string) => call<{ path: string }>("POST", "theme/new", { name, from }),
+  themeUse: (path: string) => call<{ conf: string; theme: string }>("POST", "theme/use", { path }),
   starter: (kind: string, path: string, title: string) =>
     call<{ created: string[]; open: string }>("POST", "starter", { kind, path, title }),
 };

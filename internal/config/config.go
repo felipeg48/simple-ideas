@@ -18,8 +18,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 )
+
+func fileExists(p string) bool { _, err := os.Stat(p); return err == nil }
 
 // Actions are the remappable single-key commands (keys.<action>).
 var Actions = []string{"overview", "presenter", "draw", "timer", "mode", "fullscreen", "find", "help", "terminal", "remote"}
@@ -313,6 +316,12 @@ func Load(paths ...string) *Config {
 		}
 		c := Parse(f)
 		f.Close()
+		// a .css theme path is relative to si.conf (when the file is there)
+		if t := c.Theme; strings.HasSuffix(strings.ToLower(t), ".css") && !filepath.IsAbs(t) && !strings.Contains(t, "://") {
+			if q := filepath.Join(filepath.Dir(p), t); fileExists(q) {
+				c.Theme = q
+			}
+		}
 		return c
 	}
 	return &Config{Keys: map[string]string{}, Features: map[string]bool{}}

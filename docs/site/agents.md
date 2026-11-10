@@ -92,6 +92,13 @@ in (paths outside it are refused):
 | `si_build` | self-contained HTML (and PDF) |
 | `si_qr` | a QR code file |
 | `si_screenshot` | a slide or page as a picture, light or dark, at any size: the agent sees what it made |
+| `si_theme_spec` | the theme tokens by group, each with its kind and units, and the built-in themes to start from |
+| `si_theme_write` | a `.css` theme: the built-in it extends and the tokens it changes, light and dark; only known tokens with values of their kind |
+| `si_theme_check` | a theme's WCAG contrast in light and dark, each failing pair with a colour that passes |
+| `si_theme_preview` | the specimen deck (or one of yours) drawn with a theme, as a picture |
+| `si_theme_export` / `si_theme_import` | a theme as one `.css` file or as W3C Design Tokens JSON, out and back in |
+
+A prompt that works: "our brand colours are #0B3D91 and #FC3D21: make a theme that passes contrast in dark mode, serif headings, and use it for this folder".
 
 The Claude Code plugin above already includes it. Elsewhere:
 

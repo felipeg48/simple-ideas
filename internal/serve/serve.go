@@ -296,7 +296,11 @@ func (s *Server) index(w http.ResponseWriter) {
 	if title == "" {
 		title = filepath.Base(s.dir)
 	}
-	w.Write(render.Index(title, entries, render.Options{LiveReload: true, UserCSS: s.css()}))
+	theme := s.Theme
+	if theme == "" {
+		theme = config.Load(s.Conf, filepath.Join(s.dir, "si.conf")).Theme
+	}
+	w.Write(render.Index(title, entries, render.Options{LiveReload: true, UserCSS: s.css(), Theme: theme}))
 }
 
 // events is the server-sent events endpoint: one `reload` event per change.

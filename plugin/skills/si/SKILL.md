@@ -44,6 +44,8 @@ si build <dir> --handout        # handouts/<deck>.pdf for the audience: slides o
 si build talk.md --narration latest  # talk.mp4 paced and voiced by a teleprompter recording (● Record in si play)
 si rehearse talk.md             # a recording's pace: planned vs spoken per slide, words per minute
 si theme list                   # built-in themes for theme: / --theme
+si theme check themes/acme.css  # a .css theme: wrong values, WCAG contrast light and dark (with a passing colour)
+                                # (a theme file starting /* si theme: Acme · extends paper */ sets only what it changes)
 si new <name>                   # a scaffold deck that uses every rule
 si --export example             # the showcase decks, to copy patterns from
 si play talk.md --remote --https  # teleprompter / draw pad / clicker on a tablet or phone (keyed LAN port, HTTPS)

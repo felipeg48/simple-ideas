@@ -44,6 +44,9 @@ type Options struct {
 	// ("../" for each folder level below the build's root).
 	SharedAssets bool
 	AssetPrefix  string
+	// ThemeCSS, when set, is the theme as CSS text (a theme file being edited
+	// in the Studio): it wins over Theme and the front matter.
+	ThemeCSS string
 	// Theme overrides the deck's `theme:` front matter; empty keeps it.
 	Theme string
 	// Config is an optional si.conf: default theme, key remaps, feature toggles.

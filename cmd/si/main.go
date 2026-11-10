@@ -146,6 +146,13 @@ Usage:
         with the version and OS filled in
   si theme list
         list the built-in themes (name, display name, aliases) for --theme / theme:
+  si theme check <file.css>       (also: si check <file.css>)
+        a theme file's unknown tokens, wrong values and WCAG contrast in light and dark
+  si theme export <name|file.css> [--format css|dtcg] [-o <file>]
+        a theme as one shareable file (a built-in in full; url()s inlined), or as
+        W3C Design Tokens JSON with --format dtcg
+  si theme import <file.css|file.tokens.json|https://…> [-o <dir>] [--use]
+        check a theme and copy it into themes/ (or <dir>); --use also writes theme: into si.conf
   si --export css-rules|rules|conf|example|themes|agent-rules|docs-site [--output <path>]
         css-rules: starter stylesheet with every --si-* token and .si-* hook
         rules:     RULES.md
@@ -305,6 +312,8 @@ type options struct {
 	qrJPG, qrECSet                               bool    // si qr --jpg; --ec given
 	audience                                     bool    // si play --audience: the room follows the talk on their phones
 	tunnel                                       bool    // si play --tunnel: the audience side on a temporary public address
+	format                                       string  // si theme export --format css|dtcg
+	use                                          bool    // si theme import --use: write theme: into si.conf
 	css                                          multi
 	args                                         []string
 }
@@ -393,6 +402,8 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.qrVCard, "vcard", "", "")
 	fl.BoolVar(&o.audience, "audience", false, "")
 	fl.BoolVar(&o.tunnel, "tunnel", false, "")
+	fl.StringVar(&o.format, "format", "", "")
+	fl.BoolVar(&o.use, "use", false, "")
 	for {
 		if err := fl.Parse(argv); err != nil {
 			return nil, err
@@ -497,11 +508,7 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		fmt.Fprint(stdout, docs.Rules)
 		return exitOK
 	case "theme", "themes":
-		if len(rest) > 1 || (len(rest) == 1 && rest[0] != "list") {
-			return usageErr(stderr, "theme takes one subcommand: list")
-		}
-		listThemes(stdout)
-		return exitOK
+		return themeCmd(rest, o, stdout, stderr)
 	case "play":
 		if len(rest) != 1 {
 			if len(o.remote.roles) > 0 {
@@ -527,6 +534,9 @@ func run(argv []string, stdout, stderr io.Writer) int {
 	case "check":
 		if len(rest) != 1 {
 			return usageErr(stderr, "check needs one <dir|file.md>")
+		}
+		if strings.HasSuffix(strings.ToLower(rest[0]), ".css") {
+			return checkThemeFile(rest[0], stdout, stderr)
 		}
 		dir := rest[0]
 		if st, err := os.Stat(dir); err == nil && !st.IsDir() {
@@ -688,7 +698,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			continue
 		}
 		if indexTheme == "" && d.Meta.Theme != "" {
-			indexTheme = d.Meta.Theme
+			indexTheme = indexThemeOf(d.Meta.Theme, d.Path)
 		}
 		mode := render.MediaInline
 		if o.noInline {
@@ -868,7 +878,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			continue
 		}
 		if indexTheme == "" && g.Meta.Theme != "" {
-			indexTheme = g.Meta.Theme
+			indexTheme = indexThemeOf(g.Meta.Theme, filepath.Join(g.Dir, "_nav.md"))
 		}
 		entries = append(entries, render.IndexEntry{Href: sub + "/" + home, Title: g.Meta.Title, Subtitle: g.Meta.Description,
 			Lab: true, Kind: guideKindOf(g), Sections: len(g.Pages), Version: firstOf(g.Meta.Edition, g.Meta.Version), Status: g.Meta.Status})
@@ -879,6 +889,9 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	if o.title != "" {
 		title = o.title // --title / --site overrides the index title + heading
+	}
+	if indexTheme == "" && cfg != nil {
+		indexTheme = cfg.Theme
 	}
 	if err := os.WriteFile(filepath.Join(out, "index.html"), render.Index(title, entries, render.Options{UserCSS: css, Theme: indexTheme}), 0o644); err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
@@ -1858,6 +1871,15 @@ func writeExamples(dir, mainName string) error {
 
 // listThemes prints the built-in themes: the name to pass to --theme or
 // theme:, its display name (also accepted, quoted), aliases and a summary.
+// indexThemeOf is a deck's theme for the index page: a .css path becomes
+// one the index can read (it is relative to the deck).
+func indexThemeOf(theme, deckPath string) string {
+	if strings.HasSuffix(strings.ToLower(theme), ".css") {
+		return render.ThemePath(theme, filepath.Dir(deckPath))
+	}
+	return theme
+}
+
 func listThemes(w io.Writer) {
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(tw, "NAME\tLABEL\tALIASES\tABOUT")

@@ -239,6 +239,7 @@ static NSMenu *submenu(NSMenu *bar, NSString *title) {
 	[target.web evaluateJavaScript:js completionHandler:nil];
 }
 - (void)showGallery:(id)sender { [self helpJS:helpScript("gallery")]; }
+- (void)newTheme:(id)sender { [self helpJS:helpScript("newTheme")]; }
 - (void)showTour:(id)sender { [self helpJS:helpScript("tour")]; }
 - (void)showDocs:(id)sender { [self helpJS:helpScript("docs")]; }
 - (void)showRules:(id)sender { [self helpJS:helpScript("rules")]; }
@@ -460,6 +461,9 @@ static NSMenuItem *action(NSMenu *m, NSString *title, SEL sel, id target, id obj
 	recent.delegate = self; // filled from the saved list each time it opens
 	recentItem.submenu = recent;
 	[file addItem:recentItem];
+	NSMenuItem *theme = item(@"New Theme…", @selector(newTheme:), @"");
+	theme.target = self;
+	[file addItem:theme];
 	[file addItem:[NSMenuItem separatorItem]];
 	[file addItem:item(@"Close Window", @selector(performClose:), @"w")];
 

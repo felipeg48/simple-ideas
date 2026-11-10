@@ -7,6 +7,7 @@ import { BuildDialog } from "./build-dialog";
 import { type Mode, ModeView } from "./modes";
 import { type Command, Palette } from "./palette";
 import { NewDialog } from "./new-dialog";
+import { NewThemeDialog } from "./theme-editor";
 import { History } from "./history";
 import { Review } from "./review";
 import { Gallery } from "./gallery";
@@ -316,9 +317,10 @@ export function App() {
       ok={async (k, path, title) => { await onStarter(k, path, title); if (!tourDone()) setTimeout(() => setTourOn(true), 400); }}
       onClose={() => setDialog(null)} />);
   // the desktop app's Help menu calls these; #gallery and #tour links open them too
+  const newTheme = () => { setMode("write"); setDialog(<NewThemeDialog ok={(path) => { void refresh().then(() => open(path)); }} onClose={() => setDialog(null)} />); };
   const startTour = () => { setMode("write"); setView("edit"); setTourOn(true); };
   const showAbout = (binary?: { path?: string; note?: string }) => setDialog(<About binary={binary} onClose={() => setDialog(null)} />);
-  (window as unknown as { siStudio: object }).siStudio = { gallery: showGallery, tour: startTour, about: showAbout, help };
+  (window as unknown as { siStudio: object }).siStudio = { gallery: showGallery, tour: startTour, about: showAbout, help, newTheme };
   const hashed = useRef(false);
   useEffect(() => {
     if (!tree || hashed.current) return;
@@ -348,6 +350,7 @@ export function App() {
     ...modes.map((m): Command => ({ id: "mode-" + m.id, label: `Mode: ${m.label}`, icon: m.icon, run: () => setMode(m.id) })),
     { id: "new", label: "New slides, article, guide, site…", icon: "plus", run: () => setDialog(
       <NewDialog dir={active && active.includes("/") ? active.slice(0, active.lastIndexOf("/")) : ""} ok={onStarter} onClose={() => setDialog(null)} />) },
+    { id: "new-theme", label: "New theme: colours, fonts and sizes, light and dark…", icon: "css", run: newTheme },
     { id: "build", label: "Build the folder to HTML…", icon: "braces", run: () => setDialog(<BuildDialog onClose={() => setDialog(null)} />) },
     { id: "history", label: "History: changes, commit, earlier versions (git)…", icon: "braces", run: showHistory },
     { id: "review", label: "Review: comments from a review link…", icon: "braces", run: showReview },

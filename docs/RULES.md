@@ -1221,6 +1221,61 @@ build shown (ANSI colours) and exits: for scripts, READMEs and checks.
 .si-step.is-latest { color: var(--si-accent-2); }
 ```
 
+### Make a theme: `extends`, the Theme view, check, export, import
+
+- **`extends`**: a theme file whose first comment starts with
+  `si theme: <Name> · extends <built-in>` gets that built-in's tokens first and
+  its own after (the file wins), so it only needs the tokens it changes:
+  headings, padding, shadows and dark mode come from the built-in. Without the
+  header a `.css` theme has nothing underneath, as before. An unknown built-in
+  is a `si check` problem.
+- **The Studio's Theme view** (`si --web`): ⌘K › *New theme* (or File › New
+  Theme… in the Mac app) asks for a name and a built-in to start from and
+  creates `themes/<name>.css`; opening any `.css` theme shows it as controls:
+  colours light beside dark with a picker, fonts, sizes on sliders (never
+  `px`), motion, beside a specimen deck drawn with it, light and dark, at four
+  screen sizes, and the contrast checks with **Fix**. Every change is one
+  undoable edit of the file, which stays plain CSS (the Text view edits it
+  too). *Use in this folder* writes `theme:` into `si.conf`; a `.css` path in
+  `si.conf` is relative to `si.conf`.
+- **Checks**: `si theme check <file.css>` (or `si check <file.css>`) reports
+  unknown tokens and values of the wrong kind (errors), and every
+  text/background pair under its WCAG AA minimum in light or dark (warnings,
+  each with a colour that passes): body and muted text 4.5:1 on the
+  background and on surfaces, text on the accent 4.5:1, accents and status
+  colours 3:1.
+- **Share**: `si theme export <name|file.css> [-o file]` writes one
+  self-contained file (a built-in in full; a file's `url()`s inlined);
+  `--format dtcg` writes W3C Design Tokens JSON (`.tokens.json`: colours with
+  their dark value in `$extensions`, font families, durations, numbers, `rem`
+  and `em` sizes; other tokens are listed, never guessed).
+  `si theme import <file.css|file.tokens.json|https://…> [-o dir] [--use]`
+  checks a theme (a broken value refuses it), writes it to `themes/<name>.css`
+  and, with `--use`, sets it in `si.conf`.
+- The index page of `si build` and `si play` follows the decks' theme, a
+  `.css` theme included.
+
+```css
+/* si theme: Acme · extends paper
+   tokens and looks only; edit here or in the Theme view of si Studio */
+:root {
+  --si-accent: #0b3d91;
+  --si-font-heading: "Fraunces", Georgia, serif;
+  --si-h1-size: 3.4em;
+}
+:root[data-si-mode="dark"] {
+  --si-accent: #8fb3ff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-si-mode]) {
+    --si-accent: #8fb3ff;
+  }
+}
+```
+
+Use it with `theme: themes/acme.css` in a deck's front matter (a path from
+the deck) or in `si.conf`. Load a web font like Fraunces with `fonts:` (below).
+
 ### Themes for documents (labs, articles, guides)
 
 Every theme styles documents too, from the same tokens as slides. Documents
@@ -1268,9 +1323,11 @@ finer control are listed by `si --export css-rules` (`.si-doc[data-si-doc]`,
 /* repeat the dark block inside @media (prefers-color-scheme: dark) { :root:not([data-si-mode]) { … } } */
 ```
 
-A `.css` theme file replaces the built-in theme, so it must set the colour,
-font and layout tokens itself (`si --export css-rules` writes a complete,
-commented starter with every token and its studio default). The same file
+A `.css` theme file without an `extends` header replaces the built-in theme,
+so it must set the colour, font and layout tokens itself (`si --export
+css-rules` writes a complete, commented starter with every token and its
+studio default); with `si theme: Name · extends studio` it sets only what it
+changes. The same file
 styles decks, articles, guides and labs. To change only a few things on top of
 a built-in theme, keep `theme: studio` (or any) and pass the overrides with
 `--css`, which lands in the `si.user` layer after the theme.
