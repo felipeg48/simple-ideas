@@ -3,18 +3,70 @@
 Read this, then `FEATURE.md`, then `CLAUDE.md`. This is a Go CLI (`si`) that turns
 Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
-## Current state (2026-11-10)
+## Current state (2026-11-10, end of day)
 
-- **v2.39.0: si's own demo videos.** `docs/demos/*.md` (six scripts) are
-  tested on every push (ci.yml `demos`) and filmed on minor tags by
-  `.github/workflows/demos.yml` (macOS, Kokoro cached, uploads
-  `si-demo-videos.tar.gz` to the release, then runs docs-site). The site embeds
-  them through `<!-- si-video: area -->` lines (internal/docsite/videos.go,
-  `$SI_DEMO_VIDEOS`; `make docs-site` copies `videos/`). Fixes found while
-  writing them: iframe loads no longer hold a step (`r.inner` in run.go: the
-  Studio preview iframe stuck the loading count), title cards keep a lowercase
-  first word only if the script avoids it (scripts reworded; not fixed in
-  code). Not yet filmable: the teleprompter popup, drawing (needs drag).
+**Released and live: v2.39.1** (CI, release, docs-site all green; si 2.39.1
+installed via `make install </dev/null`; the Claude plugin updated with
+`claude plugin marketplace update simple-ideas && claude plugin update si@simple-ideas`).
+The v2.37.0 / v2.38.0 notes below say "unreleased, on a worktree branch":
+that was true when written; both are merged and released.
+
+### Today's releases, in order
+- v2.34.0 `si demo test` (phase 1) · v2.35.0 `si demo run` (video + voice) ·
+  v2.36.0 terminals and programs (`start:`/`stop:`, `terminal`, `run`,
+  `expect output`, `start … as`/`stop`) · v2.36.1 `run … · exit N` / `· fails`,
+  exit-status counting fix · v2.37.0 `si voice` (install kokoro, say, list,
+  login; keys only in the user si.conf) + mock keychain for headless Chrome ·
+  v2.38.0 three videos per take, captions band, `.vtt`, fast-forward; `type "x"`
+  at the focus; `app:` with a query kept; `SI_STUDIO_TOKEN`; `si theme list`
+  hides client themes · v2.39.0 si's own demo videos (below) · v2.39.1
+  `select` waits for late options.
+
+### si's own demo videos (v2.39.0)
+- Six scripts in `docs/demos/` (decks, presenting, studio, themes, mindmaps,
+  terminal); `.gitignore` there lists what they create.
+- `ci.yml` job `demos`: `si demo test` on all six, Linux, every push (green).
+- `.github/workflows/demos.yml`: films them on macOS with Kokoro on minor tags
+  (`v*.*.0`) and on `workflow_dispatch`; uploads `si-demo-videos.tar.gz` and
+  `si-demo-<area>.mp4` to the release, then dispatches docs-site. First run on
+  v2.39.0 succeeded (~15 min).
+- `pages.yml` downloads the newest release's tarball into `$SI_DEMO_VIDEOS`;
+  `internal/docsite/videos.go` turns `<!-- si-video: area -->` lines (decks,
+  presenting in features/decks.md; studio, terminal pages; themes page;
+  mindmaps tour) into the video + chapters; `make docs-site` copies `videos/`.
+  Live on simple-ideas.org (checked).
+- README "Watch it": posters `docs/screenshots/readme/demo-*.jpg` → site.
+- Local copies of every video: `~/Downloads/si-demo/<area>/`.
+
+### Bugs found by filming, fixed
+iframe loads no longer hold a click (`r.inner`, run.go); exit status counted
+per command (`t.base`/`t.runs`); backslashes kept in quoted steps; `select`
+waits for its option; Studio demo avoids `cmd+z` (Linux).
+
+### Next (in order; the founder wants autonomy: do not ask, decide and report)
+1. A window step (the teleprompter opens a popup the runner does not film) and
+   a drag step (drawing with `a`); then add them to `presenting.md`.
+2. Title cards capitalise the first word of `What it does:` ("si" → "Si");
+   keep it lowercase when the script wrote it so (film.go title card).
+3. Terminal `split` (terminal and browser side by side), phase 3 of the
+   terminal spec.
+4. AceMQ demo scripts live in the AceMQ repo (`acemq-broker/demos/`), not in
+   si; the founder's top wish. Use `start:`/`stop:` with `make
+   demo-single-insecure` / `make demo-down`, workloads from
+   `acemq-broker-libraries/acemq-broker-workloads` as `start … as load`.
+   Never put AceMQ in si's docs (TRADEMARKS.md).
+5. Retake (`~/Progs/AI/retake-app`): point its CLAUDE.md at the web-demos spec
+   for the shared script format (phase 5).
+6. Voice: try `si voice login` with real ElevenLabs/OpenAI keys; Kokoro
+   install on Linux/Windows untested.
+
+### Housekeeping
+- Notices: `si voice say "Ideas finished"` / `"Ideas needs your input"`
+  (Kokoro installed in `~/Library/Caches/si/kokoro`).
+- Permissions: `.claude/settings.local.json` allows Bash, Agent, SendMessage,
+  TaskStop, Monitor, ToolSearch, ListAgents; run in manual mode (auto mode's
+  classifier blocked background agents).
+- Pages deploys sometimes time out on GitHub's side: re-run the failed job.
 
 - **v2.38.0 (unreleased, on a worktree branch): three videos per take, the
   captions band, fast-forwarded waits.** `internal/webdemo/film.go`
