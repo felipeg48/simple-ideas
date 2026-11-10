@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/render"
 	"github.com/felipeg48/simple-ideas/internal/tools"
@@ -26,8 +27,9 @@ const demoUsage = `Usage:
         .video.mp4 (silent), .voice.wav/.m4a and .srt; all.mp4 (a title card per feature,
         chapters inside), chapters.txt (YouTube), the report and README.md + README.html.
         --voice   kokoro[:af_heart] (the default when installed), system[:name] (say, espeak-ng,
-                  Windows voices), elevenlabs:<voice id> (ELEVENLABS_API_KEY),
-                  openai[:alloy] (OPENAI_API_KEY; voice-style: in front matter)
+                  Windows voices), elevenlabs:<voice id> and openai[:alloy] (a key: si voice
+                  login; voice-style: sets openai's tone); else voice: in front matter or si.conf.
+                  si voice install kokoro sets Kokoro up; si voice say "line" tries a voice
         --captions  burn the captions into the video (the .srt is always written)
         --viewport  phone (400x800), tablet (820x1180), desktop (1440x900) or WxH
   Both run start: programs first and stop them at the end (and on Ctrl-C); terminal "Name"
@@ -91,12 +93,18 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 	}
 	o := webdemo.Options{Feature: feature, Log: stdout, SI: version}
 	if film {
-		v := webdemo.DefaultVoice()
-		if spec := firstNonEmpty(voice, s.Voice); spec != "" {
-			if v, err = webdemo.ParseVoice(spec); err != nil {
-				fmt.Fprintf(stderr, "si demo: %v\n", err)
-				return exitUsage
-			}
+		// --voice > front matter > si.conf beside the script > the user's si.conf > default
+		cfg := config.Load("", filepath.Join(filepath.Dir(args[1]), "si.conf"))
+		for _, w := range cfg.Warnings {
+			fmt.Fprintf(stderr, "warning: %s\n", w)
+		}
+		v, err := chooseVoice(voice, s.Voice, cfg.Voice)
+		if err != nil {
+			fmt.Fprintf(stderr, "si demo: %v\n", err)
+			return exitUsage
+		}
+		if s.Style == "" {
+			s.Style = cfg.VoiceStyle
 		}
 		o.Video, o.Voice, o.Captions = true, v, captions
 		if o.FFmpeg = tools.Find("ffmpeg"); o.FFmpeg == "" {

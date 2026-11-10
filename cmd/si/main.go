@@ -123,6 +123,12 @@ Usage:
         the same steps filmed with a drawn cursor, notes and blurred secrets, narrated from
         the Say: lines (kokoro, system, elevenlabs, openai): <feature>.mp4 each, all.mp4 with
         chapters, chapters.txt, .srt captions (--captions burns them in), the report, README
+  si voice say "text" [--voice engine:name] [-o out.wav] | list [engine]
+        say a line aloud with the narration voice (like macOS say; -o saves a WAV), list voices
+  si voice install|uninstall kokoro [--dir D]
+        set up Kokoro, the natural offline voice, in one command (a Python venv + model files)
+  si voice login|logout elevenlabs|openai
+        keep a cloud voice's API key in your own si.conf (0600), never in a project's
   si doctor
         the optional programs si can use (Chrome, ffmpeg, git, …): found or not, and
         how to install each on this computer
@@ -457,6 +463,9 @@ func run(argv []string, stdout, stderr io.Writer) int {
 	if len(argv) > 0 && argv[0] == "demo" { // its own flags (--feature takes a name)
 		return runDemo(argv[1:], stdout, stderr)
 	}
+	if len(argv) > 0 && argv[0] == "voice" { // its own flags
+		return runVoice(argv[1:], stdout, stderr)
+	}
 	o, err := parseArgs(argv, stderr)
 	if err != nil {
 		fmt.Fprintf(stderr, "si: %v\n\n%s", err, usage)
@@ -567,7 +576,11 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		if st, err := os.Stat(dir); err == nil && !st.IsDir() {
 			dir = filepath.Dir(dir)
 		}
-		b := config.Load(o.conf, filepath.Join(dir, "si.conf")).Budget
+		cfg := config.Load(o.conf, filepath.Join(dir, "si.conf"))
+		for _, w := range cfg.Warnings { // an API key in a project si.conf, a typo: file and line
+			fmt.Fprintf(stderr, "warning: %s\n", w)
+		}
+		b := cfg.Budget
 		if o.budget && b.Page == 0 {
 			b.Page = defaultBudget.Page
 		}
@@ -692,7 +705,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	cfg := config.Load(o.conf, filepath.Join(dir, "si.conf"))
 	for _, w := range cfg.Warnings {
-		fmt.Fprintf(stderr, "si.conf: %s\n", w)
+		fmt.Fprintf(stderr, "warning: %s\n", w)
 	}
 	failed, sharedDone := false, false
 	chrome := ""
