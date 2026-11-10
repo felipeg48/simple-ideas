@@ -5,6 +5,10 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **README redesign (2026-11-10):** feature sections with screenshots
+  (`docs/screenshots/readme/`, the site's `features/img/`), theme thumbnails
+  linking to simple-ideas.org/themes.html#<name>; release notes moved to
+  `CHANGELOG.md` (newest first). New releases: add the note to CHANGELOG.md.
 - **v2.29.0: two presenters.** Voices parsed in `deck.voices` (`Slide.Voices`,
   speaking order; plain `Notes:` = first speaker; `Slide.Notes/Points` keep the
   joined text). A part starts at the click count of the parts before it
