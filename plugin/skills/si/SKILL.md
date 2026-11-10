@@ -285,8 +285,8 @@ Not everything is a slide deck. Pick the type by what the reader does:
   server the app needs goes in front matter `start: <command> · wait for
   "ready text"` (or `· wait for port N`), never in a `run` step of a feature
   the others depend on. Show a command with `terminal "Name"` then `run
-  "command"` (`· wait` when it must finish first) and check it with `expect
-  output "text"`; write `- browser` before any browser step that follows a
+  "command"` (`· wait` when it must finish first; `· exit 1` or `· fails` when
+  it must fail, an error on purpose) and check it with `expect output "text"`; write `- browser` before any browser step that follows a
   terminal. A workload for one feature is `start "…" as NAME`, then `stop NAME`
   and `expect NAME exited 0`. Every program is stopped for you; do not add
   `kill` steps. Run `si check` (it follows the scenes), then `si demo test`;

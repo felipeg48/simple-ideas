@@ -29,6 +29,8 @@ func TestTerminalSteps(t *testing.T) {
 		{`run "./bin/send orders hello"`, Step{Kind: "run", Value: Value{Text: "./bin/send orders hello"}}},
 		{`run "make seed" · wait`, Step{Kind: "run", Value: Value{Text: "make seed"}, Block: true}},
 		{`run "make seed" · wait · within 90s`, Step{Kind: "run", Value: Value{Text: "make seed"}, Block: true, Within: 90 * time.Second}},
+		{`run "false" · fails`, Step{Kind: "run", Value: Value{Text: "false"}, Block: true, Code: -1}},
+		{`run "make bad" · exit 2`, Step{Kind: "run", Value: Value{Text: "make bad"}, Block: true, Code: 2}},
 		{`press ctrl+c`, Step{Kind: "press", Value: Value{Text: "ctrl+c"}}},
 		{`expect output "sent 1"`, Step{Kind: "expect-output", Value: Value{Text: "sent 1"}}},
 		{`expect output "Server startup complete" · within 30s`, Step{Kind: "expect-output", Value: Value{Text: "Server startup complete"}, Within: 30 * time.Second}},
@@ -67,7 +69,7 @@ func TestTerminalSteps(t *testing.T) {
 		}
 	}
 	for _, bad := range []string{`terminal Broker`, `terminal "B" · window=linux`, `terminal "B" · size=10`, `terminal "B" · colour=red`, `browser now`,
-		`run ls`, `run "ls" · fast`, `start "x"`, `start "x" as`, `start "x" as a · wait for nothing`, `stop "load"`, `stop load · soon`,
+		`run ls`, `run "ls" · fast`, `run "ls" · exit x`, `start "x"`, `start "x" as`, `start "x" as a · wait for nothing`, `stop "load"`, `stop load · soon`,
 		`expect output sent`, `expect no output "x" · within 2s`, `expect load exited`, `expect output of "load" "x"`, `note "x" at line`} {
 		if _, err := ParseStep(bad); err == nil {
 			t.Errorf("%s: no error", bad)

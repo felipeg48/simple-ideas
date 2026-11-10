@@ -3,6 +3,10 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.36.1:** web demos: a terminal command that must fail, `run "…" ·
+  exit 1` or `· fails` (any non-zero status), passes only when it does. Fixed:
+  `run … · wait` after a `run` that was not waited for read the earlier
+  command's exit status.
 - **v2.36.0:** web demos with a terminal: front matter `start: <command> ·
   wait for "text"` (or `· wait for port N`, `· wait 5s`; `as NAME`) runs
   programs in the background for the whole run, `stop:` tears down at the

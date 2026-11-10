@@ -336,6 +336,16 @@ func (r *runner) termStep(st *Step) error {
 	case "run":
 		at, n := t.out.mark()
 		t.runAt, t.ran = at, true
+		if t.runs == 0 {
+			t.base = n
+		}
+		t.runs++
+		if !t.pipes {
+			// each command ends with one prompt mark; an earlier run not waited
+			// for may not have printed its own yet, so count, don't look
+			// ponytail: a Ctrl-C at an idle prompt adds a mark and shifts this count
+			n = t.base + t.runs - 1
+		}
 		if err := r.typeIn(t, st.Value.Text); err != nil {
 			return err
 		}
@@ -349,8 +359,11 @@ func (r *runner) termStep(st *Step) error {
 		end := time.Now().Add(d)
 		for {
 			if code, ok := t.out.code(n); ok {
-				if code != 0 {
-					return &failure{expected: "the command exits 0", found: fmt.Sprintf("exit status %d", code), output: t.out.tail(40)}
+				switch {
+				case st.Code < 0 && code == 0:
+					return &failure{expected: "the command fails (a non-zero exit)", found: "exit status 0", output: t.out.tail(40)}
+				case st.Code >= 0 && code != st.Code:
+					return &failure{expected: fmt.Sprintf("the command exits %d", st.Code), found: fmt.Sprintf("exit status %d", code), output: t.out.tail(40)}
 				}
 				return nil
 			}

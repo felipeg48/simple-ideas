@@ -181,6 +181,11 @@ for it to end and fails on a non-zero exit. `expect output` checks what it
 printed since, colours aside; `press ctrl+c` stops a program on camera;
 `note "…" at line "…"` points at a line.
 
+Sometimes the failure is the point: `run "si check bad.md" · exit 1` passes
+only when the command exits 1 (`· fails`: any non-zero status), and an
+`expect output "problem"` after it shows the error the viewer should read.
+A command that succeeds there fails the step.
+
 ![A frame of a terminal scene: a Mac-style window on a dusk backdrop, "go run ./broker serve --port 7311" typed, the line "broker ready" ringed with a note "Ready for messages" under it, and the caption "A second broker starts in a terminal of its own, on port 7311."](img/webdemos/terminal.jpg)
 
 A workload for one feature is `start "go run ./broker load" as load · wait

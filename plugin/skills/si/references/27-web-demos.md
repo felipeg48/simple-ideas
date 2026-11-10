@@ -220,6 +220,7 @@ Say: A load generator sends thirty messages.
 | `terminal "Name"` | opens a terminal named Name (or brings it back): a real shell in the script's folder, filmed as a code window (§25). Options after `·`: `window=terminal\|mac\|windows\|none` (default `terminal`), `title="…"` (default the name), `theme=night\|dusk\|paper\|auto` (default `night`), `backdrop=graphite\|ocean\|dusk\|mint\|none` (default `graphite`), `size=100x30` (columns x rows; default: as many as fit) |
 | `run "command"` | types the command into the terminal in front (at a person's pace in `si demo run`, at once in `si demo test`) and presses Enter. It does not wait: a broker never ends; the next `expect output` is the wait |
 | `run "command" · wait` | the same, and waits until it ends (up to a minute, `· within 5m` for longer); fails when it exits non-zero |
+| `run "command" · exit 1` · `run "command" · fails` | a failure on purpose: waits until it ends, and passes only when it exits with that status (`· exit 2`) or with any non-zero one (`· fails`); exit 0 is then the failure. Show what the error says with `expect output "…"` after it |
 | `press ctrl+c` | in a terminal, sends the key to the shell: `ctrl+<letter>`, Enter, Tab, Escape, Backspace, arrows, one character |
 | `expect output "text"` | the terminal's output since its last `run` shows the text, within `timeout:` (`· within 30s` for longer); white space matches any white space, colours do not count |
 | `expect no output "text"` | the text never appears from there to the end of the `Say:` block |

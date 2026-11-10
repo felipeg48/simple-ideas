@@ -158,7 +158,8 @@ an example for every rule: [RULES.md](docs/RULES.md).
   delay) runs a broker or a server in the background for the run, `stop:`
   tears down; `terminal "Name"` opens a real shell filmed as a code window
   (`window=mac`, `theme=dusk`, `backdrop=ocean`, `size=100x30`), `run
-  "command"` types it (`· wait` for its exit status), `expect output "text"`,
+  "command"` types it (`· wait` for its exit status, `· exit 1` or `· fails`
+  when it must fail), `expect output "text"`,
   `press ctrl+c`, `note "…" at line "text"`, `browser` goes back to the app.
   Workloads for a feature or a few blocks: `start "…" as load`, `stop load`,
   `expect output of load`, `expect load exited 0`. Every program stopped by

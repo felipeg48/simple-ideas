@@ -38,6 +38,8 @@ type term struct {
 	done    chan struct{}
 	runAt   int    // the plain text's length when the last run began
 	ran     bool   // a run has begun
+	runs    int    // commands typed
+	base    int    // marks seen when the first command was typed (idle prompts: the first, redraws on resize)
 	id      string // on the terminal server
 	session string // the page's DevTools session
 	once    sync.Once

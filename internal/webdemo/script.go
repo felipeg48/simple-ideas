@@ -108,7 +108,7 @@ type Step struct {
 	Block  bool              // run … · wait, stop NAME · wait
 	Within time.Duration     // · within 30s
 	Ready  Ready             // start …: what to wait for before going on
-	Code   int               // expect NAME exited N
+	Code   int               // expect NAME exited N; run … · exit N (-1: · fails, any non-zero)
 }
 
 // Problem is an error or warning at a line of the script.

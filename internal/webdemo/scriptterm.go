@@ -192,8 +192,16 @@ func termStep(st *Step, word, rest string) (*Step, error) {
 		for _, c := range parts[1:] {
 			if c == "wait" {
 				st.Block = true
+			} else if c == "fails" {
+				st.Block, st.Code = true, -1
+			} else if n, ok := strings.CutPrefix(c, "exit "); ok {
+				code, err := strconv.Atoi(strings.TrimSpace(n))
+				if err != nil || code < 0 {
+					return bad(`%q: write · exit 1 (the status the command must end with)`)
+				}
+				st.Block, st.Code = true, code
 			} else if ok, err := readyClause(c, &Ready{}, &st.Within); !ok || err != nil || !strings.HasPrefix(c, "within") {
-				return bad(`%q: run takes · wait and · within 60s`)
+				return bad(`%q: run takes · wait, · exit 1, · fails and · within 60s`)
 			}
 		}
 		return st, nil

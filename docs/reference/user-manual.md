@@ -368,6 +368,7 @@ Say: First we send one message.
 
 - `start:` programs in the background for the run; `start "…" as load` for a feature; `stop load`
 - `terminal`, `run`, `expect output`, `browser`: the shell filmed as a framed window
+- a failure on purpose: `run "si check bad.md" · exit 1` (or `· fails`), then `expect output "problem"`
 - `note "…" at line "ready"`, `press ctrl+c`, `expect load exited 0`
 
 Notes: (1 min)
