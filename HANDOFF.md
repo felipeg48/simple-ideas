@@ -5,6 +5,27 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-10)
 
+- **v2.38.0 (unreleased, on a worktree branch): three videos per take, the
+  captions band, fast-forwarded waits.** `internal/webdemo/film.go`
+  `finishTake` writes `.video.mp4` (picture + fast-forward badges),
+  `.mp4` (that + the voice, `-c:v copy`) and `.captions.mp4` (the same image
+  sequence encoded again: badges, then `band(w, h)` = scale to 85% + pad on
+  0x111318 at 2% from the top, then the caption PNGs in the bottom 13%, voice
+  muxed in the same call), `.srt` + `.vtt`; `joinAll` adds `all.video.mp4`
+  (all.mp4 with `-map 0:v -c copy`, chapters ride along), `all.captions.mp4`
+  (allArgs over the captions clips) and `all.srt`/`all.vtt`
+  (`joinCaptions`). Fast-forward: `r.waiting()` records wait windows in
+  `tk.waits` (run · wait, stop · wait, expect/wait for output, start, browser
+  wait for); `fastForward` (encode.go) cuts each to `[from+after, to]`,
+  subtracts `tk.spoken` (the voice never plays over sped-up picture), picks
+  X = ceil(len/2 s); `sequence` samples the take through `inT`, voice,
+  captions and badges are placed with `outT`, so the clip length (and the
+  chapters) come from the output. Options: `NoCaptions`, `FastForward`
+  (`--fast-forward 3s` default in cmd, 0 in tests); `--captions` is a no-op.
+  FeatureResult gains `videoOnly` / `videoCaptions`. Verified: broker.md,
+  shop.md and a `sleep 14` script (a 6× badge, 9.2 s shorter), frames looked
+  at. Next: a nicer badge animation; a `fast-forward:` front-matter key if
+  someone asks.
 - **v2.37.0 (unreleased, on a worktree branch): `si voice`.**
   `cmd/si/voice.go`: `say` (voice: `--voice` > si.conf `voice:` > default;
   an engine whose `Ready()` fails falls back to `system` with one stderr

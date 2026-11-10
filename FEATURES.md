@@ -147,10 +147,15 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - **`si demo run`:** the same steps filmed and narrated: a drawn cursor that
   glides, click ripples, `note "…" at "Field"` callouts, blurred `$VAR`
   fields; each `Say:` line voiced first so the words set the pace;
-  `<feature>.mp4` (+ silent `.video.mp4`, `.voice.wav/.m4a`, `.srt`),
-  `all.mp4` with a title card per feature and chapters, `chapters.txt` for
-  YouTube, the report and README.md + README.html. `--captions` burns the
-  captions in; `--viewport phone`; a failing step ends its clip.
+  three videos per feature from one take: `.video.mp4` (picture only),
+  `.mp4` (picture + voice) and `.captions.mp4` (the picture shrunk above a
+  band with the captions, so they never cover it); `.voice.wav/.m4a`, `.srt`
+  and `.vtt`; `all.mp4`, `all.video.mp4` and `all.captions.mp4` with a title
+  card per feature and chapters, `chapters.txt` for YouTube, the report and
+  README.md + README.html (the video with a captions track). Long waits play
+  faster with a ⏩ badge, the voice never (`--fast-forward 3s`,
+  `--no-fast-forward`); `--no-captions`; `--viewport phone`; a failing step
+  ends its clip.
 - **Voices:** `kokoro:af_heart` (local, the default when installed),
   `system` (say, espeak-ng, Windows), `elevenlabs`, `openai` (`voice-style:`);
   `pronounce: si = ess eye`; lines cached, only changed lines re-voiced.

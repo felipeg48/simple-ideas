@@ -2811,8 +2811,9 @@ si demo: 0 passed, 1 failed in 6.9s; report: demo-out/shop/report.html
 
 ```bash
 SHOP_PASSWORD=shop-demo si demo run shop.md
-si demo run shop.md --feature "Pay for an order" --captions --viewport phone
+si demo run shop.md --feature "Pay for an order" --viewport phone
 si demo run shop.md --voice system:Samantha -o videos/
+si demo run broker.md --fast-forward 5s --no-captions
 ```
 
 The same steps, filmed: a drawn cursor glides to each element and clicks
@@ -2827,16 +2828,30 @@ It writes into `demo-out/<script>/` (or `-o dir`):
 
 | File | What |
 |---|---|
-| `<feature>.mp4` | the feature, video and voice (H.264 + AAC, 30 fps) |
-| `<feature>.video.mp4` | the same video, silent |
+| `<feature>.mp4` | the feature, picture and voice (H.264 + AAC, 30 fps), no captions |
+| `<feature>.video.mp4` | the picture alone: no sound, no captions |
+| `<feature>.captions.mp4` | picture, voice and captions: the picture shrinks (aspect kept) into the top of the same frame, centered on a near-black backdrop, and the captions (white, two lines at most) sit in a band under it, so they never cover the picture |
 | `<feature>.voice.wav` · `.voice.m4a` | the narration alone, to edit or re-voice |
-| `<feature>.srt` | captions of the `Say:` lines, timed (always; `--captions` also burns them into the video, bottom, two lines at most) |
-| `all.mp4` | every feature, each after a title card (the feature and its `What it does:`), chapters embedded |
+| `<feature>.srt` · `<feature>.vtt` | captions of the `Say:` lines, timed: SubRip, and WebVTT for a web page's `<track>` |
+| `all.mp4` · `all.video.mp4` · `all.captions.mp4` | every feature, each after a title card (the feature and its `What it does:`), chapters embedded: with voice, picture only, with voice and captions |
+| `all.srt` · `all.vtt` | the captions of `all.mp4` |
 | `chapters.txt` | YouTube chapter lines: `0:00 Sign in` |
 | `report.html` · `report.json` | the run, each feature linked to its clip |
 | `README.md` · `README.html` | the folder: every file, each feature with its video (linked, not inlined), the script, how it was made |
 
 `<feature>` is the heading in lower case with dashes (`pay-for-an-order`).
+The three videos come from one take; a feature without `Say:` lines gets
+`.video.mp4` and a `.mp4` with silent sound only. `--no-captions` skips the
+`.captions.mp4` files (a faster run; the `.srt` and `.vtt` are still written);
+`--captions`, from before v2.38.0, is accepted and does nothing.
+
+**Long waits play faster.** A step that waits (`run … · wait`, `stop … ·
+wait`, `wait for output`, `expect output … within`, `wait for "…"`, `start … ·
+wait for …`) plays at speed for its first 3 s; the rest plays faster, so it
+lasts 2 s at most, with a ⏩ 6× badge at the top right. The narration never
+speeds up: a stretch under a `Say:` voice stays at speed, and the captions and
+chapters are timed on the faster video. `--fast-forward 5s` changes the 3 s;
+`--no-fast-forward` keeps every wait at speed.
 
 **Voices.** `voice: engine:name` in front matter, or `--voice`:
 

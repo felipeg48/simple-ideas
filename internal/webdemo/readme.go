@@ -10,19 +10,29 @@ import (
 
 // describe says what a file of the output folder is.
 func describe(name string) string {
+	switch name {
+	case "all.mp4":
+		return "every feature in one video: a title card each, chapters embedded"
+	case "all.video.mp4":
+		return "every feature, the picture alone (no sound), chapters embedded"
+	case "all.captions.mp4":
+		return "every feature with the narration and the captions under the picture, chapters embedded"
+	case "all.srt", "all.vtt":
+		return "captions of all.mp4, timed"
+	}
 	for _, k := range []struct{ suffix, what string }{
-		{".video.mp4", "the video alone, silent"},
+		{".video.mp4", "the picture alone: no sound, no captions"},
+		{".captions.mp4", "picture, narration and the captions in a band under the picture"},
 		{".voice.m4a", "the narration alone (AAC)"},
 		{".voice.wav", "the narration alone (WAV), to edit or re-voice"},
-		{".srt", "captions of the narration, timed"},
+		{".srt", "captions of the narration, timed (SubRip)"},
+		{".vtt", "the same captions as WebVTT, for a web page's captions track"},
 	} {
 		if strings.HasSuffix(name, k.suffix) {
 			return k.what
 		}
 	}
 	switch name {
-	case "all.mp4":
-		return "every feature in one video: a title card each, chapters embedded"
 	case "chapters.txt":
 		return "chapter lines for a YouTube description"
 	case "report.html":
@@ -35,7 +45,7 @@ func describe(name string) string {
 		return "the pictures of the report (screenshot steps, failures)"
 	}
 	if strings.HasSuffix(name, ".mp4") {
-		return "the feature, video and narration (H.264 + AAC)"
+		return "the feature: picture and narration (H.264 + AAC), no captions"
 	}
 	return ""
 }
@@ -71,11 +81,22 @@ func Readme(rep *Report, s *Script, dir, how string) string {
 		fmt.Fprintf(&b, "%s in %.1fs.", strings.ToUpper(f.Status[:1])+f.Status[1:], f.Seconds)
 		if f.Video != "" {
 			stem := strings.TrimSuffix(f.Video, ".mp4")
+			has := func(ext string) bool { _, err := os.Stat(filepath.Join(dir, stem+ext)); return err == nil }
 			fmt.Fprintf(&b, " [%s](%s)", f.Video, f.Video)
-			if _, err := os.Stat(filepath.Join(dir, stem+".srt")); err == nil {
+			if has(".captions.mp4") {
+				fmt.Fprintf(&b, " · [with captions](%s.captions.mp4)", stem)
+			}
+			if has(".video.mp4") {
+				fmt.Fprintf(&b, " · [picture only](%s.video.mp4)", stem)
+			}
+			track := ""
+			if has(".srt") {
 				fmt.Fprintf(&b, " · [captions](%s.srt) · [narration](%s.voice.m4a)", stem, stem)
 			}
-			fmt.Fprintf(&b, "\n\n<video controls preload=\"metadata\" src=\"%s\" style=\"width:100%%;height:auto\"></video>\n\n", f.Video)
+			if has(".vtt") {
+				track = fmt.Sprintf(`<track kind="captions" src="%s.vtt" srclang="en" label="Captions" default>`, stem)
+			}
+			fmt.Fprintf(&b, "\n\n<video controls preload=\"metadata\" src=\"%s\" style=\"width:100%%;height:auto\">%s</video>\n\n", f.Video, track)
 		} else {
 			b.WriteString("\n\n")
 		}

@@ -38,7 +38,10 @@ type FeatureResult struct {
 	Steps    []StepResult `json:"steps"`
 	Errors   []string     `json:"consoleErrors,omitempty"`
 	Requests []string     `json:"failedRequests,omitempty"`
-	Video    string       `json:"video,omitempty"` // si demo run: the clip, relative to the report folder
+	// si demo run: the clips, relative to the report folder
+	Video     string `json:"video,omitempty"`         // picture and voice
+	Silent    string `json:"videoOnly,omitempty"`     // the picture alone
+	Captioned string `json:"videoCaptions,omitempty"` // picture, voice, captions under it
 }
 
 // StepResult is one step's run.
@@ -162,7 +165,7 @@ a{color:var(--accent)}
 <div class="meta"><span>{{.Script}}</span><span>{{.App}}</span><span>{{.Viewport}}</span><span>{{.Chrome}}</span><span>si {{.SI}}</span><span>{{.Date}}</span></div>
 <div class="sum"><span class="pill passed">{{.Passed}} passed</span><span class="pill failed">{{.Failed}} failed</span>{{if .Skipped}}<span class="pill skipped">{{.Skipped}} skipped</span>{{end}}<span class="pill">{{secs .Seconds}}</span></div>
 {{range .Views}}<section class="st-{{.Status}}">
-<header><h2>{{.Name}}</h2><span class="{{.Status}}">{{.Status}} · {{secs .Seconds}}{{if .Video}} · <a href="{{.Video}}">▶ {{.Video}}</a>{{end}}</span></header>
+<header><h2>{{.Name}}</h2><span class="{{.Status}}">{{.Status}} · {{secs .Seconds}}{{if .Video}} · <a href="{{.Video}}">▶ {{.Video}}</a>{{end}}{{if .Captioned}} · <a href="{{.Captioned}}">with captions</a>{{end}}{{if .Silent}} · <a href="{{.Silent}}">picture only</a>{{end}}</span></header>
 {{if .What}}<p class="what">{{.What}}</p>{{end}}
 <ol>{{range .Steps}}<li>
 <div class="row"><span class="mark {{.Status}}">{{if eq .Status "passed"}}✓{{else if eq .Status "failed"}}✗{{else}}–{{end}}</span><code>{{.Text}}</code><span class="t">{{if .Line}}line {{.Line}} · {{end}}{{if ne .Status "skipped"}}{{secs .Seconds}}{{else}}skipped{{end}}</span></div>

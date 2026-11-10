@@ -200,9 +200,13 @@ pass. The steps that matter:
   2 video + 3 voice DONE v2.35.0: `si demo run`, `internal/webdemo/film.go`,
   `encode.go`, `voice.go`, `overlay.js`): one `type: demo` script with
   `app: <url>` makes narrated videos of a web app (per feature and one with
-  chapters, callouts, `--captions`, voice engines local and cloud) and runs as a
+  chapters, callouts, captions, voice engines local and cloud) and runs as a
   test (`si demo test`, report, JUnit). Phases: test mode, video, voice, the
   manual with videos, then Retake's CLAUDE.md gets the shared script format.
+  **Three videos per take** (DONE v2.38.0): `.video.mp4`, `.mp4`,
+  `.captions.mp4` (picture shrunk above a captions band, never covered), `.vtt`
+  beside `.srt`, long waits fast-forwarded with a badge (`fast-forward` in
+  `encode.go`; the voice never sped up).
   **`si voice`** (DONE v2.37.0, `cmd/si/voice.go`, `internal/tools/kokoro.go`):
   `install kokoro` (venv + kokoro-onnx 0.6.1 + SHA-256-pinned models in the
   user cache), `say` (plays like macOS say, falls back to system), `list`,
