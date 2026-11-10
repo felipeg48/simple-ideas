@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/felipeg48/simple-ideas/examples"
+	"github.com/felipeg48/simple-ideas/internal/brand"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/render"
 )
@@ -104,6 +105,7 @@ func (l *liveExamples) result(dir string) func(string) string {
 		if pageLinkRE.MatchString(md) { // a menu or contents of pages that are not there
 			return ""
 		}
+		md = audienceQRRE.ReplaceAllString(md, "<!-- qr: "+brand.Site+"features/audience.html") // a live link only under si play --audience: a sample here
 		forms := []string{asLivePage(md)}
 		if !strings.HasPrefix(md, "---\n") { // slides, or a document's part (alert, carousel)
 			forms = append(forms, "---\ntitle: Example\ntype: article\n---\n\n"+md)
@@ -141,6 +143,8 @@ func (l *liveExamples) try(src, up string) string {
 	}
 	return "<!-- embed: " + up + "live/" + name + " bare -->"
 }
+
+var audienceQRRE = regexp.MustCompile(`<!--\s*qr:\s*audience\b`)
 
 var pageLinkRE = regexp.MustCompile(`\]\([^)#:\s]+(\.md|/)(#[^)]*)?\)`)
 
