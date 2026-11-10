@@ -68,6 +68,8 @@ Nothing goes to a server.
 Prefer the keyboard? `si --terminal .` is the same Studio as a terminal app:
 see [Terminal](terminal.md).
 
+<!-- si-deps: git -->
+
 ## The rules
 
 - [17. What si check reports](../rules/17-what-si-check-reports.md)

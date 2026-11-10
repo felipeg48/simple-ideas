@@ -179,7 +179,7 @@ func Generate(dst string) (pages int, err error) {
 		}
 		text := links.Replace(string(raw))
 		if strings.HasSuffix(p, ".md") {
-			text = withAdoc(text, ex.result(path.Dir(strings.TrimPrefix(p, "site/"))))
+			text = withAdoc(withDeps(text), ex.result(path.Dir(strings.TrimPrefix(p, "site/"))))
 		}
 		return write(strings.TrimPrefix(p, "site/"), text)
 	})

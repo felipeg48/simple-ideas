@@ -138,6 +138,8 @@ To remove it: on the iPhone, **Settings › General › VPN & Device
 Management**; on Android, **Trusted credentials › User**; on the laptop,
 `si ca untrust`. Delete the `ca` folder to make a new authority.
 
+<!-- si-deps: tailscale -->
+
 ## The rules
 
 - [11. Speaker notes and the teleprompter](../rules/11-speaker-notes-and-the-teleprompter.md)

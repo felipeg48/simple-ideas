@@ -100,6 +100,8 @@ addresses. Keep `.si/` out of git. To keep nothing, put this in `si.conf`:
 audience.save: off
 ```
 
+<!-- si-deps: cloudflared -->
+
 ## The rules
 
 - [11. Speaker notes and the teleprompter](../rules/11-speaker-notes-and-the-teleprompter.md)

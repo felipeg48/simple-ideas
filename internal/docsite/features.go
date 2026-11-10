@@ -116,7 +116,7 @@ func writeFeatures(write func(rel, text string) error, refs map[string]Section) 
 		for _, o := range f.Options {
 			fmt.Fprintf(&b, "| %s | %s |\n", o[0], o[1])
 		}
-		fmt.Fprintf(&b, "\n## Commands\n\n%s\n\n## The rules\n\n", fence("bash", f.Commands))
+		fmt.Fprintf(&b, "\n## Commands\n\n%s\n\n%s\n## The rules\n\n", fence("bash", f.Commands), depsSection(featureDeps[f.Slug]))
 		for _, n := range f.Rules {
 			if s, ok := refs[n]; ok {
 				fmt.Fprintf(&b, "- [%s. %s](../rules/%s.md)\n", s.N, s.Title, s.Slug)

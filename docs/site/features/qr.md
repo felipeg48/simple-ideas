@@ -71,6 +71,8 @@ version 1 to 40 at every error correction level. Each of them, square and
 dotted, with and without a logo, was decoded by Apple's barcode reader, and
 the test suite pins those codes module for module.
 
+<!-- si-deps: -->
+
 ## The rules
 
 - [23. Sites (the qr plugin)](../rules/23-sites.md)

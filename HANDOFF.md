@@ -5,6 +5,17 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.32.0: si doctor, dependencies, website kinds.** `internal/tools` (the
+  optional programs: Bins, per-OS Paths, Install per platform mac/debian/
+  fedora/arch/windows/other from /etc/os-release, `Need` = the message a feature
+  prints); `cmd/si/doctor.go`; Chrome, ffmpeg, cloudflared, Tailscale go through
+  it; the Studio History shows git's install line. Site: `internal/docsite/deps.go`
+  (External dependencies sections from the same table: `featureDeps` for the
+  generated pages, `<!-- si-deps: … -->` lines in hand-written ones). Website
+  kinds (`--kind resume|portfolio|landing`, `internal/studio/starters/<kind>/`,
+  `studio.StarterFolder`; a page `cta:` via `ctaLink` in render/site.go; card
+  titles keep links). CI's `studio` job: vitest, the bundle up to date, every
+  e2e (zsh installed for the terminal drawer).
 - **v2.31.0: theme from a logo.** `internal/themefile/logo.go`
   (`LogoPalette`/`FromLogo`: PNG/JPEG/GIF pixels and SVG fills, OKLab
   quantising, accent = weightiest chromatic colour, accent-2 ≥ 40° away, every

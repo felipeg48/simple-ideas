@@ -3,6 +3,16 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.32.0:** `si doctor` lists every optional program (Chrome, ffmpeg, git,
+  tmux, cloudflared, Tailscale, gh), found or not, with the install command for
+  your computer (macOS, Debian/Ubuntu, Fedora, Arch, Windows); a feature that
+  needs a missing one says how to install it instead of failing; every feature
+  page of the site has an External dependencies section with macOS | Linux |
+  Windows tabs. Website kinds: `si new me --type website --kind
+  resume|portfolio|landing` (also in the Studio); a page's own `cta:`; links in
+  card titles; sites print without their navigator. The Themes page shows how
+  to make your own (the Theme view, a theme from a logo). CI runs the Studio's
+  browser tests.
 - **v2.31.0:** theme from a logo: `si theme from logo.svg` (PNG, JPEG, GIF or
   SVG) finds the logo's colours and writes a whole theme, light and dark, with
   every text and background pair passing WCAG AA; the Studio's New theme ›

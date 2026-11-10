@@ -183,4 +183,7 @@ an example for every rule: [RULES.md](docs/RULES.md).
   pinned Mermaid script for decks that use it.
 - Loopback by default; keys for every network listener; confined file access
   in the Studio and the MCP server.
+- `si doctor`: the optional programs (Chrome, ffmpeg, git, tmux, cloudflared,
+  Tailscale, gh), found or not, with the install command for macOS, Linux or
+  Windows; a feature that needs a missing one says how to install it.
 - `si selfupdate` (checksum-verified), `si report` for issues, `si manual`.

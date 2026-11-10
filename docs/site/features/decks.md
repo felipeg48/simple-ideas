@@ -193,6 +193,8 @@ In a terminal, over SSH: `si play talk.md --terminal`
 ([Terminal](terminal.md)). In a window with a live preview: the
 [Studio](studio.md).
 
+<!-- si-deps: chrome ffmpeg cloudflared tailscale gh -->
+
 ## The rules
 
 - [3. Slides and headings](../rules/03-slides-and-headings.md)

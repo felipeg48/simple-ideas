@@ -67,6 +67,8 @@ under the topic above, `<` takes it out a level, `u` undoes.
 **Lab** (`4`) lists the deck's commands (its runbook and demo scripts) beside
 a shell: in tmux a pane below, where Enter types a command and `x` runs it.
 
+<!-- si-deps: tmux -->
+
 ## The rules
 
 - [14. Presenting: keys, touch, overview, print](../rules/14-presenting-keys-touch-overview-print.md)

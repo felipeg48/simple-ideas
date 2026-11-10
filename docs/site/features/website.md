@@ -103,6 +103,8 @@ carousels, code, mind maps, QR codes and embedded talks.
 [See the whole example on GitHub](https://github.com/felipeg48/simple-ideas/tree/main/examples/site),
 or this very site: simple-ideas.org is built with si.
 
+<!-- si-deps: -->
+
 ## The rules
 
 - [23. Sites](../rules/23-sites.md)

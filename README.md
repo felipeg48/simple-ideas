@@ -214,6 +214,26 @@ view or straight from your logo with `si theme from logo.svg`. Click one to see 
 </tr>
 </table>
 
+## External dependencies
+
+`si` is one program and needs nothing else for writing, presenting, building
+HTML, checking, the Studio, the teleprompter, the phone remote and the
+audience. A few features use a program you install once; **`si doctor`**
+lists them all, found or not, with the command for your computer.
+
+| Program | Used for | macOS | Linux (Debian, Ubuntu) | Windows |
+|---|---|---|---|---|
+| Chrome or Chromium | `--pdf`, `--png`, `--svg`, `--handout`, `--mp4` | `brew install --cask google-chrome` | `sudo apt install chromium` | `winget install Google.Chrome` |
+| ffmpeg | `--mp4`, `--narration`, `si code --gif` | `brew install ffmpeg` | `sudo apt install ffmpeg` | `winget install Gyan.FFmpeg` |
+| git | the Studio's History | `xcode-select --install` | `sudo apt install git` | `winget install Git.Git` |
+| tmux | shell panes in `si --terminal` | `brew install tmux` | `sudo apt install tmux` | in WSL: `sudo apt install tmux` |
+| cloudflared | `si play --tunnel` | `brew install cloudflared` | [pkg.cloudflare.com](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) | `winget install --id Cloudflare.cloudflared` |
+| Tailscale | `--https=tailscale` | `brew install --cask tailscale` | `curl -fsSL https://tailscale.com/install.sh \| sh` | `winget install Tailscale.Tailscale` |
+| GitHub CLI | code from private GitHub repos | `brew install gh` | `sudo apt install gh` | `winget install GitHub.cli` |
+
+Fedora and Arch commands are on each feature page of
+[simple-ideas.org](https://simple-ideas.org/), and in `si doctor`.
+
 ## With your AI agent
 
 si ships an Agent Skill (how to write si documents, every rule on demand) and
