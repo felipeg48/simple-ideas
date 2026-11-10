@@ -18,6 +18,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/felipeg48/simple-ideas/internal/brand"
+	"github.com/felipeg48/simple-ideas/internal/tools"
 	"html"
 	"io"
 	"io/fs"
@@ -114,6 +115,9 @@ Usage:
         turn an OPML, FreeMind, XMind or Mermaid mindmap file into a mind map page
   si mindmap export <map.md> --to opml|freemind|xmind|mermaid [--map id] [-o file|-]
         write a mind map in another format (XMind: every map, one sheet each)
+  si doctor
+        the optional programs si can use (Chrome, ffmpeg, git, …): found or not, and
+        how to install each on this computer
   si rehearse <file.md> [--narration <dir|latest>]
         the pace of a recording (the teleprompter's Record button): per slide, planned
         (Notes: (N min)), spoken, and the words per minute of its script
@@ -530,6 +534,8 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		}
 		o.serveMode = true
 		return play(rest[0], o, stdout, stderr)
+	case "doctor":
+		return doctor(stdout)
 	case "rehearse":
 		if len(rest) != 1 {
 			return usageErr(stderr, "rehearse needs one <file.md> (and a recording: the teleprompter's Record button in si play)")
@@ -672,7 +678,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	if o.pdf || o.svg || o.png || o.mp4 || o.handout != "" {
 		if chrome = findChrome(); chrome == "" {
-			fmt.Fprintln(stderr, "si: --pdf, --svg, --png and --mp4 need Google Chrome/Chromium; none found — writing HTML only")
+			fmt.Fprintf(stderr, "si: %s\n    (writing the HTML now)\n", tools.Need("chrome", "--pdf, --svg, --png, --mp4 and --handout"))
 		}
 	}
 	var entries []render.IndexEntry
@@ -1468,38 +1474,7 @@ func lanIPs() []string {
 }
 
 // findChrome returns a path to a headless-capable Chromium browser, or "".
-func findChrome() string {
-	var candidates []string
-	switch runtime.GOOS {
-	case "darwin":
-		candidates = []string{
-			"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-			"/Applications/Chromium.app/Contents/MacOS/Chromium",
-			"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
-			"/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
-		}
-	case "windows":
-		candidates = []string{
-			`C:\Program Files\Google\Chrome\Application\chrome.exe`,
-			`C:\Program Files (x86)\Google\Chrome\Application\chrome.exe`,
-			`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`,
-		}
-	default:
-		candidates = []string{"google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge"}
-	}
-	for _, c := range candidates {
-		if filepath.IsAbs(c) {
-			if _, err := os.Stat(c); err == nil {
-				return c
-			}
-			continue
-		}
-		if p, err := exec.LookPath(c); err == nil {
-			return p
-		}
-	}
-	return ""
-}
+func findChrome() string { return tools.Find("chrome") }
 
 // deckToPDF renders a built deck HTML to a self-contained PDF with headless
 // Chrome. The deck is loaded at #print so deck.js shows every slide in its
@@ -1671,7 +1646,7 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 	chrome := ""
 	if o.pdf && g.IsBook() {
 		if chrome = findChrome(); chrome == "" {
-			fmt.Fprintln(stderr, "si: --pdf needs Google Chrome/Chromium; none found — writing HTML only")
+			fmt.Fprintf(stderr, "si: %s\n    (writing the HTML now)\n", tools.Need("chrome", "--pdf"))
 		} else {
 			ro.BookPDF = "book.pdf"
 		}

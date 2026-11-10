@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/tools"
 	"html"
 	"image"
 	"image/color"
@@ -30,7 +31,7 @@ type videoFrame struct {
 	Dur float64 // seconds on screen
 }
 
-const ffmpegHint = "MP4 export needs ffmpeg on the PATH (macOS: brew install ffmpeg; Debian/Ubuntu: apt install ffmpeg)"
+var ffmpegHint = tools.Need("ffmpeg", "Video export")
 
 const videoFPS = 30
 

@@ -806,3 +806,5 @@ button.link { color: var(--blue); text-decoration: underline; text-underline-off
 .hist-newbranch{display:flex;gap:.4rem;flex:1;min-width:12rem}
 .hist-newbranch input{flex:1;min-width:0}
 .thx-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.hist-install{font-family:var(--mono,ui-monospace,monospace);font-size:.85rem;padding:.6rem .8rem;border:1px solid var(--line,#ddd);border-radius:.45rem;user-select:all;white-space:pre-wrap}

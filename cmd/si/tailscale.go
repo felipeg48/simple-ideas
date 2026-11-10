@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/tools"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,7 +19,7 @@ import (
 func tailscaleCert() (string, tls.Certificate, error) {
 	bin := tailscaleBin()
 	if bin == "" {
-		return "", tls.Certificate{}, errors.New("no tailscale command found (install Tailscale, or use --https for si's own certificate)")
+		return "", tls.Certificate{}, errors.New(tools.Need("tailscale", "--https=tailscale") + "\n  Or use plain --https: si's own certificate, nothing to install.")
 	}
 	out, err := exec.Command(bin, "status", "--json").Output()
 	if err != nil {
@@ -72,14 +73,4 @@ func tailscaleName(statusJSON []byte) (string, error) {
 	return name, nil
 }
 
-func tailscaleBin() string {
-	if p, err := exec.LookPath("tailscale"); err == nil {
-		return p
-	}
-	for _, p := range []string{"/Applications/Tailscale.app/Contents/MacOS/Tailscale", "/usr/local/bin/tailscale", "/opt/homebrew/bin/tailscale"} {
-		if _, err := os.Stat(p); err == nil {
-			return p
-		}
-	}
-	return ""
-}
+func tailscaleBin() string { return tools.Find("tailscale") }

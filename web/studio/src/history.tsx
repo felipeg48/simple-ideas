@@ -10,7 +10,7 @@ interface GitFile { path: string; status: string; staged: boolean }
 interface GitCommit { hash: string; short: string; author: string; date: string; subject: string }
 
 export function History(p: { active: string | null; restore(path: string, text: string): boolean; onClose(): void }) {
-  const [st, setSt] = useState<{ git: boolean; repo: boolean; branch?: string; files?: GitFile[] } | null>(null);
+  const [st, setSt] = useState<{ git: boolean; repo: boolean; install?: string; more?: string; branch?: string; files?: GitFile[] } | null>(null);
   const [tab, setTab] = useState<"changes" | "file">("changes");
   const [pick, setPick] = useState<string | null>(null);
   const [diff, setDiff] = useState("");
@@ -72,7 +72,13 @@ export function History(p: { active: string | null; restore(path: string, text: 
         <h2 id="hist-title">History{st?.branch ? <span class="mute"> · {st.branch}</span> : null}</h2>
         {err && <p class="dialog-err" role="alert">{err}</p>}
         {note && <p class="dialog-ok" role="status">{note}</p>}
-        {st && !st.git && <p class="dialog-body">History needs git, which this computer does not have.</p>}
+        {st && !st.git && (
+          <div class="dialog-body">
+            <p>History needs git, which this computer does not have yet. Install it, then open History again:</p>
+            <pre class="hist-install">{st.install}</pre>
+            {st.more && <p class="mute">More: <a href={st.more} target="_blank" rel="noopener">{st.more}</a></p>}
+          </div>
+        )}
         {st && st.git && !st.repo && (
           <div class="dialog-body">
             <p>This folder is not a git repository yet.</p>

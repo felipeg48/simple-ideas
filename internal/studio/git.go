@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/felipeg48/simple-ideas/internal/tools"
 )
 
 // History: git in the workspace, for the Studio's History panel. Every call
@@ -74,7 +76,8 @@ type gitFile struct {
 
 func (a *api) gitStatus(w http.ResponseWriter, r *http.Request) {
 	if _, err := exec.LookPath("git"); err != nil {
-		writeJSON(w, http.StatusOK, map[string]any{"git": false, "repo": false})
+		g, _ := tools.Get("git")
+		writeJSON(w, http.StatusOK, map[string]any{"git": false, "repo": false, "install": g.How(), "more": g.URL})
 		return
 	}
 	if !a.inRepo() {

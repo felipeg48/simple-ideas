@@ -66,7 +66,7 @@ export const api = {
   /** codewin redraws the code window (or show) holding line, applying op first if given. */
   codewin: (path: string, text: string, line: number, op: unknown) => call<any>("POST", "codewin", { path, text, line, op }),
   /** codewinExport runs si code on the saved file: png, svg or gif next to it. */
-  gitStatus: () => call<{ git: boolean; repo: boolean; branch?: string; files?: { path: string; status: string; staged: boolean }[] }>("GET", "git/status"),
+  gitStatus: () => call<{ git: boolean; repo: boolean; install?: string; more?: string; branch?: string; files?: { path: string; status: string; staged: boolean }[] }>("GET", "git/status"),
   gitDiff: (path: string) => call<{ diff: string }>("GET", `git/diff?path=${q(path)}`),
   gitLog: (path: string) => call<{ commits: { hash: string; short: string; author: string; date: string; subject: string }[] }>("GET", `git/log?path=${q(path)}`),
   gitShow: (path: string, rev: string) => call<{ text: string }>("GET", `git/show?path=${q(path)}&rev=${q(rev)}`),

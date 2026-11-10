@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/tools"
 	"io"
 	"net"
 	"net/http"
@@ -24,16 +25,9 @@ var trycloudflareRE = regexp.MustCompile(`https://[a-z0-9-]+\.trycloudflare\.com
 // quick tunnel (cloudflared, if installed) to reach it; the address is gone
 // when si play stops. It returns the public base URL and a stop func.
 func startTunnel(srv *serve.Server, stderr io.Writer) (string, func(), error) {
-	bin, err := exec.LookPath("cloudflared")
-	if err != nil {
-		for _, p := range []string{"/opt/homebrew/bin/cloudflared", "/usr/local/bin/cloudflared"} {
-			if fileExists(p) {
-				bin, err = p, nil
-			}
-		}
-	}
-	if err != nil {
-		return "", nil, errors.New("--tunnel needs Cloudflare's free cloudflared (brew install cloudflared, or https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)")
+	bin := tools.Find("cloudflared")
+	if bin == "" {
+		return "", nil, errors.New(tools.Need("cloudflared", "--tunnel"))
 	}
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
