@@ -24,7 +24,7 @@ Fluid on every screen, one self-contained HTML file each, with a real teleprompt
 <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-![A deck in si: one canvas that changes state slide by slide](docs/screenshots/canvas-declined.png)
+![A deck in si: one canvas that changes state slide by slide](docs/screenshots/readme/canvas-declined.png)
 
 ## Install
 

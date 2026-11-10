@@ -18,7 +18,7 @@ the git history of this file.
   arrow keys, REPL prompts (`psql`), and full-screen apps all work — the
   bytes travel straight through; `si` never parses commands.
 
-![the terminal drawer, two tabs, a live shell](screenshots/terminal-drawer.png)
+![the terminal drawer, two tabs, a live shell](screenshots/readme/terminal-drawer.png)
 
 ## Why it is a documented exception to the project rules
 
