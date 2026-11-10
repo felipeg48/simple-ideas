@@ -9,6 +9,7 @@
 /html/
 /si-example/
 /dist/
+/demo-out/
 
 # editors and OS
 .DS_Store

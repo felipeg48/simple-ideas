@@ -32,6 +32,8 @@ si play talk.md --audience      # the room follows on their phones; <!-- qr: aud
                                 # <!-- cloud: id --> collects a few words each, shown as a word cloud;
                                 # their questions arrive in the teleprompter's Q&A tab
 si play talk.md --tunnel        # the same for a remote audience (a video call): a temporary public link
+si demo test shop.md            # a web demo script (type: demo + app:) run against the web app in headless Chrome:
+                                # report.html + report.json in demo-out/shop/, exit 1 on a failure, --junit junit.xml for CI
 ```
 
 ## A deck
@@ -158,6 +160,7 @@ Not everything is a slide deck. Pick the type by what the reader does:
 | do hands-on work on one page | a lab | `type: lab`, `## Step N:` headings |
 | look things up, read cover to cover | a book | a guide folder whose `_nav.md` says `type: book`: parts, chapters, appendices |
 | run a live demo (the presenter) | a demo script | `type: demo`, `> Say:` lines, every command followed by its expected output |
+| show and test a web app, feature by feature | a web demo | `type: demo` with `app:` (a URL or the app's folder), `## Feature`, `What it does:`, `Say:` lines, then steps as list items (`go`, `click "Pay"`, `type "…" into "Field"`, `expect text "Paid"`); run `si demo test` |
 | browse several kinds of content | a site | a folder with `_site.md` (a `navigator:`, a menu list; `logo:`, `favicon:`, `touch-icon:`, `og-image:` are opt-in branding), plain pages, plus articles, talks and guide folders |
 | a résumé, a portfolio, a product or event page | a site of that kind | start with `si new <name> --type website --kind resume\|portfolio\|landing`, then replace the content; a landing hero is the page's title, `description:` and its own `cta:` |
 | show code changing, step by step, in a window | a code show | fences with `window=mac` and the same `id=`, one per step, `<!-- callout: LINE text -->` after a fence |
@@ -237,6 +240,14 @@ Not everything is a slide deck. Pick the type by what the reader does:
 - **Publishing** (RULES.md §26): `linkedin:` (the post text), `tags:`,
   `canonical:` and `cover:` (a link post's picture) in front matter feed `si publish` (LinkedIn, dev.to, Hashnode, Ghost, WordPress); it is a dry run unless `--yes`.
   Never run it with `--yes` for the author.
+- **Web demos** (RULES.md §27): each `##` is a feature run in a fresh browser; steps
+  name elements as a person reads them (`click "Sign in"`, `type "demo" into
+  "Username"`, `#id`, `[data-testid=pay]`, `role=button "Pay"`). Every feature
+  ends with an `expect` (`text`, `url`, `"X" visible|hidden|disabled|enabled|checked`,
+  `no errors`). Secrets are `$VAR` from the environment, never written in the
+  script. `Say:` is narration spoken to the viewer (the teleprompter rule), never
+  a direction. Run `si demo test <script>`; when a step fails, read expected,
+  found and the closest elements in the output, and fix the step or the app.
 - **Sites** take opt-in branding in `_site.md`: `logo: brand/mark.svg Name` (a
   picture with the name), `favicon:`, `touch-icon:`, `og-image:` (an https URL)
   and `version: v1.2.0 → <release notes URL>`. Never add si's own logo to a

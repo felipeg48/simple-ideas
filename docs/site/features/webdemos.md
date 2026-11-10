@@ -1,0 +1,116 @@
+---
+title: Web demos
+description: One Markdown script performs each feature of your web app in a browser, the way a person would, and reports what passed and what broke.
+---
+
+# Web demos
+
+A web demo is a demo script with an `app:`. Each `##` is a feature of your
+web app; under it, the steps a person would take, and what the page should
+show. `si demo test` performs them in headless Chrome and tells you, step by
+step, what passed and what broke.
+
+```markdown
+---
+type: demo
+title: Northwind Shop, from sign-in to receipt
+app: app                # a URL, or the app's folder next to the script
+viewport: desktop
+---
+
+## Pay for an order
+
+What it does: a customer picks Express shipping and pays with a card.
+
+Say: Sign in with the demo account.
+- go /
+- type "demo" into "Username"
+- type $SHOP_PASSWORD into "Password"
+- click "Sign in"
+- expect text "Welcome back, demo"
+
+Say: A test card goes through in a second.
+- click "Order #4711"
+- select "Express" in "Shipping"
+- check "Gift wrap"
+- click role=button "Pay"
+- type "4242 4242 4242 4242" into "Card number"
+- click "Confirm"
+- wait for "Paid"
+- expect url /receipt.html?order=4711
+- expect no errors
+```
+
+Steps name elements the way you would say them: `click "Sign in"` finds the
+button that reads Sign in, `type … into "Username"` the field labelled
+Username. When the text is not enough, `#id`, `[data-testid=pay]` and
+`role=button "Pay"` are there too. Clicks are real mouse clicks at the
+element's centre, typing goes through the keyboard, and every step waits a
+few seconds for the page to catch up before it gives up.
+
+Secrets stay out of the script: `$SHOP_PASSWORD` comes from the environment
+and shows as `$SHOP_PASSWORD` (or `••••`) in every line si prints.
+
+## Run it
+
+```bash
+SHOP_PASSWORD=shop-demo si demo test shop.md
+si demo test shop.md --feature "Pay for an order" --junit junit.xml
+```
+
+```text
+Pay for an order
+  ✓ type "demo" into "Username"  0.01s
+  ✓ type $SHOP_PASSWORD into "Password"  0.01s
+  ✓ press Enter  0.06s
+  ✓ click "Order #4711"  0.07s
+  ✓ select "Express" in "Shipping"  0.00s
+  ✓ check "Gift wrap"  0.01s
+  ✓ expect text "Total: €54.90"  0.00s
+  ✓ click "Confirm"  0.07s
+  ✓ wait for "Paid"  0.61s
+  ✓ expect url /receipt.html?order=4711  0.00s
+  ✓ expect no errors  0.00s
+si demo: 3 passed, 0 failed in 4.6s; report: demo-out/shop/report.html
+```
+
+Every feature runs in a fresh browser, after the script's `setup:` command if
+it has one, so one feature never leans on what the last one left behind.
+`si demo test` exits 1 when anything failed, and `--junit` writes the JUnit
+XML that GitHub Actions, GitLab and Jenkins read.
+
+## When a step fails
+
+The feature stops there, and the report says what the step expected, what
+it found, the elements that came closest, and shows the page at that moment,
+with the console errors and failed requests up to then.
+
+![The report of a failed run: six steps passed, then expect text "10% off" failed; it shows the page's words, and a screenshot of the order with "That coupon is not valid."](img/webdemos/report.jpg)
+
+`report.html` is one page with the screenshots inside, so it travels as an
+attachment or a CI artifact; `report.json` has the same for your own tools.
+
+## The script
+
+- Markdown, AsciiDoc, or JSON for tools (the same features, blocks and
+  steps).
+- `app:` is a URL, or a folder: si serves the folder itself on this computer
+  only, so a static app needs no server at all.
+- `viewport:` `desktop` (1440×900), `tablet`, `phone` or `1280x720`;
+  `timeout:` how long a step waits (5 s by default).
+- `si check` knows every step, points at a bad one by its line, and warns
+  when a `$VAR` is not set.
+
+The example is a small shop in `examples/webdemo/`: `shop.md` signs in, pays
+for an order and searches the order list; `broken.md` tries a spring coupon
+that the shop does not know.
+
+Narrated videos of the same script, with callouts from `note` steps, come in
+a later version.
+
+<!-- si-deps: chrome -->
+
+## The rules
+
+- [27. Web demos](../rules/27-web-demos.md)
+- [22. Demo scripts](../rules/22-demo-scripts.md)

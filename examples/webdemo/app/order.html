@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Order · Northwind Shop</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<script src="app.js"></script>
+</head>
+<body>
+<header class="bar"><span class="brand">Northwind Shop</span>
+  <span class="help"><button class="quiet" type="button" title="Help">?</button><span class="tip" role="tooltip">Questions? Call us on 555-0100.</span></span>
+</header>
+<main>
+  <h1 id="title">Order</h1>
+  <div class="card">
+    <table><tbody id="items"></tbody></table>
+    <label for="shipping">Shipping</label>
+    <select id="shipping"><option>Standard</option><option>Express</option></select>
+    <label class="inline"><input id="gift" type="checkbox"> Gift wrap</label>
+    <div class="row">
+      <div><label for="coupon">Coupon</label><input id="coupon" type="text"></div>
+      <button id="apply" type="button" class="quiet">Apply</button>
+    </div>
+    <p id="coupon-note" class="muted" aria-live="polite"></p>
+    <p id="total" class="paid"></p>
+  </div>
+  <p class="muted spacer">Orders ship from Rotterdam within a day. Express arrives the next working day in the Netherlands, Belgium and Germany.</p>
+  <div class="card">
+    <button id="pay" type="button" data-testid="pay">Pay</button>
+    <div id="payment" hidden>
+      <label for="card">Card number</label>
+      <input id="card" type="text" inputmode="numeric" autocomplete="cc-number">
+      <button id="confirm" type="button" disabled>Confirm</button>
+    </div>
+  </div>
+</main>
+<script>order();</script>
+</body>
+</html>

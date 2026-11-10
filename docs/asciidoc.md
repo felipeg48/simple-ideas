@@ -27,7 +27,8 @@ slide:
 
 becomes a `title`/`author`/`theme`/`aspect` front-matter block and a `# My Talk`
 title slide. Mapped attributes: `author`, `revdate`/`date`, `theme`, `mode`,
-`accent`, `transition`, `aspect`, `mermaid`, `lang`, `background`. (You can also
+`accent`, `transition`, `aspect`, `mermaid`, `lang`, `background`, and `type`, `app`,
+`viewport`, `timeout`, `setup`, `voice` for web demos. (You can also
 just write an si `---` front-matter block at the top of a `.adoc` file; it passes
 through untouched.)
 

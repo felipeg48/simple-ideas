@@ -115,6 +115,11 @@ Usage:
         turn an OPML, FreeMind, XMind or Mermaid mindmap file into a mind map page
   si mindmap export <map.md> --to opml|freemind|xmind|mermaid [--map id] [-o file|-]
         write a mind map in another format (XMind: every map, one sheet each)
+  si demo test <script.md> [--feature "Name"] [--junit report.xml] [-o dir]
+        run a web demo script (type: demo with app:, a URL or the app's folder) in headless
+        Chrome as a test: clicks, typing, expectations; report.html + report.json in
+        demo-out/<script>/, exit 1 on a failure; --junit writes JUnit XML for CI
+        (si demo run: the narrated videos, in a later version; runs the test for now)
   si doctor
         the optional programs si can use (Chrome, ffmpeg, git, …): found or not, and
         how to install each on this computer
@@ -446,6 +451,9 @@ func main() {
 }
 
 func run(argv []string, stdout, stderr io.Writer) int {
+	if len(argv) > 0 && argv[0] == "demo" { // its own flags (--feature takes a name)
+		return runDemo(argv[1:], stdout, stderr)
+	}
 	o, err := parseArgs(argv, stderr)
 	if err != nil {
 		fmt.Fprintf(stderr, "si: %v\n\n%s", err, usage)
@@ -961,6 +969,9 @@ func check(src string, budget config.Budget, stdout, stderr io.Writer) int {
 	if len(guides) > 0 && len(files) == 0 {
 		return checkGuides(guides, 0, stdout, stderr)
 	}
+	if strings.EqualFold(filepath.Ext(src), ".json") { // a web demo script in its JSON form
+		return checkWebDemo(src, stdout, stderr)
+	}
 	n := 0
 	for _, f := range files {
 		d, err := deck.Parse(f)
@@ -968,6 +979,9 @@ func check(src string, budget config.Budget, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "si: %v\n", err)
 			n++
 			continue
+		}
+		if d.IsDemo() && d.Meta.App != "" {
+			n += webDemoProblems(f, stderr)
 		}
 		res := render.Deck(d, render.Options{})
 		for _, p := range res.Problems {

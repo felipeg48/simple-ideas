@@ -25,7 +25,7 @@ jobs:
       - name: go test
         run: go test ./...
       - name: examples within their size budgets
-        run: for d in examples examples/mindmap examples/article examples/code; do go run ./cmd/si check "$d" --budget || exit 1; done
+        run: for d in examples examples/mindmap examples/article examples/code examples/webdemo; do go run ./cmd/si check "$d" --budget || exit 1; done
       - name: the docs site builds (every page and link)
         run: go run ./cmd/si --export docs-site --output /tmp/si-docs-src && go run ./cmd/si build /tmp/si-docs-src --output /tmp/si-docs --share-assets
 

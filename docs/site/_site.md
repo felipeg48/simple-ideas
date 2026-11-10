@@ -23,6 +23,7 @@ footer: simple-ideas
   - [Mind Maps](features/mindmaps.md)
   - [Books](features/books.md)
   - [Code](features/code.md)
+  - [Web Demos](features/webdemos.md)
   - [Website](features/website.md)
   - [Terminal](features/terminal.md)
   - [QR Codes](features/qr.md)
