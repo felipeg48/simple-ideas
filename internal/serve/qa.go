@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 	"unicode/utf8"
+
+	"github.com/felipeg48/simple-ideas/internal/config"
 )
 
 // Q&A (si play --audience): an audience phone sends a question to
@@ -155,9 +157,13 @@ func (s *Server) qaState(w http.ResponseWriter, r *http.Request) {
 }
 
 // SaveAudience writes the run's poll counts and questions beside the served
-// folder, in .si/audience/<name>-<date-time>.json, when there were any; it
-// returns the path ("" when there was nothing to keep).
+// folder, in .si/audience/<name>-<date-time>.json, when there were any and
+// si.conf does not say audience.save: off; it returns the path ("" when there
+// was nothing to keep).
 func (s *Server) SaveAudience(name string, now time.Time) (string, error) {
+	if config.Load(s.Conf, filepath.Join(s.dir, "si.conf")).AudienceOff {
+		return "", nil
+	}
 	s.polls.mu.Lock()
 	results := map[string]any{}
 	for id, b := range s.polls.ballot {

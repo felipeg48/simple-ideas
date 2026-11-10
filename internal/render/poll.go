@@ -13,18 +13,22 @@ var pollIDRE = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,39}$`)
 // the room answers on their phones under si play --audience. On a slide the
 // options carry bars the runtime grows as votes arrive (and buttons on an
 // audience phone); in a document, or a deck built without si play, it is the
-// plain list of options.
+// plain list of options. With · hidden, a slide's bars and counts are a build
+// step: the room sees only how many voted until the next click.
 func (dr *deckRenderer) pollHTML(val string, sc *slideCtx, slide bool) string {
 	id, _, words := pluginParts(val)
 	id = strings.TrimSpace(id)
-	multiple := false
+	multiple, hidden := false, false
 	var opts []string
 	for _, w := range words {
-		if w == "multiple" {
+		switch w {
+		case "multiple":
 			multiple = true
-			continue
+		case "hidden":
+			hidden = slide // a document has no clicks: its list stays as is
+		default:
+			opts = append(opts, w)
 		}
-		opts = append(opts, w)
 	}
 	if !pollIDRE.MatchString(id) {
 		dr.problem(sc, "poll: %q is not a poll id (lowercase letters, digits and -, e.g. <!-- poll: retry · Once · Twice -->)", id)
@@ -39,7 +43,15 @@ func (dr *deckRenderer) pollHTML(val string, sc *slideCtx, slide bool) string {
 	if multiple {
 		b.WriteString(` data-multiple`)
 	}
-	b.WriteString(`><ol class="si-poll-opts">`)
+	if hidden {
+		b.WriteString(` data-hidden`)
+	}
+	b.WriteString(`>`)
+	if hidden { // the step marker the runtime shows on the next click
+		sc.steps++
+		fmt.Fprintf(&b, `<span class="si-step si-poll-reveal" data-step="%d" hidden></span>`, sc.steps)
+	}
+	b.WriteString(`<ol class="si-poll-opts">`)
 	for i, o := range opts {
 		fmt.Fprintf(&b, `<li class="si-poll-opt" data-i="%d" style="--_share:0"><span class="si-poll-label">%s</span><span class="si-poll-n" aria-label="votes">0</span><span class="si-poll-bar" aria-hidden="true"></span></li>`, i, dr.inline(o))
 	}

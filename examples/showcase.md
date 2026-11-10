@@ -274,10 +274,10 @@ Points: Three causes, one per click
 
 ## Which habit would your team start with?
 
-<!-- poll: first-habit · Follow one order end to end · Retry once, then tell the customer · Lend people before adding systems -->
+<!-- poll: first-habit · Follow one order end to end · Retry once, then tell the customer · Lend people before adding systems · hidden -->
 
 Notes: (1 min)
-Before the last slide, a question for you. If your team could start one of these habits on Monday, which would it be? The bars fill in as you vote.
+Before the last slide, a question for you. If your team could start one of these habits on Monday, which would it be? Take a moment and vote. [CLICK] And here is the room.
 
 Points:
 - Read the leading option aloud before moving on

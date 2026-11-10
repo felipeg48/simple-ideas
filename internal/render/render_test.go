@@ -58,8 +58,8 @@ func TestGolden(t *testing.T) {
 
 func TestPage(t *testing.T) {
 	res, page := renderGolden(t, Options{UserCSS: []Stylesheet{{Path: "testdata/my.css", Text: ".si-slide{color:red} a{background:url(assets/pic.svg)}"}}})
-	if res.Steps != 6 || res.Canvases != 2 {
-		t.Errorf("steps = %d, canvases = %d; want 6 and 2", res.Steps, res.Canvases)
+	if res.Steps != 7 || res.Canvases != 2 { // 7: the hidden poll is a step
+		t.Errorf("steps = %d, canvases = %d; want 7 and 2", res.Steps, res.Canvases)
 	}
 	for _, want := range []string{
 		`<html lang="en" data-si-theme="paper">`,

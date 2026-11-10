@@ -50,6 +50,10 @@ keys.remote:     q          # si play --remote: the phone and tablet links as QR
 # si build --handout: the paper of handout PDFs
 handout.paper: a4      # a4 or letter
 
+# si play --audience: keep the room's poll counts and questions in
+# .si/audience/ when the talk ends (off: keep nothing)
+audience.save: on
+
 # draw (a): hold this key and move to draw with the cursor, no click
 draw.hold: alt         # alt (⌥ Option), shift, ctrl, meta (⌘ Command), or off
 
@@ -86,6 +90,7 @@ type Config struct {
 	Budget       Budget            // budget.page / budget.3d: si check fails on bigger pages
 	DrawHold     string            // draw.hold: the key that draws with the cursor ("" = alt)
 	HandoutPaper string            // handout.paper: a4 (default) or letter
+	AudienceOff  bool              // audience.save: off: keep no poll counts or questions
 	Warnings     []string          // unknown keys / bad values, for the caller to report
 }
 
@@ -254,6 +259,12 @@ func Parse(r io.Reader) *Config {
 				c.HandoutPaper = p
 			} else {
 				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: handout.paper wants a4 or letter, got %q", ln, v))
+			}
+		case k == "audience.save":
+			if on, ok := parseBool(v); ok {
+				c.AudienceOff = !on
+			} else {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: audience.save wants on or off, got %q", ln, v))
 			}
 		case k == "draw.hold":
 			hold, ok := map[string]string{"alt": "alt", "option": "alt", "shift": "shift", "ctrl": "ctrl", "control": "ctrl",

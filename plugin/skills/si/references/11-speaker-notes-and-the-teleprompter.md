@@ -101,7 +101,19 @@ grow on the projected slide:
 ```
 
 The first part is the poll's id (lowercase letters, digits, `-`), then 2 to
-6 options; `· multiple` lets a phone pick several. A phone votes once per
+6 options; `· multiple` lets a phone pick several, and `· hidden` keeps the
+results for the next click: until then the slide and the phones show only how
+many have voted (no bars, no counts), so the first votes do not sway the rest.
+That click is a build step of the slide, so give it a `[CLICK]` in `Notes:`:
+
+```markdown
+<!-- poll: retry · Once, after 30 s · Three times, backing off · Never · hidden -->
+
+Notes:
+Which one would you ship? Take a moment. [CLICK] Here is the room.
+```
+
+A phone votes once per
 poll and can change its mind (unpicking everything takes the vote back); it
 sees the results after voting. Late phones get the current counts. Without
 `si play --audience` (a built deck, a document) the poll is the plain list of
@@ -124,7 +136,8 @@ every 20 seconds). Questions go to you only, never to the other phones: a
 *Show on screen* (a band at the foot of the projected slide; Esc on the deck
 takes it off), *Answered* and *Hide*. When `si play` stops, the poll counts
 and the questions are saved beside the talk in
-`.si/audience/<talk>-<date-time>.json` (keep `.si/` out of git).
+`.si/audience/<talk>-<date-time>.json` (keep `.si/` out of git);
+`audience.save: off` in `si.conf` keeps nothing.
 
 The code appears only under `si play --audience` (in a built deck the figure
 stays hidden). It works with `--remote` (your roles and theirs, two keys) and

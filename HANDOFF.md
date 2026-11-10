@@ -5,6 +5,11 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.20.0: hidden polls, audience.save, coffee.** `· hidden` on a poll adds
+  `<span class="si-step si-poll-reveal">` (render/poll.go, slides only); layout.css
+  hides `.si-poll-n`/`.si-poll-bar` until it is `.is-visible` (deck and phones,
+  which follow the step). `audience.save: off` (config `AudienceOff`, checked in
+  `SaveAudience`). README badge, `.github/FUNDING.yml`, site footer pill.
 - **v2.19.1: client themes off the docs.** `crdb`, `acemq`, `acemq-pro` stay
   in the code (decks keep building) but left RULES, manual, README, help text,
   site (`internal/docsite/themes.go` `unlisted`, pictures deleted) and the

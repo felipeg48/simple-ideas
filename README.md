@@ -5,6 +5,7 @@
 [![Go](https://img.shields.io/github/go-mod/go-version/felipeg48/simple-ideas)](go.mod)
 [![Go Report Card](https://goreportcard.com/badge/github.com/felipeg48/simple-ideas)](https://goreportcard.com/report/github.com/felipeg48/simple-ideas)
 [![License](https://img.shields.io/github/license/felipeg48/simple-ideas)](LICENSE)
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-ffdd00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/felipeg48)
 
 **Docs, features and live examples: [simple-ideas.org](https://simple-ideas.org/)**
 
@@ -127,6 +128,9 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.20.0:** `<!-- poll: … · hidden -->` keeps a poll's bars for the next
+  click, so the first votes do not sway the rest; `audience.save: off` in
+  `si.conf` keeps no votes or questions; a Buy me a coffee badge.
 - **v2.19.1:** the docs list nine built-in themes; three client themes stay in
   the code but leave the docs and site (see [TRADEMARKS.md](TRADEMARKS.md)).
 - **v2.19.0:** remote audiences: `si play talk.md --tunnel` puts the audience

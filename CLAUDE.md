@@ -203,6 +203,8 @@ pass. The steps that matter:
   v2.17.0: polls (`render/poll.go`, `serve/poll.go`, `/_si/audience/vote`,
   `poll` relay messages). v2.18.0: Q&A (`serve/qa.go`, `/_si/audience/ask`,
   `/_si/qa`, teleprompter Q&A tab, `.si-qa-show`, results saved on exit).
+  v2.20.0: poll `· hidden` (a `.si-poll-reveal` build step; CSS hides
+  bars and counts until it is visible) and `audience.save: off`.
   v2.19.0: `--tunnel` (Cloudflare quick tunnel to `AudienceOnlyHandler`;
   polling fallback `/_si/audience/now` since quick tunnels carry no SSE). The
   founder ruled out a hosted relay on simple-ideas.org for now (cost).

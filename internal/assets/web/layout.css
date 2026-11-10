@@ -127,6 +127,7 @@ img,svg,video{max-width:100%}
 .si-qa-name:empty{display:none}
 .si-poll:not([data-live]) :is(.si-poll-n,.si-poll-bar,.si-poll-total){display:none} /* a plain list without si play --audience */
 :root[data-si-role="audience"] .si-poll-opt{cursor:pointer;touch-action:manipulation}
+.si-poll[data-hidden]:not(:has(> .si-poll-reveal.is-visible)) :is(.si-poll-n,.si-poll-bar){visibility:hidden} /* · hidden: results on the next click */
 :root[data-si-role="audience"] .si-poll:not([data-voted]) :is(.si-poll-n,.si-poll-bar,.si-poll-total){visibility:hidden}
 .si-qr a svg{width:100%}
 /* figure caps follow --si-figure-max (the theme's room for a canvas under a

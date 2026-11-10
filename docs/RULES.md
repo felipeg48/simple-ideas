@@ -522,7 +522,19 @@ grow on the projected slide:
 ```
 
 The first part is the poll's id (lowercase letters, digits, `-`), then 2 to
-6 options; `· multiple` lets a phone pick several. A phone votes once per
+6 options; `· multiple` lets a phone pick several, and `· hidden` keeps the
+results for the next click: until then the slide and the phones show only how
+many have voted (no bars, no counts), so the first votes do not sway the rest.
+That click is a build step of the slide, so give it a `[CLICK]` in `Notes:`:
+
+```markdown
+<!-- poll: retry · Once, after 30 s · Three times, backing off · Never · hidden -->
+
+Notes:
+Which one would you ship? Take a moment. [CLICK] Here is the room.
+```
+
+A phone votes once per
 poll and can change its mind (unpicking everything takes the vote back); it
 sees the results after voting. Late phones get the current counts. Without
 `si play --audience` (a built deck, a document) the poll is the plain list of
@@ -545,7 +557,8 @@ every 20 seconds). Questions go to you only, never to the other phones: a
 *Show on screen* (a band at the foot of the projected slide; Esc on the deck
 takes it off), *Answered* and *Hide*. When `si play` stops, the poll counts
 and the questions are saved beside the talk in
-`.si/audience/<talk>-<date-time>.json` (keep `.si/` out of git).
+`.si/audience/<talk>-<date-time>.json` (keep `.si/` out of git);
+`audience.save: off` in `si.conf` keeps nothing.
 
 The code appears only under `si play --audience` (in a built deck the figure
 stays hidden). It works with `--remote` (your roles and theirs, two keys) and
@@ -1712,7 +1725,7 @@ Options follow the text after a `·`: `key=value`, or a kind word (`info`,
 | `badge: text · kind` | a status pill, same kinds; on a slide, the pill paragraph a cover or closing slide carries |
 | `cards: 2` | the `###` headings that follow become a grid of cards (2, 3 or 4 columns, or as many as fit): `### Title · tag · colour`, colour one of `teal`, `orange`, `ok`, `crit`, `hi` (the highlighted card); the grid ends at the next `##`, `---` or directive; a `<!-- step -->` before it reveals the whole grid |
 | `logo: [image] × Partner · alt=Brand` | a logo lockup: the image (or, with none, the theme's own logo: `--si-brand-logo`), a bar, and the partner's name; on slides and pages |
-| `poll: id · option · option … · multiple` | a live poll the room answers on their phones under `si play --audience`; elsewhere the list of options (above) |
+| `poll: id · option · option … · multiple · hidden` | a live poll the room answers on their phones under `si play --audience` (`hidden`: results on the next click); elsewhere the list of options (above) |
 | `qr: text or URL · caption=… · style=dots · logo=path · size=large · ec=H` | a QR code (below); `qr: audience` is the live follow-along code of `si play --audience` |
 | `event: YYYY-MM-DDTHH:MM text · Label → link` | a corner toast with a live countdown, shown from two days before the time until it starts |
 | `accordion` | the `###` questions that follow become a one-open-at-a-time list; it ends at the next `##`, `---` or directive |

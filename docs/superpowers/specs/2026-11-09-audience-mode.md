@@ -1,9 +1,10 @@
 # Audience mode: follow along, live polls, Q&A
 
 Status: phase 1 (follow along, `qr: audience`) DONE in v2.16.0; phase 2
-(polls) DONE in v2.17.0 (`multiple`; `hidden` and `step` not built yet);
+(polls) DONE in v2.17.0 (`multiple`); v2.20.0: `hidden` (the results are a
+build step, so `hidden` and `step` became one option) and `audience.save: off`;
 phase 3 (Q&A) DONE in v2.18.0 (results saved to `.si/audience/`).
-Not built: poll `hidden`/`step`, `audience.save: off`, word clouds. The flag is `--audience` (front matter
+Not built: word clouds. The flag is `--audience` (front matter
 `audience:` not added). The audience page also renders without
 `Notes:`/`Points:` (`NoSpeakerText`), not only a filtered stream.
 

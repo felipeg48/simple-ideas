@@ -109,3 +109,11 @@ func TestDrawHold(t *testing.T) {
 		t.Errorf("draw.hold: space should warn and keep the default: %q %v", c.DrawHold, c.Warnings)
 	}
 }
+func TestAudienceSave(t *testing.T) {
+	if c := Parse(strings.NewReader("audience.save: off\n")); !c.AudienceOff || len(c.Warnings) > 0 {
+		t.Errorf("audience.save: off → %v %v", c.AudienceOff, c.Warnings)
+	}
+	if c := Parse(strings.NewReader("audience.save: maybe\n")); c.AudienceOff || len(c.Warnings) != 1 {
+		t.Errorf("audience.save: maybe should warn and keep saving")
+	}
+}
