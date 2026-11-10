@@ -5,6 +5,10 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **Feature tours (after v2.30.1):** Articles, Guides, Books, Mind Maps and Code
+  pages get a picture tour before "Try it live": `internal/docsite/tours.go`
+  (Markdown + figure grids, `§` = backtick, code spans in captions become
+  `<code>`), pictures in `docs/site/features/img/<slug>/`.
 - **v2.30.1:** Decks page hand-written (`docs/site/features/decks.md`, images in
   `features/img/decks/`, from the showcase: file:// for keys, `si play --remote
   --audience` with Playwright phones for the live shots; navigate the deck by
