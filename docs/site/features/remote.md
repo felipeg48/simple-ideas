@@ -79,7 +79,16 @@ Put `<!-- qr: audience · caption=Follow along on your phone -->` on your
 first slide. Everyone who scans it sees the current slide on their phone as
 you present: slides only, never your notes, and they cannot change the slide
 or reach your teleprompter (their key is not yours). `q` shows the audience
-code full screen too. Polls and questions from the room come next.
+code full screen too.
+
+Ask the room with a poll on a slide; their phones turn it into buttons, the
+bars grow on your screen as they vote:
+
+```markdown
+<!-- poll: first-habit · Follow one order end to end · Retry once · Lend people -->
+```
+
+Questions from the room come next.
 
 ## Draw with the cursor
 

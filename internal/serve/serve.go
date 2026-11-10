@@ -43,6 +43,7 @@ type Server struct {
 	clients map[chan struct{}]bool
 	term    *termHub
 	relay   *relay
+	polls   *polls   // si play --audience: the ballots (poll.go)
 	rev     *reviews // review comments (review.go)
 	revOnce sync.Once
 }
@@ -65,6 +66,7 @@ func New(root string, css []string, theme, conf string) (*Server, error) {
 	}
 	s.term = newTermHub(s.dir)
 	s.relay = newRelay()
+	s.polls = newPolls()
 	return s, nil
 }
 

@@ -91,6 +91,22 @@ source). Put the code on a slide:
 <!-- qr: audience · caption=Follow along on your phone · size=small -->
 ```
 
+**Live polls.** A slide asks, the room votes on their phones, and the bars
+grow on the projected slide:
+
+```markdown
+## Which habit would your team start with?
+
+<!-- poll: first-habit · Follow one order end to end · Retry once, then tell the customer · Lend people before adding systems -->
+```
+
+The first part is the poll's id (lowercase letters, digits, `-`), then 2 to
+6 options; `· multiple` lets a phone pick several. A phone votes once per
+poll and can change its mind (unpicking everything takes the vote back); it
+sees the results after voting. Late phones get the current counts. Without
+`si play --audience` (a built deck, a document) the poll is the plain list of
+its options. Votes are kept in memory for the run.
+
 The code appears only under `si play --audience` (in a built deck the figure
 stays hidden). It works with `--remote` (your roles and theirs, two keys) and
 `--https`, and `q` shows the audience code with the others.

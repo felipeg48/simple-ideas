@@ -5,6 +5,21 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.17.0: live polls (audience mode phase 2).** `<!-- poll: id · a · b … ·
+  multiple -->` (`render/poll.go`; slides and documents). `serve/poll.go`:
+  `POST /_si/audience/vote` on the audience mux only; ballots per poll per
+  voter (checked ids, ≤ 6 distinct choices, 300 ms between changes, caps),
+  empty ballot withdraws; `relay.publish` sends `{type: poll, id, counts,
+  total}` to every page, kept as `poll:<id>` for late joiners; `audienceView`
+  passes polls. Runtime: `pollShow` (bars via `--_share`), audience phones
+  get buttons (aria-pressed, localStorage voter id and choices; results after
+  voting); counts only with `data-live` (audience phone, or the deck when
+  `SI_REMOTE_QR.audience`). Tests: `TestPolls`; live: three phones, counts
+  1,2,0 → 0,3,0 after a change, a late phone sees 0,3,0, results hidden
+  before voting; a built deck shows the plain list. The showcase has a poll
+  slide ("Which habit would your team start with?"). Gotcha: saving files
+  into the folder si play serves triggers live reload (a test artefact).
+
 - **v2.16.0: audience mode, phase 1 (follow along).** `si play --audience`
   (starts the remote listener if needed): `Server.AudienceKey`, cookie
   `si_audience`; `RemoteHandler` admits the presenter key to the presenter mux

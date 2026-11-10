@@ -94,6 +94,47 @@
     f.hidden = false;
   });
 
+  /* polls (si play --audience): counts arrive as poll messages (to every page);
+     an audience phone votes, once per poll, and may change its vote */
+  function pollShow(m) {
+    each(document.querySelectorAll('.si-poll[data-poll="' + String(m.id).replace(/"/g, '') + '"]'), function (f) {
+      var counts = m.counts || [], total = m.total || 0;
+      each(f.querySelectorAll('.si-poll-opt'), function (li) {
+        var v = counts[+li.getAttribute('data-i')] || 0;
+        li.style.setProperty('--_share', total ? Math.round(v * 100 / total) : 0);
+        var nEl = li.querySelector('.si-poll-n'); if (nEl) nEl.textContent = v;
+      });
+      var t = f.querySelector('[data-poll-total]'); if (t) t.textContent = total;
+    });
+  }
+  /* counts and bars only where a room can vote: an audience phone, or the deck of a si play --audience */
+  if (role === 'audience' || audQR) each(document.querySelectorAll('.si-poll'), function (f) { f.setAttribute('data-live', ''); });
+  if (role === 'audience') {
+    var voter = '';
+    try { voter = localStorage.getItem('si-voter') || ''; if (!voter) { voter = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2); localStorage.setItem('si-voter', voter); } } catch (e) { voter = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2); }
+    each(document.querySelectorAll('.si-poll'), function (f) {
+      var id = f.getAttribute('data-poll'), multi = f.hasAttribute('data-multiple'), mine = [];
+      try { mine = JSON.parse(localStorage.getItem('si-vote-' + id) || '[]'); } catch (e) {}
+      var paint = function () {
+        each(f.querySelectorAll('.si-poll-opt'), function (li) { li.setAttribute('aria-pressed', mine.indexOf(+li.getAttribute('data-i')) >= 0 ? 'true' : 'false'); });
+        if (mine.length) f.setAttribute('data-voted', ''); else f.removeAttribute('data-voted');
+      };
+      each(f.querySelectorAll('.si-poll-opt'), function (li) {
+        li.setAttribute('role', 'button'); li.tabIndex = 0;
+        var pick = function () {
+          var i = +li.getAttribute('data-i');
+          if (multi) { var at = mine.indexOf(i); if (at >= 0) mine.splice(at, 1); else mine.push(i); } else mine = [i];
+          try { localStorage.setItem('si-vote-' + id, JSON.stringify(mine)); } catch (e) {}
+          paint();
+          fetch('/_si/audience/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ poll: id, choices: mine, voter: voter }) }).catch(function () {});
+        };
+        li.addEventListener('click', pick);
+        li.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+      });
+      paint();
+    });
+  }
+
   /* si build --handout prints the page with ?si-handout=slides|lines|points|notes
      (and ?si-paper=letter): light, every slide in its final state */
   var handout = /[?&]si-handout=(slides|lines|points|notes)(?:&|$)/.exec(location.search);

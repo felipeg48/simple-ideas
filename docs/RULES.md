@@ -512,6 +512,22 @@ source). Put the code on a slide:
 <!-- qr: audience · caption=Follow along on your phone · size=small -->
 ```
 
+**Live polls.** A slide asks, the room votes on their phones, and the bars
+grow on the projected slide:
+
+```markdown
+## Which habit would your team start with?
+
+<!-- poll: first-habit · Follow one order end to end · Retry once, then tell the customer · Lend people before adding systems -->
+```
+
+The first part is the poll's id (lowercase letters, digits, `-`), then 2 to
+6 options; `· multiple` lets a phone pick several. A phone votes once per
+poll and can change its mind (unpicking everything takes the vote back); it
+sees the results after voting. Late phones get the current counts. Without
+`si play --audience` (a built deck, a document) the poll is the plain list of
+its options. Votes are kept in memory for the run.
+
 The code appears only under `si play --audience` (in a built deck the figure
 stays hidden). It works with `--remote` (your roles and theirs, two keys) and
 `--https`, and `q` shows the audience code with the others.
@@ -1774,6 +1790,7 @@ Options follow the text after a `·`: `key=value`, or a kind word (`info`,
 | `badge: text · kind` | a status pill, same kinds; on a slide, the pill paragraph a cover or closing slide carries (AceMQ Pro styles it with its orange mark) |
 | `cards: 2` | the `###` headings that follow become a grid of cards (2, 3 or 4 columns, or as many as fit): `### Title · tag · colour`, colour one of `teal`, `orange`, `ok`, `crit`, `hi` (the highlighted card); the grid ends at the next `##`, `---` or directive; a `<!-- step -->` before it reveals the whole grid |
 | `logo: [image] × Partner · alt=Brand` | a logo lockup: the image (or, with none, the theme's own logo: `--si-brand-logo`, as in AceMQ Pro), a bar, and the partner's name; on slides and pages |
+| `poll: id · option · option … · multiple` | a live poll the room answers on their phones under `si play --audience`; elsewhere the list of options (above) |
 | `qr: text or URL · caption=… · style=dots · logo=path · size=large · ec=H` | a QR code (below); `qr: audience` is the live follow-along code of `si play --audience` |
 | `event: YYYY-MM-DDTHH:MM text · Label → link` | a corner toast with a live countdown, shown from two days before the time until it starts |
 | `accordion` | the `###` questions that follow become a one-open-at-a-time list; it ends at the next `##`, `---` or directive |

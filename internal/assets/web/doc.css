@@ -484,6 +484,14 @@ pre.si-code :is(.si-diff-hunk,.si-diff-meta) .si-ln{display:none}
 .si-qr a svg{width:100%}
 :where(.si-qr) svg{color:var(--si-qr-fg,#111);background:var(--si-qr-bg,#fff);border-radius:.6em}
 :where(.si-qr-cap){font-size:.85em;color:var(--si-muted);text-align:center}
+.si-poll{margin:1.2em 0}
+.si-poll-opts{list-style:none;margin:0;padding:0;display:grid;gap:.4em}
+.si-poll-opt{position:relative;display:flex;justify-content:space-between;gap:1em;padding:.45em .8em}
+.si-poll-n,.si-poll-bar{display:none}
+:where(.si-poll-opt){background:var(--si-poll-track,var(--si-surface-2));border:1px solid transparent;border-radius:var(--si-radius)}
+:where(.si-poll-bar){background:var(--si-poll-bar,color-mix(in srgb,var(--si-accent) 30%,transparent))}
+:where(.si-poll-opt[aria-pressed="true"]){border-color:var(--si-accent)}
+:where(.si-poll-total){font-size:.7em;color:var(--si-muted)}
 :where(.si-lk-img){height:1.9em;width:auto;max-height:none;border-radius:0;box-shadow:none}
 :where(.si-lk-logo,.si-lk-logo+.si-lk-x){display:none}
 :where(.si-lk-x){width:2px;height:1.9em;background:var(--si-line)}

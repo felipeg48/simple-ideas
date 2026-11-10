@@ -24,7 +24,7 @@ import (
 //	<!-- embed: … -->             see embed.go
 
 // Plugins are the plugin directive names (documents only).
-var Plugins = []string{"alert", "badge", "logo", "qr", "accordion", "modal", "end", "carousel", "event", "embed"}
+var Plugins = []string{"alert", "badge", "logo", "qr", "poll", "accordion", "modal", "end", "carousel", "event", "embed"}
 
 // pluginKinds are the looks of an alert or a badge.
 var pluginKinds = map[string]bool{"info": true, "ok": true, "warn": true, "crit": true}
@@ -150,6 +150,8 @@ func (dr *deckRenderer) plugins(doc ast.Node, src []byte, s *deck.Slide, sc *sli
 			doc.ReplaceChild(doc, c, &rawNode{html: dr.logoHTML(val, s, sc)})
 		case "qr":
 			doc.ReplaceChild(doc, c, &rawNode{html: dr.qrHTML(val, s, sc)})
+		case "poll":
+			doc.ReplaceChild(doc, c, &rawNode{html: dr.pollHTML(val, sc, false)})
 		case "event":
 			text, opts, _ := pluginParts(val)
 			m := eventAtRE.FindStringSubmatch(text)

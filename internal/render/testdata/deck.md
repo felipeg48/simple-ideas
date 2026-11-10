@@ -101,6 +101,8 @@ the answer
 
 <!-- qr: https://example.com/slides · caption=The slides · size=small · dots -->
 
+<!-- poll: next-step · Ship it · Test more · multiple -->
+
 Body with a ==phrase==.
 
 ---

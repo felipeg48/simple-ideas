@@ -127,6 +127,9 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.17.0:** live polls: `<!-- poll: id · option · option -->` on a slide;
+  under `si play --audience` the room votes on their phones and the bars grow
+  on your screen (one vote per phone, changeable); elsewhere a plain list.
 - **v2.16.0:** the room follows along: `si play talk.md --audience` and
   `<!-- qr: audience -->` on a slide; phones show the current slide as you
   present, with their own key (never your controls) and never your notes.
@@ -351,7 +354,7 @@ https://simple-ideas.org/agents.html
 | `si manual [--slides] [--pdf] [--out dir]` | render the built-in user manual as self-contained HTML (and PDF with `--pdf`) |
 | `si selfupdate` | download the latest release for your OS/arch (checksum-verified) and replace the running `si` |
 | `si qr <text\|URL> [-o name.png] [--png --jpg --svg --pdf] [--logo pic] [--style dots]` | a QR code file for a link, text, `--wifi` network or `--vcard` contact; a logo too big to scan past is refused (see [QR codes](https://simple-ideas.org/features/qr.html)) |
-| `si play <file.md> --audience` | the room follows the talk on their phones: their own key, slides only, never your notes; `<!-- qr: audience -->` puts the code on a slide |
+| `si play <file.md> --audience` | the room follows the talk on their phones: their own key, slides only, never your notes; `<!-- qr: audience -->` puts the code on a slide, `<!-- poll: … -->` asks them, with live bars |
 | `si play <file.md> --remote --https[=tailscale]` | the phone and tablet pages over HTTPS; each phone trusts si's local certificate authority once (see [Present from your phone](https://simple-ideas.org/features/remote.html)) |
 | `si ca [trust\|untrust]` | si's certificate authority for `--https`: where it is, its fingerprint; `trust` adds it to this computer's trusted certificates |
 | `si mcp [dir]` | an MCP server for AI agents on stdio (see [Use it with your AI agent](#use-it-with-your-ai-agent)) |

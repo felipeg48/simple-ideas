@@ -67,11 +67,11 @@ func (h *relay) audienceEvents(w http.ResponseWriter, r *http.Request) {
 // audienceView keeps what an audience page may see of a message, or nil.
 func audienceView(raw []byte) []byte {
 	var m map[string]any
-	if json.Unmarshal(raw, &m) != nil || m["type"] != "state" {
+	if json.Unmarshal(raw, &m) != nil || (m["type"] != "state" && m["type"] != "poll") {
 		return nil
 	}
 	out := map[string]any{}
-	for _, k := range []string{"type", "name", "mid", "i", "k", "kmax", "n", "title"} {
+	for _, k := range []string{"type", "name", "mid", "i", "k", "kmax", "n", "title", "id", "counts", "total"} {
 		if v, ok := m[k]; ok {
 			out[k] = v
 		}
@@ -146,9 +146,23 @@ func (h *relay) send(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(raw, &v)
 	raw, _ = json.Marshal(v)
 	from := r.URL.Query().Get("c")
-	h.mu.Lock()
+	key := ""
 	if m.Type == "state" && m.Name != "" {
-		h.last[m.Name] = raw
+		key = m.Name
+	}
+	h.fanout(raw, key, from)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// publish sends a message from the server itself (poll counts) to every page;
+// keep names it as the message a late page is replayed ("" keeps none).
+func (h *relay) publish(raw []byte, keep string) { h.fanout(raw, keep, "") }
+
+func (h *relay) fanout(raw []byte, keep, from string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if keep != "" {
+		h.last[keep] = raw
 	}
 	for ch, id := range h.subs {
 		if id != "" && id == from {
@@ -159,8 +173,6 @@ func (h *relay) send(w http.ResponseWriter, r *http.Request) {
 		default:
 		}
 	}
-	h.mu.Unlock()
-	w.WriteHeader(http.StatusNoContent)
 }
 
 // RemoteHandler is the network-facing handler of `si play --remote`: key gate,
@@ -258,6 +270,7 @@ func (s *Server) audienceHandler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/_si/events", s.events)
 	mux.HandleFunc("GET /_si/remote/events", s.relay.audienceEvents)
+	mux.HandleFunc("POST /_si/audience/vote", s.vote)
 	static := http.FileServer(http.Dir(s.dir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path

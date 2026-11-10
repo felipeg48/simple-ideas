@@ -262,3 +262,37 @@ func TestAudience(t *testing.T) {
 		}
 	}
 }
+
+// One ballot per phone and poll; changes replace it, an empty ballot takes it
+// back; bad input and fast repeats are refused; counts reach the audience.
+func TestPolls(t *testing.T) {
+	p := newPolls()
+	now := time.Now()
+	msg, code := p.vote("retry", "phoneaaaaaa1", []int{0}, now)
+	if code != http.StatusNoContent || !strings.Contains(string(msg), `"counts":[1,0,0,0,0,0]`) || !strings.Contains(string(msg), `"total":1`) {
+		t.Fatalf("first vote: %d %s", code, msg)
+	}
+	p.vote("retry", "phonebbbbbb2", []int{2}, now)
+	msg, _ = p.vote("retry", "phoneaaaaaa1", []int{2}, now.Add(time.Second)) // changed mind
+	if !strings.Contains(string(msg), `"counts":[0,0,2,0,0,0]`) || !strings.Contains(string(msg), `"total":2`) {
+		t.Errorf("a changed vote replaces the old one: %s", msg)
+	}
+	if _, code := p.vote("retry", "phoneaaaaaa1", []int{1}, now.Add(time.Second+100*time.Millisecond)); code != http.StatusTooManyRequests {
+		t.Errorf("a vote 100 ms after the last: %d, want 429", code)
+	}
+	msg, _ = p.vote("retry", "phonebbbbbb2", nil, now.Add(2*time.Second))
+	if !strings.Contains(string(msg), `"total":1`) {
+		t.Errorf("an empty ballot takes the vote back: %s", msg)
+	}
+	for _, bad := range []struct {
+		poll, voter string
+		c           []int
+	}{{"Retry!", "phoneaaaaaa1", []int{0}}, {"retry", "x", []int{0}}, {"retry", "phonecccccc3", []int{6}}, {"retry", "phonecccccc3", []int{1, 1}}, {"retry", "phonecccccc3", []int{-1}}} {
+		if _, code := p.vote(bad.poll, bad.voter, bad.c, now.Add(time.Hour)); code != http.StatusBadRequest {
+			t.Errorf("%+v: %d, want 400", bad, code)
+		}
+	}
+	if got := string(audienceView([]byte(`{"type":"poll","id":"retry","counts":[1,0],"total":1}`))); !strings.Contains(got, `"counts":[1,0]`) {
+		t.Errorf("the audience gets poll counts: %s", got)
+	}
+}

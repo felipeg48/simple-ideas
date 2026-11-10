@@ -20,6 +20,7 @@ var help = map[string]string{
 	"alert":      "a dismissible band: text · info|ok|warn|crit · until=YYYY-MM-DD",
 	"badge":      "a status pill: text · info|ok|warn|crit (a · part that is no kind stays text)",
 	"logo":       "a logo lockup: [path/to/logo.svg] × Partner · alt=Brand (no image: the theme's logo); in _site.md: the site's logo, text or an image",
+	"poll":       "a live poll the room answers on their phones (si play --audience): id · option · option … · multiple",
 	"qr":         "a QR code for a link or text: https://… · caption=The slides · size=small|medium|large · dots · logo=path/mark.svg · ec=L|M|Q|H",
 	"cards":      "the ### headings that follow become cards: ### Title · tag · teal|orange|ok|crit|hi (cards: 2|3|4 columns)",
 	"accordion":  "the ### questions that follow, one open at a time",

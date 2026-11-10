@@ -104,6 +104,9 @@ var Tokens = []Token{
 	{"--si-mm-sticky", "mind maps: sticky note paper", "#ffe27a"},
 	{"--si-mm-sticky-fg", "mind maps: sticky note text", "#3d3000"},
 	{"--si-mm-height", "mind maps: height of an embedded map (slides: --si-figure-max)", "clamp(24em, 62vh, 48em)"},
+	// polls (<!-- poll: -->, si play --audience)
+	{"--si-poll-bar", "polls: the bar of an option's share of the votes", "the accent at 30 %"},
+	{"--si-poll-track", "polls: the row behind each option", "var(--si-surface-2)"},
 	// QR codes (<!-- qr: -->): dark on light in every theme, since an inverted code reads badly
 	{"--si-qr-fg", "QR codes: the modules", "#111"},
 	{"--si-qr-bg", "QR codes: the background and quiet zone", "#fff"},
@@ -282,6 +285,13 @@ var Hooks = []Hook{
 	{`.si-handout-qr`, "handout: the QR code to handout-url: and its address"},
 	{`.si-qr-code`, "qr: the SVG code (modules in currentColor)"},
 	{`.si-qr-cap`, "qr: the caption"},
+	{`.si-poll`, "poll: the figure (data-poll: its id; data-multiple; data-voted on an audience phone)"},
+	{`.si-poll-opts`, "poll: the list of options"},
+	{`.si-poll-opt`, "poll: one option (data-i; --_share 0-100; aria-pressed when chosen)"},
+	{`.si-poll-label`, "poll: the option's text"},
+	{`.si-poll-n`, "poll: the option's vote count"},
+	{`.si-poll-bar`, "poll: the bar behind the option"},
+	{`.si-poll-total`, "poll: the total line"},
 	{`.si-qr-audience`, "qr: audience: the live audience code (si play --audience), hidden elsewhere"},
 	{`.si-qr-slot`, "qr: audience: where si play puts the code"},
 	{`.si-lk-img`, "logo: the logo image"},

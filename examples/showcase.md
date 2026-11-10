@@ -272,6 +272,19 @@ Points: Three causes, one per click
 
 ---
 
+## Which habit would your team start with?
+
+<!-- poll: first-habit · Follow one order end to end · Retry once, then tell the customer · Lend people before adding systems -->
+
+Notes: (1 min)
+Before the last slide, a question for you. If your team could start one of these habits on Monday, which would it be? The bars fill in as you vote.
+
+Points:
+- Read the leading option aloud before moving on
+- Without si play --audience the poll is a plain list: ask for hands
+
+---
+
 <!-- transition: slide -->
 <!-- class: habits -->
 <!-- background: assets/dusk.jpg opacity=0.22 blur=6 -->

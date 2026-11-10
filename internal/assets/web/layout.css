@@ -112,6 +112,16 @@ img,svg,video{max-width:100%}
 .si-qr[data-size="large"]{--_qr:var(--si-qr-size,min(46cqi,60cqb))}
 .si-qr a,.si-qr svg{display:block;width:var(--_qr);max-width:100%;height:auto}
 .si-qr-slot,.si-qr-slot a{display:block;width:var(--_qr);max-width:100%}
+/* <!-- poll: --> (si play --audience): an option per row, its bar behind it, sized by --_share (0-100) */
+.si-poll{margin:.6em 0;width:min(100%,46em);min-width:0}
+.si-poll-opts{list-style:none;margin:0;padding:0;display:grid;gap:.45em}
+.si-poll-opt{position:relative;display:flex;justify-content:space-between;align-items:center;gap:1em;padding:.45em .8em;overflow:hidden;isolation:isolate}
+.si-poll-bar{position:absolute;inset:0 auto 0 0;width:calc(var(--_share,0) * 1%);z-index:-1;transition:width .6s ease}
+.si-poll-n{font-variant-numeric:tabular-nums;font-weight:700}
+.si-poll-total{margin-top:.5em}
+.si-poll:not([data-live]) :is(.si-poll-n,.si-poll-bar,.si-poll-total){display:none} /* a plain list without si play --audience */
+:root[data-si-role="audience"] .si-poll-opt{cursor:pointer;touch-action:manipulation}
+:root[data-si-role="audience"] .si-poll:not([data-voted]) :is(.si-poll-n,.si-poll-bar,.si-poll-total){visibility:hidden}
 .si-qr a svg{width:100%}
 /* figure caps follow --si-figure-max (the theme's room for a canvas under a
  * heading); the runtime lowers --_figfit before it shrinks the type when a

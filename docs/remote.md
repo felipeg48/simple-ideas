@@ -74,6 +74,18 @@ navigation and every command but full screen and light/dark, and gets no
 wake-lock hint. `<!-- qr: audience -->` is an empty, hidden figure that the
 presenter's loopback page fills from `SI_REMOTE_QR.audience`.
 
+### Polls
+
+`<!-- poll: id · a · b … -->` renders `.si-poll` (one `.si-poll-opt` per
+option, `--_share` 0–100 sizing its `.si-poll-bar`). An audience phone POSTs
+`{poll, choices, voter}` to `/_si/audience/vote` (audience mux only;
+`serve/poll.go`): ids and voter ids are checked, at most 6 distinct choices,
+one change per voter per 300 ms, 5000 voters per poll, 100 polls; an empty
+ballot withdraws. Each ballot publishes `{type: poll, id, counts, total}` to
+every page through the relay (kept as `poll:<id>` for late joiners);
+`audienceView` passes it. Counts and bars show only where a room can vote
+(`data-live`: an audience phone, or the deck of `si play --audience`).
+
 ## Keeping the device awake
 
 `RelayJS` also asks for a screen wake lock (`navigator.wakeLock`) on a role
