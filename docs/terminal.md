@@ -10,12 +10,12 @@ the git history of this file.
 ## What it does
 
 - A dark, monospace drawer (~55vh) over the current slide, with a **tab bar**:
-  multiple concurrent shells (tab 1 runs `cockroach start-single-node`, tab 2
-  runs `cockroach sql`, tab 3 runs `docker ps`). `+` opens a tab, `×` closes one,
+  multiple concurrent shells (tab 1 runs `postgres -D data`, tab 2
+  runs `psql`, tab 3 runs `docker ps`). `+` opens a tab, `×` closes one,
   `✕` hides the drawer.
 - Each tab is a **real shell** (`$SHELL`, falling back to `/bin/sh`) running under
   a **PTY**, started in the deck's directory. Because it is a true PTY, Ctrl-C,
-  arrow keys, REPL prompts (`cockroach sql`), and full-screen apps all work — the
+  arrow keys, REPL prompts (`psql`), and full-screen apps all work — the
   bytes travel straight through; `si` never parses commands.
 
 ![the terminal drawer, two tabs, a live shell](screenshots/terminal-drawer.png)
@@ -89,10 +89,8 @@ one (`creack/pty`) plus the bundled xterm.
 A right-hand drawer in the terminal HUD: a command cheat-sheet that types into the
 active shell. Opt in with front matter `runbook: <path>.json` on the deck.
 
-- **Source of truth.** The JSON shape matches the cockroach-engineering-tool VS
-  Code extension's `runbook.json` (`{ categories: [ { name, icon, entries: [ {
-  label, description, command, target } ] } ] }`), so an exported runbook drops in
-  unchanged. `command` is canonical; `sql` is accepted as an alias. `target`
+- **Shape.** The JSON is `{ categories: [ { name, icon, entries: [ {
+  label, description, command, target } ] } ] }`. `command` is canonical; `sql` is accepted as an alias. `target`
   (`sql` | `bash`, default `sql`) picks the highlighter.
 - **Highlighting is server-side.** `render` runs each command through the same
   highlighter the code fences use and injects `window.SI_RUNBOOK` with both the

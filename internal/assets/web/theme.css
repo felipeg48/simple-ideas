@@ -133,7 +133,7 @@ pre.si-mermaid{background:none;border:0;text-align:center;margin:.4em 0;font-fam
 .si-view button:first-child{border-left:0}
 .si-view button[aria-pressed=true]{color:var(--si-bg);background:var(--si-accent)}
 .si-badges{display:flex;flex-wrap:wrap;gap:.4em;margin:.1rem 0 .3rem}
-/* Badges: fixed CockroachDB-brand backgrounds with white text (readable in light
+/* Badges: fixed brand-colour backgrounds with white text (readable in light
    and dark). Override the fg/bg custom properties to recolour, e.g.
    .si-badge[data-status=beta]{background:#123456} */
 .si-badge{--si-badge-fg:#fff;--si-badge-bg:#6933ff;display:inline-block;font-family:var(--si-font-mono);font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--si-badge-fg);background:var(--si-badge-bg);border-radius:.4em;padding:.15em .5em;white-space:nowrap}

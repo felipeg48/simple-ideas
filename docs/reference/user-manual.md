@@ -229,7 +229,7 @@ where you are, what comes next, a stopwatch). `--remote=tp` picks roles, `--remo
 address. See `docs/remote.md`.
 
 The **terminal drawer** (`` ` ``) slides up a tabbed, real shell for running
-commands mid-demo (`docker ps`, `cockroach sql`, …). It exists only under
+commands mid-demo (`docker ps`, `psql`, …). It exists only under
 `si play` bound to a loopback address — never in a built deck, never on
 `--addr 0.0.0.0`. See `docs/terminal.md`.
 

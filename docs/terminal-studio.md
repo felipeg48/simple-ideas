@@ -105,7 +105,7 @@ The slide (← → step through builds), the commands of the deck, and a shell:
   (`demos:`), grouped by category and by demo, each with its heading.
 - **Inside tmux** Lab opens a shell pane below (Ctrl+T opens another beside):
   Enter types the selected command into it, `x` types and runs it. The pane is
-  your normal shell, so interactive tools (`cockroach sql`, `rabbitmqctl`) work
+  your normal shell, so interactive tools (`psql`, `rabbitmqctl`) work
   there.
 - **Outside tmux** Enter runs the command and streams its output into the
   Output pane (`c` clears it); `!` opens your shell full screen until you exit.

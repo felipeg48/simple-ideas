@@ -950,14 +950,14 @@ callouts are written the same way.
   for live demos — play-only and loopback-only, never shipped in a built deck.
   Full reference: `docs/terminal.md`.
 
-- **Runbook** (front matter `runbook: cockroach.json`): a command cheat-sheet in a
+- **Runbook** (front matter `runbook: runbook.json`): a command cheat-sheet in a
   right drawer of the play terminal. The JSON is a list of categories, each with
   entries (`label`, `description`, `command`, `target: sql|bash`):
 
   ```json
-  { "categories": [ { "name": "Cluster Info", "entries": [
-      { "label": "Show Nodes", "description": "live nodes",
-        "command": "SELECT node_id, is_live FROM crdb_internal.gossip_nodes;", "target": "sql" } ] } ] }
+  { "categories": [ { "name": "Database", "entries": [
+      { "label": "Sessions", "description": "who is connected",
+        "command": "SELECT pid, state FROM pg_stat_activity;", "target": "sql" } ] } ] }
   ```
 
   Each command is syntax-highlighted (by `target`) so you can read it at a glance;
@@ -966,8 +966,7 @@ callouts are written the same way.
   Enter); clicking the entry itself is Copy, Shift-click Run. A command waits
   until the shell has drawn its prompt, and is sent as a paste where the shell
   supports it (zsh, bash 5.1+), so a multi-line command shows whole and runs only
-  on Enter. The shape matches the cockroach-engineering-tool VS Code extension's
-  `runbook.json`, so an exported runbook drops in unchanged. Like the terminal, it
+  on Enter. Like the terminal, it
   appears only in `si play` on a loopback address — a built deck never loads it, so
   rules #2/#7 still hold for shipped HTML. `si check` validates the path and JSON.
 
