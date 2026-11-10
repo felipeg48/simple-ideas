@@ -1,6 +1,7 @@
 package docsite
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -27,7 +28,15 @@ func TestAdocExamplesRenderTheSame(t *testing.T) {
 		return regexp.MustCompile(` data-src="[^"]*"`).ReplaceAllString(body.FindString(string(render.Deck(d, render.Options{}).HTML)), "")
 	}
 	n := 0
-	for _, src := range []string{docs.Rules, docs.Manual} {
+	srcs := []string{docs.Rules, docs.Manual}
+	fs.WalkDir(docs.Site, "site", func(p string, e fs.DirEntry, err error) error {
+		if err == nil && strings.HasSuffix(p, ".md") {
+			raw, _ := fs.ReadFile(docs.Site, p)
+			srcs = append(srcs, string(raw))
+		}
+		return nil
+	})
+	for _, src := range srcs {
 		for _, ex := range mdExamples(src) {
 			n++
 			md, ad := build("e.md", ex), strings.ReplaceAll(build("e.adoc", deck.MarkdownToAdoc(ex)), `"e.adoc"`, `"e.md"`)

@@ -69,46 +69,11 @@ si play talk.md --remote=tp,clicker --https
 The code is new every run: the link carries a key made for that run, and a
 page without it gets nothing.
 
-## The room follows along
+## Your audience too
 
-```bash
-si play talk.md --audience            # with --remote too, for your own phone
-```
-
-Put `<!-- qr: audience · caption=Follow along on your phone -->` on your
-first slide. Everyone who scans it sees the current slide on their phone as
-you present: slides only, never your notes, and they cannot change the slide
-or reach your teleprompter (their key is not yours). `q` shows the audience
-code full screen too.
-
-Ask the room with a poll on a slide; their phones turn it into buttons, the
-bars grow on your screen as they vote:
-
-```markdown
-<!-- poll: first-habit · Follow one order end to end · Retry once · Lend people -->
-```
-
-Add `· hidden` to keep the bars back until your next click, so the first votes
-do not sway the rest; the room sees only how many have voted.
-
-Questions come from the room too: every phone has an *Ask a question*
-button. They land in a **Q&A** tab on your teleprompter, never on the other
-phones; *Show on screen* puts one at the foot of your slide (Esc takes it
-off). When you stop `si play`, the votes and questions are saved beside your
-talk in `.si/audience/` (`audience.save: off` in `si.conf` keeps nothing).
-
-## A remote audience, on a video call
-
-```bash
-si play talk.md --tunnel        # once: brew install cloudflared
-```
-
-si prints a temporary public link (`https://<words>.trycloudflare.com/a?k=…`):
-paste it in the call's chat, or show the `<!-- qr: audience -->` slide, which
-now carries it. People anywhere follow the slides, vote and ask questions,
-exactly like the room. Only the audience side is on the internet, never your
-teleprompter or controls; everything stays on your laptop, and the link is
-gone when you stop `si play`.
+`--audience` puts the talk on the room's phones as well: they follow the
+slides, vote in polls and send you questions; `--tunnel` does the same on a
+video call. See [Your audience](audience.md).
 
 ## Draw with the cursor
 

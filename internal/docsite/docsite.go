@@ -171,7 +171,11 @@ func Generate(dst string) (pages int, err error) {
 		if err != nil {
 			return err
 		}
-		return write(strings.TrimPrefix(p, "site/"), links.Replace(string(raw)))
+		text := links.Replace(string(raw))
+		if strings.HasSuffix(p, ".md") {
+			text = withAdoc(text)
+		}
+		return write(strings.TrimPrefix(p, "site/"), text)
 	})
 	if err != nil {
 		return 0, err

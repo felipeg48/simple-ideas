@@ -21,6 +21,7 @@ footer: simple-ideas
   - [Books](features/books.md)
   - [Code windows and shows](features/code.md)
   - [Present from your phone](features/remote.md)
+  - [Your audience: polls and questions](features/audience.md)
   - [QR codes](features/qr.md)
 - Examples
   - [All examples](examples.md)

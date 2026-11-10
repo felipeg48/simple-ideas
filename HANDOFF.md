@@ -5,6 +5,7 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **Site: Your audience page** (`docs/site/features/audience.md`, menu, home card, Decks options row; remote.md points to it); hand-written site pages get AsciiDoc tabs too.
 - **v2.21.0: AsciiDoc tabs on the site.** `deck.MarkdownToAdoc`
   (`internal/deck/mdadoc.go`, the inverse of `adocToMarkdown`);
   `docsite.withAdoc` turns each ```markdown example (rules pages, manual,

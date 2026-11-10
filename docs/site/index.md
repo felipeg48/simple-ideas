@@ -128,6 +128,11 @@ teleprompter in a second pane.
 Your phone as the clicker, an iPad as the teleprompter, over HTTPS after a
 one-time setup. [Present from your phone](features/remote.md)
 
+### Your audience · polls and questions
+
+The room follows on their phones, votes in live polls and sends you
+questions, in the room or on a video call. [Your audience](features/audience.md)
+
 ### Exports · PDF PNG SVG GIF MP4
 
 Every deck, map and code show as a file you can send, print or post.
