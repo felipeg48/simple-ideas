@@ -56,7 +56,7 @@
     else if (m.cmd === 'prev') backward();
     else if (m.cmd === 'first') go(0, 0);
     else if (m.cmd === 'last') go(n - 1, 'end');
-    else if (m.cmd === 'hello') announce();
+    else if (m.cmd === 'hello') { announce(); replayRoom(); }
     else if (m.cmd === 'go' && typeof m.i === 'number') go(m.i, 0);
   }
   chans.forEach(function (c) { c.onmessage = onMsg; });

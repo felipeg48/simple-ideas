@@ -5,6 +5,12 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.30.1:** Decks page hand-written (`docs/site/features/decks.md`, images in
+  `features/img/decks/`, from the showcase: file:// for keys, `si play --remote
+  --audience` with Playwright phones for the live shots; navigate the deck by
+  `#N` then a key so phones follow). The `decks` generated feature and its
+  `More` field are gone from features.go. Fix: `replayRoom()` on the
+  teleprompter's hello re-sends the last questions and clouds.
 - **v2.30.0: theme editor.** `internal/themefile` (read/write theme files,
   extends, checks, DTCG export/import), `render.ThemeLayer`/`ThemeFileLayer`/
   `Options.ThemeCSS`, token metadata `assets.AllMeta`, `cmd/si/themecmd.go`,

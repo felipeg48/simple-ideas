@@ -22,29 +22,12 @@ type feature struct {
 	Lines                   int           // how much of it (0: all)
 	Options                 [][2]string
 	Commands                string
-	More                    string   // more sections, Markdown, after the options
 	Rules                   []string // RULES.md section numbers
 }
 
 // Features are the main kinds of document, in the order the site lists them.
 var Features = []feature{
-	{Slug: "decks", Title: "Decks",
-		Lede: "Talks that fill any screen: build steps, animated canvases, a teleprompter that scrolls with you and a remote on your phone.",
-		What: "A deck is a Markdown file cut into slides by `---` lines. Every slide reflows to the screen it is on, from a phone to a 4K projector; one SVG canvas can change state slide after slide, and the teleprompter reads you the `Notes:` of each slide at your pace.",
-		Live: func() string { return "<!-- embed: ../live/showcase.md 1-4 -->" }, Open: "../live/showcase.md",
-		Source: "showcase.md", Lines: 46,
-		Options: [][2]string{
-			{"`<!-- layout: two-col -->`", "center, two-col, split, quote, big-number, image"},
-			{"`<!-- step -->`", "reveal the next block on a click"},
-			{"`<!-- svg: journey.svg +paid -->`", "a canvas whose parts change state slide by slide"},
-			{"`Notes: (2 min)`", "the teleprompter script, with `[CLICK]` cues"},
-			{"`Notes[Ana]:`", "two or more presenters (`speakers: Ana, Felipe`): a script each, a teleprompter each"},
-			{"`transition:`", "fade, slide, zoom, none"},
-			{"`<!-- poll: id · a · b -->`", "a live poll the room answers on their phones ([your audience](audience.md))"},
-		},
-		Commands: "si new talk                      # a starter deck\nsi play talk.md --open           # present, live reload, p for the teleprompter\nsi play talk.md --remote --https # teleprompter, draw pad and clicker on your phone (features/remote)\nsi play talk.md --audience       # the room follows, votes and asks (features/audience)\nsi build talk.md --pdf --mp4     # one HTML file, plus a PDF and a video\nsi build talk.md --handout       # a handout PDF: slides only, or =lines, =points, =notes\nsi build talk.md --narration latest # the talk as video, with your recorded voice\nsi rehearse talk.md              # planned vs spoken per slide",
-		More:     strings.ReplaceAll(decksMore, "§", "`"),
-		Rules:    []string{"1", "3", "5", "9", "10", "11", "14", "16"}},
+	// decks: hand-written, docs/site/features/decks.md (a visual page)
 	{Slug: "articles", Title: "Articles",
 		Lede: "One readable page: a header, a table of contents, code with copy buttons, callouts, mind maps and code windows in the text.",
 		What: "An article is a Markdown file with `type: article`. It reads like a blog post, prints well, publishes to LinkedIn, dev.to or Hashnode with `si publish`, and can hold anything a slide can: canvases, mind maps, code shows.",
@@ -132,9 +115,6 @@ func writeFeatures(write func(rel, text string) error, refs map[string]Section) 
 		for _, o := range f.Options {
 			fmt.Fprintf(&b, "| %s | %s |\n", o[0], o[1])
 		}
-		if f.More != "" {
-			b.WriteString("\n" + f.More)
-		}
 		fmt.Fprintf(&b, "\n## Commands\n\n%s\n\n## The rules\n\n", fence("bash", f.Commands))
 		for _, n := range f.Rules {
 			if s, ok := refs[n]; ok {
@@ -219,53 +199,3 @@ func mapFence(file, extra string) string {
 	})
 	return fence("mindmap "+strings.Join(opts, " "), strings.TrimSpace(body))
 }
-
-// decksMore is the Decks page's part on presenting: keys, overview, find,
-// draw.
-const decksMore = `## While you present
-
-Click the live deck above and try these; they work in every deck si builds,
-from a laptop, a projector or §file://§.
-
-| Key | What it does |
-|---|---|
-| → Space · ← | next step or slide · back |
-| §o§ | **overview**: every slide at once, one column per section; arrows move, Enter opens |
-| §/§ | **find**: search slide titles and text, or type a number to jump; it lists the other pages of the folder too |
-| §a§ | **draw** on the slide; §c§ colour, §e§ erase, §z§ undo, §x§ clear, Esc stops |
-| §p§ | the **teleprompter**: your §Notes:§ at your pace, timers, the next slide |
-| §t§ | a **break timer** to project: pick the minutes, it counts down |
-| Shift+R | in the teleprompter: **record** your voice with the slide timings (under §si play§) |
-| §d§ · §f§ · §?§ | light or dark · full screen · every key |
-
-**Presenting.** Your phone as the clicker, a tablet as the teleprompter or a
-pen pad, over HTTPS: [Presenting](remote.md). The room follows on their
-phones, votes in polls, answers in a word cloud and sends you questions:
-[Audience](audience.md).
-
-**Draw with the trackpad.** In draw mode, hold ⌥ Option (Alt) and move: the
-cursor draws where it goes, no click needed, so one finger on the trackpad
-circles a number on the slide. Let go of Option and the cursor moves without
-drawing. Prefer another key? §draw.hold: shift§ (or §ctrl§, §meta§, §off§) in
-§si.conf§. A pen on a tablet works too, with pressure, and from your phone
-the [draw pad](remote.md) puts what you draw on the projected slide.
-
-**Overview.** §o§ shows the whole talk as a map: each §#§ section (or
-included module) is a column headed by its title, so you can jump to the
-Q&A backup slide or back to the agenda without paging through.
-
-**Find.** §/§ opens a search over the deck: type a word and the matching
-slides list with their text, best title matches first; type §12§ to jump to
-slide 12. Below the slides it offers the other decks, labs and PDFs of the
-folder, and the §links.*§ you add in §si.conf§.
-
-**Record your talk.** Under §si play§ the teleprompter's **● Record** keeps
-your voice and when each slide and step began. §si build talk.md --narration
-latest§ then films the deck with your voice, every view held as long as you
-spoke on it, and §si rehearse talk.md§ shows per slide the time you planned,
-the time you took and your words per minute. It all stays on your computer.
-
-**Your keys.** Every key can be changed in §si.conf§ (§keys.draw: w§), and
-any feature turned off (§feature.find: off§).
-
-`

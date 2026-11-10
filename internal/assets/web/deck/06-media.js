@@ -110,6 +110,7 @@
   /* word clouds: the words the room gave, each sized by its count; the deck
      passes the message on to the teleprompter, which can hide a word */
   function cloudShow(m) {
+    lastClouds[m.id] = m;
     if (!role) chans.forEach(function (c) { if (typeof BroadcastChannel !== 'undefined' && c instanceof BroadcastChannel) try { c.postMessage(m); } catch (e) {} });
     var words = m.words || [], max = words.length ? words[0].n : 1;
     each(document.querySelectorAll('.si-cloud[data-cloud="' + String(m.id).replace(/"/g, '') + '"]'), function (f) {
@@ -199,8 +200,15 @@
   /* Q&A (si play --audience): the question the presenter shows, over the slide;
      the deck passes the list on to a teleprompter window on this computer */
   var qaShown = null, qaBox = null;
+  /* a teleprompter opened later still gets the room's questions and words */
+  var lastQA = null, lastClouds = {};
+  function replayRoom() {
+    if (lastQA) qaIn(lastQA);
+    Object.keys(lastClouds).forEach(function (id) { cloudShow(lastClouds[id]); });
+  }
   function qaIn(m) {
     if (role) return;
+    lastQA = m;
     chans.forEach(function (c) { if (typeof BroadcastChannel !== 'undefined' && c instanceof BroadcastChannel) try { c.postMessage(m); } catch (e) {} });
     var shown = null;
     (m.list || []).forEach(function (q) { if (q.state === 'shown') shown = q; });

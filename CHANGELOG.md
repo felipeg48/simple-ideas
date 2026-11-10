@@ -3,6 +3,12 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.30.1:** a teleprompter opened after questions or cloud words arrived
+  now shows them (the deck replays them on its hello); the docs site's Decks
+  page is rewritten as a visual tour: layouts, canvases, overview, find, draw,
+  break timer, the teleprompter, two presenters, recording, the phone remote,
+  the audience QR, polls, word clouds and questions, each with a picture and
+  its command.
 - **v2.30.0:** make your own theme: the Studio's Theme view (⌘K › New theme:
   colour pickers for light and dark, fonts, a live specimen, contrast checks
   with Fix, Use in this folder; File › New Theme… in the Mac app);
