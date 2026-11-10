@@ -186,9 +186,15 @@ func TestThemeList(t *testing.T) {
 	if code := run([]string{"theme", "list"}, &stdout, &stderr); code != 0 {
 		t.Fatalf("theme list: %d %s", code, stderr.String())
 	}
-	for _, want := range []string{"acemq-pro", "AceMQ Pro", "cockroachlabs", "studio"} {
+	for _, want := range []string{"studio", "newsprint", "twilight"} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Errorf("theme list lacks %q", want)
+		}
+	}
+	// client themes work by name but are never listed (TRADEMARKS.md)
+	for _, never := range []string{"acemq", "AceMQ", "crdb", "cockroach"} {
+		if strings.Contains(stdout.String(), never) {
+			t.Errorf("theme list shows unlisted %q", never)
 		}
 	}
 	stdout.Reset()

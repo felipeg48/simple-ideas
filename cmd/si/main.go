@@ -1437,6 +1437,15 @@ func web(dir string, o *options, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	tok := studio.NewToken()
+	// SI_STUDIO_TOKEN fixes the token for scripts (web demos, tests) that must
+	// know the URL in advance; still loopback-only, and never a short one
+	if t := os.Getenv("SI_STUDIO_TOKEN"); t != "" {
+		if len(t) < 32 {
+			fmt.Fprintln(stderr, "si: SI_STUDIO_TOKEN must be at least 32 characters")
+			return exitUsage
+		}
+		tok = t
+	}
 	st, err := studio.New(dir, studio.Options{CSS: o.css, Theme: o.theme, Conf: o.conf, Title: o.title, Token: tok, Addr: ln.Addr().String(), Version: version,
 		Run: func(args []string, out io.Writer) int { return run(args, out, out) }})
 	if err != nil {
@@ -1910,6 +1919,9 @@ func listThemes(w io.Writer) {
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(tw, "NAME\tLABEL\tALIASES\tABOUT")
 	for _, n := range assets.ThemeNames() {
+		if assets.UnlistedThemes[n] { // client work: still works by name, never listed
+			continue
+		}
 		th := assets.Themes[n]
 		al := strings.Join(assets.ThemeAliases(n), ", ")
 		if al == "" {

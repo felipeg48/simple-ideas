@@ -453,6 +453,9 @@ func ParseStep(line string) (*Step, error) {
 		if st.Value, rest, err = value(rest); err != nil {
 			return nil, bad("%q: " + word + ` needs a "text" or a $VAR first`)
 		}
+		if word == "type" && strings.TrimSpace(rest) == "" {
+			break // type "text" alone: keystrokes where the focus is, nothing replaced
+		}
 		w, r := cutWord(rest)
 		if w != sep {
 			return nil, bad("%q: write " + word + ` "text" ` + sep + ` "Field"`)

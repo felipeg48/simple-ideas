@@ -83,9 +83,12 @@ Say: Change the title in the file, and the slide follows.
 What it does: a mistake caught with its file and line, fixed, and checked again.
 
 Say: Here is a slide with a typo in one of its directives.
+- start "printf '%s\n' '# Launch day' '' '<!-- layuot: center -->' '' 'Ship it.' > bad.md" as draft
+- stop draft · wait
 - terminal "si" · window=mac theme=night backdrop=graphite
-- run "printf '%s\n' '# Launch day' '' '<!-- layuot: center -->' '' 'Ship it.' > bad.md; cat bad.md" · wait
+- run "cat bad.md" · wait
 - expect output "layuot"
+- note "A typo" at line "layuot"
 
 Say: Check finds it, says which line, and lists the directives it knows.
 - run "si check bad.md" · exit 1

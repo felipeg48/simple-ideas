@@ -285,7 +285,7 @@ func (r *runner) browser() error {
 	r.cur = nil
 	if !r.home {
 		r.home = true
-		return r.navigate(r.base + "/")
+		return r.navigate(r.start)
 	}
 	return nil
 }

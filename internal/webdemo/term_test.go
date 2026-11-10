@@ -26,6 +26,7 @@ func TestTerminalSteps(t *testing.T) {
 		{`terminal "Broker" · window=mac title="the broker · 1" theme=dusk backdrop=graphite size=100x30`, Step{Kind: "terminal", Name: "Broker",
 			Opts: map[string]string{"window": "mac", "title": "the broker · 1", "theme": "dusk", "backdrop": "graphite", "size": "100x30"}}},
 		{`browser`, Step{Kind: "browser"}},
+		{`type ", live"`, Step{Kind: "type", Value: Value{Text: ", live"}}},
 		{`run "./bin/send orders hello"`, Step{Kind: "run", Value: Value{Text: "./bin/send orders hello"}}},
 		{`run "make seed" · wait`, Step{Kind: "run", Value: Value{Text: "make seed"}, Block: true}},
 		{`run "make seed" · wait · within 90s`, Step{Kind: "run", Value: Value{Text: "make seed"}, Block: true, Within: 90 * time.Second}},
@@ -508,6 +509,18 @@ func TestQuotedKeepsBackslashes(t *testing.T) {
 		got, _, err := quoted(in)
 		if err != nil || got != want {
 			t.Errorf("quoted(%s) = %q, %v; want %q", in, got, err, want)
+		}
+	}
+}
+
+func TestAppURLs(t *testing.T) {
+	for app, want := range map[string][2]string{
+		"http://127.0.0.1:7310":            {"http://127.0.0.1:7310", "http://127.0.0.1:7310/"},
+		"http://127.0.0.1:7393/?token=abc": {"http://127.0.0.1:7393", "http://127.0.0.1:7393/?token=abc"},
+		"https://shop.test/app/?t=1#home":  {"https://shop.test/app", "https://shop.test/app/?t=1#home"},
+	} {
+		if b, s := appURLs(app); b != want[0] || s != want[1] {
+			t.Errorf("appURLs(%q) = %q, %q; want %q", app, b, s, want)
 		}
 	}
 }

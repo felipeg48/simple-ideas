@@ -55,7 +55,8 @@ type runner struct {
 	s       *Script
 	o       Options
 	c       *cdp.Client
-	base    string // the app's URL, without a trailing /
+	base    string // the app's URL, without a trailing / or a query: paths join on it
+	start   string // where a feature opens the app: app: as written (its ?token=… kept)
 	secrets []string
 	mu      sync.Mutex
 	errs    []string // console errors and exceptions of this feature
@@ -129,7 +130,7 @@ func Run(s *Script, o Options) (*Report, error) {
 		return nil, err
 	}
 	defer stop()
-	r.base = base
+	r.base, r.start = appURLs(base)
 	for _, f := range s.Features {
 		for _, b := range f.Blocks {
 			for _, st := range b.Steps {
@@ -446,7 +447,7 @@ func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
 		}
 	} else {
 		r.home = true
-		if err := r.navigate(r.base + "/"); err != nil {
+		if err := r.navigate(r.start); err != nil {
 			return fail(StepResult{Text: "open " + r.base, Status: "failed", Found: err.Error()})
 		}
 		if r.tk != nil {
@@ -603,6 +604,18 @@ func (r *runner) resolve(p string) string {
 		p = "/" + p
 	}
 	return r.base + p
+}
+
+// appURLs splits app: into the base paths join on and the URL a feature
+// opens: an app with a query or a fragment (a login token) opens as written.
+func appURLs(app string) (base, start string) {
+	u, err := url.Parse(app)
+	if err != nil || (u.RawQuery == "" && u.Fragment == "") {
+		return app, app + "/"
+	}
+	start = app
+	u.RawQuery, u.Fragment = "", ""
+	return strings.TrimRight(u.String(), "/"), start
 }
 
 // navigate loads u and waits for the page to settle.
@@ -800,6 +813,12 @@ func (r *runner) step(st *Step) (string, error) {
 		text, err := r.value(st.Value)
 		if err != nil {
 			return "", err
+		}
+		if st.Target == (Locator{}) { // no field: type where the focus is
+			if r.tk != nil {
+				return "", r.typeSlowly(text)
+			}
+			return "", r.c.Call("Input.insertText", map[string]any{"text": text}, nil)
 		}
 		f, err := r.element(st.Target, "field", true)
 		if err != nil {
