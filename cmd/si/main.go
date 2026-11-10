@@ -48,7 +48,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "2.29.0"
+const version = "2.29.1"
 
 // Exit codes.
 const (
@@ -303,7 +303,6 @@ type options struct {
 	qrLogoSize                                   float64 // si qr --logo-size, percent of the width
 	qrQuiet                                      int     // si qr --quiet, modules
 	qrJPG, qrECSet                               bool    // si qr --jpg; --ec given
-	trackpad                                     bool    // si play --trackpad: v2.10 only, now a note (Option draws in draw mode)
 	audience                                     bool    // si play --audience: the room follows the talk on their phones
 	tunnel                                       bool    // si play --tunnel: the audience side on a temporary public address
 	css                                          multi
@@ -392,7 +391,6 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.qrPassword, "password", "", "")
 	fl.StringVar(&o.qrSecurity, "security", "WPA", "")
 	fl.StringVar(&o.qrVCard, "vcard", "", "")
-	fl.BoolVar(&o.trackpad, "trackpad", false, "")
 	fl.BoolVar(&o.audience, "audience", false, "")
 	fl.BoolVar(&o.tunnel, "tunnel", false, "")
 	for {
@@ -1028,9 +1026,6 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		o.audience = true // the tunnel carries the audience side
 	}
 	srv.Remote = len(o.remote.roles) > 0 || o.audience
-	if o.trackpad { // v2.10 only: the helper is gone, Option-drawing needs nothing
-		fmt.Fprintln(stderr, "si: --trackpad is no longer needed: press a (draw), then hold ⌥ Option and move to draw with the cursor")
-	}
 	if o.https != "" && len(o.remote.roles) == 0 && !o.audience && !o.review {
 		return usageErr(stderr, "--https is for the --remote, --audience or --review listener: si play talk.md --remote --https")
 	}

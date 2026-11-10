@@ -231,9 +231,9 @@ pass. The steps that matter:
   reads them, drops dead pids); `GET /_si/qr` (loopback) shows the phone codes.
   Only while the app is open (no login item), by the founder's choice.
 - **Draw with the cursor** (DONE, v2.11.0): in draw mode, Option (Alt) held
-  = the cursor draws (`deck/05-annotate-keys.js`; pointer e2e). v2.10's
-  absolute trackpad mapping (`si-trackpad`, MultitouchSupport) was removed
-  after the founder's feel test: the pen jumped away from the cursor.
+  = the cursor draws (`deck/05-annotate-keys.js`; pointer e2e). An absolute
+  trackpad mapping was tried and dropped (the pen jumped away from the
+  cursor); `--trackpad` is gone entirely (v2.29.1). Do not bring it back.
 - **AI agents** (DONE, v2.8.0): the `si` skill, the Claude Code plugin
   (`/plugin install si@simple-ideas`), `si --export skill`, docs page
   `agents.md`. v2.9.0: `si mcp` (`internal/mcp`: stdlib JSON-RPC over stdio,

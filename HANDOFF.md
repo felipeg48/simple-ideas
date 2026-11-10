@@ -182,37 +182,13 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
   was NOT seen on screen (no windows on the founder's screen): the founder's to
   check. The founder confirmed Option-drawing works on the trackpad (v2.11.0).
 
-- **v2.11.0: draw with the cursor; the trackpad helper is gone.** The founder
-  tried v2.10's `--trackpad`: the dot showed all the time and the absolute
-  mapping put the pen far from the cursor ("it changes position not when I
-  want it"). Wanted: drawing only in draw mode, and the cursor itself drawing.
-  Now, in draw mode (`a`), holding ⌥ Option (Alt) draws where the cursor goes,
-  no click (`05-annotate-keys.js`: a pointermove listener starts/ends the
-  stroke on `e.altKey`, keydown Alt starts it at the last pointer position,
-  keyup Alt / blur end it). Pure browser: works in every deck. Removed:
-  `desktop/trackpad`, `cmd/si/trackpad.go`, the `pad` message, its release zip
-  and make targets; `--trackpad` prints that it is no longer needed. Test:
-  pointer e2e "draw: in draw mode, the cursor draws while Option is held, and
-  only then" (no ink outside draw mode, none without Option, one stroke from
-  exactly where Option went down).
-
-- **v2.10.0 (2026-11-09): the Mac trackpad as a pen.** The founder asked for the
-  trackpad mapped to the whole monitor (not the window) and ⌥ Option held to
-  draw. `desktop/trackpad/main.go` (`si-trackpad`, cgo, darwin; `stub.go`
-  elsewhere): MultitouchSupport (private) contact frames → first finger in
-  contact (states 3–4) or near; Option via `CGEventSourceFlagsState`; cursor
-  frozen while Option is held; 60 Hz `pad` POSTs to `/_si/remote/send` with
-  `s` = `CGGetActiveDisplayList` bounds (global points, top-left). `si play
-  --trackpad` (`cmd/si/trackpad.go`) turns on the loopback relay without a
-  network listener, finds the helper next to si or on PATH, stops it with
-  SIGINT. Page: `padIn`/`padPoint` (display holding the window centre;
-  ponytail: page zoom 100 %, no chrome left of the page). Tested: the helper
-  finds the trackpad (the framework logs "Recognized … 30 cols X 22 rows"),
-  starts and stops with si play; synthetic pad messages draw an exact diagonal
-  (25 %→75 % of the window) as one stroke, with the dot. NOT tested: a real
-  finger (the founder's to try), gestures while Option is held, multi-display.
-  `make trackpad`, `make install` (macOS) installs it; build-mac.sh puts it in
-  the app and in `si-trackpad-<v>-macos.zip`, uploaded by release.yml.
+- **v2.11.0: draw with the cursor.** In draw mode (`a`), holding ⌥ Option
+  (Alt) draws where the cursor goes, no click (`05-annotate-keys.js`: a
+  pointermove listener starts/ends the stroke on `e.altKey`, keydown Alt starts
+  it at the last pointer position, keyup Alt / blur end it); pointer e2e "draw:
+  in draw mode, the cursor draws while Option is held, and only then". The
+  v2.10 trackpad helper (absolute mapping) was removed after the founder's feel
+  test; the `--trackpad` flag itself is gone since v2.29.1.
 
 - **v2.9.1:** `claude mcp list` rejected v2.9.0's tools/list: `si_rules` sent
   `"required": null` (must be an array or absent); `obj` now omits it, and

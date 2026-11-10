@@ -128,6 +128,8 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.29.1:** drawing on a slide is ⌥ Option in draw mode, nothing else to
+  install; an old, unused `si play` flag is removed.
 - **v2.29.0:** two presenters: `speakers:` + `Notes[Name]:` / `Points[Name]:`; a
   teleprompter per speaker (picker, cue lines for the others, a → hand-over
   banner, your own clock), `speakers.control: turn`, one remote teleprompter
@@ -195,8 +197,7 @@ self-contained HTML files you can mail, host or open from a USB stick.
   stays in the menu bar after its last window closes.
 - **v2.11.0:** draw with the cursor: in draw mode (`a`), hold ⌥ Option (Alt)
   and move, and the cursor draws where it goes, no click; a trackpad draws with
-  one finger. It replaces v2.10's `--trackpad` helper (absolute mapping felt
-  out of tune), which is gone; `--trackpad` now just says so.
+  one finger.
 - **v2.9.1:** `si mcp` tool schemas every client accepts (Claude Code listed
   no tools with v2.9.0).
 - **v2.9.0:** `si mcp`, an MCP server for AI agents (stdio, MCP 2026-07-28
