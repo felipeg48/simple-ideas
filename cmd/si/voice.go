@@ -42,6 +42,9 @@ const voiceUsage = `Usage:
 // voiceStdin is where login reads a key (tests swap it).
 var voiceStdin io.Reader = os.Stdin
 
+// lookPlayer finds an audio player on PATH (tests swap it, with runPlayer).
+var lookPlayer = exec.LookPath
+
 // runPlayer plays a WAV (tests swap it).
 var runPlayer = func(argv []string) error {
 	c := exec.Command(argv[0], argv[1:]...)
@@ -188,7 +191,7 @@ func voiceSay(text, flagVoice, out string, play bool, stdout, stderr io.Writer) 
 		fmt.Fprintf(stdout, "%s (%s, %.1fs)\n", out, v, lines[text].Seconds)
 	}
 	if out == "" || play {
-		argv := playerFor(runtime.GOOS, wav, exec.LookPath)
+		argv := playerFor(runtime.GOOS, wav, lookPlayer)
 		if argv == nil {
 			fmt.Fprintf(stderr, "si voice: no audio player found (paplay, aplay or ffplay); the line is in %s\n", wav)
 			return exitProblems

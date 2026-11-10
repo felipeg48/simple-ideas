@@ -140,6 +140,8 @@ func TestVoiceSayPlaysFromCache(t *testing.T) {
 	var played [][]string
 	defer func(f func([]string) error) { runPlayer = f }(runPlayer)
 	runPlayer = func(argv []string) error { played = append(played, argv); return nil }
+	defer func(f func(string) (string, error)) { lookPlayer = f }(lookPlayer)
+	lookPlayer = func(name string) (string, error) { return "/usr/bin/" + name, nil } // CI's Linux has no player
 	t.Setenv("OPENAI_API_KEY", "sk-env")
 	sy := &webdemo.Synth{Cache: webdemo.VoiceCache()}
 	v, _ := webdemo.ParseVoice("openai:nova")
