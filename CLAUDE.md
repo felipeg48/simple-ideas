@@ -103,6 +103,7 @@ what you chose.
 | `docs/screenshots/readme/` | headless screenshots referenced by the README and docs/terminal.md |
 | `internal/tui/` | si in the terminal: `slide.go` + `text.go` (the deck as text and colour: layouts, builds, code, tables, cards), `font.go` (block letters), `image.go` (half-block pixels), `palette.go` (theme tokens), `play.go` (`si play --terminal`, `--dump`), `notes.go` (the `--notes` teleprompter), `sync.go` (the local socket between them), `studio.go` (`si --terminal [dir]`: files, preview, problems, overlays, modes), `lab.go` (Lab mode), `pictures.go` (Kitty / iTerm2 pictures); see `docs/terminal-studio.md` |
 | `desktop/` | si Studio.app for macOS: its own module; `main.go` (starts/stops `si --web` per folder; `helpJS`: the Help menu and About run through `window.siStudio`), `app_darwin.m` (Cocoa + WebKit windows and menus), `build-mac.sh` (universal bundle + zip, `make desktop-mac`; signs with the self-signed "simple-ideas Self-Signed" identity when present, `make desktop-cert` creates it), `icon/gen.go` (the Stack app icon, `make desktop-icon`) |
+| `internal/themefile/` | theme CSS files: the `/* si theme: Name · extends <built-in> */` header, token read/write keeping other CSS, checks (values, px, contrast), W3C Design Tokens export/import; `cmd/si/themecmd.go` (`si theme check|export|import`), `cmd/si/mcptheme.go` (MCP theme tools), `internal/studio/theme.go` + `web/studio/src/theme-editor.tsx` (the Studio Theme view) |
 | `internal/brand/` | what si says about itself, in one place: the docs site URL (`Site`), the repo, Help pages, `IssueURL` (Report a Problem / Request a Feature, issue forms in `.github/ISSUE_TEMPLATE/`), credits, build info; read by the CLI (`si --version --verbose`, `si report`), the Studio (`#si-about` JSON) and the docs site generator |
 | `docs/brand/` | the Stack logo set (mark, mono, favicon, app tiles, wordmark, social card); embedded as `docs.Brand` for the docs site |
 | `cmd/si/motion.go` | real-motion `--mp4`: headless Chrome over the DevTools pipe (stdlib), page slowed (Animation domain + a JS clock shim), screenshots stamped and resampled to 30 fps |
@@ -193,7 +194,7 @@ pass. The steps that matter:
   `docs/superpowers/specs/2026-11-09-next-five.md` indexes audience mode
   (follow, polls, Q&A), handouts (`--handout`), record your talk
   (DONE v2.28.0: ● Record, `--narration`, `si rehearse`), theme from a logo, two presenters (DONE v2.29.0)
-  (`Notes[Name]:`), and the Studio Theme editor (`2026-11-09-studio-theme-editor.md`;
+  (`Notes[Name]:`), and the Studio Theme editor (DONE v2.30.0; `2026-11-09-studio-theme-editor.md`;
   phase 1 fixes CSS-file themes: `extends <built-in>`, the index page's theme;
   theme import/export incl. W3C design tokens; MCP theme tools), and Motion
   (`2026-11-09-motion-editor.md`: `transition: morph`, the Studio Motion view).

@@ -5,6 +5,13 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.30.0: theme editor.** `internal/themefile` (read/write theme files,
+  extends, checks, DTCG export/import), `render.ThemeLayer`/`ThemeFileLayer`/
+  `Options.ThemeCSS`, token metadata `assets.AllMeta`, `cmd/si/themecmd.go`,
+  `cmd/si/mcptheme.go`, `internal/studio/theme.go`, `web/studio/src/theme-editor.tsx`,
+  specimen `internal/assets/web/themes/specimen.md`, `e2e/theme.e2e.mjs`. Left
+  out: start from a logo (next: theme-from-logo spec), use your own deck in the
+  preview, Use in this deck, compare two themes.
 - **README redesign (2026-11-10):** feature sections with screenshots
   (`docs/screenshots/readme/`, the site's `features/img/`), theme thumbnails
   linking to simple-ideas.org/themes.html#<name>; release notes moved to

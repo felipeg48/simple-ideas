@@ -3,6 +3,12 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.30.0:** make your own theme: the Studio's Theme view (⌘K › New theme:
+  colour pickers for light and dark, fonts, a live specimen, contrast checks
+  with Fix, Use in this folder; File › New Theme… in the Mac app);
+  `/* si theme: Name · extends <built-in> */` headers; `si theme
+  check|export|import` (CSS or W3C Design Tokens); MCP theme tools; the index
+  page follows a `.css` theme.
 - **v2.29.1:** drawing on a slide is ⌥ Option in draw mode, nothing else to
   install; an old, unused `si play` flag is removed.
 - **v2.29.0:** two presenters: `speakers:` + `Notes[Name]:` / `Points[Name]:`; a
