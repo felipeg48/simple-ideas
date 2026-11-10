@@ -144,6 +144,16 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - **`si demo test`:** ✓ / ✗ per step, `report.html` (expected, found, the
   closest elements, a screenshot, console errors) and `report.json`, exit 1 on
   a failure, `--junit` for CI. Markdown, AsciiDoc or JSON scripts.
+- **`si demo run`:** the same steps filmed and narrated: a drawn cursor that
+  glides, click ripples, `note "…" at "Field"` callouts, blurred `$VAR`
+  fields; each `Say:` line voiced first so the words set the pace;
+  `<feature>.mp4` (+ silent `.video.mp4`, `.voice.wav/.m4a`, `.srt`),
+  `all.mp4` with a title card per feature and chapters, `chapters.txt` for
+  YouTube, the report and README.md + README.html. `--captions` burns the
+  captions in; `--viewport phone`; a failing step ends its clip.
+- **Voices:** `kokoro:af_heart` (local, the default when installed),
+  `system` (say, espeak-ng, Windows), `elevenlabs`, `openai` (`voice-style:`);
+  `pronounce: si = ess eye`; lines cached, only changed lines re-voiced.
 
 ## Themes
 

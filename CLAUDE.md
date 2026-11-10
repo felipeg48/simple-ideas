@@ -104,7 +104,7 @@ what you chose.
 | `internal/tui/` | si in the terminal: `slide.go` + `text.go` (the deck as text and colour: layouts, builds, code, tables, cards), `font.go` (block letters), `image.go` (half-block pixels), `palette.go` (theme tokens), `play.go` (`si play --terminal`, `--dump`), `notes.go` (the `--notes` teleprompter), `sync.go` (the local socket between them), `studio.go` (`si --terminal [dir]`: files, preview, problems, overlays, modes), `lab.go` (Lab mode), `pictures.go` (Kitty / iTerm2 pictures); see `docs/terminal-studio.md` |
 | `desktop/` | si Studio.app for macOS: its own module; `main.go` (starts/stops `si --web` per folder; `helpJS`: the Help menu and About run through `window.siStudio`), `app_darwin.m` (Cocoa + WebKit windows and menus), `build-mac.sh` (universal bundle + zip, `make desktop-mac`; signs with the self-signed "simple-ideas Self-Signed" identity when present, `make desktop-cert` creates it), `icon/gen.go` (the Stack app icon, `make desktop-icon`) |
 | `internal/cdp/` | the Chrome DevTools Protocol client over `--remote-debugging-pipe` (stdlib, with events): used by `--mp4` motion filming and web demos |
-| `internal/webdemo/` | web demos (RULES §27): the `type: demo` + `app:` script (Markdown, AsciiDoc, JSON), the runner over `internal/cdp` (locators, steps, expects), report.html/json and JUnit; `cmd/si/demo.go` is `si demo test|run`; spec `docs/superpowers/specs/2026-11-10-web-demos.md` |
+| `internal/webdemo/` | web demos (RULES §27): the `type: demo` + `app:` script (Markdown, AsciiDoc, JSON), the runner over `internal/cdp` (locators, steps, expects), report.html/json and JUnit; `film.go` + `overlay.js` (the take: cursor, notes, blur, screencast), `encode.go` (ffmpeg, captions, chapters, SRT), `voice.go` (engines, cache, `pronounce:`), `readme.go`; `cmd/si/demo.go` is `si demo test|run`; spec `docs/superpowers/specs/2026-11-10-web-demos.md` |
 | `internal/motion/` | animated SVG canvases as frames for the Studio's Motion view (`internal/studio/motion.go`, `web/studio/src/motion-editor.tsx`): reads/writes the `/* si motion: … */` block, keeps hand-written SVG and CSS; `transition: morph` itself lives in `deck/02-navigation.js` |
 | `internal/themefile/` | theme CSS files: the `/* si theme: Name · extends <built-in> */` header, token read/write keeping other CSS, checks (values, px, contrast), W3C Design Tokens export/import; `cmd/si/themecmd.go` (`si theme check|export|import`), `cmd/si/mcptheme.go` (MCP theme tools), `internal/studio/theme.go` + `web/studio/src/theme-editor.tsx` (the Studio Theme view) |
 | `internal/brand/` | what si says about itself, in one place: the docs site URL (`Site`), the repo, Help pages, `IssueURL` (Report a Problem / Request a Feature, issue forms in `.github/ISSUE_TEMPLATE/`), credits, build info; read by the CLI (`si --version --verbose`, `si report`), the Studio (`#si-about` JSON) and the docs site generator |
@@ -194,7 +194,9 @@ pass. The steps that matter:
 ## Roadmap ideas
 
 - **v3.0.0: web demos** (spec `docs/superpowers/specs/2026-11-10-web-demos.md`,
-  decided with the founder 2026-11-10, not built): one `type: demo` script with
+  decided with the founder 2026-11-10; phase 1 test mode DONE v2.34.0, phases
+  2 video + 3 voice DONE v2.35.0: `si demo run`, `internal/webdemo/film.go`,
+  `encode.go`, `voice.go`, `overlay.js`): one `type: demo` script with
   `app: <url>` makes narrated videos of a web app (per feature and one with
   chapters, callouts, `--captions`, voice engines local and cloud) and runs as a
   test (`si demo test`, report, JUnit). Phases: test mode, video, voice, the

@@ -321,8 +321,35 @@ step fails it shows what it expected, what it found and a picture of the page. [
 
 Points:
 - `app:` is a URL, or the app's folder: si serves it on loopback
-- Videos and narration of the same script come in a later version
+- The same script makes the videos: next slide
 - Example: `examples/webdemo/` (shop.md passes, broken.md fails on purpose)
+
+---
+
+## Web demos, on film
+
+```bash
+SHOP_PASSWORD=shop-demo si demo run shop.md --captions
+```
+
+- A drawn cursor, click ripples, `note "…" at "Field"` callouts, blurred `$VAR` fields
+- Each `Say:` line voiced first: the narration sets the pace
+- `voice: kokoro:af_heart` (the default when installed), `system`, `elevenlabs`, `openai`
+- `pronounce: si = ess eye`: the voice says it, the captions keep the word
+- `<feature>.mp4` each, `all.mp4` with chapters, `chapters.txt`, `.srt`, README.html
+
+Notes: (1 min)
+The same script makes the videos. Every Say line is spoken first, so the
+words set the pace and the steps fit between them. A cursor glides to each
+button, notes point at the fields that matter, and passwords are blurred.
+You get one video per feature, one with chapters for YouTube, captions, and
+a page that lists it all. [CLICK]
+
+Points:
+- Kokoro is si's own voice; without it, the computer's voice
+- Cloud voices send only the Say: text; lines are cached, re-runs re-voice only changes
+- A failing step ends that clip and lands in the report
+- Needs Chrome and ffmpeg: `si doctor`
 
 ---
 
@@ -334,6 +361,7 @@ si build <dir> --pdf       # self-contained HTML (+ PDF)
 si build talk.md --handout # handouts/talk.pdf: slides only; =lines, =points, =notes add space or speaker text
 si check <dir>             # validate; exit 1 on a problem
 si demo test shop.md       # run a web demo script against a web app as a test (report.html, --junit)
+si demo run shop.md        # the same, filmed and narrated: <feature>.mp4, all.mp4 with chapters, .srt (--captions)
 si doctor                  # the optional programs (Chrome, ffmpeg, git…): found or not, how to install each
 si new <name>              # scaffold a deck (the showcase, every rule)
 si new <name> --type article   # a small starter: deck, article, guide, book, site, page, lab, demo, mindmap, mindmap3d, codeshow

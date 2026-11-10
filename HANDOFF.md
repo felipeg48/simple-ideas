@@ -3,8 +3,29 @@
 Read this, then `FEATURE.md`, then `CLAUDE.md`. This is a Go CLI (`si`) that turns
 Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
-## Current state (2026-11-09)
+## Current state (2026-11-10)
 
+- **v2.35.0: web demos phases 2 + 3 (video, voice).** `si demo run`
+  (`cmd/si/demo.go`): `internal/webdemo/film.go` (the take: overlay injected
+  with `Page.addScriptToEvaluateOnNewDocument`, `overlay.js` in a closed shadow
+  root on `<html>`: cursor, ripple, notes ringed and anchored to `__siT`,
+  blur; restored after navigations via `__siDemo.fresh`; `Page.startScreencast`
+  JPEG frames stamped on arrival, acked from a goroutine; pacing
+  `beginBlock`/`pace`/`endBlock` = max(voice, steps); title cards and caption
+  PNGs rendered by the same Chrome, transparent background override),
+  `encode.go` (30 fps sequence of hard links, ffmpeg args: captions burned with
+  `overlay` + `enable=between`, mux, all.mp4 via the concat filter with
+  `anullsrc` under the cards, FFMETADATA chapters, chapters.txt, SRT, caption
+  split/wrap), `voice.go` (engines system/kokoro/elevenlabs/openai, cache
+  `<user cache>/si/voice/<sha>.wav` normalised to 24 kHz mono, `mixWAV`,
+  `pronounce:`), `readme.go` (README.md; cmd renders README.html with
+  `render.Deck`, MediaLink). Run mode waits at most 3 s per step. Kokoro is a
+  `tools` entry with a `Probe` (python + `kokoro_onnx` spec + model files in
+  `tools.KokoroDir()`); espeak-ng added. Verified end to end on
+  examples/webdemo with `say` (Kokoro was not installed on this machine, so
+  its Python path has not run yet; the cloud engines are tested on fakes only). Next: piper/chatterbox/record engines,
+  phase 4 (the manual with videos, `make docs-videos`), the open questions in
+  the spec (`--titles`, music, device frames).
 - **v2.34.0: web demos phase 1 (test mode).** `internal/cdp` (the DevTools
   client, now with events; motion.go uses it), `internal/webdemo` (parser for
   Markdown/AsciiDoc/JSON with line numbers, runner: locators by text, label,
