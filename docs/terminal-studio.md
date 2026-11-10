@@ -90,7 +90,8 @@ The Studio as a keyboard app, the twin of `si --web [dir]`.
 - **Lab:** see below.
 - **Mind maps:** with the preview focused, a mind map page becomes an editable
   tree: ↑ ↓ pick a topic, Enter renames it, `c` adds a child, `o` a sibling, `x`
-  deletes, `[` `]` move it among its siblings. Every edit is written through
+  deletes, `[` `]` move it among its siblings, `>` puts it under the topic above,
+  `<` takes it out a level, `u` undoes. Every edit is written through
   the same writer as the web Studio's Map view.
 - **Code windows:** `:` lists, for every code block of the previewed file, its
   window style (macOS, Windows, Terminal, None), line numbers on/off and its

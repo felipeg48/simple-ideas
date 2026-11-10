@@ -5,6 +5,12 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.27.0: site Studio + terminal pages; TUI map indent/undo.**
+  `docs/site/features/{studio,terminal}.md` with `img/*.jpg`. Terminal shots:
+  run si in a pty (Python `pty`, TERM=xterm-256color, COLORTERM=truecolor),
+  keep the bytes, replay them into the bundled `internal/assets/web/term/xterm.js`
+  in headless Playwright and screenshot. TUI map: `>` / `<` (move op), `u`
+  (mmUndo, 100 deep).
 - **v2.26.0: History branches, pull, push.** `git/branches`, `git/branch`
   (`switch`/`switch -c`, `branchRE` + check-ref-format), `git/pull` (`--ff-only`),
   `git/push` (`-u origin <branch>` the first time); branch bar in history.tsx;

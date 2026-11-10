@@ -29,6 +29,24 @@ func TestTerminalEditsAMindMap(t *testing.T) {
 	if strings.Contains(string(raw), "New topic") || strings.Index(string(raw), "- Picking") > strings.Index(string(raw), "- Receiving dock") {
 		t.Fatalf("delete + move down:\n%s", raw)
 	}
+	// > puts Receiving dock under Picking (the topic above); < takes it back out; u undoes
+	before, _ := os.ReadFile(file)
+	press(m, ">")
+	raw, _ = os.ReadFile(file)
+	if !strings.Contains(string(raw), "\n  - Receiving dock\n    - Receive\n") {
+		t.Fatalf("indent: %q", raw)
+	}
+	press(m, "<")
+	raw, _ = os.ReadFile(file)
+	if string(raw) != string(before) {
+		t.Fatalf("outdent should give back the order before:\n%s", raw)
+	}
+	press(m, "u")
+	press(m, "u")
+	raw, _ = os.ReadFile(file)
+	if string(raw) != string(before) {
+		t.Fatalf("two undos: back before the indent:\n%s", raw)
+	}
 	if v := strings.Join(m.docLines(100, 40), "\n"); !strings.Contains(v, "enter rename") {
 		t.Errorf("the focused tree shows its keys:\n%s", v)
 	}

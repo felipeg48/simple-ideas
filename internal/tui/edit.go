@@ -13,7 +13,8 @@ import (
 
 // Editing in the terminal Studio, through the same writers as the web Studio:
 // a mind map page's topics (preview focused: ↑↓ pick a topic, enter renames,
-// c adds a child, o a sibling, x deletes, [ ] move it) and a code window's
+// c adds a child, o a sibling, x deletes, [ ] move it, > indents it under the
+// topic above, < takes it out a level, u undoes) and a code window's
 // look (the palette: window style, title, line numbers).
 
 // mmRow is one line of a mind map page's editable tree: a map title (path nil)
@@ -91,6 +92,29 @@ func (m *studioModel) mmKey(k string) (bool, tea.Cmd) {
 		if topic {
 			return true, m.mmApply(mindmap.Op{Kind: "delete", Map: r.mapI, Path: r.path})
 		}
+	case ">": // under the topic above it, as its last child
+		if topic && r.path[len(r.path)-1] > 0 {
+			to := append(append([]int{}, r.path[:len(r.path)-1]...), r.path[len(r.path)-1]-1)
+			return true, m.mmApply(mindmap.Op{Kind: "move", Map: r.mapI, Path: r.path, To: to, Index: -1})
+		}
+	case "<": // out a level, right after its parent
+		if topic && len(r.path) > 1 {
+			parent := r.path[:len(r.path)-1]
+			return true, m.mmApply(mindmap.Op{Kind: "move", Map: r.mapI, Path: r.path, To: append([]int{}, parent[:len(parent)-1]...), Index: parent[len(parent)-1] + 1})
+		}
+	case "u": // undo the last edit made here
+		if n := len(m.mmUndo); n > 0 {
+			prev := m.mmUndo[n-1]
+			m.mmUndo = m.mmUndo[:n-1]
+			if err := os.WriteFile(m.abs(m.file), []byte(prev), 0o644); err != nil {
+				m.status = err.Error()
+				return true, nil
+			}
+			m.status = "undone in " + m.file
+			m.loadPreview()
+			return true, m.check()
+		}
+		m.status = "nothing to undo"
 	case "[", "]":
 		if topic {
 			return true, m.mmApply(mindmap.Op{Kind: map[string]string{"[": "up", "]": "down"}[k], Map: r.mapI, Path: r.path})
@@ -118,7 +142,7 @@ func (m *studioModel) mmRename(text string) tea.Cmd {
 // mmApply runs one edit on the page, writes it and selects the topic the edit
 // points at.
 func (m *studioModel) mmApply(op mindmap.Op) tea.Cmd {
-	d, _ := m.mmDoc()
+	d, before := m.mmDoc()
 	if d == nil {
 		return nil
 	}
@@ -130,6 +154,10 @@ func (m *studioModel) mmApply(op mindmap.Op) tea.Cmd {
 	if err := os.WriteFile(m.abs(m.file), []byte(d.String()), 0o644); err != nil {
 		m.status = err.Error()
 		return nil
+	}
+	m.mmUndo = append(m.mmUndo, before)
+	if len(m.mmUndo) > 100 {
+		m.mmUndo = m.mmUndo[1:]
 	}
 	for i, r := range mmRows(d) {
 		if r.mapI == sel.Map && fmt.Sprint(r.path) == fmt.Sprint(sel.Path) && (r.path != nil) == (sel.Path != nil) {
@@ -148,7 +176,7 @@ func (m *studioModel) mmLines(w int) []string {
 		return nil
 	}
 	st := m.st()
-	out := []string{st.Foreground(m.pal.Muted).Render("↑↓ topic · enter rename · c child · o sibling · x delete · [ ] move")}
+	out := []string{st.Foreground(m.pal.Muted).Render("↑↓ topic · enter rename · c child · o sibling · x delete · [ ] move · > < indent · u undo")}
 	for i, r := range mmRows(d) {
 		line := strings.Repeat("  ", r.depth) + "• " + r.text
 		s := st

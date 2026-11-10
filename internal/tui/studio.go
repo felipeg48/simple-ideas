@@ -87,9 +87,10 @@ type studioModel struct {
 	output  []string // build output, editor errors
 	status  string
 	newKind string
-	field   string // the inspector field being edited
-	mmSel   int    // the selected row of a mind map page's editable tree (edit.go)
-	cwLine  int    // the code window whose title the prompt edits
+	field   string   // the inspector field being edited
+	mmSel   int      // the selected row of a mind map page's editable tree (edit.go)
+	mmUndo  []string // the page before each tree edit, for u
+	cwLine  int      // the code window whose title the prompt edits
 	lab     *labState
 }
 

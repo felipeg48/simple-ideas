@@ -1,6 +1,6 @@
 {
   "name": "si",
-  "version": "2.26.0",
+  "version": "2.27.0",
   "description": "Write slide decks, talks, articles, guides, books, mind maps and code shows in Markdown with si (simple-ideas): the format, the check-and-look loop, and every rule on demand.",
   "author": { "name": "Felipe Gutierrez", "url": "https://github.com/felipeg48" },
   "homepage": "https://simple-ideas.org/agents.html",

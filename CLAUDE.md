@@ -298,8 +298,7 @@ pass. The steps that matter:
   ops applied by `internal/mindmap`), `si build --svg/--png/--pdf` for mind
   maps, `si mindmap import/export` (OPML, FreeMind, XMind, Mermaid), fence
   `steps` (one branch per click, 2D and 3D), `flow: on`, toy labels facing the
-  camera, a portrait 3D fit. Next: editing in the terminal Studio (read-only
-  tree today), a 3D canvas in the map editor, multi-select and copy/paste of
+  camera, a portrait 3D fit. Terminal Studio map editing has indent/outdent/undo (v2.27.0). Next: a 3D canvas in the map editor, multi-select and copy/paste of
   branches, XMind 8 export.
   **3D** (v1.13.0 DONE): `view: 3d` / `view=3d`, `camera: iso|perspective`,
   `floors: on|off`; pills on a shadow floor, cables with flow dots, linked maps

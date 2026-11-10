@@ -20,6 +20,8 @@ footer: simple-ideas
   - [Mind maps](features/mindmaps.md)
   - [Books](features/books.md)
   - [Code windows and shows](features/code.md)
+  - [Studio: web and Mac app](features/studio.md)
+  - [si in the terminal](features/terminal.md)
   - [Present from your phone](features/remote.md)
   - [Your audience: polls and questions](features/audience.md)
   - [QR codes](features/qr.md)

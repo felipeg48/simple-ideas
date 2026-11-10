@@ -116,12 +116,12 @@ def quote(parcel):
 ### Studio · web and desktop
 
 Write, preview, rehearse and present in the browser or the Mac app, with a
-map editor and a code window builder.
+map editor and a code window builder. [The Studio](features/studio.md)
 
 ### Terminal · si play --terminal
 
 The same deck in the terminal, with real pictures, animated canvases and a
-teleprompter in a second pane.
+teleprompter in a second pane. [si in the terminal](features/terminal.md)
 
 ### Presenting · from your phone
 
