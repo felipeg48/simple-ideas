@@ -15,7 +15,8 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - **One format, many documents:** `type: deck` (default), `article`, `page`,
   `lab`, `demo`, `mindmap`; folders with `_nav.md` (guide, or `type: book`) or
   `_site.md` (website).
-- **Starters:** `si new <name> --type deck|article|guide|book|website|page|lab|demo|mindmap|mindmap3d|codeshow`,
+- **Starters:** `si new <name> --type deck|article|guide|book|website|page|lab|demo|mindmap|mindmap3d|codeshow`
+  (a website `--kind resume|portfolio|landing`),
   joined to the menu of the guide or site they land in; `si new-canvas` for an
   animated SVG.
 - **Includes:** `<!-- include: sections/02-payment.md -->`, code from files by
@@ -107,6 +108,11 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - A folder with `_site.md`: a navigator (`topbar`, `topbar-centred`, `mega`,
   `sidebar`), a call to action, search, favicon and link previews, footer;
   pages, articles, talks, guides and books inside it. `si new <name> --type website`.
+- Start from a kind: `--kind resume` (one page that prints on A4 or Letter,
+  projects, about), `--kind portfolio` (project cards with pictures, a case
+  study each) or `--kind landing` (a hero with its own button, features,
+  questions, a QR code, pricing). A page's own `cta:` is a hero button; a
+  card's title can be a link.
 
 ## Mind maps
 
