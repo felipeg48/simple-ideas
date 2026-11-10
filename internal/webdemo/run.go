@@ -895,10 +895,18 @@ func (r *runner) step(st *Step) (string, error) {
 			return "", r.click(o)
 		}
 		arg, _ := json.Marshal(text)
-		v, err := r.c.Eval(`(function(e,t){var o=[].find.call(e.options,function(o){return o.text.trim()===t||o.value===t||o.label===t});
+		var v []byte
+		// a list filled after it appears (options fetched by the page) gets the
+		// step's timeout to show the option, as an element does
+		for end := time.Now().Add(r.timeout); ; time.Sleep(100 * time.Millisecond) {
+			v, err = r.c.Eval(`(function(e,t){var o=[].find.call(e.options,function(o){return o.text.trim()===t||o.value===t||o.label===t});
 if(!o)return [].map.call(e.options,function(o){return o.text.trim()});e.value=o.value;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));return true})(window.__siT,` + string(arg) + `)`)
-		if err != nil {
-			return "", err
+			if err != nil {
+				return "", err
+			}
+			if string(v) == "true" || time.Now().After(end) {
+				break
+			}
 		}
 		if string(v) != "true" {
 			var opts []string

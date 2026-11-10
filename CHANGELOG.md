@@ -3,6 +3,10 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.39.1:** web demos: `select "…" in "…"` waits for an option a page adds
+  late (a list filled from the network), as other steps wait for elements;
+  the shop example now offers Express a moment after the page shows. The
+  Studio demo works on Linux too.
 - **v2.39.0:** si's own demo videos: six scripts in `docs/demos/` (a deck
   from the command line to the room, presenting, the Studio, themes, mind maps,
   the terminal) are checked by `si demo test` on every push and filmed with

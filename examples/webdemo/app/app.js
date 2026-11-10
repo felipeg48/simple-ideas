@@ -67,6 +67,12 @@ function order() {
     body.appendChild(tr);
   });
   var ship = $("#shipping"), gift = $("#gift"), discount = 0;
+  // Express is offered once the carrier answers, a moment after the page shows
+  setTimeout(function () {
+    var o = document.createElement("option");
+    o.textContent = "Express";
+    ship.appendChild(o);
+  }, 600);
   function total() {
     var t = o.items.reduce(function (s, it) { return s + it[1]; }, 0) + SHIPPING[ship.value] + (gift.checked ? GIFT : 0);
     $("#total").textContent = "Total: " + euro(t * (1 - discount));
