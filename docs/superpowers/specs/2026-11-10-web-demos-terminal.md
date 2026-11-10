@@ -72,6 +72,31 @@ Say: The console shows it waiting in the queue.
 `note "…" at "Element"` works in a terminal too: `at line "Server startup"`
 points at the line that shows that text.
 
+### Workloads during the take (three lifetimes)
+
+A product demo needs traffic on screen: a load generator running while the
+console's charts move. Programs can live for the whole run, one feature, or a
+few blocks:
+
+| Lifetime | How | Example |
+|---|---|---|
+| the whole run | front matter `start:` (and `stop:` for a tear-down command run at the end, e.g. `make demo-down`) | the broker, the cluster |
+| one feature | `setup:` (must exit) for state; a `start` step at the top of the feature for a program, stopped automatically when the feature ends | a seed, a steady workload |
+| some blocks | the steps below | a burst, a node kill, a second workload |
+
+| Step | What it does |
+|---|---|
+| `start "command" as load` | runs it in the background (not filmed), named `load`; `· wait for "text"` / `· wait for port N` / `· wait 3s` before going on. Stopped at the end of its feature unless stopped earlier. |
+| `stop load` | stops it (SIGTERM, then SIGKILL after 5 s); `· wait` waits for it to exit on its own instead (a workload with a fixed duration). |
+| `expect output of load "VERDICT passed"` | checks a background program's output, like `expect output` for a terminal. |
+| `expect load running` / `… exited 0` | its state. |
+
+A workload can also be shown: `terminal "Load"` then `run "…"` (no `wait`)
+puts its scrolling output on camera, and `browser` goes back to the console
+while it keeps running. The narration sets the pace either way; a block that
+needs the traffic to build up says `wait 10s` or `wait for "1,000 msg/s"` in
+the browser.
+
 ## How it works
 
 - **The terminal scene is a page.** si serves a small page (loopback only, a
