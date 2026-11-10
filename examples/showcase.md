@@ -25,6 +25,8 @@ linkedin: One order, five hand-offs, and a promise that still lands on Thursday.
 
 How one order crosses five teams, fails twice, and still arrives on time.
 
+<!-- qr: audience · caption=Follow along on your phone · size=small -->
+
 Notes: (0.5 min)
 Welcome. This talk follows a single parcel, order #4711, from the click on "buy" to a doorstep, and the two moments it nearly broke the promise we print at checkout: delivered by Thursday.
 

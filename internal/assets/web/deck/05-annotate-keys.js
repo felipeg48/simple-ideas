@@ -132,6 +132,7 @@
   }
 
   function runCmd(a) {
+    if (role === 'audience' && a !== 'fullscreen' && a !== 'mode' && a !== 'help') return; /* follow only */
     if (a === 'overview') { if (feat.overview) overview(); }
     else if (a === 'presenter') { if (feat.presenter) openPresenter(); }
     else if (a === 'draw') { if (feat.draw) toggleDraw(); }

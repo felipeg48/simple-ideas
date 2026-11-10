@@ -47,7 +47,7 @@
     if (m.mid) { if (seen.indexOf(m.mid) >= 0) return; seen.push(m.mid); if (seen.length > 64) seen.shift(); }
     if (m.type === 'ink' || m.type === 'erase' || m.type === 'clear') { inkIn(m); return; }
     if (m.type === 'state' && role === 'clicker') { clickerState(m); return; }
-    if (m.type === 'state' && role === 'draw') { if (m.i !== cur || m.k !== step) go(m.i, m.k); return; }
+    if (m.type === 'state' && (role === 'draw' || role === 'audience')) { if (m.i !== cur || m.k !== step) go(m.i, m.k); return; }
     if (m.type !== 'cmd' || role) return;
     if (m.cmd === 'next') forward();
     else if (m.cmd === 'prev') backward();

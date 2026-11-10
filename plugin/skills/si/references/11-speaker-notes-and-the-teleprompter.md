@@ -78,6 +78,23 @@ them (`keys.remote` in si.conf remaps it). When the laptop is on more than
 one network (Wi-Fi and Ethernet, or a VPN such as Tailscale), the other
 addresses are listed under the codes.
 
+**The room follows along (`--audience`).** `si play talk.md --audience`
+gives the audience their own link: their phones show the current slide as
+you present, and nothing else. The audience key is separate from yours, so a
+phone in the room can never drive the deck or open the teleprompter, and
+their pages never carry your `Notes:` or `Points:` (not even in the page
+source). Put the code on a slide:
+
+```markdown
+# The Thursday Promise
+
+<!-- qr: audience · caption=Follow along on your phone · size=small -->
+```
+
+The code appears only under `si play --audience` (in a built deck the figure
+stays hidden). It works with `--remote` (your roles and theirs, two keys) and
+`--https`, and `q` shows the audience code with the others.
+
 `--https` serves the remote pages over HTTPS, so the phone keeps its screen
 on and the notes are private on any network. si makes its own certificate
 authority once (it can only vouch for local addresses) and each phone trusts

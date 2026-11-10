@@ -60,6 +60,9 @@ type Options struct {
 	// si play --remote: the role links and their QR codes. Loopback play pages
 	// only (it carries the remote key), never the remote listener or a build.
 	RemoteQR *RemoteQR
+	// NoSpeakerText leaves every Notes: and Points: out of the page: the
+	// audience's view of a deck (si play --audience).
+	NoSpeakerText bool
 	// Pages are the other pages find (/) offers (see Pages); nil offers none.
 	Pages []Page
 	// Prev and Next link a lab to its neighbours built from the same
@@ -280,7 +283,7 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 	}
 	b.WriteString("</div>\n")
 	b.WriteString(dr.footer(s))
-	if s.Notes != "" || s.HasMinutes {
+	if (s.Notes != "" || s.HasMinutes) && !dr.opt.NoSpeakerText {
 		notes := dr.postprocess(dr.toHTML(s.Notes, nil), s.Dir, sc)
 		// [CLICK] in the script marks where the speaker advances (a build step,
 		// a canvas change, the next slide): a cue in the teleprompter, never read aloud
@@ -291,7 +294,7 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 		}
 		fmt.Fprintf(&b, `<aside class="si-notes" hidden>%s</aside>`+"\n", notes)
 	}
-	if s.Points != "" {
+	if s.Points != "" && !dr.opt.NoSpeakerText {
 		fmt.Fprintf(&b, `<aside class="si-points" hidden>%s</aside>`+"\n", dr.postprocess(dr.toHTML(s.Points, nil), s.Dir, sc))
 	}
 	b.WriteString("</section>\n")
@@ -355,8 +358,9 @@ func Topics(d *deck.Deck) []int {
 
 // RemoteQR is the q overlay of si play --remote: one card per role link.
 type RemoteQR struct {
-	Links []RemoteLink `json:"links"`
-	Also  []string     `json:"also,omitempty"` // other addresses of this machine the links work on
+	Links    []RemoteLink `json:"links"`
+	Audience *RemoteLink  `json:"audience,omitempty"` // si play --audience: fills <!-- qr: audience --> (SVG in currentColor)
+	Also     []string     `json:"also,omitempty"`     // other addresses of this machine the links work on
 }
 
 // RemoteLink is one role (or the deck picker) and its QR code as SVG.

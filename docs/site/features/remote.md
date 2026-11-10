@@ -69,6 +69,18 @@ si play talk.md --remote=tp,clicker --https
 The code is new every run: the link carries a key made for that run, and a
 page without it gets nothing.
 
+## The room follows along
+
+```bash
+si play talk.md --audience            # with --remote too, for your own phone
+```
+
+Put `<!-- qr: audience · caption=Follow along on your phone -->` on your
+first slide. Everyone who scans it sees the current slide on their phone as
+you present: slides only, never your notes, and they cannot change the slide
+or reach your teleprompter (their key is not yours). `q` shows the audience
+code full screen too. Polls and questions from the room come next.
+
 ## Draw with the cursor
 
 Press `a` (draw), then **hold ⌥ Option and move**: the cursor draws where it

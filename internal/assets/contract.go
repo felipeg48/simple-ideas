@@ -282,6 +282,8 @@ var Hooks = []Hook{
 	{`.si-handout-qr`, "handout: the QR code to handout-url: and its address"},
 	{`.si-qr-code`, "qr: the SVG code (modules in currentColor)"},
 	{`.si-qr-cap`, "qr: the caption"},
+	{`.si-qr-audience`, "qr: audience: the live audience code (si play --audience), hidden elsewhere"},
+	{`.si-qr-slot`, "qr: audience: where si play puts the code"},
 	{`.si-lk-img`, "logo: the logo image"},
 	{`.si-lk-logo`, "logo: the theme's own logo (--si-brand-logo), when no image is given"},
 	{`.si-lk-x`, "logo: the bar between logo and partner"},

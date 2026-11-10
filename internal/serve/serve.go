@@ -24,17 +24,18 @@ import (
 
 // Server renders the decks under Root (a directory or one .md file).
 type Server struct {
-	pos      *positions       // where each deck open in a browser is (position.go)
-	Root     string           // directory or deck file
-	CSSPaths []string         // user CSS files or directories (--css)
-	Theme    string           // --theme override; empty keeps each deck's theme: front matter
-	Conf     string           // --conf path; empty falls back to si.conf next to the deck
-	Terminal bool             // enable the play terminal drawer; set only on a loopback address
-	Dev      bool             // --dev: in-place hot reload instead of full-page reload
-	Remote   bool             // --remote: decks join the relay (see remote.go)
-	RemoteQR *render.RemoteQR // --remote: the role links and QR codes the q key shows (loopback pages)
-	Title    string           // --title / --site: the index page title; empty uses the directory name
-	Interval time.Duration
+	pos         *positions       // where each deck open in a browser is (position.go)
+	Root        string           // directory or deck file
+	CSSPaths    []string         // user CSS files or directories (--css)
+	Theme       string           // --theme override; empty keeps each deck's theme: front matter
+	Conf        string           // --conf path; empty falls back to si.conf next to the deck
+	Terminal    bool             // enable the play terminal drawer; set only on a loopback address
+	Dev         bool             // --dev: in-place hot reload instead of full-page reload
+	Remote      bool             // --remote: decks join the relay (see remote.go)
+	RemoteQR    *render.RemoteQR // --remote: the role links and QR codes the q key shows (loopback pages)
+	AudienceKey string           // --audience: the key of the audience pages (follow along), not the presenter's
+	Title       string           // --title / --site: the index page title; empty uses the directory name
+	Interval    time.Duration
 
 	dir     string
 	file    string // set when Root is a single deck
@@ -141,7 +142,11 @@ func (s *Server) css() []render.Stylesheet {
 }
 
 // deck renders one deck; term turns the terminal drawer on (loopback only).
-func (s *Server) deck(w http.ResponseWriter, md string, term bool) {
+func (s *Server) deck(w http.ResponseWriter, md string, term bool) { s.deckPage(w, md, term, false) }
+
+// deckPage renders a deck; audience leaves Notes: and Points: out of the page
+// (an audience phone must not be able to read the speaker's script).
+func (s *Server) deckPage(w http.ResponseWriter, md string, term, audience bool) {
 	d, err := deck.Parse(md)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -157,7 +162,7 @@ func (s *Server) deck(w http.ResponseWriter, md string, term bool) {
 	if v, ok := cfg.Features["terminal"]; ok && !v {
 		termOn = false
 	}
-	opt := render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Remote: s.Remote, RemoteQR: s.RemoteQR, Pages: s.pages(cfg)}
+	opt := render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Remote: s.Remote, RemoteQR: s.RemoteQR, Pages: s.pages(cfg), NoSpeakerText: audience}
 	if g := deck.FindGuide(md, s.dir); g != nil && g.Item(md) != nil { // a guide or book renders as a whole (numbering, search across pages)
 		s.writeBookPage(w, g, opt, filepath.Join(filepath.Dir(md), strings.TrimSuffix(filepath.Base(md), filepath.Ext(md))+".html"))
 		return

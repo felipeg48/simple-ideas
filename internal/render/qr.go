@@ -18,6 +18,23 @@ import (
 func (dr *deckRenderer) qrHTML(val string, s *deck.Slide, sc *slideCtx) string {
 	text, opts, words := pluginParts(val)
 	text = strings.TrimSpace(text)
+	if text == "audience" { // the link of this run's audience, filled in by si play --audience
+		size := opts["size"]
+		if size != "small" && size != "medium" && size != "large" {
+			size = ""
+		}
+		var b strings.Builder
+		b.WriteString(`<figure class="si-qr si-qr-audience" hidden`)
+		if size != "" {
+			fmt.Fprintf(&b, ` data-size="%s"`, size)
+		}
+		b.WriteString(`><div class="si-qr-slot"></div>`)
+		if cap := opts["caption"]; cap != "" {
+			fmt.Fprintf(&b, `<figcaption class="si-qr-cap">%s</figcaption>`, dr.inline(cap))
+		}
+		b.WriteString("</figure>")
+		return b.String()
+	}
 	if text == "" {
 		dr.problem(sc, "qr: wants the text or address to encode, e.g. <!-- qr: https://example.com/slides · caption=The slides -->")
 		return ""

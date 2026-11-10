@@ -1,6 +1,9 @@
 # Audience mode: follow along, live polls, Q&A
 
-Status: spec, not started. Order: 1 of 5 (see `2026-11-09-next-five.md`).
+Status: phase 1 (follow along, `qr: audience`) DONE in v2.16.0; phases 2
+(polls) and 3 (Q&A) next. The flag is `--audience` (front matter
+`audience:` not added). The audience page also renders without
+`Notes:`/`Points:` (`NoSpeakerText`), not only a filtered stream.
 
 ## Why
 

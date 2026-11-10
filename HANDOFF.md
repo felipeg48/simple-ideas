@@ -5,6 +5,22 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.16.0: audience mode, phase 1 (follow along).** `si play --audience`
+  (starts the remote listener if needed): `Server.AudienceKey`, cookie
+  `si_audience`; `RemoteHandler` admits the presenter key to the presenter mux
+  and the audience key to `audienceHandler` (`/a`, the deck with
+  `render.Options.NoSpeakerText`, files, `relay.audienceEvents` through
+  `audienceView`: state cut to name/i/k/kmax/n/title). Runtime role
+  `audience` (follows like draw; navigation and commands but full screen /
+  mode ignored; controls hidden by CSS; no wake-lock hint). `qr: audience`
+  → hidden `.si-qr-audience` filled from `SI_REMOTE_QR.audience`. Tests:
+  `TestAudience` (routes, no notes in page or stream, no sends, presenter key
+  intact). Live: presenter deck shows the code (Vision decodes it), an
+  iPhone-size audience page follows, its keys/taps move nothing, no notes in
+  its HTML. Also: the v2.15.0 docs-site failed (the Download page left the
+  build with its menu item); it is under Help now, and CI builds the docs
+  site on every push.
+
 - **v2.15.0: six new themes and a Themes page** (the founder: pictures on the
   site and GitHub, the name to use, at least five more themes). `slate`,
   `twilight`, `forest`, `sunrise`, `neon`, `newsprint` in `assets.Themes`;

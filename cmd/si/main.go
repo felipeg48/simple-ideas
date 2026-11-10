@@ -47,7 +47,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "2.15.0"
+const version = "2.16.0"
 
 // Exit codes.
 const (
@@ -164,6 +164,8 @@ Flags (GNU style, before or after the path):
       --addr <host:port> play address (default 127.0.0.1:7070)
       --remote[=tp,draw,clicker] play: a second, keyed listener for a tablet or phone on your network: tp = teleprompter, draw = draw pad, clicker = phone remote (default: all)
       --remote-addr <host:port> play: the --remote address (default 0.0.0.0, the play port + 1)
+      --audience        play: the room follows the talk on their phones (a separate key; no notes, no control);
+                        <!-- qr: audience --> on a slide shows the code; works with --remote and --https
       --https[=tailscale] play --remote: serve the remote pages over HTTPS, with si's own certificate authority
                         (each phone trusts it once, from the "first time" code) or a Tailscale certificate
       --offline         code: / diff: use the cache only (CI, a plane); fails on what was never fetched
@@ -291,6 +293,7 @@ type options struct {
 	qrQuiet                                      int     // si qr --quiet, modules
 	qrJPG, qrECSet                               bool    // si qr --jpg; --ec given
 	trackpad                                     bool    // si play --trackpad: v2.10 only, now a note (Option draws in draw mode)
+	audience                                     bool    // si play --audience: the room follows the talk on their phones
 	css                                          multi
 	args                                         []string
 }
@@ -375,6 +378,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.qrSecurity, "security", "WPA", "")
 	fl.StringVar(&o.qrVCard, "vcard", "", "")
 	fl.BoolVar(&o.trackpad, "trackpad", false, "")
+	fl.BoolVar(&o.audience, "audience", false, "")
 	for {
 		if err := fl.Parse(argv); err != nil {
 			return nil, err
@@ -976,11 +980,11 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	srv.Dev = o.dev
 	srv.Title = o.title
-	srv.Remote = len(o.remote.roles) > 0
+	srv.Remote = len(o.remote.roles) > 0 || o.audience
 	if o.trackpad { // v2.10 only: the helper is gone, Option-drawing needs nothing
 		fmt.Fprintln(stderr, "si: --trackpad is no longer needed: press a (draw), then hold ⌥ Option and move to draw with the cursor")
 	}
-	if o.https != "" && len(o.remote.roles) == 0 {
+	if o.https != "" && len(o.remote.roles) == 0 && !o.audience {
 		return usageErr(stderr, "--https is for the --remote listener: si play talk.md --remote --https")
 	}
 	ln, err := net.Listen("tcp", o.addr)
@@ -989,7 +993,7 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		return exitProblems
 	}
 	var remote *http.Server
-	if len(o.remote.roles) > 0 {
+	if len(o.remote.roles) > 0 || o.audience {
 		rs, code := startRemote(srv, ln.Addr(), o, stdout, stderr)
 		if rs == nil {
 			ln.Close()
@@ -1143,7 +1147,9 @@ func startRemote(srv *serve.Server, main net.Addr, o *options, stdout, stderr io
 			rq.Links = append(rq.Links, render.RemoteLink{Name: name, URL: u, SVG: c.SVG(qr.Style{Quiet: 2, Label: name + " link"}, "", "", "")})
 		}
 	}
-	if len(srv.RemoteDecks()) == 1 {
+	if len(o.remote.roles) == 0 {
+		// --audience alone: no presenter roles on the network
+	} else if len(srv.RemoteDecks()) == 1 {
 		for _, r := range o.remote.roles {
 			// the short link (/clicker?k=…) redirects to the deck in that role; it
 			// keeps the QR code small enough for any address and deck name
@@ -1151,6 +1157,22 @@ func startRemote(srv *serve.Server, main net.Addr, o *options, stdout, stderr io
 		}
 	} else {
 		link("Pick a deck and a role ("+strings.Join(o.remote.roles, ", ")+")", base+"?k="+key)
+	}
+	if o.audience {
+		// its own key: an audience phone can follow, never drive or read the notes
+		var araw [16]byte
+		if _, err := rand.Read(araw[:]); err != nil {
+			ln.Close()
+			fmt.Fprintf(stderr, "si: --audience: %v\n", err)
+			return nil, exitProblems
+		}
+		srv.AudienceKey = hex.EncodeToString(araw[:])
+		u := base + "a?k=" + srv.AudienceKey
+		link("Audience (follow along)", u)
+		if c, err := qr.Encode([]byte(u), qr.Options{Level: qr.M}); err == nil {
+			rq.Audience = &render.RemoteLink{Name: "Audience", URL: u,
+				SVG: c.SVG(qr.Style{Quiet: 2, BG: qr.Transparent, Class: "si-qr-code", Label: "QR code: follow the talk"}, "", "", "")}
+		}
 	}
 	if len(hosts) > 1 { // Wi-Fi, Ethernet, a VPN: the phone may only reach one of them
 		for _, h := range hosts[1:] {

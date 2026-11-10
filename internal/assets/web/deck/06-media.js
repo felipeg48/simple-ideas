@@ -83,6 +83,17 @@
   /* si build --pdf loads the deck at #print; headless Chrome's --print-to-pdf
      does not reliably fire beforeprint, so force every canvas to its final
      state here too. */
+  /* si play --audience: on an audience phone, only full screen and light/dark;
+     on the presenter's deck, <!-- qr: audience --> shows the live audience link */
+  if (role === 'audience') root.setAttribute('data-si-role', 'audience');
+  var audQR = window.SI_REMOTE_QR && window.SI_REMOTE_QR.audience;
+  each(document.querySelectorAll('.si-qr-audience'), function (f) {
+    if (!audQR || role) return;
+    var slot = f.querySelector('.si-qr-slot');
+    if (slot) slot.innerHTML = '<a href="' + audQR.url.replace(/"/g, '&quot;') + '">' + audQR.svg + '</a>';
+    f.hidden = false;
+  });
+
   /* si build --handout prints the page with ?si-handout=slides|lines|points|notes
      (and ?si-paper=letter): light, every slide in its final state */
   var handout = /[?&]si-handout=(slides|lines|points|notes)(?:&|$)/.exec(location.search);

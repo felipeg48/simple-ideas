@@ -13,9 +13,10 @@
   if (termEnabled) cmd.terminal = '`';
   /* si play --remote: this page joins the relay; ?role=tp turns it into the
      teleprompter, ?role=draw into a draw pad that follows the deck, ?role=clicker
-     into a phone remote */
+     into a phone remote, ?role=audience (si play --audience) into a phone in
+     the room that follows the talk and never drives it */
   var remoteOn = !!cfg.remote;
-  var role = remoteOn ? ((/[?&]role=(tp|draw|clicker)(?:&|$)/.exec(location.search) || [])[1] || '') : '';
+  var role = remoteOn ? ((/[?&]role=(tp|draw|clicker|audience)(?:&|$)/.exec(location.search) || [])[1] || '') : '';
   /* ?si-view=tp: this page becomes the teleprompter of the deck open in another
      window or frame of the same browser (si --web Rehearse / Lab, or by hand) */
   if (!role && /[?&]si-view=tp(?:&|$)/.test(location.search)) role = 'tp-local';

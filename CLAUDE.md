@@ -197,6 +197,10 @@ pass. The steps that matter:
   phase 1 fixes CSS-file themes: `extends <built-in>`, the index page's theme;
   theme import/export incl. W3C design tokens; MCP theme tools), and Motion
   (`2026-11-09-motion-editor.md`: `transition: morph`, the Studio Motion view).
+- **Audience mode** (phase 1 DONE, v2.16.0): `si play --audience`: a second
+  key, `audienceHandler` (deck with `NoSpeakerText`, `audienceView`-filtered
+  stream, no sends), runtime role `audience`, `<!-- qr: audience -->`. Next:
+  polls (phase 2), Q&A (phase 3); spec `2026-11-09-audience-mode.md`.
 - **Themes** (v2.15.0): six new built-ins (slate, twilight, forest, sunrise,
   neon, newsprint; `TestNewThemesContrast`: WCAG AA in light and dark); the
   docs site's Themes page is generated from `assets.Themes`

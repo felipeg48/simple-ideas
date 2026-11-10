@@ -36,11 +36,13 @@
     update();
   }
   function forward() {
+    if (role === 'audience') return; /* the room follows; only the presenter moves the talk */
     if (role === 'draw') { post({ type: 'cmd', cmd: 'next' }); return; }
     if (step < maxStep(slides[cur])) go(cur, step + 1);
     else if (cur < n - 1) go(cur + 1, 0);
   }
   function backward() {
+    if (role === 'audience') return;
     if (role === 'draw') { post({ type: 'cmd', cmd: 'prev' }); return; }
     if (step > 0) go(cur, step - 1);
     else if (cur > 0) go(cur - 1, 'end');

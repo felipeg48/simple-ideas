@@ -206,3 +206,59 @@ func TestSessionAndQRPage(t *testing.T) {
 		t.Error("the qr page must refuse a non-loopback Host")
 	}
 }
+
+// The audience key opens the audience view only: the deck without Notes: or
+// Points:, a stream that carries where the talk is and nothing else, and no
+// way to send, to open a presenter role, or to reach the presenter routes.
+func TestAudience(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "talk.md"), []byte("# Talk\n\nNotes:\nSECRET-SCRIPT\n\nPoints:\n- SECRET-POINT\n\n---\n\n## Two\n\nText.\n"), 0o644)
+	s, err := New(dir, nil, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Remote, s.AudienceKey = true, "aud"
+	ts := httptest.NewServer(s.RemoteHandler("presenter", []string{"tp", "clicker"}))
+	defer ts.Close()
+	noRedirect := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	get := func(path string) (int, string) {
+		res, err := noRedirect.Get(ts.URL + path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		b, _ := io.ReadAll(res.Body)
+		return res.StatusCode, res.Header.Get("Location") + string(b)
+	}
+	if code, loc := get("/a?k=aud"); code != http.StatusFound || !strings.Contains(loc, "/talk.html?role=audience&k=aud") {
+		t.Errorf("audience link: %d %q", code, loc)
+	}
+	code, body := get("/talk.html?role=audience&k=aud")
+	if code != 200 || strings.Contains(body, "SECRET-SCRIPT") || strings.Contains(body, "SECRET-POINT") {
+		t.Errorf("audience page %d: must not carry the speaker's text", code)
+	}
+	if !strings.Contains(body, "Two") {
+		t.Error("audience page should carry the slides")
+	}
+	for _, p := range []string{"/talk.html?role=tp&k=aud", "/tp?k=aud", "/_si/qr?k=aud", "/_si/term/api/new?k=aud"} {
+		if code, _ := get(p); code == 200 || code == http.StatusFound {
+			t.Errorf("the audience key must not open %s (%d)", p, code)
+		}
+	}
+	if res, err := http.Post(ts.URL+"/_si/remote/send?k=aud", "application/json", strings.NewReader(`{"type":"cmd","cmd":"next"}`)); err == nil && res.StatusCode < 300 {
+		t.Error("an audience page must not send to the relay")
+	}
+	if code, _ := get("/talk.html?role=tp&k=presenter"); code != 200 {
+		t.Errorf("the presenter key still opens the teleprompter: %d", code)
+	}
+	state := []byte(`{"type":"state","name":"talk","i":1,"k":0,"n":2,"title":"Two","notes":"SECRET-SCRIPT","points":"SECRET-POINT","cur":"<section>…</section>"}`)
+	got := string(audienceView(state))
+	if strings.Contains(got, "SECRET") || strings.Contains(got, "section") || !strings.Contains(got, `"i":1`) {
+		t.Errorf("audience view of a state: %s", got)
+	}
+	for _, m := range []string{`{"type":"ink","p":[[0,0]]}`, `{"type":"cmd","cmd":"next"}`} {
+		if audienceView([]byte(m)) != nil {
+			t.Errorf("the audience must not receive %s", m)
+		}
+	}
+}

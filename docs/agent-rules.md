@@ -21,6 +21,7 @@ si new <name>                   # a scaffold deck that uses every rule
 si --export example             # the showcase decks, to copy patterns from
 si play talk.md --remote --https  # teleprompter / draw pad / clicker on a tablet or phone (keyed LAN port, HTTPS)
 si qr https://… --png --svg     # a QR code file (on a slide: <!-- qr: https://… · caption=… -->)
+si play talk.md --audience      # the room follows on their phones; <!-- qr: audience --> shows the code
 ```
 
 ## A deck

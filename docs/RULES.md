@@ -499,6 +499,23 @@ them (`keys.remote` in si.conf remaps it). When the laptop is on more than
 one network (Wi-Fi and Ethernet, or a VPN such as Tailscale), the other
 addresses are listed under the codes.
 
+**The room follows along (`--audience`).** `si play talk.md --audience`
+gives the audience their own link: their phones show the current slide as
+you present, and nothing else. The audience key is separate from yours, so a
+phone in the room can never drive the deck or open the teleprompter, and
+their pages never carry your `Notes:` or `Points:` (not even in the page
+source). Put the code on a slide:
+
+```markdown
+# The Thursday Promise
+
+<!-- qr: audience · caption=Follow along on your phone · size=small -->
+```
+
+The code appears only under `si play --audience` (in a built deck the figure
+stays hidden). It works with `--remote` (your roles and theirs, two keys) and
+`--https`, and `q` shows the audience code with the others.
+
 `--https` serves the remote pages over HTTPS, so the phone keeps its screen
 on and the notes are private on any network. si makes its own certificate
 authority once (it can only vouch for local addresses) and each phone trusts
@@ -1757,7 +1774,7 @@ Options follow the text after a `·`: `key=value`, or a kind word (`info`,
 | `badge: text · kind` | a status pill, same kinds; on a slide, the pill paragraph a cover or closing slide carries (AceMQ Pro styles it with its orange mark) |
 | `cards: 2` | the `###` headings that follow become a grid of cards (2, 3 or 4 columns, or as many as fit): `### Title · tag · colour`, colour one of `teal`, `orange`, `ok`, `crit`, `hi` (the highlighted card); the grid ends at the next `##`, `---` or directive; a `<!-- step -->` before it reveals the whole grid |
 | `logo: [image] × Partner · alt=Brand` | a logo lockup: the image (or, with none, the theme's own logo: `--si-brand-logo`, as in AceMQ Pro), a bar, and the partner's name; on slides and pages |
-| `qr: text or URL · caption=… · style=dots · logo=path · size=large · ec=H` | a QR code (below) |
+| `qr: text or URL · caption=… · style=dots · logo=path · size=large · ec=H` | a QR code (below); `qr: audience` is the live follow-along code of `si play --audience` |
 | `event: YYYY-MM-DDTHH:MM text · Label → link` | a corner toast with a live countdown, shown from two days before the time until it starts |
 | `accordion` | the `###` questions that follow become a one-open-at-a-time list; it ends at the next `##`, `---` or directive |
 | `modal: id` … `end` | the blocks up to `<!-- end -->` become a dialog; any `[link](#id)` (or the `cta:`) opens it, and so does a URL ending in `#id`. A document part ends at `##`, so use `###` headings inside a modal. |

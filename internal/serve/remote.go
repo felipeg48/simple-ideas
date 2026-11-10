@@ -39,6 +39,10 @@ var RemoteRoleNames = map[string]string{"tp": "Teleprompter", "draw": "Draw pad"
 
 const remoteCookie = "si_remote"
 
+// audienceCookie carries the audience key: a different key and cookie, so an
+// audience phone can never open the teleprompter, the clicker or the draw pad.
+const audienceCookie = "si_audience"
+
 // relay fans messages out to every subscriber but the sender, and keeps each
 // deck's last state so a page that connects late shows the current slide.
 type relay struct {
@@ -51,7 +55,32 @@ func newRelay() *relay {
 	return &relay{subs: map[chan []byte]string{}, last: map[string][]byte{}}
 }
 
-func (h *relay) events(w http.ResponseWriter, r *http.Request) {
+func (h *relay) events(w http.ResponseWriter, r *http.Request) { h.stream(w, r, nil) }
+
+// audienceEvents is the audience's stream: only where the talk is (slide,
+// step, title), never the notes, points, previews, ink or commands the
+// presenter's pages exchange.
+func (h *relay) audienceEvents(w http.ResponseWriter, r *http.Request) {
+	h.stream(w, r, audienceView)
+}
+
+// audienceView keeps what an audience page may see of a message, or nil.
+func audienceView(raw []byte) []byte {
+	var m map[string]any
+	if json.Unmarshal(raw, &m) != nil || m["type"] != "state" {
+		return nil
+	}
+	out := map[string]any{}
+	for _, k := range []string{"type", "name", "mid", "i", "k", "kmax", "n", "title"} {
+		if v, ok := m[k]; ok {
+			out[k] = v
+		}
+	}
+	b, _ := json.Marshal(out)
+	return b
+}
+
+func (h *relay) stream(w http.ResponseWriter, r *http.Request, filter func([]byte) []byte) {
 	fl, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
@@ -72,9 +101,17 @@ func (h *relay) events(w http.ResponseWriter, r *http.Request) {
 		delete(h.subs, ch)
 		h.mu.Unlock()
 	}()
+	pass := func(m []byte) []byte {
+		if filter == nil {
+			return m
+		}
+		return filter(m)
+	}
 	fmt.Fprint(w, "retry: 1000\n: connected\n\n")
 	for _, m := range replay {
-		fmt.Fprintf(w, "data: %s\n\n", m)
+		if m = pass(m); m != nil {
+			fmt.Fprintf(w, "data: %s\n\n", m)
+		}
 	}
 	fl.Flush()
 	for {
@@ -82,8 +119,10 @@ func (h *relay) events(w http.ResponseWriter, r *http.Request) {
 		case <-r.Context().Done():
 			return
 		case m := <-ch:
-			fmt.Fprintf(w, "data: %s\n\n", m)
-			fl.Flush()
+			if m = pass(m); m != nil {
+				fmt.Fprintf(w, "data: %s\n\n", m)
+				fl.Flush()
+			}
 		}
 	}
 }
@@ -169,23 +208,91 @@ func (s *Server) RemoteHandler(key string, roles []string) http.Handler {
 			static.ServeHTTP(w, r)
 		}
 	})
-	return remoteGate(key, mux)
+	var aud http.Handler
+	if s.AudienceKey != "" {
+		aud = s.audienceHandler()
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Referrer-Policy", "no-referrer")
+		switch {
+		case admit(w, r, key, remoteCookie):
+			mux.ServeHTTP(w, r)
+		case aud != nil && admit(w, r, s.AudienceKey, audienceCookie):
+			aud.ServeHTTP(w, r)
+		default:
+			http.Error(w, "si remote: open the link printed by si play (it carries the key)", http.StatusForbidden)
+		}
+	})
 }
 
-// remoteGate admits a request whose ?k= or cookie matches key; a matching
-// ?k= also sets the cookie, so later requests (images, the relay) pass.
+// remoteGate admits a request whose ?k= or cookie matches key (the review
+// listener's gate; the remote listener checks two keys itself).
 func remoteGate(key string, next http.Handler) http.Handler {
-	ok := func(v string) bool { return v != "" && subtle.ConstantTimeCompare([]byte(v), []byte(key)) == 1 }
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if k := r.URL.Query().Get("k"); ok(k) {
-			http.SetCookie(w, &http.Cookie{Name: remoteCookie, Value: key, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode})
-		} else if c, err := r.Cookie(remoteCookie); err != nil || !ok(c.Value) {
+		if !admit(w, r, key, remoteCookie) {
 			http.Error(w, "si remote: open the link printed by si play (it carries the key)", http.StatusForbidden)
 			return
 		}
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		next.ServeHTTP(w, r)
 	})
+}
+
+// admit reports whether the request carries key, as ?k= (which also sets the
+// cookie, so later requests such as images and the relay pass) or as cookie.
+func admit(w http.ResponseWriter, r *http.Request, key, cookie string) bool {
+	ok := func(v string) bool { return v != "" && subtle.ConstantTimeCompare([]byte(v), []byte(key)) == 1 }
+	if ok(r.URL.Query().Get("k")) {
+		http.SetCookie(w, &http.Cookie{Name: cookie, Value: key, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode})
+		return true
+	}
+	c, err := r.Cookie(cookie)
+	return err == nil && ok(c.Value)
+}
+
+// audienceHandler is what an audience phone may reach (si play --audience):
+// the deck in the audience role, rendered without Notes: and Points:, its
+// files, and the filtered stream of where the talk is. Nothing it sends is
+// relayed (polls and questions come with their own endpoints).
+func (s *Server) audienceHandler() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/_si/events", s.events)
+	mux.HandleFunc("GET /_si/remote/events", s.relay.audienceEvents)
+	static := http.FileServer(http.Dir(s.dir))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Path
+		decks := s.RemoteDecks()
+		switch {
+		case strings.Contains(p, "/.") || strings.HasPrefix(p, "/_si/"):
+			http.NotFound(w, r)
+		case p == "/a" || p == "/" || p == "/index.html":
+			if len(decks) == 1 { // the code on the slide: straight to the talk
+				http.Redirect(w, r, decks[0]+"?role=audience&k="+url.QueryEscape(r.URL.Query().Get("k")), http.StatusFound)
+				return
+			}
+			s.audiencePicker(w, decks)
+		case strings.HasSuffix(p, ".html"):
+			md := filepath.Join(s.dir, filepath.FromSlash(strings.TrimSuffix(strings.TrimPrefix(p, "/"), ".html")+".md"))
+			if r.URL.Query().Get("role") != "audience" || !s.isDeck(md) {
+				http.NotFound(w, r)
+				return
+			}
+			s.deckPage(w, md, false, true)
+		default:
+			static.ServeHTTP(w, r)
+		}
+	})
+	return mux
+}
+
+func (s *Server) audiencePicker(w http.ResponseWriter, decks []string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprint(w, `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Follow the talk</title>
+<style>body{font:18px/1.5 system-ui,sans-serif;max-width:30rem;margin:0 auto;padding:1.2rem}a{display:block;padding:.8em;margin:.5em 0;border:1px solid #ccc;border-radius:.6em;text-decoration:none;color:inherit}@media (prefers-color-scheme:dark){body{background:#16171b;color:#eee}a{border-color:#444}}</style></head><body><h1>Follow the talk</h1>`)
+	for _, d := range decks {
+		fmt.Fprintf(w, `<a href="%s?role=audience">%s</a>`, html.EscapeString(d), html.EscapeString(strings.TrimSuffix(strings.TrimPrefix(d, "/"), ".html")))
+	}
+	fmt.Fprint(w, `</body></html>`)
 }
 
 // isDeck reports whether md is a deck under the served root.

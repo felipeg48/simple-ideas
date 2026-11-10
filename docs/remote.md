@@ -58,6 +58,22 @@ Scan it on the iPad; open the deck on the laptop as usual
   of it, and the local presenter window keeps using BroadcastChannel (so it
   still works from `file://`).
 
+## The audience (`--audience`)
+
+`si play talk.md --audience` adds a second key to the remote listener (it
+starts the listener when `--remote` is not given). `RemoteHandler` admits the
+presenter key (cookie `si_remote`) to the presenter routes as before, and the
+audience key (cookie `si_audience`) to `audienceHandler` only: `/a` (a 302 to
+the deck with `?role=audience`, or a picker for a folder), the deck rendered
+with `NoSpeakerText` (no `Notes:` / `Points:` asides), static files, and
+`GET /_si/remote/events` through `audienceView`, which passes `state`
+messages cut down to slide, step, count and title, and drops everything else
+(notes, points, previews, ink, commands). An audience page cannot POST to the
+relay. The runtime role `audience` follows `state` like the draw pad, ignores
+navigation and every command but full screen and light/dark, and gets no
+wake-lock hint. `<!-- qr: audience -->` is an empty, hidden figure that the
+presenter's loopback page fills from `SI_REMOTE_QR.audience`.
+
 ## Keeping the device awake
 
 `RelayJS` also asks for a screen wake lock (`navigator.wakeLock`) on a role

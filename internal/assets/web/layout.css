@@ -111,6 +111,7 @@ img,svg,video{max-width:100%}
 .si-qr[data-size="small"]{--_qr:var(--si-qr-size,min(18cqi,26cqb))}
 .si-qr[data-size="large"]{--_qr:var(--si-qr-size,min(46cqi,60cqb))}
 .si-qr a,.si-qr svg{display:block;width:var(--_qr);max-width:100%;height:auto}
+.si-qr-slot,.si-qr-slot a{display:block;width:var(--_qr);max-width:100%}
 .si-qr a svg{width:100%}
 /* figure caps follow --si-figure-max (the theme's room for a canvas under a
  * heading); the runtime lowers --_figfit before it shrinks the type when a
@@ -155,6 +156,8 @@ img,svg,video{max-width:100%}
 .si-bar>*{pointer-events:auto}
 .si-controls{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:.3rem;opacity:0;transition:opacity .2s}
 .si-counter{white-space:nowrap}
+/* an audience phone (si play --audience) follows the talk: no prev/next, draw, overview or teleprompter */
+:root[data-si-role="audience"] .si-controls [data-si-action]:not([data-si-action="fullscreen"]):not([data-si-action="mode"]){display:none}
 .si-bar:hover .si-controls,.si-bar:focus-within .si-controls,.si-deck.si-overview~.si-bar .si-controls,body.si-ui .si-controls{opacity:1}
 @media (hover:none){.si-controls{opacity:.8}}
 .si-controls button{font:inherit;color:var(--si-fg);background:var(--si-surface);border:1px solid var(--si-line);border-radius:.45em;padding:.4em .65em;min-height:2.1em;cursor:pointer}
