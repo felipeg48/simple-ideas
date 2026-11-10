@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your orders · Northwind Shop</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<script src="app.js"></script>
+</head>
+<body>
+<header class="bar"><span class="brand">Northwind Shop</span><span>Welcome back, <strong id="who"></strong></span></header>
+<main>
+  <h1>Your orders</h1>
+  <div class="card">
+    <div class="row">
+      <div><label for="search">Find an order</label><input id="search" type="search" placeholder="Order number"></div>
+    </div>
+    <label class="inline"><input id="show-paid" type="checkbox" checked> Show paid orders</label>
+    <ul id="orders" class="orders" aria-label="Orders"></ul>
+  </div>
+</main>
+<script>orders();</script>
+</body>
+</html>

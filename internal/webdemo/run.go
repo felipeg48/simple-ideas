@@ -1,0 +1,784 @@
+package webdemo
+
+import (
+	_ "embed"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"net/url"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"runtime"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/felipeg48/simple-ideas/internal/cdp"
+)
+
+//go:embed locate.js
+var locateJS string
+
+// Options are how a run goes.
+type Options struct {
+	Chrome  string    // the browser to drive
+	Feature string    // run only the feature with this name ("" = all)
+	Out     string    // where the screenshots go (the report folder)
+	Log     io.Writer // one line per step (nil: quiet)
+	SI      string    // si's version, for the report
+}
+
+// failure is a step that did not pass: what it expected, what it found, the
+// candidates the locator saw.
+type failure struct {
+	expected, found string
+	candidates      []string
+}
+
+func (f *failure) Error() string { return f.found }
+
+type runner struct {
+	s       *Script
+	o       Options
+	c       *cdp.Client
+	base    string // the app's URL, without a trailing /
+	secrets []string
+	mu      sync.Mutex
+	errs    []string // console errors and exceptions of this feature
+	reqs    []string // failed requests of this feature
+	urls    map[string]string
+	session string // the page whose events count
+	loading int    // frames loading now (a click or a key may start a navigation)
+	shotN   int
+}
+
+// Run runs the script's features as tests and returns the report. An error
+// means the run could not start (no app, no browser), not a failed step.
+func Run(s *Script, o Options) (*Report, error) {
+	if len(s.Problems) > 0 {
+		return nil, fmt.Errorf("%s", s.Problems[0])
+	}
+	r := &runner{s: s, o: o}
+	if o.Log == nil {
+		r.o.Log = io.Discard
+	}
+	base, stop, err := serveApp(s)
+	if err != nil {
+		return nil, err
+	}
+	defer stop()
+	r.base = base
+	for _, f := range s.Features {
+		for _, b := range f.Blocks {
+			for _, st := range b.Steps {
+				if v, ok := os.LookupEnv(st.Value.Var); ok && st.Value.Var != "" && v != "" {
+					r.secrets = append(r.secrets, v)
+				}
+			}
+		}
+	}
+	if o.Out != "" {
+		if err := os.MkdirAll(filepath.Join(o.Out, "shots"), 0o755); err != nil {
+			return nil, err
+		}
+	}
+	c, err := cdp.Launch(o.Chrome, s.W, s.H)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+	r.c = c
+	var ver struct{ Product string }
+	c.CallIn("", "Browser.getVersion", nil, &ver)
+	c.OnEvent(r.event)
+	rep := &Report{Script: filepath.Base(s.Path), Title: s.Title, App: r.mask(base), Viewport: fmt.Sprintf("%dx%d", s.W, s.H),
+		Chrome: ver.Product, SI: o.SI, Date: time.Now().Format(time.RFC3339)}
+	if rep.Title == "" {
+		rep.Title = s.Name
+	}
+	start := time.Now()
+	matched := false
+	for _, f := range s.Features {
+		if o.Feature != "" && !strings.EqualFold(f.Name, o.Feature) {
+			continue
+		}
+		matched = true
+		rep.Features = append(rep.Features, r.feature(f))
+	}
+	if !matched {
+		return nil, fmt.Errorf("no feature named %q in %s", o.Feature, filepath.Base(s.Path))
+	}
+	rep.Seconds = time.Since(start).Seconds()
+	rep.count()
+	return rep, nil
+}
+
+// serveApp gives the app's base URL: the app: URL, or a loopback server of
+// the app: folder (stopped by the returned func).
+func serveApp(s *Script) (string, func(), error) {
+	app := s.App
+	if strings.Contains(app, "://") {
+		return strings.TrimRight(app, "/"), func() {}, nil
+	}
+	dir := app
+	if !filepath.IsAbs(dir) {
+		dir = filepath.Join(s.Dir(), dir)
+	}
+	if st, err := os.Stat(dir); err != nil || !st.IsDir() {
+		return "", nil, fmt.Errorf("app: %s is not a URL or a folder next to the script", app)
+	}
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return "", nil, err
+	}
+	srv := &http.Server{Handler: http.FileServer(http.Dir(dir))}
+	go srv.Serve(ln)
+	return "http://" + ln.Addr().String(), func() { srv.Close() }, nil
+}
+
+func (r *runner) mask(s string) string {
+	for _, v := range r.secrets {
+		s = strings.ReplaceAll(s, v, "••••")
+	}
+	return s
+}
+
+// event collects the page's console errors, exceptions and failed requests.
+func (r *runner) event(e cdp.Event) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if e.Session != r.session {
+		return
+	}
+	switch e.Method {
+	case "Page.frameStartedLoading":
+		r.loading++
+	case "Page.frameStoppedLoading":
+		r.loading--
+	case "Runtime.exceptionThrown":
+		var p struct {
+			ExceptionDetails struct {
+				Text      string
+				Exception struct{ Description string }
+			}
+		}
+		json.Unmarshal(e.Params, &p)
+		msg := p.ExceptionDetails.Exception.Description
+		if msg == "" {
+			msg = p.ExceptionDetails.Text
+		}
+		r.errs = append(r.errs, firstLine(msg))
+	case "Runtime.consoleAPICalled":
+		var p struct {
+			Type string
+			Args []struct {
+				Value       any
+				Description string
+			}
+		}
+		json.Unmarshal(e.Params, &p)
+		if p.Type != "error" && p.Type != "assert" {
+			return
+		}
+		var parts []string
+		for _, a := range p.Args {
+			if s, ok := a.Value.(string); ok {
+				parts = append(parts, s)
+			} else if a.Description != "" {
+				parts = append(parts, firstLine(a.Description))
+			} else if a.Value != nil {
+				parts = append(parts, fmt.Sprint(a.Value))
+			}
+		}
+		r.errs = append(r.errs, "console.error: "+strings.Join(parts, " "))
+	case "Network.requestWillBeSent":
+		var p struct {
+			RequestID string
+			Request   struct{ URL string }
+		}
+		json.Unmarshal(e.Params, &p)
+		r.urls[p.RequestID] = p.Request.URL
+	case "Network.responseReceived":
+		var p struct {
+			Response struct {
+				URL        string
+				Status     int
+				StatusText string
+			}
+		}
+		json.Unmarshal(e.Params, &p)
+		if p.Response.Status >= 400 && !ignoredURL(p.Response.URL) {
+			r.reqs = append(r.reqs, fmt.Sprintf("%d %s", p.Response.Status, p.Response.URL))
+		}
+	case "Network.loadingFailed":
+		var p struct {
+			RequestID string
+			ErrorText string
+			Canceled  bool
+		}
+		json.Unmarshal(e.Params, &p)
+		if u := r.urls[p.RequestID]; !p.Canceled && !ignoredURL(u) {
+			r.reqs = append(r.reqs, p.ErrorText+" "+u)
+		}
+	}
+}
+
+// ignoredURL: browsers ask for /favicon.ico on their own.
+func ignoredURL(u string) bool { return strings.HasSuffix(u, "/favicon.ico") }
+
+func firstLine(s string) string {
+	s, _, _ = strings.Cut(s, "\n")
+	return s
+}
+
+// feature runs one feature in a fresh browser context, after setup:.
+func (r *runner) feature(f *Feature) (fr FeatureResult) {
+	fr = FeatureResult{Name: f.Name, What: f.What, Line: f.Line, Status: "passed"}
+	fmt.Fprintf(r.o.Log, "%s\n", f.Name)
+	start := time.Now()
+	defer func() { fr.Seconds = time.Since(start).Seconds() }()
+	fail := func(sr StepResult) FeatureResult {
+		fr.Steps = append(fr.Steps, sr)
+		fr.Status = "failed"
+		return fr
+	}
+	if r.s.Setup != "" {
+		t := time.Now()
+		out, err := shell(r.s.Setup, r.s.Dir())
+		sr := StepResult{Text: "setup: " + r.s.Setup, Status: "passed", Seconds: time.Since(t).Seconds()}
+		r.line(sr)
+		if err != nil {
+			sr.Status, sr.Expected, sr.Found = "failed", "setup: exits 0", r.mask(strings.TrimSpace(err.Error()+"\n"+out))
+			r.line(sr)
+			return fail(sr)
+		}
+	}
+	var ctx struct{ BrowserContextID string }
+	if err := r.c.CallIn("", "Target.createBrowserContext", map[string]any{"disposeOnDetach": true}, &ctx); err != nil {
+		return fail(StepResult{Text: "open a browser context", Status: "failed", Found: err.Error()})
+	}
+	defer r.c.CallIn("", "Target.disposeBrowserContext", map[string]any{"browserContextId": ctx.BrowserContextID}, nil)
+	r.mu.Lock()
+	r.errs, r.reqs, r.urls, r.loading = nil, nil, map[string]string{}, 0
+	r.mu.Unlock()
+	if _, err := r.c.OpenPage(ctx.BrowserContextID, r.s.W, r.s.H); err != nil {
+		return fail(StepResult{Text: "open a page", Status: "failed", Found: err.Error()})
+	}
+	r.mu.Lock()
+	r.session = r.c.Session
+	r.mu.Unlock()
+	for _, m := range []string{"Page.enable", "Runtime.enable", "Network.enable"} {
+		if err := r.c.Call(m, nil, nil); err != nil {
+			return fail(StepResult{Text: m, Status: "failed", Found: err.Error()})
+		}
+	}
+	if err := r.navigate(r.base + "/"); err != nil {
+		return fail(StepResult{Text: "open " + r.base, Status: "failed", Found: err.Error()})
+	}
+	failed := false
+	for _, b := range f.Blocks {
+		for _, st := range b.Steps {
+			sr := StepResult{Line: st.Line, Text: st.Text, Kind: st.Kind, Status: "passed"}
+			if failed {
+				sr.Status = "skipped"
+				fr.Steps = append(fr.Steps, sr)
+				continue
+			}
+			t := time.Now()
+			shot, err := r.step(st)
+			sr.Seconds = time.Since(t).Seconds()
+			if shot != "" {
+				sr.Shot = shot
+			}
+			if st.Kind == "note" {
+				sr.Note = st.Value.String()
+			}
+			if err != nil {
+				failed = true
+				fr.Status = "failed"
+				sr.Status = "failed"
+				var fe *failure
+				if errors.As(err, &fe) {
+					sr.Expected, sr.Found, sr.Candidates = r.mask(fe.expected), r.mask(fe.found), fe.candidates
+				} else {
+					sr.Found = r.mask(err.Error())
+				}
+				if png, err := r.c.Screenshot(); err == nil {
+					sr.Shot = r.save(f.Name, "failed", png)
+				}
+			}
+			r.line(sr)
+			fr.Steps = append(fr.Steps, sr)
+		}
+	}
+	r.mu.Lock()
+	fr.Errors = append([]string(nil), r.errs...)
+	fr.Requests = append([]string(nil), r.reqs...)
+	r.mu.Unlock()
+	for i := range fr.Errors {
+		fr.Errors[i] = r.mask(fr.Errors[i])
+	}
+	for i := range fr.Requests {
+		fr.Requests[i] = r.mask(fr.Requests[i])
+	}
+	return fr
+}
+
+func (r *runner) line(sr StepResult) {
+	mark := map[string]string{"passed": "✓", "failed": "✗", "skipped": "-"}[sr.Status]
+	fmt.Fprintf(r.o.Log, "  %s %s  %.2fs\n", mark, sr.Text, sr.Seconds)
+	if sr.Status != "failed" {
+		return
+	}
+	if sr.Expected != "" {
+		fmt.Fprintf(r.o.Log, "      expected: %s\n", sr.Expected)
+	}
+	fmt.Fprintf(r.o.Log, "      found:    %s\n", sr.Found)
+	if len(sr.Candidates) > 0 {
+		fmt.Fprintf(r.o.Log, "      closest:  %s\n", strings.Join(sr.Candidates, ", "))
+	}
+}
+
+// shell runs setup: in dir.
+func shell(cmd, dir string) (string, error) {
+	c := exec.Command("sh", "-c", cmd)
+	if runtime.GOOS == "windows" {
+		c = exec.Command("cmd", "/C", cmd)
+	}
+	c.Dir = dir
+	out, err := c.CombinedOutput()
+	return string(out), err
+}
+
+var slugRE = regexp.MustCompile(`[^a-z0-9]+`)
+
+func slug(s string) string {
+	return strings.Trim(slugRE.ReplaceAllString(strings.ToLower(s), "-"), "-")
+}
+
+// save writes a screenshot into the report folder and returns its path
+// relative to it ("" when there is no folder).
+func (r *runner) save(feature, name string, png []byte) string {
+	if r.o.Out == "" {
+		return ""
+	}
+	r.shotN++
+	rel := fmt.Sprintf("shots/%02d-%s-%s.png", r.shotN, slug(feature), slug(name))
+	if os.WriteFile(filepath.Join(r.o.Out, rel), png, 0o644) != nil {
+		return ""
+	}
+	return rel
+}
+
+// resolve turns a step's path into a URL of the app.
+func (r *runner) resolve(p string) string {
+	if strings.Contains(p, "://") {
+		return p
+	}
+	if !strings.HasPrefix(p, "/") {
+		p = "/" + p
+	}
+	return r.base + p
+}
+
+// navigate loads u and waits for the page to settle.
+func (r *runner) navigate(u string) error {
+	var nav struct{ ErrorText string }
+	if err := r.c.Call("Page.navigate", map[string]any{"url": u}, &nav); err != nil {
+		return err
+	}
+	if nav.ErrorText != "" {
+		return &failure{expected: "the page loads: " + u, found: nav.ErrorText}
+	}
+	return r.settle()
+}
+
+// settle waits until the document is complete (up to the timeout).
+func (r *runner) settle() error {
+	end := time.Now().Add(r.s.Timeout)
+	for {
+		v, err := r.c.Eval("document.readyState")
+		if err == nil && string(v) == `"complete"` {
+			time.Sleep(50 * time.Millisecond) // a frame for scripts that run on load
+			return nil
+		}
+		if time.Now().After(end) {
+			return &failure{expected: "the page finishes loading", found: "still " + string(v)}
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+}
+
+// loaded waits, after a click or a key, for a navigation it started to
+// finish, so the next step does not look at the page being left.
+func (r *runner) loaded() error {
+	time.Sleep(60 * time.Millisecond)
+	end := time.Now().Add(r.s.Timeout)
+	for {
+		r.mu.Lock()
+		n := r.loading
+		r.mu.Unlock()
+		if n <= 0 {
+			return nil
+		}
+		if time.Now().After(end) {
+			return &failure{expected: "the page finishes loading", found: "still loading"}
+		}
+		time.Sleep(30 * time.Millisecond)
+	}
+}
+
+// found is the locator's answer (locate.js).
+type found struct {
+	Found      bool
+	Visible    bool
+	Enabled    bool
+	Checked    bool
+	Field      bool
+	Tag        string
+	Desc       string
+	Count      int
+	X, Y       float64
+	Covered    string
+	Candidates []string
+	Error      string
+}
+
+func (r *runner) locate(l Locator, want string, scroll bool) (found, error) {
+	arg, _ := json.Marshal(map[string]any{"loc": l, "want": want, "scroll": scroll})
+	v, err := r.c.Eval(locateJS + "(" + string(arg) + ")")
+	var f found
+	if err != nil {
+		return f, err
+	}
+	err = json.Unmarshal(v, &f)
+	return f, err
+}
+
+// until retries try every 100 ms up to the timeout; try returns done, or the
+// failure to report when time runs out.
+func (r *runner) until(try func() (bool, error)) error {
+	end := time.Now().Add(r.s.Timeout)
+	for {
+		done, err := try()
+		if done {
+			return err
+		}
+		if time.Now().After(end) {
+			return err
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+// element waits for a visible, enabled (when act) element, scrolled into
+// view and not covered, and returns where it is.
+func (r *runner) element(l Locator, want string, act bool) (found, error) {
+	var last found
+	err := r.until(func() (bool, error) {
+		f, err := r.locate(l, want, true)
+		if err != nil {
+			return false, &failure{expected: "an element " + l.String(), found: err.Error()}
+		}
+		last = f
+		switch {
+		case f.Error != "":
+			return true, &failure{expected: "an element " + l.String(), found: f.Error}
+		case !f.Found:
+			return false, &failure{expected: "an element " + l.String(), found: "nothing matches", candidates: f.Candidates}
+		case !f.Visible:
+			return false, &failure{expected: l.String() + " visible", found: f.Desc + ", hidden"}
+		case act && !f.Enabled:
+			return false, &failure{expected: l.String() + " enabled", found: f.Desc + ", disabled"}
+		case act && f.Covered != "":
+			return false, &failure{expected: l.String() + " clickable", found: f.Desc + " is covered by " + f.Covered}
+		}
+		return true, nil
+	})
+	return last, err
+}
+
+func (r *runner) mouse(typ string, x, y float64, extra map[string]any) error {
+	p := map[string]any{"type": typ, "x": x, "y": y}
+	for k, v := range extra {
+		p[k] = v
+	}
+	return r.c.Call("Input.dispatchMouseEvent", p, nil)
+}
+
+// click is a real click at the element's centre.
+func (r *runner) click(f found) error {
+	if err := r.mouse("mouseMoved", f.X, f.Y, nil); err != nil {
+		return err
+	}
+	if err := r.mouse("mousePressed", f.X, f.Y, map[string]any{"button": "left", "buttons": 1, "clickCount": 1}); err != nil {
+		return err
+	}
+	return r.mouse("mouseReleased", f.X, f.Y, map[string]any{"button": "left", "buttons": 0, "clickCount": 1})
+}
+
+func (r *runner) value(v Value) (string, error) {
+	if v.Var == "" {
+		return v.Text, nil
+	}
+	s, ok := os.LookupEnv(v.Var)
+	if !ok {
+		return "", &failure{expected: "$" + v.Var + " set in the environment", found: "it is not set"}
+	}
+	return s, nil
+}
+
+// step runs one step; it returns a screenshot's path when it took one.
+func (r *runner) step(st *Step) (string, error) {
+	switch st.Kind {
+	case "go":
+		return "", r.navigate(r.resolve(st.Value.Text))
+	case "click":
+		f, err := r.element(st.Target, "click", true)
+		if err != nil {
+			return "", err
+		}
+		if err := r.click(f); err != nil {
+			return "", err
+		}
+		return "", r.loaded()
+	case "hover":
+		f, err := r.element(st.Target, "click", false)
+		if err != nil {
+			return "", err
+		}
+		return "", r.mouse("mouseMoved", f.X, f.Y, nil)
+	case "scroll", "waitfor", "note":
+		_, err := r.element(st.Target, "any", false)
+		if st.Kind == "note" && st.Target == (Locator{}) {
+			err = nil
+		}
+		return "", err
+	case "type":
+		text, err := r.value(st.Value)
+		if err != nil {
+			return "", err
+		}
+		f, err := r.element(st.Target, "field", true)
+		if err != nil {
+			return "", err
+		}
+		if err := r.click(f); err != nil {
+			return "", err
+		}
+		// replace what the field holds, as a person selecting it all would
+		if _, err := r.c.Eval(`(function(e){if(document.activeElement!==e)e.focus();if(e.select)e.select();else{var s=getSelection(),g=document.createRange();g.selectNodeContents(e);s.removeAllRanges();s.addRange(g)}})(window.__siT)`); err != nil {
+			return "", err
+		}
+		if text == "" { // type "" clears the field
+			return "", r.press(Chord{Key: "Backspace"})
+		}
+		return "", r.c.Call("Input.insertText", map[string]any{"text": text}, nil)
+	case "select":
+		text, err := r.value(st.Value)
+		if err != nil {
+			return "", err
+		}
+		f, err := r.element(st.Target, "field", true)
+		if err != nil {
+			return "", err
+		}
+		if f.Tag != "select" { // a listbox: open it, then click the option
+			if err := r.click(f); err != nil {
+				return "", err
+			}
+			o, err := r.element(Locator{Name: text}, "click", true)
+			if err != nil {
+				return "", err
+			}
+			return "", r.click(o)
+		}
+		arg, _ := json.Marshal(text)
+		v, err := r.c.Eval(`(function(e,t){var o=[].find.call(e.options,function(o){return o.text.trim()===t||o.value===t||o.label===t});
+if(!o)return [].map.call(e.options,function(o){return o.text.trim()});e.value=o.value;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));return true})(window.__siT,` + string(arg) + `)`)
+		if err != nil {
+			return "", err
+		}
+		if string(v) != "true" {
+			var opts []string
+			json.Unmarshal(v, &opts)
+			return "", &failure{expected: "an option " + st.Value.String() + " in " + f.Desc, found: "no such option", candidates: opts}
+		}
+		return "", nil
+	case "check", "uncheck":
+		want := st.Kind == "check"
+		f, err := r.element(st.Target, "field", true)
+		if err != nil {
+			return "", err
+		}
+		if f.Checked != want {
+			if err := r.click(f); err != nil {
+				return "", err
+			}
+		}
+		return "", r.until(func() (bool, error) {
+			v, err := r.c.Eval(`(function(e){return !!(e.checked||e.getAttribute('aria-checked')==='true')})(window.__siT)`)
+			if err == nil && (string(v) == "true") == want {
+				return true, nil
+			}
+			return false, &failure{expected: f.Desc + " " + st.Kind + "ed", found: "it did not change"}
+		})
+	case "press":
+		ch, _ := keyChord(st.Value.Text)
+		if err := r.press(ch); err != nil {
+			return "", err
+		}
+		return "", r.loaded()
+	case "wait":
+		time.Sleep(st.Wait)
+		return "", nil
+	case "screenshot":
+		png, err := r.c.Screenshot()
+		if err != nil {
+			return "", err
+		}
+		return r.save(r.currentFeature(st), st.Value.Text, png), nil
+	case "expect-text":
+		want, err := r.value(st.Value)
+		if err != nil {
+			return "", err
+		}
+		arg, _ := json.Marshal(want)
+		return "", r.until(func() (bool, error) {
+			v, err := r.c.Eval(`(function(t){var b=document.body?document.body.innerText.replace(/\s+/g,' '):'';return b.indexOf(t.replace(/\s+/g,' '))>=0?'':b.slice(0,300)})(` + string(arg) + `)`)
+			var page string
+			json.Unmarshal(v, &page)
+			if err == nil && string(v) == `""` {
+				return true, nil
+			}
+			return false, &failure{expected: "the page shows " + st.Value.String(), found: "the page shows: " + strings.TrimSpace(page)}
+		})
+	case "expect-url":
+		want := st.Value.Text
+		return "", r.until(func() (bool, error) {
+			v, err := r.c.Eval("location.href")
+			var href string
+			json.Unmarshal(v, &href)
+			if err == nil && urlMatches(href, want) {
+				return true, nil
+			}
+			return false, &failure{expected: "the URL is " + want, found: href}
+		})
+	case "expect-state":
+		return "", r.until(func() (bool, error) {
+			f, err := r.locate(st.Target, "any", false)
+			if err != nil {
+				return false, &failure{expected: st.Target.String() + " " + st.State, found: err.Error()}
+			}
+			got := ""
+			switch {
+			case !f.Found:
+				got = "nothing matches"
+			case !f.Visible:
+				got = f.Desc + ", hidden"
+			}
+			ok := false
+			switch st.State {
+			case "visible":
+				ok = f.Found && f.Visible
+			case "hidden":
+				ok = !f.Found || !f.Visible
+				if f.Found && f.Visible {
+					got = f.Desc + ", visible"
+				}
+			case "disabled", "enabled":
+				ok = f.Found && f.Enabled == (st.State == "enabled")
+				if f.Found {
+					got = f.Desc + map[bool]string{true: ", enabled", false: ", disabled"}[f.Enabled]
+				}
+			case "checked", "unchecked":
+				ok = f.Found && f.Checked == (st.State == "checked")
+				if f.Found {
+					got = f.Desc + map[bool]string{true: ", checked", false: ", unchecked"}[f.Checked]
+				}
+			}
+			if ok {
+				return true, nil
+			}
+			return false, &failure{expected: st.Target.String() + " " + st.State, found: got, candidates: f.Candidates}
+		})
+	case "expect-errors":
+		r.mu.Lock()
+		all := append(append([]string(nil), r.errs...), r.reqs...)
+		r.mu.Unlock()
+		if len(all) > 0 {
+			return "", &failure{expected: "no console errors and no failed requests", found: strings.Join(all, "; ")}
+		}
+		return "", nil
+	}
+	return "", fmt.Errorf("step %q is not known to the runner", st.Kind)
+}
+
+// currentFeature names a screenshot after the feature holding st.
+func (r *runner) currentFeature(st *Step) string {
+	for _, f := range r.s.Features {
+		for _, b := range f.Blocks {
+			for _, s := range b.Steps {
+				if s == st {
+					return f.Name
+				}
+			}
+		}
+	}
+	return r.s.Name
+}
+
+// urlMatches: a /path matches the page's path (with its query and hash), a
+// full URL the whole address; either may be followed by ?… or #….
+func urlMatches(href, want string) bool {
+	got := href
+	if strings.HasPrefix(want, "/") {
+		u, err := url.Parse(href)
+		if err != nil {
+			return false
+		}
+		got = u.RequestURI()
+		if u.Fragment != "" {
+			got += "#" + u.Fragment
+		}
+	}
+	return got == want || strings.HasPrefix(got, want+"?") || strings.HasPrefix(got, want+"#")
+}
+
+// press sends a key with its modifiers.
+func (r *runner) press(ch Chord) error {
+	k, named := namedKey(ch.Key)
+	if !named {
+		up := strings.ToUpper(ch.Key)
+		k = keyDef{key: ch.Key, text: ch.Key, vk: int(up[0])}
+		if c := up[0]; c >= 'A' && c <= 'Z' {
+			k.code = "Key" + up
+		} else if c >= '0' && c <= '9' {
+			k.code = "Digit" + up
+		}
+	}
+	text := k.text
+	if ch.Mods&(1|2|4) != 0 {
+		text = "" // a shortcut types nothing
+	}
+	down := map[string]any{"type": "rawKeyDown", "key": k.key, "code": k.code, "windowsVirtualKeyCode": k.vk, "modifiers": ch.Mods}
+	if text != "" {
+		down["type"], down["text"] = "keyDown", text
+	}
+	if ch.Mods&4 != 0 && runtime.GOOS == "darwin" {
+		// macOS Chrome runs editing shortcuts (cmd+a, cmd+c …) as commands
+		cmds := map[string]string{"a": "selectAll", "c": "copy", "x": "cut", "v": "paste", "z": "undo"}
+		if c, ok := cmds[strings.ToLower(ch.Key)]; ok {
+			down["commands"] = []string{c}
+		}
+	}
+	if err := r.c.Call("Input.dispatchKeyEvent", down, nil); err != nil {
+		return err
+	}
+	return r.c.Call("Input.dispatchKeyEvent", map[string]any{"type": "keyUp", "key": k.key, "code": k.code, "windowsVirtualKeyCode": k.vk, "modifiers": ch.Mods}, nil)
+}

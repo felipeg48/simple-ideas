@@ -426,3 +426,7 @@ func adocRanges(v string) string {
 	}
 	return strings.Join(out, ",")
 }
+
+// AdocToMarkdown converts AsciiDoc to the Markdown si reads (see
+// adocToMarkdown); web demo scripts written in AsciiDoc go through it too.
+func AdocToMarkdown(src string) string { return adocToMarkdown(src) }
