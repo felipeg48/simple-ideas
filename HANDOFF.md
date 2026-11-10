@@ -5,6 +5,15 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.34.0: web demos phase 1 (test mode).** `internal/cdp` (the DevTools
+  client, now with events; motion.go uses it), `internal/webdemo` (parser for
+  Markdown/AsciiDoc/JSON with line numbers, runner: locators by text, label,
+  aria, placeholder, title, alt, CSS, role; real mouse events; console errors
+  and failed requests; fresh incognito context per feature after `setup:`;
+  `$VAR` masked; report.html/json, JUnit), `cmd/si/demo.go`. A prototype made
+  the first narrated video of the Studio with Playwright + kokoro-onnx + ffmpeg
+  (spec "Lessons"). Next: phase 2 (video: frames, cursor, ripple, notes drawn,
+  blur, per-feature and full MP4, chapters), screenshots per step.
 - **v2.33.0: motion.** `transition: morph` runtime in `deck/02-navigation.js`
   (`morphList`, `morphPlay`: FLIP; match by `data-si-morph` from `<!-- id: -->`,
   heading text, image, same words; text scales by font size, boxes by box;

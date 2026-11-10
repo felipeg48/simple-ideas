@@ -3,6 +3,13 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.34.0:** web demos, phase 1: `si demo test script.md` runs a web app's
+  features in headless Chrome from a `type: demo` script with `app:` (a URL or
+  a folder si serves), finds elements as a person would, clicks and types for
+  real, checks text, URL, state and `no errors`, and writes report.html,
+  report.json and JUnit (`--junit`); exit 1 on a failure; `$VAR` secrets
+  masked. Markdown, AsciiDoc or JSON scripts; `examples/webdemo/` (a small shop
+  app); RULES §27; a Web Demos page on the site. Video and voice come next.
 - **v2.33.0:** `transition: morph`: what two slides share (a heading, a
   picture, a block named with `<!-- id: name -->`) glides from its old place to
   the new, the rest cross-fades (`morph 0.9s`; no motion when reduced motion is
