@@ -52,6 +52,23 @@ Points: Talking points
 
 ---
 
+<!-- transition: morph -->
+<!-- layout: center -->
+## One promise, ==five hand-offs==
+
+**Nobody owns the promise from end to end**
+
+So today we follow one order across all of them.
+
+Notes: (0.5 min)
+Nobody owns the promise from end to end. That is the whole problem in one line, so today we follow one order across every team and watch where it slips.
+
+Points:
+- Let the line settle before speaking
+- This is the question the rest of the talk answers
+
+---
+
 ## The five hand-offs, start to finish
 
 ```stage

@@ -195,6 +195,11 @@ One inline SVG whose parts change state slide by slide:
 - State words in the markdown drive CSS transitions in the SVG
 - Scaffold one with **`si new-canvas`**; recipe in `docs/authoring-canvases.md`
 
+Or let si move the slide itself: with `<!-- transition: morph -->` what two
+slides in a row share (the same heading, picture or words, or a block named
+`<!-- id: name -->` on both) glides from its old place and size to the new;
+the rest fades. `morph 0.9s` sets the length.
+
 ---
 
 ## Themes

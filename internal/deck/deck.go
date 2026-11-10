@@ -34,7 +34,7 @@ const (
 // Layouts and transitions accepted by the per-slide directives.
 var (
 	Layouts     = []string{"default", "center", "two-col", "split", "quote", "big-number", "image"}
-	Transitions = []string{"fade", "slide", "zoom", "none"}
+	Transitions = []string{"fade", "slide", "zoom", "none", "morph"}
 	// FooterPositions are the accepted footer-position values (long form plus short aliases).
 	FooterPositions = []string{"bottom-right", "bottom-left", "bottom-center", "top-right", "top-left", "top-center", "br", "bl", "bc", "tr", "tl", "tc"}
 	Modes           = []string{"auto", "light", "dark"}
@@ -87,6 +87,7 @@ var Directives = map[string]string{
 	"steps":      "body",  // reveal the next list item by item
 	"column":     "body",  // start the next column
 	"image":      "body",  // size and place the next image
+	"id":         "body",  // name the next block, so transition: morph matches it on the next slide
 }
 
 // Meta is the deck-level front matter.
@@ -175,15 +176,17 @@ type Slide struct {
 	HasMinutes bool
 	Layout     string
 	Transition string
-	Background string
-	Footer     string // per-slide footer override: text, or "off" to hide; empty inherits the deck footer
-	Labs       []Lab  // lab links; a non-empty list turns the slide into a lab slide
-	Classes    []string
-	Eyebrow    string // small context label above the heading; not part of the title
-	Part       int    // section slides: 1-based number of the section in the deck
-	Dir        string // directory of the source file: base for relative paths
-	File       string // source file
-	Line       int    // line of the slide's first line in File
+	// MorphDuration is the length of a morph transition (`transition: morph 0.8s`).
+	MorphDuration string
+	Background    string
+	Footer        string // per-slide footer override: text, or "off" to hide; empty inherits the deck footer
+	Labs          []Lab  // lab links; a non-empty list turns the slide into a lab slide
+	Classes       []string
+	Eyebrow       string // small context label above the heading; not part of the title
+	Part          int    // section slides: 1-based number of the section in the deck
+	Dir           string // directory of the source file: base for relative paths
+	File          string // source file
+	Line          int    // line of the slide's first line in File
 }
 
 // Voice is one speaker's part of a slide in a deck with `speakers:`: what
@@ -924,10 +927,21 @@ func (d *Deck) slideDirective(s *Slide, l srcLine, name, val string) bool {
 		}
 		s.Layout = val
 	case "transition":
-		if msg := oneOf("transition", val, Transitions); msg != "" {
+		f := strings.Fields(val)
+		if len(f) == 0 {
+			f = []string{""}
+		}
+		if msg := oneOf("transition", f[0], Transitions); msg != "" {
 			d.problem(l.file, l.no, "%s", msg)
 		}
-		s.Transition = val
+		s.Transition = f[0]
+		if len(f) > 1 {
+			if f[0] != "morph" || len(f) > 2 || !morphDurRE.MatchString(f[1]) {
+				d.problem(l.file, l.no, "transition: only morph takes a length, as in <!-- transition: morph 0.8s --> (s or ms)")
+			} else {
+				s.MorphDuration = f[1]
+			}
+		}
 	case "background":
 		d.checkBackground(l.file, l.no, s.Dir, val)
 		s.Background = val
@@ -972,6 +986,10 @@ func (d *Deck) slideDirective(s *Slide, l srcLine, name, val string) bool {
 	case "column":
 		if val != "" {
 			d.problem(l.file, l.no, "column takes no value")
+		}
+	case "id":
+		if !morphIDRE.MatchString(val) {
+			d.problem(l.file, l.no, "id needs one name (letters, digits, - or _): <!-- id: warehouse -->")
 		}
 	}
 	return kind == "slide"
@@ -1075,6 +1093,13 @@ func (d *Deck) checkDemoMinutes(lines []srcLine) {
 			strconv.FormatFloat(got, 'f', -1, 64), strconv.FormatFloat(want, 'f', -1, 64))})
 	}
 }
+
+// morphDurRE is the length a morph transition takes (0.8s, 600ms);
+// morphIDRE a name the id directive gives a block.
+var (
+	morphDurRE = regexp.MustCompile(`^\d+(\.\d+)?m?s$`)
+	morphIDRE  = regexp.MustCompile(`^[A-Za-z][\w-]*$`)
+)
 
 var durationRE = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*min`)
 

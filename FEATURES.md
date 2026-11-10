@@ -42,7 +42,8 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - **Media:** colour, gradient, image and muted video backgrounds with
   overlays; sized, aligned, captioned and full-bleed images; web fonts inlined.
 - **Transitions:** fade, slide, zoom; the canvas and code windows morph
-  between slides.
+  between slides; `transition: morph` glides any heading, picture or words
+  two slides share (or a block named `<!-- id: -->`) to its new place.
 
 ## Presenting
 

@@ -16,7 +16,8 @@ that is not a directive (`<!-- wobble -->`) is an error.
 |---|---|---|
 | `layout: center` | slide | [Layouts](#5-layouts-and-columns) |
 | `column` | body | [Layouts](#5-layouts-and-columns) |
-| `transition: zoom` | slide | [Transitions](#6-transitions) |
+| `transition: zoom`, `transition: morph 0.9s` | slide | [Transitions](#6-transitions) |
+| `id: promise` | next block | names the block so `transition: morph` matches it on the next slide ([Transitions](#6-transitions)) |
 | `background: assets/city.jpg opacity=0.4` | slide | [Backgrounds](#7-backgrounds) |
 | `footer: off` | slide | overrides the deck `footer` on this slide (`off` hides it, e.g. the title) |
 | `labs: [Create a Cluster](https://…), [Scale out](https://…)` | slide | turns the slide into a lab slide: a centred beaker icon, the `labs-label` heading, and a button per lab (opens in a new tab). A bare URL works too and shows a default label. |
@@ -27,5 +28,5 @@ that is not a directive (`<!-- wobble -->`) is an error.
 | `svg: assets/canvas.svg state words` | body | [SVG canvases](#10-animated-svg-canvases) |
 | `include: other.md` | deck | [Includes](#12-includes) |
 
-Body directives (`column`, `image`, `step`, `steps`, `svg`) work on the
+Body directives (`column`, `id`, `image`, `step`, `steps`, `svg`) work on the
 top-level blocks of a slide, not inside lists or quotes.

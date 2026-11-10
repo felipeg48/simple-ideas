@@ -802,6 +802,11 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 						return d.Slides[i].Minutes
 					}
 					return 0
+				}, morph: func(i int) float64 {
+					if i >= len(d.Slides) || (d.Slides[i].Transition != "morph" && (d.Slides[i].Transition != "" || d.Meta.Transition != "morph")) {
+						return 0
+					}
+					return morphSeconds(d.Slides[i].MorphDuration)
 				}}
 				var n int
 				if n, err = exportDeckMotion(chrome, dest, out, info, o.dwell, nar); err == nil {

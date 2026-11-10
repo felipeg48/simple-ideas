@@ -76,6 +76,15 @@ Or draw it in text: a `stage` flow, a Mermaid diagram, a mind map on a slide.
 `<!-- step -->` reveals the next block on a click, and `transition:` picks
 fade, slide or zoom.
 
+`transition: morph` moves anything two slides share: the same heading, the
+same picture, the same words, or a block you name with `<!-- id: -->`. It
+glides from its old place and size to the new one; the rest fades.
+
+<div class="dk-grid">
+<figure><img src="img/decks/morph-before.jpg" alt="A slide with a heading and a list" loading="lazy"><figcaption>Slide 2: the last line is one item in a list</figcaption></figure>
+<figure><img src="img/decks/morph-after.jpg" alt="The same heading and line, centred" loading="lazy"><figcaption>Slide 3, <code>transition: morph</code>: the heading and the line glide to the middle</figcaption></figure>
+</div>
+
 ## While you present
 
 Every deck si builds answers these keys, in `si play` or opened from a file.

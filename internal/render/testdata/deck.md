@@ -140,4 +140,25 @@ func send() error {
 
 ---
 
+<!-- transition: morph -->
+## One promise
+
+<!-- id: promise -->
+Two days, door to door.
+
+<!-- id: code -->
+```sh
+si play
+```
+
+---
+
+<!-- transition: morph 0.9s -->
+## One promise
+
+<!-- id: promise -->
+**Two days, door to door.**
+
+---
+
 # The end

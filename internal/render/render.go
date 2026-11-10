@@ -212,6 +212,13 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 	}
 	classes := []string{"si-slide", "si-" + string(s.Kind)}
 	bgClasses, style, layer := dr.background(s, sc)
+	if s.MorphDuration != "" {
+		style = strings.TrimSuffix(style, ";")
+		if style != "" {
+			style += ";"
+		}
+		style += "--si-morph-duration:" + s.MorphDuration
+	}
 	classes = append(classes, bgClasses...)
 	classes = append(classes, s.Classes...)
 	layout := s.Layout
