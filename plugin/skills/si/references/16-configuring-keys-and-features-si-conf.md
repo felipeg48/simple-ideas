@@ -26,7 +26,7 @@ Remappable **actions**: `overview`, `presenter`, `draw`, `timer`, `find`,
 
 ```
 # si.conf — flat key: value, same style as front matter (not YAML)
-theme: crdb
+theme: slate
 keys.draw: w          # draw with w instead of a
 draw.hold: shift      # in draw mode, hold Shift (not Option) to draw with the cursor
 feature.timer: off    # no break-timer HUD for these decks

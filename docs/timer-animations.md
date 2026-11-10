@@ -15,7 +15,7 @@ Three built-ins ship with si:
 | `orbit` | a constellation of nodes orbiting a centre, linked when they drift close |
 | `bokeh` | soft dots rising and fading — a calm ambient field |
 
-All three are drawn with the deck's theme tokens (so they match `crdb`, `paper`,
+All three are drawn with the deck's theme tokens (so they match `slate`, `paper`,
 your custom theme, dark mode …) and pause under `prefers-reduced-motion`.
 
 ## A toggle between several

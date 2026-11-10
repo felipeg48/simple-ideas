@@ -47,7 +47,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "2.19.0"
+const version = "2.19.1"
 
 // Exit codes.
 const (
@@ -156,7 +156,7 @@ Usage:
 Flags (GNU style, before or after the path):
   -o, --output <path>   output directory (build) or file (export)
       --css <path>      user stylesheet file or directory; repeatable; loads after the theme
-      --theme <name>    built-in theme (si theme list: studio, paper, mono, crdb, acemq, acemq-pro; "AceMQ Pro" works too), a .css theme file or an https:// URL; overrides theme: front matter
+      --theme <name>    built-in theme (si theme list: studio, paper, mono, slate, twilight, forest, sunrise, neon, newsprint), a .css theme file or an https:// URL; overrides theme: front matter
       --conf <path>     read si.conf (key remaps, feature toggles, default theme); default: si.conf next to the deck
       --title <text>    build, play: title for the index page — its <title> and <h1> (default: the source dir name)
       --site-title <text> alias for --title: the site or landing page title (--site <text> still works, with a warning)
@@ -1806,7 +1806,7 @@ func listThemes(w io.Writer) {
 		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", n, th.Label, al, th.About)
 	}
 	tw.Flush()
-	fmt.Fprintln(w, "\nUse: si build --theme acemq-pro decks/   (or --theme \"AceMQ Pro\", or theme: in front matter)")
+	fmt.Fprintln(w, "\nUse: si build --theme twilight decks/   (or theme: in front matter)")
 	fmt.Fprintln(w, "A path to a .css file or an https:// URL also works as a theme.")
 }
 

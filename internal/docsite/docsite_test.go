@@ -90,10 +90,17 @@ func TestEveryFeatureHasAWorkingPage(t *testing.T) {
 	}
 }
 
-// The Themes page shows every built-in theme, and each has its picture.
+// The Themes page shows every built-in theme but the unlisted ones, and each
+// has its picture.
 func TestThemesPageHasEveryTheme(t *testing.T) {
 	page := themesPage()
 	for _, n := range assets.ThemeNames() {
+		if unlisted[n] {
+			if strings.Contains(page, "`theme: "+n+"`") || strings.Contains(page, "themes/"+n+".jpg") {
+				t.Errorf("unlisted theme %s is on the Themes page", n)
+			}
+			continue
+		}
 		if !strings.Contains(page, "themes/"+n+".jpg") || !strings.Contains(page, "`theme: "+n+"`") {
 			t.Errorf("theme %s is not on the Themes page", n)
 		}

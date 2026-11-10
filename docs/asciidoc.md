@@ -19,7 +19,7 @@ slide:
 ```asciidoc
 = My Talk
 :author: Ada Lovelace
-:theme: crdb
+:theme: studio
 :aspect: 16:9
 
 == First section

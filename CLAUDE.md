@@ -206,6 +206,9 @@ pass. The steps that matter:
   v2.19.0: `--tunnel` (Cloudflare quick tunnel to `AudienceOnlyHandler`;
   polling fallback `/_si/audience/now` since quick tunnels carry no SSE). The
   founder ruled out a hosted relay on simple-ideas.org for now (cost).
+- **Unlisted themes** (v2.19.1): `crdb`, `acemq`, `acemq-pro` (client work)
+  stay in code but never in docs, site or help (`docsite.unlisted`, the
+  theme-shots skip list; `TRADEMARKS.md`). Do not document them again.
 - **Themes** (v2.15.0): six new built-ins (slate, twilight, forest, sunrise,
   neon, newsprint; `TestNewThemesContrast`: WCAG AA in light and dark); the
   docs site's Themes page is generated from `assets.Themes`

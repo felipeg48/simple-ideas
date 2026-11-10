@@ -7,6 +7,11 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/assets"
 )
 
+// unlisted are built-in themes made for client work: they stay in si but are
+// not shown on the site (their names are other companies' trademarks; see
+// TRADEMARKS.md).
+var unlisted = map[string]bool{"crdb": true, "acemq": true, "acemq-pro": true}
+
 // themesPage is the site's Themes page, made from the built-in theme list so
 // it cannot drift: each theme's name, what it is, and its picture
 // (docs/site/themes/<name>.jpg, `make theme-shots`), light beside dark.
@@ -37,6 +42,9 @@ same slide of the [showcase](live/showcase.md) in that theme.
 
 `))
 	for _, n := range assets.ThemeNames() {
+		if unlisted[n] {
+			continue
+		}
 		th := assets.Themes[n]
 		fmt.Fprintf(&b, "## %s\n\n![%s, light and dark](themes/%s.jpg)\n\n`theme: %s`: %s.", th.Label, th.Label, n, n, th.About)
 		if al := assets.ThemeAliases(n); len(al) > 0 {

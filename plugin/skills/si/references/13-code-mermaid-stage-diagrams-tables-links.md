@@ -75,8 +75,8 @@ Every team was green; ==the customer still waited==.
 ```
 
 It renders as `<span class="hl">…</span>`, so a theme decides the look: the
-built-in themes underline it with a band of the accent colour, and AceMQ Pro
-sweeps the band in as the slide arrives. It nests (`==**bold** words==`), stays
+built-in themes underline it with a band of the accent colour, and a theme can
+sweep the band in as the slide arrives. It nests (`==**bold** words==`), stays
 on one line, and leaves code, a single `=` and `===` alone. Plain-text copies
 of a title (the tab, the teleprompter, search) drop the marks.
 

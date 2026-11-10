@@ -699,8 +699,8 @@ Every team was green; ==the customer still waited==.
 ```
 
 It renders as `<span class="hl">…</span>`, so a theme decides the look: the
-built-in themes underline it with a band of the accent colour, and AceMQ Pro
-sweeps the band in as the slide arrives. It nests (`==**bold** words==`), stays
+built-in themes underline it with a band of the accent colour, and a theme can
+sweep the band in as the slide arrives. It nests (`==**bold** words==`), stays
 on one line, and leaves code, a single `=` and `===` alone. Plain-text copies
 of a title (the tab, the teleprompter, search) drop the marks.
 
@@ -1074,15 +1074,10 @@ build shown (ANSI colours) and exits: for scripts, READMEs and checks.
 ## 15. Styling: themes and your own CSS
 
 - `theme:` picks a built-in theme (`studio`, `paper`, `mono`, `slate`,
-  `twilight`, `forest`, `sunrise`, `neon`, `newsprint`, `crdb`,
-  `acemq`, `acemq-pro`), each with a light and a dark palette. `si theme list`
+  `twilight`, `forest`, `sunrise`, `neon`, `newsprint`), each with a light and a dark palette. `si theme list`
   prints them with their display names and aliases. Names are matched loosely:
-  case is ignored and spaces or underscores count as `-`, so `theme: AceMQ Pro`
-  and `--theme "AceMQ Pro"` mean `acemq-pro`. An unknown `--theme` is an error. `crdb` is the CockroachDB
-  University brand (cream / ink / purple; aliases `cockroachdb`,
-  `cockroachlabs`). `acemq` is the AceMQ brand (orange / teal / ink, Urbanist
-  and Mona Sans embedded) with extra components, below. `acemq-pro` (AceMQ
-  Pro) is `acemq` plus the rest of the AceMQ deck style guide's layouts.
+  case is ignored and spaces or underscores count as `-`, so `theme: Twilight`
+  and `--theme TWILIGHT` mean `twilight`. An unknown `--theme` is an error.
 - `theme:` (or `--theme`) can instead be a path ending in `.css`: the file's
   contents become the `si.theme` layer, so you ship a whole palette from one
   file. Define the `--si-*` tokens (see `si --export css-rules`); resolved
@@ -1116,97 +1111,6 @@ build shown (ANSI colours) and exits: for scripts, READMEs and checks.
 :root { --si-accent: #e4572e; --si-font-heading: Georgia, serif; }
 :root[data-si-mode="dark"] { --si-bg: #0b1a28; --si-fg: #f1ece2; }
 .si-step.is-latest { color: var(--si-accent-2); }
-```
-
-### acemq theme extras
-
-`theme: acemq` adds more than tokens. Only decks using it carry the extras
-(fonts and logo inlined, about 145 KB):
-
-- **Background rhythm**, automatic: odd slides are plain with a faint grid and
-  an orange glow at the top, even slides are flat `--si-surface-2`.
-- **Eyebrow**: `<!-- eyebrow: Context -->` renders as an orange uppercase label
-  with a dash. **Highlighter**: `<span class="hl">` in a heading draws an
-  orange band that sweeps in. Use one per slide.
-- **Footer**: the `footer:` text gets an orange dot, and the AceMQ logo is
-  drawn at the bottom left of every slide that has a footer. Set
-  `:root { --si-brand-logo: none; }` (in `--css`) to hide the logo, or
-  `url(...)` to swap it.
-- **Cover and closing**: the title slide is left-aligned. Optional blocks:
-  `.lockup` (`<span class="lk-logo">` draws the brand logo, `<img>`,
-  `.lk-x` divider, `.lk-name` wordmark; a slide with a `.lockup` drops the
-  footer logo so the logo shows once, and keeps the footer text), `.pill`
-  with `.pill-mark`,
-  `.cover-sub`, `.lead`, `.contact` (a row of `.tag`s).
-- **Slide classes** (`<!-- class: ... -->`): `on-ink` (a dark slide in light
-  mode; use once or twice), `dense` (smaller table), `us-2` … `us-6` (tint
-  table column N orange: "our" column), `us-row` (tint the first body row),
-  `vs` (red marker on the second column's `###`).
-- **Components** (raw HTML): `.cards` (`c2`, `c4`) of `.card` (`hi` the one
-  recommended card, `orange`, `teal`/`ok`, `crit`) with `h4`, `p`, `.big`
-  (`<em>` unit in orange) and `.tag` (`orange`, `teal`, `crit`); `.tl` of
-  `.ev` incidents (`.when`, `.what`, `.impact`); `.steps` of `.st` (`.num`,
-  `h4`, `p`); `.callout` (`warn`) under a table or grid; verdict marks
-  `.y`, `.n`, `.p`, `.u` in table cells.
-- Code blocks are a dark terminal in both modes; tables are cards; motion
-  (rise, pop, highlighter) is off under reduced motion and in print.
-
-```markdown
-<!-- eyebrow: Two paths -->
-<!-- class: us-3 -->
-<!-- footer: Source: AceMQ docs -->
-## Same workload, <span class="hl">half the nodes.</span>
-
-| | Today | AceMQ |
-|---|---|---|
-| Nodes | 6 | <span class="y">3</span> |
-
-<div class="cards c2">
-<div class="card hi"><span class="tag">Recommended</span><h4>AceMQ</h4><p>Quorum by default.</p></div>
-<div class="card crit"><span class="tag">Today</span><h4>Mirrored</h4><p>Split brain on a lost AZ.</p></div>
-</div>
-```
-
-Lab documents (`type: lab`) under `acemq` get the fonts and palette.
-
-### acemq-pro theme extras (AceMQ Pro)
-
-`theme: acemq-pro` is everything in `acemq` (above) plus the layout catalogue
-of the AceMQ deck style guide, as raw-HTML components. All of them reflow:
-grids use auto-fit and stack on narrow or portrait slides, and each pops in
-with a stagger on the active slide. `si --export themes` writes a full
-AceMQ Pro sample deck that uses every one.
-
-| Component | Markup | Use for |
-|---|---|---|
-| Fact grid | `.heard` of `.hc` (`.k` label, `.big` with `<em>` unit, `p`; `hi`) | "What we heard" |
-| Incidents + verdict | `.inc` of `.ic` (`.when`, `h4`, `p`), then `<p class="verdict">` (`<b>` in orange) | outages with one root cause |
-| Argument + visual | `.split2` with `.blist` (`li.ok`, `li.crit`) and `.topo` (a card for an SVG, `.cap`) or `.zones` | a claim next to a diagram |
-| Zones | `.zones` of `.zg` (`.zl` label, `.zc` cells: `ok`, `us`, `hot`, `down`) | before / after topology |
-| Options | `.opts` of `.opt` (`.ol` letter, `.tag`, `h4`, `p`, `dl` of `<div><dt><dd>`; `hi`) | options A–D, one recommended |
-| HTML table | `table.tbl` with `.us` cells | a matrix with "our" column |
-| Fact rows | `.facts` of `.fr` (`.fn` number with `<em>` unit, then a `div` with `h4`, `p`) | big number, then why |
-| Feature grid | `.feat` of `.fc` (`.icon-chip`, `h4`, `p`) | product capabilities |
-| Benchmark | `.bench` of `.brow` (`style="--w:84%"`; `us` row orange; `.bl`, `.bar`, `.bv`), then `.bks` of `.bk` (`.big`, `p`; `hi`) | measured results |
-| Flow | `.flowline` of `.fs` (`h4`, `p`; `hot` pulses), then `.mnotes` (`p`, `p.warn`) | migration, process |
-| Plans | `.poc` of `.pc2` (`.tag`, `h4`, `p`, `dl`; `hi`) with a `.term2` terminal (`.c` comment, `.k` prompt, `.ok` output) | trial vs PoC |
-| Cover floaters | `.floaters` of three `.fl` (text, `<img>` or `<svg>`) on the title slide | tilted tiles that drift; hidden on narrow slides |
-| Parts | `.icon-chip` (`--sm`, `--teal`, `--ink`; holds an inline `<svg>` or a glyph), `.btn`, `.btn--ghost` | icons, a call to action |
-| Motion | `.r` rise, `.f` fade, `.pop` pop, `.pulse` ring ×3, `.grow-x` draw in; `style="--i:N"` staggers | hand-placed raw HTML |
-
-`.pop` is the guide's `.p`: in si `.p` stays the "partial" verdict mark.
-There is no icon font (a deck stays self-contained), so icon chips take an
-inline SVG.
-
-```markdown
-<!-- eyebrow: Options -->
-## Four ways forward, ==one we recommend.==
-
-<div class="opts">
-<div class="opt"><span class="ol">A</span><span class="tag">Today</span><h4>Keep as is</h4><p>Hand-run clusters.</p></div>
-<div class="opt hi"><span class="ol">B</span><span class="tag">Recommended</span><h4>AceMQ Broker</h4><p>Quorum by default.</p><dl><div><dt>Lost zone</dt><dd>Alert</dd></div></dl></div>
-</div>
-<p class="verdict">Both keep your clients. <b>Only B removes the outage.</b></p>
 ```
 
 ### Themes for documents (labs, articles, guides)
@@ -1333,7 +1237,7 @@ Remappable **actions**: `overview`, `presenter`, `draw`, `timer`, `find`,
 
 ```
 # si.conf — flat key: value, same style as front matter (not YAML)
-theme: crdb
+theme: slate
 keys.draw: w          # draw with w instead of a
 draw.hold: shift      # in draw mode, hold Shift (not Option) to draw with the cursor
 feature.timer: off    # no break-timer HUD for these decks
@@ -1795,7 +1699,7 @@ runtime; nothing is fetched. `badge`, `logo`, `qr` and `cards` also work on slid
 the others, on a slide, are reported as a problem.
 Options follow the text after a `·`: `key=value`, or a kind word (`info`,
 `ok`, `warn`, `crit`). Any other `· part` stays in the text, so
-`<!-- badge: Prepared for CACI · Session 1 of 5 -->` keeps its dot.
+`<!-- badge: Prepared for Northwind · Session 1 of 5 -->` keeps its dot.
 
 ```markdown
 <!-- alert: The lab moves to the new cluster on 24 November. · until=2026-11-25 · warn -->
@@ -1806,9 +1710,9 @@ Options follow the text after a `·`: `key=value`, or a kind word (`info`,
 | Plugin | What |
 |---|---|
 | `alert: text · kind · until=YYYY-MM-DD` | a dismissible band; the reader's dismissal is remembered in that browser; hidden after `until`. Kinds: `info` (default), `ok`, `warn`, `crit`. |
-| `badge: text · kind` | a status pill, same kinds; on a slide, the pill paragraph a cover or closing slide carries (AceMQ Pro styles it with its orange mark) |
+| `badge: text · kind` | a status pill, same kinds; on a slide, the pill paragraph a cover or closing slide carries |
 | `cards: 2` | the `###` headings that follow become a grid of cards (2, 3 or 4 columns, or as many as fit): `### Title · tag · colour`, colour one of `teal`, `orange`, `ok`, `crit`, `hi` (the highlighted card); the grid ends at the next `##`, `---` or directive; a `<!-- step -->` before it reveals the whole grid |
-| `logo: [image] × Partner · alt=Brand` | a logo lockup: the image (or, with none, the theme's own logo: `--si-brand-logo`, as in AceMQ Pro), a bar, and the partner's name; on slides and pages |
+| `logo: [image] × Partner · alt=Brand` | a logo lockup: the image (or, with none, the theme's own logo: `--si-brand-logo`), a bar, and the partner's name; on slides and pages |
 | `poll: id · option · option … · multiple` | a live poll the room answers on their phones under `si play --audience`; elsewhere the list of options (above) |
 | `qr: text or URL · caption=… · style=dots · logo=path · size=large · ec=H` | a QR code (below); `qr: audience` is the live follow-along code of `si play --audience` |
 | `event: YYYY-MM-DDTHH:MM text · Label → link` | a corner toast with a live countdown, shown from two days before the time until it starts |
@@ -1866,9 +1770,9 @@ On a cover slide:
 ```markdown
 # Message flows, end to end
 
-<!-- logo: × CACI · alt=AceMQ -->
+<!-- logo: × Northwind · alt=Harbor -->
 
-<!-- badge: Prepared for CACI · Session 1 of 5 -->
+<!-- badge: Prepared for Northwind · Session 1 of 5 -->
 ```
 
 ### QR codes

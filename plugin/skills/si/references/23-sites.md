@@ -68,7 +68,7 @@ runtime; nothing is fetched. `badge`, `logo`, `qr` and `cards` also work on slid
 the others, on a slide, are reported as a problem.
 Options follow the text after a `·`: `key=value`, or a kind word (`info`,
 `ok`, `warn`, `crit`). Any other `· part` stays in the text, so
-`<!-- badge: Prepared for CACI · Session 1 of 5 -->` keeps its dot.
+`<!-- badge: Prepared for Northwind · Session 1 of 5 -->` keeps its dot.
 
 ```markdown
 <!-- alert: The lab moves to the new cluster on 24 November. · until=2026-11-25 · warn -->
@@ -79,9 +79,9 @@ Options follow the text after a `·`: `key=value`, or a kind word (`info`,
 | Plugin | What |
 |---|---|
 | `alert: text · kind · until=YYYY-MM-DD` | a dismissible band; the reader's dismissal is remembered in that browser; hidden after `until`. Kinds: `info` (default), `ok`, `warn`, `crit`. |
-| `badge: text · kind` | a status pill, same kinds; on a slide, the pill paragraph a cover or closing slide carries (AceMQ Pro styles it with its orange mark) |
+| `badge: text · kind` | a status pill, same kinds; on a slide, the pill paragraph a cover or closing slide carries |
 | `cards: 2` | the `###` headings that follow become a grid of cards (2, 3 or 4 columns, or as many as fit): `### Title · tag · colour`, colour one of `teal`, `orange`, `ok`, `crit`, `hi` (the highlighted card); the grid ends at the next `##`, `---` or directive; a `<!-- step -->` before it reveals the whole grid |
-| `logo: [image] × Partner · alt=Brand` | a logo lockup: the image (or, with none, the theme's own logo: `--si-brand-logo`, as in AceMQ Pro), a bar, and the partner's name; on slides and pages |
+| `logo: [image] × Partner · alt=Brand` | a logo lockup: the image (or, with none, the theme's own logo: `--si-brand-logo`), a bar, and the partner's name; on slides and pages |
 | `poll: id · option · option … · multiple` | a live poll the room answers on their phones under `si play --audience`; elsewhere the list of options (above) |
 | `qr: text or URL · caption=… · style=dots · logo=path · size=large · ec=H` | a QR code (below); `qr: audience` is the live follow-along code of `si play --audience` |
 | `event: YYYY-MM-DDTHH:MM text · Label → link` | a corner toast with a live countdown, shown from two days before the time until it starts |
@@ -139,9 +139,9 @@ On a cover slide:
 ```markdown
 # Message flows, end to end
 
-<!-- logo: × CACI · alt=AceMQ -->
+<!-- logo: × Northwind · alt=Harbor -->
 
-<!-- badge: Prepared for CACI · Session 1 of 5 -->
+<!-- badge: Prepared for Northwind · Session 1 of 5 -->
 ```
 
 ### QR codes

@@ -28,8 +28,8 @@ self-contained HTML files you can mail, host or open from a USB stick.
   per-slide and total timers with pace, per-slide rehearsal timings, previews,
   synced with the audience window.
 - **Live terminal drawer** (`si play` only): press `` ` `` to slide up a tabbed,
-  real shell and run commands mid-demo (`docker ps`, `cockroach start-single-node`,
-  `cockroach sql`) without leaving the slides. Loopback-only and never in a built
+  real shell and run commands mid-demo (`docker ps`, `psql`,
+  `redis-cli`) without leaving the slides. Loopback-only and never in a built
   deck — see [docs/terminal.md](docs/terminal.md).
 - **Present with ease:** jump to any slide with the `/` find palette (search
   titles and text, or type a number); a full-screen break timer (digital or
@@ -127,6 +127,8 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.19.1:** the docs list nine built-in themes; three client themes stay in
+  the code but leave the docs and site (see [TRADEMARKS.md](TRADEMARKS.md)).
 - **v2.19.0:** remote audiences: `si play talk.md --tunnel` puts the audience
   side (follow along, polls, questions) on a temporary public HTTPS link
   (Cloudflare's free quick tunnel, `cloudflared`) for a talk on a video call;
@@ -219,7 +221,7 @@ self-contained HTML files you can mail, host or open from a USB stick.
   fetched once, cached, and inlined, so the file stays self-contained (§15).
 - **Markdown or AsciiDoc:** author decks in `*.md` or `*.adoc` — both feed the
   same pipeline ([docs/asciidoc.md](docs/asciidoc.md)).
-- **Your own look:** four built-in themes (incl. the CockroachDB `crdb` brand),
+- **Your own look:** nine built-in themes,
   a CSS theme file or URL, or your CSS on a documented `--si-*` token and
   `.si-*` hook contract.
 
@@ -264,7 +266,7 @@ si selfupdate
 si new talk                 # talk/talk.md uses every rule
 si play talk --open         # present with live reload at http://127.0.0.1:7070/
 si talk --output html/      # one self-contained HTML file per deck + index.html
-si courses/ --site "CockroachDB Courses" -o site/   # a tiled landing page over many decks
+si courses/ --site "Northwind Academy" -o site/     # a tiled landing page over many decks
 si check talk               # validate; exit 1 on a problem
 ```
 
@@ -369,7 +371,7 @@ https://simple-ideas.org/agents.html
 | `si mcp [dir]` | an MCP server for AI agents on stdio (see [Use it with your AI agent](#use-it-with-your-ai-agent)) |
 | `si rules` | print RULES.md |
 | `si build <dir\|file.md> --handout[=slides\|lines\|points\|notes]` | `handouts/<name>.pdf` for the audience: slides only by default; `lines` adds space to write, `points` / `notes` add the speaker's text; `handout-url:` prints a QR code to the live deck |
-| `si --theme <name\|file.css\|url>` | override the theme: a built-in (`si theme list`: `studio`, `paper`, `mono`, `crdb`, `acemq`, `acemq-pro`; `"AceMQ Pro"` works too), a CSS file, or an `https://` URL |
+| `si --theme <name\|file.css\|url>` | override the theme: a built-in (`si theme list`: `studio`, `paper`, `mono`, `slate`, `twilight`, `forest`, `sunrise`, `neon`, `newsprint`), a CSS file, or an `https://` URL |
 | `si theme list` | list the built-in themes: name, display name, aliases, summary |
 | `si --export css-rules\|rules\|conf\|example\|themes\|agent-rules\|skill [--output path]` | `skill`: the si Agent Skill (`SKILL.md` + references, default `.claude/skills/si/`) · starter stylesheet · RULES.md · starter `si.conf` · the showcase decks · a sample deck per theme (a gallery) · `CLAUDE.md` + `AGENTS.md` for a deck project, so a coding agent writes decks the si way (teleprompter `Notes:` as spoken script, `Points:` as talking points; never overwrites, `-o -` prints) |
 
@@ -395,7 +397,7 @@ More in [docs/screenshots](docs/screenshots/).
 
 ## Themes
 
-Twelve built-in themes, each in light and dark (the reader's setting, or `d`
+Nine built-in themes, each in light and dark (the reader's setting, or `d`
 while presenting). Use one by name: `theme: twilight` in front matter,
 `--theme twilight`, or `theme: twilight` in `si.conf`. More on
 [the Themes page](https://simple-ideas.org/themes.html).
@@ -405,13 +407,12 @@ while presenting). Use one by name: `theme: twilight` in front matter,
 <tr><td width="50%"><img src="docs/site/themes/mono.jpg" alt="The mono theme, light and dark"><br><code>theme: mono</code></td><td width="50%"><img src="docs/site/themes/slate.jpg" alt="The slate theme, light and dark"><br><code>theme: slate</code></td></tr>
 <tr><td width="50%"><img src="docs/site/themes/twilight.jpg" alt="The twilight theme, light and dark"><br><code>theme: twilight</code></td><td width="50%"><img src="docs/site/themes/forest.jpg" alt="The forest theme, light and dark"><br><code>theme: forest</code></td></tr>
 <tr><td width="50%"><img src="docs/site/themes/sunrise.jpg" alt="The sunrise theme, light and dark"><br><code>theme: sunrise</code></td><td width="50%"><img src="docs/site/themes/neon.jpg" alt="The neon theme, light and dark"><br><code>theme: neon</code></td></tr>
-<tr><td width="50%"><img src="docs/site/themes/newsprint.jpg" alt="The newsprint theme, light and dark"><br><code>theme: newsprint</code></td><td width="50%"><img src="docs/site/themes/crdb.jpg" alt="The crdb theme, light and dark"><br><code>theme: crdb</code></td></tr>
-<tr><td width="50%"><img src="docs/site/themes/acemq.jpg" alt="The acemq theme, light and dark"><br><code>theme: acemq</code></td><td width="50%"><img src="docs/site/themes/acemq-pro.jpg" alt="The acemq-pro theme, light and dark"><br><code>theme: acemq-pro</code></td></tr>
+<tr><td width="50%"><img src="docs/site/themes/newsprint.jpg" alt="The newsprint theme, light and dark"><br><code>theme: newsprint</code></td><td width="50%"></td></tr>
 </table>
 
 ## Styling
 
-Pick a built-in theme in front matter (`theme: crdb`), point `theme:` at a CSS
+Pick a built-in theme in front matter (`theme: twilight`), point `theme:` at a CSS
 file or an `https://` URL, or layer your own CSS:
 
 ```bash
@@ -451,3 +452,9 @@ and how to add a directive, theme, canvas helper or timer animation.
 
 Licensed under the Apache License, Version 2.0 — see [LICENSE](LICENSE).
 © 2026 Felipe Gutierrez.
+
+## Trademarks
+
+CockroachDB and Cockroach Labs are trademarks of Cockroach Labs, Inc.; AceMQ
+is a trademark of its respective owner. si is an independent project, not
+affiliated with or endorsed by them. See [TRADEMARKS.md](TRADEMARKS.md).

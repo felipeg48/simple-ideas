@@ -5,6 +5,10 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.19.1: client themes off the docs.** `crdb`, `acemq`, `acemq-pro` stay
+  in the code (decks keep building) but left RULES, manual, README, help text,
+  site (`internal/docsite/themes.go` `unlisted`, pictures deleted) and the
+  skill; `TRADEMARKS.md` + a README Trademarks section.
 - **v2.19.0: `si play --tunnel` for remote audiences.** `cmd/si/tunnel.go`:
   `AudienceOnlyHandler` (audience key and routes only) on a loopback port,
   `cloudflared tunnel --url` (found on PATH or Homebrew), the trycloudflare

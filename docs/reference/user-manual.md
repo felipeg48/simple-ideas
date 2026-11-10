@@ -1,7 +1,7 @@
 ---
 title: The si User Manual
 author: simple-ideas
-theme: crdb
+theme: studio
 aspect: 16:9
 ---
 
@@ -29,7 +29,7 @@ This manual is itself an si deck — build it with `si manual --slides` or `si m
 ```markdown
 ---
 title: My Talk
-theme: crdb
+theme: studio
 ---
 
 # My Talk
@@ -198,7 +198,7 @@ One inline SVG whose parts change state slide by slide:
 
 ## Themes
 
-- Six built-ins: `studio`, `paper`, `mono`, `crdb`, `acemq` (brand components, embedded fonts), `acemq-pro` (AceMQ plus the full deck-system catalogue); `si theme list` prints them
+- Nine built-ins: `studio`, `paper`, `mono`, `slate`, `twilight`, `forest`, `sunrise`, `neon`, `newsprint`; `si theme list` prints them
 - `theme: my.css` loads a CSS token file; `theme: https://…/x.css` fetches one
 - `si --export themes` writes a gallery; `si --export css-rules` a starter stylesheet
 - Your own CSS layers in `si.user` after the theme — tokens are `--si-*`
