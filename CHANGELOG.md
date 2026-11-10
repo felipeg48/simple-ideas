@@ -3,6 +3,22 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.38.0:** `si demo run` makes three videos from one take: `<feature>.video.mp4`
+  (the picture alone), `<feature>.mp4` (picture and voice) and
+  `<feature>.captions.mp4` (picture, voice and captions); the same for the
+  whole run (`all.video.mp4`, `all.mp4`, `all.captions.mp4`, title cards and
+  chapters in each). Captions never cover the picture any more: in the
+  captions video the picture shrinks into the top of the frame and the
+  captions sit in a dark band under it (they used to hide the command just
+  typed in a terminal). A `.vtt` is written beside every `.srt` (and
+  `all.srt`/`all.vtt`), and README.html plays each feature with a captions
+  track and links all three videos; so does the report. Long waits play
+  faster: after its first 3 s a command, a program starting or a wait for
+  output is sped up to last 2 s at most, with a ⏩ badge; the voice is never
+  sped up, captions and chapters follow the shorter video (`--fast-forward
+  5s`, `--no-fast-forward`). `--no-captions` skips the captions videos;
+  `--captions` still runs and does nothing. Web demos keep backslashes in
+  quoted step values except `\"` and `\\`.
 - **v2.37.0:** `si voice`: `si voice install kokoro` sets Kokoro up in one
   command (a Python venv with kokoro-onnx 0.6.1 and the two model files,
   SHA-256 checked, in the user cache; idempotent; `--dir`; `si voice uninstall

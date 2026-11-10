@@ -109,7 +109,7 @@ that the shop does not know.
 ## On film
 
 ```bash
-SHOP_PASSWORD=shop-demo si demo run shop.md --captions
+SHOP_PASSWORD=shop-demo si demo run shop.md
 ```
 
 The same steps, filmed in a browser you never see. A drawn cursor glides to
@@ -117,7 +117,7 @@ each button and a ripple marks the click; `note "Username: demo" at
 "Username"` puts a bubble beside the field until the narration moves on; text
 is typed at a person's pace, and a field typed from a `$VAR` is blurred.
 
-![A frame of the sign-in video: the Username field ringed, a note "Username: demo" beside it, and the caption "Northwind keeps your orders behind one sign-in."](img/webdemos/film.jpg)
+![A frame of the sign-in captions video: the drawn cursor in the Username field as "demo" is typed, the picture a little smaller at the top, and under it, in a dark band, the caption "Northwind keeps your orders behind one sign-in."](img/webdemos/film.jpg)
 
 **The words set the pace.** Every `Say:` line is voiced before the take and
 measured; the steps under it are spread over its words, and a block whose
@@ -129,18 +129,29 @@ In `demo-out/shop/`:
 
 | File | What |
 |---|---|
-| `pay-for-an-order.mp4` | the feature, video and voice |
-| `pay-for-an-order.video.mp4` | the same, silent |
+| `pay-for-an-order.mp4` | the feature, picture and voice |
+| `pay-for-an-order.video.mp4` | the picture alone, no sound |
+| `pay-for-an-order.captions.mp4` | picture, voice and captions in a band under the picture |
 | `pay-for-an-order.voice.m4a` · `.wav` | the narration alone |
-| `pay-for-an-order.srt` | captions, timed |
-| `all.mp4` | every feature after a title card, chapters inside |
+| `pay-for-an-order.srt` · `.vtt` | captions, timed (SubRip, and WebVTT for the web) |
+| `all.mp4` · `all.video.mp4` · `all.captions.mp4` | every feature after a title card, chapters inside |
+| `all.srt` · `all.vtt` | the captions of `all.mp4` |
 | `chapters.txt` | `0:00 Sign in` lines for a YouTube description |
 | `report.html` · `report.json` | the run, linked to the clips |
-| `README.md` · `README.html` | every file, each video in the page, the script, how it was made |
+| `README.md` · `README.html` | every file, each video in the page with its captions track, the script, how it was made |
 
-`--captions` burns the captions into the video as well (bottom, two lines at
-most); `--viewport phone` films the phone layout; `--feature "Pay for an
-order"` films one feature.
+The three videos come from one take. In the captions video the picture shrinks
+into the top of the frame and the captions sit in a dark band under it, so
+they never hide the command just typed. `--no-captions` skips those videos;
+`--viewport phone` films the phone layout; `--feature "Pay for an order"`
+films one feature.
+
+**Long waits play faster.** A command that runs for a while, a program
+starting, a wait for some output: after its first 3 s the video plays it
+faster (it lasts 2 s at most) with a ⏩ badge in the corner. The voice is
+never sped up, and the captions and chapters follow the shorter video.
+`--fast-forward 5s` changes the 3 s; `--no-fast-forward` keeps every wait as
+it was.
 
 ## With a terminal
 

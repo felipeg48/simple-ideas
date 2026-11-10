@@ -59,8 +59,10 @@ si play talk.md --audience      # the room follows on their phones; <!-- qr: aud
 si play talk.md --tunnel        # the same for a remote audience (a video call): a temporary public link
 si demo test shop.md            # a web demo script (type: demo + app:) run against the web app in headless Chrome:
                                 # report.html + report.json in demo-out/shop/, exit 1 on a failure, --junit junit.xml for CI
-si demo run shop.md             # the same steps filmed and narrated: <feature>.mp4, all.mp4 with chapters,
-                                # chapters.txt, .srt (--captions burns them in), README.html; --voice, --viewport
+si demo run shop.md             # the same steps filmed and narrated, three videos per feature: .video.mp4 (picture),
+                                # .mp4 (+ voice), .captions.mp4 (captions in a band under the picture); all.mp4 (and
+                                # all.video.mp4, all.captions.mp4) with chapters, chapters.txt, .srt + .vtt, README.html;
+                                # long waits play faster (--fast-forward 3s, --no-fast-forward); --no-captions, --voice, --viewport
 ```
 
 ## A deck

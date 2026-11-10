@@ -329,23 +329,28 @@ Points:
 ## Web demos, on film
 
 ```bash
-SHOP_PASSWORD=shop-demo si demo run shop.md --captions
+SHOP_PASSWORD=shop-demo si demo run shop.md
 ```
 
 - A drawn cursor, click ripples, `note "…" at "Field"` callouts, blurred `$VAR` fields
 - Each `Say:` line voiced first: the narration sets the pace
 - `voice: kokoro:af_heart` (the default when installed), `system`, `elevenlabs`, `openai`
 - `pronounce: si = ess eye`: the voice says it, the captions keep the word
-- `<feature>.mp4` each, `all.mp4` with chapters, `chapters.txt`, `.srt`, README.html
+- Three videos per feature: `.video.mp4` (picture), `.mp4` (+ voice), `.captions.mp4` (captions under the picture)
+- `all.mp4` (and its two variants) with chapters, `chapters.txt`, `.srt` + `.vtt`, README.html
+- Long waits play faster, with a ⏩ badge; the voice never speeds up
 
 Notes: (1 min)
 The same script makes the videos. Every Say line is spoken first, so the
 words set the pace and the steps fit between them. A cursor glides to each
 button, notes point at the fields that matter, and passwords are blurred.
-You get one video per feature, one with chapters for YouTube, captions, and
-a page that lists it all. [CLICK]
+Each feature comes out three ways: the picture alone, with the voice, and with
+captions in a band under the picture, so they never hide what was typed. A
+long wait plays faster, and the voice stays at its own pace. You also get one
+video with chapters for YouTube and a page that lists it all. [CLICK]
 
 Points:
+- `--no-captions` skips the captions videos; `--fast-forward 5s` or `--no-fast-forward` for waits
 - Kokoro is si's own voice: `si voice install kokoro`, one command; without it, the computer's voice
 - Try a voice aloud: `si voice say "Hello" --voice kokoro:bf_emma`; `si voice list`
 - Cloud keys: `si voice login openai` keeps the key in your own si.conf, never the project's
@@ -397,7 +402,7 @@ si build <dir> --pdf       # self-contained HTML (+ PDF)
 si build talk.md --handout # handouts/talk.pdf: slides only; =lines, =points, =notes add space or speaker text
 si check <dir>             # validate; exit 1 on a problem
 si demo test shop.md       # run a web demo script against a web app as a test (report.html, --junit)
-si demo run shop.md        # the same, filmed and narrated: <feature>.mp4, all.mp4 with chapters, .srt (--captions)
+si demo run shop.md        # the same, filmed and narrated: <feature>.mp4, .video.mp4, .captions.mp4, all.mp4 with chapters, .srt/.vtt
 si doctor                  # the optional programs (Chrome, ffmpeg, git…): found or not, how to install each
 si new <name>              # scaffold a deck (the showcase, every rule)
 si new <name> --type article   # a small starter: deck, article, guide, book, site, page, lab, demo, mindmap, mindmap3d, codeshow
