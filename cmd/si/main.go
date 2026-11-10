@@ -49,7 +49,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "2.36.1"
+const version = "2.37.0"
 
 // Exit codes.
 const (
@@ -1539,7 +1539,7 @@ func pagePDF(chrome, htmlPath, pdfPath, query string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, chrome,
-		"--headless=new", "--disable-gpu", "--no-pdf-header-footer",
+		"--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--no-pdf-header-footer",
 		"--virtual-time-budget=2000",
 		"--print-to-pdf="+pdfPath, url)
 	if out, err := cmd.CombinedOutput(); err != nil {

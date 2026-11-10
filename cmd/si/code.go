@@ -186,7 +186,7 @@ func runCode(path string, o *options, stdout, stderr io.Writer) int {
 func codeFrames(chrome, page string) ([]codeExport, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
-	out, err := exec.CommandContext(ctx, chrome, "--headless=new", "--disable-gpu", "--virtual-time-budget=5000",
+	out, err := exec.CommandContext(ctx, chrome, "--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--virtual-time-budget=5000",
 		"--window-size=1800,1200", "--dump-dom", "file://"+filepath.ToSlash(page)+"#si-code-export").Output()
 	if err != nil {
 		return nil, fmt.Errorf("chrome: %v", err)

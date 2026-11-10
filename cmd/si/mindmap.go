@@ -37,7 +37,7 @@ func mapSVGs(chrome, htmlPath string) ([]mapSVG, error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	out, err := exec.CommandContext(ctx, chrome, "--headless=new", "--disable-gpu", "--virtual-time-budget=4000",
+	out, err := exec.CommandContext(ctx, chrome, "--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--virtual-time-budget=4000",
 		"--window-size=1600,1000", "--dump-dom", "file://"+filepath.ToSlash(abs)+"#si-export").Output()
 	if err != nil {
 		return nil, fmt.Errorf("chrome: %v", err)
@@ -123,7 +123,7 @@ func exportMindmap(chrome, htmlPath, out, name string, svg, png, pdf bool, scale
 func chromeRun(chrome string, args ...string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, chrome, append([]string{"--headless=new", "--disable-gpu"}, args...)...)
+	cmd := exec.CommandContext(ctx, chrome, append([]string{"--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu"}, args...)...)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("%v: %s", err, strings.TrimSpace(string(out)))
 	}

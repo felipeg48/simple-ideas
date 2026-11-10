@@ -4,6 +4,8 @@ title: Northwind Shop, from sign-in to receipt
 app: app
 viewport: desktop
 timeout: 5s
+voice: kokoro:af_heart
+pronounce: Northwind = north wind
 ---
 
 # Northwind Shop, from sign-in to receipt

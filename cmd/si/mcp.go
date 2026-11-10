@@ -274,7 +274,7 @@ func chromeShot(page, slide string, w, h int, dark bool) ([]byte, error) {
 		url += "#" + slide
 	}
 	png := filepath.Join(filepath.Dir(page), "shot.png")
-	args := []string{"--headless=new", "--disable-gpu", "--hide-scrollbars", "--screenshot=" + png, fmt.Sprintf("--window-size=%d,%d", w, h), "--virtual-time-budget=3000"}
+	args := []string{"--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--hide-scrollbars", "--screenshot=" + png, fmt.Sprintf("--window-size=%d,%d", w, h), "--virtual-time-budget=3000"}
 	if dark {
 		args = append(args, "--force-dark-mode", "--blink-settings=preferredColorScheme=0")
 	}

@@ -53,7 +53,7 @@ func Launch(chrome string, w, h int, extra ...string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	args := append([]string{"--headless=new", "--remote-debugging-pipe", "--hide-scrollbars", "--no-first-run", "--no-default-browser-check",
+	args := append([]string{"--headless=new", "--use-mock-keychain", "--password-store=basic", "--remote-debugging-pipe", "--hide-scrollbars", "--no-first-run", "--no-default-browser-check",
 		fmt.Sprintf("--window-size=%d,%d", w, h)}, extra...)
 	cmd := exec.Command(chrome, append(args, "about:blank")...)
 	cmd.ExtraFiles = []*os.File{toChrome, fromChrome}

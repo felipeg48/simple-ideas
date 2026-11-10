@@ -118,7 +118,7 @@ func exportMindmapMP4(chrome, htmlPath, out, name string, scale float64, stdout 
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
-	dom, err := exec.CommandContext(ctx, chrome, "--headless=new", "--disable-gpu", "--virtual-time-budget=6000",
+	dom, err := exec.CommandContext(ctx, chrome, "--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--virtual-time-budget=6000",
 		"--window-size=1600,1000", "--dump-dom", "file://"+filepath.ToSlash(abs)+"#si-export-play").Output()
 	if err != nil {
 		return fmt.Errorf("chrome: %v", err)
@@ -317,7 +317,7 @@ func exportMindmap3DMP4(chrome, htmlPath, out, name string, stdout io.Writer) er
 		return fmt.Errorf("%s", ffmpegHint)
 	}
 	abs, _ := filepath.Abs(htmlPath)
-	gl := []string{"--headless=new", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--hide-scrollbars", "--window-size=1600,1000"}
+	gl := []string{"--headless=new", "--use-mock-keychain", "--password-store=basic", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--hide-scrollbars", "--window-size=1600,1000"}
 	url := func(k int) string { return fmt.Sprintf("file://%s#si-play3d-%d", filepath.ToSlash(abs), k) }
 	run := func(args ...string) ([]byte, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)

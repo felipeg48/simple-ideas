@@ -16,7 +16,9 @@ binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
   si.conf is read before the project's (project values win). `voice:` and
   `voice.style:` in si.conf set the default voice and tone of `si demo run`.
   `si doctor` shows Kokoro's venv and files and whether each cloud key is set.
-  si.conf warnings now carry their file.
+  si.conf warnings now carry their file. Fixed: headless Chrome (exports, screenshots, web demos) no longer asks
+  macOS for a keychain ("Keychain Not Found") when HOME is not your own.
+
 - **v2.36.1:** web demos: a terminal command that must fail, `run "…" ·
   exit 1` or `· fails` (any non-zero status), passes only when it does. Fixed:
   `run … · wait` after a `run` that was not waited for read the earlier

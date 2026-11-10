@@ -4,6 +4,7 @@ title: A message broker, from the terminal to its console
 app: http://127.0.0.1:7310
 viewport: desktop
 timeout: 10s
+voice: kokoro:af_heart
 shell: bash
 start: go run ./broker serve --port 7310 as broker · wait for port 7310 · within 120s
 setup: go run ./broker reset --port 7310
