@@ -453,6 +453,109 @@ var layoutDefaults = map[string]string{
 
 // Themes are the built-in themes. studio is the default.
 var Themes = map[string]Theme{
+	// The six below (v2.15.0) are checked by TestNewThemesContrast: body, muted
+	// and accent text 4.5:1 on the background, and text on an accent button.
+	"twilight": {
+		Label: "Twilight", About: "deep indigo and lavender, violet and coral accents",
+		Base: map[string]string{"--si-font-body": sansStack, "--si-font-heading": sansStack, "--si-font-mono": monoStack, "--si-heading-weight": "780"},
+		Light: map[string]string{
+			"--si-bg": "#f5f3fa", "--si-fg": "#1b1830", "--si-muted": "#5a5672", "--si-surface": "#ffffff",
+			"--si-surface-2": "#ebe7f4", "--si-line": "#d9d3e8", "--si-accent": "#6236c9", "--si-accent-2": "#b43a0c",
+			"--si-on-accent": "#ffffff", "--si-ok": "#157a45", "--si-warn": "#9a5800", "--si-crit": "#c02a2a",
+			"--si-shadow": "0 .1em .3em rgb(27 24 48 / .06), 0 .6em 1.6em rgb(98 54 201 / .09)",
+		},
+		Dark: map[string]string{
+			"--si-bg": "#12101f", "--si-fg": "#ece9f7", "--si-muted": "#a19cbc", "--si-surface": "#1a1730",
+			"--si-surface-2": "#221e3b", "--si-line": "#332d52", "--si-accent": "#a98bff", "--si-accent-2": "#ff8a65",
+			"--si-on-accent": "#12101f", "--si-ok": "#4ade80", "--si-warn": "#fbbf24", "--si-crit": "#ff7a85",
+			"--si-shadow": "0 .6em 1.8em rgb(0 0 0 / .45)",
+		},
+	},
+	"forest": {
+		Label: "Forest", About: "moss and pine greens, amber accent, serif headings",
+		Base: map[string]string{"--si-font-body": sansStack, "--si-font-heading": serifStack, "--si-font-mono": monoStack,
+			"--si-heading-weight": "700", "--si-heading-tracking": "-0.01em"},
+		Light: map[string]string{
+			"--si-bg": "#f3f5ef", "--si-fg": "#17211a", "--si-muted": "#536257", "--si-surface": "#ffffff",
+			"--si-surface-2": "#e6ece2", "--si-line": "#d0dacb", "--si-accent": "#2b6a3d", "--si-accent-2": "#8f5410",
+			"--si-on-accent": "#ffffff", "--si-ok": "#2b6a3d", "--si-warn": "#8f5410", "--si-crit": "#b3261e",
+			"--si-shadow": "0 .3em 1.2em rgb(23 33 26 / .08)",
+		},
+		Dark: map[string]string{
+			"--si-bg": "#0e1510", "--si-fg": "#e3eee4", "--si-muted": "#93a597", "--si-surface": "#152019",
+			"--si-surface-2": "#1b2920", "--si-line": "#283a2d", "--si-accent": "#7fd39a", "--si-accent-2": "#e8b46a",
+			"--si-on-accent": "#0e1510", "--si-ok": "#7fd39a", "--si-warn": "#e8b46a", "--si-crit": "#ff8a80",
+			"--si-shadow": "0 .6em 1.8em rgb(0 0 0 / .45)",
+		},
+	},
+	"sunrise": {
+		Label: "Sunrise", About: "warm cream and peach, magenta and orange accents",
+		Base: map[string]string{"--si-font-body": sansStack, "--si-font-heading": sansStack, "--si-font-mono": monoStack, "--si-radius": ".8em"},
+		Light: map[string]string{
+			"--si-bg": "#fff8f1", "--si-fg": "#2a1a14", "--si-muted": "#6e5447", "--si-surface": "#ffffff",
+			"--si-surface-2": "#fbeadc", "--si-line": "#f0d8c6", "--si-accent": "#b8175a", "--si-accent-2": "#a34a05",
+			"--si-on-accent": "#ffffff", "--si-ok": "#1d7a43", "--si-warn": "#a34a05", "--si-crit": "#b42318",
+			"--si-shadow": "0 .3em 1.2em rgb(180 90 40 / .10)",
+		},
+		Dark: map[string]string{
+			"--si-bg": "#1d1210", "--si-fg": "#fbe9df", "--si-muted": "#c0a092", "--si-surface": "#271916",
+			"--si-surface-2": "#30201b", "--si-line": "#46302a", "--si-accent": "#ff6fa3", "--si-accent-2": "#ffb066",
+			"--si-on-accent": "#1d1210", "--si-ok": "#6ee7a0", "--si-warn": "#ffb066", "--si-crit": "#ff8a80",
+			"--si-shadow": "0 .6em 1.8em rgb(0 0 0 / .45)",
+		},
+	},
+	"slate": {
+		Label: "Slate", About: "cool blue-grey, corporate blue, crisp corners",
+		Base: map[string]string{"--si-font-body": sansStack, "--si-font-heading": sansStack, "--si-font-mono": monoStack,
+			"--si-heading-weight": "700", "--si-heading-tracking": "-0.015em", "--si-radius": ".3em"},
+		Light: map[string]string{
+			"--si-bg": "#f7f8fa", "--si-fg": "#0f172a", "--si-muted": "#4f5d77", "--si-surface": "#ffffff",
+			"--si-surface-2": "#edf0f5", "--si-line": "#d8dee8", "--si-accent": "#1d5bb8", "--si-accent-2": "#0e6f67",
+			"--si-on-accent": "#ffffff", "--si-ok": "#15803d", "--si-warn": "#9a5b00", "--si-crit": "#c0262d",
+			"--si-shadow": "0 .1em .25em rgb(15 23 42 / .07), 0 .5em 1.4em rgb(15 23 42 / .07)",
+		},
+		Dark: map[string]string{
+			"--si-bg": "#0b1220", "--si-fg": "#e6ebf3", "--si-muted": "#93a1b8", "--si-surface": "#111a2b",
+			"--si-surface-2": "#172236", "--si-line": "#24324a", "--si-accent": "#6ea8ff", "--si-accent-2": "#2dd4bf",
+			"--si-on-accent": "#0b1220", "--si-ok": "#4ade80", "--si-warn": "#fbbf24", "--si-crit": "#f87171",
+			"--si-shadow": "0 .6em 1.8em rgb(0 0 0 / .45)",
+		},
+	},
+	"neon": {
+		Label: "Neon", About: "night-terminal dark, cyan and pink, monospace headings",
+		Base: map[string]string{"--si-font-body": sansStack, "--si-font-heading": monoStack, "--si-font-mono": monoStack,
+			"--si-heading-weight": "700", "--si-heading-tracking": "0", "--si-radius": ".35em"},
+		Light: map[string]string{
+			"--si-bg": "#f4f7fb", "--si-fg": "#0b1020", "--si-muted": "#4b5770", "--si-surface": "#ffffff",
+			"--si-surface-2": "#e6ecf5", "--si-line": "#cdd7e6", "--si-accent": "#0b6f95", "--si-accent-2": "#a3107f",
+			"--si-on-accent": "#ffffff", "--si-ok": "#127a46", "--si-warn": "#975a00", "--si-crit": "#bf1d3b",
+			"--si-shadow": "0 .3em 1.2em rgb(11 16 32 / .08)",
+		},
+		Dark: map[string]string{
+			"--si-bg": "#07090f", "--si-fg": "#e8f1ff", "--si-muted": "#8b97b3", "--si-surface": "#0d121d",
+			"--si-surface-2": "#121a29", "--si-line": "#1f2a40", "--si-accent": "#22d3ee", "--si-accent-2": "#f472d0",
+			"--si-on-accent": "#07090f", "--si-ok": "#4ade80", "--si-warn": "#facc15", "--si-crit": "#fb7185",
+			"--si-shadow": "0 0 1.4em rgb(34 211 238 / .12)",
+		},
+	},
+	"newsprint": {
+		Label: "Newsprint", About: "editorial: serif type, black ink on newsprint, red accent",
+		Base: map[string]string{"--si-font-body": serifStack, "--si-font-heading": serifStack, "--si-font-mono": monoStack,
+			"--si-heading-weight": "800", "--si-heading-tracking": "-0.015em", "--si-radius": ".15em",
+			"--si-prose-size": "1.06rem", "--si-prose-leading": "1.7"},
+		Light: map[string]string{
+			"--si-bg": "#f7f5f0", "--si-fg": "#121212", "--si-muted": "#545049", "--si-surface": "#fffefb",
+			"--si-surface-2": "#ece8df", "--si-line": "#d6d0c3", "--si-accent": "#b3001b", "--si-accent-2": "#1f3a68",
+			"--si-on-accent": "#ffffff", "--si-ok": "#2f6b2f", "--si-warn": "#8a5a00", "--si-crit": "#b3001b",
+			"--si-shadow": "none",
+		},
+		Dark: map[string]string{
+			"--si-bg": "#141312", "--si-fg": "#ecebe7", "--si-muted": "#a7a39b", "--si-surface": "#1c1b19",
+			"--si-surface-2": "#24221f", "--si-line": "#36332e", "--si-accent": "#ff5c6c", "--si-accent-2": "#8fb3ff",
+			"--si-on-accent": "#141312", "--si-ok": "#86c27f", "--si-warn": "#e6b450", "--si-crit": "#ff5c6c",
+			"--si-shadow": "none",
+		},
+	},
 	"studio": {
 		Label: "Studio", About: "the default: neutral ink on warm paper, blue accent",
 		Base: map[string]string{"--si-font-body": sansStack, "--si-font-heading": sansStack, "--si-font-mono": monoStack},

@@ -121,10 +121,10 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:     "front matter: unknown key, bad theme, bad accent",
-			files:    map[string]string{"d.md": "---\ntheme: neon\naccent: not a colour!\ncolour: red\n---\n# Deck\n"},
+			files:    map[string]string{"d.md": "---\ntheme: glowstick\naccent: not a colour!\ncolour: red\n---\n# Deck\n"},
 			kinds:    "t",
 			titles:   "Deck",
-			problems: []string{`unknown theme "neon"`, `accent "not a colour!"`, `unknown front matter key "colour"`},
+			problems: []string{`unknown theme "glowstick"`, `accent "not a colour!"`, `unknown front matter key "colour"`},
 		},
 		{
 			name:     "background and image directives are validated",

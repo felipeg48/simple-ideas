@@ -54,7 +54,7 @@ img,svg,video{max-width:100%}
 .si-wm-img{background:var(--si-wm-img) center/contain no-repeat}
 /* footer (front matter): small muted text in a corner of every slide */
 .si-footer{position:absolute;z-index:2;max-width:70%;font:500 clamp(.6rem,1.8cqi,1rem)/1.2 var(--si-font-body);color:var(--si-muted);pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.si-footer[data-pos="bottom-right"]{right:var(--si-pad-x);bottom:calc(var(--si-pad-y) * .5);text-align:right}
+.si-footer[data-pos="bottom-right"]{right:var(--si-pad-x);bottom:max(calc(var(--si-pad-y) * .5),2.2rem);text-align:right} /* above the slide counter on short screens */
 .si-footer[data-pos="bottom-left"]{left:var(--si-pad-x);bottom:calc(var(--si-pad-y) * .5)}
 .si-footer[data-pos="bottom-center"]{left:50%;transform:translateX(-50%);bottom:calc(var(--si-pad-y) * .5);text-align:center}
 .si-footer[data-pos="top-right"]{right:var(--si-pad-x);top:calc(var(--si-pad-y) * .5);text-align:right}

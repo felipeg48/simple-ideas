@@ -1,6 +1,8 @@
 package assets
 
 import (
+	"fmt"
+	"math"
 	"regexp"
 	"sort"
 	"strings"
@@ -138,5 +140,45 @@ func TestAcemqProCarriesBothExtras(t *testing.T) {
 	}
 	if ThemeSample("acemq-pro") == "" || ThemeSample("studio") != "" {
 		t.Error("only acemq-pro ships its own gallery sample")
+	}
+}
+
+// The v2.15.0 themes pass WCAG AA in both modes: body, muted, accent and
+// accent-2 text 4.5:1 on the background and on surfaces, and text on an
+// accent fill.
+func TestNewThemesContrast(t *testing.T) {
+	lum := func(hex string) float64 {
+		var r, g, b int
+		fmt.Sscanf(hex, "#%02x%02x%02x", &r, &g, &b)
+		ch := func(v int) float64 {
+			x := float64(v) / 255
+			if x <= 0.03928 {
+				return x / 12.92
+			}
+			return math.Pow((x+0.055)/1.055, 2.4)
+		}
+		return 0.2126*ch(r) + 0.7152*ch(g) + 0.0722*ch(b)
+	}
+	ratio := func(a, b string) float64 {
+		la, lb := lum(a), lum(b)
+		return (math.Max(la, lb) + 0.05) / (math.Min(la, lb) + 0.05)
+	}
+	for _, name := range []string{"twilight", "forest", "sunrise", "slate", "neon", "newsprint"} {
+		th, ok := Themes[name]
+		if !ok {
+			t.Fatalf("theme %s missing", name)
+		}
+		for mode, v := range map[string]map[string]string{"light": th.Light, "dark": th.Dark} {
+			for _, ground := range []string{"--si-bg", "--si-surface"} {
+				for _, text := range []string{"--si-fg", "--si-muted", "--si-accent", "--si-accent-2"} {
+					if r := ratio(v[text], v[ground]); r < 4.5 {
+						t.Errorf("%s %s: %s on %s is %.2f:1 (want 4.5)", name, mode, text, ground, r)
+					}
+				}
+			}
+			if r := ratio(v["--si-on-accent"], v["--si-accent"]); r < 4.5 {
+				t.Errorf("%s %s: on-accent on accent is %.2f:1 (want 4.5)", name, mode, r)
+			}
+		}
 	}
 }

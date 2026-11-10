@@ -197,6 +197,13 @@ pass. The steps that matter:
   phase 1 fixes CSS-file themes: `extends <built-in>`, the index page's theme;
   theme import/export incl. W3C design tokens; MCP theme tools), and Motion
   (`2026-11-09-motion-editor.md`: `transition: morph`, the Studio Motion view).
+- **Themes** (v2.15.0): six new built-ins (slate, twilight, forest, sunrise,
+  neon, newsprint; `TestNewThemesContrast`: WCAG AA in light and dark); the
+  docs site's Themes page is generated from `assets.Themes`
+  (`internal/docsite/themes.go`) with a picture per theme in
+  `docs/site/themes/<name>.jpg` (`make theme-shots`, `web/studio/e2e/theme-shots.mjs`;
+  `TestThemesPageHasEveryTheme` fails when one is missing); the README shows
+  the same pictures. Add a theme → `make theme-shots`.
 - **Handouts** (DONE, v2.14.0): `si build --handout[=slides|lines|points|notes]`
   prints the deck page with `?si-handout=<mode>#print` (06-media.js sets
   `data-si-handout`, light mode and a portrait `@page` after the deck's own;

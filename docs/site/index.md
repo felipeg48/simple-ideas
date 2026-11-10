@@ -114,8 +114,8 @@ dry run first.
 
 ### Themes and fonts · your look
 
-Built-in themes, your own CSS, fonts from Google, Bunny, Fontshare or a file,
-inlined at build time.
+Twelve built-in themes in light and dark, your own CSS, fonts from Google,
+Bunny, Fontshare or a file. [See the themes](themes.md)
 
 ### Sites · many pages
 

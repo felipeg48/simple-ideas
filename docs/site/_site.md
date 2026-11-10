@@ -30,10 +30,10 @@ footer: simple-ideas
   - [A book](live/book/)
   - [The Thursday Promise, a 3D mind map](live/mindmap/thursday.md)
   - [The retry, a code show](live/code/retry.md)
+- [Themes](themes.md)
 - [AI agents](agents.md)
 - [Rules](rules/)
 - [Manual](manual.md)
-- [Download](download.md)
 - Help
   - [Report a problem]($SI_BUG_URL)
   - [Request a feature]($SI_FEATURE_URL)

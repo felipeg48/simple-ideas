@@ -1,7 +1,7 @@
 BIN := bin/si
 INSTALL_DIR ?= $(HOME)/.bin
 
-.PHONY: docs-site build test install play-example examples check fmt clean studio-ui studio-e2e desktop-mac desktop-icon desktop-cert
+.PHONY: theme-shots docs-site build test install play-example examples check fmt clean studio-ui studio-e2e desktop-mac desktop-icon desktop-cert
 
 build:
 	go build -o $(BIN) ./cmd/si
@@ -49,6 +49,10 @@ clean:
 
 studio-e2e: build
 	cd web/studio && npm run e2e
+
+# docs/site/themes/<name>.jpg: every built-in theme, light beside dark (the Themes page, the README)
+theme-shots: build
+	cd web/studio && node e2e/theme-shots.mjs
 
 # si Studio.app for macOS (universal), into desktop/dist; needs Xcode command line tools
 desktop-mac:

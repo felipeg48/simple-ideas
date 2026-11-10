@@ -1,6 +1,7 @@
 # 15. Styling: themes and your own CSS
 
-- `theme:` picks a built-in theme (`studio`, `paper`, `mono`, `crdb`,
+- `theme:` picks a built-in theme (`studio`, `paper`, `mono`, `slate`,
+  `twilight`, `forest`, `sunrise`, `neon`, `newsprint`, `crdb`,
   `acemq`, `acemq-pro`), each with a light and a dark palette. `si theme list`
   prints them with their display names and aliases. Names are matched loosely:
   case is ignored and spaces or underscores count as `-`, so `theme: AceMQ Pro`

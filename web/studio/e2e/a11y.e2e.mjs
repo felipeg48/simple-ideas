@@ -24,7 +24,7 @@ build(join(ex, "mindmap"), "mindmap");
 build(join(ex, "code"), "code");
 
 // one small page per built-in theme: an article and a deck with code, a callout, a badge, a table
-const themes = ["studio", "paper", "mono", "crdb", "acemq", "acemq-pro"];
+const themes = ["studio", "paper", "mono", "slate", "twilight", "forest", "sunrise", "neon", "newsprint", "crdb", "acemq", "acemq-pro"];
 const sample = (type, theme) => `---\ntype: ${type}\ntitle: Contrast in ${theme}\ntheme: ${theme}\n---\n# Contrast in ${theme}\n\n` +
   (type === "deck" ? "---\n\n## A slide\n\n" : "") +
   "Text with a [link](https://example.com), `inline code` and ==a highlight==.\n\n<!-- badge: Draft -->\n\n" +

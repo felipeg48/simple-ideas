@@ -229,6 +229,9 @@ func Generate(dst string) (pages int, err error) {
 	for _, s := range secs {
 		bySec[s.N] = s
 	}
+	if err := write("themes.md", themesPage()); err != nil {
+		return 0, err
+	}
 	if err := writeFeatures(write, bySec); err != nil {
 		return 0, err
 	}

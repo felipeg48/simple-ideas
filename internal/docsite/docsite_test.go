@@ -1,6 +1,9 @@
 package docsite
 
 import (
+	"io/fs"
+
+	"github.com/felipeg48/simple-ideas/internal/assets"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/render"
 	"os"
@@ -83,6 +86,19 @@ func TestEveryFeatureHasAWorkingPage(t *testing.T) {
 		}
 		if !strings.Contains(string(res.HTML), "## The Markdown behind it") && !strings.Contains(string(res.HTML), "The Markdown behind it") {
 			t.Errorf("%s: no source section", f.Slug)
+		}
+	}
+}
+
+// The Themes page shows every built-in theme, and each has its picture.
+func TestThemesPageHasEveryTheme(t *testing.T) {
+	page := themesPage()
+	for _, n := range assets.ThemeNames() {
+		if !strings.Contains(page, "themes/"+n+".jpg") || !strings.Contains(page, "`theme: "+n+"`") {
+			t.Errorf("theme %s is not on the Themes page", n)
+		}
+		if _, err := fs.Stat(docs.Site, "site/themes/"+n+".jpg"); err != nil {
+			t.Errorf("theme %s has no picture: run make theme-shots", n)
 		}
 	}
 }

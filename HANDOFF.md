@@ -5,6 +5,19 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.15.0: six new themes and a Themes page** (the founder: pictures on the
+  site and GitHub, the name to use, at least five more themes). `slate`,
+  `twilight`, `forest`, `sunrise`, `neon`, `newsprint` in `assets.Themes`;
+  `TestNewThemesContrast` (fg, muted, accent, accent-2 ≥ 4.5:1 on bg and
+  surface, on-accent on accent, light and dark); added to the a11y suite.
+  Pictures: `make theme-shots` builds the showcase without its `accent:` /
+  `watermark:` (they hid each theme's accent) in every theme, slide 5.2, light
+  beside dark → `docs/site/themes/<name>.jpg` (~40 KB each). Site: `themes.md`
+  generated from `assets.Themes` (top menu "Themes"; the duplicate "Download"
+  item went, the "Get si" button links there); README "Themes" grid. Found on
+  the way: a bottom-right footer overlapped the slide counter on short
+  screens (720 px); it now stays ≥ 2.2rem up.
+
 - **v2.14.0: handouts.** `si build … --handout[=slides|lines|points|notes]`
   → `handouts/<name>.pdf` (index tile: HANDOUT badge). The founder asked
   mid-build for no speaker text by default: `slides` (8 a page) is the default;

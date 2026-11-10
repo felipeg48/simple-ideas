@@ -127,6 +127,10 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.15.0:** six new themes: `slate`, `twilight`, `forest`, `sunrise`,
+  `neon`, `newsprint` (each light and dark, contrast-checked), and a Themes
+  page with a picture of every theme; a bottom-right footer no longer
+  overlaps the slide counter on short screens.
 - **v2.14.0:** handouts. `si build talk.md --handout` prints every slide,
   eight to a page, with a header and (with `handout-url:`) a QR code back to
   the live deck; no speaker text unless you ask: `--handout=lines` (space to
@@ -372,6 +376,22 @@ The `si play` terminal drawer (loopback only), two tabs and a live shell:
 ![The play terminal drawer](docs/screenshots/terminal-drawer.png)
 
 More in [docs/screenshots](docs/screenshots/).
+
+## Themes
+
+Twelve built-in themes, each in light and dark (the reader's setting, or `d`
+while presenting). Use one by name: `theme: twilight` in front matter,
+`--theme twilight`, or `theme: twilight` in `si.conf`. More on
+[the Themes page](https://simple-ideas.org/themes.html).
+
+<table>
+<tr><td width="50%"><img src="docs/site/themes/studio.jpg" alt="The studio theme, light and dark"><br><code>theme: studio</code></td><td width="50%"><img src="docs/site/themes/paper.jpg" alt="The paper theme, light and dark"><br><code>theme: paper</code></td></tr>
+<tr><td width="50%"><img src="docs/site/themes/mono.jpg" alt="The mono theme, light and dark"><br><code>theme: mono</code></td><td width="50%"><img src="docs/site/themes/slate.jpg" alt="The slate theme, light and dark"><br><code>theme: slate</code></td></tr>
+<tr><td width="50%"><img src="docs/site/themes/twilight.jpg" alt="The twilight theme, light and dark"><br><code>theme: twilight</code></td><td width="50%"><img src="docs/site/themes/forest.jpg" alt="The forest theme, light and dark"><br><code>theme: forest</code></td></tr>
+<tr><td width="50%"><img src="docs/site/themes/sunrise.jpg" alt="The sunrise theme, light and dark"><br><code>theme: sunrise</code></td><td width="50%"><img src="docs/site/themes/neon.jpg" alt="The neon theme, light and dark"><br><code>theme: neon</code></td></tr>
+<tr><td width="50%"><img src="docs/site/themes/newsprint.jpg" alt="The newsprint theme, light and dark"><br><code>theme: newsprint</code></td><td width="50%"><img src="docs/site/themes/crdb.jpg" alt="The crdb theme, light and dark"><br><code>theme: crdb</code></td></tr>
+<tr><td width="50%"><img src="docs/site/themes/acemq.jpg" alt="The acemq theme, light and dark"><br><code>theme: acemq</code></td><td width="50%"><img src="docs/site/themes/acemq-pro.jpg" alt="The acemq-pro theme, light and dark"><br><code>theme: acemq-pro</code></td></tr>
+</table>
 
 ## Styling
 
