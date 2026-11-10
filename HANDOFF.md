@@ -5,6 +5,15 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.21.0: AsciiDoc tabs on the site.** `deck.MarkdownToAdoc`
+  (`internal/deck/mdadoc.go`, the inverse of `adocToMarkdown`);
+  `docsite.withAdoc` turns each ```markdown example (rules pages, manual,
+  feature pages) into `<!-- tabs -->` Markdown | AsciiDoc.
+  `TestAdocExamplesRenderTheSame` renders every RULES/manual example from both
+  and compares the HTML. Reader fixes it needed: fence options pass through
+  `[source,…]`, `<n>` callouts kept, admonitions as `> [!NOTE]`, `[NOTE]` +
+  `====`, `link:` any target, no extra slide for `==` after `---`, no slide
+  breaks in documents.
 - **v2.20.0: hidden polls, audience.save, coffee.** `· hidden` on a poll adds
   `<span class="si-step si-poll-reveal">` (render/poll.go, slides only); layout.css
   hides `.si-poll-n`/`.si-poll-bar` until it is `.is-visible` (deck and phones,

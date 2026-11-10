@@ -123,7 +123,7 @@ func writeFeatures(write func(rel, text string) error, refs map[string]Section) 
 		var b strings.Builder
 		fmt.Fprintf(&b, "---\ntitle: %s\ndescription: %s\n---\n\n# %s\n\n%s\n\n", f.Title, f.Lede, f.Title, f.What)
 		fmt.Fprintf(&b, "## Live\n\n%s\n\n[Open the whole example](%s)\n\n", f.Live(), f.Open)
-		fmt.Fprintf(&b, "## The Markdown behind it\n\n`examples/%s`%s:\n\n%s\n\n", f.Source, partOf(f.Lines, string(src)), fence("markdown", excerpt(string(src), f.Lines)))
+		fmt.Fprintf(&b, "## The Markdown behind it\n\n`examples/%s`%s:\n\n%s\n\n", f.Source, partOf(f.Lines, string(src)), withAdoc(fence("markdown", excerpt(string(src), f.Lines))))
 		b.WriteString("## Key options\n\n| Write | What it does |\n|---|---|\n")
 		for _, o := range f.Options {
 			fmt.Fprintf(&b, "| %s | %s |\n", o[0], o[1])

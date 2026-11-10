@@ -5,7 +5,8 @@ this file; `examples/showcase.md` uses every rule in a real talk.
 
 > **AsciiDoc too.** A deck can be `*.adoc` / `*.asciidoc` instead of `*.md`; si
 > converts the AsciiDoc to this same format and everything below applies. See
-> `docs/asciidoc.md` for the supported subset.
+> `docs/asciidoc.md` for the supported subset. On the docs site every example
+> has an **AsciiDoc** tab beside the Markdown one.
 
 > **The layout rule.** Slides are fluid and responsive, never fixed. There is
 > no 1280×720 canvas scaled by a transform: every slide fills the viewport and

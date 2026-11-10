@@ -196,7 +196,7 @@ func Generate(dst string) (pages int, err error) {
 	if err := write("live/showcase.md", showcase); err != nil {
 		return 0, err
 	}
-	if err := write("manual.md", strings.Replace(docs.Manual, "---\n", "---\ntype: deck\n", 1)); err != nil {
+	if err := write("manual.md", strings.Replace(withAdoc(docs.Manual), "---\n", "---\ntype: deck\n", 1)); err != nil {
 		return 0, err
 	}
 	intro, secs := Split(docs.Rules)
@@ -217,7 +217,7 @@ func Generate(dst string) (pages int, err error) {
 	}
 	for _, s := range secs {
 		fmt.Fprintf(&nav, "- [%s. %s](%s.md)\n", s.N, s.Title, s.Slug)
-		page := fmt.Sprintf("---\ntitle: %s. %s\n---\n\n# %s. %s\n\n%s\n", s.N, yamlSafe(s.Title), s.N, s.Title, linkRefs(s.Body, refs))
+		page := fmt.Sprintf("---\ntitle: %s. %s\n---\n\n# %s. %s\n\n%s\n", s.N, yamlSafe(s.Title), s.N, s.Title, withAdoc(linkRefs(s.Body, refs)))
 		if err := write("rules/"+s.Slug+".md", page); err != nil {
 			return 0, err
 		}

@@ -33,6 +33,12 @@ func adocToMarkdown(src string) string {
 	var tableCells []string
 	tableCols := 0
 	wrote := len(out) > 0
+	doc := false // a document (type: article, lab, …) has no slides to break
+	for _, l := range out {
+		if t, ok := strings.CutPrefix(l, "type:"); ok && strings.TrimSpace(t) != "deck" {
+			doc = true
+		}
+	}
 
 	for ; i < len(lines); i++ {
 		line := lines[i]
@@ -101,14 +107,29 @@ func adocToMarkdown(src string) string {
 			continue
 		}
 
+		// [NOTE] + ==== … ==== : an admonition block -> a GitHub-style alert
+		if m := adocAdmonBlockRE.FindStringSubmatch(line); m != nil && i+1 < len(lines) && strings.TrimSpace(lines[i+1]) == "====" {
+			out = append(out, "> [!"+m[1]+"]")
+			for i += 2; i < len(lines) && strings.TrimSpace(lines[i]) != "===="; i++ {
+				out = append(out, strings.TrimRight("> "+adocInline(lines[i]), " "))
+			}
+			wrote = true
+			continue
+		}
 		// [source,go] / [source] / [,go] attribute line before a block
 		if m := adocSourceRE.FindStringSubmatch(line); m != nil {
 			pendingLang = m[1]
-			if strings.Contains(m[0], "linenums") {
-				pendingAttrs += " linenos"
-			}
-			if h := adocHighlightRE.FindStringSubmatch(m[2]); h != nil {
-				pendingAttrs += ` hl="` + adocRanges(h[1]) + `"`
+			for _, a := range strings.Split(strings.TrimPrefix(m[2], ","), ",") {
+				a = strings.TrimSpace(a)
+				switch k, v, _ := strings.Cut(a, "="); {
+				case a == "":
+				case k == "linenums" || k == "%linenums":
+					pendingAttrs += " linenos"
+				case k == "highlight":
+					pendingAttrs += ` hl="` + adocRanges(v) + `"`
+				default: // si's own fence options (window=mac, numbers, step="…") pass through
+					pendingAttrs += " " + a
+				}
 			}
 			continue
 		}
@@ -156,7 +177,7 @@ func adocToMarkdown(src string) string {
 			level := len(m[1]) // number of '='
 			text := adocInline(m[2])
 			if level >= 2 { // == and deeper
-				if level == 2 && wrote {
+				if level == 2 && wrote && !doc && !freshSlide(out) {
 					out = append(out, "", "---", "") // new slide
 				}
 				out = append(out, strings.Repeat("#", level)+" "+text)
@@ -176,15 +197,15 @@ func adocToMarkdown(src string) string {
 
 		// admonitions
 		if m := adocAdmonRE.FindStringSubmatch(line); m != nil {
-			label := m[1][:1] + strings.ToLower(m[1][1:])
-			out = append(out, "> **"+label+":** "+adocInline(m[2]))
+			out = append(out, "> [!"+m[1]+"]", "> "+adocInline(m[2]))
 			wrote = true
 			continue
 		}
 
-		// code callout list: "<1> text" (below a listing block) -> numbered item
+		// code callout list: "<1> text" below a listing block is si's own
+		// callout syntax too: kept, so the markers in the code light up
 		if m := adocCalloutRE.FindStringSubmatch(line); m != nil {
-			out = append(out, m[1]+". "+adocInline(m[2]))
+			out = append(out, "<"+m[1]+"> "+adocInline(m[2]))
 			wrote = true
 			continue
 		}
@@ -228,6 +249,7 @@ var (
 	adocBlockTitleRE = regexp.MustCompile(`^\.([^.\s].*)$`)
 	adocColsRE       = regexp.MustCompile(`^\[cols=([^\]]+)\]\s*$`)
 	adocAttrRE       = regexp.MustCompile(`^\[[^\]]*\]\s*$`)
+	adocAdmonBlockRE = regexp.MustCompile(`^\[(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$`)
 	adocAdmonRE      = regexp.MustCompile(`^(NOTE|TIP|IMPORTANT|WARNING|CAUTION):\s+(.*)$`)
 	adocDescRE       = regexp.MustCompile(`^(\S[^:]*?)::[ \t]+(.+)$`)
 	adocCalloutRE    = regexp.MustCompile(`^<(\d+)>\s+(.+)$`)
@@ -236,9 +258,26 @@ var (
 	adocOLRE         = regexp.MustCompile(`^(\.+)\s+(.*)$`)
 	adocBlockImg     = regexp.MustCompile(`^image::(\S+)\[([^\]]*)\]\s*$`)
 	adocInlineImg    = regexp.MustCompile(`image:(\S+)\[([^\]]*)\]`)
-	adocLinkRE       = regexp.MustCompile(`(?:link:)?(https?://[^\[\s]+)\[([^\]]*)\]`)
+	adocLinkRE       = regexp.MustCompile(`(?:link:(\S+?)|(https?://[^\[\s]+))\[([^\]]*)\]`)
 	adocBoldRE       = regexp.MustCompile(`(^|[\s(])\*(\S[^*]*?\S|\S)\*([\s).,;:!?]|$)`)
 )
+
+// freshSlide reports whether out ends a --- slide break followed only by
+// blank lines and directives: a == heading there starts that slide, not one
+// more.
+func freshSlide(out []string) bool {
+	for k := len(out) - 1; k >= 0; k-- {
+		t := strings.TrimSpace(out[k])
+		switch {
+		case t == "---":
+			return true
+		case t == "" || strings.HasPrefix(t, "<!--") && strings.HasSuffix(t, "-->"):
+		default:
+			return false
+		}
+	}
+	return true // only directives so far: the first slide
+}
 
 // adocInline converts block/inline images, links and bold on one line.
 func adocInline(line string) string {
@@ -246,7 +285,7 @@ func adocInline(line string) string {
 		return "![" + m[2] + "](" + m[1] + ")"
 	}
 	line = adocInlineImg.ReplaceAllString(line, "![$2]($1)")
-	line = adocLinkRE.ReplaceAllString(line, "[$2]($1)")
+	line = adocLinkRE.ReplaceAllString(line, "[$3]($1$2)")
 	line = adocBoldRE.ReplaceAllString(line, "$1**$2**$3")
 	return line
 }

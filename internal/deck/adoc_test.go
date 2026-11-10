@@ -41,7 +41,7 @@ NOTE: heads up.
 		"- one", // list
 		"```go", // source block fence
 		"x := 1",
-		"> **Note:** heads up.",
+		"> [!NOTE]\n> heads up.",
 		"### Sub", // === -> ###
 	} {
 		if !strings.Contains(md, want) {
@@ -96,8 +96,8 @@ func TestAdocCallouts(t *testing.T) {
 	md := adocToMarkdown(src)
 	for _, want := range []string{
 		"fmt.Println(\"hi\") // <1>", // marker kept verbatim in the code
-		"1. prints a greeting",       // callout list -> numbered item
-		"2. and returns",
+		"<1> prints a greeting",      // si's own callout lines
+		"<2> and returns",
 	} {
 		if !strings.Contains(md, want) {
 			t.Errorf("missing %q in:\n%s", want, md)

@@ -211,5 +211,6 @@ directive is a problem (decks do not nest).
 
 **AsciiDoc** maps onto the same features: `include::App.java[lines=5..10]`,
 `include::App.java[tag=retry]` (`tags=a;b`), `.Retry.java` before a listing
-(the title), `[source,java,highlight=3;5..6]` and `%linenums`; `<1>`
-callouts are written the same way.
+(the title), `[source,java,highlight=3;5..6]` and `%linenums`; si's own
+fence options go in the same brackets (`[source,go,window=mac,numbers]`);
+`<1>` callouts are written the same way.

@@ -36,7 +36,7 @@ through untouched.)
 | AsciiDoc | Becomes | Notes |
 |---|---|---|
 | `= Title` | title slide (`# Title`) | the document title (header) |
-| `== Section` | a new slide (`## Section`) | each `==` starts a slide |
+| `== Section` | a new slide (`## Section`) | each `==` starts a slide (right after a `---` and its directives it is that slide's title; in a document, `type: article` and the like, it is a heading) |
 | `=== Sub` / `==== ` | `### ` / `#### ` headings | within the current slide |
 | `* item`, `** item` | `- item` (nested) | unordered lists |
 | `. item` | `1. item` | ordered lists |
@@ -44,14 +44,15 @@ through untouched.)
 | `` `mono` `` | `` `mono` `` | inline code (unchanged) |
 | `*bold*` | `**bold**` | inline bold |
 | `_italic_` | `_italic_` | italic (Markdown already understands it) |
-| `[source,go]` + `----` block | ```` ```go ```` fenced code | highlighted; `....` works too |
-| `<1>` marker + `<1> text` list | marker kept; list → numbered list | code callouts |
+| `[source,go]` + `----` block | ```` ```go ```` fenced code | highlighted; `....` works too; `highlight=`, `linenums` and si's fence options (`window=mac`, `numbers`, `step="…"`) |
+| `<1>` marker + `<1> text` list | kept as si callouts | code callouts |
 | `[cols=…]` + `\|===` … `\|===` | a GFM table | see tables, below |
 | `[quote]` + `____` … `____` | a `>` blockquote | quote blocks |
 | `include::file.adoc[]` | `<!-- include: file.adoc -->` | included AsciiDoc is converted too |
-| `url[label]`, `link:url[label]` | `[label](url)` | links |
+| `url[label]`, `link:page.adoc[label]` | `[label](url)` | links, absolute or relative |
 | `image::path[alt]`, `image:path[alt]` | `![alt](path)` | block and inline images |
-| `NOTE:`/`TIP:`/`WARNING:`/… | `> **Note:** …` blockquote | admonition lines |
+| `NOTE:`/`TIP:`/`WARNING:`/… | a `> [!NOTE]` alert | admonition lines |
+| `[NOTE]` + `====` … `====` | a `> [!NOTE]` alert | admonition blocks |
 | `'''` | a horizontal rule | not an si slide break (that is `---`) |
 | `//` line, `////` block | dropped | comments |
 

@@ -128,6 +128,10 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.21.0:** the docs site shows every example of the rules, the manual and
+  the feature pages in Markdown and AsciiDoc (tabs; the choice is remembered);
+  AsciiDoc decks gain si's fence options in `[source,…]`, real `<1>` callouts,
+  alerts from `NOTE:` / `[NOTE]` blocks and relative `link:` targets.
 - **v2.20.0:** `<!-- poll: … · hidden -->` keeps a poll's bars for the next
   click, so the first votes do not sway the rest; `audience.save: off` in
   `si.conf` keeps no votes or questions; a Buy me a coffee badge.
