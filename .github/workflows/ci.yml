@@ -28,3 +28,32 @@ jobs:
         run: for d in examples examples/mindmap examples/article examples/code; do go run ./cmd/si check "$d" --budget || exit 1; done
       - name: the docs site builds (every page and link)
         run: go run ./cmd/si --export docs-site --output /tmp/si-docs-src && go run ./cmd/si build /tmp/si-docs-src --output /tmp/si-docs --share-assets
+
+  studio:
+    # the Studio front end: unit tests, the committed bundle matches its source,
+    # and every browser e2e suite (headless Chromium) against a fresh bin/si
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/studio/package-lock.json
+      - name: build si
+        run: make build
+      - name: install
+        working-directory: web/studio
+        run: npm ci && npx playwright install --with-deps chromium
+      - name: unit tests
+        working-directory: web/studio
+        run: npm test
+      - name: the committed bundle is up to date
+        working-directory: web/studio
+        run: npm run build && git diff --exit-code -- ../../internal/assets/web/studio/assets
+      - name: e2e (headless)
+        working-directory: web/studio
+        run: npm run e2e
