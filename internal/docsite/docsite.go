@@ -10,6 +10,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/brand"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -146,6 +147,11 @@ func Generate(dst string) (pages int, err error) {
 		}
 		return os.WriteFile(p, []byte(text), 0o644)
 	}
+	ex, done, err := newLiveExamples(write)
+	if err != nil {
+		return 0, err
+	}
+	defer done()
 	copyFS := func(fsys fs.FS, root, to string, skip func(string) bool) error {
 		return fs.WalkDir(fsys, root, func(p string, e fs.DirEntry, err error) error {
 			if err != nil || e.IsDir() || skip(p) {
@@ -173,7 +179,7 @@ func Generate(dst string) (pages int, err error) {
 		}
 		text := links.Replace(string(raw))
 		if strings.HasSuffix(p, ".md") {
-			text = withAdoc(text)
+			text = withAdoc(text, ex.result(path.Dir(strings.TrimPrefix(p, "site/"))))
 		}
 		return write(strings.TrimPrefix(p, "site/"), text)
 	})
@@ -200,7 +206,7 @@ func Generate(dst string) (pages int, err error) {
 	if err := write("live/showcase.md", showcase); err != nil {
 		return 0, err
 	}
-	if err := write("manual.md", strings.Replace(withAdoc(docs.Manual), "---\n", "---\ntype: deck\n", 1)); err != nil {
+	if err := write("manual.md", strings.Replace(withAdoc(docs.Manual, nil), "---\n", "---\ntype: deck\n", 1)); err != nil {
 		return 0, err
 	}
 	intro, secs := Split(docs.Rules)
@@ -221,7 +227,7 @@ func Generate(dst string) (pages int, err error) {
 	}
 	for _, s := range secs {
 		fmt.Fprintf(&nav, "- [%s. %s](%s.md)\n", s.N, s.Title, s.Slug)
-		page := fmt.Sprintf("---\ntitle: %s. %s\n---\n\n# %s. %s\n\n%s\n", s.N, yamlSafe(s.Title), s.N, s.Title, withAdoc(linkRefs(s.Body, refs)))
+		page := fmt.Sprintf("---\ntitle: %s. %s\n---\n\n# %s. %s\n\n%s\n", s.N, yamlSafe(s.Title), s.N, s.Title, withAdoc(linkRefs(s.Body, refs), ex.result("rules")))
 		if err := write("rules/"+s.Slug+".md", page); err != nil {
 			return 0, err
 		}

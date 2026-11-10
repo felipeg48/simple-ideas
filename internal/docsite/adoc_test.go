@@ -51,7 +51,7 @@ func TestAdocExamplesRenderTheSame(t *testing.T) {
 }
 
 func TestWithAdocTabs(t *testing.T) {
-	got := withAdoc("Intro\n\n  ```markdown\n  ## Hi **there**\n  ```\n")
+	got := withAdoc("Intro\n\n  ```markdown\n  ## Hi **there**\n  ```\n", nil)
 	for _, w := range []string{"  <!-- tabs -->", "  ```markdown title=Markdown", "  ## Hi **there**", "  ```asciidoc title=AsciiDoc", "  == Hi *there*"} {
 		if !strings.Contains(got, w+"\n") {
 			t.Errorf("missing %q in\n%s", w, got)

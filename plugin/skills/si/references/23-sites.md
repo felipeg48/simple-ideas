@@ -119,6 +119,7 @@ It is a trimmed copy with stubbed providers.
 | `embed: blog/retries.md full` | the whole body |
 | `embed: talks/journey.md 1-3` | a deck: its slides, live, in a frame (as `<!-- slides: -->`) |
 | `embed: docs/` | a guide, book or site folder: a card with its first pages or chapters |
+| `embed: talks/journey.md 1-3 bare` | the same without the caption (`full bare`: the body without its title and *From* line) |
 
 Cards, on a slide or a page:
 

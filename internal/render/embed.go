@@ -20,7 +20,7 @@ import (
 func (dr *deckRenderer) embedSlides(val string, s *deck.Slide, sc *slideCtx) string {
 	ref, rng, _ := strings.Cut(strings.TrimSpace(val), " ")
 	ref, frag, _ := strings.Cut(ref, "#")
-	rng = strings.TrimSpace(rng)
+	rng, bare := cutBare(rng)
 	if ref == "" {
 		dr.problem(sc, "slides: needs a deck, e.g. <!-- slides: ../decks/talk.md 23-24 -->")
 		return ""
@@ -83,11 +83,25 @@ func (dr *deckRenderer) embedSlides(val string, s *deck.Slide, sc *slideCtx) str
 		which = fmt.Sprintf("%d slides", n)
 	}
 	title := plain(sub.Title())
+	if bare {
+		return fmt.Sprintf(`<figure class="si-embed-slides" style="--_aspect:%s"><iframe srcdoc="%s" title="%s, %s" loading="lazy" allowfullscreen></iframe></figure>`,
+			html.EscapeString(aspect), html.EscapeString(string(res.HTML)), html.EscapeString(title), which)
+	}
 	// the caption names the deck; it does not link to it, since the deck may not be part of the build
 	return fmt.Sprintf(`<figure class="si-embed-slides" style="--_aspect:%s"><iframe srcdoc="%s" title="%s, %s" loading="lazy" allowfullscreen></iframe>`+
 		`<figcaption>From <cite>%s</cite>, %s. Click the slides, then use the arrow keys.</figcaption></figure>`,
 		html.EscapeString(aspect), html.EscapeString(string(res.HTML)), html.EscapeString(title), which,
 		html.EscapeString(title), which)
+}
+
+// cutBare takes a trailing "bare" (no caption, no From line) off an embed's
+// options.
+func cutBare(opts string) (string, bool) {
+	opts = strings.TrimSpace(opts)
+	if rest, ok := strings.CutSuffix(opts, "bare"); ok && (rest == "" || strings.HasSuffix(rest, " ")) {
+		return strings.TrimSpace(rest), true
+	}
+	return opts, false
 }
 
 // embed renders `<!-- embed: … -->`: a deck (or some of its slides) in a
@@ -96,7 +110,7 @@ func (dr *deckRenderer) embedSlides(val string, s *deck.Slide, sc *slideCtx) str
 // pages. Everything is rendered when the page is built.
 func (dr *deckRenderer) embed(val string, s *deck.Slide, sc *slideCtx) string {
 	ref, rest, _ := strings.Cut(strings.TrimSpace(val), " ")
-	rest = strings.TrimSpace(rest)
+	rest, bare := cutBare(rest)
 	path, frag, _ := strings.Cut(ref, "#")
 	if path == "" {
 		dr.problem(sc, "embed: needs a file or folder, e.g. <!-- embed: articles/retry.md -->")
@@ -126,6 +140,8 @@ func (dr *deckRenderer) embed(val string, s *deck.Slide, sc *slideCtx) string {
 		}
 		return fmt.Sprintf(`<section class="si-embed-doc">%s<p class="si-embed-from">From <a href="%s#%s">%s</a></p></section>`,
 			sec, html.EscapeString(href), html.EscapeString(frag), html.EscapeString(plain(d.Title())))
+	case rest == "full" && bare:
+		return `<section class="si-embed-doc">` + res.body + `</section>`
 	case rest == "full":
 		return fmt.Sprintf(`<section class="si-embed-doc"><h2>%s</h2>%s<p class="si-embed-from">From <a href="%s">%s</a></p></section>`,
 			dr.inline(d.Title()), res.body, html.EscapeString(href), html.EscapeString(plain(d.Title())))

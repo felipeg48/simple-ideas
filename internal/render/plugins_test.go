@@ -112,6 +112,27 @@ func TestEmbed(t *testing.T) {
 	}
 }
 
+// bare drops the caption of an embedded deck and the title and From line of
+// an embedded document.
+func TestEmbedBare(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "post.md"), []byte("---\ntype: article\ntitle: Retries\n---\n# Retries\n\nSpread them out.\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "talk.md"), []byte("# Talk\n\n---\n\n## Two\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "d.md"), []byte("---\ntype: article\n---\n# D\n\n<!-- embed: talk.md 2 bare -->\n\n<!-- embed: post.md full bare -->\n"), 0o644)
+	d, err := deck.Parse(filepath.Join(dir, "d.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := Deck(d, Options{})
+	h := string(res.HTML)
+	if len(res.Problems) > 0 || !strings.Contains(h, "srcdoc=") || !strings.Contains(h, "Spread them out.") {
+		t.Fatalf("bare embeds missing: %v", res.Problems)
+	}
+	if strings.Contains(h, "<figcaption>From") || strings.Contains(h, `<p class="si-embed-from"`) {
+		t.Errorf("bare embeds kept a caption")
+	}
+}
+
 func TestPluginsOnSlideAreProblems(t *testing.T) {
 	p := filepath.Join(t.TempDir(), "s.md")
 	os.WriteFile(p, []byte("# S\n\n<!-- alert: hi -->\n"), 0o644)

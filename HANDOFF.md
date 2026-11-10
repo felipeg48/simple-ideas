@@ -5,6 +5,13 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.22.0: results under every example.** `docsite.liveExamples` writes each
+  ```markdown example of the rules and site pages as `live/ex-NNN.md` (a deck,
+  with a `# Example` title slide shown from slide 2; else an article for
+  document-only plugins), renders it first in a scratch copy of examples/ and
+  embeds it (`embed: … bare`) only when it has no problems; examples with
+  relative page links are skipped. `embed:` gained `bare`. Decks feature page:
+  `More` (keys, overview, find, draw with Option).
 - **Site: Your audience page** (`docs/site/features/audience.md`, menu, home card, Decks options row; remote.md points to it); hand-written site pages get AsciiDoc tabs too.
 - **v2.21.0: AsciiDoc tabs on the site.** `deck.MarkdownToAdoc`
   (`internal/deck/mdadoc.go`, the inverse of `adocToMarkdown`);

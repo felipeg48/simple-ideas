@@ -22,6 +22,7 @@ type feature struct {
 	Lines                   int           // how much of it (0: all)
 	Options                 [][2]string
 	Commands                string
+	More                    string   // more sections, Markdown, after the options
 	Rules                   []string // RULES.md section numbers
 }
 
@@ -41,7 +42,8 @@ var Features = []feature{
 			{"`<!-- poll: id · a · b -->`", "a live poll the room answers on their phones ([your audience](audience.md))"},
 		},
 		Commands: "si new talk                      # a starter deck\nsi play talk.md --open           # present, live reload, p for the teleprompter\nsi play talk.md --remote --https # teleprompter, draw pad and clicker on your phone (features/remote)\nsi play talk.md --audience       # the room follows, votes and asks (features/audience)\nsi build talk.md --pdf --mp4     # one HTML file, plus a PDF and a video\nsi build talk.md --handout       # a handout PDF: slides only, or =lines, =points, =notes",
-		Rules:    []string{"1", "3", "5", "9", "10", "11", "14"}},
+		More:     strings.ReplaceAll(decksMore, "§", "`"),
+		Rules:    []string{"1", "3", "5", "9", "10", "11", "14", "16"}},
 	{Slug: "articles", Title: "Articles",
 		Lede: "One readable page: a header, a table of contents, code with copy buttons, callouts, mind maps and code windows in the text.",
 		What: "An article is a Markdown file with `type: article`. It reads like a blog post, prints well, publishes to LinkedIn, dev.to or Hashnode with `si publish`, and can hold anything a slide can: canvases, mind maps, code shows.",
@@ -124,10 +126,13 @@ func writeFeatures(write func(rel, text string) error, refs map[string]Section) 
 		var b strings.Builder
 		fmt.Fprintf(&b, "---\ntitle: %s\ndescription: %s\n---\n\n# %s\n\n%s\n\n", f.Title, f.Lede, f.Title, f.What)
 		fmt.Fprintf(&b, "## Live\n\n%s\n\n[Open the whole example](%s)\n\n", f.Live(), f.Open)
-		fmt.Fprintf(&b, "## The Markdown behind it\n\n`examples/%s`%s:\n\n%s\n\n", f.Source, partOf(f.Lines, string(src)), withAdoc(fence("markdown", excerpt(string(src), f.Lines))))
+		fmt.Fprintf(&b, "## The Markdown behind it\n\n`examples/%s`%s:\n\n%s\n\n", f.Source, partOf(f.Lines, string(src)), withAdoc(fence("markdown", excerpt(string(src), f.Lines)), nil))
 		b.WriteString("## Key options\n\n| Write | What it does |\n|---|---|\n")
 		for _, o := range f.Options {
 			fmt.Fprintf(&b, "| %s | %s |\n", o[0], o[1])
+		}
+		if f.More != "" {
+			b.WriteString("\n" + f.More)
 		}
 		fmt.Fprintf(&b, "\n## Commands\n\n%s\n\n## The rules\n\n", fence("bash", f.Commands))
 		for _, n := range f.Rules {
@@ -213,3 +218,41 @@ func mapFence(file, extra string) string {
 	})
 	return fence("mindmap "+strings.Join(opts, " "), strings.TrimSpace(body))
 }
+
+// decksMore is the Decks page's part on presenting: keys, overview, find,
+// draw.
+const decksMore = `## While you present
+
+Click the live deck above and try these; they work in every deck si builds,
+from a laptop, a projector or §file://§.
+
+| Key | What it does |
+|---|---|
+| → Space · ← | next step or slide · back |
+| §o§ | **overview**: every slide at once, one column per section; arrows move, Enter opens |
+| §/§ | **find**: search slide titles and text, or type a number to jump; it lists the other pages of the folder too |
+| §a§ | **draw** on the slide; §c§ colour, §e§ erase, §z§ undo, §x§ clear, Esc stops |
+| §p§ | the **teleprompter**: your §Notes:§ at your pace, timers, the next slide |
+| §t§ | a **break timer** to project: pick the minutes, it counts down |
+| §d§ · §f§ · §?§ | light or dark · full screen · every key |
+
+**Draw with the trackpad.** In draw mode, hold ⌥ Option (Alt) and move: the
+cursor draws where it goes, no click needed, so one finger on the trackpad
+circles a number on the slide. Let go of Option and the cursor moves without
+drawing. Prefer another key? §draw.hold: shift§ (or §ctrl§, §meta§, §off§) in
+§si.conf§. A pen on a tablet works too, with pressure, and from your phone
+the [draw pad](remote.md) puts what you draw on the projected slide.
+
+**Overview.** §o§ shows the whole talk as a map: each §#§ section (or
+included module) is a column headed by its title, so you can jump to the
+Q&A backup slide or back to the agenda without paging through.
+
+**Find.** §/§ opens a search over the deck: type a word and the matching
+slides list with their text, best title matches first; type §12§ to jump to
+slide 12. Below the slides it offers the other decks, labs and PDFs of the
+folder, and the §links.*§ you add in §si.conf§.
+
+**Your keys.** Every key can be changed in §si.conf§ (§keys.draw: w§), and
+any feature turned off (§feature.find: off§).
+
+`

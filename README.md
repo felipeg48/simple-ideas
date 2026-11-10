@@ -128,6 +128,10 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.22.0:** every example on the docs site shows its result under the
+  Markdown and AsciiDoc tabs; `<!-- embed: … bare -->` embeds without a caption;
+  the Decks page covers presenting (keys, overview, find, draw with the
+  trackpad); a Your audience page.
 - **v2.21.0:** the docs site shows every example of the rules, the manual and
   the feature pages in Markdown and AsciiDoc (tabs; the choice is remembered);
   AsciiDoc decks gain si's fence options in `[source,…]`, real `<1>` callouts,
