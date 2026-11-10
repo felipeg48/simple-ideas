@@ -45,7 +45,8 @@ func runMCP(rest []string, stdout, stderr io.Writer) int {
 
 const mcpInstructions = "si turns Markdown into slide decks (with a teleprompter script in Notes:), articles, guides, books, mind maps and code shows. " +
 	"Work in a loop: write the Markdown, call si_check and fix every problem, call si_screenshot to see the result, and only then report it done. " +
-	"Look syntax up with si_rules instead of guessing. Notes: is what the speaker says to the room, word for word; Points: is the speaker's own list."
+	"Look syntax up with si_rules instead of guessing. Notes: is what the speaker says to the room, word for word; Points: is the speaker's own list. " +
+	"A theme is a .css file of --si-* tokens: si_theme_spec for the tokens, si_theme_write, si_theme_check (fix every contrast pair), si_theme_preview light and dark."
 
 // mcpMu runs one si command at a time: the CLI keeps a few package settings.
 var mcpMu sync.Mutex
@@ -88,7 +89,7 @@ func mcpTools(root string) []mcp.Tool {
 		return p
 	}
 	problemRE := regexp.MustCompile(`^(.+?):(\d+): (.+)$`)
-	return []mcp.Tool{
+	return append([]mcp.Tool{
 		{Name: "si_check", Title: "Check si documents", ReadOnly: true,
 			Description: "Validate a deck, document or folder like `si check`: front matter, directives, layouts, files, includes, links, Notes: [CLICK] cues. Returns every problem with its file and line; fix them all before you finish.",
 			Input:       obj([]string{"path"}, map[string]any{"path": str("a .md file or a folder, relative to the served folder")}),
@@ -232,10 +233,6 @@ func mcpTools(root string) []mcp.Tool {
 				if err != nil {
 					return mcp.Result{}, err
 				}
-				chrome := findChrome()
-				if chrome == "" {
-					return mcp.Result{}, fmt.Errorf("no Chrome or Chromium found for screenshots")
-				}
 				tmp, err := os.MkdirTemp("", "si-mcp-shot-")
 				if err != nil {
 					return mcp.Result{}, err
@@ -245,9 +242,6 @@ func mcpTools(root string) []mcp.Tool {
 					return mcp.Result{}, fmt.Errorf("%s", out)
 				}
 				page := filepath.Join(tmp, strings.TrimSuffix(filepath.Base(p), filepath.Ext(p))+".html")
-				if _, err := os.Stat(page); err != nil {
-					return mcp.Result{}, fmt.Errorf("built no %s", filepath.Base(page))
-				}
 				w, h := max(a.Width, 0), max(a.Height, 0)
 				if w == 0 {
 					w = 1280
@@ -255,24 +249,37 @@ func mcpTools(root string) []mcp.Tool {
 				if h == 0 {
 					h = 720
 				}
-				url := "file://" + filepath.ToSlash(page)
-				if a.Slide != "" {
-					url += "#" + a.Slide
-				}
-				png := filepath.Join(tmp, "shot.png")
-				args := []string{"--headless=new", "--disable-gpu", "--hide-scrollbars", "--screenshot=" + png, fmt.Sprintf("--window-size=%d,%d", w, h), "--virtual-time-budget=3000"}
-				if a.Dark {
-					args = append(args, "--force-dark-mode", "--blink-settings=preferredColorScheme=0")
-				}
-				if b, err := exec.Command(chrome, append(args, url)...).CombinedOutput(); err != nil {
-					return mcp.Result{}, fmt.Errorf("chrome: %v: %s", err, b)
-				}
-				img, err := os.ReadFile(png)
+				img, err := chromeShot(page, a.Slide, w, h, a.Dark)
 				if err != nil {
 					return mcp.Result{}, err
 				}
 				return mcp.Result{Text: fmt.Sprintf("%s%s at %dx%d", relTo(p), map[bool]string{true: " #" + a.Slide, false: ""}[a.Slide != ""], w, h),
 					Images: []mcp.Image{{MIME: "image/png", Data: base64.StdEncoding.EncodeToString(img)}}}, nil
 			}},
+	}, mcpThemeTools(in, si, relTo)...)
+}
+
+// chromeShot is a PNG of a built page (a slide by number for a deck) in
+// headless Chrome, light or dark.
+func chromeShot(page, slide string, w, h int, dark bool) ([]byte, error) {
+	chrome := findChrome()
+	if chrome == "" {
+		return nil, fmt.Errorf("no Chrome or Chromium found for screenshots")
 	}
+	if _, err := os.Stat(page); err != nil {
+		return nil, fmt.Errorf("built no %s", filepath.Base(page))
+	}
+	url := "file://" + filepath.ToSlash(page)
+	if slide != "" {
+		url += "#" + slide
+	}
+	png := filepath.Join(filepath.Dir(page), "shot.png")
+	args := []string{"--headless=new", "--disable-gpu", "--hide-scrollbars", "--screenshot=" + png, fmt.Sprintf("--window-size=%d,%d", w, h), "--virtual-time-budget=3000"}
+	if dark {
+		args = append(args, "--force-dark-mode", "--blink-settings=preferredColorScheme=0")
+	}
+	if b, err := exec.Command(chrome, append(args, url)...).CombinedOutput(); err != nil {
+		return nil, fmt.Errorf("chrome: %v: %s", err, b)
+	}
+	return os.ReadFile(png)
 }

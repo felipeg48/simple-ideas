@@ -95,7 +95,7 @@ func Plugin(version string) map[string]string {
   }
 }
 `,
-		"README.md": "# si for Claude Code\n\nThe `si` skill (how to write decks and documents for si, the check-and-look\nloop, every rule on demand) and the `si mcp` tools (si_check, si_rules,\nsi_new, si_build, si_qr, si_screenshot; they need `si` on your PATH). Generated from docs/agent-rules.md and\ndocs/RULES.md by `go test ./internal/skill -update`; do not edit by hand.\n\n```\n/plugin marketplace add felipeg48/simple-ideas\n/plugin install si@simple-ideas\n```\n\nThe si binary itself: https://simple-ideas.org/download.html\n",
+		"README.md": "# si for Claude Code\n\nThe `si` skill (how to write decks and documents for si, the check-and-look\nloop, every rule on demand) and the `si mcp` tools (si_check, si_rules,\nsi_new, si_build, si_qr, si_screenshot, and the theme tools si_theme_spec, si_theme_write,\nsi_theme_check, si_theme_preview, si_theme_export, si_theme_import; they need `si` on your PATH). Generated from docs/agent-rules.md and\ndocs/RULES.md by `go test ./internal/skill -update`; do not edit by hand.\n\n```\n/plugin marketplace add felipeg48/simple-ideas\n/plugin install si@simple-ideas\n```\n\nThe si binary itself: https://simple-ideas.org/download.html\n",
 	}
 	for p, c := range Files() {
 		files["skills/si/"+p] = c

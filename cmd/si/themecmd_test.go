@@ -2,11 +2,65 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/felipeg48/simple-ideas/internal/assets"
+	"github.com/felipeg48/simple-ideas/internal/mcp"
 )
+
+// The MCP theme tools: spec, write (only known tokens of their kind), check
+// with fixes, export as Design Tokens, import, and (with Chrome) a picture.
+func TestMCPThemeTools(t *testing.T) {
+	root := t.TempDir()
+	tools := map[string]func(json.RawMessage) (mcp.Result, error){}
+	for _, tl := range mcpTools(root) {
+		tools[tl.Name] = tl.Call
+	}
+	res, err := tools["si_theme_spec"](json.RawMessage(`{}`))
+	if err != nil || len(res.Structured.(map[string]any)["tokens"].([]assets.TokenMeta)) < 50 {
+		t.Fatalf("spec: %v", err)
+	}
+	if _, err := tools["si_theme_write"](json.RawMessage(`{"name":"Acme","extends":"paper","light":{"h1-size":"40px"}}`)); err == nil {
+		t.Error("a px size was written")
+	}
+	res, err = tools["si_theme_write"](json.RawMessage(`{"name":"Acme","extends":"paper","light":{"--si-accent":"#0b3d91","muted":"#c9c9c9"},"dark":{"accent":"#8fb3ff"}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	st := res.Structured.(map[string]any)
+	if st["path"] != "themes/acme.css" || st["passes"] != false || st["ok"] != true {
+		t.Errorf("write: %+v", st)
+	}
+	res, _ = tools["si_theme_check"](json.RawMessage(`{"path":"themes/acme.css"}`))
+	if !strings.Contains(res.Text, "--si-muted on --si-bg") || !strings.Contains(res.Text, "try #") {
+		t.Errorf("check: %s", res.Text)
+	}
+	res, err = tools["si_theme_export"](json.RawMessage(`{"theme":"themes/acme.css","format":"dtcg","output":"acme.tokens.json"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tools["si_theme_import"](json.RawMessage(`{"source":"acme.tokens.json","use":true}`)); err == nil {
+		t.Error("import over the theme it came from should fail (themes/acme.css exists)")
+	}
+	os.Remove(filepath.Join(root, "themes", "acme.css"))
+	if _, err := tools["si_theme_import"](json.RawMessage(`{"source":"acme.tokens.json","use":true}`)); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(filepath.Join(root, "si.conf")); !strings.Contains(string(b), "themes/acme.css") {
+		t.Errorf("si.conf: %s", b)
+	}
+	if findChrome() == "" {
+		return
+	}
+	res, err = tools["si_theme_preview"](json.RawMessage(`{"path":"themes/acme.css","dark":true}`))
+	if err != nil || len(res.Images) != 1 {
+		t.Errorf("preview: %v", err)
+	}
+}
 
 // export a built-in as CSS and as Design Tokens, import both back, check.
 func TestThemeExportImportCheck(t *testing.T) {
