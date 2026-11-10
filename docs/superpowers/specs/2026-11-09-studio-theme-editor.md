@@ -113,6 +113,55 @@ small files work:
   Studio command (`window.siStudio`), like Help does.
 - **Terminal Studio**: out of scope (it can show the specimen preview later).
 
+## Import and export (founder, 2026-11-09: "easy to share")
+
+A theme should travel as one file and come back the same.
+
+- **Export** (`si theme export themes/acme.css -o acme.si-theme.css`, and
+  Export… in the Theme view): one self-contained CSS file: the header
+  (`si theme: Acme · extends studio`, `fonts:` line), every token it changes,
+  its logo and local font files inlined as data URIs. A built-in theme exports
+  too (`si theme export paper`), as a full starting point.
+- **Import** (`si theme import acme.si-theme.css|https://…|folder/` and
+  Import… / drop a file on the Theme view): validated with the theme checker
+  (known tokens, values of their kind, the Safety rules below), copied into
+  `themes/`, data URIs kept or written out as files (`--unpack`), then opened
+  in the Theme view; `--use` also writes `theme:` into si.conf.
+- **Design tokens** (`--format dtcg`): export to and import from the W3C
+  Design Tokens format (`.tokens.json`: colours, dimensions, font families,
+  durations), so a theme moves to and from Figma (Tokens Studio), Style
+  Dictionary and other tools. Unmapped tokens are reported, never guessed.
+- **Gallery**: `si --export themes` includes the workspace's themes beside
+  the built-ins; a theme can be shared as its gallery page plus the file.
+
+## With AI agents (the MCP server and the skill)
+
+An agent can design a theme the way it writes a deck: propose, check, look,
+refine. The skill teaches the method; the MCP tools do the work and return
+data the agent can act on.
+
+- **MCP tools** (`si mcp`):
+  - `si_theme_spec`: groups, tokens, kinds, units, built-in values.
+  - `si_theme_write {name, extends, tokens{light,dark,base}, fonts}`: writes
+    the theme through `themefile` (only known tokens, values of their kind);
+    returns the file and its check report.
+  - `si_theme_check {path}`: contrast pairs (light and dark) and validity,
+    with the ratio of each failing pair and the nearest passing value.
+  - `si_theme_preview {path, deck?, dark?}`: the specimen (or a deck) as a
+    picture, like `si_screenshot`.
+  - `si_theme_from_logo {image}`: the palette of the logo spec, as data.
+  - `si_theme_import` / `si_theme_export`.
+- **Skill reference** `references/themes.md` (generated with the others):
+  the token groups and what each controls, colour roles (accent for emphasis
+  and links, accent-2 sparingly, tinted neutrals for surfaces), contrast
+  minimums, font pairing (one display face for headings, a readable body
+  face, a mono that matches), light and dark designed together, and the loop:
+  write → `si_theme_check` → fix → `si_theme_preview` light and dark → done.
+- **Prompts that should work**: "make a theme from our logo, warm and calm,
+  serif headings"; "our brand colours are #0B3D91 and #FC3D21: a theme that
+  passes contrast in dark mode"; "import brand.tokens.json and use it for
+  this folder".
+
 ## Safety
 
 Theme CSS is author code that ends up in every built deck. The writer only
@@ -147,12 +196,13 @@ the Checks pane ("not edited here").
 
 ## Phases
 
-1. Engine: `extends`, index theme, token metadata, `themefile`, `si check`.
+1. Engine: `extends`, index theme, token metadata, `themefile`, `si check`,
+   `si theme export` / `import` (CSS), the MCP theme tools.
 2. Theme view: Colours + Type + Headings groups, preview, save, use.
 3. All groups, the Checks pane with Fix, Start from a logo (shares
    `internal/themegen` with the logo spec).
-4. Polish: compare two themes side by side, duplicate a theme, include
-   custom themes in `si --export themes`.
+4. Polish: Design Tokens (`--format dtcg`) import/export, compare two themes
+   side by side, duplicate a theme, custom themes in `si --export themes`.
 
 ## Open questions
 
