@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"image/jpeg"
 	"math"
 	"os"
 	"os/exec"
@@ -39,6 +40,19 @@ type take struct {
 	length float64   // how long its narration needs
 	last   time.Time // when the last step ended
 	noted  time.Time // when the last note went up
+	spoken []span    // when the voice speaks
+	waits  []span    // the steps that wait (the video may fast-forward them)
+}
+
+// waiting marks a step that waits (a command, a program, some output); call
+// what it returns when the wait is over.
+func (r *runner) waiting() func() {
+	tk := r.tk
+	if tk == nil || !tk.on {
+		return func() {}
+	}
+	from := time.Since(tk.t0).Seconds()
+	return func() { tk.waits = append(tk.waits, span{from, time.Since(tk.t0).Seconds()}) }
 }
 
 // liveNote is a note on screen: until (zero) the end of its block, or a time.
@@ -274,6 +288,7 @@ func (r *runner) beginBlock(b *Block) {
 	if l, ok := r.lines[b]; ok {
 		at := time.Since(tk.t0).Seconds()
 		tk.voice = append(tk.voice, placed{l.WAV, at})
+		tk.spoken = append(tk.spoken, span{at, at + l.Seconds})
 		tk.caps = append(tk.caps, captions(b.Say, at, l.Seconds)...)
 		tk.length = l.Seconds + 0.4
 	}
@@ -360,29 +375,55 @@ h1::after{content:"";display:block;width:2.4em;height:.12em;margin-top:.35em;bac
 .w{margin:1.4rem 0 0;color:var(--si-fg);opacity:.86;font-size:clamp(16px,2.6vw,32px);line-height:1.4;max-width:34em}`)
 }
 
-// captionHTML is one caption at the bottom of the frame, two lines at most.
+// captionHTML is one caption, two lines at most, centered in the band under
+// the shrunk picture of the captions variant (see band).
 func captionHTML(text string) string {
 	var lines []string
 	for _, l := range wrap(text) {
 		lines = append(lines, html.EscapeString(l))
 	}
-	return pageHTML(`<div><span>`+strings.Join(lines, "<br>")+`</span></div>`,
-		`div{position:fixed;left:0;right:0;bottom:6vh;text-align:center;padding:0 5vw}
-span{display:inline-block;padding:.35em .8em;border-radius:var(--si-radius,.55em);background:rgb(15 17 21/.82);color:#fff;
-font:600 clamp(16px,3.1vw,40px)/1.35 var(--si-font-body,system-ui,sans-serif);box-shadow:0 .3em 1em rgb(0 0 0/.25)}`)
+	return pageHTML(`<div>`+strings.Join(lines, "<br>")+`</div>`,
+		fmt.Sprintf(`div{position:fixed;left:0;right:0;bottom:0;height:%gvh;display:flex;align-items:center;justify-content:center;padding:0 4vw;text-align:center;color:#fff;
+font:600 clamp(13px,min(2.5vw,4.2vh),40px)/1.3 var(--si-font-body,system-ui,sans-serif)}`, (1-picScale-picTop)*100))
+}
+
+// badgeHTML is the fast-forward badge (⏩ 6×) at the top right of the frame.
+func badgeHTML(x int) string {
+	return pageHTML(fmt.Sprintf(`<b><svg viewBox="0 0 24 16" aria-hidden="true"><path d="M1 1l10 7-10 7zM12 1l10 7-10 7z" fill="currentColor"/></svg>%d×</b>`, x),
+		`b{position:fixed;top:clamp(10px,2.4vh,28px);right:clamp(10px,2vw,32px);display:flex;align-items:center;gap:.4em;padding:.3em .7em;border-radius:2em;
+background:rgb(17 19 24/.78);color:#fff;font:700 clamp(14px,2vw,30px)/1 var(--si-font-body,system-ui,sans-serif);box-shadow:0 .2em .8em rgb(0 0 0/.3)}
+svg{width:1.2em;height:.8em}`)
 }
 
 // clip is what a feature's take wrote.
 type clip struct {
-	Name    string // file stem: <feature slug>
-	title   string // the feature's name
-	Seconds float64
-	Card    string // the title card (temporary)
-	Voiced  bool
+	Name      string // file stem: <feature slug>
+	title     string // the feature's name
+	Seconds   float64
+	Card      string // the title card (temporary)
+	Voiced    bool
+	Captioned bool      // <stem>.captions.mp4 was made
+	Caps      []caption // on the video's clock
+	Fast      []fast    // the waits played faster
 }
 
-// finishTake renders the feature's card and captions, then writes its files:
-// .video.mp4, .voice.wav/.m4a, .srt, .mp4.
+// frameSize is the size of a filmed frame (w, h when it cannot be read).
+func frameSize(file string, w, h int) (int, int) {
+	fh, err := os.Open(file)
+	if err != nil {
+		return w, h
+	}
+	defer fh.Close()
+	if c, err := jpeg.DecodeConfig(fh); err == nil {
+		return c.Width, c.Height
+	}
+	return w, h
+}
+
+// finishTake renders the feature's card, captions and badges, then writes
+// its files from the one take: .video.mp4 (picture), .mp4 (picture and
+// voice), .captions.mp4 (picture, voice, captions under it), .voice.wav/.m4a,
+// .srt and .vtt. Long waits play faster in all three (fastForward).
 func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 	tk := r.tk
 	defer func() {
@@ -396,25 +437,45 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 	}
 	out := func(ext string) string { return filepath.Join(r.o.Out, stem+ext) }
 	cl := &clip{Name: stem, title: f.Name, Seconds: d, Voiced: len(tk.voice) > 0}
-	for i := range tk.caps { // a caption never outlives the clip
-		tk.caps[i].To = min(tk.caps[i].To, d)
-	}
-	var caps []caption
-	for _, c := range tk.caps {
+	fs := fastForward(tk.waits, tk.spoken, r.o.FastForward.Seconds(), d)
+	cl.Fast = fs
+	for _, c := range tk.caps { // a caption never outlives the clip
 		if c.From < d {
-			caps = append(caps, c)
+			cl.Caps = append(cl.Caps, caption{c.Text, outT(fs, c.From), outT(fs, min(c.To, d))})
 		}
 	}
-	if r.o.Captions {
-		for i := range caps {
-			png, err := r.picture(captionHTML(caps[i].Text), true)
+	var voice []placed
+	for _, v := range tk.voice {
+		voice = append(voice, placed{v.WAV, outT(fs, v.At)})
+	}
+	picture := func(page, name string) (string, error) {
+		png, err := r.picture(page, true)
+		if err != nil {
+			return "", err
+		}
+		file := filepath.Join(tk.dir, name)
+		return file, os.WriteFile(file, png, 0o644)
+	}
+	var badges []pic
+	drawn := map[int]string{}
+	for _, x := range fs {
+		if drawn[x.X] == "" {
+			file, err := picture(badgeHTML(x.X), fmt.Sprintf("ff%d.png", x.X))
 			if err != nil {
 				return nil, err
 			}
-			caps[i].PNG = filepath.Join(tk.dir, fmt.Sprintf("cap%03d.png", i))
-			if err := os.WriteFile(caps[i].PNG, png, 0o644); err != nil {
+			drawn[x.X] = file
+		}
+		badges = append(badges, pic{drawn[x.X], outT(fs, x.From), outT(fs, x.To)})
+	}
+	var caps []pic
+	if cl.Voiced && !r.o.NoCaptions {
+		for i, c := range cl.Caps {
+			file, err := picture(captionHTML(c.Text), fmt.Sprintf("cap%03d.png", i))
+			if err != nil {
 				return nil, err
 			}
+			caps = append(caps, pic{file, c.From, c.To})
 		}
 	}
 	card, err := r.picture(cardHTML(r.title(), f.Name, f.What), false)
@@ -429,27 +490,38 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 	if err != nil {
 		return nil, err
 	}
-	pattern, n, err := sequence(tk.frames, d, seq)
+	pattern, n, err := sequence(tk.frames, d, fs, seq)
 	if err != nil {
 		return nil, err
 	}
 	cl.Seconds = float64(n) / fps
-	if err := r.ffmpeg(videoArgs(pattern, caps, out(".video.mp4"))); err != nil {
+	w, h := frameSize(tk.frames[0].File, r.s.W, r.s.H)
+	if err := r.ffmpeg(videoArgs(pattern, w, h, badges, nil, "", out(".video.mp4"))); err != nil {
 		return nil, err
 	}
 	wav := out(".voice.wav")
-	if err := mixWAV(wav, cl.Seconds, tk.voice); err != nil {
+	if err := mixWAV(wav, cl.Seconds, voice); err != nil {
 		return nil, err
 	}
 	if err := r.ffmpeg(muxArgs(out(".video.mp4"), wav, out(".mp4"))); err != nil {
 		return nil, err
 	}
+	os.Remove(out(".captions.mp4")) // not left over from an earlier run
 	if cl.Voiced {
 		if err := r.ffmpeg(m4aArgs(wav, out(".voice.m4a"))); err != nil {
 			return nil, err
 		}
-		if err := os.WriteFile(out(".srt"), []byte(srt(caps)), 0o644); err != nil {
+		if err := os.WriteFile(out(".srt"), []byte(srt(cl.Caps)), 0o644); err != nil {
 			return nil, err
+		}
+		if err := os.WriteFile(out(".vtt"), []byte(vtt(cl.Caps)), 0o644); err != nil {
+			return nil, err
+		}
+		if len(caps) > 0 {
+			if err := r.ffmpeg(videoArgs(pattern, w, h, badges, caps, wav, out(".captions.mp4"))); err != nil {
+				return nil, err
+			}
+			cl.Captioned = true
 		}
 	} else {
 		os.Remove(wav)
@@ -472,26 +544,59 @@ func (r *runner) ffmpeg(args []string) error {
 	return nil
 }
 
-// joinAll writes all.mp4 (every clip after its title card, chapters inside)
-// and chapters.txt.
+// joinAll writes all.mp4 (every clip after its title card, chapters inside),
+// all.video.mp4 (its picture alone), all.captions.mp4 (the captions
+// variants joined), all.srt and all.vtt when there is narration, and
+// chapters.txt.
 func (r *runner) joinAll(clips []*clip) error {
 	defer func() {
 		for _, c := range clips {
 			os.Remove(c.Card)
 		}
 	}()
+	at := func(name string) string { return filepath.Join(r.o.Out, name) }
 	var parts []part
+	var caps [][]caption
+	voiced, captioned := false, false
 	for _, c := range clips {
-		parts = append(parts, part{Name: c.title, Card: c.Card, Clip: filepath.Join(r.o.Out, c.Name+".mp4"), Seconds: c.Seconds})
+		parts = append(parts, part{Name: c.title, Card: c.Card, Clip: at(c.Name + ".mp4"), Seconds: c.Seconds})
+		caps = append(caps, c.Caps)
+		voiced, captioned = voiced || c.Voiced, captioned || c.Captioned
 	}
 	cs := chapters(parts)
-	meta := filepath.Join(r.o.Out, ".chapters.ffmeta")
+	meta := at(".chapters.ffmeta")
 	if err := os.WriteFile(meta, []byte(ffmetadata(r.title(), cs)), 0o644); err != nil {
 		return err
 	}
 	defer os.Remove(meta)
-	if err := r.ffmpeg(allArgs(parts, meta, filepath.Join(r.o.Out, "all.mp4"))); err != nil {
+	if err := r.ffmpeg(allArgs(parts, meta, at("all.mp4"))); err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(r.o.Out, "chapters.txt"), []byte(youtube(cs)), 0o644)
+	// the picture alone: all.mp4 without its sound (chapters copied along)
+	if err := r.ffmpeg(ff("-i", at("all.mp4"), "-map", "0:v", "-c", "copy", "-movflags", "+faststart", at("all.video.mp4"))); err != nil {
+		return err
+	}
+	for _, name := range []string{"all.captions.mp4", "all.srt", "all.vtt"} {
+		os.Remove(at(name)) // not left over from an earlier run
+	}
+	if captioned {
+		for i, c := range clips {
+			if c.Captioned {
+				parts[i].Clip = at(c.Name + ".captions.mp4")
+			}
+		}
+		if err := r.ffmpeg(allArgs(parts, meta, at("all.captions.mp4"))); err != nil {
+			return err
+		}
+	}
+	if voiced {
+		all := joinCaptions(cs, caps)
+		if err := os.WriteFile(at("all.srt"), []byte(srt(all)), 0o644); err != nil {
+			return err
+		}
+		if err := os.WriteFile(at("all.vtt"), []byte(vtt(all)), 0o644); err != nil {
+			return err
+		}
+	}
+	return os.WriteFile(at("chapters.txt"), []byte(youtube(cs)), 0o644)
 }

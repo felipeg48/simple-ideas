@@ -34,11 +34,12 @@ type Options struct {
 	SI      string    // si's version, for the report
 
 	// si demo run: film each feature (Video), narrated by Voice
-	Video    bool
-	Voice    Voice
-	Captions bool   // burn the captions into the video
-	FFmpeg   string // the ffmpeg to encode with
-	Cache    string // where voiced lines are kept ("" = VoiceCache())
+	Video       bool
+	Voice       Voice
+	NoCaptions  bool          // skip the .captions.mp4 variants
+	FastForward time.Duration // a wait plays at speed this long, then faster (0: never)
+	FFmpeg      string        // the ffmpeg to encode with
+	Cache       string        // where voiced lines are kept ("" = VoiceCache())
 }
 
 // failure is a step that did not pass: what it expected, what it found, the
@@ -194,7 +195,10 @@ func Run(s *Script, o Options) (*Report, error) {
 		fr, cl := r.feature(f)
 		if cl != nil {
 			clips = append(clips, cl)
-			fr.Video = cl.Name + ".mp4"
+			fr.Video, fr.Silent = cl.Name+".mp4", cl.Name+".video.mp4"
+			if cl.Captioned {
+				fr.Captioned = cl.Name + ".captions.mp4"
+			}
 		}
 		rep.Features = append(rep.Features, fr)
 	}
@@ -528,7 +532,19 @@ func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
 			fr.Steps = append(fr.Steps, StepResult{Text: "make the video", Status: "failed", Found: err.Error()})
 			cl = nil
 		} else {
-			fmt.Fprintf(r.o.Log, "  ▶ %s.mp4  %.1fs\n", cl.Name, cl.Seconds)
+			files := cl.Name + ".mp4 · " + cl.Name + ".video.mp4"
+			if cl.Captioned {
+				files += " · " + cl.Name + ".captions.mp4"
+			}
+			ff := ""
+			if len(cl.Fast) > 0 {
+				saved := 0.0
+				for _, x := range cl.Fast {
+					saved += (x.To - x.From) * (1 - 1/float64(x.X))
+				}
+				ff = fmt.Sprintf(" (%d wait(s) fast-forwarded, %.1fs shorter)", len(cl.Fast), saved)
+			}
+			fmt.Fprintf(r.o.Log, "  ▶ %s  %.1fs%s\n", files, cl.Seconds, ff)
 		}
 	}
 	r.mu.Lock()
@@ -761,7 +777,10 @@ func (r *runner) value(v Value) (string, error) {
 // step runs one step; it returns a screenshot's path when it took one.
 func (r *runner) step(st *Step) (string, error) {
 	switch st.Kind {
-	case "terminal", "browser", "run", "expect-output", "expect-no-output", "waitfor-output", "start", "stop", "expect-proc":
+	case "expect-output", "waitfor-output", "start", "stop":
+		defer r.waiting()()
+		return "", r.termStep(st)
+	case "terminal", "browser", "run", "expect-no-output", "expect-proc":
 		return "", r.termStep(st)
 	case "press", "note":
 		if r.cur != nil && (st.Kind == "press" || st.AtLine) {
@@ -788,6 +807,9 @@ func (r *runner) step(st *Step) (string, error) {
 		r.glide(f.X, f.Y)
 		return "", r.mouse("mouseMoved", f.X, f.Y, nil)
 	case "scroll", "waitfor", "note":
+		if st.Kind == "waitfor" {
+			defer r.waiting()()
+		}
 		var err error
 		if st.Kind != "note" || st.Target != (Locator{}) {
 			_, err = r.element(st.Target, "any", false)

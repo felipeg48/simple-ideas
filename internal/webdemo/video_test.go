@@ -2,7 +2,9 @@ package webdemo
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -93,6 +95,74 @@ func TestCaptionsAndSRT(t *testing.T) {
 	}
 }
 
+func TestVTT(t *testing.T) {
+	got := vtt([]caption{{Text: "Pay sits at the bottom, under the delivery promise.", From: 9.7272, To: 3723.5}, {Text: "Done.", From: 3724, To: 3725}})
+	want := "WEBVTT\n\n00:00:09.727 --> 01:02:03.500\nPay sits at the bottom,\nunder the delivery promise.\n\n01:02:04.000 --> 01:02:05.000\nDone.\n\n"
+	if got != want {
+		t.Errorf("vtt:\n%q\nwant\n%q", got, want)
+	}
+}
+
+// The time map: a wait beyond its first seconds plays faster, never under
+// the narration; captions and chapters land on the video's clock.
+func TestFastForward(t *testing.T) {
+	// a 30 s wait from 10 s; the voice speaks 5-15 s; fast-forward after 3 s
+	fs := fastForward([]span{{10, 40}}, []span{{5, 15}}, 3, 60)
+	if len(fs) != 1 || fs[0].From != 15 || fs[0].To != 40 || fs[0].X != 13 {
+		t.Fatalf("fast: %+v", fs)
+	}
+	if fastForward([]span{{10, 40}}, nil, 0, 60) != nil {
+		t.Error("--no-fast-forward still fast-forwards")
+	}
+	if fs := fastForward([]span{{10, 14}, {20, 24.5}}, nil, 3, 60); len(fs) != 0 {
+		t.Errorf("a short wait fast-forwarded: %+v", fs)
+	}
+	// the voice in the middle of a wait splits it in two
+	if fs := fastForward([]span{{0, 40}}, []span{{12, 20}}, 2.5, 30); len(fs) != 2 || fs[0] != (fast{2.5, 12, 5}) || fs[1] != (fast{20, 30, 5}) {
+		t.Errorf("split: %+v", fs)
+	}
+	near := func(a, b float64) bool { return math.Abs(a-b) < 1e-9 }
+	saved := 25 * (1 - 1.0/13)
+	for _, c := range [][2]float64{{0, 0}, {15, 15}, {40, 40 - saved}, {60, 60 - saved}, {27.5, 15 + 12.5/13}} {
+		if o := outT(fs, c[0]); !near(o, c[1]) {
+			t.Errorf("outT(%g) = %g, want %g", c[0], o, c[1])
+		}
+		if i := inT(fs, c[1]); !near(i, c[0]) {
+			t.Errorf("inT(%g) = %g, want %g", c[1], i, c[0])
+		}
+	}
+	if l := outT(fs, 40) - outT(fs, 15); l > ffMost {
+		t.Errorf("the fast stretch lasts %gs", l)
+	}
+	// the sequence: frames at 0 (prompt) and 39.5 s (the output); the video is shorter and shows the output at its end
+	dir := t.TempDir()
+	a, b := filepath.Join(dir, "a.jpg"), filepath.Join(dir, "b.jpg")
+	os.WriteFile(a, []byte("a"), 0o644)
+	os.WriteFile(b, []byte("b"), 0o644)
+	_, n, err := sequence([]frame{{a, 0}, {b, 39.5}}, 41, fs, dir)
+	if err != nil || n != int(outT(fs, 41)*fps+.5) {
+		t.Fatalf("sequence: %d %v", n, err)
+	}
+	for k, want := range map[int]string{0: "a", int(15*fps + 5): "a", n - 1: "b"} {
+		if raw, _ := os.ReadFile(filepath.Join(dir, fmt.Sprintf("seq%05d.jpg", k))); string(raw) != want {
+			t.Errorf("frame %d shows %q, want %q", k, raw, want)
+		}
+	}
+	// captions after the wait move up by what it saved; the chapters follow the clips' new lengths
+	caps := []caption{{"Before.", 6, 9}, {"After.", 45, 48}}
+	for i := range caps {
+		caps[i].From, caps[i].To = outT(fs, caps[i].From), outT(fs, caps[i].To)
+	}
+	if !near(caps[0].From, 6) || !near(caps[1].From, 45-saved) || !near(caps[1].To-caps[1].From, 3) {
+		t.Errorf("captions: %+v", caps)
+	}
+	cs := chapters([]part{{Name: "A", Seconds: outT(fs, 60)}, {Name: "B", Seconds: 10}})
+	all := joinCaptions(cs, [][]caption{caps, {{"B.", 1, 2}}})
+	if len(all) != 3 || !near(all[1].From, cardSeconds+45-saved) || all[2].From < cs[1].Start+cardSeconds+1-1e-9 || all[2].From > cs[1].Start+cardSeconds+1+1e-9 {
+		t.Errorf("all captions: %+v chapters %+v", all, cs)
+	}
+}
+
 func TestChapters(t *testing.T) {
 	parts := []part{{Name: "Sign in", Seconds: 6.3333}, {Name: "Pay; then #1 = done", Seconds: 57.8}, {Name: "Find", Seconds: 10}}
 	cs := chapters(parts)
@@ -112,21 +182,36 @@ func TestChapters(t *testing.T) {
 }
 
 func TestFFmpegArgs(t *testing.T) {
-	a := strings.Join(videoArgs("/t/seq%05d.jpg", nil, "/o/a.video.mp4"), " ")
+	a := strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, nil, nil, "", "/o/a.video.mp4"), " ")
 	if !strings.HasPrefix(a, "-nostdin -y") || !strings.Contains(a, "-framerate 30 -i /t/seq%05d.jpg -vf scale=") || !strings.HasSuffix(a, "+faststart /o/a.video.mp4") {
 		t.Errorf("video: %s", a)
 	}
-	caps := []caption{{Text: "x", From: 1, To: 2.5, PNG: "/t/c0.png"}, {Text: "y", From: 3, To: 4}, {Text: "z", From: 5, To: 6, PNG: "/t/c2.png"}}
-	a = strings.Join(videoArgs("/t/seq%05d.jpg", caps, "/o/a.video.mp4"), " ")
-	for _, w := range []string{"-i /t/c0.png -i /t/c2.png -filter_complex",
-		"[0:v][1:v]overlay=0:0:enable='between(t,1.000,2.500)'[c1];[c1][2:v]overlay=0:0:enable='between(t,5.000,6.000)'[c2];[c2]scale=",
-		"-map [v]"} {
+	badges := []pic{{"/t/ff6.png", 4, 6}}
+	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, badges, nil, "", "/o/a.video.mp4"), " ")
+	if !strings.Contains(a, "-i /t/ff6.png -filter_complex [0:v][1:v]overlay=0:0:enable='between(t,4.000,6.000)'[o1];[o1]scale=") || strings.Contains(a, "pad=") || strings.Contains(a, "aac") {
+		t.Errorf("badges: %s", a)
+	}
+	caps := []pic{{"/t/c0.png", 1, 2.5}, {"/t/c1.png", 5, 6}}
+	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, badges, caps, "/o/a.voice.wav", "/o/a.captions.mp4"), " ")
+	for _, w := range []string{"-i /t/ff6.png -i /t/c0.png -i /t/c1.png -i /o/a.voice.wav -filter_complex",
+		// the badge over the picture, the picture shrunk into the top (1222x764 at 109,18 of 1440x900), the captions in the band
+		"[0:v][1:v]overlay=0:0:enable='between(t,4.000,6.000)'[o1];[o1]scale=1222:764,pad=1440:900:109:18:color=0x111318[band];" +
+			"[band][2:v]overlay=0:0:enable='between(t,1.000,2.500)'[o2];[o2][3:v]overlay=0:0:enable='between(t,5.000,6.000)'[o3];[o3]scale=",
+		"-map [v] -map 4:a -c:a aac", "-shortest", "/o/a.captions.mp4"} {
 		if !strings.Contains(a, w) {
 			t.Errorf("captions: %s\nmissing %s", a, w)
 		}
 	}
-	if strings.Contains(a, "filter_complex_script") {
-		t.Error("ffmpeg 9 has no -filter_complex_script")
+	if strings.Contains(a, "filter_complex_script") || strings.Contains(a, "drawtext") || strings.Contains(a, "subtitles") {
+		t.Error("ffmpeg 9 has no -filter_complex_script; Homebrew's has no drawtext or subtitles")
+	}
+	// the band leaves the bottom 13% for the captions, whatever the frame
+	for _, wh := range [][2]int{{1440, 900}, {400, 800}, {820, 1180}, {1280, 720}} {
+		var sw, sh, x, y, W, H int
+		fmt.Sscanf(band(wh[0], wh[1]), "scale=%d:%d,pad=%d:%d:%d:%d", &sw, &sh, &W, &H, &x, &y)
+		if W != wh[0] || H != wh[1] || sw > W || x*2+sw != W || float64(H-y-sh) < .12*float64(H) || sh%2 != 0 || sw%2 != 0 {
+			t.Errorf("band %v: %s", wh, band(wh[0], wh[1]))
+		}
 	}
 	a = strings.Join(muxArgs("v.mp4", "v.wav", "o.mp4"), " ")
 	if !strings.Contains(a, "-i v.mp4 -i v.wav -map 0:v -map 1:a -c:v copy -c:a aac") || !strings.Contains(a, "-shortest") {
@@ -227,15 +312,19 @@ func TestMixWAV(t *testing.T) {
 
 func TestReadme(t *testing.T) {
 	dir := t.TempDir()
-	for _, f := range []string{"pay.mp4", "pay.video.mp4", "pay.srt", "pay.voice.m4a", "all.mp4", "chapters.txt", "report.html", ".card-pay.png"} {
+	for _, f := range []string{"pay.mp4", "pay.video.mp4", "pay.captions.mp4", "pay.srt", "pay.vtt", "pay.voice.m4a", "all.mp4", "all.video.mp4", "all.captions.mp4", "all.vtt",
+		"chapters.txt", "report.html", ".card-pay.png"} {
 		os.WriteFile(filepath.Join(dir, f), nil, 0o644)
 	}
 	script := filepath.Join(dir, "shop.md")
 	os.WriteFile(script, []byte("---\ntype: demo\n---\n## Pay\n"), 0o644)
 	rep := &Report{Script: "shop.md", Title: "Shop", Voice: "kokoro:af_heart", Passed: 1, Features: []FeatureResult{{Name: "Pay", What: "pays", Status: "passed", Seconds: 3, Video: "pay.mp4"}}}
 	md := Readme(rep, &Script{Path: script}, dir, "si demo run shop.md")
-	for _, w := range []string{"type: article", "| [all.mp4](all.mp4) | every feature", "| [pay.srt](pay.srt) | captions", `<video controls preload="metadata" src="pay.mp4"`,
-		"[captions](pay.srt)", "~~~~markdown\n---\ntype: demo", "- Voice: kokoro:af_heart", "`si demo run shop.md`"} {
+	for _, w := range []string{"type: article", "| [all.mp4](all.mp4) | every feature", "| [pay.srt](pay.srt) | captions",
+		"| [all.video.mp4](all.video.mp4) | every feature, the picture alone", "| [all.captions.mp4](all.captions.mp4) | every feature with the narration and the captions",
+		"| [pay.captions.mp4](pay.captions.mp4) | picture, narration and the captions in a band", "| [pay.video.mp4](pay.video.mp4) | the picture alone", "| [pay.vtt](pay.vtt) | the same captions as WebVTT",
+		`<video controls preload="metadata" src="pay.mp4" style="width:100%;height:auto"><track kind="captions" src="pay.vtt" srclang="en" label="Captions" default></video>`,
+		"[pay.mp4](pay.mp4) · [with captions](pay.captions.mp4) · [picture only](pay.video.mp4) · [captions](pay.srt)", "~~~~markdown\n---\ntype: demo", "- Voice: kokoro:af_heart", "`si demo run shop.md`"} {
 		if !strings.Contains(md, w) {
 			t.Errorf("README.md lacks %q:\n%s", w, md)
 		}

@@ -352,6 +352,7 @@ func (r *runner) termStep(st *Step) error {
 		if !st.Block {
 			return nil
 		}
+		defer r.waiting()()
 		if t.pipes {
 			t.send("echo \x1b]133;D;%errorlevel%\x07\r\n")
 		}

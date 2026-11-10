@@ -2,15 +2,17 @@ package webdemo
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 )
 
-// The video side of si demo run: screencast frames laid out at 30 fps,
-// captions as pictures over them, the voice mixed under, the features joined
-// into all.mp4 with a title card and a chapter each. Every ffmpeg call gets
+// The video side of si demo run: screencast frames laid out at 30 fps (long
+// waits fast-forwarded), the voice mixed under, in the captions variant the
+// picture shrunk over a band where the captions go, the features joined into
+// all.mp4 with a title card and a chapter each. Every ffmpeg call gets
 // -nostdin (it runs in a loop) and plain -filter_complex text (ffmpeg 9 has
 // no -filter_complex_script).
 
@@ -26,18 +28,20 @@ type frame struct {
 	At   float64
 }
 
-// sequence links frames into a 30 fps image sequence (seq00000.jpg …) of d
-// seconds: frame k shows the last frame that came at or before k/30 s. It
-// returns the ffmpeg input pattern and the number of frames.
-func sequence(frames []frame, d float64, dir string) (string, int, error) {
+// sequence links frames into a 30 fps image sequence (seq00000.jpg …) of the
+// d seconds of the take as the video plays them (fs: the stretches played
+// faster): output frame k shows the last frame that came at or before the
+// take time it maps to. It returns the ffmpeg input pattern and the number of
+// frames.
+func sequence(frames []frame, d float64, fs []fast, dir string) (string, int, error) {
 	if len(frames) == 0 {
 		return "", 0, fmt.Errorf("no frames were filmed")
 	}
 	sort.SliceStable(frames, func(i, j int) bool { return frames[i].At < frames[j].At })
-	n := max(1, int(d*fps+.5))
+	n := max(1, int(outT(fs, d)*fps+.5))
 	j := 0
 	for k := 0; k < n; k++ {
-		t := float64(k) / fps
+		t := inT(fs, float64(k)/fps)
 		for j+1 < len(frames) && frames[j+1].At <= t {
 			j++
 		}
@@ -55,6 +59,86 @@ func sequence(frames []frame, d float64, dir string) (string, int, error) {
 	return filepath.Join(dir, "seq%05d.jpg"), n, nil
 }
 
+// span is a stretch of a take, in seconds since it started.
+type span struct{ From, To float64 }
+
+// fast is a stretch of the take the video plays X times faster.
+type fast struct {
+	From, To float64
+	X        int
+}
+
+// ffMost is how long a fast-forwarded stretch lasts at most, once sped up.
+const ffMost = 2.0
+
+// fastForward picks the stretches of a d-second take to play faster: each
+// wait beyond its first after seconds, never under the narration (the voice
+// plays at its own pace over the picture at its own pace), sped up so it
+// lasts ffMost seconds at most. after <= 0: none.
+func fastForward(waits, spoken []span, after, d float64) []fast {
+	if after <= 0 {
+		return nil
+	}
+	var cand []span
+	for _, w := range waits {
+		if from, to := w.From+after, min(w.To, d); from < to {
+			cand = append(cand, span{from, to})
+		}
+	}
+	for _, v := range spoken {
+		var keep []span
+		for _, c := range cand {
+			if v.To <= c.From || v.From >= c.To {
+				keep = append(keep, c)
+				continue
+			}
+			if c.From < v.From {
+				keep = append(keep, span{c.From, v.From})
+			}
+			if v.To < c.To {
+				keep = append(keep, span{v.To, c.To})
+			}
+		}
+		cand = keep
+	}
+	sort.Slice(cand, func(i, j int) bool { return cand[i].From < cand[j].From })
+	var fs []fast
+	for _, c := range cand {
+		if x := int(math.Ceil((c.To - c.From) / ffMost)); x >= 2 {
+			fs = append(fs, fast{c.From, c.To, x})
+		}
+	}
+	return fs
+}
+
+// outT is where take time t falls in the video.
+func outT(fs []fast, t float64) float64 {
+	o := t
+	for _, f := range fs {
+		if t > f.From {
+			o -= (min(t, f.To) - f.From) * (1 - 1/float64(f.X))
+		}
+	}
+	return o
+}
+
+// inT is the take time video time o shows (outT's inverse).
+func inT(fs []fast, o float64) float64 {
+	shift := 0.0
+	for _, f := range fs {
+		start := f.From - shift
+		if o < start {
+			break
+		}
+		l := f.To - f.From
+		if o < start+l/float64(f.X) {
+			return f.From + (o-start)*float64(f.X)
+		}
+		shift += l - l/float64(f.X)
+	}
+	return o + shift
+}
+
 var ffHead = []string{"-nostdin", "-y", "-hide_banner", "-loglevel", "error"}
 
 func ff(a ...string) []string { return append(append([]string(nil), ffHead...), a...) }
@@ -67,31 +151,67 @@ var h264 = []string{"-c:v", "libx264", "-preset", "medium", "-crf", "20", "-r", 
 type caption struct {
 	Text     string
 	From, To float64
-	PNG      string // the picture burned in with --captions
 }
 
-// videoArgs encode the sequence into the silent clip; captions (pictures the
-// size of the frame, transparent around the words) go over it when given.
-func videoArgs(pattern string, caps []caption, out string) []string {
+// pic is a picture the size of the frame, transparent around what it draws
+// (a caption, a fast-forward badge), over the video from From to To.
+type pic struct {
+	PNG      string
+	From, To float64
+}
+
+// The captions variant: the picture shrinks to picScale of the frame, picTop
+// below its top edge, centered, on bandColor; the captions go in the band
+// under it (1 - picTop - picScale of the height).
+const (
+	picScale  = 0.85
+	picTop    = 0.02
+	bandColor = "0x111318"
+)
+
+func even(f float64) int { return int(f/2) * 2 }
+
+// band is the filter that lays a w×h picture out for the captions variant.
+func band(w, h int) string {
+	sh := even(float64(h) * picScale)
+	sw := even(float64(w) * float64(sh) / float64(h))
+	return fmt.Sprintf("scale=%d:%d,pad=%d:%d:%d:%d:color=%s", sw, sh, w, h, (w-sw)/2, even(float64(h)*picTop), bandColor)
+}
+
+// videoArgs encode the sequence of w×h frames with the badges over it. With
+// caps, the picture shrinks into the top of the frame (band), the captions go
+// under it and wav is the voice: the captions variant.
+func videoArgs(pattern string, w, h int, badges, caps []pic, wav, out string) []string {
 	a := ff("-framerate", fmt.Sprint(fps), "-i", pattern)
-	var pics []caption
-	for _, c := range caps {
-		if c.PNG != "" {
-			pics = append(pics, c)
-		}
-	}
-	if len(pics) == 0 {
+	if len(badges) == 0 && len(caps) == 0 && wav == "" {
 		return append(append(a, "-vf", evenSize), append(h264, out)...)
 	}
 	var g strings.Builder
-	last := "0:v"
-	for i, c := range pics {
-		a = append(a, "-i", c.PNG)
-		fmt.Fprintf(&g, "[%s][%d:v]overlay=0:0:enable='between(t,%.3f,%.3f)'[c%d];", last, i+1, c.From, c.To, i+1)
-		last = fmt.Sprintf("c%d", i+1)
+	last, in := "0:v", 1
+	lay := func(ps []pic) {
+		for _, p := range ps {
+			a = append(a, "-i", p.PNG)
+			fmt.Fprintf(&g, "[%s][%d:v]overlay=0:0:enable='between(t,%.3f,%.3f)'[o%d];", last, in, p.From, p.To, in)
+			last = fmt.Sprintf("o%d", in)
+			in++
+		}
+	}
+	lay(badges)
+	if len(caps) > 0 {
+		fmt.Fprintf(&g, "[%s]%s[band];", last, band(w, h))
+		last = "band"
+		lay(caps)
 	}
 	fmt.Fprintf(&g, "[%s]%s[v]", last, evenSize)
-	return append(append(a, "-filter_complex", g.String(), "-map", "[v]"), append(h264, out)...)
+	if wav != "" {
+		a = append(a, "-i", wav)
+	}
+	a = append(a, "-filter_complex", g.String(), "-map", "[v]")
+	if wav != "" {
+		a = append(append(a, "-map", fmt.Sprintf("%d:a", in)), aac...)
+		a = append(a, "-shortest")
+	}
+	return append(a, append(h264, out)...)
 }
 
 var aac = []string{"-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2"}
@@ -150,6 +270,18 @@ func chapters(parts []part) []chapter {
 		t += d
 	}
 	return cs
+}
+
+// joinCaptions puts each clip's captions on all.mp4's clock: after the
+// title card of its chapter.
+func joinCaptions(cs []chapter, caps [][]caption) []caption {
+	var all []caption
+	for i, c := range cs {
+		for _, k := range caps[i] {
+			all = append(all, caption{k.Text, c.Start + cardSeconds + k.From, c.Start + cardSeconds + k.To})
+		}
+	}
+	return all
 }
 
 // ffmetadata is the chapters as an FFMETADATA1 file.
@@ -250,13 +382,25 @@ func abs(n int) int {
 
 // srt is the captions as SubRip.
 func srt(cs []caption) string {
-	ts := func(t float64) string {
-		ms := int(t*1000 + .5)
-		return fmt.Sprintf("%02d:%02d:%02d,%03d", ms/3600000, ms/60000%60, ms/1000%60, ms%1000)
-	}
 	var b strings.Builder
 	for i, c := range cs {
-		fmt.Fprintf(&b, "%d\n%s --> %s\n%s\n\n", i+1, ts(c.From), ts(c.To), strings.Join(wrap(c.Text), "\n"))
+		fmt.Fprintf(&b, "%d\n%s --> %s\n%s\n\n", i+1, stamp(c.From, ","), stamp(c.To, ","), strings.Join(wrap(c.Text), "\n"))
 	}
 	return b.String()
+}
+
+// vtt is the captions as WebVTT (what a browser's <track> reads).
+func vtt(cs []caption) string {
+	var b strings.Builder
+	b.WriteString("WEBVTT\n\n")
+	for _, c := range cs {
+		fmt.Fprintf(&b, "%s --> %s\n%s\n\n", stamp(c.From, "."), stamp(c.To, "."), strings.Join(wrap(c.Text), "\n"))
+	}
+	return b.String()
+}
+
+// stamp is t as hh:mm:ss<sep>mmm.
+func stamp(t float64, sep string) string {
+	ms := int(t*1000 + .5)
+	return fmt.Sprintf("%02d:%02d:%02d%s%03d", ms/3600000, ms/60000%60, ms/1000%60, sep, ms%1000)
 }

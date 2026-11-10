@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
@@ -20,17 +21,25 @@ const demoUsage = `Usage:
         run a web demo script (type: demo with app:) in headless Chrome as a test: one line
         per step, report.html + report.json in demo-out/<script>/ (or -o dir), exit 1 on a failure;
         --junit also writes JUnit XML (one test case per feature) for CI
-  si demo run <script> [--feature "Name"] [--captions] [--voice engine:name] [--viewport V] [--junit report.xml] [-o dir]
+  si demo run <script> [--feature "Name"] [--voice engine:name] [--viewport V] [--junit report.xml] [-o dir]
+              [--no-captions] [--fast-forward 3s | --no-fast-forward]
         perform the same steps on film: a drawn cursor glides to each target, clicks ripple,
         note steps point at elements, fields typed from $VARs are blurred. Each Say: line is
-        voiced first and sets the pace. Writes, per feature, <feature>.mp4 (video + voice),
-        .video.mp4 (silent), .voice.wav/.m4a and .srt; all.mp4 (a title card per feature,
-        chapters inside), chapters.txt (YouTube), the report and README.md + README.html.
+        voiced first and sets the pace. Writes three videos per feature from one take:
+        <feature>.video.mp4 (picture only), <feature>.mp4 (picture + voice) and
+        <feature>.captions.mp4 (picture shrunk above a band with the captions, never over it);
+        .voice.wav/.m4a, .srt and .vtt; all.mp4, all.video.mp4, all.captions.mp4 (a title card
+        per feature, chapters inside), all.srt/.vtt, chapters.txt (YouTube), the report and
+        README.md + README.html.
         --voice   kokoro[:af_heart] (the default when installed), system[:name] (say, espeak-ng,
                   Windows voices), elevenlabs:<voice id> and openai[:alloy] (a key: si voice
                   login; voice-style: sets openai's tone); else voice: in front matter or si.conf.
                   si voice install kokoro sets Kokoro up; si voice say "line" tries a voice
-        --captions  burn the captions into the video (the .srt is always written)
+        --no-captions  skip the .captions.mp4 videos (faster; .srt and .vtt are still written).
+                  --captions is accepted and does nothing: captions are always made
+        --fast-forward 3s  a wait (run … · wait, wait for output, start … · wait for …) plays
+                  at speed this long, then faster (a ⏩ 6× badge, at most 2s); the narration
+                  never speeds up. --no-fast-forward keeps every wait at speed
         --viewport  phone (400x800), tablet (820x1180), desktop (1440x900) or WxH
   Both run start: programs first and stop them at the end (and on Ctrl-C); terminal "Name"
   steps open a real shell, filmed as a framed window (RULES.md §27, Terminals and programs).
@@ -42,14 +51,18 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 	fl := flag.NewFlagSet("si demo", flag.ContinueOnError)
 	fl.SetOutput(io.Discard)
 	var feature, junit, out, viewport, voice string
-	var help, captions bool
+	var help, noCaptions, noFF bool
+	fastFwd := 3 * time.Second
 	fl.StringVar(&feature, "feature", "", "")
 	fl.StringVar(&junit, "junit", "", "")
 	fl.StringVar(&out, "output", "", "")
 	fl.StringVar(&out, "o", "", "")
 	fl.StringVar(&viewport, "viewport", "", "")
 	fl.StringVar(&voice, "voice", "", "")
-	fl.BoolVar(&captions, "captions", false, "")
+	fl.Bool("captions", false, "") // captions are always made now (v2.38.0); kept so old commands still run
+	fl.BoolVar(&noCaptions, "no-captions", false, "")
+	fl.DurationVar(&fastFwd, "fast-forward", fastFwd, "")
+	fl.BoolVar(&noFF, "no-fast-forward", false, "")
 	fl.BoolVar(&help, "help", false, "")
 	fl.BoolVar(&help, "h", false, "")
 	var args []string
@@ -106,7 +119,10 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 		if s.Style == "" {
 			s.Style = cfg.VoiceStyle
 		}
-		o.Video, o.Voice, o.Captions = true, v, captions
+		o.Video, o.Voice, o.NoCaptions, o.FastForward = true, v, noCaptions, fastFwd
+		if noFF || fastFwd < 0 {
+			o.FastForward = 0
+		}
 		if o.FFmpeg = tools.Find("ffmpeg"); o.FFmpeg == "" {
 			fmt.Fprintf(stderr, "si: %s\n", tools.Need("ffmpeg", "si demo run"))
 			return exitProblems
