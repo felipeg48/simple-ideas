@@ -72,6 +72,10 @@ export const api = {
   gitShow: (path: string, rev: string) => call<{ text: string }>("GET", `git/show?path=${q(path)}&rev=${q(rev)}`),
   gitCommit: (message: string, paths: string[]) => call<{ commit: string }>("POST", "git/commit", { message, paths }),
   gitInit: () => call<{ repo: boolean }>("POST", "git/init", {}),
+  gitBranches: () => call<{ current: string; branches: string[]; upstream?: string; ahead?: string; behind?: string; remote: boolean }>("GET", "git/branches"),
+  gitBranch: (name: string, create: boolean) => call<{ current: string }>("POST", "git/branch", { name, create }),
+  gitPull: () => call<{ ok: boolean }>("POST", "git/pull", {}),
+  gitPush: () => call<{ ok: boolean }>("POST", "git/push", {}),
   codewinExport: (path: string, format: string, id: string) => call<{ code: number; output: string }>("POST", "codewin/export", { path, format, id }),
   starter: (kind: string, path: string, title: string) =>
     call<{ created: string[]; open: string }>("POST", "starter", { kind, path, title }),

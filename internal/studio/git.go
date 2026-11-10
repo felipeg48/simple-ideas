@@ -26,13 +26,20 @@ func (a *api) gitRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST "+apiPrefix+"git/restore", a.gitRestore)
 	mux.HandleFunc("POST "+apiPrefix+"git/commit", a.gitCommit)
 	mux.HandleFunc("POST "+apiPrefix+"git/init", a.gitInit)
+	mux.HandleFunc("GET "+apiPrefix+"git/branches", a.gitBranches)
+	mux.HandleFunc("POST "+apiPrefix+"git/branch", a.gitBranch)
+	mux.HandleFunc("POST "+apiPrefix+"git/pull", a.gitPull)
+	mux.HandleFunc("POST "+apiPrefix+"git/push", a.gitPush)
 }
 
 var revRE = regexp.MustCompile(`^[0-9a-f]{7,40}$`)
 
 // git runs git in the workspace; out is stdout, err carries stderr.
-func (a *api) git(args ...string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+func (a *api) git(args ...string) ([]byte, error) { return a.gitWait(20*time.Second, args...) }
+
+// gitWait is git with a time limit (pull and push talk to the network).
+func (a *api) gitWait(limit time.Duration, args ...string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), limit)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "git", append([]string{"-c", "core.quotepath=off", "-c", "color.ui=false"}, args...)...)
 	cmd.Dir = a.ws.Root
@@ -263,4 +270,111 @@ func (a *api) gitInit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"repo": true})
+}
+
+// branchRE is a branch name the Studio accepts (git check-ref-format has the
+// last word); never one that reads as an option.
+var branchRE = regexp.MustCompile(`^[A-Za-z0-9._][A-Za-z0-9._/-]{0,99}$`)
+
+// gitBranches is the local branches, the current one, and how far it is from
+// its upstream (ahead/behind; no upstream: "").
+func (a *api) gitBranches(w http.ResponseWriter, r *http.Request) {
+	if !a.inRepo() {
+		fail(w, http.StatusConflict, "not a git repository")
+		return
+	}
+	out, err := a.git("for-each-ref", "--format=%(refname:short)", "refs/heads/")
+	if err != nil {
+		fail(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	branches := []string{}
+	for _, b := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if b != "" {
+			branches = append(branches, b)
+		}
+	}
+	cur, _ := a.git("rev-parse", "--abbrev-ref", "HEAD")
+	res := map[string]any{"current": strings.TrimSpace(string(cur)), "branches": branches}
+	if up, err := a.git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"); err == nil {
+		res["upstream"] = strings.TrimSpace(string(up))
+		if c, err := a.git("rev-list", "--left-right", "--count", "@{u}...HEAD"); err == nil {
+			if f := strings.Fields(string(c)); len(f) == 2 {
+				res["behind"], res["ahead"] = f[0], f[1]
+			}
+		}
+	}
+	remotes, _ := a.git("remote")
+	res["remote"] = strings.TrimSpace(string(remotes)) != ""
+	writeJSON(w, http.StatusOK, res)
+}
+
+// gitBranch switches to a branch, or makes one from here and switches to it
+// (create). Uncommitted changes go along; git refuses when they would be lost.
+func (a *api) gitBranch(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Name   string `json:"name"`
+		Create bool   `json:"create"`
+	}
+	if !decode(w, r, &req) {
+		return
+	}
+	name := strings.TrimSpace(req.Name)
+	if !branchRE.MatchString(name) {
+		fail(w, http.StatusBadRequest, "a branch name is letters, digits, . _ / -")
+		return
+	}
+	if _, err := a.git("check-ref-format", "--branch", name); err != nil {
+		fail(w, http.StatusBadRequest, "not a valid branch name: "+name)
+		return
+	}
+	args := []string{"switch", "-q", name}
+	if req.Create {
+		args = []string{"switch", "-q", "-c", name}
+	}
+	if _, err := a.git(args...); err != nil {
+		fail(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"current": name})
+}
+
+// gitPull brings the upstream's commits in when that needs no merge
+// (--ff-only): the Studio never makes a merge behind the author's back.
+func (a *api) gitPull(w http.ResponseWriter, r *http.Request) {
+	if _, err := a.gitWait(90*time.Second, "pull", "--ff-only", "-q"); err != nil {
+		fail(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+// gitPush sends the branch to its upstream; a branch without one goes to
+// origin (or the only remote) and remembers it.
+func (a *api) gitPush(w http.ResponseWriter, r *http.Request) {
+	args := []string{"push", "-q"}
+	if _, err := a.git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"); err != nil {
+		out, _ := a.git("remote")
+		rs := strings.Fields(string(out))
+		remote := ""
+		for _, x := range rs {
+			if x == "origin" {
+				remote = x
+			}
+		}
+		if remote == "" && len(rs) == 1 {
+			remote = rs[0]
+		}
+		if remote == "" {
+			fail(w, http.StatusConflict, "this repository has no remote to push to (add one with git remote add origin <url>)")
+			return
+		}
+		cur, _ := a.git("rev-parse", "--abbrev-ref", "HEAD")
+		args = append(args, "-u", remote, strings.TrimSpace(string(cur)))
+	}
+	if _, err := a.gitWait(90*time.Second, args...); err != nil {
+		fail(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }

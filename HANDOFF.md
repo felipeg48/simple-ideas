@@ -5,6 +5,10 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.26.0: History branches, pull, push.** `git/branches`, `git/branch`
+  (`switch`/`switch -c`, `branchRE` + check-ref-format), `git/pull` (`--ff-only`),
+  `git/push` (`-u origin <branch>` the first time); branch bar in history.tsx;
+  `TestHistoryBranchesPullPush` against a bare remote.
 - **v2.25.0: Ghost and WordPress.** `internal/publish/blogs.go`: Ghost Admin
   API (`ghostToken`: HS256 JWT, kid, aud /admin/, 5 min; `?source=html`) and
   WordPress REST (basic auth, application password; tags not sent). The CLI

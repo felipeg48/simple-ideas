@@ -259,12 +259,23 @@ its text into the editor as one ordinary edit (⌘Z takes it back; autosave writ
 it). A folder that is not a repository offers **Start a repository here**
 (`git init`); without git on the computer the panel says so.
 
+The branch bar at the top switches branches (uncommitted changes go along;
+git refuses a switch that would lose them), **New branch** makes one from
+here and switches to it, and with a remote **Pull** (↓ how many commits
+behind) and **Push** (↑ how many ahead). Pull is fast-forward only: when your
+branch and the remote both moved, it says so and leaves the merge to you.
+Push sets the upstream the first time (to `origin`, or the only remote). They
+use your own git credentials (SSH agent or credential helper); si never asks
+for a password.
+
 The calls are `GET /api/git/status`, `git/diff?path=`, `git/log?path=`,
-`git/show?path=&rev=` and `POST git/commit`, `git/restore`, `git/init`
+`git/show?path=&rev=`, `git/branches` and `POST git/commit`, `git/restore`,
+`git/init`, `git/branch {name, create}`, `git/pull`, `git/push`
 (`internal/studio/git.go`): git runs with fixed arguments and no shell, in the
 workspace root; paths go through the same confinement as every file call
 (nothing outside the workspace, no dot paths) and after `--`; a revision must
-be a hex hash. Commits use your own git identity.
+be a hex hash; a branch name is checked by `git check-ref-format` and never
+starts with `-`. Commits use your own git identity.
 
 ## Review (comments from a review link)
 

@@ -1,7 +1,8 @@
 // History: the workspace's git, in the Studio. Changed files with their diff,
 // a commit of the ticked files, and the open file's history: any version can
-// be viewed and restored (as one undoable edit in the editor). Every call goes
-// through /api/git/* (confined paths, fixed git arguments).
+// be viewed and restored (as one undoable edit in the editor). The branch bar
+// switches or makes branches and pulls (fast-forward only) and pushes. Every
+// call goes through /api/git/* (confined paths, fixed git arguments).
 import { useEffect, useRef, useState } from "preact/hooks";
 import { api } from "./api";
 
@@ -19,6 +20,9 @@ export function History(p: { active: string | null; restore(path: string, text: 
   const [rev, setRev] = useState<{ c: GitCommit; text: string } | null>(null);
   const [note, setNote] = useState("");
   const [err, setErr] = useState("");
+  const [br, setBr] = useState<{ current: string; branches: string[]; upstream?: string; ahead?: string; behind?: string; remote: boolean } | null>(null);
+  const [newBr, setNewBr] = useState<string | null>(null);
+  const [busy, setBusy] = useState("");
   const box = useRef<HTMLDivElement>(null);
 
   const load = async () => {
@@ -29,7 +33,13 @@ export function History(p: { active: string | null; restore(path: string, text: 
       const first = pick && s.files?.some((f) => f.path === pick) ? pick : s.files?.[0]?.path ?? null;
       setPick(first);
       if (p.active) setLog((await api.gitLog(p.active)).commits);
+      if (s.repo) setBr(await api.gitBranches());
     } catch (e) { setErr((e as Error).message); }
+  };
+  const run = async (what: string, f: () => Promise<unknown>, done: string) => {
+    setErr(""); setNote(""); setBusy(what);
+    try { await f(); setNote(done); await load(); } catch (x) { setErr((x as Error).message); }
+    setBusy("");
   };
   useEffect(() => { void load(); box.current?.focus(); }, []);
   useEffect(() => {
@@ -71,6 +81,27 @@ export function History(p: { active: string | null; restore(path: string, text: 
         )}
         {st?.repo && (
           <>
+            {br && (
+              <div class="hist-branch">
+                <label>Branch <select class="field" value={br.current} disabled={!!busy}
+                  onChange={(e) => { const n = e.currentTarget.value; void run("switch", () => api.gitBranch(n, false), "On " + n + " now"); }}>
+                  {br.branches.map((b) => <option value={b}>{b}</option>)}
+                </select></label>
+                {newBr === null
+                  ? <button class="btn" type="button" onClick={() => setNewBr("")}>New branch</button>
+                  : <form class="hist-newbranch" onSubmit={(e) => { e.preventDefault(); const n = newBr.trim(); if (n) void run("create", () => api.gitBranch(n, true), "Made " + n + " and switched to it").then(() => setNewBr(null)); }}>
+                      <input class="field" aria-label="New branch name" placeholder="draft/new-ending" value={newBr} autoFocus
+                        onInput={(e) => setNewBr(e.currentTarget.value)} onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setNewBr(null); } }} />
+                      <button class="btn btn-pri" type="submit" disabled={!newBr.trim() || !!busy}>Make it</button>
+                    </form>}
+                {br.remote && <>
+                  <button class="btn" type="button" disabled={!!busy || !br.upstream} title={br.upstream ? "Bring in the commits of " + br.upstream + " (only when no merge is needed)" : "Push first: this branch is not on the remote yet"}
+                    onClick={() => void run("pull", api.gitPull, "Up to date with " + br.upstream)}>{busy === "pull" ? "Pulling…" : "Pull" + (br.behind && br.behind !== "0" ? " ↓" + br.behind : "")}</button>
+                  <button class="btn" type="button" disabled={!!busy} title={br.upstream ? "Send your commits to " + br.upstream : "Put this branch on the remote"}
+                    onClick={() => void run("push", api.gitPush, "Pushed " + br.current)}>{busy === "push" ? "Pushing…" : "Push" + (br.ahead && br.ahead !== "0" ? " ↑" + br.ahead : "")}</button>
+                </>}
+              </div>
+            )}
             <div class="hist-tabs" role="tablist">
               <button role="tab" aria-selected={tab === "changes"} class={tab === "changes" ? "on" : ""} onClick={() => setTab("changes")}>Changes ({st.files?.length ?? 0})</button>
               <button role="tab" aria-selected={tab === "file"} class={tab === "file" ? "on" : ""} disabled={!p.active} onClick={() => setTab("file")}>{p.active ? "History of " + p.active.split("/").pop() : "No open file"}</button>

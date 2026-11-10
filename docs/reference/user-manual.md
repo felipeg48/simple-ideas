@@ -307,7 +307,8 @@ si migrate <src>           # an AI migration prompt for an existing deck
   bullet or figure (click it to pin the note), and the Studio's
   Review panel shows them live, to reply and resolve; `--https` puts the
   link on HTTPS. **History** in the Studio
-  shows what changed, commits, and restores earlier versions (git).
+  shows what changed, commits, restores earlier versions, switches or makes
+  branches, and pulls and pushes (git).
 - **Film it:** `--mp4` on `si code`, on a mind map build (in 3D when the map
   is) and on a deck build (every slide and step, `--dwell 2` for a teaser)
   writes video that plays anywhere, with the transitions and morphs as they

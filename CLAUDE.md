@@ -325,7 +325,7 @@ pass. The steps that matter:
   links (`--review`, `internal/serve/review.go`, comments in `.si/review/`),
   `si check --budget`, map editor multi-select + copy/cut/paste, terminal
   Studio editing (`internal/tui/edit.go`). Paragraph pins and 3D map editing
-  are in (v2.5.0). Next: History branches and pull/push.
+  are in (v2.5.0). History branches and pull/push are in (v2.26.0).
 - More themes; `theme:` from a remote URL (the CSS-file path and the
   `si --export themes` gallery already exist).
 - SVG helpers: `data-move` along a path, counters that tick between states,

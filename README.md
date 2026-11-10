@@ -128,6 +128,8 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.26.0:** Studio History: switch or make branches, Pull (fast-forward
+  only) and Push with ahead/behind counts.
 - **v2.25.0:** `si publish --to ghost` (Admin API, a JWT from your Admin API
   key) and `--to wordpress` (REST API, an application password): the article
   as HTML, a draft unless `--public`.
