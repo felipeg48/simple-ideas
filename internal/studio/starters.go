@@ -18,19 +18,26 @@ import (
 )
 
 // Starters are the small files "New…" writes: one file for a deck, article,
-// lab, demo, site page or mind map; a folder for a guide, book or site. {{title}},
+// lab, demo, site page or mind map; a folder for a guide, book or site (and
+// the website kinds: resume, portfolio, landing). {{title}},
 // {{date}} and {{year}} are filled in.
 //
 //go:embed all:starters
 var startersFS embed.FS
 
-// starterFolder reports whether a kind is a folder of files.
-func starterFolder(kind string) bool { return kind == "guide" || kind == "book" || kind == "site" }
+// StarterFolder reports whether a kind is a folder of files.
+func StarterFolder(kind string) bool {
+	switch kind {
+	case "guide", "book", "site", "resume", "portfolio", "landing":
+		return true
+	}
+	return false
+}
 
 // starterFiles lists a kind's files: starter path → path relative to the target.
 func starterFiles(kind string) map[string]string {
 	out := map[string]string{}
-	if !starterFolder(kind) {
+	if !StarterFolder(kind) {
 		if _, err := fs.Stat(startersFS, "starters/"+kind+".md"); err == nil {
 			out["starters/"+kind+".md"] = ""
 		}
@@ -49,10 +56,10 @@ func starterFiles(kind string) map[string]string {
 var ErrStarterExists = errors.New("exists")
 
 // StarterKinds are the kinds WriteStarter knows.
-var StarterKinds = []string{"deck", "article", "lab", "demo", "page", "guide", "book", "site", "mindmap", "mindmap3d", "codeshow"}
+var StarterKinds = []string{"deck", "article", "lab", "demo", "page", "guide", "book", "site", "resume", "portfolio", "landing", "mindmap", "mindmap3d", "codeshow"}
 
 // WriteStarter writes the starter for kind at abs (a .md file, or a folder for
-// guide, book and site), never overwriting. A page or folder made inside a
+// guide, book, site and the website kinds), never overwriting. A page or folder made inside a
 // guide, book or site (found from abs up to root) joins its menu. It returns
 // the files written, the file to open, and the nav file it linked into ("").
 func WriteStarter(kind, abs, title, root string) (created []string, open, linked string, err error) {
@@ -100,20 +107,20 @@ func WriteStarter(kind, abs, title, root string) (created []string, open, linked
 		created = append(created, t)
 	}
 	open = abs // the file to open: the file itself, or the folder's first page
-	if starterFolder(kind) {
+	if StarterFolder(kind) {
 		open = filepath.Join(abs, "index.md")
 		if kind == "book" {
 			open = filepath.Join(abs, "preface.md")
 		}
 	}
 	probe := abs // FindGuide looks from the folder of the file it is given
-	if starterFolder(kind) {
+	if StarterFolder(kind) {
 		probe = filepath.Join(filepath.Dir(abs), "_")
 	}
 	if g := deck.FindGuide(probe, root); g != nil {
 		rel, _ := filepath.Rel(g.Dir, abs)
 		rel = filepath.ToSlash(rel)
-		if starterFolder(kind) {
+		if StarterFolder(kind) {
 			rel += "/"
 		}
 		nav := navPath(g)
@@ -183,7 +190,7 @@ func (a *api) gallery(w http.ResponseWriter, r *http.Request) {
 	}
 	defer os.RemoveAll(tmp)
 	target := filepath.Join(tmp, "preview")
-	if !starterFolder(kind) {
+	if !StarterFolder(kind) {
 		target += ".md"
 	}
 	_, open, _, err := WriteStarter(kind, target, "Your title here", tmp)
@@ -192,7 +199,7 @@ func (a *api) gallery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	def := deck.Meta{Type: "deck"}
-	if starterFolder(kind) {
+	if StarterFolder(kind) {
 		def.Type = "page"
 	}
 	d, err := deck.ParseWith(open, def)

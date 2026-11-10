@@ -128,6 +128,10 @@ html{font-size:clamp(100%,.85rem + .3vw,150%);-webkit-text-size-adjust:100%;scro
   .si-table-wrap :is(th,td) code{overflow-wrap:anywhere}
   .si-doc-body pre{white-space:pre-wrap;overflow-wrap:anywhere}
   .si-codeblock,.si-callout,.si-image,tr{break-inside:avoid}
+  /* a site page on paper: no navigator or buttons, a short table kept whole (a résumé) */
+  .si-site-nav,.si-page-cta{display:none!important}
+  .si-table-wrap:not(:has(tr:nth-child(13))){break-inside:avoid}
+  .si-doc-body>ul,.si-doc-body>h3+p{break-before:avoid}
   .si-doc-body h2,.si-doc-body h3{break-after:avoid}
 }
 
@@ -453,6 +457,8 @@ pre.si-code :is(.si-diff-hunk,.si-diff-meta) .si-ln{display:none}
 .si-site-version{align-self:center;margin-inline-start:.5rem;padding:.1rem .45rem;border-radius:99px;border:1px solid var(--si-line);font:600 .72rem/1.4 var(--si-font-mono);color:var(--si-muted)!important;text-decoration:none;white-space:nowrap}
 @media (max-width:40em){.si-site-version{display:none}}
 .si-site-cta{padding:.55rem .95rem;border-radius:.5rem;background:var(--si-accent);color:var(--si-on-accent)!important;font-weight:650;font-size:.9rem;text-decoration:none;white-space:nowrap}
+.si-page-cta{margin:1.6rem 0 2rem}
+.si-page-cta .si-site-cta{display:inline-block;padding:.8em 1.5em;font-size:1.05rem;white-space:normal}
 .si-site-menu>summary{list-style:none;cursor:pointer;padding:.4rem .75rem;border:1px solid var(--si-line);border-radius:.45rem;font-size:.9rem}
 .si-site-menu>summary::-webkit-details-marker{display:none}
 .si-doc:has(>.si-site-nav) .si-doc-layout{margin-top:clamp(1.6rem,4vw,3rem)}

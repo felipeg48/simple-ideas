@@ -509,6 +509,9 @@ var starterLabels = []struct{ kind, label, what string }{
 	{"guide", "Guide", "a folder of pages in order, with a sidebar"},
 	{"book", "Book", "chapters, numbered sections, an index"},
 	{"site", "Site", "a folder of pages with a menu"},
+	{"resume", "Résumé", "a website: one printable résumé, projects, about"},
+	{"portfolio", "Portfolio", "a website: project cards, a case study each, about"},
+	{"landing", "Landing page", "a website: a hero, features, questions, a QR code"},
 	{"page", "Site page", "one plain page for a site"},
 	{"lab", "Lab", "hands-on steps with commands and output"},
 	{"demo", "Demo script", "what the presenter says and runs"},
@@ -545,7 +548,7 @@ func (m *studioModel) createStarter(name string) tea.Cmd {
 		return nil
 	}
 	rel := filepath.ToSlash(filepath.Join(dir, slug))
-	folder := m.newKind == "guide" || m.newKind == "book" || m.newKind == "site"
+	folder := studio.StarterFolder(m.newKind)
 	if !folder {
 		rel += ".md"
 	}

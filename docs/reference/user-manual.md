@@ -295,6 +295,7 @@ si build talk.md --handout # handouts/talk.pdf: slides only; =lines, =points, =n
 si check <dir>             # validate; exit 1 on a problem
 si new <name>              # scaffold a deck (the showcase, every rule)
 si new <name> --type article   # a small starter: deck, article, guide, book, site, page, lab, demo, mindmap, mindmap3d, codeshow
+si new <name> --type website --kind resume   # a website made for one job: resume, portfolio, landing
 si publish talk.md --to linkedin   # a dry run of the post; --yes sends it (also devto, hashnode, ghost, wordpress)
 si code show.md --mp4      # a code show as video (si build map.md --mp4: a mind map's Play; needs ffmpeg)
 si fix <dir> [--write]     # raw-HTML components (hl, pill, lockup, cards) into si syntax

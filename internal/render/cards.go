@@ -63,7 +63,7 @@ func (dr *deckRenderer) cardsPass(doc ast.Node, src []byte, sc *slideCtx) {
 				}
 			}
 			if h, ok := k.(*ast.Heading); ok && h.Level == 3 {
-				card = dr.cardOf(textOf(h, src))
+				card = dr.cardOf(strings.TrimSpace(blockText(h, src))) // the source, so a title can be a link
 				grid.AppendChild(grid, card)
 				doc.RemoveChild(doc, k)
 			} else if card != nil {

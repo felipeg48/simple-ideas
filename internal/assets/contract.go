@@ -256,6 +256,7 @@ var Hooks = []Hook{
 	{`.si-site-drop`, "site: the dropdown (or mega panel) of a menu section"},
 	{`.si-site-tools`, "site: search, light / dark and the call to action"},
 	{`.si-site-cta`, "site: the call to action (cta: in _site.md)"},
+	{`.si-page-cta`, "site page: the button a page's own cta: puts under its title"},
 	{`.si-site-version`, "site: the version badge beside the logo (version: in _site.md)"},
 	{`.si-alert`, "plugin: an alert band (data-kind info, ok, warn, crit; data-until)"},
 	{`.si-alert-x`, "plugin: the dismiss button of an alert"},

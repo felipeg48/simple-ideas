@@ -18,6 +18,35 @@ si build mysite -o out/          # the site as HTML, ready to upload
 
 ![A website built with si: the top bar, the home page with an announcement and a badge](img/site-home.jpg)
 
+## Start from a kind
+
+Three starters come with real content, ready to replace with yours:
+
+```bash
+si new marta --type website --kind resume       # or simply --type resume
+si new tomas --type website --kind portfolio
+si new dockside --type website --kind landing
+```
+
+**Résumé.** One page with your name, contact lines, experience, skills and
+education that prints cleanly on A4 or Letter, plus a projects page and an
+about page.
+
+![The résumé starter: a name, a lede, contact lines, an open-to-work badge and the experience list](img/website/resume.jpg)
+
+**Portfolio.** A home with a card per project, each with a picture and a
+linked title, a case study per project, and an about page.
+
+![The portfolio starter in dark mode: three project cards with pictures](img/website/portfolio.jpg)
+
+**Landing page.** A hero with its own button (a page's `cta:`), features as
+cards, results as a table, questions as an accordion, a QR code, a demo
+dialog and a pricing page.
+
+![The landing starter: a hero with a trial button, then three feature cards](img/website/landing.jpg)
+
+The Studio's **New…** dialog and start gallery offer the same three.
+
 ## The folder
 
 ```
