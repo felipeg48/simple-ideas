@@ -5,6 +5,20 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.18.0: Q&A (audience mode phase 3).** `serve/qa.go`: `ask` (tidy text ≤ 500,
+  name ≤ 40, one per voter per 20 s, 200 open max), `set` (open, shown,
+  answered, hidden; one shown at a time), `questions` messages (presenter pages
+  only: `audienceView` drops them), `/_si/audience/ask` (audience mux),
+  `/_si/qa` (loopback `localOnly` + presenter mux), `SaveAudience` on exit →
+  `.si/audience/<talk>-<date-time>.json`. Teleprompter: Q&A tab (`3`, hidden
+  until a question), Show on screen / Off screen / Answered / Hide. Deck:
+  forwards the list over BroadcastChannel to a local teleprompter window,
+  `.si-qa-show` band, Esc → open. Phone: Ask a question sheet. Tests: `TestQA`;
+  live: ask → tab "Q&A (1)" → Show → band on the slide → Esc clears; phones
+  never get the question; a second question in 20 s is refused; the saved file.
+  The founder asked how a remote (Zoom) audience could join: see the answer in
+  the session (a tunnel now, a relay on simple-ideas.org later).
+
 - **v2.17.0: live polls (audience mode phase 2).** `<!-- poll: id · a · b … ·
   multiple -->` (`render/poll.go`; slides and documents). `serve/poll.go`:
   `POST /_si/audience/vote` on the audience mux only; ballots per poll per

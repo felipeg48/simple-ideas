@@ -88,7 +88,11 @@ bars grow on your screen as they vote:
 <!-- poll: first-habit · Follow one order end to end · Retry once · Lend people -->
 ```
 
-Questions from the room come next.
+Questions come from the room too: every phone has an *Ask a question*
+button. They land in a **Q&A** tab on your teleprompter, never on the other
+phones; *Show on screen* puts one at the foot of your slide (Esc takes it
+off). When you stop `si play`, the votes and questions are saved beside your
+talk in `.si/audience/`.
 
 ## Draw with the cursor
 

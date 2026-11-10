@@ -296,3 +296,59 @@ func TestPolls(t *testing.T) {
 		t.Errorf("the audience gets poll counts: %s", got)
 	}
 }
+
+// Questions: tidy text, one per phone per 20 s, one shown at a time; the
+// audience never receives them and cannot change their state.
+func TestQA(t *testing.T) {
+	q := newQA()
+	now := time.Now()
+	msg, code := q.ask("  Why one retry?\x07  ", "Ana", "phoneaaaaaa1", now)
+	if code != http.StatusNoContent || !strings.Contains(string(msg), `"text":"Why one retry? "`) && !strings.Contains(string(msg), `"text":"Why one retry?"`) {
+		t.Fatalf("ask: %d %s", code, msg)
+	}
+	if _, code := q.ask("again", "", "phoneaaaaaa1", now.Add(5*time.Second)); code != http.StatusTooManyRequests {
+		t.Errorf("a second question 5 s later: %d, want 429", code)
+	}
+	if _, code := q.ask("   ", "", "phonebbbbbb2", now); code != http.StatusBadRequest {
+		t.Errorf("an empty question: %d", code)
+	}
+	if _, code := q.ask(strings.Repeat("x", 900), "", "phonebbbbbb2", now); code != http.StatusNoContent || len([]rune(q.list[1].Text)) != maxQuestion {
+		t.Errorf("a long question is cut to %d characters", maxQuestion)
+	}
+	q.set(1, "shown")
+	msg, _ = q.set(2, "shown")
+	if q.list[0].State != "open" || q.list[1].State != "shown" {
+		t.Errorf("one question shown at a time: %s", msg)
+	}
+	if _, ok := q.set(1, "deleted"); ok {
+		t.Error("an unknown state must be refused")
+	}
+	if audienceView(q.message()) != nil {
+		t.Error("the audience must never receive the questions")
+	}
+	// over HTTP: the audience key may ask, never set a state
+	s, _ := remoteServer(t)
+	s.AudienceKey = "aud"
+	ts := httptest.NewServer(s.RemoteHandler("presenter", []string{"tp"}))
+	defer ts.Close()
+	post := func(path, body string) int {
+		res, err := http.Post(ts.URL+path, "application/json", strings.NewReader(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		res.Body.Close()
+		return res.StatusCode
+	}
+	if c := post("/_si/audience/ask?k=aud", `{"text":"How many pickers?","voter":"phonecccccc3"}`); c != http.StatusNoContent {
+		t.Errorf("audience ask: %d", c)
+	}
+	if c := post("/_si/qa?k=aud", `{"id":1,"state":"hidden"}`); c < 400 {
+		t.Errorf("the audience key must not set a question's state: %d", c)
+	}
+	if c := post("/_si/qa?k=presenter", `{"id":1,"state":"answered"}`); c != http.StatusNoContent {
+		t.Errorf("the presenter key sets a state: %d", c)
+	}
+	if c := post("/_si/audience/ask?k=presenter", `{"text":"x","voter":"phonecccccc3"}`); c < 400 {
+		t.Errorf("asking is the audience's route only: %d", c)
+	}
+}

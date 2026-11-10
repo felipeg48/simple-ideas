@@ -187,6 +187,7 @@ func (s *Server) RemoteHandler(key string, roles []string) http.Handler {
 	mux.HandleFunc("/_si/events", s.events)
 	mux.HandleFunc("GET /_si/remote/events", s.relay.events)
 	mux.HandleFunc("POST /_si/remote/send", s.relay.send)
+	mux.HandleFunc("POST /_si/qa", s.qaState) // a phone teleprompter's Q&A buttons (presenter key)
 	static := http.FileServer(http.Dir(s.dir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path
@@ -271,6 +272,7 @@ func (s *Server) audienceHandler() http.Handler {
 	mux.HandleFunc("/_si/events", s.events)
 	mux.HandleFunc("GET /_si/remote/events", s.relay.audienceEvents)
 	mux.HandleFunc("POST /_si/audience/vote", s.vote)
+	mux.HandleFunc("POST /_si/audience/ask", s.ask)
 	static := http.FileServer(http.Dir(s.dir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path

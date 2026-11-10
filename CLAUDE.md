@@ -201,7 +201,9 @@ pass. The steps that matter:
   key, `audienceHandler` (deck with `NoSpeakerText`, `audienceView`-filtered
   stream, no sends), runtime role `audience`, `<!-- qr: audience -->`.
   v2.17.0: polls (`render/poll.go`, `serve/poll.go`, `/_si/audience/vote`,
-  `poll` relay messages). Next: Q&A (phase 3); spec `2026-11-09-audience-mode.md`.
+  `poll` relay messages). v2.18.0: Q&A (`serve/qa.go`, `/_si/audience/ask`,
+  `/_si/qa`, teleprompter Q&A tab, `.si-qa-show`, results saved on exit).
+  Next: a way for remote audiences (Zoom) to reach it.
 - **Themes** (v2.15.0): six new built-ins (slate, twilight, forest, sunrise,
   neon, newsprint; `TestNewThemesContrast`: WCAG AA in light and dark); the
   docs site's Themes page is generated from `assets.Themes`

@@ -107,6 +107,7 @@ var Tokens = []Token{
 	// polls (<!-- poll: -->, si play --audience)
 	{"--si-poll-bar", "polls: the bar of an option's share of the votes", "the accent at 30 %"},
 	{"--si-poll-track", "polls: the row behind each option", "var(--si-surface-2)"},
+	{"--si-qa-bg", "Q&A: the band of the question shown over the slide", "var(--si-surface)"},
 	// QR codes (<!-- qr: -->): dark on light in every theme, since an inverted code reads badly
 	{"--si-qr-fg", "QR codes: the modules", "#111"},
 	{"--si-qr-bg", "QR codes: the background and quiet zone", "#fff"},
@@ -292,6 +293,9 @@ var Hooks = []Hook{
 	{`.si-poll-n`, "poll: the option's vote count"},
 	{`.si-poll-bar`, "poll: the bar behind the option"},
 	{`.si-poll-total`, "poll: the total line"},
+	{`.si-qa-show`, "Q&A: the question the presenter shows over the slide (si play --audience)"},
+	{`.si-qa-text`, "Q&A: the question's text"},
+	{`.si-qa-name`, "Q&A: who asked (when they gave a name)"},
 	{`.si-qr-audience`, "qr: audience: the live audience code (si play --audience), hidden elsewhere"},
 	{`.si-qr-slot`, "qr: audience: where si play puts the code"},
 	{`.si-lk-img`, "logo: the logo image"},

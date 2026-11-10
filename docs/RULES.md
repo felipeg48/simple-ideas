@@ -528,6 +528,15 @@ sees the results after voting. Late phones get the current counts. Without
 `si play --audience` (a built deck, a document) the poll is the plain list of
 its options. Votes are kept in memory for the run.
 
+**Questions from the room.** Under `--audience` every phone has an *Ask a
+question* button (500 characters, an optional name, one question per phone
+every 20 seconds). Questions go to you only, never to the other phones: a
+**Q&A** tab appears in the teleprompter (key `3`), newest first, each with
+*Show on screen* (a band at the foot of the projected slide; Esc on the deck
+takes it off), *Answered* and *Hide*. When `si play` stops, the poll counts
+and the questions are saved beside the talk in
+`.si/audience/<talk>-<date-time>.json` (keep `.si/` out of git).
+
 The code appears only under `si play --audience` (in a built deck the figure
 stays hidden). It works with `--remote` (your roles and theirs, two keys) and
 `--https`, and `q` shows the audience code with the others.

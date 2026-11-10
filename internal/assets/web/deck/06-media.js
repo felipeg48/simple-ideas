@@ -135,6 +135,61 @@
     });
   }
 
+  /* an audience phone asks: a button, then a sheet with the question and a name */
+  if (role === 'audience') {
+    var askBtn = document.createElement('button');
+    askBtn.type = 'button'; askBtn.id = 'si-ask-btn'; askBtn.textContent = 'Ask a question';
+    askBtn.setAttribute('style', 'position:fixed;left:max(.8rem,env(safe-area-inset-left));bottom:max(.8rem,env(safe-area-inset-bottom));z-index:30;font:600 1rem var(--si-font-body);color:var(--si-on-accent);background:var(--si-accent);border:0;border-radius:2em;padding:.7em 1.1em;box-shadow:var(--si-shadow)');
+    var sheet = document.createElement('form');
+    sheet.id = 'si-ask'; sheet.hidden = true;
+    sheet.setAttribute('style', 'position:fixed;inset:auto 0 0 0;z-index:31;display:grid;gap:.6rem;padding:1rem max(1rem,env(safe-area-inset-right)) max(1rem,env(safe-area-inset-bottom)) max(1rem,env(safe-area-inset-left));background:var(--si-surface);color:var(--si-fg);border-top:1px solid var(--si-line);box-shadow:0 -.5em 2em rgb(0 0 0 / .2);font:1rem var(--si-font-body)');
+    sheet.innerHTML = '<label style="font-weight:600" for="si-ask-q">Your question</label>' +
+      '<textarea id="si-ask-q" maxlength="500" rows="3" required style="font:inherit;padding:.6em;border:1px solid var(--si-line);border-radius:.5em;background:var(--si-bg);color:var(--si-fg)"></textarea>' +
+      '<input id="si-ask-name" maxlength="40" placeholder="Your name (optional)" style="font:inherit;padding:.6em;border:1px solid var(--si-line);border-radius:.5em;background:var(--si-bg);color:var(--si-fg)">' +
+      '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button type="button" data-ask="cancel" style="font:inherit;padding:.6em 1em;border:1px solid var(--si-line);border-radius:.5em;background:var(--si-bg);color:var(--si-fg)">Cancel</button>' +
+      '<button type="submit" style="font:600 1rem var(--si-font-body);padding:.6em 1.2em;border:0;border-radius:.5em;background:var(--si-accent);color:var(--si-on-accent)">Send</button></div>' +
+      '<p data-ask="msg" role="status" style="margin:0;color:var(--si-muted);min-height:1.2em"></p>';
+    document.body.appendChild(askBtn); document.body.appendChild(sheet);
+    var askMsg = sheet.querySelector('[data-ask="msg"]');
+    askBtn.addEventListener('click', function () { sheet.hidden = false; askBtn.hidden = true; askMsg.textContent = ''; sheet.querySelector('textarea').focus(); });
+    sheet.querySelector('[data-ask="cancel"]').addEventListener('click', function () { sheet.hidden = true; askBtn.hidden = false; });
+    sheet.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var q = sheet.querySelector('textarea'), name = sheet.querySelector('#si-ask-name');
+      fetch('/_si/audience/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: q.value, name: name.value, voter: voter }) })
+        .then(function (r) {
+          if (r.ok) { q.value = ''; askMsg.textContent = 'Sent. Thank you!'; setTimeout(function () { sheet.hidden = true; askBtn.hidden = false; }, 1200); }
+          else askMsg.textContent = r.status === 429 ? 'One question every 20 seconds: try again in a moment.' : 'Could not send it.';
+        }).catch(function () { askMsg.textContent = 'Could not send it.'; });
+    });
+  }
+
+  /* Q&A (si play --audience): the question the presenter shows, over the slide;
+     the deck passes the list on to a teleprompter window on this computer */
+  var qaShown = null, qaBox = null;
+  function qaIn(m) {
+    if (role) return;
+    chans.forEach(function (c) { if (typeof BroadcastChannel !== 'undefined' && c instanceof BroadcastChannel) try { c.postMessage(m); } catch (e) {} });
+    var shown = null;
+    (m.list || []).forEach(function (q) { if (q.state === 'shown') shown = q; });
+    qaShown = shown;
+    if (!qaBox) {
+      qaBox = document.createElement('aside'); qaBox.className = 'si-qa-show'; qaBox.setAttribute('aria-live', 'polite');
+      qaBox.innerHTML = '<p class="si-qa-text"></p><span class="si-qa-name"></span>';
+      document.body.appendChild(qaBox);
+    }
+    qaBox.hidden = !shown;
+    if (shown) {
+      qaBox.querySelector('.si-qa-text').textContent = shown.text;
+      qaBox.querySelector('.si-qa-name').textContent = shown.name || '';
+    }
+  }
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && qaShown && !role) {
+      try { fetch('/_si/qa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: qaShown.id, state: 'open' }) }); } catch (x) {}
+    }
+  });
+
   /* si build --handout prints the page with ?si-handout=slides|lines|points|notes
      (and ?si-paper=letter): light, every slide in its final state */
   var handout = /[?&]si-handout=(slides|lines|points|notes)(?:&|$)/.exec(location.search);

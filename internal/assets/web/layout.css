@@ -119,6 +119,12 @@ img,svg,video{max-width:100%}
 .si-poll-bar{position:absolute;inset:0 auto 0 0;width:calc(var(--_share,0) * 1%);z-index:-1;transition:width .6s ease}
 .si-poll-n{font-variant-numeric:tabular-nums;font-weight:700}
 .si-poll-total{margin-top:.5em}
+/* Q&A: the question the presenter shows, a band at the foot of the slide */
+.si-qa-show{position:fixed;left:50%;bottom:max(3.2rem,6vh);transform:translateX(-50%);z-index:24;width:min(92vw,52rem);padding:.9em 1.2em;box-sizing:border-box}
+.si-qa-show[hidden]{display:none}
+.si-qa-text{margin:0;font-size:clamp(1rem,2.2vw,1.7rem);line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere}
+.si-qa-name{display:block;margin-top:.35em;font-size:clamp(.8rem,1.3vw,1rem)}
+.si-qa-name:empty{display:none}
 .si-poll:not([data-live]) :is(.si-poll-n,.si-poll-bar,.si-poll-total){display:none} /* a plain list without si play --audience */
 :root[data-si-role="audience"] .si-poll-opt{cursor:pointer;touch-action:manipulation}
 :root[data-si-role="audience"] .si-poll:not([data-voted]) :is(.si-poll-n,.si-poll-bar,.si-poll-total){visibility:hidden}

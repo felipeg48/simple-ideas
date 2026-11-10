@@ -86,6 +86,20 @@ every page through the relay (kept as `poll:<id>` for late joiners);
 `audienceView` passes it. Counts and bars show only where a room can vote
 (`data-live`: an audience phone, or the deck of `si play --audience`).
 
+### Questions
+
+`POST /_si/audience/ask {text, name, voter}` (audience mux; `serve/qa.go`):
+text tidied and cut to 500 characters, name to 40, one question per voter
+per 20 s, 200 open questions at most. The list goes out as `{type:
+questions, list}` (kept as `questions` for late presenter pages);
+`audienceView` drops it, so phones never see it. `POST /_si/qa {id, state}`
+(open, shown, answered, hidden; one shown at a time) is on the loopback
+handler (`localOnly`) and the presenter mux, never the audience's. The deck
+passes the list on over BroadcastChannel to a teleprompter window on the
+same computer, shows the `shown` one as `.si-qa-show`, and Esc sets it back
+to open. On exit `SaveAudience` writes the counts and questions to
+`<served dir>/.si/audience/<talk>-<date-time>.json`.
+
 ## Keeping the device awake
 
 `RelayJS` also asks for a screen wake lock (`navigator.wakeLock`) on a role

@@ -47,7 +47,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "2.17.0"
+const version = "2.18.0"
 
 // Exit codes.
 const (
@@ -1061,6 +1061,16 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 	}()
 	if o.open {
 		openBrowser(url)
+	}
+	if o.audience { // the room's poll counts and questions, kept beside the talk when it ends
+		defer func() {
+			name := strings.TrimSuffix(filepath.Base(src), filepath.Ext(src))
+			if p, err := srv.SaveAudience(name, time.Now()); err != nil {
+				fmt.Fprintf(stderr, "si: saving the audience's polls and questions: %v\n", err)
+			} else if p != "" {
+				fmt.Fprintf(stdout, "si: the audience's polls and questions: %s\n", p)
+			}
+		}()
 	}
 	if err := hs.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		fmt.Fprintf(stderr, "si: %v\n", err)
