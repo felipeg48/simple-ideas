@@ -353,6 +353,38 @@ Points:
 
 ---
 
+## Web demos with a terminal
+
+```markdown
+start: ./bin/broker --port 5672 · wait for "ready"
+
+Say: First we send one message.
+- terminal "Client" · backdrop=ocean
+- run "./bin/send orders hello" · wait
+- expect output "sent 1 message"
+- browser
+- expect text "1 message waiting"
+```
+
+- `start:` programs in the background for the run; `start "…" as load` for a feature; `stop load`
+- `terminal`, `run`, `expect output`, `browser`: the shell filmed as a framed window
+- `note "…" at line "ready"`, `press ctrl+c`, `expect load exited 0`
+
+Notes: (1 min)
+Many apps are a terminal and a web page together. The script starts the
+broker before the first feature and waits until it is ready. Then a terminal
+opens on screen, the command is typed for real, and its output is checked.
+One more line goes back to the browser, where the console shows the message.
+When the run ends, everything it started is stopped. [CLICK]
+
+Points:
+- Three lifetimes: the run (`start:`, `stop:`), a feature (`start` step), some blocks (`start` … `stop`)
+- Programs stop by process group: SIGTERM, SIGKILL after 5 s, also on Ctrl-C
+- A failure shows the terminal's last 40 lines in the report and JUnit
+- Example: `examples/webdemo/broker.md` (a tiny Go broker, `go run`)
+
+---
+
 ## The CLI
 
 ```bash

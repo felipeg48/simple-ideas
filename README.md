@@ -194,7 +194,9 @@ SVG or PDF with your logo in the middle, a Wi-Fi network or a contact.
 One Markdown script performs each feature of your web app the way a person
 would. `si demo test` checks it (a report, JUnit for CI); `si demo run` films
 it with a cursor, callouts and a narrated voice: one video per feature, one
-with chapters, captions. [Web demos →](https://simple-ideas.org/features/webdemos.html)
+with chapters, captions. It can start your server in the background and type
+commands into a real terminal on camera, check their output, then switch to
+the browser. [Web demos →](https://simple-ideas.org/features/webdemos.html)
 
 ![A frame of a web demo video](docs/site/features/img/webdemos/film.jpg)
 

@@ -2841,5 +2841,112 @@ pronounce: kubectl = cube control; YAML = yammel
 
 `si demo run` needs Chrome and ffmpeg, and the voice's engine (`si doctor`).
 
-Example: `examples/webdemo/` (a small shop, `shop.md`, and `broken.md`, whose
-coupon does not work).
+### Terminals and programs
+
+Many apps are a terminal and a web page together: start a broker, send it a
+message, see it in the console. A web demo can start programs in the
+background, type commands into a terminal the viewer sees, check what they
+print, and switch between the terminal and the browser.
+
+```markdown
+---
+type: demo
+title: A message broker, from the terminal to its console
+app: http://127.0.0.1:7310
+shell: bash
+start: go run ./broker serve --port 7310 as broker · wait for port 7310 · within 120s
+setup: go run ./broker reset --port 7310
+stop: go run ./broker reset --port 7310
+---
+
+## Send a message from the terminal
+
+What it does: a client sends one message, and the console shows it waiting.
+
+Say: From a terminal, we send the broker one message.
+- terminal "Client" · backdrop=ocean
+- run "go run ./broker send hello from the terminal" · wait
+- expect output "sent 1 message"
+- note "One message, sent" at line "sent 1 message"
+
+Say: The broker's console shows it, waiting in the queue.
+- browser
+- expect text "1 message waiting"
+
+## Watch a workload fill the queue
+
+What it does: a load generator sends thirty messages while the console counts them.
+
+Say: A load generator sends thirty messages.
+- start "go run ./broker load --count 30" as load · wait for "sending"
+- expect load running
+- wait for "30 messages waiting"
+- stop load · wait
+- expect load exited 0
+- expect output of load "sent 30 messages"
+```
+
+| Front matter | What it does |
+|---|---|
+| `start: <command> · wait for "text"` | runs the command in the background, in the script's folder, before the first feature, and waits until its output shows the text (or `· wait for port 5672`: a TCP port on 127.0.0.1 accepts; or `· wait 5s`); `· within 60s` gives it longer than 30 s. Several `start:` lines start in order. `as NAME` (after the command) names it for the steps below; else it is `start-1`, `start-2` … Its output goes to `<name>.log` beside the report. When one does not come up, every feature fails with its last lines. Not filmed. |
+| `stop: <command>` | a tear-down command run at the end of the run (passed, failed or interrupted), before the programs are stopped, e.g. `make demo-down` |
+| `shell: bash` | the shell of the terminals: `sh`, `bash` or `zsh` (default `$SHELL`, else `sh`; `cmd` on Windows) |
+| `app: none` | a terminal-only demo: no browser; every feature begins with `terminal` |
+
+| Step | What it does |
+|---|---|
+| `terminal "Name"` | opens a terminal named Name (or brings it back): a real shell in the script's folder, filmed as a code window (§25). Options after `·`: `window=terminal\|mac\|windows\|none` (default `terminal`), `title="…"` (default the name), `theme=night\|dusk\|paper\|auto` (default `night`), `backdrop=graphite\|ocean\|dusk\|mint\|none` (default `graphite`), `size=100x30` (columns x rows; default: as many as fit) |
+| `run "command"` | types the command into the terminal in front (at a person's pace in `si demo run`, at once in `si demo test`) and presses Enter. It does not wait: a broker never ends; the next `expect output` is the wait |
+| `run "command" · wait` | the same, and waits until it ends (up to a minute, `· within 5m` for longer); fails when it exits non-zero |
+| `press ctrl+c` | in a terminal, sends the key to the shell: `ctrl+<letter>`, Enter, Tab, Escape, Backspace, arrows, one character |
+| `expect output "text"` | the terminal's output since its last `run` shows the text, within `timeout:` (`· within 30s` for longer); white space matches any white space, colours do not count |
+| `expect no output "text"` | the text never appears from there to the end of the `Say:` block |
+| `wait for output "text"` | like `expect output`, as a pause before what comes next |
+| `browser` | brings the app back in front |
+| `note "…" at line "text"` | in a terminal, a callout under the line that shows the text, ringed |
+| `start "command" as NAME` | runs a program in the background for the rest of the feature (not filmed); `· wait for "text"`, `· wait for port N` or `· wait 3s` before going on |
+| `stop NAME` | stops it now; `· wait` waits for it to end on its own instead (a workload of a fixed length) |
+| `expect output of NAME "text"` | a background program's output shows the text |
+| `expect NAME running` · `expect NAME exited 0` | its state |
+
+**Three lifetimes.** A product demo needs traffic on screen: a load generator
+running while the console's charts move. Programs live for the whole run, one
+feature, or some blocks:
+
+| Lifetime | How | Example |
+|---|---|---|
+| the whole run | front matter `start:` (and `stop:` to tear down) | the broker, the cluster |
+| one feature | `setup:` (must exit) for state; a `start` step at the top of the feature for a program, stopped when the feature ends | a seed, a steady workload |
+| some blocks | `start "…" as NAME` … `stop NAME` | a burst, a second workload |
+
+A program can also be shown: `terminal "Load"` then `run "…"` (no `wait`)
+puts its scrolling output on camera, and `browser` goes back to the console
+while it keeps running.
+
+- **Stopped, always.** Each program runs in its own process group, so
+  stopping it stops what it started too: SIGTERM, then SIGKILL after 5 s.
+  That happens when its feature (a `start` step) or the run (a `start:`)
+  ends, passed or failed, and on Ctrl-C. A terminal hangs up its shell and
+  everything running in it when its feature ends.
+- **The terminal scene** is a page si serves on 127.0.0.1 with a random key:
+  xterm.js inside the code window frame. It opens in its own tab, and the
+  video follows the tab in front; the cursor, clicks, notes and captions of
+  `si demo run` work on it as on the app. `si demo test` opens it too
+  (nothing is filmed), so `expect output` is a real check either way.
+- **si's prompt.** The shell starts without your own rc files: the prompt is
+  the folder's name and `$`, history expansion (`!`) is off, and job control
+  is off (a program run in a terminal stops with it). Commands are typed as
+  written: a `$VAR` is expanded by the shell, so its value is never typed on
+  screen, and the values of the `$VAR`s a command uses are masked (`••••`) in
+  the logs and the report.
+- On a failure the report and the JUnit case show the terminal's (or the
+  program's) last 40 lines.
+- `si check` follows the scenes: a browser step while a terminal is in front
+  (write `- browser` first), a terminal step with no terminal, and a program
+  name no `start` gave are problems, with their line.
+- On Windows a terminal is `cmd` on pipes (no colours); `run … · wait` and the
+  rest work the same.
+
+Examples: `examples/webdemo/` (a small shop, `shop.md`, and `broken.md`,
+whose coupon does not work; `broker.md`, a tiny broker in Go started with
+`go run`, filmed in a terminal and in its console).

@@ -142,6 +142,61 @@ In `demo-out/shop/`:
 most); `--viewport phone` films the phone layout; `--feature "Pay for an
 order"` films one feature.
 
+## With a terminal
+
+Many apps are a terminal and a web page together: start a broker, send it a
+message, see the message in its console. The script can start programs in
+the background, type commands into a real terminal on camera, check what
+they print, and go back to the browser.
+
+```markdown
+---
+type: demo
+title: A message broker, from the terminal to its console
+app: http://127.0.0.1:7310
+start: go run ./broker serve --port 7310 as broker · wait for port 7310 · within 120s
+---
+
+## Send a message from the terminal
+
+What it does: a client sends one message, and the console shows it waiting.
+
+Say: From a terminal, we send the broker one message.
+- terminal "Client" · backdrop=ocean
+- run "go run ./broker send hello from the terminal" · wait
+- expect output "sent 1 message"
+- note "One message, sent" at line "sent 1 message"
+
+Say: The broker's console shows it, waiting in the queue.
+- browser
+- expect text "1 message waiting"
+```
+
+`start:` runs the broker before the first feature and waits until its port
+answers (or until its output shows a text, `· wait for "ready"`). `terminal
+"Client"` opens a shell in the script's folder, framed like a code window:
+`window=mac`, `theme=dusk`, `backdrop=ocean`, `title="…"`, `size=100x30`.
+`run` types the command at a person's pace and presses Enter; `· wait` waits
+for it to end and fails on a non-zero exit. `expect output` checks what it
+printed since, colours aside; `press ctrl+c` stops a program on camera;
+`note "…" at line "…"` points at a line.
+
+![A frame of a terminal scene: a Mac-style window on a dusk backdrop, "go run ./broker serve --port 7311" typed, the line "broker ready" ringed with a note "Ready for messages" under it, and the caption "A second broker starts in a terminal of its own, on port 7311."](img/webdemos/terminal.jpg)
+
+A workload for one feature is `start "go run ./broker load" as load · wait
+for "sending"`; `stop load · wait` lets it finish, `expect load exited 0` and
+`expect output of load "sent 30 messages"` check it, and the console's
+counter climbs on screen meanwhile. Programs live for the whole run
+(`start:`, with `stop:` to tear down), one feature (a `start` step), or a few
+blocks (`start` … `stop`).
+
+Nothing is left behind: every program runs in its own process group and is
+stopped (SIGTERM, then SIGKILL after 5 s) when its feature or the run ends,
+passed or failed, and on Ctrl-C. Its output goes to `<name>.log` beside the
+report, secrets masked; a failure shows the terminal's last 40 lines in the
+report and in JUnit. The example `examples/webdemo/broker.md` starts a tiny
+broker written in Go with `go run`, so CI runs it too.
+
 ## Voices
 
 ```markdown

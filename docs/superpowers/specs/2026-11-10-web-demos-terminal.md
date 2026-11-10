@@ -1,8 +1,18 @@
 # Web demos with a terminal: start, run, film
 
-Status: spec, decided with the founder on 2026-11-10; not built. Planned as
+Status: built in v2.36.0 (phases 1 and 2, and `app: none` of phase 3; `split` not
+yet). Decided with the founder on 2026-11-10. Planned as
 v2.36.0, after `si demo run` (video and voice, v2.35.0). The founder's most
 wanted part of web demos.
+
+As built (where it differs from below): `run` types a `$VAR` as written and
+the shell expands it, so a secret is never typed on screen (its value is
+masked in logs and the report); a program's log is `<name>.log`
+(`start-1.log` for an unnamed `start:`); `stop:` runs before the programs are
+stopped, so it can still talk to them; a terminal defaults to `theme=night
+backdrop=graphite`; `run … · wait` waits up to a minute (`· within`); the
+terminal-only demo is `app: none`. The shell starts with si's own prompt
+(no user rc files), which reports each exit status in an OSC 133;D mark.
 
 ## Why
 

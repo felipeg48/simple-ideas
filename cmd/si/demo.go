@@ -30,6 +30,8 @@ const demoUsage = `Usage:
                   openai[:alloy] (OPENAI_API_KEY; voice-style: in front matter)
         --captions  burn the captions into the video (the .srt is always written)
         --viewport  phone (400x800), tablet (820x1180), desktop (1440x900) or WxH
+  Both run start: programs first and stop them at the end (and on Ctrl-C); terminal "Name"
+  steps open a real shell, filmed as a framed window (RULES.md §27, Terminals and programs).
 `
 
 // runDemo is `si demo test|run <script>`. Its flags are its own: --feature

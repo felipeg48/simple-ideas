@@ -256,6 +256,16 @@ Not everything is a slide deck. Pick the type by what the reader does:
   for names the voice gets wrong. Leave `voice:` out unless the author asks for
   one (si picks Kokoro af_heart, else the computer's voice); never put an API
   key in the script.
+- **Web demos with a terminal** (RULES.md §27, Terminals and programs): a
+  server the app needs goes in front matter `start: <command> · wait for
+  "ready text"` (or `· wait for port N`), never in a `run` step of a feature
+  the others depend on. Show a command with `terminal "Name"` then `run
+  "command"` (`· wait` when it must finish first) and check it with `expect
+  output "text"`; write `- browser` before any browser step that follows a
+  terminal. A workload for one feature is `start "…" as NAME`, then `stop NAME`
+  and `expect NAME exited 0`. Every program is stopped for you; do not add
+  `kill` steps. Run `si check` (it follows the scenes), then `si demo test`;
+  a failed `expect output` shows the terminal's last 40 lines.
 - **Sites** take opt-in branding in `_site.md`: `logo: brand/mark.svg Name` (a
   picture with the name), `favicon:`, `touch-icon:`, `og-image:` (an https URL)
   and `version: v1.2.0 → <release notes URL>`. Never add si's own logo to a

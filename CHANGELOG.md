@@ -3,6 +3,23 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.36.0:** web demos with a terminal: front matter `start: <command> ·
+  wait for "text"` (or `· wait for port N`, `· wait 5s`; `as NAME`) runs
+  programs in the background for the whole run, `stop:` tears down at the
+  end, `shell:` picks the terminals' shell. New steps: `terminal "Name"` (a
+  real shell under a pseudo-terminal, filmed as a code window: `window=`,
+  `title=`, `theme=`, `backdrop=`, `size=`), `run "command"` (typed at a
+  person's pace; `· wait` waits for it to end and fails on a non-zero exit),
+  `press ctrl+c` in a terminal, `expect output "text"`, `expect no output`,
+  `wait for output`, `browser`, `start "…" as NAME` for one feature, `stop
+  NAME` (`· wait`), `expect output of NAME`, `expect NAME running|exited 0`,
+  `note "…" at line "text"`. Every program runs in its own process group and
+  is stopped (SIGTERM, SIGKILL after 5 s) at its feature's or the run's end,
+  on a failure and on Ctrl-C; logs `<name>.log` beside the report with
+  secrets masked. The video follows the scene in front (terminal or browser);
+  `si check` follows the scenes; the report and JUnit show the terminal's last
+  40 lines on a failure. `app: none` for a terminal-only demo.
+  `examples/webdemo/broker.md` films a tiny Go broker.
 - **v2.35.0:** web demos on film: `si demo run script.md` performs each
   feature in headless Chrome and films it, with a drawn cursor that glides to
   each element, a ripple on clicks, `note "…" at "Field"` callouts and a blur

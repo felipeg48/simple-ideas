@@ -57,7 +57,9 @@ what you chose.
    drawer adds `github.com/creack/pty` and bundles `xterm.js`. It is contained to
    `si play` on a loopback address — a built deck never loads it — so rules #2 and
    #8 hold everywhere except that one play-only, loopback-only subsystem. See
-   `docs/terminal.md`.
+   `docs/terminal.md`. Web demos (`si demo test|run`, v2.36.0) reuse the same
+   pty and xterm.js for their terminal scenes, on a keyed 127.0.0.1 page that
+   only that run's headless Chrome opens; still never in a built deck.
    **Exception (v1.13.0, 3D mind maps only):** three.js r128 (MIT) and its
    OrbitControls are vendored in `internal/assets/web/` (`three.min.js`,
    `three-orbitcontrols.js`, `THREE-LICENSE`) and inlined, with
@@ -201,6 +203,13 @@ pass. The steps that matter:
   chapters, callouts, `--captions`, voice engines local and cloud) and runs as a
   test (`si demo test`, report, JUnit). Phases: test mode, video, voice, the
   manual with videos, then Retake's CLAUDE.md gets the shared script format.
+  **With a terminal** (spec `2026-11-10-web-demos-terminal.md`, DONE v2.36.0
+  except `split`): `start:`/`stop:`/`shell:`, `terminal`/`run`/`expect
+  output`/`browser`, `start … as NAME`/`stop NAME`; `internal/webdemo/
+  scriptterm.go`, `procs.go`, `output.go`, `term.go` (PTY shell + keyed page,
+  xterm.js from `assets.TermFS`; the creack/pty exception now also covers web
+  demos: never in a built deck), `runterm.go`; `app: none` for a
+  terminal-only demo. Next: `split`, ConPTY.
 - **On hold until a user asks for it** (the founder, 2026-11-10; do not build
   before a real request):
   - **PowerPoint / Google Slides export.** Google Slides has no file format of

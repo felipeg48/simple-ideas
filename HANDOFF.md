@@ -5,6 +5,38 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-10)
 
+- **v2.36.0 (unreleased, on a worktree branch): web demos with a terminal**
+  (spec `docs/superpowers/specs/2026-11-10-web-demos-terminal.md`, phases 1, 2
+  and `app: none` of 3; `split` not built). `scriptterm.go` parses `start:`
+  (several; `as NAME`, `· wait for "text"|port N|Ns`, `· within`), `stop:`,
+  `shell:` and the steps terminal/browser/run/start/stop, expect output (of
+  NAME), expect no output, wait for output, expect NAME running|exited N,
+  note … at line; `checkScenes` follows browser vs terminal and program names
+  for `si check`. `procs.go`: programs via `sh -c` in their own process group
+  (`proc_unix.go` Setpgid + kill(-pgid); `proc_windows.go` taskkill /T),
+  stop = SIGTERM, `stopGrace` (5 s), SIGKILL to the group. `output.go`: the
+  stream kept raw (masked, for the page) and plain (a streaming ANSI
+  stripper) plus the exit codes from OSC 133;D marks. `term.go`: a shell per
+  terminal under creack/pty with si's prompt (`shellRC`: zsh -d with ZDOTDIR,
+  bash --rcfile, sh via ENV; job control and ! expansion off; the prompt
+  prints `ESC]133;D;$?BEL`, which is how `run · wait` gets the exit status),
+  the keyed loopback `termServer` (page, xterm assets from `assets.TermFS`,
+  chunked output stream, resize) and `termpage.js` (xterm in the code window
+  frame from `render.WindowChrome` + `assets.CodewinCSS`; `__siTermLine` makes
+  a live box for note-at-line). `runterm.go`: the runner side: scenes are tabs
+  (`show` moves `c.Session`, `Page.bringToFront` and the screencast;
+  `r.film` is the filmed session, `r.session` stays the app's for console
+  events), a feature that begins with `terminal` opens it before the first
+  block and loads the app lazily at `browser`; `shutdown` (once: stop:, then
+  every terminal and program; deferred in Run, also on SIGINT/SIGTERM) and
+  `endFeature`. A note stays at least 1.8 s on screen (`tk.noted`). Windows:
+  cmd.exe on pipes with local echo, compiles (`GOOS=windows go build`), never
+  run. Verified end to end: `si demo test` and `si demo run --voice system
+  --captions` on `examples/webdemo/broker.md` (frames looked at: ocean and dusk
+  backdrops, typing, note under a line, Ctrl-C, switch to the console, a
+  live counter). `TestExamples` runs broker.md (needs Chrome and go).
+  Next: `split` (two tabs side by side needs compositing frames or an iframe
+  with locate.js inside it), ConPTY on Windows.
 - **v2.35.0: web demos phases 2 + 3 (video, voice).** `si demo run`
   (`cmd/si/demo.go`): `internal/webdemo/film.go` (the take: overlay injected
   with `Page.addScriptToEvaluateOnNewDocument`, `overlay.js` in a closed shadow
