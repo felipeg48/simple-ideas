@@ -97,6 +97,7 @@ in (paths outside it are refused):
 | `si_theme_check` | a theme's WCAG contrast in light and dark, each failing pair with a colour that passes |
 | `si_theme_preview` | the specimen deck (or one of yours) drawn with a theme, as a picture |
 | `si_theme_export` / `si_theme_import` | a theme as one `.css` file or as W3C Design Tokens JSON, out and back in |
+| `si_theme_from_logo` | a theme from a logo's colours (PNG, JPEG, GIF or SVG), light and dark, every pair WCAG AA |
 
 A prompt that works: "our brand colours are #0B3D91 and #FC3D21: make a theme that passes contrast in dark mode, serif headings, and use it for this folder".
 

@@ -130,6 +130,8 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - **Your own:** a CSS file of `--si-*` tokens; `/* si theme: Name · extends
   twilight */`; `si theme check` (values, contrast in light and dark),
   `si theme export|import` (CSS or W3C Design Tokens); a theme from a URL;
+  **a theme from a logo** (`si theme from logo.svg`, the Studio's *From a
+  logo…*: its colours, light and dark, every pair WCAG AA);
   your CSS in its own cascade layer.
 
 ## Output
