@@ -117,13 +117,10 @@ var All = []Tool{
 	},
 	{
 		Name: "kokoro", Label: "Kokoro (kokoro-onnx, a local voice)",
-		For:   "si demo run: the narration in a natural voice (af_heart), offline",
-		Probe: findKokoro,
-		Install: map[string]string{
-			"mac": kokoroSteps("python3"), "debian": kokoroSteps("python3"), "fedora": kokoroSteps("python3"),
-			"arch": kokoroSteps("python3"), "windows": kokoroSteps("python"), "other": kokoroSteps("python3"),
-		},
-		URL: "https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.0",
+		For:     "si demo run: the narration in a natural voice (af_heart), offline",
+		Probe:   findKokoro,
+		Install: kokoroInstall(),
+		URL:     "https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.0",
 	},
 	{
 		Name: "espeak-ng", Label: "eSpeak NG",
@@ -153,9 +150,13 @@ func KokoroDir() string {
 }
 
 // KokoroPython is the Python that has kokoro-onnx: $SI_KOKORO_PYTHON, else
-// python3 (python on Windows).
+// the venv si voice install kokoro made in KokoroDir, else python3 (python
+// on Windows).
 func KokoroPython() string {
 	if p := os.Getenv("SI_KOKORO_PYTHON"); p != "" {
+		return p
+	}
+	if p := KokoroVenvPython(KokoroDir()); fileExists(p) {
 		return p
 	}
 	if runtime.GOOS == "windows" {
@@ -167,9 +168,16 @@ func KokoroPython() string {
 // KokoroFiles are the model files Kokoro needs in KokoroDir.
 var KokoroFiles = []string{"kokoro-v1.0.onnx", "voices-v1.0.bin"}
 
-func kokoroSteps(py string) string {
-	return py + " -m pip install kokoro-onnx, then download " + strings.Join(KokoroFiles, " and ") + " (link below) into " + KokoroDir()
+// kokoroInstall is the same one command everywhere.
+func kokoroInstall() map[string]string {
+	m := map[string]string{}
+	for _, p := range []string{"mac", "windows", "debian", "fedora", "arch", "other"} {
+		m[p] = "si voice install kokoro   (a Python venv, kokoro-onnx and the model files, all in " + KokoroDir() + ")"
+	}
+	return m
 }
+
+func fileExists(p string) bool { st, err := os.Stat(p); return err == nil && !st.IsDir() }
 
 // findKokoro is the model folder when both the Python package and the model
 // files are there ("" otherwise).
