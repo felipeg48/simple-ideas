@@ -192,7 +192,8 @@ SVG or PDF with your logo in the middle, a Wi-Fi network or a contact.
 ## Themes
 
 Nine built-in themes, each in light and dark. `theme: twilight` in front
-matter, or your own: a CSS file of `--si-*` tokens. Click one to see it on
+matter, or your own: a CSS file of `--si-*` tokens, made in the Studio's Theme
+view or straight from your logo with `si theme from logo.svg`. Click one to see it on
 [simple-ideas.org](https://simple-ideas.org/themes.html).
 
 <table>

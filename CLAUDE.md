@@ -193,7 +193,7 @@ pass. The steps that matter:
 - **Next five** (specs, 2026-11-09; the founder wants all, one at a time):
   `docs/superpowers/specs/2026-11-09-next-five.md` indexes audience mode
   (follow, polls, Q&A), handouts (`--handout`), record your talk
-  (DONE v2.28.0: ● Record, `--narration`, `si rehearse`), theme from a logo, two presenters (DONE v2.29.0)
+  (DONE v2.28.0: ● Record, `--narration`, `si rehearse`), theme from a logo (DONE v2.31.0, `internal/themefile/logo.go`), two presenters (DONE v2.29.0)
   (`Notes[Name]:`), and the Studio Theme editor (DONE v2.30.0; `2026-11-09-studio-theme-editor.md`;
   phase 1 fixes CSS-file themes: `extends <built-in>`, the index page's theme;
   theme import/export incl. W3C design tokens; MCP theme tools), and Motion

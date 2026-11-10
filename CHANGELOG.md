@@ -3,6 +3,11 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.31.0:** theme from a logo: `si theme from logo.svg` (PNG, JPEG, GIF or
+  SVG) finds the logo's colours and writes a whole theme, light and dark, with
+  every text and background pair passing WCAG AA; the Studio's New theme ›
+  From a logo…; the MCP tool `si_theme_from_logo`. The docs site's Articles,
+  Guides, Books, Mind Maps and Code pages open with picture tours.
 - **v2.30.1:** a teleprompter opened after questions or cloud words arrived
   now shows them (the deck replays them on its hello); the docs site's Decks
   page is rewritten as a visual tour: layouts, canvases, overview, find, draw,

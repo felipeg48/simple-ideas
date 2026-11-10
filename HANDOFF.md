@@ -5,6 +5,13 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.31.0: theme from a logo.** `internal/themefile/logo.go`
+  (`LogoPalette`/`FromLogo`: PNG/JPEG/GIF pixels and SVG fills, OKLab
+  quantising, accent = weightiest chromatic colour, accent-2 ≥ 40° away, every
+  `Pairs` pair fixed with `FixContrast`, extends studio, deterministic);
+  `si theme from`; Studio `POST theme/logo` + New theme › From a logo…; MCP
+  `si_theme_from_logo`. Skipped: a brand-logo token (`url()` is refused in
+  token values), a `--from-url` option.
 - **Feature tours (after v2.30.1):** Articles, Guides, Books, Mind Maps and Code
   pages get a picture tour before "Try it live": `internal/docsite/tours.go`
   (Markdown + figure grids, `§` = backtick, code spans in captions become
