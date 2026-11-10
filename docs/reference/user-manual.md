@@ -211,7 +211,7 @@ One inline SVG whose parts change state slide by slide:
 |---|---|
 | → ← Space | next / previous step or slide |
 | `o` | overview — one column per topic (section); ← → across topics, ↑ ↓ within one, Enter opens the selected slide |
-| `p` | teleprompter — script + speaker-notes tabs, timers, rehearsal pacing |
+| `p` | teleprompter — script + speaker-notes tabs, timers, rehearsal pacing, ● Record (Shift+R) |
 | `t` | break timer (configurable presets + animation layer) |
 | `a` | draw over the slide |
 | `d` / `f` / `?` | light-dark / full screen / help |
@@ -313,6 +313,10 @@ si migrate <src>           # an AI migration prompt for an existing deck
   is) and on a deck build (every slide and step, `--dwell 2` for a teaser)
   writes video that plays anywhere, with the transitions and morphs as they
   move, made with ffmpeg if it is installed.
+- **Record your talk:** **● Record** in the teleprompter (under `si play`)
+  records your voice with every slide change; `si build talk.md --narration
+  latest` turns it into the video, paced and voiced as you gave it, and `si
+  rehearse talk.md` shows where you ran long or rushed.
 - **Point to it:** `<!-- qr: https://… · caption=The slides -->` puts a QR
   code on a slide or page; `si qr https://… --logo mark.png --pdf` makes one as
   a file for a poster or a badge.

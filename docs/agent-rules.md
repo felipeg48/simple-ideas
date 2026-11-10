@@ -16,6 +16,8 @@ si play <dir|file.md> --open    # live preview with reload (http://127.0.0.1:707
 si build <dir> -o html/         # one self-contained HTML file per deck + index.html
 si build <dir> -o html/ --pdf   # also a PDF per deck (needs headless Chrome)
 si build <dir> --handout        # handouts/<deck>.pdf for the audience: slides only (=points / =notes add speaker text)
+si build talk.md --narration latest  # talk.mp4 paced and voiced by a teleprompter recording (● Record in si play)
+si rehearse talk.md             # a recording's pace: planned vs spoken per slide, words per minute
 si theme list                   # built-in themes for theme: / --theme
 si new <name>                   # a scaffold deck that uses every rule
 si --export example             # the showcase decks, to copy patterns from

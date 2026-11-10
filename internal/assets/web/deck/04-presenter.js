@@ -67,7 +67,7 @@
       .split('</head>').join((rl ? rl.outerHTML : '') + '</head>')
       .split('__CSS__').join(css)
       .split('__TITLE__').join(data.title.replace(/[<&]/g, ''))
-      .split('__DATA__').join(JSON.stringify({ name: data.name, title: data.title, aspect: data.aspect, relay: relay }).replace(/</g, '\\u003c'));
+      .split('__DATA__').join(JSON.stringify({ name: data.name, title: data.title, aspect: data.aspect, relay: relay, path: location.protocol === 'file:' ? '' : location.pathname }).replace(/</g, '\\u003c'));
   }
   function openPresenter() {
     var w = window.open('', 'si-presenter-' + data.name, 'width=1200,height=760');

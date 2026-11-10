@@ -47,7 +47,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "2.27.0"
+const version = "2.28.0"
 
 // Exit codes.
 const (
@@ -76,7 +76,9 @@ Usage:
         only by default (no speaker text); lines adds space to write, points / notes the speaker's text
         --mp4 [--dwell 3] also films each deck to <name>.mp4 (1080p): every slide and build
         step, held for its share of (N min) or --dwell seconds, and the transitions and
-        canvas morphs as they move (--dissolve: stills dissolving into each other)
+        canvas morphs as they move (--dissolve: stills dissolving into each other);
+        --narration <dir|latest>: a recording from the teleprompter's Record button paces
+        each view as you spoke it, with your voice
   si [build] <map.md> [--svg] [--png [--scale 2]] [--pdf] [--mp4]
         mind map pages: every map as <name>-<id>.svg / .png (2D, theme and watermark
         baked in), pdfs/<name>.pdf with one page per map (map › links work), and
@@ -110,6 +112,9 @@ Usage:
         turn an OPML, FreeMind, XMind or Mermaid mindmap file into a mind map page
   si mindmap export <map.md> --to opml|freemind|xmind|mermaid [--map id] [-o file|-]
         write a mind map in another format (XMind: every map, one sheet each)
+  si rehearse <file.md> [--narration <dir|latest>]
+        the pace of a recording (the teleprompter's Record button): per slide, planned
+        (Notes: (N min)), spoken, and the words per minute of its script
   si check <dir|file.md> [--budget]
         validate decks: title, directives, assets, includes; exit 1 on a problem;
         --budget (or budget.page / budget.3d in si.conf) also fails pages over 1 MB (3D: 1.5 MB)
@@ -288,6 +293,7 @@ type options struct {
 	canonical, baseURL                           string  // si publish
 	yes, copy, public, mp4                       bool    // si publish --yes/--copy/--public; --mp4
 	dissolve                                     bool    // --mp4 --dissolve: stills that dissolve, not the filmed motion
+	narration                                    string  // --mp4 --narration <dir|latest>: the teleprompter's recording paces and voices the video
 	port                                         int     // si publish login linkedin: the loopback redirect port
 	qrEC, qrLogo, qrStyle, qrFG, qrBG, qrName    string  // si qr
 	qrWifi, qrPassword, qrSecurity, qrVCard      string  // si qr --wifi / --vcard
@@ -345,6 +351,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.copy, "copy", false, "")
 	fl.BoolVar(&o.public, "public", false, "")
 	fl.BoolVar(&o.mp4, "mp4", false, "")
+	fl.StringVar(&o.narration, "narration", "", "")
 	fl.BoolVar(&o.dissolve, "dissolve", false, "")
 	fl.BoolVar(&o.budget, "budget", false, "")
 	fl.BoolVar(&o.review, "review", false, "")
@@ -510,6 +517,11 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		}
 		o.serveMode = true
 		return play(rest[0], o, stdout, stderr)
+	case "rehearse":
+		if len(rest) != 1 {
+			return usageErr(stderr, "rehearse needs one <file.md> (and a recording: the teleprompter's Record button in si play)")
+		}
+		return rehearse(rest[0], o, stdout, stderr)
 	case "check":
 		if len(rest) != 1 {
 			return usageErr(stderr, "check needs one <dir|file.md>")
@@ -639,6 +651,9 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	failed, sharedDone := false, false
 	chrome := ""
+	if o.narration != "" {
+		o.mp4 = true // a narration is for the video
+	}
 	if o.pdf || o.svg || o.png || o.mp4 || o.handout != "" {
 		if chrome = findChrome(); chrome == "" {
 			fmt.Fprintln(stderr, "si: --pdf, --svg, --png and --mp4 need Google Chrome/Chromium; none found — writing HTML only")
@@ -752,6 +767,17 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			}
 		}
 		if chrome != "" && o.mp4 && !d.IsDoc() { // the deck as a video: every slide and build step
+			var nar *narration
+			if o.narration != "" {
+				if dir := findRecording(o.narration, d.Path); dir == "" {
+					fmt.Fprintf(stderr, "si: %s: no recording for --narration %s (record one with the teleprompter's Record button in si play)\n", d.Name, o.narration)
+				} else if nar, err = loadNarration(dir); err != nil {
+					fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
+					nar = nil
+				} else if nar.changed(d.Path) {
+					fmt.Fprintf(stderr, "si: %s: the deck changed since %s was recorded; views it never showed get the usual time\n", d.Name, filepath.Base(dir))
+				}
+			}
 			err := fmt.Errorf("dissolve")
 			if !o.dissolve {
 				page, _ := os.ReadFile(dest)
@@ -762,16 +788,25 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 					return 0
 				}}
 				var n int
-				if n, err = exportDeckMotion(chrome, dest, out, info, o.dwell); err == nil {
+				if n, err = exportDeckMotion(chrome, dest, out, info, o.dwell, nar); err == nil {
 					fmt.Fprintf(stdout, "  %-28s (mp4, in motion, %d views, %d KB)\n", d.Name+".mp4", n, fileKB(filepath.Join(out, d.Name+".mp4")))
 				} else {
 					fmt.Fprintf(stderr, "si: %s: filming the motion failed (%v); falling back to --dissolve\n", d.Name, err)
 				}
 			}
 			if err != nil {
-				if err := exportDeckMP4(chrome, dest, out, d, o.dwell, stdout); err != nil {
+				if err := exportDeckMP4(chrome, dest, out, d, o.dwell, nar, stdout); err != nil {
 					fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
 					failed = true
+					nar = nil
+				}
+			}
+			if nar != nil {
+				if err := muxAudio(filepath.Join(out, d.Name+".mp4"), nar.audio, stderr); err != nil {
+					fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
+					failed = true
+				} else {
+					fmt.Fprintf(stdout, "  %-28s (narrated from %s)\n", d.Name+".mp4", filepath.Base(nar.dir))
 				}
 			}
 		}

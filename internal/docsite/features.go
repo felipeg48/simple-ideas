@@ -41,7 +41,7 @@ var Features = []feature{
 			{"`transition:`", "fade, slide, zoom, none"},
 			{"`<!-- poll: id · a · b -->`", "a live poll the room answers on their phones ([your audience](audience.md))"},
 		},
-		Commands: "si new talk                      # a starter deck\nsi play talk.md --open           # present, live reload, p for the teleprompter\nsi play talk.md --remote --https # teleprompter, draw pad and clicker on your phone (features/remote)\nsi play talk.md --audience       # the room follows, votes and asks (features/audience)\nsi build talk.md --pdf --mp4     # one HTML file, plus a PDF and a video\nsi build talk.md --handout       # a handout PDF: slides only, or =lines, =points, =notes",
+		Commands: "si new talk                      # a starter deck\nsi play talk.md --open           # present, live reload, p for the teleprompter\nsi play talk.md --remote --https # teleprompter, draw pad and clicker on your phone (features/remote)\nsi play talk.md --audience       # the room follows, votes and asks (features/audience)\nsi build talk.md --pdf --mp4     # one HTML file, plus a PDF and a video\nsi build talk.md --handout       # a handout PDF: slides only, or =lines, =points, =notes\nsi build talk.md --narration latest # the talk as video, with your recorded voice\nsi rehearse talk.md              # planned vs spoken per slide",
 		More:     strings.ReplaceAll(decksMore, "§", "`"),
 		Rules:    []string{"1", "3", "5", "9", "10", "11", "14", "16"}},
 	{Slug: "articles", Title: "Articles",
@@ -234,6 +234,7 @@ from a laptop, a projector or §file://§.
 | §a§ | **draw** on the slide; §c§ colour, §e§ erase, §z§ undo, §x§ clear, Esc stops |
 | §p§ | the **teleprompter**: your §Notes:§ at your pace, timers, the next slide |
 | §t§ | a **break timer** to project: pick the minutes, it counts down |
+| Shift+R | in the teleprompter: **record** your voice with the slide timings (under §si play§) |
 | §d§ · §f§ · §?§ | light or dark · full screen · every key |
 
 **Draw with the trackpad.** In draw mode, hold ⌥ Option (Alt) and move: the
@@ -251,6 +252,12 @@ Q&A backup slide or back to the agenda without paging through.
 slides list with their text, best title matches first; type §12§ to jump to
 slide 12. Below the slides it offers the other decks, labs and PDFs of the
 folder, and the §links.*§ you add in §si.conf§.
+
+**Record your talk.** Under §si play§ the teleprompter's **● Record** keeps
+your voice and when each slide and step began. §si build talk.md --narration
+latest§ then films the deck with your voice, every view held as long as you
+spoke on it, and §si rehearse talk.md§ shows per slide the time you planned,
+the time you took and your words per minute. It all stays on your computer.
 
 **Your keys.** Every key can be changed in §si.conf§ (§keys.draw: w§), and
 any feature turned off (§feature.find: off§).

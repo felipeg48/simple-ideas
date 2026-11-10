@@ -61,6 +61,10 @@ body{overflow:hidden;height:100%}
 .pv-bar button[aria-pressed="true"]{color:var(--si-on-accent);background:var(--si-accent)}
 .pv-bar .sep{width:1px;align-self:stretch;background:var(--si-line);margin:0 .2rem}
 .pv-bar small{font-family:var(--si-font-mono);color:var(--si-muted)}
+.pv-bar #rec[aria-pressed="true"]{color:#fff;background:#c62828;border-color:#c62828}
+.pv-bar #rec[aria-pressed="true"]::before{content:"";display:inline-block;width:.6em;height:.6em;border-radius:50%;background:#fff;margin-right:.4em;animation:pv-rec 1s steps(2) infinite}
+@keyframes pv-rec{50%{opacity:.2}}
+@media (prefers-reduced-motion:reduce){.pv-bar #rec[aria-pressed="true"]::before{animation:none}}
 .pv-keys{margin-left:auto;font-family:var(--si-font-mono);font-size:.72rem;color:var(--si-muted)}
 @media (max-width:52rem),(orientation:portrait){
   .pv{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(40vh,1fr) auto auto;height:auto;min-height:100dvh}
@@ -115,6 +119,7 @@ body{overflow:hidden;height:100%}
     <button id="only" aria-pressed="false" title="Notes only (x)">Notes only</button>
     <span class="sep"></span>
     <button id="timer" title="Pause or resume the timer (t)">Pause</button><button id="reset" title="Reset the timer (0)">Reset</button>
+    <button id="rec" aria-pressed="false" title="Record your voice with the slide timings (Shift+R); saved beside the talk in .si/recordings/" hidden>● Record</button>
     <span class="pv-keys">&larr; &rarr; space: navigate · 1/2 tabs · &uarr; &darr;: scroll · a auto · +/- speed · [ ] size · m mirror · x notes only</span>
   </div>
 </div>
@@ -212,13 +217,48 @@ body{overflow:hidden;height:100%}
   requestAnimationFrame(frame);
 
   /* ---------- timers: total vs plan, this slide vs its minutes, pace ---------- */
-  var start = Date.now(), paused = 0, pausedAt = 0, slideStart = Date.now(), cur = -1, plan = [], total = 0;
+  var start = Date.now(), paused = 0, pausedAt = 0, slideStart = Date.now(), cur = -1, curStep = 0, plan = [], total = 0;
   /* rehearsal: actual time spent per slide this run (persisted), and the prior run for reference */
   var prevSpent = load('rehearse-' + D.name, []), spent = [];
   function now() { return pausedAt || Date.now(); }
   function fmt(ms) { var neg = ms < 0, s = Math.floor(Math.abs(ms) / 1000); return (neg ? '-' : '') + pad(Math.floor(s / 60)) + ':' + pad(s % 60); }
   function pad(x) { return (x < 10 ? '0' : '') + x; }
+  /* ---------- Record your talk (si play): the microphone in chunks, a mark per view ---------- */
+  var rec = null, recT0 = 0, recQ = Promise.resolve(), recView = null;
+  function recPost(p, body, type) { return fetch('/_si/record/' + p, { method: 'POST', headers: { 'Content-Type': type || 'application/json' }, body: body }); }
+  function recT() { return Math.round((Date.now() - recT0) / 10) / 100; } /* audio time: the talk timer may be paused */
+  function recMark(i, k) {
+    if (!rec) return;
+    recView = [i, k];
+    recQ = recQ.then(function () { return recPost('mark', JSON.stringify({ t: recT(), slide: i, step: k })); }).catch(function () {});
+  }
+  function recStart() {
+    var types = [['audio/webm;codecs=opus', 'webm'], ['audio/mp4', 'm4a'], ['audio/ogg;codecs=opus', 'ogg']], pick = null;
+    for (var i = 0; i < types.length; i++) if (window.MediaRecorder && MediaRecorder.isTypeSupported(types[i][0])) { pick = types[i]; break; }
+    if (!pick || !navigator.mediaDevices) { $('rec').title = 'This browser cannot record audio here'; return; }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      return recPost('start', JSON.stringify({ path: D.path, ext: pick[1] })).then(function (r) {
+        if (!r.ok) throw new Error('start ' + r.status);
+        rec = new MediaRecorder(stream, { mimeType: pick[0] });
+        rec.ondataavailable = function (e) { if (e.data && e.data.size) recQ = recQ.then(function () { return recPost('chunk', e.data, 'application/octet-stream'); }).catch(function () {}); };
+        rec.onstop = function () {
+          var t = recT();
+          stream.getTracks().forEach(function (tr) { tr.stop(); });
+          setTimeout(function () { recQ = recQ.then(function () { return recPost('stop', JSON.stringify({ t: t })); }).then(function (r) { return r.json(); }).then(function (m) { $('rec').title = 'Saved in ' + m.dir; }).catch(function () {}); }, 50);
+          rec = null; $('rec').setAttribute('aria-pressed', 'false'); $('rec').textContent = '● Record';
+        };
+        recT0 = Date.now(); rec.start(2000);
+        $('rec').setAttribute('aria-pressed', 'true');
+        if (cur >= 0) recMark(cur, curStep);
+      });
+    }).catch(function (e) { $('rec').title = 'Could not record: ' + e.message; });
+  }
+  function recToggle() { if (rec) rec.stop(); else recStart(); }
+  if (D.path && !D.relay) fetch('/_si/record').then(function (r) { if (r.ok) $('rec').hidden = false; }).catch(function () {});
+  $('rec').onclick = recToggle;
+
   function tick() {
+    if (rec) $('rec').textContent = 'Stop ' + fmt(Date.now() - recT0);
     var el = now() - start - paused, sl = now() - slideStart;
     $('elapsed').textContent = fmt(el);
     $('slideel').textContent = fmt(sl);
@@ -262,6 +302,8 @@ body{overflow:hidden;height:100%}
     $('cur').innerHTML = m.cur;
     $('next').innerHTML = m.next || '';
     $('label').textContent = m.label;
+    curStep = m.k || 0;
+    if (rec && (!recView || recView[0] !== m.i || recView[1] !== curStep)) recMark(m.i, curStep);
     if (m.i !== cur) {
       if (cur >= 0) { spent[cur] = (spent[cur] || 0) + (now() - slideStart); save('rehearse-' + D.name, spent); }
       cur = m.i; slideStart = now();
@@ -306,6 +348,7 @@ body{overflow:hidden;height:100%}
       case 'm': mirror = !mirror; settings(); break;
       case 'x': only = !only; settings(); break;
       case 'r': activePane().scrollTop = 0; break;
+      case 'R': if (!$('rec').hidden) recToggle(); break;
       case '1': showTab('tele'); break;
       case '2': showTab('notes'); break;
       case '3': showTab('qa'); break;

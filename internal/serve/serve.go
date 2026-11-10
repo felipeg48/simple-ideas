@@ -46,6 +46,7 @@ type Server struct {
 	polls   *polls   // si play --audience: the ballots (poll.go)
 	qa      *qa      // si play --audience: the questions (qa.go)
 	clouds  *clouds  // si play --audience: the word clouds (cloud.go)
+	rec     recorder // Record your talk (record.go)
 	rev     *reviews // review comments (review.go)
 	revOnce sync.Once
 }
@@ -85,6 +86,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /_si/position/cmd", s.pos.command)
 	mux.HandleFunc("GET /_si/position/events", s.pos.events)
 	mux.HandleFunc("POST /_si/callout", localOnly(s.callout)) // writes files: never on the remote listener
+	s.recordRoutes(mux)                                       // Record your talk: loopback only (record.go)
 	mux.HandleFunc("GET /_si/qr", localOnly(s.qrPage))        // the --remote links as codes: carries the key, loopback only
 	s.authorRoutes(mux)                                       // review comments: read, follow, reply, resolve (loopback)
 	if s.Remote {

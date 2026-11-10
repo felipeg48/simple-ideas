@@ -253,7 +253,7 @@ func stepHold(minutes float64, views int, dwell float64) float64 {
 
 // exportDeckMP4 writes <name>.mp4: every slide and build step as the audience
 // sees it (1920×1080), each held for stepHold, dissolving into the next.
-func exportDeckMP4(chrome, htmlPath, out string, d *deck.Deck, dwell float64, stdout io.Writer) error {
+func exportDeckMP4(chrome, htmlPath, out string, d *deck.Deck, dwell float64, nar *narration, stdout io.Writer) error {
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
 		return fmt.Errorf("%s", ffmpegHint)
 	}
@@ -280,7 +280,11 @@ func exportDeckMP4(chrome, htmlPath, out string, d *deck.Deck, dwell float64, st
 				fmt.Sprintf("file://%s#%d.%d", filepath.ToSlash(abs), i+1, k)); err != nil {
 				return fmt.Errorf("slide %d.%d: %v", i+1, k, err)
 			}
-			shots = append(shots, videoFrame{PNG: p, Dur: stepHold(minutes, n+1, dwell)})
+			dur := stepHold(minutes, n+1, dwell)
+			if h, ok := nar.hold(i, k, 12.0/videoFPS, len(shots) == 0); ok { // the dissolve into it: 12 frames
+				dur = h
+			}
+			shots = append(shots, videoFrame{PNG: p, Dur: dur})
 		}
 	}
 	video, err := withFades(shots, tmp)

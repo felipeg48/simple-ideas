@@ -192,7 +192,7 @@ pass. The steps that matter:
 - **Next five** (specs, 2026-11-09; the founder wants all, one at a time):
   `docs/superpowers/specs/2026-11-09-next-five.md` indexes audience mode
   (follow, polls, Q&A), handouts (`--handout`), record your talk
-  (`--mp4 --narration`, pace report), theme from a logo, two presenters
+  (DONE v2.28.0: ● Record, `--narration`, `si rehearse`), theme from a logo, two presenters
   (`Notes[Name]:`), and the Studio Theme editor (`2026-11-09-studio-theme-editor.md`;
   phase 1 fixes CSS-file themes: `extends <built-in>`, the index page's theme;
   theme import/export incl. W3C design tokens; MCP theme tools), and Motion
@@ -298,7 +298,7 @@ pass. The steps that matter:
   ops applied by `internal/mindmap`), `si build --svg/--png/--pdf` for mind
   maps, `si mindmap import/export` (OPML, FreeMind, XMind, Mermaid), fence
   `steps` (one branch per click, 2D and 3D), `flow: on`, toy labels facing the
-  camera, a portrait 3D fit. Terminal Studio map editing has indent/outdent/undo (v2.27.0). Next: a 3D canvas in the map editor, multi-select and copy/paste of
+  camera, a portrait 3D fit. Terminal Studio map editing has indent/outdent/undo (v2.27.0). Next: multi-select and copy/paste of
   branches, XMind 8 export.
   **3D** (v1.13.0 DONE): `view: 3d` / `view=3d`, `camera: iso|perspective`,
   `floors: on|off`; pills on a shadow floor, cables with flow dots, linked maps

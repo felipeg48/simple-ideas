@@ -5,6 +5,14 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.28.0: record your talk.** Teleprompter ● Record (Shift+R; shown only when
+  `GET /_si/record` answers, i.e. si play on loopback): MediaRecorder chunks
+  every 2 s to `POST /_si/record/chunk`, marks on each view (`/mark`, audio
+  clock = Date.now, not the pausable talk timer), `/stop` writes meta.json
+  (`internal/serve/record.go`). `cmd/si/narration.go`: `findRecording`,
+  `loadNarration` (spoken per view), `hold` (minus the transition into it:
+  1.3 s motion, 12 frames dissolve), `muxAudio` (AAC), `si rehearse` +
+  `paceReport`. Deck page path reaches the teleprompter as `D.path`.
 - **v2.27.0: site Studio + terminal pages; TUI map indent/undo.**
   `docs/site/features/{studio,terminal}.md` with `img/*.jpg`. Terminal shots:
   run si in a pty (Python `pty`, TERM=xterm-256color, COLORTERM=truecolor),

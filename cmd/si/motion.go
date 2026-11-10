@@ -236,7 +236,7 @@ func (c *cdp) key(name string, code int) error {
 // exportDeckMotion writes <name>.mp4 with the deck's real motion: each view
 // held for stepHold, then → pressed and the transition (slide, build step,
 // canvas morph) filmed as it plays.
-func exportDeckMotion(chrome, htmlPath, out string, d *deckInfo, dwell float64) (views int, err error) {
+func exportDeckMotion(chrome, htmlPath, out string, d *deckInfo, dwell float64, nar *narration) (views int, err error) {
 	tmp, err := os.MkdirTemp("", "si-deckmotion-")
 	if err != nil {
 		return 0, err
@@ -260,7 +260,11 @@ func exportDeckMotion(chrome, htmlPath, out string, d *deckInfo, dwell float64) 
 			if err != nil {
 				return views, err
 			}
-			video = append(video, videoFrame{PNG: held[len(held)-1].png, Dur: stepHold(d.minutes(i), n+1, dwell)})
+			dur := stepHold(d.minutes(i), n+1, dwell)
+			if h, ok := nar.hold(i, k, move, views == 1); ok {
+				dur = h
+			}
+			video = append(video, videoFrame{PNG: held[len(held)-1].png, Dur: dur})
 			if i == len(d.steps)-1 && k == n {
 				break
 			}

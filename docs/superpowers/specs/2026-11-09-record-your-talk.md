@@ -1,6 +1,8 @@
 # Record your talk: narration, timeline, a narrated video
 
-Status: spec, not started. Order: 3 of 5.
+Status: DONE in v2.28.0 (all three phases). Record is Shift+R (`r` already
+scrolls the script to the top); no pause/resume; the `.gitignore` starter
+is not written yet (docs say keep `.si/` out of git). Order: 3 of 5.
 
 ## Why
 

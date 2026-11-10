@@ -57,6 +57,7 @@ static HTML (`file://`), and either window drives both. It has two tabs:
 | Clocks | time on this slide against its `(N min)` (amber when over, red at 1.5×), total against the deck plan, ahead/behind pace, wall clock |
 | Rehearsal | the time you spent on each slide is recorded per run; next to the slide clock it shows `last M:SS` — your previous run's time for this slide, to pace against; and the whole talk against it: `vs last run 0:40 behind` (works without any `(N min)` plan) |
 | Timer | `t` pause/resume, `0` reset (promotes this run to the `last` reference and starts fresh) |
+| Record | **● Record** (Shift+R) under `si play`: records your voice from the microphone with every slide and step change; Stop saves `.si/recordings/<talk>-<date-time>/` beside the talk (`audio.webm`, `timeline.json`, `meta.json`). It feeds `--mp4 --narration` and `si rehearse` |
 | Navigation | → ← Space PgDn PgUp Home End, buttons |
 
 Settings (tab, size, speed, mirror, notes only) are remembered per browser.

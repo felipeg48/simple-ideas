@@ -479,6 +479,7 @@ static HTML (`file://`), and either window drives both. It has two tabs:
 | Clocks | time on this slide against its `(N min)` (amber when over, red at 1.5×), total against the deck plan, ahead/behind pace, wall clock |
 | Rehearsal | the time you spent on each slide is recorded per run; next to the slide clock it shows `last M:SS` — your previous run's time for this slide, to pace against; and the whole talk against it: `vs last run 0:40 behind` (works without any `(N min)` plan) |
 | Timer | `t` pause/resume, `0` reset (promotes this run to the `last` reference and starts fresh) |
+| Record | **● Record** (Shift+R) under `si play`: records your voice from the microphone with every slide and step change; Stop saves `.si/recordings/<talk>-<date-time>/` beside the talk (`audio.webm`, `timeline.json`, `meta.json`). It feeds `--mp4 --narration` and `si rehearse` |
 | Navigation | → ← Space PgDn PgUp Home End, buttons |
 
 Settings (tab, size, speed, mirror, notes only) are remembered per browser.
@@ -970,6 +971,22 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   ```bash
   si build talk.md --mp4 --dwell 2   # talk.mp4: a 2 s look at every slide and step
   ```
+
+  With a recording from the teleprompter's **● Record** button, `--narration`
+  holds every view exactly as long as you spoke on it and puts your voice
+  under the video (`latest`: the newest recording of that deck; or a
+  recording's folder). A view you never showed gets the usual time, and si
+  warns when the deck changed since the recording:
+
+  ```bash
+  si build talk.md --narration latest   # talk.mp4: the talk, paced and voiced as you gave it
+  si rehearse talk.md                   # per slide: planned, spoken, and your words per minute
+  ```
+
+  `si rehearse` reads the same recording: each slide's `(N min)` against the
+  time you spent on it (`← long` past 1.25×, `← fast` under 0.75×) and the
+  words per minute its `Notes:` script implies at that pace. Recordings stay
+  on your computer; keep `.si/` out of git.
 
   It needs headless Chrome and ffmpeg (`brew install ffmpeg`). si runs the page
   slowed down while it films, so the motion is smooth whatever the machine;

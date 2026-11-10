@@ -98,6 +98,22 @@
   si build talk.md --mp4 --dwell 2   # talk.mp4: a 2 s look at every slide and step
   ```
 
+  With a recording from the teleprompter's **● Record** button, `--narration`
+  holds every view exactly as long as you spoke on it and puts your voice
+  under the video (`latest`: the newest recording of that deck; or a
+  recording's folder). A view you never showed gets the usual time, and si
+  warns when the deck changed since the recording:
+
+  ```bash
+  si build talk.md --narration latest   # talk.mp4: the talk, paced and voiced as you gave it
+  si rehearse talk.md                   # per slide: planned, spoken, and your words per minute
+  ```
+
+  `si rehearse` reads the same recording: each slide's `(N min)` against the
+  time you spent on it (`← long` past 1.25×, `← fast` under 0.75×) and the
+  words per minute its `Notes:` script implies at that pace. Recordings stay
+  on your computer; keep `.si/` out of git.
+
   It needs headless Chrome and ffmpeg (`brew install ffmpeg`). si runs the page
   slowed down while it films, so the motion is smooth whatever the machine;
   `--dissolve` films still views that dissolve into each other in 0.4 s
