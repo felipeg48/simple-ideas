@@ -537,3 +537,24 @@ func TestIconsAreOptIn(t *testing.T) {
 		t.Error("without the keys a page carries no icon and no preview picture")
 	}
 }
+
+// The printed handout's header: title and byline always, a QR code only when
+// the deck names handout-url:, and hidden on screen.
+func TestHandoutHead(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "d.md")
+	os.WriteFile(p, []byte("---\ntitle: Talk\nauthor: Ada\nhandout-url: https://example.com/t\n---\n# Talk\n"), 0o644)
+	d, err := deck.Parse(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := string(Deck(d, Options{}).HTML)
+	if !strings.Contains(h, `<header class="si-handout-head" hidden>`) || !strings.Contains(h, `<figure class="si-handout-qr">`) || !strings.Contains(h, "https://example.com/t") {
+		t.Error("handout head with the QR code expected")
+	}
+	os.WriteFile(p, []byte("---\ntitle: Talk\n---\n# Talk\n"), 0o644)
+	d, _ = deck.Parse(p)
+	if strings.Contains(string(Deck(d, Options{}).HTML), `<figure class="si-handout-qr">`) {
+		t.Error("no QR code without handout-url:")
+	}
+}

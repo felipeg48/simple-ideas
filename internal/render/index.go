@@ -21,6 +21,7 @@ type IndexEntry struct {
 	Slides   int
 	Minutes  float64
 	PDF      string // optional relative href to a slides PDF (pdfs/<name>.pdf); empty = no badge
+	Handout  string // optional relative href to a handout PDF (handouts/<name>.pdf); empty = no badge
 	Status   string // optional status badge (e.g. beta, preview, new)
 	Version  string // optional version badge (e.g. v1.2.0)
 	Lab      bool   // a document (lab, article, guide): shown as "N sections", no slides/time
@@ -88,14 +89,20 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 		}
 		inner := fmt.Sprintf("<b>%s</b><span>%s</span>%s<small>%s</small>",
 			html.EscapeString(e.Title), html.EscapeString(e.Subtitle), bg, size)
-		if e.PDF == "" {
+		if e.PDF == "" && e.Handout == "" {
 			fmt.Fprintf(&b, "<a class=\"si-card\" data-kind=\"%s\" href=\"%s\">%s</a>\n", kind, html.EscapeString(e.Href), inner)
 		} else {
-			// Two sibling links in a positioned wrapper: the card opens the deck, the
-			// badge downloads the PDF. (Nesting <a> in <a> is invalid HTML.)
-			fmt.Fprintf(&b, "<div class=\"si-card-wrap\"><a class=\"si-card\" data-kind=\"%s\" href=\"%s\">%s</a>"+
-				"<a class=\"si-card-pdf\" href=\"%s\" download title=\"Download the slides as PDF\">PDF</a></div>\n",
-				kind, html.EscapeString(e.Href), inner, html.EscapeString(e.PDF))
+			// Sibling links in a positioned wrapper: the card opens the deck, the
+			// badges download the PDFs. (Nesting <a> in <a> is invalid HTML.)
+			badges := ""
+			if e.Handout != "" {
+				badges += fmt.Sprintf("<a class=\"si-card-pdf si-card-handout\" href=\"%s\" download title=\"Download the handout as PDF\">HANDOUT</a>", html.EscapeString(e.Handout))
+			}
+			if e.PDF != "" {
+				badges += fmt.Sprintf("<a class=\"si-card-pdf\" href=\"%s\" download title=\"Download the slides as PDF\">PDF</a>", html.EscapeString(e.PDF))
+			}
+			fmt.Fprintf(&b, "<div class=\"si-card-wrap\"><a class=\"si-card\" data-kind=\"%s\" href=\"%s\">%s</a>%s</div>\n",
+				kind, html.EscapeString(e.Href), inner, badges)
 		}
 	}
 	b.WriteString("</div>\n")

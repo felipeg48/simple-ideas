@@ -858,6 +858,24 @@ callouts are written the same way.
   `aspect`, every step revealed, canvases in their final state. `si build --pdf`
   writes a `<name>.pdf` next to each deck using headless Chrome (needs Chrome or
   Chromium installed; without it, HTML is still written).
+- **Handouts**: `si build talk.md --handout` writes `handouts/<name>.pdf` for
+  the audience: a header (title, author, date) and every slide in its final
+  state, eight to a page. By default a handout carries **no speaker text**;
+  ask for it by name:
+
+  ```bash
+  si build talk.md --handout              # slides only (also: --handout=slides)
+  si build talk.md --handout=lines        # each slide with ruled lines for notes
+  si build talk.md --handout=points       # each slide with its Points:
+  si build talk.md --handout=notes        # each slide with its Notes: script
+  ```
+
+  Front matter: `handout:` sets a deck's layout for a plain `--handout`
+  (`slides`, `lines`, `points` or `notes`); `handout-url: https://…` prints a
+  QR code to that address in the header, so the reader can open the live
+  deck. si.conf `handout.paper: letter` changes the paper (A4 by default).
+  The index tile of a deck gets a HANDOUT download badge. Needs Chrome, like
+  `--pdf`.
 - **Video**: `si build talk.md --mp4` films the deck to `<name>.mp4` (1920×1080,
   H.264): every slide and every build step as the audience sees it, each held
   for its share of the slide's `(N min)` (else 3 s), then the slide transition,
@@ -1245,6 +1263,7 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `theme: <name>` | default theme when a deck sets no `theme:` and there is no `--theme` |
 | `keys.<action>: <key>` | remap a command key |
 | `feature.<name>: off` | turn a feature off (its key stops working and its toolbar button is hidden) |
+| `handout.paper: letter` | the paper of `si build --handout` PDFs: `a4` (default) or `letter` |
 | `draw.hold: shift` | the key you hold in draw mode to draw with the cursor, no click: `alt` (⌥ Option, the default), `shift`, `ctrl`, `meta` (⌘ Command), or `off` |
 | `links.<label>: <url>` | a page outside the build that find (`/`) offers, e.g. `links.Team wiki: https://wiki.example.com`; relative paths work too |
 | `timer.time: 10,15,30` | break-timer presets (default `5,10,15,20,30,45,60`) |

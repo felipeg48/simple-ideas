@@ -118,3 +118,34 @@ func TestMCPTools(t *testing.T) {
 		t.Errorf("a fresh starter should check clean: %s", res.Text)
 	}
 }
+
+// Handouts carry no speaker text unless asked: the default is slides only;
+// points and notes are named. With Chrome, a real build prints a PDF.
+func TestHandout(t *testing.T) {
+	var h handoutFlag
+	for v, want := range map[string]string{"true": "deck", "slides": "slides", "grid": "slides", "lines": "lines", "points": "points", "notes": "notes"} {
+		if err := h.Set(v); err != nil || string(h) != want {
+			t.Errorf("--handout=%s → %q %v, want %q", v, h, err, want)
+		}
+	}
+	if err := h.Set("teleprompter"); err == nil {
+		t.Error("an unknown handout mode must be refused")
+	}
+	if findChrome() == "" {
+		t.Skip("no Chrome for the PDF")
+	}
+	dir := t.TempDir()
+	src := filepath.Join(dir, "talk.md")
+	os.WriteFile(src, []byte("---\ntitle: Talk\nhandout-url: https://example.com/talk\n---\n\n# Talk\n\nNotes:\nSAY-THIS-ALOUD\n\nPoints:\n- POINT-FOR-ME\n\n---\n\n## Two\n\nText.\n"), 0o644)
+	for _, mode := range []string{"slides", "notes"} {
+		out := filepath.Join(dir, "out-"+mode)
+		var o, e strings.Builder
+		if code := run([]string{"build", src, "-o", out, "--handout=" + mode}, &o, &e); code != exitOK {
+			t.Fatalf("%s: exit %d: %s", mode, code, e.String())
+		}
+		b, err := os.ReadFile(filepath.Join(out, "handouts", "talk.pdf"))
+		if err != nil || !strings.HasPrefix(string(b), "%PDF-") {
+			t.Fatalf("%s: no handout PDF: %v", mode, err)
+		}
+	}
+}

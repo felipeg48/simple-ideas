@@ -98,3 +98,29 @@ func (dr *deckRenderer) qrHTML(val string, s *deck.Slide, sc *slideCtx) string {
 	b.WriteString("</figure>")
 	return b.String()
 }
+
+// handoutHead is the header of a printed handout (si build --handout): the
+// title, author and date, and a QR code to handout-url: when the deck sets
+// one. Hidden everywhere else (layout.css shows it under [data-si-handout]).
+func (dr *deckRenderer) handoutHead(d *deck.Deck) string {
+	var b strings.Builder
+	b.WriteString(`<header class="si-handout-head" hidden><div><b>` + dr.inline(d.Title()) + `</b>`)
+	var by []string
+	for _, v := range []string{d.Meta.Author, d.Meta.Date} {
+		if v != "" {
+			by = append(by, html.EscapeString(v))
+		}
+	}
+	if len(by) > 0 {
+		b.WriteString(`<span>` + strings.Join(by, " · ") + `</span>`)
+	}
+	b.WriteString(`</div>`)
+	if u := strings.TrimSpace(d.Meta.HandoutURL); u != "" {
+		if c, err := qr.Encode([]byte(u), qr.Options{Level: qr.M}); err == nil {
+			fmt.Fprintf(&b, `<figure class="si-handout-qr">%s<figcaption>%s</figcaption></figure>`,
+				c.SVG(qr.Style{Quiet: 2, Label: "QR code: " + u}, "", "", ""), html.EscapeString(u))
+		}
+	}
+	b.WriteString("</header>\n")
+	return b.String()
+}

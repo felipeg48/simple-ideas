@@ -5,6 +5,22 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.14.0: handouts.** `si build … --handout[=slides|lines|points|notes]`
+  → `handouts/<name>.pdf` (index tile: HANDOUT badge). The founder asked
+  mid-build for no speaker text by default: `slides` (8 a page) is the default;
+  `lines` adds ruled lines, `points` the Points:, `notes` the Notes: script
+  (cues hidden). How: `pagePDF` prints the built page with
+  `?si-handout=<mode>&si-paper=a4|letter#print`; the runtime sets
+  `data-si-handout`, light mode, and a portrait `@page` appended after the
+  deck's own landscape `@page` (in layout.css it lost to it); slides are
+  `container-type:size` boxes, so content scales by its own container units.
+  `handout-url:` → a QR code in `.si-handout-head` (render/qr.go
+  `handoutHead`). Tests: `TestHandout` (modes; a real PDF when Chrome is
+  there), `TestHandoutHead`; the four layouts looked at page by page, the
+  header QR decoded by Vision. Not done: a Handout choice in the Studio's
+  Build dialog. Next (the founder): 5+ new built-in themes, screenshots of
+  every theme on the site and in the README.
+
 - **Specs for the next five features** (2026-11-09): `docs/superpowers/specs/2026-11-09-next-five.md`
   and one spec each. Not started; the founder picks the order, one at a time.
 

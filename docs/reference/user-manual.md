@@ -269,6 +269,7 @@ Points:
 ```bash
 si play <dir>              # serve with live reload (--dev: in-place hot reload)
 si build <dir> --pdf       # self-contained HTML (+ PDF)
+si build talk.md --handout # handouts/talk.pdf: slides only; =lines, =points, =notes add space or speaker text
 si check <dir>             # validate; exit 1 on a problem
 si new <name>              # scaffold a deck (the showcase, every rule)
 si new <name> --type article   # a small starter: deck, article, guide, book, site, page, lab, demo, mindmap, mindmap3d, codeshow

@@ -278,6 +278,8 @@ var Hooks = []Hook{
 	{`.si-pill-mark`, "badge on a slide: the coloured mark before the text"},
 	{`.si-lockup`, "logo: the lockup (logo × partner name)"},
 	{`.si-qr`, "qr: the figure (data-size: small, medium, large)"},
+	{`.si-handout-head`, "handout (si build --handout): the printed header: title, author, date, the QR code"},
+	{`.si-handout-qr`, "handout: the QR code to handout-url: and its address"},
 	{`.si-qr-code`, "qr: the SVG code (modules in currentColor)"},
 	{`.si-qr-cap`, "qr: the caption"},
 	{`.si-lk-img`, "logo: the logo image"},

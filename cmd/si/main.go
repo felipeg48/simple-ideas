@@ -47,7 +47,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "2.13.0"
+const version = "2.14.0"
 
 // Exit codes.
 const (
@@ -72,6 +72,8 @@ Usage:
   si [build] <dir|file.md> [--output html/] [--css <dir|file.css>]... [--no-inline-media] [--pdf]
         write one self-contained HTML file per deck plus index.html
         --pdf also renders each deck to pdfs/<name>.pdf and adds a PDF badge to the index tiles
+        --handout[=slides|lines|points|notes] also prints handouts/<name>.pdf for the audience: slides
+        only by default (no speaker text); lines adds space to write, points / notes the speaker's text
         --mp4 [--dwell 3] also films each deck to <name>.mp4 (1080p): every slide and build
         step, held for its share of (N min) or --dwell seconds, and the transitions and
         canvas morphs as they move (--dissolve: stills dissolving into each other)
@@ -181,6 +183,28 @@ Example:
   si --css css/ --output html/ md/
 `
 
+// handoutFlag is --handout (each deck's handout:, else slides only) or
+// --handout=slides|lines|points|notes (every deck). By default a handout
+// carries no speaker text; points (Points:) and notes (the Notes: script) are
+// asked for by name.
+type handoutFlag string
+
+func (h *handoutFlag) IsBoolFlag() bool { return true }
+func (h *handoutFlag) String() string   { return string(*h) }
+func (h *handoutFlag) Set(v string) error {
+	switch v {
+	case "true":
+		*h = "deck" // each deck's own handout:, else slides
+	case "false":
+		*h = ""
+	case "slides", "grid", "lines", "points", "notes":
+		*h = handoutFlag(handoutMode(v))
+	default:
+		return fmt.Errorf("--handout=%q: use slides, lines, points or notes", v)
+	}
+	return nil
+}
+
 // httpsFlag is --https (si's own certificate authority) or --https=tailscale.
 type httpsFlag string
 
@@ -235,7 +259,8 @@ type options struct {
 	remoteAddr                                   string
 	siteOld                                      string // the old --site <text>, now --site-title
 	remote                                       remoteFlag
-	https                                        httpsFlag // si play --remote --https[=tailscale]
+	https                                        httpsFlag   // si play --remote --https[=tailscale]
+	handout                                      handoutFlag // si build --handout[=points|lines|grid]
 	open, help, ver, verbose, feature            bool
 	noInline, pdf, slides, dev, web, noOpen      bool
 	share                                        bool // --share-assets
@@ -283,6 +308,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.Var(&o.remote, "remote", "")
 	fl.StringVar(&o.remoteAddr, "remote-addr", "", "")
 	fl.Var(&o.https, "https", "")
+	fl.Var(&o.handout, "handout", "")
 	fl.StringVar(&o.export, "export", "", "")
 	fl.StringVar(&o.kind, "type", "", "")
 	fl.BoolVar(&o.offline, "offline", false, "")
@@ -604,7 +630,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	failed, sharedDone := false, false
 	chrome := ""
-	if o.pdf || o.svg || o.png || o.mp4 {
+	if o.pdf || o.svg || o.png || o.mp4 || o.handout != "" {
 		if chrome = findChrome(); chrome == "" {
 			fmt.Fprintln(stderr, "si: --pdf, --svg, --png and --mp4 need Google Chrome/Chromium; none found — writing HTML only")
 		}
@@ -752,6 +778,36 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			} else {
 				entry.PDF = filepath.ToSlash(rel)
 				fmt.Fprintf(stdout, "  %-28s (pdf)\n", rel)
+			}
+		}
+		if chrome != "" && o.handout != "" && !d.IsDoc() {
+			mode := string(o.handout)
+			if mode == "deck" {
+				mode = d.Meta.Handout
+			}
+			if m := handoutMode(mode); m != "" {
+				mode = m
+			} else {
+				if mode != "" {
+					fmt.Fprintf(stderr, "si: %s: handout: %q is not slides, lines, points or notes; using slides\n", d.Name, mode)
+				}
+				mode = "slides"
+			}
+			rel := filepath.Join("handouts", d.Name+".pdf")
+			pdf := filepath.Join(out, rel)
+			paper := "a4"
+			if cfg != nil && cfg.HandoutPaper != "" {
+				paper = cfg.HandoutPaper
+			}
+			if err := os.MkdirAll(filepath.Dir(pdf), 0o755); err != nil {
+				fmt.Fprintf(stderr, "si: %v\n", err)
+				failed = true
+			} else if err := pagePDF(chrome, dest, pdf, "?si-handout="+mode+"&si-paper="+paper); err != nil {
+				fmt.Fprintf(stderr, "si: handout %s: %v\n", d.Name, err)
+				failed = true
+			} else {
+				entry.Handout = filepath.ToSlash(rel)
+				fmt.Fprintf(stdout, "  %-28s (handout, %s)\n", rel, mode)
 			}
 		}
 		entries = append(entries, entry)
@@ -1310,12 +1366,16 @@ func findChrome() string {
 // deckToPDF renders a built deck HTML to a self-contained PDF with headless
 // Chrome. The deck is loaded at #print so deck.js shows every slide in its
 // final state (all steps revealed, canvases at their last state).
-func deckToPDF(chrome, htmlPath, pdfPath string) error {
+func deckToPDF(chrome, htmlPath, pdfPath string) error { return pagePDF(chrome, htmlPath, pdfPath, "") }
+
+// pagePDF prints a built page to PDF with headless Chrome, with a query
+// (?si-handout=points) before the #print that puts every slide in its final state.
+func pagePDF(chrome, htmlPath, pdfPath, query string) error {
 	abs, err := filepath.Abs(htmlPath)
 	if err != nil {
 		return err
 	}
-	url := "file://" + filepath.ToSlash(abs) + "#print"
+	url := "file://" + filepath.ToSlash(abs) + query + "#print"
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, chrome,
@@ -1942,4 +2002,16 @@ func absPath(p string) string {
 		return a
 	}
 	return p
+}
+
+// handoutMode names a handout layout ("grid" is an older name of "slides"),
+// or "" for none.
+func handoutMode(v string) string {
+	switch v {
+	case "slides", "grid":
+		return "slides"
+	case "lines", "points", "notes":
+		return v
+	}
+	return ""
 }

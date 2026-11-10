@@ -49,6 +49,7 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	}
 	dr.userAndMode(&b, modeAttr)
 	b.WriteString("</head>\n<body>\n")
+	b.WriteString(dr.handoutHead(d))
 	ratio := strings.Replace(aspect, ":", "/", 1)
 	fmt.Fprintf(&b, "<main class=\"si-deck\" aria-label=\"%s\" style=\"--_aspect:%s\" data-si-tx=\"none\">\n", html.EscapeString(plain(d.Title())), ratio)
 	slides, shared := shareMedia(slides)

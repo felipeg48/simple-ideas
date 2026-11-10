@@ -197,6 +197,11 @@ pass. The steps that matter:
   phase 1 fixes CSS-file themes: `extends <built-in>`, the index page's theme;
   theme import/export incl. W3C design tokens; MCP theme tools), and Motion
   (`2026-11-09-motion-editor.md`: `transition: morph`, the Studio Motion view).
+- **Handouts** (DONE, v2.14.0): `si build --handout[=slides|lines|points|notes]`
+  prints the deck page with `?si-handout=<mode>#print` (06-media.js sets
+  `data-si-handout`, light mode and a portrait `@page` after the deck's own;
+  print CSS in layout.css); `handout:` / `handout-url:` front matter,
+  `handout.paper` in si.conf. No speaker text by default (the founder).
 - **Menu-bar icon** (DONE, v2.12.0): si Studio.app's NSStatusItem lists
   running sessions from `<config dir>/si/sessions/<pid>.json`
   (`internal/serve/session.go`, written by si play / serve; `desktop/sessions.go`

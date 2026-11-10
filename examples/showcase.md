@@ -7,6 +7,7 @@ accent: "#3657d6"
 transition: fade
 aspect: 16:9
 footer: Northwind Logistics
+handout-url: https://simple-ideas.org/live/showcase.html
 watermark: Confidential
 watermark-opacity: 0.05
 runbook: runbook.json

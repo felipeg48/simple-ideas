@@ -47,6 +47,9 @@ keys.help:       ?
 keys.terminal:   ` + "`" + `          # backtick; play terminal drawer (si play on a loopback address only)
 keys.remote:     q          # si play --remote: the phone and tablet links as QR codes
 
+# si build --handout: the paper of handout PDFs
+handout.paper: a4      # a4 or letter
+
 # draw (a): hold this key and move to draw with the cursor, no click
 draw.hold: alt         # alt (⌥ Option), shift, ctrl, meta (⌘ Command), or off
 
@@ -73,16 +76,17 @@ feature.terminal:  on   # si play loopback only; always off in a built deck and 
 
 // Config is a parsed si.conf. Zero value is a usable empty config.
 type Config struct {
-	Theme       string            // default theme, or ""
-	Fonts       string            // default fonts: (a deck's own fonts: wins)
-	FontsSubset string            // default fonts-subset:
-	Keys        map[string]string // action -> key
-	Features    map[string]bool   // feature -> enabled
-	Timer       TimerConfig       // break-timer presets, unit and animation
-	Links       []Link            // links.<label>: <url>, searchable from find (/), in file order
-	Budget      Budget            // budget.page / budget.3d: si check fails on bigger pages
-	DrawHold    string            // draw.hold: the key that draws with the cursor ("" = alt)
-	Warnings    []string          // unknown keys / bad values, for the caller to report
+	Theme        string            // default theme, or ""
+	Fonts        string            // default fonts: (a deck's own fonts: wins)
+	FontsSubset  string            // default fonts-subset:
+	Keys         map[string]string // action -> key
+	Features     map[string]bool   // feature -> enabled
+	Timer        TimerConfig       // break-timer presets, unit and animation
+	Links        []Link            // links.<label>: <url>, searchable from find (/), in file order
+	Budget       Budget            // budget.page / budget.3d: si check fails on bigger pages
+	DrawHold     string            // draw.hold: the key that draws with the cursor ("" = alt)
+	HandoutPaper string            // handout.paper: a4 (default) or letter
+	Warnings     []string          // unknown keys / bad values, for the caller to report
 }
 
 // Budget is the largest a built page may be, in KB (0: not set).
@@ -244,6 +248,12 @@ func Parse(r io.Reader) *Config {
 				c.Budget.Page = kb
 			} else {
 				c.Budget.ThreeD = kb
+			}
+		case k == "handout.paper":
+			if p := strings.ToLower(v); p == "a4" || p == "letter" {
+				c.HandoutPaper = p
+			} else {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: handout.paper wants a4 or letter, got %q", ln, v))
 			}
 		case k == "draw.hold":
 			hold, ok := map[string]string{"alt": "alt", "option": "alt", "shift": "shift", "ctrl": "ctrl", "control": "ctrl",

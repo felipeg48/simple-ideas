@@ -83,7 +83,18 @@
   /* si build --pdf loads the deck at #print; headless Chrome's --print-to-pdf
      does not reliably fire beforeprint, so force every canvas to its final
      state here too. */
-  if (location.hash === '#print') printAll();
+  /* si build --handout prints the page with ?si-handout=slides|lines|points|notes
+     (and ?si-paper=letter): light, every slide in its final state */
+  var handout = /[?&]si-handout=(slides|lines|points|notes)(?:&|$)/.exec(location.search);
+  if (handout) {
+    root.setAttribute('data-si-handout', handout[1]);
+    root.setAttribute('data-si-mode', 'light');
+    // portrait paper with margins, after the deck's own landscape @page so it wins
+    var paper = document.createElement('style');
+    paper.textContent = '@page{size:' + (/[?&]si-paper=letter(?:&|$)/.test(location.search) ? 'letter' : 'A4') + ' portrait;margin:14mm 14mm 16mm}';
+    document.head.appendChild(paper);
+  }
+  if (location.hash === '#print' || handout) printAll();
 
   var fitTimer = 0;
   window.addEventListener('resize', function () { clearTimeout(fitTimer); fitTimer = setTimeout(function () { fit(slides[cur]); }, 100); });

@@ -127,6 +127,10 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.14.0:** handouts. `si build talk.md --handout` prints every slide,
+  eight to a page, with a header and (with `handout-url:`) a QR code back to
+  the live deck; no speaker text unless you ask: `--handout=lines` (space to
+  write), `=points` (Points:), `=notes` (the Notes: script).
 - **v2.13.0:** the key that draws with the cursor is yours to pick:
   `draw.hold: shift` (or `alt`, the default, `ctrl`, `meta`, `off`) in si.conf.
 - **v2.12.0:** a menu-bar icon in si Studio for Mac: every running `si play`
@@ -344,6 +348,7 @@ https://simple-ideas.org/agents.html
 | `si ca [trust\|untrust]` | si's certificate authority for `--https`: where it is, its fingerprint; `trust` adds it to this computer's trusted certificates |
 | `si mcp [dir]` | an MCP server for AI agents on stdio (see [Use it with your AI agent](#use-it-with-your-ai-agent)) |
 | `si rules` | print RULES.md |
+| `si build <dir\|file.md> --handout[=slides\|lines\|points\|notes]` | `handouts/<name>.pdf` for the audience: slides only by default; `lines` adds space to write, `points` / `notes` add the speaker's text; `handout-url:` prints a QR code to the live deck |
 | `si --theme <name\|file.css\|url>` | override the theme: a built-in (`si theme list`: `studio`, `paper`, `mono`, `crdb`, `acemq`, `acemq-pro`; `"AceMQ Pro"` works too), a CSS file, or an `https://` URL |
 | `si theme list` | list the built-in themes: name, display name, aliases, summary |
 | `si --export css-rules\|rules\|conf\|example\|themes\|agent-rules\|skill [--output path]` | `skill`: the si Agent Skill (`SKILL.md` + references, default `.claude/skills/si/`) · starter stylesheet · RULES.md · starter `si.conf` · the showcase decks · a sample deck per theme (a gallery) · `CLAUDE.md` + `AGENTS.md` for a deck project, so a coding agent writes decks the si way (teleprompter `Notes:` as spoken script, `Points:` as talking points; never overwrites, `-o -` prints) |

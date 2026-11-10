@@ -254,3 +254,24 @@ body.si-drawing .si-draw-bar{display:flex}
   .si-step{opacity:1;transform:none}
   .si-bar,.si-progress,.si-help,.si-hud,.si-find,.si-anim,.si-draw,.si-draw-bar,.si-problems{display:none!important}
 }
+/* handout (si build --handout): paper sizes (mm, pt) are print-only; on screen
+   nothing here applies. Slides become size containers, so they scale by their
+   own container units as on screen. No speaker text unless asked for: points
+   shows Points:, notes shows the Notes: script, beside each slide */
+@media print{
+  :root[data-si-handout] .si-handout-head{display:flex!important;justify-content:space-between;align-items:center;gap:6mm;margin:0 0 6mm;padding-bottom:3mm;border-bottom:.3mm solid var(--si-line);font-family:var(--si-font-body);color:var(--si-fg)}
+  .si-handout-head b{display:block;font-size:16pt;line-height:1.2}
+  .si-handout-head span{font-size:9pt;color:var(--si-muted)}
+  .si-handout-qr{margin:0;display:flex;align-items:center;gap:2mm;font-size:7pt;color:var(--si-muted);max-width:60mm;word-break:break-all}
+  .si-handout-qr svg{flex:none;width:20mm;height:20mm}
+  :root[data-si-handout] .si-deck{display:block}
+  :root[data-si-handout] .si-slide{width:56%;height:auto;aspect-ratio:var(--_aspect,16/10);container-type:size;overflow:visible;margin:0 0 6mm;break-after:auto;break-inside:avoid;outline:.3mm solid var(--si-line);border-radius:1.5mm}
+  :root[data-si-handout] .si-inner{border-radius:1.5mm}
+  :root[data-si-handout="points"] .si-points,:root[data-si-handout="notes"] .si-notes{display:block!important;position:absolute;left:calc(100% + 5mm);top:0;width:calc(78.5% - 5mm);max-height:100%;overflow:hidden;font:9pt/1.4 var(--si-font-body);color:var(--si-fg)}
+  :root[data-si-handout] :is(.si-points,.si-notes) :is(ul,ol){margin:0;padding-left:1.1em}
+  :root[data-si-handout] :is(.si-points,.si-notes) p{margin:0 0 .4em}
+  :root[data-si-handout] .si-notes .si-cue{display:none}
+  :root[data-si-handout="lines"] .si-slide::after{content:"";position:absolute;left:calc(100% + 5mm);top:1mm;bottom:0;width:calc(78.5% - 5mm);background:repeating-linear-gradient(to bottom,transparent 0 6.5mm,var(--si-line) 6.5mm 6.8mm)}
+  :root[data-si-handout="slides"] .si-deck{display:grid;grid-template-columns:1fr 1fr;gap:6mm}
+  :root[data-si-handout="slides"] .si-slide{width:auto;margin:0}
+}

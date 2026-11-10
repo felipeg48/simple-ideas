@@ -147,10 +147,12 @@ type Meta struct {
 	Tags         string // si publish: comma-separated tags for dev.to and Hashnode
 	Canonical    string // si publish: the article's original URL (canonical_url; a LinkedIn link post)
 	Cover        string // si publish: the picture of a LinkedIn link post (default: the article's first picture)
+	Handout      string // si build --handout: points (default), lines or grid
+	HandoutURL   string // si build --handout: a QR code to this address in the handout's header
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -485,7 +487,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "fonts": &m.Fonts, "fonts-subset": &m.FontsSubset, "repo": &m.Repo,
 		"subtitle": &m.Subtitle, "edition": &m.Edition, "session": &m.Session, "slides": &m.SlidesRef, "duration": &m.Duration,
 		"navigator": &m.Navigator, "logo": &m.Logo, "cta": &m.CTA,
-		"linkedin": &m.LinkedIn, "tags": &m.Tags, "canonical": &m.Canonical, "cover": &m.Cover,
+		"linkedin": &m.LinkedIn, "tags": &m.Tags, "canonical": &m.Canonical, "cover": &m.Cover, "handout": &m.Handout, "handout-url": &m.HandoutURL,
 		"layout": &m.MapLayout, "lines": &m.MapLines, "nodes": &m.MapNodes, "map-theme": &m.MapTheme, "watermark-position": &m.WatermarkPos, "favicon": &m.Favicon, "touch-icon": &m.TouchIcon, "og-image": &m.OGImage,
 		"view": &m.MapView, "camera": &m.MapCamera, "floors": &m.MapFloors, "kind": &m.MapKind, "flow": &m.MapFlow,
 	}[key]
