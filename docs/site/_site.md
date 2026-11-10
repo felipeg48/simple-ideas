@@ -35,6 +35,7 @@ footer: simple-ideas
 - [Rules](rules/)
 - [Manual](manual.md)
 - Help
+  - [Download](download.md)
   - [Report a problem]($SI_BUG_URL)
   - [Request a feature]($SI_FEATURE_URL)
   - [GitHub](https://github.com/felipeg48/simple-ideas)
