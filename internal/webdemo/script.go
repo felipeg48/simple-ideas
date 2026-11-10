@@ -606,10 +606,12 @@ func quoted(s string) (string, string, error) {
 	for i := 1; i < len(s); i++ {
 		switch c := s[i]; c {
 		case '\\':
-			if i+1 < len(s) {
+			// only \" and \\ are escapes; any other backslash is kept, so a
+			// shell command's \n or \t reaches the shell as written
+			if i+1 < len(s) && (s[i+1] == '"' || s[i+1] == '\\') {
 				i++
-				b.WriteByte(s[i])
 			}
+			b.WriteByte(s[i])
 		case '"':
 			return b.String(), strings.TrimSpace(s[i+1:]), nil
 		default:

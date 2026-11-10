@@ -1,0 +1,6 @@
+# What the demo scripts make while they run (setup: removes them)
+talk/
+out/
+bad.md
+bad.md.bak
+demo-out/

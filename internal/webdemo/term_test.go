@@ -495,3 +495,19 @@ func TestTerminalFailure(t *testing.T) {
 		}
 	}
 }
+
+// A backslash in a quoted value is kept unless it escapes a quote or itself,
+// so shell commands keep their \n.
+func TestQuotedKeepsBackslashes(t *testing.T) {
+	for in, want := range map[string]string{
+		`"printf 'a\nb'"`:    `printf 'a\nb'`,
+		`"say \"hi\""`:       `say "hi"`,
+		`"C:\\path"`:         `C:\path`,
+		`"tab\there" · wait`: `tab\there`,
+	} {
+		got, _, err := quoted(in)
+		if err != nil || got != want {
+			t.Errorf("quoted(%s) = %q, %v; want %q", in, got, err, want)
+		}
+	}
+}
