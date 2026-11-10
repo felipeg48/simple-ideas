@@ -1,0 +1,82 @@
+name: demos
+
+# Films docs/demos (si demo run, Kokoro af_heart) on every minor release tag
+# (v2.N.0, not patch tags) and on demand, on macOS so fonts and windows match
+# the site's pictures. The videos go to the release as si-demo-videos.tar.gz
+# (plus each area's all.mp4), never into git; the docs-site workflow puts the
+# newest ones on the site.
+on:
+  push:
+    tags: ['v*.*.0']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: demos
+  cancel-in-progress: false
+
+jobs:
+  film:
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: build si
+        run: make build && echo "$PWD/bin" >> "$GITHUB_PATH"
+      - name: ffmpeg
+        run: brew install ffmpeg
+      - name: Kokoro (cached between runs)
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/si/kokoro
+          key: kokoro-onnx-0.6.1-model-v1.0-${{ runner.os }}-${{ runner.arch }}
+      - name: 'voice cache (only changed Say lines are voiced again)'
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/si/voice
+          key: si-voice-${{ hashFiles('docs/demos/*.md') }}
+          restore-keys: si-voice-
+      - name: install Kokoro
+        run: si voice install kokoro && si doctor
+      - name: film every script
+        working-directory: docs/demos
+        run: |
+          status=0
+          for d in *.md; do
+            si demo run "$d" -o "../../dist/demos/${d%.md}" || status=1
+          done
+          exit $status
+      - name: the release to attach to
+        id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then t="$GITHUB_REF_NAME"; else t="$(gh release view --json tagName -q .tagName)"; fi
+          echo "tag=$t" >> "$GITHUB_OUTPUT"
+      - name: attach the videos
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd dist
+          tar czf si-demo-videos.tar.gz demos
+          for a in demos/*/; do n="$(basename "$a")"; [ -f "$a/all.mp4" ] && cp "$a/all.mp4" "si-demo-$n.mp4"; done
+          gh release upload "${{ steps.tag.outputs.tag }}" si-demo-videos.tar.gz si-demo-*.mp4 --clobber
+      - name: rebuild the site with the new videos
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run docs-site --ref main
+      - name: reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-run-reports
+          path: dist/demos/*/report.*

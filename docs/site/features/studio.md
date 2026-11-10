@@ -15,6 +15,8 @@ si --web .                      # opens the Studio for this folder in your brows
 
 ![The Studio: files, the editor and the live preview of a deck](img/studio-write-light.jpg)
 
+<!-- si-video: studio -->
+
 ## What it does
 
 | | |

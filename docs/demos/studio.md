@@ -37,7 +37,7 @@ Say: Change the title, and the preview follows as you type.
 
 ## Problems as you type
 
-What it does: si check runs while you write, and points at the line.
+What it does: the check runs while you write, and points at the line.
 
 Say: A typo in a directive shows up as a problem at once, with its line.
 - click "talk.md"
@@ -47,16 +47,18 @@ Say: A typo in a directive shows up as a problem at once, with its line.
 - press Enter
 - press Enter
 - type "<!-- layuot: center -->"
-- expect text "unknown directive"
+- expect text "1 problem"
+- note "si check, as you type" at "1 problem"
 - wait 2s
 
-Say: Fix it, and the problem is gone.
+Say: Undo it, and the problem is gone.
 - press cmd+z
+- expect text "files OK"
 - wait 1500ms
 
 ## A theme from your logo
 
-What it does: si reads a logo's colours and builds a theme for light and dark, where every pair of colours is easy to read.
+What it does: a logo's colours become a theme for light and dark, where every pair of colours is easy to read.
 
 Say: Every deck can wear a theme. The command palette makes a new one.
 - press cmd+k

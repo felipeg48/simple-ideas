@@ -16,6 +16,8 @@ si play talk.md --open        # present it, live reload: p opens the teleprompte
 si build talk.md -o html/     # one self-contained HTML file, ready to send
 ```
 
+<!-- si-video: decks -->
+
 <!-- embed: ../live/showcase.md 1-4 -->
 
 ## Write it in Markdown
@@ -86,6 +88,8 @@ glides from its old place and size to the new one; the rest fades.
 </div>
 
 ## While you present
+
+<!-- si-video: presenting -->
 
 Every deck si builds answers these keys, in `si play` or opened from a file.
 

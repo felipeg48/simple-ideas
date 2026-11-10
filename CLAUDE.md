@@ -203,6 +203,16 @@ pass. The steps that matter:
   chapters, callouts, captions, voice engines local and cloud) and runs as a
   test (`si demo test`, report, JUnit). Phases: test mode, video, voice, the
   manual with videos, then Retake's CLAUDE.md gets the shared script format.
+  **Phase 4, si's own videos** (DONE v2.39.0): six scripts in `docs/demos/`
+  (decks, presenting, studio, themes, mindmaps, terminal); CI `demos` job runs
+  `si demo test` on them every push; `.github/workflows/demos.yml` films them
+  on macOS with Kokoro on minor tags (`v*.*.0`) and on demand, attaches
+  `si-demo-videos.tar.gz` + `si-demo-<area>.mp4` to the release and starts
+  docs-site; `pages.yml` unpacks the newest release's tarball into
+  `$SI_DEMO_VIDEOS`; `internal/docsite/videos.go` turns `<!-- si-video: area -->`
+  lines into the video + chapters (nothing without videos); `make docs-site`
+  copies `videos/`. README "Watch it" posters in `docs/screenshots/readme/demo-*.jpg`.
+  Next: a window step (the teleprompter is a popup) and a drag step (drawing).
   **Three videos per take** (DONE v2.38.0): `.video.mp4`, `.mp4`,
   `.captions.mp4` (picture shrunk above a captions band, never covered), `.vtt`
   beside `.srt`, long waits fast-forwarded with a badge (`fast-forward` in

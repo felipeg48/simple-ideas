@@ -82,6 +82,8 @@ si build ops-reference -o html/ --pdf
 The whole book is also one page and one PDF, for print.
 `,
 	"mindmaps": `
+<!-- si-video: mindmaps -->
+
 §§§bash
 si new ideas --type mindmap        # ideas.md: a list that becomes a map
 si play ideas.md --open

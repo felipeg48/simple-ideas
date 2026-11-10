@@ -76,6 +76,19 @@ Prefer AsciiDoc? Name the file `.adoc`: every feature works the same
 ([docs/asciidoc.md](docs/asciidoc.md)), and every example on the site has an
 AsciiDoc tab.
 
+## Watch it
+
+Short narrated videos of si itself, filmed from scripts in
+[`docs/demos/`](docs/demos) by `si demo run` on every minor release (they are
+si's own end-to-end tests too). Click a picture to watch it on the site.
+
+| | | |
+|---|---|---|
+| [![A deck from the command line to the room](docs/screenshots/readme/demo-decks.jpg)](https://simple-ideas.org/features/decks.html) | [![Presenting: overview, search, a break, light and dark](docs/screenshots/readme/demo-presenting.jpg)](https://simple-ideas.org/features/decks.html#while-you-present) | [![The Studio: live preview, problems as you type, a theme from a logo](docs/screenshots/readme/demo-studio.jpg)](https://simple-ideas.org/features/studio.html) |
+| **Decks:** new, play, check, build, PDF | **Presenting:** keys, overview, find | **Studio:** write, check, theme |
+| [![Nine themes and a theme from a logo](docs/screenshots/readme/demo-themes.jpg)](https://simple-ideas.org/themes.html) | [![Mind maps in 2D and 3D](docs/screenshots/readme/demo-mindmaps.jpg)](https://simple-ideas.org/features/mindmaps.html) | [![si in the terminal](docs/screenshots/readme/demo-terminal.jpg)](https://simple-ideas.org/features/terminal.html) |
+| **Themes:** nine, and your logo's | **Mind maps:** a list, 2D, 3D | **Terminal:** slides and the Studio |
+
 ## Features
 
 ### Decks

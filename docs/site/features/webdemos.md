@@ -213,6 +213,15 @@ report, secrets masked; a failure shows the terminal's last 40 lines in the
 report and in JUnit. The example `examples/webdemo/broker.md` starts a tiny
 broker written in Go with `go run`, so CI runs it too.
 
+## si's own demos
+
+The videos on this site are web demos too: six scripts in
+[`docs/demos/`](https://github.com/felipeg48/simple-ideas/tree/main/docs/demos)
+drive si in a terminal, a browser and the Studio. Every push checks them with
+`si demo test`; every minor release films them with the Kokoro voice. They are
+a good place to see terminals, background programs and the Studio in one
+script.
+
 ## Voices
 
 ```markdown

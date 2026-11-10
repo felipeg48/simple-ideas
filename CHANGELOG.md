@@ -3,6 +3,14 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.39.0:** si's own demo videos: six scripts in `docs/demos/` (a deck
+  from the command line to the room, presenting, the Studio, themes, mind maps,
+  the terminal) are checked by `si demo test` on every push and filmed with
+  the Kokoro voice on every minor release; the site shows each area's video
+  with its chapters (Decks, Studio, Themes, Mind maps, Terminal), and the
+  README has a "Watch it" row of posters. Fixed: a page with an iframe that
+  reloads (the Studio's preview) no longer makes a click wait for "still
+  loading".
 - **v2.38.0:** `si demo run` makes three videos from one take: `<feature>.video.mp4`
   (the picture alone), `<feature>.mp4` (picture and voice) and
   `<feature>.captions.mp4` (picture, voice and captions); the same for the

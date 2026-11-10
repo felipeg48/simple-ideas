@@ -55,7 +55,7 @@ Say: And every theme has a dark side, one key away.
 
 ## A theme from your logo
 
-What it does: si reads a logo's colours and makes a theme for light and dark, where every pair of colours is easy to read.
+What it does: a logo's colours become a theme for light and dark, where every pair of colours is easy to read.
 
 Say: Start from the company logo.
 - terminal "si" · window=mac theme=night backdrop=graphite

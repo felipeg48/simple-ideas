@@ -17,6 +17,8 @@ si --terminal .                          # the Studio as a keyboard app
 
 ![The title slide of a deck in the terminal: block letters, the logo and the badge](img/term-title.jpg)
 
+<!-- si-video: terminal -->
+
 ## Present
 
 Titles in block letters, builds, every layout, code, tables, cards, badges and

@@ -147,6 +147,15 @@ func Generate(dst string) (pages int, err error) {
 		}
 		return os.WriteFile(p, []byte(text), 0o644)
 	}
+	// every page may carry <!-- si-video: area --> lines (videos.go)
+	vids := newVideos(write)
+	plain := write
+	write = func(rel, text string) error {
+		if strings.HasSuffix(rel, ".md") {
+			text = vids.replace(text, rel)
+		}
+		return plain(rel, text)
+	}
 	ex, done, err := newLiveExamples(write)
 	if err != nil {
 		return 0, err

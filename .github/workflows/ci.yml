@@ -59,3 +59,29 @@ jobs:
       - name: e2e (headless)
         working-directory: web/studio
         run: npm run e2e
+
+  demos:
+    # docs/demos are si's own end-to-end test: every feature of every script
+    # performed and checked in headless Chrome (no video, no voice)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: build si
+        run: make build && echo "$PWD/bin" >> "$GITHUB_PATH"
+      - name: si demo test docs/demos
+        working-directory: docs/demos
+        run: |
+          status=0
+          for d in *.md; do
+            si demo test "$d" -o "../../dist/demo-test/${d%.md}" --junit "../../dist/demo-test/${d%.md}.xml" || status=1
+          done
+          exit $status
+      - name: reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-test-reports
+          path: dist/demo-test

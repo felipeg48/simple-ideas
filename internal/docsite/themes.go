@@ -25,6 +25,8 @@ description: Every built-in si theme, light and dark, with the name to use. Or m
 
 # Themes
 
+<!-- si-video: themes -->
+
 Every theme comes in light and dark (the reader's system setting, or §d§
 while presenting). Pick one by name:
 

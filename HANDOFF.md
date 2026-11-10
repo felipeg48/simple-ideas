@@ -5,6 +5,17 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-10)
 
+- **v2.39.0: si's own demo videos.** `docs/demos/*.md` (six scripts) are
+  tested on every push (ci.yml `demos`) and filmed on minor tags by
+  `.github/workflows/demos.yml` (macOS, Kokoro cached, uploads
+  `si-demo-videos.tar.gz` to the release, then runs docs-site). The site embeds
+  them through `<!-- si-video: area -->` lines (internal/docsite/videos.go,
+  `$SI_DEMO_VIDEOS`; `make docs-site` copies `videos/`). Fixes found while
+  writing them: iframe loads no longer hold a step (`r.inner` in run.go: the
+  Studio preview iframe stuck the loading count), title cards keep a lowercase
+  first word only if the script avoids it (scripts reworded; not fixed in
+  code). Not yet filmable: the teleprompter popup, drawing (needs drag).
+
 - **v2.38.0 (unreleased, on a worktree branch): three videos per take, the
   captions band, fast-forwarded waits.** `internal/webdemo/film.go`
   `finishTake` writes `.video.mp4` (picture + fast-forward badges),

@@ -70,6 +70,8 @@ docs-site:
 	rm -rf dist/docs-site-src dist/docs-site
 	go run ./cmd/si --export docs-site --output dist/docs-site-src
 	go run ./cmd/si build dist/docs-site-src --output dist/docs-site --share-assets
+	# demo videos ($$SI_DEMO_VIDEOS, from the demos workflow) sit beside the pages
+	if [ -d dist/docs-site-src/videos ]; then cp -R dist/docs-site-src/videos dist/docs-site/; fi
 
 # a self-signed code-signing identity in your login keychain, once, for desktop-mac
 desktop-cert:

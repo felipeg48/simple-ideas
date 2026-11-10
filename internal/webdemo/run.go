@@ -63,8 +63,9 @@ type runner struct {
 	errs    []string // console errors and exceptions of this feature
 	reqs    []string // failed requests of this feature
 	urls    map[string]string
-	session string // the page whose events count
-	loading int    // frames loading now (a click or a key may start a navigation)
+	session string          // the page whose events count
+	loading int             // the page's own frame loading now (a click or a key may start a navigation)
+	inner   map[string]bool // frames inside the page (iframes): their loads never hold a step
 	shotN   int
 	tk      *take           // the feature being filmed (run)
 	lines   map[*Block]Line // each Say: line voiced (run)
@@ -95,7 +96,7 @@ func Run(s *Script, o Options) (*Report, error) {
 	if len(s.Problems) > 0 {
 		return nil, fmt.Errorf("%s", s.Problems[0])
 	}
-	r := &runner{s: s, o: o, timeout: s.Timeout, terms: map[string]*term{}, procs: map[string]*proc{}}
+	r := &runner{s: s, o: o, timeout: s.Timeout, terms: map[string]*term{}, procs: map[string]*proc{}, inner: map[string]bool{}}
 	if o.Log == nil {
 		r.o.Log = io.Discard
 	}
@@ -313,10 +314,21 @@ func (r *runner) event(e cdp.Event) {
 		return
 	}
 	switch e.Method {
-	case "Page.frameStartedLoading":
-		r.loading++
-	case "Page.frameStoppedLoading":
-		r.loading--
+	case "Page.frameAttached": // an iframe: a preview that reloads, or is replaced mid-load, must not count
+		var p struct{ FrameID string }
+		json.Unmarshal(e.Params, &p)
+		r.inner[p.FrameID] = true
+	case "Page.frameStartedLoading", "Page.frameStoppedLoading":
+		var p struct{ FrameID string }
+		json.Unmarshal(e.Params, &p)
+		if r.inner[p.FrameID] {
+			return
+		}
+		if e.Method == "Page.frameStartedLoading" {
+			r.loading++
+		} else if r.loading > 0 {
+			r.loading--
+		}
 	case "Runtime.exceptionThrown":
 		var p struct {
 			ExceptionDetails struct {
@@ -424,7 +436,7 @@ func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
 	defer r.endFeature() // its terminals and start steps' programs, before its context goes
 	r.ctx = ctx.BrowserContextID
 	r.mu.Lock()
-	r.errs, r.reqs, r.urls, r.loading = nil, nil, map[string]string{}, 0
+	r.errs, r.reqs, r.urls, r.loading, r.inner = nil, nil, map[string]string{}, 0, map[string]bool{}
 	r.mu.Unlock()
 	if _, err := r.c.OpenPage(ctx.BrowserContextID, r.s.W, r.s.H); err != nil {
 		return fail(StepResult{Text: "open a page", Status: "failed", Found: err.Error()})

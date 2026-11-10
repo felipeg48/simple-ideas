@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -30,6 +31,17 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: the newest demo videos (from the latest release that has them)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dist
+          for t in $(gh release list --limit 30 --json tagName -q '.[].tagName'); do
+            if gh release download "$t" --pattern si-demo-videos.tar.gz --dir dist 2>/dev/null; then
+              tar xzf dist/si-demo-videos.tar.gz -C dist && echo "SI_DEMO_VIDEOS=$PWD/dist/demos" >> "$GITHUB_ENV"
+              echo "videos from $t"; break
+            fi
+          done
       - run: make docs-site
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

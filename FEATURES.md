@@ -176,6 +176,9 @@ an example for every rule: [RULES.md](docs/RULES.md).
   `expect output of load`, `expect load exited 0`. Every program stopped by
   process group, also on Ctrl-C; logs beside the report; the terminal's last
   40 lines in the report on a failure; `app: none` for a terminal-only demo.
+- **si's own videos:** `docs/demos/` (decks, presenting, the Studio, themes,
+  mind maps, the terminal) tested on every push, filmed on every minor
+  release, shown on the site.
 
 ## Themes
 
