@@ -1,6 +1,7 @@
 package webdemo
 
 import (
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -201,5 +202,19 @@ func TestURLMatches(t *testing.T) {
 		if urlMatches(c.href, c.want) != c.ok {
 			t.Errorf("urlMatches(%q, %q) != %v", c.href, c.want, c.ok)
 		}
+	}
+}
+
+func TestParseAsciiDoc(t *testing.T) {
+	p := t.TempDir() + "/shop.adoc"
+	if err := os.WriteFile(p, []byte("= Shop\n:type: demo\n:app: http://localhost:1\n:viewport: tablet\n\n== Sign in\n\n* go /\n* click \"Sign in\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s, err := ParseFile(p)
+	if err != nil || len(s.Problems) > 0 {
+		t.Fatalf("%v %v", err, s.Problems)
+	}
+	if s.App != "http://localhost:1" || s.W != 820 || len(s.Features) != 1 || len(s.Features[0].Blocks[0].Steps) != 2 {
+		t.Errorf("adoc: %+v", s)
 	}
 }
