@@ -108,7 +108,9 @@ func readChapters(p string) []chapter {
 var slugRE = regexp.MustCompile(`[^a-z0-9]+`)
 
 // slugOf names a feature's files the way si demo run does.
-func slugOf(s string) string { return strings.Trim(slugRE.ReplaceAllString(strings.ToLower(s), "-"), "-") }
+func slugOf(s string) string {
+	return strings.Trim(slugRE.ReplaceAllString(strings.ToLower(s), "-"), "-")
+}
 
 const videoCSS = `<style>
 .demo-video{margin:1.2em 0 1.6em}

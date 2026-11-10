@@ -51,8 +51,10 @@ Say: A typo in a directive shows up as a problem at once, with its line.
 - note "si check, as you type" at "1 problem"
 - wait 2s
 
-Say: Undo it, and the problem is gone.
-- press cmd+z
+Say: Delete the line, and the problem is gone.
+- press End
+- press shift+Home
+- press Backspace
 - expect text "files OK"
 - wait 1500ms
 
