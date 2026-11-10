@@ -45,6 +45,8 @@ jobs:
           cache-dependency-path: web/studio/package-lock.json
       - name: build si
         run: make build
+      - name: zsh (the terminal-drawer test runs it, as on a Mac)
+        run: sudo apt-get update -q && sudo apt-get install -y -q zsh
       - name: install
         working-directory: web/studio
         run: npm ci && npx playwright install --with-deps chromium
