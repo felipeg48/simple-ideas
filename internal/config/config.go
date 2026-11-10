@@ -19,6 +19,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -64,6 +65,12 @@ speakers.control: any
 # draw (a): hold this key and move to draw with the cursor, no click
 draw.hold: alt         # alt (⌥ Option), shift, ctrl, meta (⌘ Command), or off
 
+# si demo run and si voice say: the voice when the script and --voice set none
+# voice: kokoro:af_heart
+# voice.style: warm and unhurried   # a tone, for engines that take one (openai)
+# API keys never go here: si voice login elevenlabs|openai keeps them in your
+# own si.conf (si voice login prints where), which never goes to git
+
 feature.draw:      on
 feature.timer:     on
 feature.presenter: on
@@ -87,19 +94,25 @@ feature.terminal:  on   # si play loopback only; always off in a built deck and 
 
 // Config is a parsed si.conf. Zero value is a usable empty config.
 type Config struct {
-	Theme        string            // default theme, or ""
-	Fonts        string            // default fonts: (a deck's own fonts: wins)
-	FontsSubset  string            // default fonts-subset:
-	Keys         map[string]string // action -> key
-	Features     map[string]bool   // feature -> enabled
-	Timer        TimerConfig       // break-timer presets, unit and animation
-	Links        []Link            // links.<label>: <url>, searchable from find (/), in file order
-	Budget       Budget            // budget.page / budget.3d: si check fails on bigger pages
-	DrawHold     string            // draw.hold: the key that draws with the cursor ("" = alt)
-	HandoutPaper string            // handout.paper: a4 (default) or letter
-	AudienceOff  bool              // audience.save: off: keep no poll counts or questions
-	SpeakersTurn bool              // speakers.control: turn: only the speaker whose turn it is advances
-	Warnings     []string          // unknown keys / bad values, for the caller to report
+	Theme                    string            // default theme, or ""
+	Fonts                    string            // default fonts: (a deck's own fonts: wins)
+	FontsSubset              string            // default fonts-subset:
+	Keys                     map[string]string // action -> key
+	Features                 map[string]bool   // feature -> enabled
+	Timer                    TimerConfig       // break-timer presets, unit and animation
+	Links                    []Link            // links.<label>: <url>, searchable from find (/), in file order
+	Budget                   Budget            // budget.page / budget.3d: si check fails on bigger pages
+	DrawHold                 string            // draw.hold: the key that draws with the cursor ("" = alt)
+	HandoutPaper             string            // handout.paper: a4 (default) or letter
+	AudienceOff              bool              // audience.save: off: keep no poll counts or questions
+	SpeakersTurn             bool              // speakers.control: turn: only the speaker whose turn it is advances
+	Voice                    string            // voice: engine:name for si demo run and si voice say
+	VoiceStyle               string            // voice.style: a tone for engines that take one (openai)
+	ElevenLabsKey, OpenAIKey string            // voice.<engine>.key: kept from the user's si.conf only
+	Path                     string            // the project si.conf Load read ("" when none)
+	Warnings                 []string          // unknown keys / bad values, for the caller to report
+
+	secretLines []string // "line N: key" of each API key the files set
 }
 
 // Budget is the largest a built page may be, in KB (0: not set).
@@ -201,7 +214,15 @@ func (c *Config) setFeature(name, v string, ln int) {
 // Parse reads a flat `key: value` config (the same style as deck front matter,
 // not YAML). Recognised: `theme:`, `keys.<action>:`, `feature.<name>:`.
 func Parse(r io.Reader) *Config {
-	c := &Config{Keys: map[string]string{}, Features: map[string]bool{}}
+	c := empty()
+	c.parse(r)
+	return c
+}
+
+func empty() *Config { return &Config{Keys: map[string]string{}, Features: map[string]bool{}} }
+
+// parse reads r into c: what r sets wins over what c already holds.
+func (c *Config) parse(r io.Reader) {
 	sc := bufio.NewScanner(r)
 	for ln := 1; sc.Scan(); ln++ {
 		line := strings.TrimSpace(sc.Text())
@@ -283,6 +304,16 @@ func Parse(r io.Reader) *Config {
 			default:
 				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: speakers.control wants any or turn, got %q", ln, v))
 			}
+		case k == "voice":
+			c.Voice = v
+		case k == "voice.style":
+			c.VoiceStyle = v
+		case k == "voice.elevenlabs.key":
+			c.ElevenLabsKey = v
+			c.secretLines = append(c.secretLines, fmt.Sprintf("line %d: %s", ln, k))
+		case k == "voice.openai.key":
+			c.OpenAIKey = v
+			c.secretLines = append(c.secretLines, fmt.Sprintf("line %d: %s", ln, k))
 		case k == "draw.hold":
 			hold, ok := map[string]string{"alt": "alt", "option": "alt", "shift": "shift", "ctrl": "ctrl", "control": "ctrl",
 				"meta": "meta", "cmd": "meta", "command": "meta", "off": "off", "none": "off"}[strings.ToLower(v)]
@@ -299,32 +330,105 @@ func Parse(r io.Reader) *Config {
 			c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: unknown key %q", ln, k))
 		}
 	}
-	return c
 }
 
-// Load returns the config from the first path that exists, or an empty config
-// if none do. A read/parse of an existing file never fails hard: problems are
-// returned as Warnings so a typo in si.conf cannot break a build.
+// UserPath is the user's own si.conf, <config dir>/si/si.conf: settings that
+// follow the user from project to project, API keys included.
+func UserPath() string {
+	d, err := os.UserConfigDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(d, "si", "si.conf")
+}
+
+// readFile parses the file at p into c (its values win) and reports whether
+// it exists. Its warnings carry its path; a .css theme it sets is relative
+// to it (when the file is there).
+func (c *Config) readFile(p string) bool {
+	f, err := os.Open(p)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	n, theme := len(c.Warnings), c.Theme
+	c.parse(f)
+	for i := n; i < len(c.Warnings); i++ {
+		c.Warnings[i] = p + ": " + c.Warnings[i]
+	}
+	if t := c.Theme; t != theme && strings.HasSuffix(strings.ToLower(t), ".css") && !filepath.IsAbs(t) && !strings.Contains(t, "://") {
+		if q := filepath.Join(filepath.Dir(p), t); fileExists(q) {
+			c.Theme = q
+		}
+	}
+	return true
+}
+
+// Load returns the user's si.conf (UserPath) overlaid with the first of
+// paths that exists: the project's values win. Reading never fails hard:
+// problems come back as Warnings, each with its file, so a typo in si.conf
+// cannot break a build. API keys count only in the user's file: a project
+// si.conf goes to git, so a key there is ignored with a warning.
 func Load(paths ...string) *Config {
+	c := LoadUser()
 	for _, p := range paths {
 		if p == "" {
 			continue
 		}
-		f, err := os.Open(p)
-		if err != nil {
+		before, eleven, openai := len(c.secretLines), c.ElevenLabsKey, c.OpenAIKey
+		if !c.readFile(p) {
 			continue
 		}
-		c := Parse(f)
-		f.Close()
-		// a .css theme path is relative to si.conf (when the file is there)
-		if t := c.Theme; strings.HasSuffix(strings.ToLower(t), ".css") && !filepath.IsAbs(t) && !strings.Contains(t, "://") {
-			if q := filepath.Join(filepath.Dir(p), t); fileExists(q) {
-				c.Theme = q
-			}
+		for _, l := range c.secretLines[before:] {
+			c.Warnings = append(c.Warnings, p+": "+l+" is ignored: a project si.conf goes to git, so API keys go only in your own "+UserPath()+" (si voice login)")
 		}
+		c.secretLines, c.ElevenLabsKey, c.OpenAIKey, c.Path = c.secretLines[:before], eleven, openai, p
+		break
+	}
+	return c
+}
+
+// LoadUser reads the user's si.conf alone. On unix it warns when the file
+// holds an API key and others may read it.
+func LoadUser() *Config {
+	c := empty()
+	p := UserPath()
+	if p == "" || !c.readFile(p) {
 		return c
 	}
-	return &Config{Keys: map[string]string{}, Features: map[string]bool{}}
+	if st, err := os.Stat(p); err == nil && len(c.secretLines) > 0 && runtime.GOOS != "windows" && st.Mode().Perm()&0o077 != 0 {
+		c.Warnings = append(c.Warnings, fmt.Sprintf("%s holds an API key and others may read it (%v): chmod 600 %s", p, st.Mode().Perm(), p))
+	}
+	return c
+}
+
+// KeyEnv is the environment variable for each voice engine's API key.
+var KeyEnv = map[string]string{"elevenlabs": "ELEVENLABS_API_KEY", "openai": "OPENAI_API_KEY"}
+
+// APIKey is the key for a voice engine (elevenlabs, openai): its environment
+// variable first, then voice.<engine>.key in the user's si.conf. from names
+// where it came from ("" when there is none).
+func APIKey(engine string) (key, from string) {
+	env := KeyEnv[engine]
+	if env == "" {
+		return "", ""
+	}
+	if k := os.Getenv(env); k != "" {
+		return k, env
+	}
+	u := LoadUser()
+	if k := map[string]string{"elevenlabs": u.ElevenLabsKey, "openai": u.OpenAIKey}[engine]; k != "" {
+		return k, UserPath()
+	}
+	return "", ""
+}
+
+// Mask shows a secret by its last four characters only.
+func Mask(s string) string {
+	if len(s) <= 8 {
+		return "****"
+	}
+	return "****" + s[len(s)-4:]
 }
 
 // Empty reports whether the config sets nothing.
