@@ -130,6 +130,21 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - **Code shows:** steps that morph into each other, on slides and in
   documents; `si code` exports PNG, SVG, GIF and MP4.
 
+## Web demos
+
+- **A test from a demo script:** `type: demo` with `app:` (a URL, or the app's
+  folder, served by si) drives a web app in headless Chrome, feature by
+  feature, each in a fresh browser: `go`, `click "Pay"`, `type "…" into
+  "Field"`, `select`, `check`, `press cmd+k`, `hover`, `scroll to`, `wait for`.
+- Elements found the way a person names them (text, label, aria name,
+  placeholder, title), or `#id`, `[data-testid=…]`, `role=button "Pay"`.
+- **`expect`** text, URL, `visible`, `hidden`, `disabled`, `enabled`,
+  `checked`, `no errors` (console errors, failed requests); `$VAR` secrets
+  from the environment, never printed.
+- **`si demo test`:** ✓ / ✗ per step, `report.html` (expected, found, the
+  closest elements, a screenshot, console errors) and `report.json`, exit 1 on
+  a failure, `--junit` for CI. Markdown, AsciiDoc or JSON scripts.
+
 ## Themes
 
 - Nine built-in themes, each in light and dark: `studio`, `paper`, `mono`,

@@ -58,3 +58,5 @@ Point at the latency while the room waits.
 
 Example: `si --export example --type demo`; the showcase deck lists it, so
 `si --export example && si play si-example` shows it in the ▶ Demos panel.
+
+With `app:` in its front matter, a demo script is a web demo that si runs against a web app (§27).

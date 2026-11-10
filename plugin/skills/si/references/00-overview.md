@@ -41,3 +41,6 @@ this file; `examples/showcase.md` uses every rule in a real talk.
 22. [Demo scripts](#22-demo-scripts)
 23. [Sites](#23-sites)
 24. [Mind maps](#24-mind-maps)
+25. [Code windows and code shows](#25-code-windows-and-code-shows)
+26. [Publishing](#26-publishing)
+27. [Web demos](#27-web-demos)

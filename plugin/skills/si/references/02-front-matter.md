@@ -45,6 +45,7 @@ lang: en
 | `type` values | `deck`, `lab`, `article`, `guide`, `book`, `mindmap` | `deck` | `lab` §18, `article` §19, `guide` §20 (guide pages get it from `_nav.md`), `book` §21 (in `_nav.md` only), `mindmap` §24 (with `layout`, `lines`, `nodes`, `map-theme`, `watermark-position`) |
 | `subtitle`, `edition` | text | none | books: the cover's subtitle and edition (§21) |
 | `session`, `slides`, `duration` | text | none | demo scripts: the facts under the title; `duration: 14 min` is checked against the script's steps (§22) |
+| `app`, `viewport`, `timeout`, `setup`, `voice` | URL or folder; WxH or phone, tablet, desktop; seconds; a shell command; engine:voice | none; desktop; 5s | web demos: `app:` turns a demo script into a script si runs against a web app (§27) |
 | `description` | text | none | documents: the lede under the title, the index tile subtitle and `<meta name="description">` (§19, §20) |
 | `edit-url` | URL | none | guides: base of the "Edit this page" link (§20) |
 | `header`, `footer-page` | `off` | on | a guide page without the guide's `_header.md` / `_footer.md` (§20) |

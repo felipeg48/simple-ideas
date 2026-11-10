@@ -293,6 +293,39 @@ Points:
 
 ---
 
+## Web demos
+
+A demo script with `app:` drives a web app in headless Chrome, step by step:
+
+```markdown
+## Pay for an order
+
+What it does: a customer pays with a card and sees "Paid".
+
+Say: A test card goes through in a second.
+- click "Order #4711"
+- type "4242 4242 4242 4242" into "Card number"
+- click "Confirm"
+- expect text "Paid"
+```
+
+- Elements by what a person reads: text, label, placeholder, `#id`, `role=button "Pay"`
+- `si demo test shop.md`: ✓ / ✗ per step, `report.html`, exit 1 on a failure, `--junit` for CI
+- `$VAR` values come from the environment and are never printed
+
+Notes: (1 min)
+The same Markdown can drive your own web app. Each feature is a list of
+steps a person would take: open a page, click Pay, type a card number, and
+expect the word Paid. si runs them in a browser you never see, and when a
+step fails it shows what it expected, what it found and a picture of the page. [CLICK]
+
+Points:
+- `app:` is a URL, or the app's folder: si serves it on loopback
+- Videos and narration of the same script come in a later version
+- Example: `examples/webdemo/` (shop.md passes, broken.md fails on purpose)
+
+---
+
 ## The CLI
 
 ```bash
@@ -300,6 +333,7 @@ si play <dir>              # serve with live reload (--dev: in-place hot reload)
 si build <dir> --pdf       # self-contained HTML (+ PDF)
 si build talk.md --handout # handouts/talk.pdf: slides only; =lines, =points, =notes add space or speaker text
 si check <dir>             # validate; exit 1 on a problem
+si demo test shop.md       # run a web demo script against a web app as a test (report.html, --junit)
 si doctor                  # the optional programs (Chrome, ffmpeg, git…): found or not, how to install each
 si new <name>              # scaffold a deck (the showcase, every rule)
 si new <name> --type article   # a small starter: deck, article, guide, book, site, page, lab, demo, mindmap, mindmap3d, codeshow
