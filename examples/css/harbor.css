@@ -12,9 +12,10 @@
   --si-surface: #fffaf0;
   --si-surface-2: #e7e0d1;
   --si-line: #d4cab6;
-  --si-accent: #e4572e;
+  --si-accent: #d2461a;
   --si-accent-2: #17607d;
   --si-on-accent: #ffffff;
+  --si-warn: #c47900;
   --si-font-heading: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --si-heading-weight: 700;
   --si-heading-tracking: -0.015em;

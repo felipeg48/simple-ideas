@@ -200,6 +200,9 @@ One inline SVG whose parts change state slide by slide:
 
 - Nine built-ins: `studio`, `paper`, `mono`, `slate`, `twilight`, `forest`, `sunrise`, `neon`, `newsprint`; `si theme list` prints them
 - `theme: my.css` loads a CSS token file; `theme: https://…/x.css` fetches one
+- `/* si theme: Acme · extends paper */` as a theme file's first comment puts paper's tokens underneath: the file sets only what it changes
+- Make one in the Studio: ⌘K › *New theme*, then colours (light and dark), fonts and sizes beside a live specimen deck, with contrast checks and **Fix**
+- `si theme check acme.css` (contrast in light and dark, wrong values); `si theme export acme.css [--format dtcg]` and `si theme import file.css|file.tokens.json [--use]` share one as CSS or W3C Design Tokens
 - `si --export themes` writes a gallery; `si --export css-rules` a starter stylesheet
 - Your own CSS layers in `si.user` after the theme — tokens are `--si-*`
 

@@ -27,6 +27,7 @@ si --web .                      # opens the Studio for this folder in your brows
 | **Lab** | a deck's commands (runbook, demo scripts) beside a real terminal |
 | **Map view** | edit a mind map by dragging topics; Tab adds a child, Enter a sibling |
 | **Window view** | style a code window, its steps and callouts, and export it as PNG, SVG, GIF or MP4 |
+| **Theme view** | make your own theme: start from a built-in, pick colours light and dark, fonts and sizes beside a live deck at four screen sizes, with contrast checks that **Fix** a pair that fails (**New theme** in ⌘K, File › New Theme… in the Mac app) |
 | **History** | git without leaving the page: what changed, commit, earlier versions, branches, pull and push |
 | **Review** | comments people leave from a review link (`si serve . --review`), live, to reply and resolve |
 | **⌘K** | every file and command, fuzzy |

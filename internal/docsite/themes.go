@@ -55,8 +55,14 @@ same slide of the [showcase](live/showcase.md) in that theme.
 	b.WriteString(tick.Replace(`## Your own
 
 A theme is a CSS file of §--si-*§ tokens: §theme: brand.css§ (or an §https://§
-address). §si --export css-rules§ writes a starter with every token and what
-it does; see [Styling](rules/15-styling-themes-and-your-own-css.md).
+address). Start it with §/* si theme: Brand · extends paper */§ and it sets
+only what it changes; the built-in fills in the rest. The easiest way is the
+Studio's Theme view (§si --web§, then ⌘K › New theme): colours light and dark,
+fonts and sizes beside a live deck, with contrast checks that fix a failing
+pair. §si theme export§ and §si theme import§ share a theme as one CSS file or
+as W3C Design Tokens (§--format dtcg§). §si --export css-rules§ writes a starter
+with every token and what it does; see
+[Styling](rules/15-styling-themes-and-your-own-css.md).
 `))
 	return b.String()
 }

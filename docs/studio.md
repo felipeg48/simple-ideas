@@ -249,6 +249,46 @@ clipboard's list. The editor draws the map in 2D, also for a `view: 3d` page
 (its preview pane shows 3D). Keys and drags: RULES.md §24, *Editing in the
 Studio*.
 
+## Themes: the Theme view
+
+⌘K › *New theme* (File › New Theme… in the Mac app, `window.siStudio.newTheme`)
+asks for a name and a built-in to start from (the public ones, with their
+colours) and `POST /_si/studio/api/theme/new` creates `themes/<name>.css`
+with the header `si theme: Name · extends <built-in>` and no tokens yet; the
+file opens in the **Theme** view. Any `.css` file with that header or with
+`--si-*` tokens on `:root` gets the Theme | Text bar; the choice is
+remembered per file. The Theme view takes the deck preview's room, since it
+draws its own.
+
+- **Controls** (right): the name, *Starts from* (the built-in it extends, or
+  nothing), then the token groups from `GET /_si/studio/api/theme/spec`
+  (`assets.AllMeta`: group, kind, units; the per-element tokens are left out).
+  Colours are a light | dark pair, each a picker and a text field; shadows a
+  pair of fields; fonts a field with system stacks offered; plain lengths a
+  slider in their own unit (em, rem, cqi, cqb, %, ch); enumerations a select.
+  The base theme's value shows as the placeholder; a changed token has a dot
+  and **Reset**.
+- **Preview** (left): the specimen deck (`internal/assets/web/themes/specimen.md`:
+  title, list, two columns, table and callout, a code window, big number,
+  quote, mind map, QR code) rendered with the theme as it is being edited,
+  light, dark or both, at desktop, phone, tablet or 4K size (the page is drawn
+  at that real size and scaled down, so container units behave as on the
+  device); ← → move through the slides.
+- **Checks**: `themefile.Check` on every change, light and dark; a failing
+  pair has **Fix**, which sets the text colour to the nearest lightness (in
+  OKLab, same hue) that passes.
+- **Use in this folder** (`POST theme/use`) writes `theme: themes/<name>.css`
+  into the folder's `si.conf`.
+
+Every change is an op: `POST /_si/studio/api/theme {path, text, op}` parses
+the editor's text with `internal/themefile`, sets one token (checked: known
+token, value of its kind, no `px`, nothing that leaves the declaration),
+writes the file back (only the token blocks change; other rules are kept as
+written) and answers with the text, the file's own and the effective values
+(the built-in underneath), the checks and the preview page. The text goes into
+CodeMirror as one change, so Undo, autosave and the Text view behave as for
+typing. A picker or slider sends its last value after a short pause.
+
 ## History (git)
 
 **History** in the top bar (or ⌘K → History) shows the workspace's git: the
