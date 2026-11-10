@@ -154,6 +154,12 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - **Voices:** `kokoro:af_heart` (local, the default when installed),
   `system` (say, espeak-ng, Windows), `elevenlabs`, `openai` (`voice-style:`);
   `pronounce: si = ess eye`; lines cached, only changed lines re-voiced.
+- **`si voice`:** `si voice install kokoro` sets Kokoro up in one command (a
+  Python venv, kokoro-onnx, the model files checked by SHA-256);
+  `si voice say "text"` speaks a line aloud like macOS `say` (`-o` saves a
+  WAV); `si voice list`; `si voice login openai|elevenlabs` keeps API keys in
+  your own si.conf (0600), never a project's; `voice:` and `voice.style:` in
+  si.conf set the default voice and tone.
 - **With a terminal:** `start: <command> · wait for "ready"` (or a port, or a
   delay) runs a broker or a server in the background for the run, `stop:`
   tears down; `terminal "Name"` opens a real shell filmed as a code window

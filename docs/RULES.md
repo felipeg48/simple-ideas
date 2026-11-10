@@ -1485,8 +1485,32 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `timer.face: analog` | countdown face: `digital` (default) or `analog` (sport-clock dial) |
 | `timer.animation: waves,orbit` | animation(s) behind the timer HUD: `waves`, `orbit`, `bokeh`, or custom names; a comma list gives a toggle |
 | `timer.animation.path: ./anim` | directory of custom `<name>.js` / `<name>.svg` animations |
+| `voice: kokoro:af_heart` | the voice of `si demo run` and `si voice say` when the script and `--voice` set none (§27) |
+| `voice.style: calm, friendly` | the tone, for engines that take one (`openai`), when the script sets no `voice-style:` |
 
 Nesting is written as dotted keys (`timer.animation.path`), not YAML.
+
+**Your own si.conf.** Besides the project's, si reads one si.conf of yours in
+the user config folder: `~/Library/Application Support/si/si.conf` on macOS,
+`~/.config/si/si.conf` on Linux, `%AppData%\si\si.conf` on Windows. It is
+read first, so the project's file wins key by key; put there what follows you
+from project to project (a theme you like, `voice:`).
+
+It is also the only place for **API keys**: `voice.elevenlabs.key:` and
+`voice.openai.key:`. A project si.conf goes to git with the decks, so a key in
+it is ignored, and `si check` warns with the file and line. Do not write them
+by hand: `si voice login openai` asks for the key without echo and writes it
+there with the file readable by you only (si warns when others can read it);
+`si voice logout openai` removes it. A key in the environment
+(`OPENAI_API_KEY`, `ELEVENLABS_API_KEY`) wins over the file; si never prints
+one.
+
+```
+# <config dir>/si/si.conf — yours, not the project's
+theme: slate
+voice: kokoro:bf_emma
+voice.openai.key: sk-…        # written by si voice login openai
+```
 
 Remappable **actions**: `overview`, `presenter`, `draw`, `timer`, `find`,
 `mode`, `fullscreen`, `help`, `terminal`, `remote`. Toggleable **features**: `draw`, `timer`,
@@ -1504,7 +1528,8 @@ Run `si --export conf` to print a starter `si.conf` with every key and feature
 at its default. Theme precedence: `--theme` flag > a deck's `theme:` front
 matter > `si.conf` > the built-in default (`studio`). `si play` re-reads
 `si.conf` on every request, so edits show up on reload. An unknown key or a bad
-value is a warning printed to the terminal, never a failed build.
+value is a warning printed to the terminal (with the file and line), never a
+failed build.
 
 ## 17. What si check reports
 
@@ -2819,16 +2844,38 @@ It writes into `demo-out/<script>/` (or `-o dir`):
 |---|---|---|
 | `kokoro` | open source (Apache 2.0), local, natural: si's own voice | `af_heart` |
 | `system` | the computer's own: `say` on macOS, espeak-ng on Linux, Windows' voices | the system's (`system:Samantha`) |
-| `elevenlabs` | cloud, `ELEVENLABS_API_KEY` in the environment | a voice id (`elevenlabs:21m00Tcm4TlvDq8ikWAM`) |
-| `openai` | cloud, `OPENAI_API_KEY`; `gpt-4o-mini-tts`, a tone from `voice-style: calm, friendly` | `alloy` |
+| `elevenlabs` | cloud, an API key (`si voice login elevenlabs`) | a voice id (`elevenlabs:21m00Tcm4TlvDq8ikWAM`) |
+| `openai` | cloud, an API key (`si voice login openai`); `gpt-4o-mini-tts`, a tone from `voice-style: calm, friendly` | `alloy` |
 
-Without `voice:`, si uses `kokoro:af_heart` when Kokoro is installed, else
-`system`. Kokoro runs as a program: `python3 -m pip install kokoro-onnx` and the
-model files `kokoro-v1.0.onnx` and `voices-v1.0.bin` in the folder `si doctor`
-names (or `SI_KOKORO_DIR`; `SI_KOKORO_PYTHON` picks the Python). Each line is
-cached by its engine, voice, style and words (in the user cache folder), so a
-re-run only voices the lines that changed; a cloud call sends nothing but the
-`Say:` text.
+Which voice: `--voice`, else the script's `voice:`, else `voice:` in the
+`si.conf` beside the script, else `voice:` in your own si.conf (§16), else
+`kokoro:af_heart` when Kokoro is installed, else `system`. The tone likewise:
+`voice-style:` in the script, else `voice.style:` in a si.conf.
+
+Kokoro installs with one command:
+
+```
+si voice install kokoro
+```
+
+It makes a Python venv with `kokoro-onnx` in the folder `si doctor` names
+(`<user cache>/si/kokoro`, or `SI_KOKORO_DIR`) and downloads the model files
+`kokoro-v1.0.onnx` and `voices-v1.0.bin` (about 350 MB, checked by SHA-256).
+It needs Python 3.10 to 3.13 and changes nothing else on the computer; run it
+again to repair, `si voice uninstall kokoro` to remove it. si uses that venv
+on its own (`SI_KOKORO_PYTHON` picks another Python).
+
+The cloud engines need an API key. `si voice login openai` (or `elevenlabs`)
+asks for it without echo and keeps it in your own si.conf, readable by you
+only; `si voice logout openai` removes it. `OPENAI_API_KEY` and
+`ELEVENLABS_API_KEY` in the environment still win. A key is never read from a
+project's si.conf, which goes to git (§16).
+
+Try a voice before a take: `si voice say "Every order, one journey" --voice
+kokoro:bf_emma` says the line aloud (`-o line.wav` saves it), and `si voice list
+kokoro` lists the voices. Each line is cached by its engine, voice, style and
+words (in the user cache folder), so a re-run only voices the lines that
+changed; a cloud call sends nothing but the `Say:` text.
 
 `pronounce: word = how to say it` (several lines, or pairs split by `;`)
 changes what the voice says, whole words in any case; the captions keep the

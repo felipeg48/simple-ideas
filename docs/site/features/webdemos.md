@@ -213,14 +213,44 @@ pronounce: si = ess eye
 |---|---|
 | `kokoro` | open source and local, natural: si's own voice, `af_heart` (the default when it is installed) |
 | `system` | the computer's own: `say` on macOS, espeak-ng on Linux, the voices Windows has |
-| `elevenlabs` | cloud, `ELEVENLABS_API_KEY`; `elevenlabs:<voice id>` |
-| `openai` | cloud, `OPENAI_API_KEY`; `gpt-4o-mini-tts`, with `voice-style: calm, friendly` |
+| `elevenlabs` | cloud, an API key; `elevenlabs:<voice id>` |
+| `openai` | cloud, an API key; `gpt-4o-mini-tts`, with `voice-style: calm, friendly` |
 
 `pronounce:` changes what the voice says (Kokoro reads "si" as "see"); the
 captions keep the written word. Every line is cached by its words and voice,
 so a re-run only voices the lines that changed, and a cloud voice is sent
-nothing but the `Say:` text. To install Kokoro: `python3 -m pip install
-kokoro-onnx`, then its two model files in the folder `si doctor` names.
+nothing but the `Say:` text.
+
+Kokoro installs in one command and changes nothing else on the computer (a
+Python venv, `kokoro-onnx` and the two model files, checked by SHA-256, in the
+folder `si doctor` names; it needs Python 3.10 to 3.13):
+
+```bash
+si voice install kokoro
+si voice say "Every order, one journey" --voice kokoro:bf_emma
+si voice list kokoro
+```
+
+`si voice say` speaks the line aloud like macOS `say` (`-o line.wav` saves
+it). The cloud voices need an API key; keep it out of the project:
+
+```bash
+si voice login openai        # asks without echo; stored in your own si.conf, 0600
+si voice logout openai
+```
+
+A key goes only in your own si.conf (in the user config folder), never in a
+project's si.conf, which goes to git: si ignores one there and `si check`
+says where. `OPENAI_API_KEY` and `ELEVENLABS_API_KEY` in the environment
+still win. Your default voice and tone go in either si.conf:
+
+```
+voice: kokoro:af_heart
+voice.style: calm, friendly
+```
+
+`--voice` wins, then the script's `voice:`, then the project's si.conf, then
+yours.
 
 <!-- si-deps: chrome ffmpeg kokoro espeak-ng -->
 

@@ -5,6 +5,32 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-10)
 
+- **v2.37.0 (unreleased, on a worktree branch): `si voice`.**
+  `cmd/si/voice.go`: `say` (voice: `--voice` > si.conf `voice:` > default;
+  an engine whose `Ready()` fails falls back to `system` with one stderr
+  line; the line goes through `webdemo.Synth`, so the cache is shared with
+  `si demo run` and ffmpeg is needed only on a cache miss; no `-o` = play via
+  `playerFor`: afplay / paplay, aplay, ffplay / PowerShell SoundPlayer;
+  `runPlayer` is swapped in tests), `list` (Kokoro names read from the npz
+  `voices-v1.0.bin` with archive/zip, English a…/b… only), `install|uninstall
+  kokoro`, `login|logout` (`readSecret`: stty -echo on unix,
+  SetConsoleMode on Windows, a pipe reads one line). `internal/tools/kokoro.go`:
+  `KokoroInstall` (FindPython: python3.13…3.10, python3, python; `py -3.x` on
+  Windows; kokoro-onnx 0.6.1 needs <3.14), venv in `<dir>/venv`, pip, the two
+  files from the `model-files-v1.0` release to a temp file + SHA-256 +
+  rename; `Run`, `BaseURL`, `Python` injectable). `KokoroPython()` prefers
+  that venv after `SI_KOKORO_PYTHON`. `internal/config`: `Load` now reads the
+  user's si.conf (`UserPath`) first and overlays the project's; warnings carry
+  their file; `voice.elevenlabs.key` / `voice.openai.key` are kept only from
+  the user file (a project one: warning, `si check` prints it); `APIKey` (env
+  first); `UnsetKey`; `SetKey` keeps the file's mode. `si demo run` resolves
+  `--voice` > front matter > si.conf beside the script > user si.conf >
+  default; `voice.style` fills an empty `voice-style:`. Tests set HOME / XDG /
+  AppData (TestMain in cmd/si and config). Verified on this Mac: a real
+  `si voice install kokoro --dir` (Python 3.13 venv, both files, hashes), a
+  second run skipping everything, `si voice say` to a WAV (24 kHz mono,
+  ~1 s, -20 dB mean) and aloud through afplay, cached replay. Not run:
+  install on Windows or Linux, the cloud engines (no keys here).
 - **v2.36.0 (unreleased, on a worktree branch): web demos with a terminal**
   (spec `docs/superpowers/specs/2026-11-10-web-demos-terminal.md`, phases 1, 2
   and `app: none` of 3; `split` not built). `scriptterm.go` parses `start:`
