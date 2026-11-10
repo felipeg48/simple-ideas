@@ -59,7 +59,7 @@ var ffHead = []string{"-nostdin", "-y", "-hide_banner", "-loglevel", "error"}
 
 func ff(a ...string) []string { return append(append([]string(nil), ffHead...), a...) }
 
-const evenSize = "scale=trunc(iw/2)*2:trunc(ih/2)*2,setsar=1,format=yuv420p"
+const evenSize = "scale=trunc(iw/2)*2:trunc(ih/2)*2:out_range=tv,setsar=1,format=yuv420p"
 
 var h264 = []string{"-c:v", "libx264", "-preset", "medium", "-crf", "20", "-r", fmt.Sprint(fps), "-movflags", "+faststart"}
 
