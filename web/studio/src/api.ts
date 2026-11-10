@@ -82,6 +82,10 @@ export const api = {
   /** theme applies op (a token's value in a mode, or the name / extends) to a theme file's text; back come the text, values, checks and the preview. */
   theme: (path: string, text: string, op: unknown) => call<any>("POST", "theme", { path, text, op }),
   themeNew: (name: string, from: string) => call<{ path: string }>("POST", "theme/new", { name, from }),
+  /** themeLogo: a theme from a logo (a workspace path, or base64 data from the browser); create writes themes/<name>.css. */
+  themeLogo: (logo: { path?: string; data?: string }, name: string, create: boolean) =>
+    call<{ path: string; name?: string; palette?: { hex: string; weight: number }[]; light?: Record<string, string>; dark?: Record<string, string> }>(
+      "POST", "theme/logo", { ...logo, name, create }),
   themeUse: (path: string) => call<{ conf: string; theme: string }>("POST", "theme/use", { path }),
   starter: (kind: string, path: string, title: string) =>
     call<{ created: string[]; open: string }>("POST", "starter", { kind, path, title }),

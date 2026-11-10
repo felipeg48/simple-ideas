@@ -726,7 +726,17 @@ button.link { color: var(--blue); text-decoration: underline; text-underline-off
 .thx-swatches { display: flex; gap: 3px; margin-bottom: 4px; }
 .thx-swatches i { width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--line-2); display: inline-block; }
 .thx-swatches i:nth-child(5) { margin-left: 6px; }
-.thx-start { text-align: left; }
+.thx-start { text-align: left; grid-template-columns: minmax(0, 1fr); }
+.thx-logo { display: grid; gap: 10px; margin: 0 0 14px; padding: 12px; border: 1px solid var(--line-2); border-radius: 10px; }
+.thx-logo-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.thx-logo-pick label { display: grid; gap: 4px; font-size: 12px; color: var(--mute); min-width: 0; }
+.thx-logo-pick .field { width: 100%; min-width: 0; }
+.thx-found { display: grid; gap: 6px; }
+.thx-found > div { display: grid; grid-template-columns: 6.5em 1fr; align-items: center; font-size: 12px; }
+.thx-found .thx-swatches { margin: 0; flex-wrap: wrap; }
+.thx-found .thx-swatches i { width: 22px; height: 22px; }
+.thx-found .thx-swatches i:nth-child(5) { margin-left: 0; }
+.thx-logo-ico { background: conic-gradient(var(--accent), var(--green), var(--red), var(--accent)) !important; }
 @container (max-width: 760px) { .thx { grid-template-columns: minmax(0, 1fr); } .thx-frames.n2.tall { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .thx-side { border-top: 1px solid var(--line); } }
 
 /* start gallery: live thumbnails of every starter */

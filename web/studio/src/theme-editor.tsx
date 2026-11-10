@@ -5,7 +5,7 @@
 // the new text goes into the editor as one undoable change, so the Text view
 // and the Theme view stay in step.
 import { useEffect, useRef, useState } from "preact/hooks";
-import { api } from "./api";
+import { api, type Node } from "./api";
 import { Field } from "./map-editor";
 import { hex6, lengthParts, short, sliderRange, themeSlug } from "./theme-tokens";
 
@@ -257,20 +257,82 @@ export function ThemeEditor(p: { path: string; text: string; setText(next: strin
   );
 }
 
-/** NewThemeDialog: a name and a built-in to start from; the server writes themes/<name>.css. */
+interface LogoTheme { path: string; name?: string; palette?: { hex: string; weight: number }[]; light?: Record<string, string>; dark?: Record<string, string> }
+const LOGO_RE = /\.(png|jpe?g|gif|svg)$/i;
+const images = (n: Node, out: string[] = []): string[] => {
+  if (!n.children && LOGO_RE.test(n.path)) out.push(n.path);
+  n.children?.forEach((c) => images(c, out));
+  return out;
+};
+
+/** LogoPicker: a logo from the folder or from the computer, and the colours si found in it. */
+function LogoPicker(p: { found: LogoTheme | null; busy: boolean; pick(logo: { path?: string; data?: string }): void; err(msg: string): void }) {
+  const [files, setFiles] = useState<string[]>([]);
+  const [path, setPath] = useState("");
+  useEffect(() => { void api.tree().then((t) => setFiles(images(t))).catch(() => {}); }, []);
+  const upload = (f: File | undefined) => {
+    if (!f) return;
+    if (f.size > 8 << 20) { p.err("A logo is at most 8 MiB."); return; }
+    const rd = new FileReader();
+    rd.onload = () => { setPath(""); p.pick({ data: String(rd.result).replace(/^data:[^,]*,/, "") }); };
+    rd.readAsDataURL(f);
+  };
+  const f = p.found;
+  const row = (m: Record<string, string> | undefined) => ["--si-bg", "--si-surface", "--si-fg", "--si-muted", "--si-accent", "--si-accent-2"].map((k) => <i title={`${k}: ${m?.[k]}`} style={{ background: m?.[k] }} />);
+  return (
+    <div class="thx-logo">
+      <div class="thx-logo-pick">
+        <label>
+          <span>A logo in this folder</span>
+          <select class="field" aria-label="Logo in this folder" value={path} onChange={(e) => { const v = e.currentTarget.value; setPath(v); if (v) p.pick({ path: v }); }}>
+            <option value="">{files.length ? "Pick one…" : "no PNG, JPEG, GIF or SVG here"}</option>
+            {files.map((x) => <option value={x}>{x}</option>)}
+          </select>
+        </label>
+        <label>
+          <span>Or one from your computer</span>
+          <input type="file" class="field" aria-label="Logo file" accept=".png,.jpg,.jpeg,.gif,.svg,image/png,image/jpeg,image/gif,image/svg+xml" onChange={(e) => upload(e.currentTarget.files?.[0])} />
+        </label>
+      </div>
+      {p.busy && <div class="spinner" aria-label="Reading the logo" />}
+      {f?.palette && (
+        <div class="thx-found" aria-live="polite">
+          <div><span class="mute">In the logo</span><span class="thx-swatches thx-pal">{f.palette.map((c) => <i title={`${c.hex}, ${Math.round(c.weight * 100)}%`} style={{ background: c.hex }} />)}</span></div>
+          <div><span class="mute">Light</span><span class="thx-swatches">{row(f.light)}</span></div>
+          <div><span class="mute">Dark</span><span class="thx-swatches">{row(f.dark)}</span></div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** NewThemeDialog: a name and a built-in (or a logo) to start from; the server writes themes/<name>.css. */
 export function NewThemeDialog(p: { ok(path: string): void; onClose(): void }) {
   const [name, setName] = useState("");
   const [from, setFrom] = useState("studio");
   const [themes, setThemes] = useState<ThemeInfo[]>([]);
   const [err, setErr] = useState("");
+  const [logo, setLogo] = useState<{ path?: string; data?: string } | null>(null);
+  const [found, setFound] = useState<LogoTheme | null>(null);
+  const [busy, setBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => { input.current?.focus(); void themeSpec().then((s) => setThemes(s.themes)).catch(() => {}); }, []);
-  const s = themeSlug(name);
+  const fromLogo = from === "logo";
+  const s = themeSlug(name || (fromLogo ? found?.name ?? "" : ""));
+  const pick = async (l: { path?: string; data?: string }) => {
+    setLogo(l); setFound(null); setErr(""); setBusy(true);
+    try { setFound(await api.themeLogo(l, name.trim(), false)); }
+    catch (x) { setErr(x instanceof Error ? x.message : String(x)); }
+    finally { setBusy(false); }
+  };
   const submit = async (e: Event) => {
     e.preventDefault();
+    if (fromLogo && !found) { setErr("Pick a logo."); return; }
     if (!s) { setErr("Give it a name."); return; }
-    try { const r = await api.themeNew(name.trim(), from); p.ok(r.path); p.onClose(); }
-    catch (x) { setErr(x instanceof Error ? x.message : String(x)); }
+    try {
+      const r = fromLogo ? await api.themeLogo(logo!, name.trim() || found?.name || "", true) : await api.themeNew(name.trim(), from);
+      p.ok(r.path); p.onClose();
+    } catch (x) { setErr(x instanceof Error ? x.message : String(x)); }
   };
   return (
     <div class="scrim" onMouseDown={(e) => e.target === e.currentTarget && p.onClose()}>
@@ -288,12 +350,18 @@ export function NewThemeDialog(p: { ok(path: string): void; onClose(): void }) {
                 <span>{t.about}</span>
               </button>
             ))}
+            <button type="button" role="radio" aria-checked={fromLogo} class={"starter thx-start" + (fromLogo ? " on" : "")} onClick={() => { setFrom("logo"); setErr(""); }}>
+              <span class="thx-swatches" aria-hidden="true">{(found?.palette ?? []).slice(0, 4).map((c) => <i style={{ background: c.hex }} />)}{!found && <i class="thx-logo-ico" />}</span>
+              <b>From a logo…</b>
+              <span>Its colours, light and dark, every pair readable</span>
+            </button>
           </div>
+          {fromLogo && <LogoPicker found={found} busy={busy} pick={(l) => void pick(l)} err={setErr} />}
           <label class="starter-name">
             <span>Name</span>
-            <input ref={input} class="field" value={name} spellcheck={false} placeholder="Acme" onInput={(e) => { setName(e.currentTarget.value); setErr(""); }} />
+            <input ref={input} class="field" value={name} spellcheck={false} placeholder={(fromLogo && found?.name) || "Acme"} onInput={(e) => { setName(e.currentTarget.value); setErr(""); }} />
           </label>
-          <p class="dialog-body mute">{s ? <>Creates <code>themes/{s}.css</code>, starting from {themes.find((t) => t.name === from)?.label ?? from}</> : " "}</p>
+          <p class="dialog-body mute">{s ? <>Creates <code>themes/{s}.css</code>, {fromLogo ? "from the logo's colours, extending Studio" : <>starting from {themes.find((t) => t.name === from)?.label ?? from}</>}</> : " "}</p>
           {err && <p class="dialog-err" role="alert">{err}</p>}
           <div class="dialog-actions">
             <button type="button" class="btn" onClick={p.onClose}>Cancel</button>

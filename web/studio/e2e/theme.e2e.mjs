@@ -4,7 +4,7 @@
 // desktop and phone width in e2e/out/.
 import { chromium } from "playwright";
 import { spawn } from "node:child_process";
-import { cpSync, mkdtempSync, readFileSync, mkdirSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -89,6 +89,40 @@ async function open(theme, size) {
   await page.click('button:has-text("Use in this folder")');
   await until(() => readFileSync(join(root, "si.conf"), "utf8").includes("theme: themes/acme.css"), 5000, "si.conf");
   await page.screenshot({ path: join(out, "theme-1440-dark.png") });
+  await ctx.close();
+}
+
+// a theme from a logo: one in the folder, then one from the computer; the
+// colours found, then the theme opens in the editor with every check passing
+const LOGO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40"><rect width="120" height="40" fill="#fff"/><circle cx="20" cy="20" r="16" fill="#f5c400"/><path d="M40 10h70v20H40z" fill="#1d3a8a"/></svg>`;
+mkdirSync(join(root, "img"), { recursive: true });
+writeFileSync(join(root, "img/harbor-logo.svg"), LOGO);
+for (const [theme, size, tag] of [["light", { width: 1440, height: 900 }, "1440-light"], ["dark", { width: 400, height: 800 }, "400-dark"], ["dark", { width: 1440, height: 900 }, "1440-dark"], ["light", { width: 400, height: 800 }, "400-light"]]) {
+  const { ctx, page } = await open(theme, size);
+  await page.evaluate(() => window.siStudio.newTheme());
+  await page.click('.thx-start:has(b:text-is("From a logo…"))');
+  await until(() => page.$('[aria-label="Logo in this folder"] option:text-is("img/harbor-logo.svg")'), 5000, "workspace logo listed");
+  await page.selectOption('[aria-label="Logo in this folder"]', "img/harbor-logo.svg");
+  await page.waitForSelector(".thx-found .thx-pal i");
+  const pal = await page.$$eval(".thx-found .thx-pal i", (is) => is.map((i) => i.title.split(",")[0]));
+  if (!pal.includes("#f5c400") || !pal.includes("#1d3a8a")) throw new Error("palette: " + pal);
+  if ((await page.getAttribute('.starter-name input', "placeholder")) !== "Harbor") throw new Error("name from the file: " + await page.getAttribute('.starter-name input', "placeholder"));
+  await page.screenshot({ path: join(out, `theme-logo-${tag}.png`) });
+  await ctx.close();
+}
+{
+  const { ctx, page } = await open("light", { width: 1440, height: 900 });
+  await page.evaluate(() => window.siStudio.newTheme());
+  await page.click('.thx-start:has(b:text-is("From a logo…"))');
+  await page.setInputFiles('[aria-label="Logo file"]', { name: "brand.svg", mimeType: "image/svg+xml", buffer: Buffer.from(LOGO.replace("#f5c400", "#e4572e")) });
+  await until(async () => (await page.$$eval(".thx-found .thx-pal i", (is) => is.map((i) => i.title))).some((t) => t.startsWith("#e4572e")), 5000, "uploaded logo read");
+  await page.fill('.starter-name input', "Logo Co");
+  await page.click('[aria-label="New theme"] button[type="submit"]');
+  await page.waitForSelector(".thx-box iframe");
+  await until(() => { try { return readFileSync(join(root, "themes/logo-co.css"), "utf8").startsWith("/* si theme: Logo Co · extends studio"); } catch { return false; } }, 5000, "logo theme written");
+  await until(() => page.$('.insp-head:has-text("all pass")'), 6000, "logo theme passes its checks");
+  await sleep(800);
+  await page.screenshot({ path: join(out, "theme-logo-editor.png") });
   await ctx.close();
 }
 
