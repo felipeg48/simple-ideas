@@ -5,6 +5,15 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.33.0: motion.** `transition: morph` runtime in `deck/02-navigation.js`
+  (`morphList`, `morphPlay`: FLIP; match by `data-si-morph` from `<!-- id: -->`,
+  heading text, image, same words; text scales by font size, boxes by box;
+  tokens `--si-morph-duration/-ease`, hooks `.si-morph-from`, `.si-morph`).
+  `internal/motion` (canvas frames between `/* si motion: … */` and `/* si
+  motion end */`, parts by `data-part`), `internal/studio/motion.go`
+  (`POST motion`, text in/out), `web/studio/src/motion-editor.tsx`; e2e
+  `morph.e2e.mjs`, `motion.e2e.mjs`. Next: New › Animation, insert into a slide,
+  spread over slides, paths and stagger, MCP `si_motion`.
 - **v2.32.0: si doctor, dependencies, website kinds.** `internal/tools` (the
   optional programs: Bins, per-OS Paths, Install per platform mac/debian/
   fedora/arch/windows/other from /etc/os-release, `Need` = the message a feature
