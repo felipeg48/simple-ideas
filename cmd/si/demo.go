@@ -19,7 +19,7 @@ const demoUsage = `Usage:
         run a web demo script (type: demo with app:) in headless Chrome as a test: one line
         per step, report.html + report.json in demo-out/<script>/ (or -o dir), exit 1 on a failure;
         --junit also writes JUnit XML (one test case per feature) for CI
-  si demo run <script> [--feature "Name"] [--captions] [--voice engine:name] [--viewport V] [-o dir]
+  si demo run <script> [--feature "Name"] [--captions] [--voice engine:name] [--viewport V] [--junit report.xml] [-o dir]
         perform the same steps on film: a drawn cursor glides to each target, clicks ripple,
         note steps point at elements, fields typed from $VARs are blurred. Each Say: line is
         voiced first and sets the pace. Writes, per feature, <feature>.mp4 (video + voice),
