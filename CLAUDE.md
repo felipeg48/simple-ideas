@@ -242,7 +242,7 @@ pass. The steps that matter:
   dots, Wi-Fi, vCard), `<!-- qr: -->`, the `q` overlay in `si play --remote`.
   v2.7.0: `si play --remote --https` (si's own name-constrained CA,
   `internal/serve/tls.go`, one port for HTTPS + the plain-HTTP setup page) and
-  `--https=tailscale`. Next: `--https` for `--review`.
+  `--https=tailscale`. `--https` for `--review` is in (v2.23.0; `httpsFor`/`serveSplit` in main.go).
 - **Brand, Help, About, Report a Problem** (DONE, v2.5.0): the Stack logo,
   `internal/brand` as the one place for links and credits, GitHub issue forms,
   `si report`; real-motion `--mp4`; review pins on blocks; 3D map editing.

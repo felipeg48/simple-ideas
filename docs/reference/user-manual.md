@@ -302,7 +302,8 @@ si migrate <src>           # an AI migration prompt for an existing deck
 - **Get reviews:** `si serve . --review` prints a keyed link for people on
   your network: they leave comments on slides, sections or one paragraph,
   bullet or figure (click it to pin the note), and the Studio's
-  Review panel shows them live, to reply and resolve. **History** in the Studio
+  Review panel shows them live, to reply and resolve; `--https` puts the
+  link on HTTPS. **History** in the Studio
   shows what changed, commits, and restores earlier versions (git).
 - **Film it:** `--mp4` on `si code`, on a mind map build (in 3D when the map
   is) and on a deck build (every slide and step, `--dwell 2` for a teaser)

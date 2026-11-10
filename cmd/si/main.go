@@ -47,7 +47,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "2.22.0"
+const version = "2.23.0"
 
 // Exit codes.
 const (
@@ -168,7 +168,7 @@ Flags (GNU style, before or after the path):
                         cloudflared), for a remote audience on a video call; only the audience side, gone at exit
       --audience        play: the room follows the talk on their phones (a separate key; no notes, no control);
                         <!-- qr: audience --> on a slide shows the code; works with --remote and --https
-      --https[=tailscale] play --remote: serve the remote pages over HTTPS, with si's own certificate authority
+      --https[=tailscale] play --remote, --audience, --review: serve those pages over HTTPS, with si's own certificate authority
                         (each phone trusts it once, from the "first time" code) or a Tailscale certificate
       --offline         code: / diff: use the cache only (CI, a plane); fails on what was never fetched
       --no-instructor   build: leave the instructor demo scripts (type: demo) out of a participant build
@@ -991,8 +991,8 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 	if o.trackpad { // v2.10 only: the helper is gone, Option-drawing needs nothing
 		fmt.Fprintln(stderr, "si: --trackpad is no longer needed: press a (draw), then hold ⌥ Option and move to draw with the cursor")
 	}
-	if o.https != "" && len(o.remote.roles) == 0 && !o.audience {
-		return usageErr(stderr, "--https is for the --remote listener: si play talk.md --remote --https")
+	if o.https != "" && len(o.remote.roles) == 0 && !o.audience && !o.review {
+		return usageErr(stderr, "--https is for the --remote, --audience or --review listener: si play talk.md --remote --https")
 	}
 	ln, err := net.Listen("tcp", o.addr)
 	if err != nil {
@@ -1137,33 +1137,11 @@ func startRemote(srv *serve.Server, main net.Addr, o *options, stdout, stderr io
 	}
 	port := strconv.Itoa(ta.Port)
 	scheme := "http"
-	var tlsCfg *tls.Config
-	var ca *serve.LocalCA
-	switch o.https {
-	case "local":
-		dir, err := serve.CADir()
-		if err == nil {
-			ca, err = serve.LoadCA(dir)
-		}
-		var leaf tls.Certificate
-		if err == nil {
-			leaf, err = ca.Leaf(append(append([]string{}, hosts...), "127.0.0.1"))
-		}
-		if err != nil {
-			ln.Close()
-			fmt.Fprintf(stderr, "si: --https: %v\n", err)
-			return nil, exitProblems
-		}
-		tlsCfg = &tls.Config{Certificates: []tls.Certificate{leaf}, MinVersion: tls.VersionTLS12}
-	case "tailscale":
-		name, cert, err := tailscaleCert()
-		if err != nil {
-			ln.Close()
-			fmt.Fprintf(stderr, "si: --https=tailscale: %v\n", err)
-			return nil, exitProblems
-		}
-		hosts = []string{name}
-		tlsCfg = &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}
+	hosts, tlsCfg, ca, err := httpsFor(o, hosts)
+	if err != nil {
+		ln.Close()
+		fmt.Fprintf(stderr, "si: %v\n", err)
+		return nil, exitProblems
 	}
 	if tlsCfg != nil {
 		scheme = "https"
@@ -1229,19 +1207,55 @@ func startRemote(srv *serve.Server, main net.Addr, o *options, stdout, stderr io
 	}
 	srv.RemoteQR = rq
 	rs := &http.Server{Handler: srv.RemoteHandler(key, o.remote.roles), ReadHeaderTimeout: 10 * time.Second}
+	serveSplit(rs, ln, tlsCfg, ca, "--remote", stderr)
+	return rs, exitOK
+}
+
+// httpsFor is --https for a listener on hosts: si's own authority (a leaf for
+// those addresses) or Tailscale (its name replaces hosts); no config without
+// --https.
+func httpsFor(o *options, hosts []string) ([]string, *tls.Config, *serve.LocalCA, error) {
+	switch o.https {
+	case "local":
+		dir, err := serve.CADir()
+		var ca *serve.LocalCA
+		if err == nil {
+			ca, err = serve.LoadCA(dir)
+		}
+		var leaf tls.Certificate
+		if err == nil {
+			leaf, err = ca.Leaf(append(append([]string{}, hosts...), "127.0.0.1"))
+		}
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("--https: %v", err)
+		}
+		return hosts, &tls.Config{Certificates: []tls.Certificate{leaf}, MinVersion: tls.VersionTLS12}, ca, nil
+	case "tailscale":
+		name, cert, err := tailscaleCert()
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("--https=tailscale: %v", err)
+		}
+		return []string{name}, &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}, nil, nil
+	}
+	return hosts, nil, nil, nil
+}
+
+// serveSplit serves hs on ln in the background; with tlsCfg, HTTPS, and the
+// same port's plain HTTP gives si's certificate (the one-time setup) and a
+// redirect to HTTPS.
+func serveSplit(hs *http.Server, ln net.Listener, tlsCfg *tls.Config, ca *serve.LocalCA, what string, stderr io.Writer) {
 	serveLn := ln
 	if tlsCfg != nil {
 		var plain net.Listener
 		serveLn, plain = serve.SplitTLS(ln, tlsCfg)
 		ps := &http.Server{Handler: serve.CAHandler(ca), ReadHeaderTimeout: 10 * time.Second}
-		go ps.Serve(plain) // the certificate and a redirect to HTTPS; stops when the shared listener closes
+		go ps.Serve(plain) // stops when the shared listener closes
 	}
 	go func() {
-		if err := rs.Serve(serveLn); err != nil && !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, net.ErrClosed) {
-			fmt.Fprintf(stderr, "si: --remote: %v\n", err)
+		if err := hs.Serve(serveLn); err != nil && !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, net.ErrClosed) {
+			fmt.Fprintf(stderr, "si: %s: %v\n", what, err)
 		}
 	}()
-	return rs, exitOK
 }
 
 // startReview opens the --review listener (default: every interface, the
@@ -1274,16 +1288,25 @@ func startReview(srv *serve.Server, main net.Addr, o *options, stdout, stderr io
 	if host == "" {
 		host = "127.0.0.1"
 	}
-	u := fmt.Sprintf("http://%s/?k=%s", net.JoinHostPort(host, strconv.Itoa(ta.Port)), key)
-	fmt.Fprintf(stdout, "  review link (same network, keyed; plain HTTP, so share it on a trusted network):\n  %s\n", u)
+	hosts, tlsCfg, ca, err := httpsFor(o, []string{host})
+	if err != nil {
+		ln.Close()
+		fmt.Fprintf(stderr, "si: --review: %v\n", err)
+		return nil, exitProblems
+	}
+	scheme, how := "http", "plain HTTP, so share it on a trusted network, or add --https"
+	if tlsCfg != nil {
+		scheme, how = "https", "over HTTPS"
+	}
+	u := fmt.Sprintf("%s://%s/?k=%s", scheme, net.JoinHostPort(hosts[0], strconv.Itoa(ta.Port)), key)
+	fmt.Fprintf(stdout, "  review link (same network, keyed; %s):\n  %s\n", how, u)
 	printQR(stdout, u)
+	if ca != nil {
+		fmt.Fprintf(stdout, "  a reviewer's first time: open http://%s/ca to trust si's certificate on that device\n", net.JoinHostPort(hosts[0], strconv.Itoa(ta.Port)))
+	}
 	fmt.Fprintf(stdout, "  comments land in .si/review/ and in the Studio's Review panel\n")
 	rs := &http.Server{Handler: srv.ReviewHandler(key), ReadHeaderTimeout: 10 * time.Second}
-	go func() {
-		if err := rs.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			fmt.Fprintf(stderr, "si: --review: %v\n", err)
-		}
-	}()
+	serveSplit(rs, ln, tlsCfg, ca, "--review", stderr)
 	return rs, exitOK
 }
 

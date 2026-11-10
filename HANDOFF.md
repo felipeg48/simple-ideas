@@ -5,6 +5,9 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.23.0: --review --https.** `httpsFor` (local CA leaf or Tailscale) and
+  `serveSplit` (TLS + the plain `/ca` page on one port) in cmd/si/main.go, used
+  by --remote and --review.
 - **v2.22.0: results under every example.** `docsite.liveExamples` writes each
   ```markdown example of the rules and site pages as `live/ex-NNN.md` (a deck,
   with a `# Example` title slide shown from slide 2; else an article for

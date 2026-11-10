@@ -283,6 +283,11 @@ to its slide or section when that block is rewritten. Comments are stored in
 bar (or ⌘K → Review) lists the open file's comments live (SSE, also when the
 review link runs in another si), with reply, resolve and reopen.
 
+Add `--https` for a network you do not control: the review link is then
+HTTPS with si's own certificate (a reviewer's device trusts it once, from the
+`/ca` page on the same port, as for `--remote --https`), or `--https=tailscale`
+with a certificate every browser already trusts.
+
 Security, like `--remote`: a 128-bit key per run (cookie, `HttpOnly`,
 `SameSite=Strict`); reviewers' POSTs must carry this listener's Origin; names
 up to 60 and texts up to 2000 characters, at most 500 comments a page; pages are

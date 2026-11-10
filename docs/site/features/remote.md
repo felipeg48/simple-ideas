@@ -109,6 +109,10 @@ on your own hotspot or a network you trust. A phone then cannot keep its own
 screen on, so the page reminds you to set **Auto-Lock** to **Never** for the
 talk, and anyone who can read the network can read the notes.
 
+The same `--https` (or `--https=tailscale`) also covers the audience link
+(`--audience`) and a review link (`si serve . --review --https`), where
+colleagues leave comments on your slides.
+
 ## When something is off
 
 | You see | Why, and what to do |

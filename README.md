@@ -128,6 +128,8 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.23.0:** `--review --https` (and `--https=tailscale`): the review link
+  over HTTPS, like the remote pages.
 - **v2.22.0:** every example on the docs site shows its result under the
   Markdown and AsciiDoc tabs; `<!-- embed: … bare -->` embeds without a caption;
   the Decks page covers presenting (keys, overview, find, draw with the

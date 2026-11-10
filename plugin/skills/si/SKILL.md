@@ -36,7 +36,7 @@ that writes or edits the decks. The full, authoritative format is printed by
 si rules                        # the complete markdown format (RULES.md)
 si check <dir|file.md>          # validate; fix every problem before you finish
 si check <dir> --budget         # also fail pages over 1 MB (3D maps: 1.5 MB); budget.* in si.conf
-si serve <dir> --review         # a keyed link where reviewers comment on slides and sections
+si serve <dir> --review         # a keyed link where reviewers comment on slides and sections (--https: over HTTPS)
 si play <dir|file.md> --open    # live preview with reload (http://127.0.0.1:7070/)
 si build <dir> -o html/         # one self-contained HTML file per deck + index.html
 si build <dir> -o html/ --pdf   # also a PDF per deck (needs headless Chrome)
