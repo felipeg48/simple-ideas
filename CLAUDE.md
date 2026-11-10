@@ -190,6 +190,16 @@ pass. The steps that matter:
 
 ## Roadmap ideas
 
+- **On hold until a user asks for it** (the founder, 2026-11-10; do not build
+  before a real request):
+  - **PowerPoint / Google Slides export.** Google Slides has no file format of
+    its own; it imports `.pptx`, which PowerPoint and Keynote open too. Shape
+    if asked: (1) `si build talk.md --pptx`: each slide a full-bleed picture of
+    its last build step, `Notes:` as the speaker notes (stdlib `archive/zip` +
+    OOXML; looks exact, text not editable); (2) editable text boxes for titles,
+    bullets, tables and code, pictures for canvases (hard: fluid layouts vs
+    fixed boxes); (3) `si publish --to google-slides` (Drive upload with
+    conversion, a Google OAuth login like LinkedIn's).
 - **Next five** (specs, 2026-11-09; the founder wants all, one at a time):
   `docs/superpowers/specs/2026-11-09-next-five.md` indexes audience mode
   (follow, polls, Q&A), handouts (`--handout`), record your talk
