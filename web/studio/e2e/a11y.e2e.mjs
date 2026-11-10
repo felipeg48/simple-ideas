@@ -1,7 +1,7 @@
 // Accessibility check with axe-core (dev dependency, injected by this harness
 // only, never into a built page): built slides, an article, a guide page, a 2D
 // and a 3D mind map, a code window article, the teleprompter, and the Studio
-// (Write, Map and Window views); the article and a slide again in every
+// (Write, Map, Window and Theme views); the article and a slide again in every
 // built-in theme, light and dark. Fails on any serious or critical violation.
 // Run: make build && npm run e2e:a11y   (A11Y_REPORT=1 prints every violation)
 import { chromium } from "playwright";
@@ -104,6 +104,7 @@ for (const t of themes) for (const type of ["article", "deck"]) for (const dark 
 {
   const root = mkdtempSync(join(tmpdir(), "si-a11y-studio-"));
   cpSync(new URL("./fixture", import.meta.url).pathname, root, { recursive: true });
+  writeFileSync(join(root, "acme.css"), "/* si theme: Acme · extends paper */\n:root {\n  --si-accent: #0b3d91;\n  --si-muted: #c9c9c9;\n}\n");
   const srv = spawn(si, ["--web", root, "--addr", "127.0.0.1:0", "--no-open"], { stdio: ["ignore", "pipe", "pipe"] });
   process.on("exit", () => srv.kill()); // a failed audit throws past srv.kill() below; never leave si --web running
   const url = await new Promise((res, rej) => {
@@ -130,6 +131,9 @@ for (const t of themes) for (const type of ["article", "deck"]) for (const dark 
     const win = await p.$("button:has-text('Window')");
     if (win) { await win.click(); await p.waitForTimeout(700); }
     await audit("studio: window" + mode, p, { exclude: ["iframe"] });
+    await openFile("acme.css");
+    await p.waitForSelector(".thx-box iframe");
+    await audit("studio: theme" + mode, p, { exclude: ["iframe"] });
     const run = async (q) => { await p.click(".brand"); await p.keyboard.press("ControlOrMeta+K"); await p.fill(".palette-in", q); await p.press(".palette-in", "Enter"); await p.waitForTimeout(700); };
     await run("start gallery");
     await audit("studio: start gallery" + mode, p, { exclude: ["iframe"] });
@@ -137,7 +141,7 @@ for (const t of themes) for (const type of ["article", "deck"]) for (const dark 
     await run("take the tour");
     await audit("studio: tour" + mode, p, { exclude: ["iframe"] });
     await p.keyboard.press("Escape");
-    for (const [q, name] of [["history:", "history"], ["review:", "review"], ["about si", "about"]]) {
+    for (const [q, name] of [["new theme", "new theme"], ["history:", "history"], ["review:", "review"], ["about si", "about"]]) {
       await run(q);
       await audit(`studio: ${name}` + mode, p, { exclude: ["iframe"] });
       await p.keyboard.press("Escape");

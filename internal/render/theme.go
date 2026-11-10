@@ -71,6 +71,10 @@ func (dr *deckRenderer) resolveOneAnim(name, dir string) {
 // build-time only; a file theme's relative url()s are inlined like --css files). A read/fetch error is a deck problem and falls back to studio.
 func (dr *deckRenderer) resolveTheme() {
 	defer dr.resolveFonts() // fonts: sets tokens on top of whichever theme won
+	if dr.opt.ThemeCSS != "" {
+		dr.themeName, dr.themeCSS = "custom", dr.opt.ThemeCSS
+		return
+	}
 	theme := dr.opt.Theme
 	if theme == "" {
 		theme = dr.d.Meta.Theme
@@ -95,7 +99,7 @@ func ThemeLayer(theme, dir string) (name, css string, err error) {
 	if theme == "" {
 		theme = "studio"
 	}
-	var raw, base string
+	var raw string
 	switch {
 	case strings.HasPrefix(theme, "http://") || strings.HasPrefix(theme, "https://"):
 		if raw, err = fetchThemeCSS(theme); err != nil {
@@ -112,14 +116,25 @@ func ThemeLayer(theme, dir string) (name, css string, err error) {
 		name = assets.CanonicalTheme(theme)
 		return name, assets.ThemeCSS(name), nil
 	}
+	css, err = ThemeFileLayer(raw)
+	if err != nil {
+		err = fmt.Errorf("theme: %s %v", theme, err)
+	}
+	return "custom", css, err
+}
+
+// ThemeFileLayer is the si.theme layer of a theme file's text: the built-in
+// its header extends (if any), then the file.
+func ThemeFileLayer(raw string) (css string, err error) {
+	var base string
 	if ext := themefile.Parse(raw).Extends; ext != "" {
 		if _, ok := assets.Themes[assets.CanonicalTheme(ext)]; ok {
 			base = assets.ThemeCSS(ext)
 		} else {
-			err = fmt.Errorf("theme: %s extends %s, which is not a built-in theme (see si theme list)", theme, ext)
+			err = fmt.Errorf("extends %s, which is not a built-in theme (see si theme list)", ext)
 		}
 	}
-	return "custom", base + "@layer si.theme{\n" + raw + "\n}\n", err
+	return base + "@layer si.theme{\n" + raw + "\n}\n", err
 }
 
 // InlineURLs inlines the relative url()s of css (resolved against dir) as

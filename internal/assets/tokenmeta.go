@@ -78,6 +78,14 @@ func ThemeTokens(name string) (light, dark map[string]string, ok bool) {
 	return light, dark, true
 }
 
+// Specimen is the deck the Theme editor previews a theme with: every part a
+// theme touches (headings, lists, columns, a table, a callout, a code
+// window, a big number, a quote, a mind map, a QR code).
+func Specimen() string {
+	md, _ := themesFS.ReadFile("web/themes/specimen.md")
+	return string(md)
+}
+
 // Meta returns the metadata of a token of the contract; ok is false for a
 // name that is not in Tokens.
 func Meta(name string) (TokenMeta, bool) {

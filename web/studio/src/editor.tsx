@@ -21,6 +21,8 @@ import { eolOf, toLF, withEol } from "./eol";
 import { Icon } from "./navigator";
 import { MapEditor, isMindmapPage, mindmapFenceAt } from "./map-editor";
 import { WindowEditor, codeFenceAt } from "./window-editor";
+import { ThemeEditor } from "./theme-editor";
+import { isThemeFile } from "./theme-tokens";
 import { RunbookEditor } from "./runbook-editor";
 import { EMPTY_RB, isRunbookText, parseRunbook, serializeRunbook, type Runbook } from "./runbook";
 import { siMarkdown } from "./si-lang";
@@ -71,6 +73,12 @@ const mapView = (path: string): "map" | "text" => {
   try { return localStorage.getItem(mapKey(path)) === "text" ? "text" : "map"; } catch { return "map"; }
 };
 const setMapView = (path: string, v: "map" | "text") => { try { localStorage.setItem(mapKey(path), v); } catch { /* best effort */ } };
+// the Theme / Text choice for a .css theme file, remembered per file (Theme by default)
+const themeKey = (path: string) => scoped("si-studio-themeview:" + path);
+const themeView = (path: string): "theme" | "text" => {
+  try { return localStorage.getItem(themeKey(path)) === "text" ? "text" : "theme"; } catch { return "theme"; }
+};
+const setThemeView = (path: string, v: "theme" | "text") => { try { localStorage.setItem(themeKey(path), v); } catch { /* best effort */ } };
 // a file that becomes a runbook while you type (or starts empty) keeps the JSON view until you pick Visual
 const keepJson = (path: string) => { try { if (localStorage.getItem(viewKey(path)) === null) setRbView(path, "json"); } catch { /* best effort */ } };
 // the Visual toggle is offered for runbook-shaped JSON and for an empty file
@@ -427,6 +435,9 @@ export function Editor(p: Props) {
   const fenceOn = !!d && !mmPage && fenceEdit?.path === d.path && mindmapFenceAt(body, fenceEdit.line) === fenceEdit.line;
   const mapOn = (mmPage && mapView(d!.path) === "map") || fenceOn;
   const winOn = !!d && !mapOn && winEdit?.path === d.path && codeFenceAt(body, winEdit.line) > 0;
+  const cssBody = d && p.kind === "css" ? text(d) : "";
+  const themeFile = !!d && isThemeFile(cssBody);
+  const themeOn = themeFile && themeView(d!.path) === "theme";
   /** editMap puts the map editor's new text into the editor as one undoable change. */
   function editMap(next: string) {
     const v = view.current;
@@ -506,6 +517,18 @@ export function Editor(p: Props) {
           </div>
         </div>
       )}
+      {themeFile && (
+        <div class="rb-bar">
+          <span class="rb-kind"><Icon name="css" />Theme</span>
+          <div class="seg rb-mode" role="group" aria-label="Theme view">
+            <button class={themeOn ? "on" : ""} aria-pressed={themeOn} onClick={() => { setThemeView(d!.path, "theme"); rerender(); }}>Theme</button>
+            <button class={themeOn ? "" : "on"} aria-pressed={!themeOn} onClick={() => { setThemeView(d!.path, "text"); rerender(); requestAnimationFrame(() => view.current?.requestMeasure()); }}>Text</button>
+          </div>
+        </div>
+      )}
+      {themeOn && (
+        <ThemeEditor path={d!.path} text={cssBody} setText={editMap} undo={(r) => view.current && (r ? redo : undo)(view.current)} />
+      )}
       {winOn && (
         <WindowEditor path={d!.path} text={body} line={winEdit!.line} setText={editMap}
           undo={(r) => view.current && (r ? redo : undo)(view.current)} />
@@ -519,7 +542,7 @@ export function Editor(p: Props) {
         <RunbookEditor text={text(d!)} edit={editRunbook} toJson={(l, c) => showJson(d!.path, l, c)}
           undo={(r) => view.current && (r ? redo : undo)(view.current)} />
       )}
-      <div class="ed-cm" ref={host} hidden={!d || visual || mapOn || winOn} />
+      <div class="ed-cm" ref={host} hidden={!d || visual || mapOn || winOn || themeOn} />
     </div>
   );
 }
