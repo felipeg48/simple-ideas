@@ -70,3 +70,21 @@ func TestPaceReport(t *testing.T) {
 		}
 	}
 }
+
+// Two speakers: the report adds each one's planned and spoken time.
+func TestPaceReportSpeakers(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "talk.md")
+	os.WriteFile(src, []byte("---\nspeakers: Ana, Felipe\n---\n# Talk\n\n---\n\n## Pay\n\n- a\n- b\n\nNotes[Ana]: (1 min) Red. [CLICK]\n\nNotes[Felipe]: (0.5 min) Fixed. [CLICK]\n"), 0o644)
+	d, err := deck.Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := &narration{spoken: map[[2]int]float64{{1, 0}: 50, {1, 1}: 20}}
+	r := paceReport(d, n, "talk-x")
+	for _, want := range []string{"Ana                                    1:00     0:50", "Felipe                                 0:30     0:20"} {
+		if !strings.Contains(r, want) {
+			t.Errorf("missing %q in\n%s", want, r)
+		}
+	}
+}

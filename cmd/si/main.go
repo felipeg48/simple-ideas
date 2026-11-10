@@ -23,6 +23,7 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -59,8 +60,9 @@ const (
 const usage = `si: markdown in, animated fluid HTML slide decks out
 
 Usage:
-  si play <file.md> --terminal [--notes] [--dump N --size WxH]
-        present in the terminal (no browser); --notes is the teleprompter, in a second
+  si play <file.md> --terminal [--notes [--speaker NAME]] [--dump N --size WxH]
+        present in the terminal (no browser); --notes is the teleprompter (--speaker: one
+        speaker's script, speakers:), in a second
         terminal; --dump prints one slide and exits
   si play <dir|file.md> [--addr 127.0.0.1:7070] [--open] [--css <dir|file.css>]... [--remote[=tp,draw,clicker]]
         serve the decks, rendered from markdown on every request, live reload on change
@@ -277,6 +279,7 @@ type options struct {
 	terminal, notes                              bool // si play --terminal [--notes]; si --terminal
 	dump                                         int  // si play --terminal --dump N
 	size                                         string
+	speaker                                      string  // si play --terminal --notes --speaker Ana
 	serveMode                                    bool    // si serve: play without the terminal (everything, for readers)
 	offline                                      bool    // code: / diff: from the cache only
 	noInstructor                                 bool    // si build: leave type: demo scripts out (a participant build)
@@ -360,6 +363,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.write, "write", false, "")
 	fl.BoolVar(&o.terminal, "terminal", false, "")
 	fl.BoolVar(&o.notes, "notes", false, "")
+	fl.StringVar(&o.speaker, "speaker", "", "")
 	fl.IntVar(&o.dump, "dump", 0, "")
 	fl.StringVar(&o.size, "size", "100x30", "")
 	fl.BoolVar(&o.help, "help", false, "")
@@ -1202,6 +1206,12 @@ func startRemote(srv *serve.Server, main net.Addr, o *options, stdout, stderr io
 		for _, r := range o.remote.roles {
 			// the short link (/clicker?k=…) redirects to the deck in that role; it
 			// keeps the QR code small enough for any address and deck name
+			if sp := srv.RemoteSpeakers(); r == "tp" && len(sp) > 0 {
+				for _, n := range sp { // speakers: one teleprompter per speaker, their own script
+					link(serve.RemoteRoleNames[r]+" · "+n, fmt.Sprintf("%s%s?k=%s&speaker=%s", base, r, key, url.QueryEscape(n)))
+				}
+				continue
+			}
 			link(serve.RemoteRoleNames[r], fmt.Sprintf("%s%s?k=%s", base, r, key))
 		}
 	} else {
@@ -2068,7 +2078,7 @@ func playTerminal(src string, o *options, stdout, stderr io.Writer) int {
 	if fi, err := os.Stat(src); err == nil && fi.IsDir() {
 		return usageErr(stderr, "play --terminal needs a deck file (talk.md), not a folder")
 	}
-	opt := tui.Options{Theme: o.theme, Notes: o.notes, Addr: o.addr}
+	opt := tui.Options{Theme: o.theme, Notes: o.notes, Addr: o.addr, Speaker: o.speaker}
 	if o.dump > 0 {
 		var w, h int
 		if _, err := fmt.Sscanf(o.size, "%dx%d", &w, &h); err != nil || w < 20 || h < 8 {

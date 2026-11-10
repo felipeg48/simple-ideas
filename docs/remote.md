@@ -10,7 +10,8 @@ si play talk.md --remote=tp         # only the teleprompter
 si play decks/ --remote --remote-addr 0.0.0.0:9000
 ```
 
-`si play` prints one URL and QR code per role (for a folder: one picker URL),
+`si play` prints one URL and QR code per role (for a folder: one picker URL;
+for a deck with `speakers:`, one teleprompter URL per speaker, `&speaker=Ana`),
 and `q` on the presenting deck shows the same codes full screen (the links go
 only into the loopback page: they carry the key). When the machine has more
 than one usable address (Wi-Fi, Ethernet, Tailscale's 100.64/10), the first is

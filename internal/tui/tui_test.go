@@ -169,6 +169,18 @@ func TestTeleprompterCues(t *testing.T) {
 	}
 }
 
+func TestTeleprompterSpeaker(t *testing.T) {
+	d := testDeck(t, "---\nspeakers: Ana, Felipe\n---\n# Talk\n\n---\n\n## Pay\n\nNotes[Ana]: (1 min) The token reaches payments and turns red. [CLICK]\n\nNotes[Felipe]: (0.5 min) Here is the fix we shipped: one retry, thirty seconds later. [CLICK]\n")
+	m := &teleprompter{d: d, pal: PaletteFor("studio", ""), w: 140, h: 30, i: 1, k: 1, start: time.Now(), slideStart: time.Now(), f: &follower{}, opt: Options{Speaker: "Felipe"}}
+	p := plain(m.render())
+	if !strings.Contains(p, "Teleprompter · Felipe") || !strings.Contains(p, "Ana 01:00") || !strings.Contains(p, "one retry") || strings.Count(p, "CLICK") != 1 {
+		t.Errorf("Felipe's script, Ana as a cue line:\n%s", p)
+	}
+	if !strings.Contains(p, "▶ CLICK") {
+		t.Errorf("Felipe's cue is step 2, the next one:\n%s", p)
+	}
+}
+
 func TestSocketSync(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "s.sock")
 	if len(path) > 100 {

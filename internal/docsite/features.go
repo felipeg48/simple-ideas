@@ -38,6 +38,7 @@ var Features = []feature{
 			{"`<!-- step -->`", "reveal the next block on a click"},
 			{"`<!-- svg: journey.svg +paid -->`", "a canvas whose parts change state slide by slide"},
 			{"`Notes: (2 min)`", "the teleprompter script, with `[CLICK]` cues"},
+			{"`Notes[Ana]:`", "two or more presenters (`speakers: Ana, Felipe`): a script each, a teleprompter each"},
 			{"`transition:`", "fade, slide, zoom, none"},
 			{"`<!-- poll: id · a · b -->`", "a live poll the room answers on their phones ([your audience](audience.md))"},
 		},

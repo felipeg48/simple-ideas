@@ -204,6 +204,60 @@ func TestSlideDirectivesAndNotes(t *testing.T) {
 	}
 }
 
+func TestSpeakers(t *testing.T) {
+	tests := []struct {
+		name, src string
+		voices    string // speaker:minutes:notes|… of slide 2
+		minutes   float64
+		problems  int
+		warnings  int
+	}{
+		{"two speakers", "Notes[Ana]: (1 min) The token turns red. [CLICK]\n\nNotes[Felipe]: (0.5 min)\nHere is the fix.\n\nPoints[Felipe]:\n- Show the log\n",
+			"Ana:1:The token turns red. [CLICK]|Felipe:0.5:Here is the fix.", 1.5, 0, 0},
+		{"plain Notes is the first speaker", "Notes: (2 min) Hello.\n\nNotes[felipe]: Bye.\n",
+			"Ana:2:Hello.|Felipe:0:Bye.", 2, 0, 0},
+		{"unknown name", "Notes[Bob]: Hi.\n", "Bob:0:Hi.", 0, 1, 2},
+		{"a speaker with no lines", "Notes[Ana]: Hi.\n", "Ana:0:Hi.", 0, 0, 1},
+		{"three, back and forth", "Notes[Ana]: One.\n\nNotes[Felipe]: Two.\n\nNotes[Cleo]: Three.\n\nNotes[Ana]: Four.\n",
+			"Ana:0:One.|Felipe:0:Two.|Cleo:0:Three.|Ana:0:Four.", 0, 0, 0},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			sp := "Ana, Felipe"
+			if strings.Contains(tc.src, "Cleo") {
+				sp += ", Cleo"
+			}
+			dir := write(t, map[string]string{"d.md": "---\nspeakers: " + sp + "\n---\n# Talk\n\n---\n\n## Slide\n\nbody\n\n" + tc.src})
+			d, err := Parse(filepath.Join(dir, "d.md"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			s := d.Slides[1]
+			var got []string
+			for _, v := range s.Voices {
+				got = append(got, fmt.Sprintf("%s:%g:%s", v.Speaker, v.Minutes, v.Notes))
+			}
+			if strings.Join(got, "|") != tc.voices {
+				t.Errorf("voices = %q, want %q", strings.Join(got, "|"), tc.voices)
+			}
+			if s.Minutes != tc.minutes {
+				t.Errorf("minutes = %g, want %g", s.Minutes, tc.minutes)
+			}
+			if len(d.Problems) != tc.problems || len(d.Warnings) != tc.warnings {
+				t.Errorf("problems %v, warnings %v", d.Problems, d.Warnings)
+			}
+		})
+	}
+	dir := write(t, map[string]string{"d.md": "# Talk\n\n---\n\n## S\n\nNotes[Ana]: Hi.\n"})
+	if d, _ := Parse(filepath.Join(dir, "d.md")); len(d.Problems) != 1 || !strings.Contains(d.Problems[0].Msg, "speakers:") {
+		t.Errorf("Notes[Ana]: without speakers: = %v", d.Problems)
+	}
+	dir = write(t, map[string]string{"d.md": "---\nspeakers: Ana, Felipe\n---\n# Talk\n\n---\n\n## S\n\nNotes[Ana]: Hi.\n\nNotes[Felipe]: Bye.\n\nPoints[Felipe]:\n- the log\n"})
+	if d, _ := Parse(filepath.Join(dir, "d.md")); d.Slides[1].Voices[1].Points != "- the log" || d.Slides[1].Points != "- the log" {
+		t.Errorf("Points[Felipe] = %+v", d.Slides[1].Voices)
+	}
+}
+
 func TestParseDirective(t *testing.T) {
 	tests := []struct {
 		line, name, value string

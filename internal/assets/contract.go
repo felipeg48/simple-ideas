@@ -313,6 +313,7 @@ var Hooks = []Hook{
 	{`.si-cell`, "cards: one card (teal, orange, ok, crit, hi)"},
 	{`.si-card-tag`, "cards: the tag above a card's title"},
 	{`.si-cue`, "teleprompter: a [CLICK] cue in the Notes: script, where the speaker advances"},
+	{`.si-voice`, "two presenters: one speaker's part of .si-notes / .si-points (data-speaker, data-minutes, data-step); labelled in handouts"},
 	{`.si-doc-wm`, "documents: the watermark layer (watermark: front matter), fixed over the page and on every printed page"},
 	{`.si-say`, "demo: a > Say: quote, what the presenter says to the room"},
 	{`.si-say-label`, "demo: the Say label of a speech callout"},

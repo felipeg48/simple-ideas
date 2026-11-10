@@ -69,6 +69,17 @@ si play talk.md --remote=tp,clicker --https
 The code is new every run: the link carries a key made for that run, and a
 page without it gets nothing.
 
+## Two presenters
+
+A talk for two names them in the front matter, `speakers: Ana, Felipe`, and
+gives each one a script with `Notes[Ana]:` and `Notes[Felipe]:`. `--remote`
+then prints one Teleprompter code per speaker: Ana's tablet shows her script
+in full and Felipe's lines as a short cue (his name, his time, his first
+words), and both show **→ Felipe** when the turn passes. Each teleprompter
+also has the picker in its bar. `speakers.control: turn` in `si.conf` lets
+only the speaker whose turn it is press Next. See
+[§11](../rules/11-speaker-notes-and-the-teleprompter.md).
+
 ## Your audience too
 
 `--audience` puts the talk on the room's phones as well: they follow the

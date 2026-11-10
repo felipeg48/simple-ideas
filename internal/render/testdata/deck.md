@@ -9,6 +9,7 @@ footer: Internal
 footer-position: bottom-left
 watermark: Draft
 watermark-opacity: 0.08
+speakers: Ana, Felipe
 ---
 
 # Golden **deck**
@@ -37,7 +38,13 @@ Step with state.
 <!-- step: -on,bad -->
 
 Notes: (1 min)
-Canvas notes.
+Canvas notes. [CLICK]
+
+Notes[Felipe]: (0.5 min)
+Felipe takes the second step. [CLICK]
+
+Points[Felipe]:
+- the bad state is on purpose
 
 Points: Canvas talking point.
 - second point

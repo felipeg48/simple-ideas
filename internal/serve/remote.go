@@ -210,7 +210,11 @@ func (s *Server) RemoteHandler(key string, roles []string) http.Handler {
 				http.NotFound(w, r)
 				return
 			}
-			http.Redirect(w, r, decks[0]+"?role="+strings.TrimPrefix(p, "/")+"&k="+url.QueryEscape(r.URL.Query().Get("k")), http.StatusFound)
+			to := decks[0] + "?role=" + strings.TrimPrefix(p, "/") + "&k=" + url.QueryEscape(r.URL.Query().Get("k"))
+			if sp := r.URL.Query().Get("speaker"); sp != "" {
+				to += "&speaker=" + url.QueryEscape(sp) // a teleprompter for one speaker (speakers:)
+			}
+			http.Redirect(w, r, to, http.StatusFound)
 		case strings.HasSuffix(p, ".html"):
 			md := filepath.Join(s.dir, filepath.FromSlash(strings.TrimSuffix(strings.TrimPrefix(p, "/"), ".html")+".md"))
 			role := r.URL.Query().Get("role")
@@ -363,6 +367,23 @@ func (s *Server) RemoteDecks() []string {
 		}
 	}
 	return out
+}
+
+// RemoteSpeakers is the `speakers:` of the one served deck (none for a folder):
+// si play --remote prints a teleprompter link per speaker.
+func (s *Server) RemoteSpeakers() []string {
+	files := []string{s.file}
+	if s.file == "" {
+		files, _ = deck.List(s.dir)
+	}
+	if len(files) != 1 {
+		return nil
+	}
+	d, err := deck.Parse(files[0])
+	if err != nil {
+		return nil
+	}
+	return d.Meta.SpeakerList()
 }
 
 // remotePicker lists every deck with one link per enabled role.

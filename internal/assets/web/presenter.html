@@ -22,6 +22,15 @@ body{overflow:hidden;height:100%}
   color:var(--si-on-accent);background:var(--si-accent);vertical-align:.18em}
 .pv-notes .si-cue::before{content:"\25B6\00a0"}
 .pv-notes[hidden]{display:none}
+/* two presenters (speakers:): your script in full, the others as one quiet cue line */
+.pv-who{font-family:var(--si-font-mono);font-size:.5em;color:var(--si-accent);margin:.4em 0 .2em}
+.pv-other{color:var(--si-muted);font-size:.6em;line-height:1.4;margin:0 0 .9em;padding:.2em .6em;border-left:3px solid var(--si-line)}
+.pv-other b{color:var(--si-accent);font-family:var(--si-font-mono);font-weight:700;margin-right:.4em}
+.pv-other.is-now{border-left-color:var(--si-accent)}
+.pv-handover{position:absolute;top:2.4rem;right:1rem;z-index:1;padding:.3em .8em;border-radius:.5em;background:var(--si-accent);color:var(--si-on-accent);font:700 clamp(1rem,1.2vw + .5rem,1.8rem) var(--si-font-mono);opacity:0;transition:opacity .3s;pointer-events:none}
+.pv-handover.on{opacity:1}
+.pv-bar select{font:inherit;color:var(--si-fg);background:var(--si-surface);border:1px solid var(--si-line);border-radius:.45rem;padding:.35em .5em}
+.pv-bar button:disabled{opacity:.4;cursor:not-allowed}
 .pv-tabs{display:flex;gap:.3rem;margin-right:auto}
 .pv-tab{font:inherit;font-family:var(--si-font-mono);font-size:.78rem;color:var(--si-muted);background:none;border:1px solid transparent;border-radius:.4rem;padding:.2em .7em;cursor:pointer}
 .pv-tab:hover{color:var(--si-fg)}
@@ -99,12 +108,13 @@ body{overflow:hidden;height:100%}
   <div class="pv-top"><b id="title"></b><span id="pos"></span>
     <span class="pv-clocks">
       <span id="slideclock">slide <strong id="slideel">00:00</strong> <span id="slideplan"></span> <span id="rehearse" class="pv-rehearse"></span></span>
+      <span id="mineclock" hidden><span id="minename"></span> <strong id="mine">00:00</strong> <span id="mineplan"></span></span>
       <span id="totalclock">total <strong id="elapsed">00:00</strong> <span id="planned"></span></span>
       <span class="pace" id="pace"></span>
       <span class="pace" id="lastpace"></span>
       <span>clock <strong id="clock"></strong></span>
     </span></div>
-  <div class="pv-prompt" id="prompt"><div class="pv-prompt-head"><div class="pv-tabs"><button class="pv-tab" id="tab-tele" aria-pressed="true" title="Verbatim script (1)">Teleprompter</button><button class="pv-tab" id="tab-notes" aria-pressed="false" title="Talking points (2)">Speaker Notes</button><button class="pv-tab" id="tab-qa" aria-pressed="false" title="Questions from the room (3)" hidden>Q&amp;A</button></div><span id="nmins"></span><span id="scrollstate"></span></div><div class="pv-notes" id="notes"></div><div class="pv-points" id="points" hidden></div><div class="pv-qa" id="qa" hidden></div></div>
+  <div class="pv-prompt" id="prompt"><div class="pv-prompt-head"><div class="pv-tabs"><button class="pv-tab" id="tab-tele" aria-pressed="true" title="Verbatim script (1)">Teleprompter</button><button class="pv-tab" id="tab-notes" aria-pressed="false" title="Talking points (2)">Speaker Notes</button><button class="pv-tab" id="tab-qa" aria-pressed="false" title="Questions from the room (3)" hidden>Q&amp;A</button></div><span id="nmins"></span><span id="scrollstate"></span></div><div class="pv-handover" id="handover" role="status"></div><div class="pv-notes" id="notes"></div><div class="pv-points" id="points" hidden></div><div class="pv-qa" id="qa" hidden></div></div>
   <div class="pv-side">
     <div><div class="pv-label">Now</div><div class="pv-screen" id="cur"></div></div>
     <div><div class="pv-label" id="label">Next</div><div class="pv-screen" id="next"></div></div>
@@ -117,10 +127,11 @@ body{overflow:hidden;height:100%}
     <button id="smaller" title="Smaller text ([)">A&minus;</button><button id="bigger" title="Bigger text (])">A+</button>
     <button id="mirror" aria-pressed="false" title="Mirror for teleprompter glass (m)">Mirror</button>
     <button id="only" aria-pressed="false" title="Notes only (x)">Notes only</button>
+    <select id="speaker" title="Whose script (s)" aria-label="Speaker" hidden></select>
     <span class="sep"></span>
     <button id="timer" title="Pause or resume the timer (t)">Pause</button><button id="reset" title="Reset the timer (0)">Reset</button>
     <button id="rec" aria-pressed="false" title="Record your voice with the slide timings (Shift+R); saved beside the talk in .si/recordings/" hidden>● Record</button>
-    <span class="pv-keys">&larr; &rarr; space: navigate · 1/2 tabs · &uarr; &darr;: scroll · a auto · +/- speed · [ ] size · m mirror · x notes only</span>
+    <span class="pv-keys">&larr; &rarr; space: navigate · 1/2 tabs · &uarr; &darr;: scroll · a auto · +/- speed · [ ] size · m mirror · x notes only · s speaker</span>
   </div>
 </div>
 <script>
@@ -132,9 +143,78 @@ body{overflow:hidden;height:100%}
   document.documentElement.style.setProperty('--_aspect', D.aspect);
   /* same-browser window: BroadcastChannel; remote device (si play --remote): the relay */
   var chan = D.relay && window.SI_RELAY ? window.SI_RELAY() : new BroadcastChannel('si:' + D.name);
-  function send(cmd) { chan.postMessage({ type: 'cmd', cmd: cmd, name: D.name, mid: Math.random().toString(36).slice(2) }); }
+  function send(cmd) {
+    if (cmd !== 'hello' && blocked()) return; /* speakers.control: turn */
+    chan.postMessage({ type: 'cmd', cmd: cmd, name: D.name, mid: Math.random().toString(36).slice(2) }); }
   function load(k, d) { try { var v = localStorage.getItem('si-prompter-' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }
   function save(k, v) { try { localStorage.setItem('si-prompter-' + k, JSON.stringify(v)); } catch (e) {} }
+
+  /* ---------- two presenters (speakers:): whose script, who speaks now, the hand-over ---------- */
+  var speakers = D.speakers || [], speaking = '', rawNotes = '', rawPoints = '', hoT = 0;
+  function speakerNamed(n) { n = (n || '').toLowerCase(); return speakers.filter(function (s) { return s.toLowerCase() === n; })[0] || ''; }
+  var qsp = /[?&]speaker=([^&#]*)/.exec(location.search);
+  var me = speakerNamed(qsp ? decodeURIComponent(qsp[1].replace(/\+/g, ' ')) : load('speaker', ''));
+  if (speakers.length) {
+    var sel = $('speaker');
+    [''].concat(speakers).forEach(function (n) { var o = document.createElement('option'); o.value = n; o.textContent = n || 'Everyone'; sel.appendChild(o); });
+    sel.value = me; sel.hidden = false;
+    sel.onchange = function () { pickSpeaker(sel.value); sel.blur(); };
+  }
+  function pickSpeaker(n) { me = n; save('speaker', me); $('speaker').value = me; script(); tick(); }
+  function blocked() { return !!(D.turn && me && speaking && speaking !== me); }
+  function voicesOf(h) { var t = document.createElement('div'); t.innerHTML = h || ''; return Array.prototype.filter.call(t.children, function (e) { return e.classList.contains('si-voice'); }); }
+  function firstWords(el) { Array.prototype.forEach.call(el.querySelectorAll(".si-cue"), function (c) { c.remove(); }); var w = (el.textContent || "").replace(/\s+/g, " ").trim().split(" "); return w.slice(0, 8).join(" ") + (w.length > 8 ? " …" : ""); }
+  function who(el, text) { var d = document.createElement('div'); d.className = 'pv-who'; d.textContent = text; el.appendChild(d); }
+  function script() {
+    var vs = voicesOf(rawNotes), ps = voicesOf(rawPoints), mine = 0;
+    if (!vs.length) notes.innerHTML = rawNotes || '<p><em>No notes for this slide.</em></p>';
+    else {
+      notes.textContent = '';
+      vs.forEach(function (v) {
+        var name = v.getAttribute('data-speaker'), mins = parseFloat(v.getAttribute('data-minutes')) || 0, part = document.createElement('div');
+        part.className = 'pv-part'; part.setAttribute('data-who', name); part.setAttribute('data-step', v.getAttribute('data-step') || '0');
+        if (name === me) mine += mins;
+        if (!me || name === me) {
+          if (!me) who(part, name + (mins ? ' · ' + fmt(mins * 60000) : ''));
+          part.insertAdjacentHTML('beforeend', v.innerHTML);
+        } else { /* someone else's lines: who, how long, their first words (your cue) */
+          part.className += ' pv-other';
+          var b = document.createElement('b'); b.textContent = name + (mins ? ' ' + fmt(mins * 60000) : '');
+          part.appendChild(b); part.appendChild(document.createTextNode('“' + firstWords(v) + '”'));
+        }
+        notes.appendChild(part);
+      });
+    }
+    if (!ps.length) points.innerHTML = rawPoints || '<p><em>No speaker notes for this slide.</em></p>';
+    else {
+      points.textContent = '';
+      ps.forEach(function (v) {
+        var name = v.getAttribute('data-speaker');
+        if (me && name !== me) return;
+        if (!me) who(points, name);
+        points.insertAdjacentHTML('beforeend', v.innerHTML);
+      });
+      if (!points.children.length) points.innerHTML = '<p><em>No speaker notes for you on this slide.</em></p>';
+    }
+    var m = $('nmins').getAttribute('data-n');
+    if (m) $('nmins').textContent = 'Notes, slide ' + m + (me && vs.length ? ' · ' + me + ' ' + (mine ? fmt(mine * 60000) : 'listens') : '');
+    turn();
+  }
+  /* who speaks now: the part whose first build step is this one, else the last one begun */
+  function turn() {
+    var parts = notes.querySelectorAll('.pv-part'), at = null;
+    Array.prototype.forEach.call(parts, function (p) { var s = +p.getAttribute('data-step'); if (s < curStep || (s === curStep && !(at && +at.getAttribute('data-step') === curStep))) at = p; });
+    Array.prototype.forEach.call(parts, function (p) { p.classList.toggle('is-now', p === at); });
+    var w = at ? at.getAttribute('data-who') : '';
+    if (w && w !== speaking) {
+      if (speaking) { /* the hand-over: both teleprompters show it for a few seconds */
+        var h = $('handover'); h.textContent = '→ ' + w + (w === me ? ' (you)' : '');
+        h.classList.add('on'); clearTimeout(hoT); hoT = setTimeout(function () { h.classList.remove('on'); }, 4000);
+      }
+      speaking = w;
+    }
+    $('prev').disabled = $('nextb').disabled = blocked();
+  }
 
   /* ---------- teleprompter settings ---------- */
   var size = load('size', 1), speed = load('speed', 4), mirror = load('mirror', false), only = load('only', false), auto = false;
@@ -257,8 +337,18 @@ body{overflow:hidden;height:100%}
   if (D.path && !D.relay) fetch('/_si/record').then(function (r) { if (r.ok) $('rec').hidden = false; }).catch(function () {});
   $('rec').onclick = recToggle;
 
+  var mineMs = 0, lastTick = Date.now();
   function tick() {
     if (rec) $('rec').textContent = 'Stop ' + fmt(Date.now() - recT0);
+    /* your own clock (speakers:): the time while it is your turn, against your planned minutes */
+    var t0 = Date.now();
+    if (!pausedAt && me && speaking === me) mineMs += t0 - lastTick;
+    lastTick = t0;
+    $('mineclock').hidden = !me;
+    if (me) {
+      var mp = (D.speakerMinutes || {})[me] || 0;
+      $('minename').textContent = me; $('mine').textContent = fmt(mineMs); $('mineplan').textContent = mp ? '/ ' + mp + ' min' : '';
+    }
     var el = now() - start - paused, sl = now() - slideStart;
     $('elapsed').textContent = fmt(el);
     $('slideel').textContent = fmt(sl);
@@ -283,7 +373,7 @@ body{overflow:hidden;height:100%}
     else { pausedAt = Date.now(); $('timer').textContent = 'Resume'; }
     tick();
   }
-  function resetTimer() { start = slideStart = Date.now(); paused = 0; if (pausedAt) pausedAt = Date.now(); prevSpent = spent.slice(); spent = []; tick(); }
+  function resetTimer() { start = slideStart = Date.now(); paused = 0; mineMs = 0; if (pausedAt) pausedAt = Date.now(); prevSpent = spent.slice(); spent = []; tick(); }
   setInterval(tick, 250);
 
   /* ---------- sync with the audience window ---------- */
@@ -298,7 +388,6 @@ body{overflow:hidden;height:100%}
     $('pos').textContent = 'slide ' + (m.i + 1) + ' / ' + m.n + (m.kmax ? '  ·  step ' + m.k + ' / ' + m.kmax : '');
     $('slideplan').textContent = m.minutes ? '/ ' + m.minutes + ' min' : '';
     $('planned').textContent = total ? '/ ' + total + ' min' : '';
-    $('nmins').textContent = 'Notes, slide ' + (m.i + 1) + (m.minutes ? ' · ' + m.minutes + ' min' : '');
     $('cur').innerHTML = m.cur;
     $('next').innerHTML = m.next || '';
     $('label').textContent = m.label;
@@ -307,10 +396,12 @@ body{overflow:hidden;height:100%}
     if (m.i !== cur) {
       if (cur >= 0) { spent[cur] = (spent[cur] || 0) + (now() - slideStart); save('rehearse-' + D.name, spent); }
       cur = m.i; slideStart = now();
-      notes.innerHTML = m.notes || '<p><em>No notes for this slide.</em></p>';
-      points.innerHTML = m.points || '<p><em>No speaker notes for this slide.</em></p>';
+      rawNotes = m.notes || ''; rawPoints = m.points || '';
+      $('nmins').setAttribute('data-n', (m.i + 1) + (m.minutes ? ' · ' + m.minutes + ' min' : ''));
+      script();
       notes.scrollTop = 0; points.scrollTop = 0; carry = 0;
     }
+    turn();
     tick();
   };
 
@@ -347,6 +438,7 @@ body{overflow:hidden;height:100%}
       case '[': size = Math.max(0.6, +(size - 0.1).toFixed(2)); settings(); break;
       case 'm': mirror = !mirror; settings(); break;
       case 'x': only = !only; settings(); break;
+      case 's': if (speakers.length) { var ix = [''].concat(speakers).indexOf(me); pickSpeaker([''].concat(speakers)[(ix + 1) % (speakers.length + 1)]); } break;
       case 'r': activePane().scrollTop = 0; break;
       case 'R': if (!$('rec').hidden) recToggle(); break;
       case '1': showTab('tele'); break;

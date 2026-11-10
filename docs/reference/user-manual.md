@@ -65,6 +65,7 @@ Points: Talking points
 | ` ```lang ` | a highlighted code block |
 | `Notes: (2 min)` | verbatim teleprompter script + a per-slide time budget |
 | `Points:` | speaker-notes talking points (the teleprompter's second tab) |
+| `Notes[Ana]:` / `Points[Ana]:` | one speaker's script and points, with `speakers: Ana, Felipe` in the front matter |
 | `<!-- layout: two-col -->` | a layout directive (see next) |
 
 Everything is in **`si rules`** (or RULES.md) with an example for each.
@@ -227,6 +228,14 @@ loopback and opens a keyed second port (play port + 1) with one QR per role:
 show on the projected slide) and `clicker` (a phone remote: big Next / Prev,
 where you are, what comes next, a stopwatch). `--remote=tp` picks roles, `--remote-addr` the
 address. See `docs/remote.md`.
+
+Two presenters: `speakers: Ana, Felipe` in the front matter and
+`Notes[Ana]:` / `Notes[Felipe]:` on the slides. Each teleprompter picks its
+speaker (the picker in the bar, `s`, or `?speaker=Ana`; `--remote` prints one
+teleprompter code per speaker): your script in full, the other's lines as a
+short cue, a **→ Felipe** banner when the turn passes, and your own clock.
+`speakers.control: turn` in `si.conf` lets only the speaker whose turn it is
+advance. In the terminal: `si play talk.md --terminal --notes --speaker Ana`.
 
 The **terminal drawer** (`` ` ``) slides up a tabbed, real shell for running
 commands mid-demo (`docker ps`, `psql`, …). It exists only under
