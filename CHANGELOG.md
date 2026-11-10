@@ -3,6 +3,19 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.35.0:** web demos on film: `si demo run script.md` performs each
+  feature in headless Chrome and films it, with a drawn cursor that glides to
+  each element, a ripple on clicks, `note "…" at "Field"` callouts and a blur
+  over fields typed from `$VAR` secrets; every `Say:` line is voiced first and
+  sets the pace. Voices: Kokoro `af_heart` (local, the default when
+  installed), the computer's own (`say`, espeak-ng, Windows), ElevenLabs and
+  OpenAI (`voice-style:`); `pronounce: si = ess eye`; voiced lines cached.
+  Writes `<feature>.mp4` (and a silent one, the narration, `.srt` captions),
+  `all.mp4` with a title card per feature and chapters, `chapters.txt` for
+  YouTube, the report and README.md + README.html; `--captions` burns the
+  captions in, `--viewport phone|tablet|WxH`, `--voice`, `--feature`. A
+  failing step ends its clip and lands in the report. `si doctor` lists Kokoro
+  and espeak-ng.
 - **v2.34.0:** web demos, phase 1: `si demo test script.md` runs a web app's
   features in headless Chrome from a `type: demo` script with `app:` (a URL or
   a folder si serves), finds elements as a person would, clicks and types for

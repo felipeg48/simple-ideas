@@ -14,7 +14,7 @@ func TestDemoCommand(t *testing.T) {
 		t.Errorf("si demo: exit %d", code)
 	}
 	errb.Reset()
-	if code := run([]string{"demo", "--help"}, &out, &errb); code != exitOK || !strings.Contains(out.String(), "si demo test") {
+	if code := run([]string{"demo", "--help"}, &out, &errb); code != exitOK || !strings.Contains(out.String(), "si demo test") || !strings.Contains(out.String(), "--captions") {
 		t.Errorf("si demo --help: %d %s", code, out.String())
 	}
 	out.Reset()

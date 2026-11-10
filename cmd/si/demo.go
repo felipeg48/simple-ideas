@@ -6,17 +6,30 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/felipeg48/simple-ideas/internal/deck"
+	"github.com/felipeg48/simple-ideas/internal/render"
 	"github.com/felipeg48/simple-ideas/internal/tools"
 	"github.com/felipeg48/simple-ideas/internal/webdemo"
 )
 
 const demoUsage = `Usage:
-  si demo test <script.md|.adoc|.json> [--feature "Name"] [--junit report.xml] [-o dir]
+  si demo test <script.md|.adoc|.json> [--feature "Name"] [--junit report.xml] [--viewport V] [-o dir]
         run a web demo script (type: demo with app:) in headless Chrome as a test: one line
         per step, report.html + report.json in demo-out/<script>/ (or -o dir), exit 1 on a failure;
         --junit also writes JUnit XML (one test case per feature) for CI
-  si demo run <script>   the narrated videos come in a later version; for now it runs the test
+  si demo run <script> [--feature "Name"] [--captions] [--voice engine:name] [--viewport V] [-o dir]
+        perform the same steps on film: a drawn cursor glides to each target, clicks ripple,
+        note steps point at elements, fields typed from $VARs are blurred. Each Say: line is
+        voiced first and sets the pace. Writes, per feature, <feature>.mp4 (video + voice),
+        .video.mp4 (silent), .voice.wav/.m4a and .srt; all.mp4 (a title card per feature,
+        chapters inside), chapters.txt (YouTube), the report and README.md + README.html.
+        --voice   kokoro[:af_heart] (the default when installed), system[:name] (say, espeak-ng,
+                  Windows voices), elevenlabs:<voice id> (ELEVENLABS_API_KEY),
+                  openai[:alloy] (OPENAI_API_KEY; voice-style: in front matter)
+        --captions  burn the captions into the video (the .srt is always written)
+        --viewport  phone (400x800), tablet (820x1180), desktop (1440x900) or WxH
 `
 
 // runDemo is `si demo test|run <script>`. Its flags are its own: --feature
@@ -24,12 +37,15 @@ const demoUsage = `Usage:
 func runDemo(argv []string, stdout, stderr io.Writer) int {
 	fl := flag.NewFlagSet("si demo", flag.ContinueOnError)
 	fl.SetOutput(io.Discard)
-	var feature, junit, out string
-	var help bool
+	var feature, junit, out, viewport, voice string
+	var help, captions bool
 	fl.StringVar(&feature, "feature", "", "")
 	fl.StringVar(&junit, "junit", "", "")
 	fl.StringVar(&out, "output", "", "")
 	fl.StringVar(&out, "o", "", "")
+	fl.StringVar(&viewport, "viewport", "", "")
+	fl.StringVar(&voice, "voice", "", "")
+	fl.BoolVar(&captions, "captions", false, "")
 	fl.BoolVar(&help, "help", false, "")
 	fl.BoolVar(&help, "h", false, "")
 	var args []string
@@ -52,9 +68,7 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "si demo: test or run, and one script\n\n%s", demoUsage)
 		return exitUsage
 	}
-	if args[0] == "run" {
-		fmt.Fprintln(stderr, "si demo run: the narrated videos come in a later version of si; running the test now")
-	}
+	film := args[0] == "run"
 	s, err := webdemo.ParseFile(args[1])
 	if err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
@@ -69,8 +83,26 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 		}
 		return exitProblems
 	}
-	chrome := findChrome()
-	if chrome == "" {
+	if err := s.SetViewport(viewport); err != nil {
+		fmt.Fprintf(stderr, "si demo: --%v\n", err)
+		return exitUsage
+	}
+	o := webdemo.Options{Feature: feature, Log: stdout, SI: version}
+	if film {
+		v := webdemo.DefaultVoice()
+		if spec := firstNonEmpty(voice, s.Voice); spec != "" {
+			if v, err = webdemo.ParseVoice(spec); err != nil {
+				fmt.Fprintf(stderr, "si demo: %v\n", err)
+				return exitUsage
+			}
+		}
+		o.Video, o.Voice, o.Captions = true, v, captions
+		if o.FFmpeg = tools.Find("ffmpeg"); o.FFmpeg == "" {
+			fmt.Fprintf(stderr, "si: %s\n", tools.Need("ffmpeg", "si demo run"))
+			return exitProblems
+		}
+	}
+	if o.Chrome = findChrome(); o.Chrome == "" {
 		fmt.Fprintf(stderr, "si: %s\n", tools.Need("chrome", "si demo"))
 		return exitProblems
 	}
@@ -81,7 +113,8 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "si: %v\n", err)
 		return exitProblems
 	}
-	rep, err := webdemo.Run(s, webdemo.Options{Chrome: chrome, Feature: feature, Out: out, Log: stdout, SI: version})
+	o.Out = out
+	rep, err := webdemo.Run(s, o)
 	if err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
 		return exitProblems
@@ -100,11 +133,47 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 			return exitProblems
 		}
 	}
+	if film {
+		if err := demoReadme(rep, s, out, "si demo "+strings.Join(os.Args[2:], " ")); err != nil {
+			fmt.Fprintf(stderr, "si: README: %v\n", err)
+			return exitProblems
+		}
+	}
 	fmt.Fprintf(stdout, "si demo: %d passed, %d failed in %.1fs; report: %s\n", rep.Passed, rep.Failed, rep.Seconds, filepath.Join(out, "report.html"))
+	if film {
+		fmt.Fprintf(stdout, "videos: %s\n", filepath.Join(out, "README.html"))
+	}
 	if !rep.OK() {
 		return exitProblems
 	}
 	return exitOK
+}
+
+func firstNonEmpty(a ...string) string {
+	for _, s := range a {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
+}
+
+// demoReadme writes README.md and, rendered by si as an article with the
+// videos linked (not inlined), README.html.
+func demoReadme(rep *webdemo.Report, s *webdemo.Script, out, how string) error {
+	md := filepath.Join(out, "README.md")
+	if err := os.WriteFile(md, []byte(webdemo.Readme(rep, s, out, how)), 0o644); err != nil {
+		return err
+	}
+	d, err := deck.Parse(md)
+	if err != nil {
+		return err
+	}
+	res := render.Deck(d, render.Options{Media: render.MediaLink})
+	if len(res.Problems) > 0 {
+		return fmt.Errorf("%s", res.Problems[0])
+	}
+	return os.WriteFile(filepath.Join(out, "README.html"), res.HTML, 0o644)
 }
 
 // webDemoProblems prints a web demo script's problems (a bad step, with its

@@ -31,6 +31,13 @@ type Options struct {
 	Out     string    // where the screenshots go (the report folder)
 	Log     io.Writer // one line per step (nil: quiet)
 	SI      string    // si's version, for the report
+
+	// si demo run: film each feature (Video), narrated by Voice
+	Video    bool
+	Voice    Voice
+	Captions bool   // burn the captions into the video
+	FFmpeg   string // the ffmpeg to encode with
+	Cache    string // where voiced lines are kept ("" = VoiceCache())
 }
 
 // failure is a step that did not pass: what it expected, what it found, the
@@ -55,6 +62,9 @@ type runner struct {
 	session string // the page whose events count
 	loading int    // frames loading now (a click or a key may start a navigation)
 	shotN   int
+	tk      *take           // the feature being filmed (run)
+	lines   map[*Block]Line // each Say: line voiced (run)
+	timeout time.Duration   // how long a step waits for its element
 }
 
 // Run runs the script's features as tests and returns the report. An error
@@ -63,9 +73,16 @@ func Run(s *Script, o Options) (*Report, error) {
 	if len(s.Problems) > 0 {
 		return nil, fmt.Errorf("%s", s.Problems[0])
 	}
-	r := &runner{s: s, o: o}
+	r := &runner{s: s, o: o, timeout: s.Timeout}
 	if o.Log == nil {
 		r.o.Log = io.Discard
+	}
+	if o.Video {
+		// a take fails fast: a long wait would be seconds of nothing in the video
+		r.timeout = min(s.Timeout, 3*time.Second)
+		if err := r.voiceLines(); err != nil {
+			return nil, err
+		}
 	}
 	base, stop, err := serveApp(s)
 	if err != nil {
@@ -101,21 +118,83 @@ func Run(s *Script, o Options) (*Report, error) {
 	if rep.Title == "" {
 		rep.Title = s.Name
 	}
-	start := time.Now()
-	matched := false
-	for _, f := range s.Features {
-		if o.Feature != "" && !strings.EqualFold(f.Name, o.Feature) {
-			continue
-		}
-		matched = true
-		rep.Features = append(rep.Features, r.feature(f))
+	if o.Video && len(r.lines) > 0 {
+		rep.Voice = o.Voice.String()
 	}
-	if !matched {
+	start := time.Now()
+	if len(r.features()) == 0 {
 		return nil, fmt.Errorf("no feature named %q in %s", o.Feature, filepath.Base(s.Path))
+	}
+	var clips []*clip
+	for _, f := range r.features() {
+		fr, cl := r.feature(f)
+		if cl != nil {
+			clips = append(clips, cl)
+			fr.Video = cl.Name + ".mp4"
+		}
+		rep.Features = append(rep.Features, fr)
+	}
+	if len(clips) > 0 {
+		fmt.Fprintf(r.o.Log, "all.mp4: %d feature(s) with title cards and chapters\n", len(clips))
+		if err := r.joinAll(clips); err != nil {
+			return nil, err
+		}
 	}
 	rep.Seconds = time.Since(start).Seconds()
 	rep.count()
 	return rep, nil
+}
+
+// features are the features this run performs (--feature, or all).
+func (r *runner) features() []*Feature {
+	var fs []*Feature
+	for _, f := range r.s.Features {
+		if r.o.Feature == "" || strings.EqualFold(f.Name, r.o.Feature) {
+			fs = append(fs, f)
+		}
+	}
+	return fs
+}
+
+// voiceLines voices every Say: line of the features to film, before the
+// take: their lengths set its pace.
+func (r *runner) voiceLines() error {
+	v := r.o.Voice
+	v.Style = r.s.Style
+	var texts []string
+	var blocks []*Block
+	for _, f := range r.features() {
+		for _, b := range f.Blocks {
+			if strings.TrimSpace(b.Say) != "" {
+				blocks = append(blocks, b)
+				texts = append(texts, Spoken(b.Say, r.s.Pronounce))
+			}
+		}
+	}
+	r.lines = map[*Block]Line{}
+	if len(texts) == 0 {
+		return nil
+	}
+	if why := v.Ready(); why != "" {
+		return fmt.Errorf("%s", why)
+	}
+	cache := r.o.Cache
+	if cache == "" {
+		cache = VoiceCache()
+	}
+	sy := &Synth{FFmpeg: r.o.FFmpeg, Cache: cache, Log: r.o.Log}
+	fmt.Fprintf(r.o.Log, "voice: %s, %d line(s)\n", v, len(texts))
+	lines, n, err := sy.Voice(v, texts)
+	if err != nil {
+		return err
+	}
+	total := 0.0
+	for i, b := range blocks {
+		r.lines[b] = lines[texts[i]]
+		total += lines[texts[i]].Seconds
+	}
+	fmt.Fprintf(r.o.Log, "voice: %d new, %d from the cache, %.1fs of narration\n", n, len(lines)-n, total)
+	return nil
 }
 
 // serveApp gives the app's base URL: the app: URL, or a loopback server of
@@ -156,6 +235,8 @@ func (r *runner) event(e cdp.Event) {
 		return
 	}
 	switch e.Method {
+	case "Page.screencastFrame":
+		r.onFrame(e.Params)
 	case "Page.frameStartedLoading":
 		r.loading++
 	case "Page.frameStoppedLoading":
@@ -236,16 +317,17 @@ func firstLine(s string) string {
 	return s
 }
 
-// feature runs one feature in a fresh browser context, after setup:.
-func (r *runner) feature(f *Feature) (fr FeatureResult) {
+// feature runs one feature in a fresh browser context, after setup:; in a
+// run it films it too and returns its clip.
+func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
 	fr = FeatureResult{Name: f.Name, What: f.What, Line: f.Line, Status: "passed"}
 	fmt.Fprintf(r.o.Log, "%s\n", f.Name)
 	start := time.Now()
 	defer func() { fr.Seconds = time.Since(start).Seconds() }()
-	fail := func(sr StepResult) FeatureResult {
+	fail := func(sr StepResult) (FeatureResult, *clip) {
 		fr.Steps = append(fr.Steps, sr)
 		fr.Status = "failed"
-		return fr
+		return fr, nil
 	}
 	if r.s.Setup != "" {
 		t := time.Now()
@@ -277,21 +359,43 @@ func (r *runner) feature(f *Feature) (fr FeatureResult) {
 			return fail(StepResult{Text: m, Status: "failed", Found: err.Error()})
 		}
 	}
+	if r.o.Video {
+		if err := r.startTake(); err != nil {
+			return fail(StepResult{Text: "film the page", Status: "failed", Found: err.Error()})
+		}
+	}
 	if err := r.navigate(r.base + "/"); err != nil {
 		return fail(StepResult{Text: "open " + r.base, Status: "failed", Found: err.Error()})
 	}
+	if r.tk != nil {
+		if err := r.roll(); err != nil {
+			return fail(StepResult{Text: "film the page", Status: "failed", Found: err.Error()})
+		}
+		time.Sleep(800 * time.Millisecond) // the page, before anything moves
+	}
 	failed := false
 	for _, b := range f.Blocks {
-		for _, st := range b.Steps {
+		if r.tk != nil && !failed {
+			r.beginBlock(b)
+		}
+		for i, st := range b.Steps {
 			sr := StepResult{Line: st.Line, Text: st.Text, Kind: st.Kind, Status: "passed"}
 			if failed {
 				sr.Status = "skipped"
 				fr.Steps = append(fr.Steps, sr)
 				continue
 			}
+			if r.tk != nil {
+				r.pace(i, len(b.Steps))
+			}
 			t := time.Now()
 			shot, err := r.step(st)
 			sr.Seconds = time.Since(t).Seconds()
+			if r.tk != nil {
+				r.claim()
+				r.expire()
+				r.tk.last = time.Now()
+			}
 			if shot != "" {
 				sr.Shot = shot
 			}
@@ -315,6 +419,21 @@ func (r *runner) feature(f *Feature) (fr FeatureResult) {
 			r.line(sr)
 			fr.Steps = append(fr.Steps, sr)
 		}
+		if r.tk != nil && !failed {
+			r.endBlock()
+		}
+	}
+	if r.tk != nil {
+		time.Sleep(time.Second) // the end (or the failure), held
+		d := r.cut()
+		var err error
+		if cl, err = r.finishTake(f, d); err != nil {
+			fr.Status = "failed"
+			fr.Steps = append(fr.Steps, StepResult{Text: "make the video", Status: "failed", Found: err.Error()})
+			cl = nil
+		} else {
+			fmt.Fprintf(r.o.Log, "  ▶ %s.mp4  %.1fs\n", cl.Name, cl.Seconds)
+		}
 	}
 	r.mu.Lock()
 	fr.Errors = append([]string(nil), r.errs...)
@@ -326,7 +445,7 @@ func (r *runner) feature(f *Feature) (fr FeatureResult) {
 	for i := range fr.Requests {
 		fr.Requests[i] = r.mask(fr.Requests[i])
 	}
-	return fr
+	return fr, cl
 }
 
 func (r *runner) line(sr StepResult) {
@@ -463,7 +582,7 @@ func (r *runner) locate(l Locator, want string, scroll bool) (found, error) {
 // until retries try every 100 ms up to the timeout; try returns done, or the
 // failure to report when time runs out.
 func (r *runner) until(try func() (bool, error)) error {
-	end := time.Now().Add(r.s.Timeout)
+	end := time.Now().Add(r.timeout)
 	for {
 		done, err := try()
 		if done {
@@ -511,8 +630,11 @@ func (r *runner) mouse(typ string, x, y float64, extra map[string]any) error {
 	return r.c.Call("Input.dispatchMouseEvent", p, nil)
 }
 
-// click is a real click at the element's centre.
+// click is a real click at the element's centre (in a take, the drawn
+// cursor glides there first and ripples).
 func (r *runner) click(f found) error {
+	r.glide(f.X, f.Y)
+	r.ripple(f.X, f.Y)
 	if err := r.mouse("mouseMoved", f.X, f.Y, nil); err != nil {
 		return err
 	}
@@ -552,11 +674,15 @@ func (r *runner) step(st *Step) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		r.glide(f.X, f.Y)
 		return "", r.mouse("mouseMoved", f.X, f.Y, nil)
 	case "scroll", "waitfor", "note":
-		_, err := r.element(st.Target, "any", false)
-		if st.Kind == "note" && st.Target == (Locator{}) {
-			err = nil
+		var err error
+		if st.Kind != "note" || st.Target != (Locator{}) {
+			_, err = r.element(st.Target, "any", false)
+		}
+		if err == nil && st.Kind == "note" {
+			r.note(st)
 		}
 		return "", err
 	case "type":
@@ -571,12 +697,18 @@ func (r *runner) step(st *Step) (string, error) {
 		if err := r.click(f); err != nil {
 			return "", err
 		}
+		if st.Value.Var != "" { // a secret: blurred in the video
+			r.js(`__siDemo.blur()`)
+		}
 		// replace what the field holds, as a person selecting it all would
 		if _, err := r.c.Eval(`(function(e){if(document.activeElement!==e)e.focus();if(e.select)e.select();else{var s=getSelection(),g=document.createRange();g.selectNodeContents(e);s.removeAllRanges();s.addRange(g)}})(window.__siT)`); err != nil {
 			return "", err
 		}
 		if text == "" { // type "" clears the field
 			return "", r.press(Chord{Key: "Backspace"})
+		}
+		if r.tk != nil {
+			return "", r.typeSlowly(text)
 		}
 		return "", r.c.Call("Input.insertText", map[string]any{"text": text}, nil)
 	case "select":

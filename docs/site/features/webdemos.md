@@ -8,7 +8,8 @@ description: One Markdown script performs each feature of your web app in a brow
 A web demo is a demo script with an `app:`. Each `##` is a feature of your
 web app; under it, the steps a person would take, and what the page should
 show. `si demo test` performs them in headless Chrome and tells you, step by
-step, what passed and what broke.
+step, what passed and what broke; `si demo run` performs them on film and
+narrates them, one video per feature and one with chapters.
 
 ```markdown
 ---
@@ -105,10 +106,63 @@ The example is a small shop in `examples/webdemo/`: `shop.md` signs in, pays
 for an order and searches the order list; `broken.md` tries a spring coupon
 that the shop does not know.
 
-Narrated videos of the same script, with callouts from `note` steps, come in
-a later version.
+## On film
 
-<!-- si-deps: chrome -->
+```bash
+SHOP_PASSWORD=shop-demo si demo run shop.md --captions
+```
+
+The same steps, filmed in a browser you never see. A drawn cursor glides to
+each button and a ripple marks the click; `note "Username: demo" at
+"Username"` puts a bubble beside the field until the narration moves on; text
+is typed at a person's pace, and a field typed from a `$VAR` is blurred.
+
+![A frame of the sign-in video: the Username field ringed, a note "Username: demo" beside it, and the caption "Northwind keeps your orders behind one sign-in."](img/webdemos/film.jpg)
+
+**The words set the pace.** Every `Say:` line is voiced before the take and
+measured; the steps under it are spread over its words, and a block whose
+steps need longer waits for them, so there is no dead air and no voice
+talking over the wrong screen. A step that fails ends that feature's clip
+there and goes into the report.
+
+In `demo-out/shop/`:
+
+| File | What |
+|---|---|
+| `pay-for-an-order.mp4` | the feature, video and voice |
+| `pay-for-an-order.video.mp4` | the same, silent |
+| `pay-for-an-order.voice.m4a` · `.wav` | the narration alone |
+| `pay-for-an-order.srt` | captions, timed |
+| `all.mp4` | every feature after a title card, chapters inside |
+| `chapters.txt` | `0:00 Sign in` lines for a YouTube description |
+| `report.html` · `report.json` | the run, linked to the clips |
+| `README.md` · `README.html` | every file, each video in the page, the script, how it was made |
+
+`--captions` burns the captions into the video as well (bottom, two lines at
+most); `--viewport phone` films the phone layout; `--feature "Pay for an
+order"` films one feature.
+
+## Voices
+
+```markdown
+voice: kokoro:af_heart
+pronounce: si = ess eye
+```
+
+| Engine | What |
+|---|---|
+| `kokoro` | open source and local, natural: si's own voice, `af_heart` (the default when it is installed) |
+| `system` | the computer's own: `say` on macOS, espeak-ng on Linux, the voices Windows has |
+| `elevenlabs` | cloud, `ELEVENLABS_API_KEY`; `elevenlabs:<voice id>` |
+| `openai` | cloud, `OPENAI_API_KEY`; `gpt-4o-mini-tts`, with `voice-style: calm, friendly` |
+
+`pronounce:` changes what the voice says (Kokoro reads "si" as "see"); the
+captions keep the written word. Every line is cached by its words and voice,
+so a re-run only voices the lines that changed, and a cloud voice is sent
+nothing but the `Say:` text. To install Kokoro: `python3 -m pip install
+kokoro-onnx`, then its two model files in the folder `si doctor` names.
+
+<!-- si-deps: chrome ffmpeg kokoro espeak-ng -->
 
 ## The rules
 

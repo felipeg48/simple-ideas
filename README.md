@@ -189,6 +189,15 @@ Studio as a keyboard app (`si --terminal .`).
 SVG or PDF with your logo in the middle, a Wi-Fi network or a contact.
 [QR Codes →](https://simple-ideas.org/features/qr.html)
 
+### Web demos
+
+One Markdown script performs each feature of your web app the way a person
+would. `si demo test` checks it (a report, JUnit for CI); `si demo run` films
+it with a cursor, callouts and a narrated voice: one video per feature, one
+with chapters, captions. [Web demos →](https://simple-ideas.org/features/webdemos.html)
+
+![A frame of a web demo video](docs/site/features/img/webdemos/film.jpg)
+
 ## Themes
 
 Nine built-in themes, each in light and dark. `theme: twilight` in front
@@ -223,13 +232,15 @@ lists them all, found or not, with the command for your computer.
 
 | Program | Used for | macOS | Linux (Debian, Ubuntu) | Windows |
 |---|---|---|---|---|
-| Chrome or Chromium | `--pdf`, `--png`, `--svg`, `--handout`, `--mp4` | `brew install --cask google-chrome` | `sudo apt install chromium` | `winget install Google.Chrome` |
-| ffmpeg | `--mp4`, `--narration`, `si code --gif` | `brew install ffmpeg` | `sudo apt install ffmpeg` | `winget install Gyan.FFmpeg` |
+| Chrome or Chromium | `--pdf`, `--png`, `--svg`, `--handout`, `--mp4`, `si demo` | `brew install --cask google-chrome` | `sudo apt install chromium` | `winget install Google.Chrome` |
+| ffmpeg | `--mp4`, `--narration`, `si code --gif`, `si demo run` | `brew install ffmpeg` | `sudo apt install ffmpeg` | `winget install Gyan.FFmpeg` |
 | git | the Studio's History | `xcode-select --install` | `sudo apt install git` | `winget install Git.Git` |
 | tmux | shell panes in `si --terminal` | `brew install tmux` | `sudo apt install tmux` | in WSL: `sudo apt install tmux` |
 | cloudflared | `si play --tunnel` | `brew install cloudflared` | [pkg.cloudflare.com](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) | `winget install --id Cloudflare.cloudflared` |
 | Tailscale | `--https=tailscale` | `brew install --cask tailscale` | `curl -fsSL https://tailscale.com/install.sh \| sh` | `winget install Tailscale.Tailscale` |
 | GitHub CLI | code from private GitHub repos | `brew install gh` | `sudo apt install gh` | `winget install GitHub.cli` |
+| Kokoro | `si demo run`'s natural local voice | `python3 -m pip install kokoro-onnx` + [two model files](https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.0) | the same | `python -m pip install kokoro-onnx` + the files |
+| eSpeak NG | `si demo run`'s computer voice on Linux | not needed (`say`) | `sudo apt install espeak-ng` | not needed |
 
 Fedora and Arch commands are on each feature page of
 [simple-ideas.org](https://simple-ideas.org/), and in `si doctor`.
@@ -258,6 +269,7 @@ Other agents: `si --export skill`, `si --export agent-rules` (AGENTS.md), or
 | `si build <dir\|file> -o html/` | self-contained HTML (`--pdf`, `--mp4`, `--handout`, `--narration`) |
 | `si check <dir\|file>` | every problem, with file and line |
 | `si --web [dir]` · `si --terminal [dir]` | the Studio, in the browser or the terminal |
+| `si demo test\|run <script>` | a web app's features as a test, or as narrated videos |
 | `si publish <file> --to linkedin\|devto\|hashnode\|ghost\|wordpress` | post it (a dry run unless `--yes`) |
 | `si code`, `si qr`, `si rehearse`, `si mcp`, `si rules`, `si manual` | code exports, QR codes, a recording's pace, the MCP server, the format, the manual |
 

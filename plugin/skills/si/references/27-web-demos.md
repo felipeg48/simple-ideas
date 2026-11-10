@@ -3,8 +3,9 @@
 A demo script (§22) with an `app:` in its front matter is a **web demo**: si
 opens the web app in headless Chrome and performs each feature the way a
 person would, step by step, checking what the page shows. `si demo test`
-runs it as a test, with a report and an exit code for CI. (Narrated videos of
-the same script come in a later version.)
+runs it as a test, with a report and an exit code for CI; `si demo run`
+performs the same steps on film and narrates them: one video per feature, one
+with chapters, captions and the report.
 
 ```markdown
 ---
@@ -14,6 +15,8 @@ app: app                # a URL, or the app's folder next to the script
 viewport: desktop       # 1440x900; also phone (400x800), tablet (820x1180), WxH
 timeout: 5s             # how long a step waits for its element
 setup: ./seed.sh        # optional: run before each feature, in the script's folder
+voice: kokoro:af_heart  # si demo run: engine:voice (see Voices below)
+pronounce: si = ess eye # what the voice says for a word (captions keep the word)
 ---
 
 ## Pay for an order
@@ -59,7 +62,7 @@ Say: A test card goes through in a second.
 | `check "Gift wrap"` · `uncheck …` | a checkbox or switch |
 | `hover "Help"` · `scroll to "Footer"` | move the mouse over it; scroll it into view |
 | `wait 1s` · `wait for "Saved"` | a pause; or until something appears |
-| `note "Username: demo" at "Username"` | a callout for the video (`· for 3s`, `· position right`); a test checks its element is there |
+| `note "Username: demo" at "Username"` | a callout in the video: a bubble pointing at the element, ringed, on screen to the end of its `Say:` block (`· for 3s` for less; `· position top\|right\|bottom\|left`, else where it fits; no `at` = a note at the top); a test checks its element is there |
 | `expect text "Paid"` | the page shows these words |
 | `expect url /orders/4711/receipt` | the address (a path, or a full URL; a `?…` or `#…` after it is fine) |
 | `expect "Pay" disabled` | `visible`, `hidden`, `enabled`, `disabled`, `checked`, `unchecked` |
@@ -91,7 +94,7 @@ si demo: 0 passed, 1 failed in 6.9s; report: demo-out/shop/report.html
 - `si demo test` writes `report.html` (one page, screenshots inlined) and
   `report.json` into `demo-out/<script>/`, exits 1 when a feature failed,
   and with `--junit file.xml` writes JUnit XML (one test case per feature).
-  `si demo run` is reserved for the videos; for now it runs the test.
+  `--viewport phone|tablet|WxH` overrides the script's size (both commands).
 - A failed step stops its feature; the report shows expected and found, the
   closest elements, a screenshot, and the page's console errors and failed
   requests.
@@ -100,6 +103,65 @@ si demo: 0 passed, 1 failed in 6.9s; report: demo-out/shop/report.html
   `{"type": "demo", "app": "…", "features": [{"name": "…", "what": "…",
   "blocks": [{"say": "…", "steps": ["go /", "click \"Pay\""]}]}]}`.
 - Needs Google Chrome or Chromium (`si doctor`).
+
+### The videos: `si demo run`
+
+```bash
+SHOP_PASSWORD=shop-demo si demo run shop.md
+si demo run shop.md --feature "Pay for an order" --captions --viewport phone
+si demo run shop.md --voice system:Samantha -o videos/
+```
+
+The same steps, filmed: a drawn cursor glides to each element and clicks
+ripple, `note` steps point at elements, text is typed at a person's pace, and a
+field typed from a `$VAR` is blurred. **The narration sets the pace:** every
+`Say:` line is voiced first and measured, the block's steps are spread over its
+words, and a block whose steps need longer than its words waits for them. A
+failing step ends that feature's clip there (in a run a step waits at most 3 s)
+and goes into the report; the other features still run.
+
+It writes into `demo-out/<script>/` (or `-o dir`):
+
+| File | What |
+|---|---|
+| `<feature>.mp4` | the feature, video and voice (H.264 + AAC, 30 fps) |
+| `<feature>.video.mp4` | the same video, silent |
+| `<feature>.voice.wav` · `.voice.m4a` | the narration alone, to edit or re-voice |
+| `<feature>.srt` | captions of the `Say:` lines, timed (always; `--captions` also burns them into the video, bottom, two lines at most) |
+| `all.mp4` | every feature, each after a title card (the feature and its `What it does:`), chapters embedded |
+| `chapters.txt` | YouTube chapter lines: `0:00 Sign in` |
+| `report.html` · `report.json` | the run, each feature linked to its clip |
+| `README.md` · `README.html` | the folder: every file, each feature with its video (linked, not inlined), the script, how it was made |
+
+`<feature>` is the heading in lower case with dashes (`pay-for-an-order`).
+
+**Voices.** `voice: engine:name` in front matter, or `--voice`:
+
+| Engine | What | Default voice |
+|---|---|---|
+| `kokoro` | open source (Apache 2.0), local, natural: si's own voice | `af_heart` |
+| `system` | the computer's own: `say` on macOS, espeak-ng on Linux, Windows' voices | the system's (`system:Samantha`) |
+| `elevenlabs` | cloud, `ELEVENLABS_API_KEY` in the environment | a voice id (`elevenlabs:21m00Tcm4TlvDq8ikWAM`) |
+| `openai` | cloud, `OPENAI_API_KEY`; `gpt-4o-mini-tts`, a tone from `voice-style: calm, friendly` | `alloy` |
+
+Without `voice:`, si uses `kokoro:af_heart` when Kokoro is installed, else
+`system`. Kokoro runs as a program: `python3 -m pip install kokoro-onnx` and the
+model files `kokoro-v1.0.onnx` and `voices-v1.0.bin` in the folder `si doctor`
+names (or `SI_KOKORO_DIR`; `SI_KOKORO_PYTHON` picks the Python). Each line is
+cached by its engine, voice, style and words (in the user cache folder), so a
+re-run only voices the lines that changed; a cloud call sends nothing but the
+`Say:` text.
+
+`pronounce: word = how to say it` (several lines, or pairs split by `;`)
+changes what the voice says, whole words in any case; the captions keep the
+written word:
+
+```markdown
+pronounce: si = ess eye
+pronounce: kubectl = cube control; YAML = yammel
+```
+
+`si demo run` needs Chrome and ffmpeg, and the voice's engine (`si doctor`).
 
 Example: `examples/webdemo/` (a small shop, `shop.md`, and `broken.md`, whose
 coupon does not work).

@@ -26,8 +26,8 @@ func TestLinuxFamily(t *testing.T) {
 // Need puts the feature, the install line and the link together.
 func TestEveryToolCanBeInstalled(t *testing.T) {
 	for _, tl := range All {
-		if tl.For == "" || tl.URL == "" || len(tl.Bins) == 0 {
-			t.Errorf("%s: missing For, URL or Bins", tl.Name)
+		if tl.For == "" || tl.URL == "" || (len(tl.Bins) == 0 && tl.Probe == nil) {
+			t.Errorf("%s: missing For, URL or Bins (or Probe)", tl.Name)
 		}
 		for _, p := range []string{"mac", "windows", "debian", "fedora", "arch", "other"} {
 			if tl.Install[p] == "" {

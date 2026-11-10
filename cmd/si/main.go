@@ -119,7 +119,10 @@ Usage:
         run a web demo script (type: demo with app:, a URL or the app's folder) in headless
         Chrome as a test: clicks, typing, expectations; report.html + report.json in
         demo-out/<script>/, exit 1 on a failure; --junit writes JUnit XML for CI
-        (si demo run: the narrated videos, in a later version; runs the test for now)
+  si demo run <script.md> [--feature "Name"] [--captions] [--voice engine:name] [--viewport phone|tablet|WxH] [-o dir]
+        the same steps filmed with a drawn cursor, notes and blurred secrets, narrated from
+        the Say: lines (kokoro, system, elevenlabs, openai): <feature>.mp4 each, all.mp4 with
+        chapters, chapters.txt, .srt captions (--captions burns them in), the report, README
   si doctor
         the optional programs si can use (Chrome, ffmpeg, git, …): found or not, and
         how to install each on this computer
