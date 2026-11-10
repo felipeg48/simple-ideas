@@ -20,18 +20,20 @@ import (
 
 // Script is one parsed web demo script.
 type Script struct {
-	Path     string // the file (absolute)
-	Name     string // the file name without extension
-	Title    string
-	App      string // a URL, or a folder (relative to the script) si serves itself
-	Viewport string // as written
-	W, H     int
-	Timeout  time.Duration // how long a step waits for its element or condition
-	Setup    string        // a shell command run before each feature, in the script's folder
-	Voice    string        // engine:voice (later phases)
-	Features []*Feature
-	Problems []Problem // the script cannot run
-	Warnings []Problem
+	Path      string // the file (absolute)
+	Name      string // the file name without extension
+	Title     string
+	App       string // a URL, or a folder (relative to the script) si serves itself
+	Viewport  string // as written
+	W, H      int
+	Timeout   time.Duration // how long a step waits for its element or condition
+	Setup     string        // a shell command run before each feature, in the script's folder
+	Voice     string        // engine:voice as written ("" = the default voice)
+	Style     string        // voice-style: a tone for engines that take one (openai)
+	Pronounce []Pronounce   // pronounce: word = how to say it
+	Features  []*Feature
+	Problems  []Problem // the script cannot run
+	Warnings  []Problem
 }
 
 // Feature is one `##` section: one test case (later, one clip).
@@ -110,6 +112,10 @@ func (p Problem) String() string {
 	}
 	return fmt.Sprintf("%s: %s", p.File, p.Msg)
 }
+
+// Pronounce is one `pronounce: si = ess eye`: what the voice says for a word
+// (captions keep the word).
+type Pronounce struct{ Word, Say string }
 
 // Viewports are the named viewport sizes.
 var Viewports = map[string][2]int{"phone": {400, 800}, "tablet": {820, 1180}, "desktop": {1440, 900}}
@@ -202,18 +208,17 @@ func (s *Script) warn(line int, format string, a ...any) {
 
 // settings applies the front matter (line: where to report a bad value).
 func (s *Script) settings(fm map[string]string, line func(string) int) {
-	s.Title, s.App, s.Setup, s.Voice, s.Viewport = fm["title"], fm["app"], fm["setup"], fm["voice"], fm["viewport"]
+	s.Title, s.App, s.Setup, s.Voice, s.Viewport, s.Style = fm["title"], fm["app"], fm["setup"], fm["voice"], fm["viewport"], fm["voice-style"]
 	if s.App == "" {
 		s.problem(line("app"), "a web demo needs app: (a URL, or a folder of the app next to the script)")
 	}
 	s.W, s.H = 1440, 900
-	if v := strings.ToLower(s.Viewport); v != "" {
-		if wh, ok := Viewports[v]; ok {
-			s.W, s.H = wh[0], wh[1]
-		} else if w, h, ok := strings.Cut(v, "x"); ok && atoi(w) > 0 && atoi(h) > 0 {
-			s.W, s.H = atoi(w), atoi(h)
-		} else {
-			s.problem(line("viewport"), "viewport %q: use WxH (1440x900), phone, tablet or desktop", s.Viewport)
+	if err := s.SetViewport(s.Viewport); err != nil {
+		s.problem(line("viewport"), "%v", err)
+	}
+	if s.Voice != "" {
+		if _, err := ParseVoice(s.Voice); err != nil {
+			s.problem(line("voice"), "%v", err)
 		}
 	}
 	s.Timeout = 5 * time.Second
@@ -223,6 +228,38 @@ func (s *Script) settings(fm map[string]string, line func(string) int) {
 		} else {
 			s.problem(line("timeout"), "timeout %q: use seconds (10s) or milliseconds (500ms)", v)
 		}
+	}
+}
+
+// SetViewport sets the size from phone, tablet, desktop or WxH ("" keeps it).
+func (s *Script) SetViewport(v string) error {
+	v = strings.ToLower(strings.TrimSpace(v))
+	if v == "" {
+		return nil
+	}
+	if wh, ok := Viewports[v]; ok {
+		s.W, s.H = wh[0], wh[1]
+	} else if w, h, ok := strings.Cut(v, "x"); ok && atoi(w) > 0 && atoi(h) > 0 {
+		s.W, s.H = atoi(w), atoi(h)
+	} else {
+		return fmt.Errorf("viewport %q: use WxH (1440x900), phone, tablet or desktop", v)
+	}
+	return nil
+}
+
+// pronounce reads `si = ess eye` (several pairs may be split by ;).
+func (s *Script) pronounce(v string, line int) {
+	for _, p := range strings.Split(v, ";") {
+		if strings.TrimSpace(p) == "" {
+			continue
+		}
+		w, say, ok := strings.Cut(p, "=")
+		w, say = strings.TrimSpace(strings.Trim(strings.TrimSpace(w), `"'`)), strings.TrimSpace(strings.Trim(strings.TrimSpace(say), `"'`))
+		if !ok || w == "" || say == "" {
+			s.problem(line, "pronounce %q: write pronounce: word = how to say it", strings.TrimSpace(p))
+			continue
+		}
+		s.Pronounce = append(s.Pronounce, Pronounce{w, say})
 	}
 }
 
@@ -264,6 +301,11 @@ func Parse(path, src string) *Script {
 		}
 		return 1
 	})
+	for i := 1; i < start; i++ { // pronounce: may be given more than once
+		if m := metaRE.FindStringSubmatch(strings.TrimSpace(lines[i])); m != nil && m[1] == "pronounce" {
+			s.pronounce(m[2], i+1)
+		}
+	}
 	var f *Feature
 	var b *Block
 	text := "" // the label whose continuation lines are being read: what, say, skip
@@ -654,6 +696,8 @@ func namedKey(p string) (keyDef, bool) {
 // blocks of steps written as in Markdown.
 type jsonScript struct {
 	Type, Title, App, Viewport, Timeout, Setup, Voice string
+	Style                                             string   `json:"voice-style"`
+	Pronounce                                         []string `json:"pronounce"`
 	Features                                          []struct {
 		Name   string `json:"name"`
 		What   string `json:"what"`
@@ -682,13 +726,17 @@ func ParseJSON(path string, raw []byte) (*Script, error) {
 		}
 		return 0
 	}
-	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "setup": j.Setup, "voice": j.Voice}
+	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "setup": j.Setup, "voice": j.Voice, "voice-style": j.Style}
 	s.settings(fm, func(key string) int {
 		if k := strings.Index(src, `"`+key+`"`); k >= 0 {
 			return strings.Count(src[:k], "\n") + 1
 		}
 		return 0
 	})
+	for _, p := range j.Pronounce {
+		s.pronounce(p, lineOf(p))
+	}
+	pos = 0
 	for _, jf := range j.Features {
 		f := &Feature{Name: jf.Name, What: jf.What, Line: lineOf(jf.Name)}
 		s.Features = append(s.Features, f)

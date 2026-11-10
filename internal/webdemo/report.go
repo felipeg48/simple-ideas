@@ -17,6 +17,7 @@ type Report struct {
 	Title    string          `json:"title"`
 	App      string          `json:"app"`
 	Viewport string          `json:"viewport"`
+	Voice    string          `json:"voice,omitempty"`
 	Chrome   string          `json:"chrome"`
 	SI       string          `json:"si"`
 	Date     string          `json:"date"`
@@ -37,6 +38,7 @@ type FeatureResult struct {
 	Steps    []StepResult `json:"steps"`
 	Errors   []string     `json:"consoleErrors,omitempty"`
 	Requests []string     `json:"failedRequests,omitempty"`
+	Video    string       `json:"video,omitempty"` // si demo run: the clip, relative to the report folder
 }
 
 // StepResult is one step's run.
@@ -150,6 +152,7 @@ dt{color:var(--muted)}dd{margin:0;overflow-wrap:anywhere}
 figure{margin:.6em 0 .2em 1.9em}
 figure img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:.4em}
 figcaption{color:var(--muted);font-size:.9em}
+a{color:var(--accent)}
 .log{margin:.8em 0 0;color:var(--bad)}
 .log ul{margin:.2em 0 0;padding-left:1.2em}
 </style></head><body><main>
@@ -157,7 +160,7 @@ figcaption{color:var(--muted);font-size:.9em}
 <div class="meta"><span>{{.Script}}</span><span>{{.App}}</span><span>{{.Viewport}}</span><span>{{.Chrome}}</span><span>si {{.SI}}</span><span>{{.Date}}</span></div>
 <div class="sum"><span class="pill passed">{{.Passed}} passed</span><span class="pill failed">{{.Failed}} failed</span>{{if .Skipped}}<span class="pill skipped">{{.Skipped}} skipped</span>{{end}}<span class="pill">{{secs .Seconds}}</span></div>
 {{range .Views}}<section class="st-{{.Status}}">
-<header><h2>{{.Name}}</h2><span class="{{.Status}}">{{.Status}} · {{secs .Seconds}}</span></header>
+<header><h2>{{.Name}}</h2><span class="{{.Status}}">{{.Status}} · {{secs .Seconds}}{{if .Video}} · <a href="{{.Video}}">▶ {{.Video}}</a>{{end}}</span></header>
 {{if .What}}<p class="what">{{.What}}</p>{{end}}
 <ol>{{range .Steps}}<li>
 <div class="row"><span class="mark {{.Status}}">{{if eq .Status "passed"}}✓{{else if eq .Status "failed"}}✗{{else}}–{{end}}</span><code>{{.Text}}</code><span class="t">{{if .Line}}line {{.Line}} · {{end}}{{if ne .Status "skipped"}}{{secs .Seconds}}{{else}}skipped{{end}}</span></div>

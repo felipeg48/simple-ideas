@@ -22,6 +22,7 @@ type Tool struct {
 	Paths   map[string][]string // GOOS -> absolute paths to try too
 	Install map[string]string   // platform (see platform) -> command or advice
 	URL     string              // where to read more
+	Probe   func() string       // when set, finds the tool instead of Bins and Paths
 }
 
 // All are the programs si can use, in the order si doctor lists them.
@@ -114,6 +115,78 @@ var All = []Tool{
 		},
 		URL: "https://cli.github.com/",
 	},
+	{
+		Name: "kokoro", Label: "Kokoro (kokoro-onnx, a local voice)",
+		For:   "si demo run: the narration in a natural voice (af_heart), offline",
+		Probe: findKokoro,
+		Install: map[string]string{
+			"mac": kokoroSteps("python3"), "debian": kokoroSteps("python3"), "fedora": kokoroSteps("python3"),
+			"arch": kokoroSteps("python3"), "windows": kokoroSteps("python"), "other": kokoroSteps("python3"),
+		},
+		URL: "https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.0",
+	},
+	{
+		Name: "espeak-ng", Label: "eSpeak NG",
+		For:   "si demo run on Linux: the computer's own voice (voice: system)",
+		Bins:  []string{"espeak-ng", "espeak"},
+		Paths: map[string][]string{"darwin": {"/opt/homebrew/bin/espeak-ng", "/usr/local/bin/espeak-ng"}},
+		Install: map[string]string{
+			"mac": "not needed on macOS: voice: system uses say (or: brew install espeak-ng)", "debian": "sudo apt install espeak-ng",
+			"fedora": "sudo dnf install espeak-ng", "arch": "sudo pacman -S espeak-ng",
+			"windows": "not needed on Windows: voice: system uses the voices Windows has", "other": "install espeak-ng",
+		},
+		URL: "https://github.com/espeak-ng/espeak-ng",
+	},
+}
+
+// KokoroDir is where Kokoro's model files are: $SI_KOKORO_DIR, else
+// <user cache>/si/kokoro.
+func KokoroDir() string {
+	if d := os.Getenv("SI_KOKORO_DIR"); d != "" {
+		return d
+	}
+	d, err := os.UserCacheDir()
+	if err != nil {
+		d = os.TempDir()
+	}
+	return filepath.Join(d, "si", "kokoro")
+}
+
+// KokoroPython is the Python that has kokoro-onnx: $SI_KOKORO_PYTHON, else
+// python3 (python on Windows).
+func KokoroPython() string {
+	if p := os.Getenv("SI_KOKORO_PYTHON"); p != "" {
+		return p
+	}
+	if runtime.GOOS == "windows" {
+		return "python"
+	}
+	return "python3"
+}
+
+// KokoroFiles are the model files Kokoro needs in KokoroDir.
+var KokoroFiles = []string{"kokoro-v1.0.onnx", "voices-v1.0.bin"}
+
+func kokoroSteps(py string) string {
+	return py + " -m pip install kokoro-onnx, then download " + strings.Join(KokoroFiles, " and ") + " (link below) into " + KokoroDir()
+}
+
+// findKokoro is the model folder when both the Python package and the model
+// files are there ("" otherwise).
+func findKokoro() string {
+	for _, f := range KokoroFiles {
+		if st, err := os.Stat(filepath.Join(KokoroDir(), f)); err != nil || st.IsDir() {
+			return ""
+		}
+	}
+	py, err := exec.LookPath(KokoroPython())
+	if err != nil {
+		return ""
+	}
+	if exec.Command(py, "-c", "import importlib.util,sys;sys.exit(0 if importlib.util.find_spec('kokoro_onnx') else 1)").Run() != nil {
+		return ""
+	}
+	return KokoroDir()
 }
 
 // Get returns the tool by name.
@@ -131,6 +204,9 @@ func Find(name string) string {
 	t, ok := Get(name)
 	if !ok {
 		return ""
+	}
+	if t.Probe != nil {
+		return t.Probe()
 	}
 	for _, p := range t.Paths[runtime.GOOS] {
 		if filepath.IsAbs(p) {
