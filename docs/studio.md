@@ -280,6 +280,16 @@ draws its own.
 - **Use in this folder** (`POST theme/use`) writes `theme: themes/<name>.css`
   into the folder's `si.conf`.
 
+**From a logo…** is the last tile of *New theme*: pick a PNG, JPEG, GIF or SVG
+in the folder or upload one from the computer (at most 8 MiB, sent as base64;
+an upload is read, not saved). `POST /_si/studio/api/theme/logo {path | data,
+name}` answers with the colours found (`themefile.LogoPalette`) and the
+theme's light and dark values (`themefile.FromLogo`), shown as swatches; the
+name defaults to the file's (`acme-logo.svg` → Acme). **Create** sends the
+same with `create: true`, which writes `themes/<name>.css` (never over an
+existing file) and opens it in the Theme view, where the checks already pass.
+The same engine is `si theme from` and the MCP tool `si_theme_from_logo`.
+
 Every change is an op: `POST /_si/studio/api/theme {path, text, op}` parses
 the editor's text with `internal/themefile`, sets one token (checked: known
 token, value of its kind, no `px`, nothing that leaves the declaration),

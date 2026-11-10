@@ -1252,6 +1252,19 @@ build shown (ANSI colours) and exits: for scripts, READMEs and checks.
   `si theme import <file.css|file.tokens.json|https://…> [-o dir] [--use]`
   checks a theme (a broken value refuses it), writes it to `themes/<name>.css`
   and, with `--use`, sets it in `si.conf`.
+- **From a logo**: `si theme from <logo.png|jpg|gif|svg> [-o dir|file.css]
+  [--name N] [--accent '#hex'] [--use]` reads the logo's colours (the pixels of
+  a PNG, JPEG or GIF; the `fill`, `stroke` and `stop-color` values of an SVG,
+  gradient stops included), leaves out white, black and transparency, and
+  writes `themes/<name>.css` extending `studio`: the brand colour is the
+  accent, the next one at least 40° away in hue is accent-2 (else a split
+  complement), backgrounds, surfaces, lines and text are neutrals tinted with
+  the accent's hue, and the status colours are set too, light and dark. Every
+  pair the checks measure passes WCAG AA; a colour moved for that is noted in
+  the file's header. `--accent` keeps a colour you know and takes the rest from
+  the logo; a black-and-white logo needs it. The same logo always gives the
+  same theme. In the Studio: *New theme* › **From a logo…**. Fonts stay yours
+  (`fonts:` below).
 - The index page of `si build` and `si play` follows the decks' theme, a
   `.css` theme included.
 
@@ -1275,6 +1288,13 @@ build shown (ANSI colours) and exits: for scripts, READMEs and checks.
 
 Use it with `theme: themes/acme.css` in a deck's front matter (a path from
 the deck) or in `si.conf`. Load a web font like Fraunces with `fonts:` (below).
+
+A theme from a logo, set as the folder's theme:
+
+```bash
+si theme from acme-logo.svg --use        # themes/acme.css + theme: in si.conf
+si theme from logo.png --name "Acme" --accent '#e4572e' -o brand/
+```
 
 ### Themes for documents (labs, articles, guides)
 

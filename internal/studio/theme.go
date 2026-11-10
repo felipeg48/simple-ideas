@@ -1,6 +1,7 @@
 package studio
 
 import (
+	"encoding/base64"
 	"errors"
 	"net/http"
 	"os"
@@ -135,7 +136,82 @@ func (a *api) themeNew(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusBadRequest, "no built-in theme "+from)
 		return
 	}
-	rel := "themes/" + slug + ".css"
+	a.createTheme(w, "themes/"+slug+".css", themefile.New(strings.TrimSpace(strings.NewReplacer("*/", "", "\n", " ").Replace(req.Name)), assets.CanonicalTheme(from)).String())
+}
+
+// themeLogo makes a theme from a logo: an image in the workspace (path) or
+// one sent from the browser (data, base64), at most themefile.MaxLogo. It
+// answers with the logo's colours and the theme's light and dark values;
+// with create it also writes themes/<name>.css and answers with its path.
+func (a *api) themeLogo(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Path   string `json:"path"`
+		Data   string `json:"data"`
+		Name   string `json:"name"`
+		Accent string `json:"accent"`
+		Create bool   `json:"create"`
+	}
+	if !decode(w, r, &req) {
+		return
+	}
+	var raw []byte
+	switch {
+	case req.Data != "":
+		if base64.StdEncoding.DecodedLen(len(req.Data)) > themefile.MaxLogo+3 {
+			fail(w, http.StatusRequestEntityTooLarge, "a logo is at most 8 MiB")
+			return
+		}
+		var err error
+		if raw, err = base64.StdEncoding.DecodeString(req.Data); err != nil {
+			fail(w, http.StatusBadRequest, "data is not base64")
+			return
+		}
+	case req.Path != "":
+		abs, ok := a.resolve(w, req.Path)
+		if !ok {
+			return
+		}
+		fi, err := os.Stat(abs)
+		if err != nil || fi.IsDir() {
+			fail(w, http.StatusNotFound, "not found")
+			return
+		}
+		if fi.Size() > themefile.MaxLogo {
+			fail(w, http.StatusRequestEntityTooLarge, "a logo is at most 8 MiB")
+			return
+		}
+		if raw, err = os.ReadFile(abs); err != nil {
+			fail(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if req.Name == "" {
+			req.Name = themefile.LogoName(req.Path)
+		}
+	default:
+		fail(w, http.StatusBadRequest, "path or data required")
+		return
+	}
+	if strings.TrimSpace(req.Name) == "" {
+		req.Name = "Brand"
+	}
+	pal, err := themefile.LogoPalette(raw)
+	if err == nil {
+		var f *themefile.File
+		if f, err = themefile.FromLogo(req.Name, pal, req.Accent); err == nil {
+			rel := "themes/" + themefile.Slug(f.Name) + ".css"
+			if req.Create {
+				a.createTheme(w, rel, f.String())
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]any{"palette": pal, "name": f.Name, "path": rel, "light": f.Light, "dark": f.Dark})
+			return
+		}
+	}
+	fail(w, http.StatusUnprocessableEntity, err.Error())
+}
+
+// createTheme writes a new theme file (never over one) and answers 201 with its path.
+func (a *api) createTheme(w http.ResponseWriter, rel, text string) {
 	abs, ok := a.resolve(w, rel)
 	if !ok {
 		return
@@ -144,7 +220,6 @@ func (a *api) themeNew(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	text := themefile.New(strings.TrimSpace(strings.NewReplacer("*/", "", "\n", " ").Replace(req.Name)), assets.CanonicalTheme(from)).String()
 	fh, err := os.OpenFile(abs, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 	if errors.Is(err, os.ErrExist) {
 		fail(w, http.StatusConflict, rel+" exists")

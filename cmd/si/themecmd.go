@@ -25,7 +25,7 @@ func themeCmd(rest []string, o *options, stdout, stderr io.Writer) int {
 		return exitOK
 	}
 	if len(rest) != 2 {
-		return usageErr(stderr, "theme takes list, check <file.css>, export <name|file.css> or import <file|url>")
+		return usageErr(stderr, "theme takes list, check <file.css>, export <name|file.css>, import <file|url> or from <logo>")
 	}
 	switch rest[0] {
 	case "check":
@@ -34,8 +34,10 @@ func themeCmd(rest []string, o *options, stdout, stderr io.Writer) int {
 		return themeExport(rest[1], o, stdout, stderr)
 	case "import":
 		return themeImport(rest[1], o, stdout, stderr)
+	case "from":
+		return themeFrom(rest[1], o, stdout, stderr)
 	}
-	return usageErr(stderr, "theme takes list, check, export or import, not "+rest[0])
+	return usageErr(stderr, "theme takes list, check, export, import or from, not "+rest[0])
 }
 
 // checkThemeFile prints a theme file's issues (si theme check, si check x.css):
@@ -171,9 +173,15 @@ func themeImport(src string, o *options, stdout, stderr io.Writer) int {
 	if dir == "" {
 		dir = "themes"
 	}
-	dest := filepath.Join(dir, name+".css")
+	return writeTheme(src, filepath.Join(dir, name+".css"), text, o, stdout, stderr)
+}
+
+// writeTheme writes a new theme file (never over one) and, with --use, sets
+// it as the folder's theme in si.conf.
+func writeTheme(src, dest, text string, o *options, stdout, stderr io.Writer) int {
+	dir := filepath.Dir(dest)
 	if _, err := os.Stat(dest); err == nil {
-		fmt.Fprintf(stderr, "si: %s exists; remove it or import with --output <dir>\n", dest)
+		fmt.Fprintf(stderr, "si: %s exists; remove it or write with --output <dir>\n", dest)
 		return exitProblems
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -199,6 +207,51 @@ func themeImport(src string, o *options, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "Use it: theme: %s (front matter or si.conf)\n", filepath.ToSlash(dest))
 	}
 	return exitOK
+}
+
+// themeFrom makes a theme from a logo (si theme from logo.png): its
+// colours, light and dark, every text/background pair passing WCAG AA;
+// written to themes/<name>.css, or --output (a .css file or a folder).
+func themeFrom(src string, o *options, stdout, stderr io.Writer) int {
+	fi, err := os.Stat(src)
+	if err == nil && fi.Size() > themefile.MaxLogo {
+		err = fmt.Errorf("%s is over %d MiB; a logo is smaller", src, themefile.MaxLogo>>20)
+	}
+	var raw []byte
+	if err == nil {
+		raw, err = os.ReadFile(src)
+	}
+	if err != nil {
+		fmt.Fprintf(stderr, "si: %v\n", err)
+		return exitProblems
+	}
+	pal, err := themefile.LogoPalette(raw)
+	if err != nil {
+		fmt.Fprintf(stderr, "si: %s: %v\n", src, err)
+		return exitProblems
+	}
+	name := o.qrName
+	if name == "" {
+		name = themefile.LogoName(src)
+	}
+	f, err := themefile.FromLogo(name, pal, o.accent)
+	if err != nil {
+		fmt.Fprintf(stderr, "si: %s: %v\n", src, err)
+		return exitProblems
+	}
+	var cols []string
+	for _, s := range pal {
+		cols = append(cols, s.Hex)
+	}
+	fmt.Fprintf(stdout, "si: %s: colours %s; accent %s, accent-2 %s\n", src, strings.Join(cols, " "), f.Light["--si-accent"], f.Light["--si-accent-2"])
+	dest := o.output
+	if !strings.HasSuffix(strings.ToLower(dest), ".css") {
+		if dest == "" {
+			dest = "themes"
+		}
+		dest = filepath.Join(dest, themefile.Slug(f.Name)+".css")
+	}
+	return writeTheme(src, dest, f.String(), o, stdout, stderr)
 }
 
 // fetchSmall downloads up to 2 MiB.

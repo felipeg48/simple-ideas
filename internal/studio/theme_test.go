@@ -1,6 +1,7 @@
 package studio
 
 import (
+	"encoding/base64"
 	"os"
 	"path/filepath"
 	"strings"
@@ -57,5 +58,41 @@ func TestThemeView(t *testing.T) {
 	}
 	if b, _ := os.ReadFile(filepath.Join(f.root, "si.conf")); string(b) != "theme: themes/acme-brand.css\n" {
 		t.Errorf("si.conf: %q", b)
+	}
+}
+
+func TestThemeFromLogo(t *testing.T) {
+	f := newFx(t)
+	logo := `<svg viewBox="0 0 2 1"><rect fill="#e4572e" width="1" height="1"/><rect fill="#1d3a8a" x="1" width="1" height="1"/></svg>`
+	os.MkdirAll(filepath.Join(f.root, "img"), 0o755)
+	os.WriteFile(filepath.Join(f.root, "img", "acme-logo.svg"), []byte(logo), 0o644)
+	code, m := f.do("POST", "theme/logo", map[string]any{"path": "img/acme-logo.svg"})
+	if code != 200 || m["name"] != "Acme" || m["path"] != "themes/acme.css" || len(m["palette"].([]any)) != 2 {
+		t.Fatalf("preview: %d %v", code, m)
+	}
+	if _, err := os.Stat(filepath.Join(f.root, "themes")); err == nil {
+		t.Error("a preview wrote a file")
+	}
+	code, m = f.do("POST", "theme/logo", map[string]any{"data": base64.StdEncoding.EncodeToString([]byte(logo)), "name": "Acme Two", "create": true})
+	if code != 201 || m["path"] != "themes/acme-two.css" {
+		t.Fatalf("create: %d %v", code, m)
+	}
+	raw, _ := os.ReadFile(filepath.Join(f.root, "themes", "acme-two.css"))
+	if !strings.HasPrefix(string(raw), "/* si theme: Acme Two · extends studio") {
+		t.Errorf("file: %q", raw)
+	}
+	for _, c := range []struct {
+		body map[string]any
+		code int
+	}{
+		{map[string]any{"path": "../x.png"}, 403},
+		{map[string]any{"path": ".git/x.png"}, 403},
+		{map[string]any{"data": "!!"}, 400},
+		{map[string]any{"data": base64.StdEncoding.EncodeToString([]byte("text"))}, 422},
+		{map[string]any{}, 400},
+	} {
+		if code, _ := f.do("POST", "theme/logo", c.body); code != c.code {
+			t.Errorf("%v: %d, want %d", c.body, code, c.code)
+		}
 	}
 }
