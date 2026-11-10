@@ -16,9 +16,10 @@ import (
 
 // Options configure si play --terminal.
 type Options struct {
-	Theme string // --theme; else the deck's theme:
-	Notes bool   // --notes: the teleprompter instead of the slides
-	Addr  string // --notes: the si play server a browser deck is on (default 127.0.0.1:7070)
+	Theme   string // --theme; else the deck's theme:
+	Notes   bool   // --notes: the teleprompter instead of the slides
+	Addr    string // --notes: the si play server a browser deck is on (default 127.0.0.1:7070)
+	Speaker string // --notes --speaker Ana: only that speaker's script, the others as cue lines (speakers:)
 }
 
 // Dump prints slide i (1-based) of the deck at w × h with every build step

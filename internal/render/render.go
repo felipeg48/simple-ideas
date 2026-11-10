@@ -284,18 +284,40 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 	b.WriteString("</div>\n")
 	b.WriteString(dr.footer(s))
 	if (s.Notes != "" || s.HasMinutes) && !dr.opt.NoSpeakerText {
-		notes := dr.postprocess(dr.toHTML(s.Notes, nil), s.Dir, sc)
 		// [CLICK] in the script marks where the speaker advances (a build step,
 		// a canvas change, the next slide): a cue in the teleprompter, never read aloud
-		clicks := len(clickCueRE.FindAllStringIndex(notes, -1))
-		notes = clickCueRE.ReplaceAllString(notes, `<span class="si-cue">click</span>`)
+		clicks := 0
+		script := func(md string) string {
+			h := dr.postprocess(dr.toHTML(md, nil), s.Dir, sc)
+			clicks += len(clickCueRE.FindAllStringIndex(h, -1))
+			return clickCueRE.ReplaceAllString(h, `<span class="si-cue">click</span>`)
+		}
+		var notes string
+		if len(s.Voices) == 0 {
+			notes = script(s.Notes)
+		}
+		// two presenters: one part per voice; data-step is the build step it starts on
+		for _, v := range s.Voices {
+			if v.Notes != "" {
+				notes += fmt.Sprintf(`<div class="si-voice" data-speaker="%s" data-minutes="%s" data-step="%d">`, html.EscapeString(v.Speaker), strconv.FormatFloat(v.Minutes, 'f', -1, 64), clicks) + script(v.Notes) + "</div>"
+			}
+		}
 		if clicks > 0 && (clicks < sc.steps || clicks > sc.steps+1) {
 			dr.warnings = append(dr.warnings, dr.at(sc, "notes: %d [CLICK] cue(s) for %d build step(s): one per step, plus at most one for the next slide", clicks, sc.steps))
 		}
 		fmt.Fprintf(&b, `<aside class="si-notes" hidden>%s</aside>`+"\n", notes)
 	}
 	if s.Points != "" && !dr.opt.NoSpeakerText {
-		fmt.Fprintf(&b, `<aside class="si-points" hidden>%s</aside>`+"\n", dr.postprocess(dr.toHTML(s.Points, nil), s.Dir, sc))
+		points := ""
+		if len(s.Voices) == 0 {
+			points = dr.postprocess(dr.toHTML(s.Points, nil), s.Dir, sc)
+		}
+		for _, v := range s.Voices {
+			if v.Points != "" {
+				points += fmt.Sprintf(`<div class="si-voice" data-speaker="%s">`, html.EscapeString(v.Speaker)) + dr.postprocess(dr.toHTML(v.Points, nil), s.Dir, sc) + "</div>"
+			}
+		}
+		fmt.Fprintf(&b, `<aside class="si-points" hidden>%s</aside>`+"\n", points)
 	}
 	b.WriteString("</section>\n")
 	return b.String(), sc

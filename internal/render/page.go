@@ -61,9 +61,20 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	for i, s := range d.Slides {
 		plan[i] = s.Minutes
 	}
-	data, _ := json.Marshal(map[string]any{
+	pd := map[string]any{
 		"name": d.Name, "title": plain(d.Title()), "minutes": d.Minutes(), "plan": plan, "transition": m.Transition, "aspect": ratio,
-	})
+	}
+	if sp := m.SpeakerList(); len(sp) > 0 {
+		pd["speakers"] = sp // the teleprompter's speaker picker
+		mins := map[string]float64{}
+		for _, s := range d.Slides {
+			for _, v := range s.Voices {
+				mins[v.Speaker] += v.Minutes
+			}
+		}
+		pd["speakerMinutes"] = mins // each speaker's planned minutes, for their own clock
+	}
+	data, _ := json.Marshal(pd)
 	fmt.Fprintf(&b, "<script type=\"application/json\" id=\"si-data\">%s</script>\n", data)
 	keys := map[string]string{}
 	feats := map[string]bool{}
@@ -89,6 +100,9 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	conf := map[string]any{"keys": keys, "features": feats, "timer": timer, "terminal": opt.Terminal, "remote": opt.Remote, "pages": opt.Pages, "live": opt.LiveReload}
 	if opt.Config != nil && opt.Config.DrawHold != "" {
 		conf["drawHold"] = opt.Config.DrawHold // si.conf draw.hold; the runtime defaults to alt
+	}
+	if opt.Config != nil && opt.Config.SpeakersTurn {
+		conf["turn"] = true // si.conf speakers.control: turn; read by the teleprompter
 	}
 	cfg, _ := json.Marshal(conf)
 	fmt.Fprintf(&b, "<script>window.SI_CONFIG=%s;</script>\n", cfg)

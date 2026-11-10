@@ -211,7 +211,41 @@ func paceReport(d *deck.Deck, n *narration, name string) string {
 		fmt.Fprintf(&b, "%-6d %-34s %8s %8s %6s%s\n", i+1, string(title), mmss(pl), mmss(sp), wpm, mark)
 	}
 	fmt.Fprintf(&b, "\n%-6s %-34s %8s %8s\n", "", "total", mmss(plannedAll), mmss(spokenAll))
+	// speakers: each one's planned minutes against the time spent on the steps
+	// their part covers (a part runs from its first build step to the next part's)
+	for _, who := range d.Meta.SpeakerList() {
+		var pl, sp float64
+		for i, s := range d.Slides {
+			for _, v := range s.Voices {
+				if v.Speaker == who {
+					pl += v.Minutes * 60
+				}
+			}
+			for k, t := range n.spoken {
+				if k[0] == i && voiceAt(s.Voices, k[1]) == who {
+					sp += t
+				}
+			}
+		}
+		fmt.Fprintf(&b, "%-6s %-34s %8s %8s\n", "", who, mmss(pl), mmss(sp))
+	}
 	return b.String()
+}
+
+// voiceAt is who speaks at build step k of a slide: the part that starts on
+// k, else the last one started (the teleprompter's rule).
+func voiceAt(vs []deck.Voice, k int) string {
+	who, start, at := "", 0, -1
+	for _, v := range vs {
+		if v.Notes == "" {
+			continue
+		}
+		if start < k || (start == k && at != k) {
+			who, at = v.Speaker, start
+		}
+		start += len(clickRE.FindAllString(v.Notes, -1))
+	}
+	return who
 }
 
 var mdMarkRE = regexp.MustCompile("[*_`=]")

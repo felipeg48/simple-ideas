@@ -1,6 +1,7 @@
 ---
 title: The Thursday Promise
 author: Ada Lindqvist, Operations
+speakers: Ada, Ravi
 date: Spring 2026
 theme: studio
 accent: "#3657d6"
@@ -87,8 +88,15 @@ Points: Canvas
 - 21:04: the card fails a fraud check, the tracking page says so
 - 21:05: an automatic retry thirty seconds later goes through
 
-Notes: (1.5 min)
-The token reaches payments and turns red: the bank's fraud check declined the card. First, the customer sees the honest status. Then the fix we shipped last quarter: one idempotent retry after thirty seconds. Most declines at night are timeouts, not fraud. And the tile goes from "payment failed" to "paid".
+Notes[Ada]: (1 min)
+The token reaches payments and turns red: the bank's fraud check declined the card. [CLICK] First, the customer sees the honest status. Ravi built what happens next. [CLICK]
+
+Notes[Ravi]: (0.5 min)
+Thank you, Ada. This is the fix we shipped last quarter: one idempotent retry after thirty seconds. Most declines at night are timeouts, not fraud. And the tile goes from "payment failed" to "paid".
+
+Points[Ravi]:
+- The retry is keyed on the order number, so it can never charge twice
+- If asked: a real fraud decline is never retried
 
 ---
 

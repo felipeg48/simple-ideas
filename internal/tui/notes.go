@@ -164,6 +164,41 @@ func (m *teleprompter) View() tea.View {
 	return v
 }
 
+// voices is a slide's script in a deck with speakers: with --speaker, that
+// speaker's lines in full and the others' as one cue line (who, how long,
+// their first words); without it, everyone's, each under its name. Cue
+// numbers count every speaker's [CLICK], so they match the deck's steps.
+func (m *teleprompter) voices(vs []deck.Voice, mark func(string) string, cue *int) string {
+	var parts []string
+	for _, v := range vs {
+		t := v.Notes
+		if m.points {
+			t = v.Points
+		}
+		switch {
+		case m.opt.Speaker == "":
+			if t != "" {
+				parts = append(parts, "**"+v.Speaker+"**\n\n"+mark(t))
+			}
+		case strings.EqualFold(v.Speaker, m.opt.Speaker):
+			if t != "" {
+				parts = append(parts, mark(t))
+			}
+		default:
+			*cue += len(clickRE.FindAllString(v.Notes, -1))
+			if !m.points && v.Notes != "" {
+				w := strings.Fields(clickRE.ReplaceAllString(v.Notes, ""))
+				more := ""
+				if len(w) > 8 {
+					w, more = w[:8], " …"
+				}
+				parts = append(parts, fmt.Sprintf("*%s %s: “%s%s”*", v.Speaker, clock(time.Duration(v.Minutes*float64(time.Minute))), strings.Join(w, " "), more))
+			}
+		}
+	}
+	return strings.Join(parts, "\n\n")
+}
+
 func (m *teleprompter) render() string {
 	if m.w < 40 || m.h < 10 {
 		return "make the terminal larger"
@@ -226,10 +261,20 @@ func (m *teleprompter) render() string {
 		src, label = s.Points, "Speaker notes"
 	}
 	cue := 0
-	src = clickRE.ReplaceAllStringFunc(src, func(string) string {
-		cue++
-		return cueMark(cue)
-	})
+	mark := func(t string) string {
+		return clickRE.ReplaceAllStringFunc(t, func(string) string {
+			cue++
+			return cueMark(cue)
+		})
+	}
+	if len(s.Voices) == 0 {
+		src = mark(src)
+	} else {
+		src = m.voices(s.Voices, mark, &cue)
+		if m.opt.Speaker != "" {
+			label += " · " + m.opt.Speaker
+		}
+	}
 	nr := &textRenderer{pal: m.pal, w: rw, k: 1 << 30}
 	var script []string
 	for bi, b := range nr.body(src) {

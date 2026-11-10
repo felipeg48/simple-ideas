@@ -35,6 +35,10 @@ same deck open in a browser through the `si play` server (`--addr`, default
 `127.0.0.1:7070`): the page reports its position (`POST /_si/position`), the
 teleprompter listens (`GET /_si/position/events`) and sends `next` / `prev` /
 `go` back (`POST /_si/position/cmd`, same-origin only). Built decks never report.
+In a deck with `speakers:`, `--speaker Ana` shows Ana's `Notes[Ana]:` in full
+and every other part as one cue line (who, how long, their first words); cue
+numbers count every speaker's `[CLICK]`. Without it, each part is under its
+speaker's name.
 
 ## Animated canvases
 

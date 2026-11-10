@@ -299,6 +299,7 @@ body.si-drawing .si-draw-bar{display:flex}
   :root[data-si-handout] :is(.si-points,.si-notes) :is(ul,ol){margin:0;padding-left:1.1em}
   :root[data-si-handout] :is(.si-points,.si-notes) p{margin:0 0 .4em}
   :root[data-si-handout] .si-notes .si-cue{display:none}
+  :root[data-si-handout] .si-voice::before{content:attr(data-speaker);display:block;font-weight:700;color:var(--si-accent)}
   :root[data-si-handout="lines"] .si-slide::after{content:"";position:absolute;left:calc(100% + 5mm);top:1mm;bottom:0;width:calc(78.5% - 5mm);background:repeating-linear-gradient(to bottom,transparent 0 6.5mm,var(--si-line) 6.5mm 6.8mm)}
   :root[data-si-handout="slides"] .si-deck{display:grid;grid-template-columns:1fr 1fr;gap:6mm}
   :root[data-si-handout="slides"] .si-slide{width:auto;margin:0}

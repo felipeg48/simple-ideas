@@ -54,6 +54,10 @@ handout.paper: a4      # a4 or letter
 # .si/audience/ when the talk ends (off: keep nothing)
 audience.save: on
 
+# a talk with speakers: (Notes[Name]:): who may advance the deck from a
+# teleprompter: any (default) or turn (only the speaker whose turn it is)
+speakers.control: any
+
 # draw (a): hold this key and move to draw with the cursor, no click
 draw.hold: alt         # alt (⌥ Option), shift, ctrl, meta (⌘ Command), or off
 
@@ -91,6 +95,7 @@ type Config struct {
 	DrawHold     string            // draw.hold: the key that draws with the cursor ("" = alt)
 	HandoutPaper string            // handout.paper: a4 (default) or letter
 	AudienceOff  bool              // audience.save: off: keep no poll counts or questions
+	SpeakersTurn bool              // speakers.control: turn: only the speaker whose turn it is advances
 	Warnings     []string          // unknown keys / bad values, for the caller to report
 }
 
@@ -265,6 +270,15 @@ func Parse(r io.Reader) *Config {
 				c.AudienceOff = !on
 			} else {
 				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: audience.save wants on or off, got %q", ln, v))
+			}
+		case k == "speakers.control":
+			switch strings.ToLower(v) {
+			case "turn":
+				c.SpeakersTurn = true
+			case "any":
+				c.SpeakersTurn = false
+			default:
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: speakers.control wants any or turn, got %q", ln, v))
 			}
 		case k == "draw.hold":
 			hold, ok := map[string]string{"alt": "alt", "option": "alt", "shift": "shift", "ctrl": "ctrl", "control": "ctrl",

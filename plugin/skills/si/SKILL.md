@@ -143,6 +143,26 @@ Points: Payment retry
 Both blocks are hidden on the slides and run to the end of the slide (or to
 the other block's line).
 
+**Two or more presenters.** List them in the front matter (`speakers: Ana,
+Felipe`) and give each one a script: `Notes[Name]:` is that speaker's
+verbatim script (spoken sentences, `[CLICK]` included, the same rules as
+`Notes:`), `Points[Name]:` their own points and reminders. Plain `Notes:` is
+the first speaker's. Order on a slide is speaking order; put a `[CLICK]` where
+the turn passes, and count the cues of every speaker together (one per build
+step, plus at most one for the next slide). Each teleprompter shows its
+speaker's script, the others as cue lines.
+
+```markdown
+Notes[Ana]: (1 min)
+The token reaches payments and turns red. [CLICK] Felipe built what happens next. [CLICK]
+
+Notes[Felipe]: (0.5 min)
+Thank you, Ana. One retry, thirty seconds later, and the order is paid.
+
+Points[Felipe]:
+- If asked: a real fraud decline is never retried
+```
+
 ## Documents: articles, guides, labs
 
 Not everything is a slide deck. Pick the type by what the reader does:

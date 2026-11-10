@@ -484,6 +484,65 @@ static HTML (`file://`), and either window drives both. It has two tabs:
 
 Settings (tab, size, speed, mirror, notes only) are remembered per browser.
 
+**Two (or more) presenters.** A talk given by two people names them in the
+front matter and gives each one a script: `Notes[Name]:` is that speaker's
+verbatim script (spoken sentences, `[CLICK]` cues included), `Points[Name]:`
+their own talking points and reminders.
+
+```markdown
+---
+title: The Thursday Promise
+speakers: Ana, Felipe
+---
+
+# The Thursday Promise
+
+---
+
+## Payment: declined, then paid
+
+<!-- steps: on -->
+- The card fails a fraud check
+- A retry thirty seconds later goes through
+
+Notes[Ana]: (1 min)
+The token reaches payments and turns red. [CLICK] Felipe built what happens next. [CLICK]
+
+Notes[Felipe]: (0.5 min)
+Thank you, Ana. One retry, thirty seconds later, and the order is paid.
+
+Points[Felipe]:
+- If asked: a real fraud decline is never retried
+```
+
+- `speakers:` lists the names, comma-separated, in any number. Plain `Notes:`
+  and `Points:` belong to the first speaker, so a deck that gains a second
+  speaker keeps working; names match without regard to case.
+- Order on a slide is speaking order, and a speaker may come back
+  (Ana, Felipe, Ana). Each `(N min)` is that speaker's time; the slide's
+  planned time is their sum.
+- A part starts on the build step after the `[CLICK]` cues before it: above,
+  Ana speaks on steps 0 and 1, Felipe from step 2. Put a `[CLICK]` where the
+  turn passes so the teleprompters know who is speaking. `si check` counts the
+  cues of every speaker on a slide together.
+- `si check` fails on a name that is not in `speakers:` (or `Notes[Name]:`
+  without `speakers:`) and warns about a speaker with no lines in the deck.
+- **The teleprompter** has a speaker picker (`s` cycles it; `?speaker=Ana`
+  on a `?si-view=tp` or remote teleprompter link picks it): your own script in
+  full, every other part as one quiet line with who, how long and their first
+  words, so you know your cue. *Everyone* shows every part under its name.
+  When the turn passes, every teleprompter shows **→ Felipe** for a few
+  seconds. A clock beside the slide clock counts your own speaking time
+  against your planned minutes. The Speaker Notes tab shows only your points.
+- `si play talk.md --remote` prints one teleprompter link and QR code per
+  speaker (`/tp?k=…&speaker=Ana`); `q` shows them too.
+- `speakers.control: turn` in `si.conf` lets only the speaker whose turn it is
+  advance from a teleprompter (the other's Prev and Next are greyed); the
+  default `any` lets every teleprompter drive, as with one speaker.
+- In the terminal: `si play talk.md --terminal --notes --speaker Ana`.
+  Handouts with `--handout=notes` or `points` put each part under its
+  speaker's name; `si rehearse` adds a planned against spoken line per speaker.
+
 **On another device (`si play --remote`).** Put the teleprompter on an iPad
 (or any tablet or phone) and project from the laptop. `--remote` opens a
 second listener on your network, next to the loopback one, and prints one

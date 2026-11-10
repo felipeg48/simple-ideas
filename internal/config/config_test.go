@@ -117,3 +117,12 @@ func TestAudienceSave(t *testing.T) {
 		t.Errorf("audience.save: maybe should warn and keep saving")
 	}
 }
+
+func TestSpeakersControl(t *testing.T) {
+	if c := Parse(strings.NewReader("speakers.control: turn\n")); !c.SpeakersTurn || len(c.Warnings) > 0 {
+		t.Errorf("speakers.control: turn → %v %v", c.SpeakersTurn, c.Warnings)
+	}
+	if c := Parse(strings.NewReader("speakers.control: me\n")); c.SpeakersTurn || len(c.Warnings) != 1 {
+		t.Errorf("speakers.control: me should warn")
+	}
+}

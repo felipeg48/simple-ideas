@@ -151,10 +151,11 @@ type Meta struct {
 	Cover        string // si publish: the picture of a LinkedIn link post (default: the article's first picture)
 	Handout      string // si build --handout: points (default), lines or grid
 	HandoutURL   string // si build --handout: a QR code to this address in the handout's header
+	Speakers     string // speakers: Ana, Felipe — a talk given by more than one person (Notes[Name]:)
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -165,10 +166,11 @@ type Lab struct {
 // Slide is one slide of a deck.
 type Slide struct {
 	Kind       Kind
-	Title      string // heading text (inline markdown), may be empty on a content slide
-	Body       string // markdown below the heading, directives for the renderer included
-	Notes      string // markdown of the verbatim teleprompter script
-	Points     string // markdown of the concise speaker-notes talking points
+	Title      string  // heading text (inline markdown), may be empty on a content slide
+	Body       string  // markdown below the heading, directives for the renderer included
+	Notes      string  // markdown of the verbatim teleprompter script (every speaker's, joined)
+	Points     string  // markdown of the concise speaker-notes talking points (every speaker's, joined)
+	Voices     []Voice // a deck with `speakers:`: each Notes block, in speaking order
 	Minutes    float64
 	HasMinutes bool
 	Layout     string
@@ -182,6 +184,27 @@ type Slide struct {
 	Dir        string // directory of the source file: base for relative paths
 	File       string // source file
 	Line       int    // line of the slide's first line in File
+}
+
+// Voice is one speaker's part of a slide in a deck with `speakers:`: what
+// they say (Notes[Name]:), their own points (Points[Name]:) and their minutes.
+type Voice struct {
+	Speaker    string
+	Notes      string
+	Points     string
+	Minutes    float64
+	HasMinutes bool
+}
+
+// SpeakerList is the names in `speakers:` (comma-separated), in order.
+func (m Meta) SpeakerList() []string {
+	var out []string
+	for _, n := range strings.Split(m.Speakers, ",") {
+		if n = strings.TrimSpace(n); n != "" {
+			out = append(out, n)
+		}
+	}
+	return out
 }
 
 // Problem is a deck error (or warning) at a source position.
@@ -304,8 +327,8 @@ var (
 	sepRE       = regexp.MustCompile(`^ {0,3}---\s*$`)
 	h1RE        = regexp.MustCompile(`^ {0,3}#\s+(.+?)\s*#*\s*$`)
 	h2RE        = regexp.MustCompile(`^ {0,3}##\s+(.+?)\s*#*\s*$`)
-	notesRE     = regexp.MustCompile(`^Notes:\s*(.*)$`)
-	pointsRE    = regexp.MustCompile(`^Points:\s*(.*)$`)
+	notesRE     = regexp.MustCompile(`^Notes(?:\[([^\]]*)\])?:\s*(.*)$`)
+	pointsRE    = regexp.MustCompile(`^Points(?:\[([^\]]*)\])?:\s*(.*)$`)
 	minutesRE   = regexp.MustCompile(`\((\d+(?:\.\d+)?)\s*min\)`)
 	directiveRE = regexp.MustCompile(`^\s*<!--\s*([a-z][a-z-]*)\s*(?::\s*(.*?))?\s*-->\s*$`)
 	metaRE      = regexp.MustCompile(`^([a-z][a-z-]*)\s*:\s*(.*?)\s*$`)
@@ -489,7 +512,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "fonts": &m.Fonts, "fonts-subset": &m.FontsSubset, "repo": &m.Repo,
 		"subtitle": &m.Subtitle, "edition": &m.Edition, "session": &m.Session, "slides": &m.SlidesRef, "duration": &m.Duration,
 		"navigator": &m.Navigator, "logo": &m.Logo, "cta": &m.CTA,
-		"linkedin": &m.LinkedIn, "tags": &m.Tags, "canonical": &m.Canonical, "cover": &m.Cover, "handout": &m.Handout, "handout-url": &m.HandoutURL,
+		"linkedin": &m.LinkedIn, "tags": &m.Tags, "canonical": &m.Canonical, "cover": &m.Cover, "handout": &m.Handout, "handout-url": &m.HandoutURL, "speakers": &m.Speakers,
 		"layout": &m.MapLayout, "lines": &m.MapLines, "nodes": &m.MapNodes, "map-theme": &m.MapTheme, "watermark-position": &m.WatermarkPos, "favicon": &m.Favicon, "touch-icon": &m.TouchIcon, "og-image": &m.OGImage,
 		"view": &m.MapView, "camera": &m.MapCamera, "floors": &m.MapFloors, "kind": &m.MapKind, "flow": &m.MapFlow,
 	}[key]
@@ -691,6 +714,7 @@ func (d *Deck) buildSlides(lines []srcLine) {
 		last.Kind = KindClosing
 		last.Part = 0
 	}
+	d.checkSpeakers()
 }
 
 func trimBlank(c []srcLine) []srcLine {
@@ -739,22 +763,25 @@ func (d *Deck) buildSlide(c []srcLine, first bool) *Slide {
 	}
 	// Notes: and Points: are trailing blocks in either order; once inside one,
 	// the other's label switches capture so neither swallows the other.
-	cur := "" // "", "notes", or "points"
+	// Notes[Name]: / Points[Name]: belong to one speaker of `speakers:`.
+	var blocks []noteBlock
+	label := func(l srcLine) bool {
+		if m := notesRE.FindStringSubmatch(l.text); m != nil {
+			blocks = append(blocks, noteBlock{name: m[1], named: strings.HasPrefix(l.text, "Notes["), lines: []string{m[2]}, at: l})
+			return true
+		}
+		if m := pointsRE.FindStringSubmatch(l.text); m != nil {
+			blocks = append(blocks, noteBlock{points: true, name: m[1], named: strings.HasPrefix(l.text, "Points["), lines: []string{m[2]}, at: l})
+			return true
+		}
+		return false
+	}
 	var ft fenceTracker
 	for _, l := range c {
-		if cur != "" {
-			if m := notesRE.FindStringSubmatch(l.text); m != nil {
-				cur, notes = "notes", append(notes, m[1])
-				continue
-			}
-			if m := pointsRE.FindStringSubmatch(l.text); m != nil {
-				cur, points = "points", append(points, m[1])
-				continue
-			}
-			if cur == "notes" {
-				notes = append(notes, l.text)
-			} else {
-				points = append(points, l.text)
+		if len(blocks) > 0 {
+			if !label(l) {
+				b := &blocks[len(blocks)-1]
+				b.lines = append(b.lines, l.text)
 			}
 			continue
 		}
@@ -762,14 +789,7 @@ func (d *Deck) buildSlide(c []srcLine, first bool) *Slide {
 			body = append(body, l.text)
 			continue
 		}
-		if m := notesRE.FindStringSubmatch(l.text); m != nil {
-			cur = "notes"
-			notes = append(notes, m[1])
-			continue
-		}
-		if m := pointsRE.FindStringSubmatch(l.text); m != nil {
-			cur = "points"
-			points = append(points, m[1])
+		if label(l) {
 			continue
 		}
 		if name, val, ok := ParseDirective(l.text); ok {
@@ -781,6 +801,21 @@ func (d *Deck) buildSlide(c []srcLine, first bool) *Slide {
 		}
 		body = append(body, l.text)
 	}
+	s.Body = strings.TrimSpace(strings.Join(body, "\n"))
+	if speakers := d.Meta.SpeakerList(); len(speakers) > 0 {
+		d.voices(s, blocks, speakers)
+		return s
+	}
+	for _, b := range blocks {
+		if b.named {
+			d.problem(b.at.file, b.at.no, "%s: a speaker's name needs `speakers:` in the front matter", strings.SplitN(b.at.text, ":", 2)[0])
+		}
+		if b.points {
+			points = append(points, b.lines...)
+		} else {
+			notes = append(notes, b.lines...)
+		}
+	}
 	if len(notes) > 0 {
 		if m := minutesRE.FindStringSubmatch(notes[0]); m != nil {
 			s.Minutes, _ = strconv.ParseFloat(m[1], 64)
@@ -788,10 +823,90 @@ func (d *Deck) buildSlide(c []srcLine, first bool) *Slide {
 			notes[0] = strings.TrimSpace(minutesRE.ReplaceAllString(notes[0], ""))
 		}
 	}
-	s.Body = strings.TrimSpace(strings.Join(body, "\n"))
 	s.Notes = strings.TrimSpace(strings.Join(notes, "\n"))
 	s.Points = strings.TrimSpace(strings.Join(points, "\n"))
 	return s
+}
+
+// noteBlock is one Notes: or Points: block of a slide, its label's name (if any).
+type noteBlock struct {
+	points bool
+	named  bool
+	name   string
+	lines  []string
+	at     srcLine
+}
+
+// voices splits a slide's script by speaker: each Notes block is a voice in
+// speaking order (plain Notes: is the first speaker's), each Points block
+// joins that speaker's first voice.
+func (d *Deck) voices(s *Slide, blocks []noteBlock, speakers []string) {
+	who := func(b noteBlock) string {
+		if !b.named || strings.TrimSpace(b.name) == "" {
+			return speakers[0]
+		}
+		for _, n := range speakers {
+			if strings.EqualFold(n, strings.TrimSpace(b.name)) {
+				return n
+			}
+		}
+		d.problem(b.at.file, b.at.no, "%s: %q is not in speakers: (%s)", strings.SplitN(b.at.text, ":", 2)[0], strings.TrimSpace(b.name), strings.Join(speakers, ", "))
+		return strings.TrimSpace(b.name)
+	}
+	for _, b := range blocks {
+		if b.points {
+			continue
+		}
+		v := Voice{Speaker: who(b)}
+		if m := minutesRE.FindStringSubmatch(b.lines[0]); m != nil {
+			v.Minutes, _ = strconv.ParseFloat(m[1], 64)
+			v.HasMinutes = true
+			b.lines[0] = strings.TrimSpace(minutesRE.ReplaceAllString(b.lines[0], ""))
+		}
+		v.Notes = strings.TrimSpace(strings.Join(b.lines, "\n"))
+		s.Voices = append(s.Voices, v)
+	}
+	for _, b := range blocks {
+		if !b.points {
+			continue
+		}
+		name, pts, i := who(b), strings.TrimSpace(strings.Join(b.lines, "\n")), 0
+		for i < len(s.Voices) && s.Voices[i].Speaker != name {
+			i++
+		}
+		if i == len(s.Voices) {
+			s.Voices = append(s.Voices, Voice{Speaker: name})
+		}
+		s.Voices[i].Points = strings.TrimSpace(s.Voices[i].Points + "\n" + pts)
+	}
+	var notes, points []string
+	for _, v := range s.Voices {
+		s.Minutes += v.Minutes
+		s.HasMinutes = s.HasMinutes || v.HasMinutes
+		if v.Notes != "" {
+			notes = append(notes, v.Notes)
+		}
+		if v.Points != "" {
+			points = append(points, v.Points)
+		}
+	}
+	s.Notes = strings.Join(notes, "\n\n")
+	s.Points = strings.Join(points, "\n\n")
+}
+
+// checkSpeakers warns about a speaker of `speakers:` with no lines anywhere.
+func (d *Deck) checkSpeakers() {
+	for _, n := range d.Meta.SpeakerList() {
+		said := false
+		for _, s := range d.Slides {
+			for _, v := range s.Voices {
+				said = said || (v.Speaker == n && v.Notes != "")
+			}
+		}
+		if !said {
+			d.Warnings = append(d.Warnings, Problem{File: rel(d.Path), Msg: fmt.Sprintf("speakers: %s has no Notes[%s]: lines in the deck", n, n)})
+		}
+	}
 }
 
 // slideDirective applies a slide-level directive and validates body-level
