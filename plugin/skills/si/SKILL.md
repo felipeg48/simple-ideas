@@ -48,6 +48,7 @@ si play talk.md --remote --https  # teleprompter / draw pad / clicker on a table
 si qr https://… --png --svg     # a QR code file (on a slide: <!-- qr: https://… · caption=… -->)
 si play talk.md --audience      # the room follows on their phones; <!-- qr: audience --> shows the code,
                                 # <!-- poll: id · option · option --> asks them (live bars; · hidden: on the next click);
+                                # <!-- cloud: id --> collects a few words each, shown as a word cloud;
                                 # their questions arrive in the teleprompter's Q&A tab
 si play talk.md --tunnel        # the same for a remote audience (a video call): a temporary public link
 ```

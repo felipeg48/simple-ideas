@@ -179,14 +179,21 @@ func (s *Server) SaveAudience(name string, now time.Time) (string, error) {
 	s.qa.mu.Lock()
 	questions := append([]*question(nil), s.qa.list...)
 	s.qa.mu.Unlock()
-	if len(results) == 0 && len(questions) == 0 {
+	s.clouds.mu.Lock()
+	words := map[string]any{}
+	for id := range s.clouds.ans {
+		shown, hidden, voters := s.clouds.count(id)
+		words[id] = map[string]any{"words": shown, "hidden": hidden, "voters": voters}
+	}
+	s.clouds.mu.Unlock()
+	if len(results) == 0 && len(questions) == 0 && len(words) == 0 {
 		return "", nil
 	}
 	dir := filepath.Join(s.dir, ".si", "audience")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}
-	b, _ := json.MarshalIndent(map[string]any{"talk": name, "ended": now.Format(time.RFC3339), "polls": results, "questions": questions}, "", "  ")
+	b, _ := json.MarshalIndent(map[string]any{"talk": name, "ended": now.Format(time.RFC3339), "polls": results, "clouds": words, "questions": questions}, "", "  ")
 	p := filepath.Join(dir, name+"-"+now.Format("2006-01-02-1504")+".json")
 	return p, os.WriteFile(p, b, 0o644)
 }

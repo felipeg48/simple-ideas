@@ -129,6 +129,23 @@ questions still live on your laptop, and the address is gone when `si play`
 stops. A quick tunnel carries no event stream, so audience pages there ask
 for the current slide about once a second.
 
+**Word clouds.** A slide asks for a few words; each phone sends up to three
+answers (30 characters each, a fourth replaces the first) and the slide shows
+them as a cloud, each word sized by how many people gave it (the same word in
+any case counts once):
+
+```markdown
+## In one word, what makes a delivery late?
+
+<!-- cloud: late -->
+```
+
+`· hidden` keeps the words for the next click, as for polls. Free text from
+the room reaches the screen, so the teleprompter's **Q&A** tab lists the
+words with *hide* beside each: a hidden word leaves the slide and every phone
+at once (*show* brings it back). Without `si play --audience` the slide says
+where the words will appear.
+
 **Questions from the room.** Under `--audience` every phone has an *Ask a
 question* button (500 characters, an optional name, one question per phone
 every 20 seconds). Questions go to you only, never to the other phones: a
@@ -137,7 +154,8 @@ every 20 seconds). Questions go to you only, never to the other phones: a
 takes it off), *Answered* and *Hide*. When `si play` stops, the poll counts
 and the questions are saved beside the talk in
 `.si/audience/<talk>-<date-time>.json` (keep `.si/` out of git);
-`audience.save: off` in `si.conf` keeps nothing.
+`audience.save: off` in `si.conf` keeps nothing. The file holds the cloud
+words too.
 
 The code appears only under `si play --audience` (in a built deck the figure
 stays hidden). It works with `--remote` (your roles and theirs, two keys) and

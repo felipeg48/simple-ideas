@@ -107,8 +107,24 @@
       var t = f.querySelector('[data-poll-total]'); if (t) t.textContent = total;
     });
   }
+  /* word clouds: the words the room gave, each sized by its count; the deck
+     passes the message on to the teleprompter, which can hide a word */
+  function cloudShow(m) {
+    if (!role) chans.forEach(function (c) { if (typeof BroadcastChannel !== 'undefined' && c instanceof BroadcastChannel) try { c.postMessage(m); } catch (e) {} });
+    var words = m.words || [], max = words.length ? words[0].n : 1;
+    each(document.querySelectorAll('.si-cloud[data-cloud="' + String(m.id).replace(/"/g, '') + '"]'), function (f) {
+      var ul = f.querySelector('.si-cloud-words'); if (!ul) return;
+      ul.textContent = '';
+      words.forEach(function (w) {
+        var li = document.createElement('li'); li.className = 'si-cloud-word'; li.textContent = w.w; li.title = w.n;
+        li.style.setProperty('--_w', 1 + Math.round(4 * (w.n - 1) / Math.max(1, max - 1)));
+        ul.appendChild(li);
+      });
+      var t = f.querySelector('[data-poll-total]'); if (t) t.textContent = m.total || 0;
+    });
+  }
   /* counts and bars only where a room can vote: an audience phone, or the deck of a si play --audience */
-  if (role === 'audience' || audQR) each(document.querySelectorAll('.si-poll'), function (f) { f.setAttribute('data-live', ''); });
+  if (role === 'audience' || audQR) each(document.querySelectorAll('.si-poll, .si-cloud'), function (f) { f.setAttribute('data-live', ''); });
   if (role === 'audience') {
     var voter = '';
     try { voter = localStorage.getItem('si-voter') || ''; if (!voter) { voter = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2); localStorage.setItem('si-voter', voter); } } catch (e) { voter = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2); }
@@ -132,6 +148,22 @@
         li.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
       });
       paint();
+    });
+    /* a cloud: a box for a few words, up to three answers per phone */
+    each(document.querySelectorAll('.si-cloud'), function (f) {
+      var id = f.getAttribute('data-cloud'), sent = 0;
+      var form = document.createElement('form'); form.className = 'si-cloud-form';
+      form.innerHTML = '<input maxlength="30" autocomplete="off" aria-label="Your answer, a few words" placeholder="A few words"><button type="submit">Send</button>';
+      var input = form.querySelector('input'), btn = form.querySelector('button');
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var text = input.value.trim(); if (!text) return;
+        fetch('/_si/audience/word', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cloud: id, text: text, voter: voter }) }).catch(function () {});
+        input.value = ''; sent++;
+        btn.textContent = 'Sent ✓'; setTimeout(function () { btn.textContent = 'Send'; }, 1500);
+        input.placeholder = sent >= 3 ? 'Another one replaces your first' : 'Another word?';
+      });
+      f.appendChild(form);
     });
   }
 

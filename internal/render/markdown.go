@@ -294,6 +294,8 @@ func (dr *deckRenderer) transform(doc ast.Node, src []byte, sc *slideCtx) {
 					c = &rawNode{html: dr.qrHTML(val, sc.s, sc)}
 				case "poll":
 					c = &rawNode{html: dr.pollHTML(val, sc, true)}
+				case "cloud":
+					c = &rawNode{html: dr.cloudHTML(val, sc, true)}
 				case "slides", "alert", "accordion", "modal", "end", "carousel", "event", "embed":
 					dr.problem(sc, "%s: works in documents and sites (articles, guides, books, labs, pages), not on a slide", name)
 					continue

@@ -128,6 +128,14 @@ img,svg,video{max-width:100%}
 .si-poll:not([data-live]) :is(.si-poll-n,.si-poll-bar,.si-poll-total){display:none} /* a plain list without si play --audience */
 :root[data-si-role="audience"] .si-poll-opt{cursor:pointer;touch-action:manipulation}
 .si-poll[data-hidden]:not(:has(> .si-poll-reveal.is-visible)) :is(.si-poll-n,.si-poll-bar){visibility:hidden} /* · hidden: results on the next click */
+.si-cloud{margin:.6em 0;width:min(100%,46em);min-width:0}
+.si-cloud-words{list-style:none;margin:0;padding:.4em 0;display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:.15em .7em;min-height:4em}
+.si-cloud-word{font-size:calc(1em * (.8 + var(--_w,1) * .45));line-height:1.1;font-weight:calc(400 + var(--_w,1) * 60);transition:font-size .5s ease;overflow-wrap:anywhere}
+.si-cloud:not([data-live]) :is(.si-cloud-words,.si-cloud-live),.si-cloud[data-live] .si-cloud-off{display:none}
+.si-cloud[data-hidden]:not(:has(> .si-poll-reveal.is-visible)) .si-cloud-words{visibility:hidden}
+.si-cloud-form{display:flex;gap:.4em;margin-top:.5em}
+.si-cloud-form input{flex:1;min-width:0;font:inherit;padding:.4em .6em}
+.si-cloud-form button{font:inherit;padding:.4em .9em}
 :root[data-si-role="audience"] .si-poll:not([data-voted]) :is(.si-poll-n,.si-poll-bar,.si-poll-total){visibility:hidden}
 .si-qr a svg{width:100%}
 /* figure caps follow --si-figure-max (the theme's room for a canvas under a

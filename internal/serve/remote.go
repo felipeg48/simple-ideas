@@ -68,11 +68,11 @@ func (h *relay) audienceEvents(w http.ResponseWriter, r *http.Request) {
 // audienceView keeps what an audience page may see of a message, or nil.
 func audienceView(raw []byte) []byte {
 	var m map[string]any
-	if json.Unmarshal(raw, &m) != nil || (m["type"] != "state" && m["type"] != "poll") {
+	if json.Unmarshal(raw, &m) != nil || (m["type"] != "state" && m["type"] != "poll" && m["type"] != "cloud") {
 		return nil
 	}
 	out := map[string]any{}
-	for _, k := range []string{"type", "name", "mid", "i", "k", "kmax", "n", "title", "id", "counts", "total"} {
+	for _, k := range []string{"type", "name", "mid", "i", "k", "kmax", "n", "title", "id", "counts", "total", "words"} {
 		if v, ok := m[k]; ok {
 			out[k] = v
 		}
@@ -193,6 +193,7 @@ func (s *Server) RemoteHandler(key string, roles []string) http.Handler {
 	mux.HandleFunc("GET /_si/remote/events", s.relay.events)
 	mux.HandleFunc("POST /_si/remote/send", s.relay.send)
 	mux.HandleFunc("POST /_si/qa", s.qaState) // a phone teleprompter's Q&A buttons (presenter key)
+	mux.HandleFunc("POST /_si/cloud", s.cloudHide)
 	static := http.FileServer(http.Dir(s.dir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path
@@ -294,6 +295,7 @@ func (s *Server) audienceHandler() http.Handler {
 	mux.HandleFunc("GET /_si/audience/now", s.audienceNow)
 	mux.HandleFunc("POST /_si/audience/vote", s.vote)
 	mux.HandleFunc("POST /_si/audience/ask", s.ask)
+	mux.HandleFunc("POST /_si/audience/word", s.word)
 	static := http.FileServer(http.Dir(s.dir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path

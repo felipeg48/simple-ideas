@@ -64,3 +64,41 @@ func (dr *deckRenderer) pollHTML(val string, sc *slideCtx, slide bool) string {
 	b.WriteString(`</figcaption></figure>`)
 	return b.String()
 }
+
+// cloudHTML is <!-- cloud: why -->: the room answers in a few words on their
+// phones under si play --audience, and the slide shows the answers as a word
+// cloud, each word sized by how many gave it. · hidden keeps the words for
+// the next click. Elsewhere it is a short line saying where the words go.
+func (dr *deckRenderer) cloudHTML(val string, sc *slideCtx, slide bool) string {
+	id, _, words := pluginParts(val)
+	id = strings.TrimSpace(id)
+	if !pollIDRE.MatchString(id) {
+		dr.problem(sc, "cloud: %q is not a cloud id (lowercase letters, digits and -, e.g. <!-- cloud: why -->)", id)
+		return ""
+	}
+	hidden := false
+	for _, w := range words {
+		if w != "hidden" {
+			dr.problem(sc, "cloud: %s: unknown option %q (hidden)", id, w)
+			return ""
+		}
+		hidden = slide
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, `<figure class="si-cloud" data-cloud="%s"`, id)
+	if hidden {
+		b.WriteString(` data-hidden>`)
+		sc.steps++
+		fmt.Fprintf(&b, `<span class="si-step si-poll-reveal" data-step="%d" hidden></span>`, sc.steps)
+	} else {
+		b.WriteString(`>`)
+	}
+	b.WriteString(`<ul class="si-cloud-words"></ul><figcaption class="si-poll-total">`)
+	if slide {
+		b.WriteString(`<span class="si-cloud-live"><span data-poll-total>0</span> answered</span><span class="si-cloud-off">The room's words appear here during the talk.</span>`)
+	} else {
+		b.WriteString(`A word cloud at the talk.`)
+	}
+	b.WriteString(`</figcaption></figure>`)
+	return b.String()
+}

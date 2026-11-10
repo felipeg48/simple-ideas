@@ -45,6 +45,7 @@ type Server struct {
 	relay   *relay
 	polls   *polls   // si play --audience: the ballots (poll.go)
 	qa      *qa      // si play --audience: the questions (qa.go)
+	clouds  *clouds  // si play --audience: the word clouds (cloud.go)
 	rev     *reviews // review comments (review.go)
 	revOnce sync.Once
 }
@@ -69,6 +70,7 @@ func New(root string, css []string, theme, conf string) (*Server, error) {
 	s.relay = newRelay()
 	s.polls = newPolls()
 	s.qa = newQA()
+	s.clouds = newClouds()
 	return s, nil
 }
 
@@ -89,6 +91,7 @@ func (s *Server) Handler() http.Handler {
 		mux.HandleFunc("GET /_si/remote/events", s.relay.events)
 		mux.HandleFunc("POST /_si/remote/send", s.relay.send)
 		mux.HandleFunc("POST /_si/qa", localOnly(s.qaState)) // the presenter's Q&A buttons (deck, teleprompter)
+		mux.HandleFunc("POST /_si/cloud", localOnly(s.cloudHide))
 	}
 	if s.Terminal {
 		// Play terminal: loopback only (see Server.Terminal). Embedded xterm.js

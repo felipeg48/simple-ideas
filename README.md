@@ -128,6 +128,9 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.24.0:** word clouds: `<!-- cloud: id -->` collects a few words from
+  each phone under `si play --audience`; the slide sizes each word by its
+  count, and the teleprompter can hide any word.
 - **v2.23.0:** `--review --https` (and `--https=tailscale`): the review link
   over HTTPS, like the remote pages.
 - **v2.22.0:** every example on the docs site shows its result under the

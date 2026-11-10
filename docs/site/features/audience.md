@@ -53,6 +53,20 @@ as the votes arrive.
 Without `--audience` (a built deck, a printed handout, an article) the poll
 is the plain list of its options: ask for hands.
 
+## Word clouds
+
+```markdown
+## In one word, what makes a delivery late?
+
+<!-- cloud: late -->
+```
+
+Each phone gets a box for a few words (up to three answers); the slide shows
+them as a cloud, the most given word the largest. Add `· hidden` to show the
+cloud on your next click. The words come from the room, so your
+teleprompter's **Q&A** tab lists them with *hide*: a hidden word leaves the
+screen and every phone at once.
+
 ## Questions from the room
 
 Every phone has an *Ask a question* button (an optional name, 500

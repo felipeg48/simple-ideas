@@ -174,6 +174,11 @@ pre.si-mermaid{background:none;border:0;text-align:center;margin:.4em 0;font-fam
 :where(.si-poll-bar){background:var(--si-poll-bar,color-mix(in srgb,var(--si-accent) 30%,transparent))}
 :where(.si-poll-opt[aria-pressed="true"]){border-color:var(--si-accent)}
 :where(.si-poll-total){font-size:.7em;color:var(--si-muted)}
+:where(.si-cloud-word){color:var(--si-fg)}
+:where(.si-cloud-word:nth-child(3n+1)){color:var(--si-accent)}
+:where(.si-cloud-word:nth-child(3n+2)){color:var(--si-accent-2,var(--si-accent))}
+:where(.si-cloud-form input){border:1px solid var(--si-line);border-radius:var(--si-radius);background:var(--si-bg);color:var(--si-fg)}
+:where(.si-cloud-form button){border:0;border-radius:var(--si-radius);background:var(--si-accent);color:var(--si-bg)}
 :where(.si-qa-show){background:var(--si-qa-bg,var(--si-surface));color:var(--si-fg);border:1px solid var(--si-line);border-left:.35em solid var(--si-accent);border-radius:var(--si-radius);box-shadow:var(--si-shadow)}
 :where(.si-qa-name){color:var(--si-muted)}
 :where(.si-lk-img){height:1.9em;width:auto;max-height:none;border-radius:0;box-shadow:none}

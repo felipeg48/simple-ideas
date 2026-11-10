@@ -251,7 +251,9 @@ About › Certificate Trust Settings**. Optional on the laptop: `si ca trust`.
 **The room:** `--audience` gives everyone a follow-along link
 (`<!-- qr: audience -->` on a slide): slides only, never your notes;
 `<!-- poll: id · a · b -->` lets them vote, live bars on your screen
-(`· hidden`: the bars wait for your next click); they
+(`· hidden`: the bars wait for your next click); `<!-- cloud: id -->` turns
+their few-word answers into a word cloud (you can hide a word from the
+teleprompter's Q&A tab); they
 ask questions from their phones into the teleprompter's Q&A tab (`3`).
 On a video call: `--tunnel` gives them a temporary public link instead.
 

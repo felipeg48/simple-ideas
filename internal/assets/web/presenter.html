@@ -37,6 +37,9 @@ body{overflow:hidden;height:100%}
 .pv-q small{display:block;margin-bottom:.5rem;color:var(--si-muted);font-family:var(--si-font-mono);font-size:.75rem}
 .pv-q button{font:inherit;font-size:.85rem;color:var(--si-fg);background:var(--si-surface);border:1px solid var(--si-line);border-radius:.45rem;padding:.3em .7em;margin-right:.3rem;cursor:pointer}
 .pv-q button:hover{border-color:var(--si-accent)}
+.pv-words small{display:block;margin-bottom:.4rem}
+.pv-words button{margin:.15rem}
+.pv-words button[aria-pressed=true]{opacity:.55;text-decoration:line-through}
 .pv-points p{margin:0 0 .6em}
 .pv-points ul,.pv-points ol{padding-left:1.3em;margin:0 0 .6em}.pv-points li{margin:.45em 0}
 .pv-points code{font-size:.85em}.pv-points strong{color:var(--si-accent)}
@@ -155,9 +158,28 @@ body{overflow:hidden;height:100%}
   function qaSet(id, state) {
     try { fetch('/_si/qa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, state: state }) }); } catch (e) {}
   }
+  /* the room's words (word clouds): Hide takes one off every screen */
+  var clouds = {}, lastQA = [];
+  function cloudWords(m) { clouds[m.id] = m; qaShow(lastQA); }
+  function cloudHide(id, w, hide) {
+    try { fetch('/_si/cloud', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cloud: id, word: w, hide: hide }) }); } catch (e) {}
+  }
   function qaShow(list) {
-    var box = $('qa'), open = 0;
+    lastQA = list || [];
+    var box = $('qa'), open = 0, words = 0;
     box.textContent = '';
+    Object.keys(clouds).forEach(function (id) {
+      var m = clouds[id], el = document.createElement('div'); el.className = 'pv-q pv-words';
+      var h = document.createElement('small'); h.textContent = 'Words · ' + id + ' · ' + (m.total || 0) + ' answered'; el.appendChild(h);
+      (m.words || []).concat(m.hidden || []).forEach(function (w) {
+        words++;
+        var off = (m.hidden || []).indexOf(w) >= 0, b = document.createElement('button'); b.type = 'button';
+        b.textContent = w.w + ' ' + w.n + (off ? ' · show' : ' · hide'); b.setAttribute('aria-pressed', off ? 'true' : 'false');
+        b.onclick = function () { cloudHide(id, w.w, !off); };
+        el.appendChild(b);
+      });
+      box.appendChild(el);
+    });
     (list || []).slice().reverse().forEach(function (q) {
       if (q.state === 'hidden') return;
       if (q.state !== 'answered') open++;
@@ -171,7 +193,7 @@ body{overflow:hidden;height:100%}
       box.appendChild(el);
     });
     var t = $('tab-qa');
-    t.hidden = !(list && list.length);
+    t.hidden = !((list && list.length) || words);
     t.textContent = 'Q&A' + (open ? ' (' + open + ')' : '');
   }
   function activePane() { return tab === 'tele' ? notes : points; }
@@ -228,6 +250,7 @@ body{overflow:hidden;height:100%}
   chan.onmessage = function (e) {
     var m = e.data || {};
     if (m.type === 'questions') { qaShow(m.list); return; }
+    if (m.type === 'cloud') { cloudWords(m); return; }
     if (m.type !== 'state' || (m.name && m.name !== D.name)) return;
     plan = m.plan || plan; total = m.total || 0;
     document.documentElement.setAttribute('data-si-mode', m.dark ? 'dark' : 'light');

@@ -5,6 +5,11 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.24.0: word clouds.** `<!-- cloud: id · hidden -->` (render/poll.go);
+  `serve/cloud.go` (3 answers per phone, case-folded counts, top 60, hidden
+  words), `cloud` relay messages (audienceView drops `hidden`), the phone's
+  answer form and `cloudShow` in 06-media.js, the teleprompter's Q&A tab lists
+  words with hide/show (`POST /_si/cloud`). Saved with the audience results.
 - **v2.23.0: --review --https.** `httpsFor` (local CA leaf or Tailscale) and
   `serveSplit` (TLS + the plain `/ca` page on one port) in cmd/si/main.go, used
   by --remote and --review.

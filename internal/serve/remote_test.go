@@ -378,3 +378,35 @@ func TestAudienceOnlyHandler(t *testing.T) {
 		}
 	}
 }
+
+// A cloud counts each phone's answers (three at most, the same word in any
+// case once), and a hidden word leaves the words every page gets.
+func TestClouds(t *testing.T) {
+	c := newClouds()
+	now := time.Now()
+	for i, v := range []string{"phoneaaaa1", "phoneaaaa2", "phoneaaaa3"} {
+		if _, code := c.add("why", v, "Speed", now.Add(time.Duration(i)*time.Second)); code != http.StatusNoContent {
+			t.Fatalf("add: %d", code)
+		}
+	}
+	c.add("why", "phoneaaaa1", "speed", now.Add(5*time.Second)) // same word, other case
+	c.add("why", "phoneaaaa1", "trust", now.Add(7*time.Second))
+	c.add("why", "phoneaaaa1", "cost", now.Add(9*time.Second)) // the fourth: replaces the oldest
+	if _, code := c.add("why", "phoneaaaa1", "x", now.Add(9*time.Second)); code != http.StatusTooManyRequests {
+		t.Errorf("two answers in one second: %d", code)
+	}
+	if _, code := c.add("why", "phoneaaaa2", "  ", now.Add(20*time.Second)); code != http.StatusBadRequest {
+		t.Errorf("an empty answer: %d", code)
+	}
+	shown, _, voters := c.count("why")
+	if voters != 3 || shown[0].Word != "Speed" || shown[0].N != 3 || len(shown) != 3 {
+		t.Errorf("count: %+v voters %d", shown, voters)
+	}
+	msg, ok := c.setHidden("why", "TRUST", true)
+	if !ok || !strings.Contains(string(msg), `"hidden":[{"w":"trust","n":1}]`) {
+		t.Fatalf("hide: %s", msg)
+	}
+	if got := string(audienceView(msg)); strings.Contains(got, "trust") || !strings.Contains(got, "Speed") {
+		t.Errorf("audience sees %s", got)
+	}
+}

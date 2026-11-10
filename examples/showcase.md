@@ -272,6 +272,19 @@ Points: Three causes, one per click
 
 ---
 
+## In one word, what makes a delivery late?
+
+<!-- cloud: late -->
+
+Notes: (1 min)
+Before we look at the fixes, one word from you: what makes a delivery late, in your experience? The bigger the word, the more of you said it.
+
+Points:
+- Read the two largest words aloud; link them to the payment and warehouse stories
+- Hide anything off-topic from the Q&A tab before it lingers
+
+---
+
 ## Which habit would your team start with?
 
 <!-- poll: first-habit · Follow one order end to end · Retry once, then tell the customer · Lend people before adding systems · hidden -->
