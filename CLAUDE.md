@@ -193,7 +193,8 @@ pass. The steps that matter:
   `docs/superpowers/specs/2026-11-09-next-five.md` indexes audience mode
   (follow, polls, Q&A), handouts (`--handout`), record your talk
   (`--mp4 --narration`, pace report), theme from a logo, two presenters
-  (`Notes[Name]:`).
+  (`Notes[Name]:`), and the Studio Theme editor (`2026-11-09-studio-theme-editor.md`;
+  phase 1 fixes CSS-file themes: `extends <built-in>`, the index page's theme).
 - **Menu-bar icon** (DONE, v2.12.0): si Studio.app's NSStatusItem lists
   running sessions from `<config dir>/si/sessions/<pid>.json`
   (`internal/serve/session.go`, written by si play / serve; `desktop/sessions.go`
