@@ -47,7 +47,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "2.24.0"
+const version = "2.25.0"
 
 // Exit codes.
 const (
@@ -85,11 +85,11 @@ Usage:
   si code <file.md> [--id show] [--png [--scale 2]] [--svg] [--gif] [--mp4] [-o dir]
         code windows and shows: one <file>-<id>-<n>.png / .svg per step (window,
         backdrop and callouts) and <file>-<id>.gif / .mp4, the whole show animated
-  si publish <file.md> --to linkedin|devto|hashnode [--url URL] [--base-url URL] [--canonical URL] [--public] [--copy] [--yes]
+  si publish <file.md> --to linkedin|devto|hashnode|ghost|wordpress [--url URL] [--base-url URL] [--canonical URL] [--public] [--copy] [--yes]
         a deck to LinkedIn as a document post (its PDF), an article as a LinkedIn link
         post or to dev.to / Hashnode; a dry run that prints the requests unless --yes
-  si publish login linkedin|devto|hashnode [--token T] [--client-id ID --client-secret S] [--url blog]
-  si publish logout [linkedin|devto|hashnode]
+  si publish login linkedin|devto|hashnode|ghost|wordpress [--token T] [--client-id ID --client-secret S] [--url site] [--user name]
+  si publish logout [linkedin|devto|hashnode|ghost|wordpress]
         store or forget a login (in your config dir, mode 0600; see docs/publish.md)
   si qr <text|URL|-> [-o name[.png|.jpg|.svg|.pdf]] [--png --jpg --svg --pdf | --type png,svg] [--terminal]
         a QR code (default qr.png, 1024 px); --wifi SSID [--password P] [--security WPA|WEP]
@@ -284,7 +284,7 @@ type options struct {
 	to, mapID                                    string  // si mindmap export --to, --map
 	gif                                          bool    // si code --gif
 	showID                                       string  // si code --id
-	url, token, clientID, clientSecret           string  // si publish
+	url, token, clientID, clientSecret, user     string  // si publish
 	canonical, baseURL                           string  // si publish
 	yes, copy, public, mp4                       bool    // si publish --yes/--copy/--public; --mp4
 	dissolve                                     bool    // --mp4 --dissolve: stills that dissolve, not the filmed motion
@@ -336,6 +336,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.showID, "id", "", "")
 	fl.StringVar(&o.url, "url", "", "")
 	fl.StringVar(&o.token, "token", "", "")
+	fl.StringVar(&o.user, "user", "", "")
 	fl.StringVar(&o.clientID, "client-id", "", "")
 	fl.StringVar(&o.clientSecret, "client-secret", "", "")
 	fl.StringVar(&o.canonical, "canonical", "", "")

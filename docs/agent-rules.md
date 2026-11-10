@@ -204,7 +204,7 @@ Not everything is a slide deck. Pick the type by what the reader does:
   `si code file.md --png --svg --gif` exports them. Leave `at=` out unless the
   author placed the note: dragging it in `si play` or the Studio writes it.
 - **Publishing** (RULES.md §26): `linkedin:` (the post text), `tags:`,
-  `canonical:` and `cover:` (a link post's picture) in front matter feed `si publish`; it is a dry run unless `--yes`.
+  `canonical:` and `cover:` (a link post's picture) in front matter feed `si publish` (LinkedIn, dev.to, Hashnode, Ghost, WordPress); it is a dry run unless `--yes`.
   Never run it with `--yes` for the author.
 - **Sites** take opt-in branding in `_site.md`: `logo: brand/mark.svg Name` (a
   picture with the name), `favicon:`, `touch-icon:`, `og-image:` (an https URL)

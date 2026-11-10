@@ -8,14 +8,15 @@ import (
 	"strings"
 )
 
-// Article is a Markdown article for dev.to or Hashnode.
+// Article is an article for dev.to, Hashnode, Ghost or WordPress.
 type Article struct {
 	Title       string
 	Body        string // Markdown, without front matter and title
+	HTML        string // the body as HTML (Ghost, WordPress)
 	Description string
 	Canonical   string
 	Tags        []string
-	Public      bool // dev.to: publish now (otherwise a draft)
+	Public      bool // publish now (otherwise a draft; Hashnode always publishes)
 }
 
 // DevTo posts to dev.to (Forem API) with an API key.

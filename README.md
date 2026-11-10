@@ -128,6 +128,9 @@ self-contained HTML files you can mail, host or open from a USB stick.
   figure; the map editor edits in 3D; History, Review and About are in the
   accessibility check; sites take `favicon:`, `touch-icon:`, `og-image:`,
   `version:` and a picture-plus-name `logo:`.
+- **v2.25.0:** `si publish --to ghost` (Admin API, a JWT from your Admin API
+  key) and `--to wordpress` (REST API, an application password): the article
+  as HTML, a draft unless `--public`.
 - **v2.24.0:** word clouds: `<!-- cloud: id -->` collects a few words from
   each phone under `si play --audience`; the slide sizes each word by its
   count, and the teleprompter can hide any word.

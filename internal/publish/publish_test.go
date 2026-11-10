@@ -3,6 +3,10 @@ package publish
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -11,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestLinkedInDocumentPost(t *testing.T) {
@@ -286,5 +291,69 @@ func TestStorePermissions(t *testing.T) {
 	got, err := Load()
 	if err != nil || got.DevTo.Key != "k" {
 		t.Errorf("load %v %v", got, err)
+	}
+}
+
+// Ghost: the Admin API gets a JWT signed with the key's secret, the post as
+// HTML, a draft unless public.
+func TestGhost(t *testing.T) {
+	key := "65a1:" + strings.Repeat("ab", 32)
+	var got map[string]any
+	var auth, query string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth, query = r.Header.Get("Authorization"), r.URL.Path+"?"+r.URL.RawQuery
+		json.NewDecoder(r.Body).Decode(&got)
+		io.WriteString(w, `{"posts":[{"url":"https://blog.example/retries/"}]}`)
+	}))
+	defer srv.Close()
+	g := &Ghost{Site: srv.URL + "/", Key: key}
+	u, err := g.Publish(context.Background(), Article{Title: "Retries", HTML: "<p>Back off.</p>", Tags: []string{"go"}, Public: true}, nil)
+	if err != nil || u != "https://blog.example/retries/" {
+		t.Fatalf("publish: %q %v", u, err)
+	}
+	if query != "/ghost/api/admin/posts/?source=html" {
+		t.Errorf("path: %s", query)
+	}
+	post := got["posts"].([]any)[0].(map[string]any)
+	if post["html"] != "<p>Back off.</p>" || post["status"] != "published" {
+		t.Errorf("post: %v", post)
+	}
+	tok := strings.TrimPrefix(auth, "Ghost ")
+	parts := strings.Split(tok, ".")
+	if len(parts) != 3 {
+		t.Fatalf("token: %s", auth)
+	}
+	head, _ := base64.RawURLEncoding.DecodeString(parts[0])
+	body, _ := base64.RawURLEncoding.DecodeString(parts[1])
+	secret, _ := hex.DecodeString(strings.Repeat("ab", 32))
+	mac := hmac.New(sha256.New, secret)
+	mac.Write([]byte(parts[0] + "." + parts[1]))
+	if !strings.Contains(string(head), `"kid":"65a1"`) || !strings.Contains(string(body), `"aud":"/admin/"`) || base64.RawURLEncoding.EncodeToString(mac.Sum(nil)) != parts[2] {
+		t.Errorf("token %s %s", head, body)
+	}
+	if _, err := ghostToken("nocolon", time.Now()); err == nil {
+		t.Error("a key without id:secret should be refused")
+	}
+}
+
+// WordPress: basic auth with the application password, the post as HTML.
+func TestWordPress(t *testing.T) {
+	var got map[string]any
+	var user, pass, path string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, pass, _ = r.BasicAuth()
+		path = r.URL.Path
+		json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusCreated)
+		io.WriteString(w, `{"link":"https://site.example/?p=7"}`)
+	}))
+	defer srv.Close()
+	wp := &WordPress{Site: srv.URL, User: "ada", Password: "abcd efgh"}
+	u, err := wp.Publish(context.Background(), Article{Title: "Retries", HTML: "<p>x</p>", Description: "Back off."}, nil)
+	if err != nil || u != "https://site.example/?p=7" {
+		t.Fatalf("publish: %q %v", u, err)
+	}
+	if user != "ada" || pass != "abcd efgh" || path != "/wp-json/wp/v2/posts" || got["status"] != "draft" || got["excerpt"] != "Back off." {
+		t.Errorf("request: %s %s %s %v", user, pass, path, got)
 	}
 }

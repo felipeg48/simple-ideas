@@ -137,7 +137,7 @@ questions, in the room or on a video call. [Your audience](features/audience.md)
 
 Every deck, map and code show as a file you can send, print or post.
 
-### Publish · LinkedIn, dev.to, Hashnode
+### Publish · LinkedIn, dev.to, Hashnode, Ghost, WordPress
 
 A deck becomes a carousel post, an article a post or a full article, always a
 dry run first.

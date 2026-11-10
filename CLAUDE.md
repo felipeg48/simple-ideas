@@ -313,7 +313,7 @@ pass. The steps that matter:
   document posts (a deck's PDF) and link posts, `--copy` rich text for the
   article editor, dev.to and Hashnode articles; always a dry run unless `--yes`.
   A link post's picture (`cover:`, Images API) is in (v2.3.1).
-  Next: Ghost and WordPress; re-check the `Linkedin-Version` header each year (LinkedIn sunsets versions).
+  Ghost and WordPress are in (v2.25.0, `internal/publish/blogs.go`). Next: re-check the `Linkedin-Version` header each year (LinkedIn sunsets versions).
 - **Video (DONE v2.3.0/v2.3.1):** `--mp4` for code shows, a mind map's Play
   (3D too) and decks (every slide and step, dissolves, `--dwell`). Real motion
   (`cmd/si/motion.go`) is in (v2.5.0).

@@ -1,6 +1,7 @@
 # si publish
 
-`si publish` sends a deck or an article to LinkedIn, dev.to or Hashnode. It is
+`si publish` sends a deck or an article to LinkedIn, dev.to, Hashnode, Ghost or
+WordPress. It is
 always a **dry run** (it prints the exact requests, secrets masked) unless you
 add `--yes`. Logins live in your config dir (`~/Library/Application
 Support/si/publish.json` on macOS, `~/.config/si/publish.json` on Linux), file
@@ -13,16 +14,18 @@ si publish article.md --to linkedin --url https://me.dev/retry --yes   # a link 
 si publish article.md --to linkedin --copy        # the article as rich text on the clipboard (macOS)
 si publish article.md --to devto --base-url https://me.dev/retry      # dry run; a draft unless --public
 si publish article.md --to hashnode --canonical https://me.dev/retry --yes
-si publish login linkedin|devto|hashnode …        # see below
-si publish logout [linkedin|devto|hashnode]
+si publish article.md --to ghost --yes             # a draft on your Ghost site; --public publishes
+si publish article.md --to wordpress --yes         # a draft on your WordPress site
+si publish login linkedin|devto|hashnode|ghost|wordpress …   # see below
+si publish logout [linkedin|devto|hashnode|ghost|wordpress]
 ```
 
 ## What is sent
 
-| Source | `--to linkedin` | `--to devto` | `--to hashnode` |
-|---|---|---|---|
-| deck | document post: the deck as PDF (a swipeable carousel in the feed), text from `linkedin:` / `description:` / the title | — | — |
-| article, guide page, page | link post to `--url` (or `canonical:`); `--copy` for LinkedIn's article editor | article (draft unless `--public`), tags from `tags:` (first 4), `canonical_url` | post, tags from `tags:`, `originalArticleURL`, subtitle from `description:` |
+| Source | `--to linkedin` | `--to devto` | `--to hashnode` | `--to ghost` | `--to wordpress` |
+|---|---|---|---|---|---|
+| deck | document post: the deck as PDF (a swipeable carousel in the feed), text from `linkedin:` / `description:` / the title | — | — | — | — |
+| article, guide page, page | link post to `--url` (or `canonical:`); `--copy` for LinkedIn's article editor | article (draft unless `--public`), tags from `tags:` (first 4), `canonical_url` | post, tags from `tags:`, `originalArticleURL`, subtitle from `description:` | post as HTML (draft unless `--public`), tags, excerpt, `canonical_url` | post as HTML (draft unless `--public`), excerpt |
 
 The article body is the Markdown with its includes expanded and the title
 heading dropped. Relative links and images become absolute against
@@ -94,6 +97,28 @@ looks the blog up once with `publication(host:) { id }`. Publishing runs the
 `contentMarkdown`, `publicationId`, `tags [{slug,name}]`, `subtitle`,
 `originalArticleURL` and returns `post { id url }`. `publishPost` publishes
 immediately (there is no draft flag on it).
+
+## Ghost (Admin API)
+
+`POST <site>/ghost/api/admin/posts/?source=html` with `Accept-Version: v5.0`
+and `Authorization: Ghost <token>`. The token is a JWT si makes for each
+request from the Admin API key (`id:secret`, Settings › Integrations › Add
+custom integration): HS256 with the hex-decoded secret, header `kid` = the
+id, payload `iat`, `exp` five minutes later and `aud: /admin/`. The body is
+`{"posts":[{title, html, status, custom_excerpt, canonical_url, tags}]}`;
+`source=html` has Ghost convert the HTML. A draft unless `--public`
+(`status: published`). Login: `si publish login ghost --url https://site
+--token <Admin API key>` (si checks the key's shape; it is not sent until you
+publish).
+
+## WordPress (REST API)
+
+`POST <site>/wp-json/wp/v2/posts` with basic auth: your user name and an
+**application password** (Users › Profile › Application Passwords; WordPress
+5.6+, over HTTPS). The body is `{title, content, status, excerpt}`: `content`
+is the article as HTML, `status` `draft` unless `--public` (`publish`). Tags
+are not sent: the API wants tag ids; si notes it. Login: `si publish login
+wordpress --url https://site --user you --token "abcd efgh ijkl …"`.
 
 ## Tests
 

@@ -5,6 +5,10 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-09)
 
+- **v2.25.0: Ghost and WordPress.** `internal/publish/blogs.go`: Ghost Admin
+  API (`ghostToken`: HS256 JWT, kid, aud /admin/, 5 min; `?source=html`) and
+  WordPress REST (basic auth, application password; tags not sent). The CLI
+  renders the article body to HTML (`Article.HTML`); `--user` for WordPress login.
 - **v2.24.0: word clouds.** `<!-- cloud: id · hidden -->` (render/poll.go);
   `serve/cloud.go` (3 answers per phone, case-folded counts, top 60, hidden
   words), `cloud` relay messages (audienceView drops `hidden`), the phone's

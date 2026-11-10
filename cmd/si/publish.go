@@ -26,12 +26,12 @@ import (
 
 func runPublish(rest []string, o *options, stdout, stderr io.Writer) int {
 	if len(rest) == 0 {
-		return usageErr(stderr, "publish needs <file.md> --to linkedin|devto|hashnode, or login|logout <service>")
+		return usageErr(stderr, "publish needs <file.md> --to linkedin|devto|hashnode|ghost|wordpress, or login|logout <service>")
 	}
 	switch rest[0] {
 	case "login":
 		if len(rest) != 2 {
-			return usageErr(stderr, "publish login needs linkedin, devto or hashnode")
+			return usageErr(stderr, "publish login needs linkedin, devto, hashnode, ghost or wordpress")
 		}
 		return publishLogin(rest[1], o, stdout, stderr)
 	case "logout":
@@ -113,7 +113,7 @@ func runPublish(rest []string, o *options, stdout, stderr io.Writer) int {
 		if o.yes {
 			fmt.Fprintf(stdout, "posted to LinkedIn: https://www.linkedin.com/feed/update/%s/\n", id)
 		}
-	case "devto", "hashnode":
+	case "devto", "hashnode", "ghost", "wordpress":
 		if !d.IsDoc() {
 			return usageErr(stderr, o.to+" takes articles (type: article, guide, page…); a deck goes to LinkedIn")
 		}
@@ -122,13 +122,33 @@ func runPublish(rest []string, o *options, stdout, stderr io.Writer) int {
 		for _, w := range warns {
 			fmt.Fprintln(stderr, "si: warning:", w)
 		}
+		var h bytes.Buffer
+		if err := render.NewParser().Convert([]byte(a.Body), &h); err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitProblems
+		}
+		a.HTML = h.String()
 		var u string
-		if o.to == "devto" {
+		switch o.to {
+		case "ghost":
+			if o.yes && (creds.Ghost.Key == "" || creds.Ghost.Site == "") {
+				return needLogin(stderr, "ghost")
+			}
+			u, err = (&publish.Ghost{Site: firstNonBlank(creds.Ghost.Site, "https://your-site.example"), Key: firstNonBlank(creds.Ghost.Key, "<not logged in>")}).Publish(ctx, a, dry)
+		case "wordpress":
+			if o.yes && (creds.WordPress.Password == "" || creds.WordPress.Site == "") {
+				return needLogin(stderr, "wordpress")
+			}
+			if len(a.Tags) > 0 {
+				fmt.Fprintln(stderr, "si: note: WordPress tags are not sent (it wants tag ids); add them in WordPress")
+			}
+			u, err = (&publish.WordPress{Site: firstNonBlank(creds.WordPress.Site, "https://your-site.example"), User: firstNonBlank(creds.WordPress.User, "<user>"), Password: firstNonBlank(creds.WordPress.Password, "<not logged in>")}).Publish(ctx, a, dry)
+		case "devto":
 			if o.yes && creds.DevTo.Key == "" {
 				return needLogin(stderr, "devto")
 			}
 			u, err = publish.NewDevTo(firstNonBlank(creds.DevTo.Key, "<not logged in>")).Publish(ctx, a, dry)
-		} else {
+		default:
 			if o.yes && (creds.Hashnode.Token == "" || creds.Hashnode.Host == "") {
 				return needLogin(stderr, "hashnode")
 			}
@@ -149,9 +169,9 @@ func runPublish(rest []string, o *options, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stdout, "published: %s\n", u)
 		}
 	case "":
-		return usageErr(stderr, "publish needs --to linkedin, devto or hashnode")
+		return usageErr(stderr, "publish needs --to linkedin, devto, hashnode, ghost or wordpress")
 	default:
-		return usageErr(stderr, fmt.Sprintf("unknown --to %q (use linkedin, devto or hashnode)", o.to))
+		return usageErr(stderr, fmt.Sprintf("unknown --to %q (use linkedin, devto, hashnode, ghost or wordpress)", o.to))
 	}
 	return exitOK
 }
@@ -353,8 +373,24 @@ func publishLogin(svc string, o *options, stdout, stderr io.Writer) int {
 			return exitProblems
 		}
 		c.Hashnode.Token, c.Hashnode.Host, c.Hashnode.Publication = o.token, host, pub
+	case "ghost":
+		if o.token == "" || o.url == "" {
+			fmt.Fprintln(stderr, "si: Ghost login needs --url <your site> and --token <Admin API key> (Settings › Integrations › Add custom integration)")
+			return exitUsage
+		}
+		if err := publish.CheckGhostKey(o.token); err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitUsage
+		}
+		c.Ghost.Site, c.Ghost.Key = strings.TrimRight(o.url, "/"), o.token
+	case "wordpress":
+		if o.token == "" || o.url == "" || o.user == "" {
+			fmt.Fprintln(stderr, "si: WordPress login needs --url <your site>, --user <your user name> and --token <application password> (Users › Profile › Application Passwords)")
+			return exitUsage
+		}
+		c.WordPress.Site, c.WordPress.User, c.WordPress.Password = strings.TrimRight(o.url, "/"), o.user, o.token
 	default:
-		return usageErr(stderr, fmt.Sprintf("unknown service %q (use linkedin, devto or hashnode)", svc))
+		return usageErr(stderr, fmt.Sprintf("unknown service %q (use linkedin, devto, hashnode, ghost or wordpress)", svc))
 	}
 	if err := publish.Save(c); err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
@@ -416,7 +452,7 @@ func publishLogout(rest []string, stdout, stderr io.Writer) int {
 	}
 	svcs := rest
 	if len(svcs) == 0 {
-		svcs = []string{"linkedin", "devto", "hashnode"}
+		svcs = []string{"linkedin", "devto", "hashnode", "ghost", "wordpress"}
 	}
 	for _, s := range svcs {
 		switch s {
@@ -426,6 +462,10 @@ func publishLogout(rest []string, stdout, stderr io.Writer) int {
 			c.DevTo = publish.Creds{}.DevTo
 		case "hashnode":
 			c.Hashnode = publish.Creds{}.Hashnode
+		case "ghost":
+			c.Ghost = publish.Creds{}.Ghost
+		case "wordpress":
+			c.WordPress = publish.Creds{}.WordPress
 		default:
 			return usageErr(stderr, fmt.Sprintf("unknown service %q", s))
 		}

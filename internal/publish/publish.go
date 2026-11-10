@@ -34,6 +34,15 @@ type Creds struct {
 		Host        string `json:"host,omitempty"`        // blog.hashnode.dev
 		Publication string `json:"publication,omitempty"` // its id, looked up once
 	} `json:"hashnode"`
+	Ghost struct {
+		Site string `json:"site,omitempty"`
+		Key  string `json:"key,omitempty"` // Admin API key, id:secret
+	} `json:"ghost"`
+	WordPress struct {
+		Site     string `json:"site,omitempty"`
+		User     string `json:"user,omitempty"`
+		Password string `json:"password,omitempty"` // an application password
+	} `json:"wordpress"`
 }
 
 // Path is the credentials file: $SI_PUBLISH_CONFIG, else <config dir>/si/publish.json.
