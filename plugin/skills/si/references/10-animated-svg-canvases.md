@@ -75,3 +75,31 @@ itself does not fade; only the words around the canvas do.
 build one from scratch, run `si new-canvas <name>` for a working, commented
 starter canvas plus a deck that drives it, and follow the step-by-step recipe in
 `docs/authoring-canvases.md`.
+
+**Frames, drawn in the Studio.** The Studio's Motion view (open an `.svg`,
+pick Motion) builds a canvas from frames: draw frame 1, add a frame, drag,
+resize, turn, recolour or hide parts, and set how long each move takes. It
+writes a normal canvas you can still edit by hand: parts carry
+`data-part="name"`, and one block in the `<style>` between
+`/* si motion: frame1 frame2 frame3 */` and `/* si motion end */` holds a rule
+per frame (coordinates in `viewBox` units, colours as tokens):
+
+```css
+/* si motion: frame1 frame2 frame3 */
+[data-part]{transform-box:fill-box;transform-origin:center}
+[data-state~="frame2"] [data-part="token"]{transform:translate(310px,0px)}
+[data-state~="frame3"] *{transition-duration:1.2s;transition-timing-function:cubic-bezier(.3,1.5,.5,1)}
+[data-state~="frame3"] [data-part="token"]{transform:translate(620px,40px) scale(1.2);fill:var(--si-ok)}
+/* si motion end */
+```
+
+Frame 1 stays on; each click adds the next frame and takes the one before off:
+
+```markdown
+<!-- svg: anim/token.svg frame1 -->
+<!-- step: +frame2 -->
+<!-- step: -frame2 +frame3 -->
+```
+
+A part's CSS `transform` replaces its own `transform=` attribute, so draw a
+moving part without one (or wrap it in a `<g>` and name the `<g>`).

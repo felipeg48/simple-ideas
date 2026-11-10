@@ -345,6 +345,11 @@ func genStage(body string, seq int) (svg string, stepOps []string, err error) {
 		class = fmt.Sprintf("si-stage si-canvas s%d", seq)
 		attrs = ` data-base="" data-state=""`
 	}
+	names := make([]string, len(g.nodes))
+	for i, n := range g.nodes {
+		names[i] = n.label
+	}
+	attrs += ` aria-label="` + html.EscapeString("Diagram: "+strings.Join(names, ", ")) + `"`
 	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" class="%s"%s role="img">`, g.vbW, g.vbH, class, attrs)
 	b.WriteString(stageStyle)
 	for i, a := range g.anims {

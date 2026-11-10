@@ -808,3 +808,10 @@ button.link { color: var(--blue); text-decoration: underline; text-underline-off
 .thx-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 .hist-install{font-family:var(--mono,ui-monospace,monospace);font-size:.85rem;padding:.6rem .8rem;border:1px solid var(--line,#ddd);border-radius:.45rem;user-select:all;white-space:pre-wrap}
+/* Motion view: the board and the frame strip */
+.mox-board { display: grid; place-items: center; padding: 18px; background: var(--bg-2, transparent); }
+.mox-svg { width: 100%; height: 100%; min-height: 0; touch-action: none; }
+.mox-strip { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.mox-strip .btn { min-width: 2.4em; }
+.mox-strip .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.mox-snippet { user-select: all; color: var(--fg, inherit); }

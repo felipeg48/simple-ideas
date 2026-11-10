@@ -1,3 +1,93 @@
+  /* ---------- morph: what both slides show glides from its old box to its
+   * new one (FLIP with the Web Animations API), the rest cross-fades ---------- */
+  var morphAnims = [];
+  function morphStop() {
+    morphAnims.forEach(function (a) { try { a.cancel(); } catch (e) {} });
+    morphAnims = [];
+    each(deck.querySelectorAll('.si-morph-from'), function (s) { s.classList.remove('si-morph-from'); });
+  }
+  /* the key an element is matched by, in order: its name (<!-- id: -->), a
+     heading's text, a picture's file, a text block's text */
+  var morphSel = '[data-si-morph],h1,h2,h3,h4,img,.si-figure[data-src],p,li,blockquote,pre,table';
+  function morphKey(e) {
+    var t = (e.textContent || '').replace(/\s+/g, ' ').trim();
+    if (e.hasAttribute('data-si-morph')) return '0' + e.getAttribute('data-si-morph');
+    if (/^H[1-4]$/.test(e.tagName)) return t ? '1' + t : '';
+    if (e.tagName === 'IMG') return '2' + e.getAttribute('src');
+    if (e.hasAttribute('data-src') && e.classList.contains('si-figure')) return '2' + e.getAttribute('data-src');
+    return t ? '3' + t : '';
+  }
+  /* a picture or block scales to its new box; words keep their shape: they
+     scale by font size from where the text itself starts */
+  function morphBox(e) {
+    var r = e.getBoundingClientRect(), box = r, cs = getComputedStyle(e);
+    if (!/^(IMG|PRE|TABLE|svg)$/.test(e.tagName) && !e.classList.contains('si-figure') && !e.querySelector('img,svg,pre,table')) {
+      var g = document.createRange(); g.selectNodeContents(e);
+      var t = g.getBoundingClientRect();
+      if (t.width && t.height) box = t;
+    }
+    return { e: e, r: r, box: box, text: box !== r, fs: parseFloat(cs.fontSize), c: cs.color, bg: cs.backgroundColor, o: cs.opacity };
+  }
+  function morphList(s) {
+    var out = [];
+    each(s.querySelectorAll(morphSel), function (e) {
+      if (e.closest('.si-step:not(.is-visible)')) return;
+      var r = e.getBoundingClientRect(), k = morphKey(e);
+      if (k && r.width && r.height) { var m = morphBox(e); m.k = k; out.push(m); }
+    });
+    return out;
+  }
+  function morphTime(s) {
+    var cs = getComputedStyle(s);
+    var v = cs.getPropertyValue('--si-morph-duration').trim();
+    var ms = /ms$/.test(v) ? parseFloat(v) : parseFloat(v) * 1000;
+    return { duration: ms >= 0 ? ms : 700, easing: cs.getPropertyValue('--si-morph-ease').trim() || 'ease' };
+  }
+  /* the blocks of a slide that hold no matched element: they fade */
+  function morphRest(s, matched) {
+    var out = [];
+    (function walk(el) {
+      each(el.children, function (c) {
+        if (matched.indexOf(c) >= 0) return;
+        if (matched.some(function (m) { return c.contains(m); })) walk(c); else out.push(c);
+      });
+    })(s);
+    return out;
+  }
+  function morphPlay(first, from, to) {
+    var t = morphTime(to), anim = function (el, kf) { morphAnims.push(el.animate(kf, t)); };
+    var last = morphList(to), pairs = [], used = [];
+    var nested = function (e, list) { return list.some(function (x) { return x === e || x.contains(e) || e.contains(x); }); };
+    ['0', '1', '2', '3'].forEach(function (kind) {
+      first.forEach(function (a) {
+        if (a.k.charAt(0) !== kind || nested(a.e, pairs.map(function (p) { return p.a.e; }))) return;
+        for (var j = 0; j < last.length; j++) {
+          var b = last[j];
+          if (b.k === a.k && !nested(b.e, used)) { pairs.push({ a: a, b: b }); used.push(b.e); return; }
+        }
+      });
+    });
+    from.classList.add('si-morph-from');
+    pairs.forEach(function (p) {
+      var a = p.a, z = morphBox(p.b.e), b = z.e, cs = getComputedStyle(b);
+      var end = cs.transform === 'none' ? '' : ' ' + cs.transform;
+      var text = a.text && z.text, sx = text ? a.fs / z.fs : a.box.width / z.box.width, sy = text ? sx : a.box.height / z.box.height;
+      var origin = (z.box.left - z.r.left) + 'px ' + (z.box.top - z.r.top) + 'px';
+      var k0 = { transformOrigin: origin, transform: 'translate(' + (a.box.left - z.box.left) + 'px,' + (a.box.top - z.box.top) + 'px) scale(' + sx + ',' + sy + ')' + end };
+      var k1 = { transformOrigin: origin, transform: end.trim() || 'none' };
+      if (a.c !== z.c) { k0.color = a.c; k1.color = z.c; }
+      if (a.bg !== z.bg) { k0.backgroundColor = a.bg; k1.backgroundColor = z.bg; }
+      if (a.o !== z.o) { k0.opacity = a.o; k1.opacity = z.o; }
+      anim(b, [k0, k1]);
+      anim(a.e, [{ opacity: 0 }, { opacity: 0 }]);
+    });
+    morphRest(to, used).forEach(function (e) { anim(e, [{ opacity: 0 }, { opacity: getComputedStyle(e).opacity }]); });
+    morphRest(from, pairs.map(function (p) { return p.a.e; })).forEach(function (e) { anim(e, [{ opacity: getComputedStyle(e).opacity }, { opacity: 0 }]); });
+    var mine = morphAnims;
+    Promise.all(mine.map(function (a) { return a.finished; })).then(function () { if (mine === morphAnims) morphStop(); }, function () {});
+    return pairs.length;
+  }
+
   /* ---------- navigation ---------- */
   function go(i, k, instant) {
     i = Math.max(0, Math.min(n - 1, i));
@@ -10,6 +100,12 @@
       var tx = next.getAttribute('data-transition') || data.transition || 'fade';
       var key = canvasKey(next);
       var carry = !instant && prev && Math.abs(i - cur) === 1 && key !== '' && key === canvasKey(prev);
+      /* morph: arriving at a morph slide, or going back from one, between neighbours */
+      if (prev && i < cur && prev.getAttribute('data-transition') === 'morph') tx = 'morph';
+      morphStop();
+      var first = tx === 'morph' && prev && !carry && !instant && Math.abs(i - cur) === 1 && !reduceMotion() &&
+        !deck.classList.contains('si-overview') && !(window.matchMedia && window.matchMedia('print').matches) ? morphList(prev) : null;
+      if (tx === 'morph' && !first) tx = 'fade';
       if (instant) tx = 'none'; else if (carry) tx = 'canvas';
       deck.setAttribute('data-si-tx', tx);
       if (carry) {
@@ -29,6 +125,7 @@
       applyCanvas(next, k);
       applyCounts(next);
       fit(next);
+      if (first) morphPlay(first, prev, next);
     } else {
       apply(next, k);
     }

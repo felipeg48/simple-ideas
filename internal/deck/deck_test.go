@@ -80,6 +80,13 @@ func TestParse(t *testing.T) {
 			problems: []string{`unknown layout "diagonal"`, `unknown transition "spin"`},
 		},
 		{
+			name:     "morph lengths and ids",
+			files:    map[string]string{"d.md": "# Deck\n\n---\n\n<!-- transition: morph 0.8s -->\n## A\n\n<!-- id: wh -->\nx\n\n---\n\n<!-- transition: fade 1s -->\n## B\n\n<!-- id: 9 bad -->\ny\n"},
+			kinds:    "tcc",
+			titles:   "Deck|A|B",
+			problems: []string{`only morph takes a length`, `id needs one name`},
+		},
+		{
 			name: "include splices a module as a section",
 			files: map[string]string{
 				"d.md":   "# Deck\n\n---\n\n<!-- include: m.md -->\n\n---\n\n## After\n",

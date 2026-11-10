@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -268,11 +270,15 @@ func exportDeckMotion(chrome, htmlPath, out string, d *deckInfo, dwell float64, 
 			if i == len(d.steps)-1 && k == n {
 				break
 			}
-			shots, err := c.film(move, tmp, fmt.Sprintf("m%03d-%02d", i, k), func() error { return c.key("ArrowRight", 39) })
+			film := move
+			if k == n && d.morph != nil { // arriving at a morph slide: film the whole glide
+				film = max(film, d.morph(i+1)+0.4)
+			}
+			shots, err := c.film(film, tmp, fmt.Sprintf("m%03d-%02d", i, k), func() error { return c.key("ArrowRight", 39) })
 			if err != nil {
 				return views, err
 			}
-			video = append(video, on30(shots, move)...)
+			video = append(video, on30(shots, film)...)
 		}
 	}
 	return views, encodeMP4(video, filepath.Join(out, d.name+".mp4"))
@@ -282,6 +288,20 @@ type deckInfo struct {
 	name    string
 	steps   []int
 	minutes func(i int) float64
+	morph   func(i int) float64 // seconds slide i's morph takes to arrive, 0 if it does not morph
+}
+
+// morphSeconds is a morph length (`transition: morph 0.8s`, 600ms) in
+// seconds; the default token (.7s) when none is given.
+func morphSeconds(v string) float64 {
+	if ms, ok := strings.CutSuffix(v, "ms"); ok {
+		f, _ := strconv.ParseFloat(ms, 64)
+		return f / 1000
+	}
+	if f, err := strconv.ParseFloat(strings.TrimSuffix(v, "s"), 64); err == nil {
+		return f
+	}
+	return 0.7
 }
 
 // exportMindmap3DMotion films a 3D map's Play as it moves: each view held,

@@ -24,6 +24,9 @@ body{overflow:hidden;background:var(--si-bg);color:var(--si-fg);-webkit-text-siz
 .si-deck[data-si-tx="canvas"] .si-current .si-inner>:not(.si-body),
 .si-deck[data-si-tx="canvas"] .si-current .si-body>:not(.si-figure):not(:has(.si-figure)),
 .si-deck[data-si-tx="canvas"] .si-current .si-col>:not(.si-figure):not(:has(.si-figure)){animation:si-enter var(--si-transition-duration) ease both}
+/* morph: the runtime glides matched parts (FLIP) and fades the rest, so the slides themselves do not move */
+.si-deck[data-si-tx="morph"] .si-slide{transition:none}
+.si-slide.si-morph-from{visibility:visible;opacity:1;pointer-events:none}
 @keyframes si-enter{from{opacity:0;transform:translateY(.35em)}}
 .si-slide:not(.si-current) *{animation-play-state:paused}
 

@@ -86,9 +86,9 @@ func TestStudioPaletteStoryboardInspector(t *testing.T) {
 	if m.overlay != "storyboard" || len(m.list) < 10 {
 		t.Fatalf("storyboard: %s %d", m.overlay, len(m.list))
 	}
-	press(m, "down", "down", "enter")
-	if m.slide != 2 || m.overlay != "" {
-		t.Errorf("storyboard goes to slide 3: %d", m.slide)
+	press(m, "down", "down", "down", "enter")
+	if m.slide != 3 || m.overlay != "" {
+		t.Errorf("storyboard goes to slide 4: %d", m.slide)
 	}
 	press(m, "i", "enter") // layout
 	if m.overlay != "prompt" {
@@ -98,9 +98,9 @@ func TestStudioPaletteStoryboardInspector(t *testing.T) {
 		press(m, string(r))
 	}
 	press(m, "enter")
-	if m.d.Slides[2].Layout != "center" {
+	if m.d.Slides[3].Layout != "center" {
 		raw, _ := os.ReadFile(m.abs("showcase.md"))
-		t.Errorf("layout written: %q\n%s", m.d.Slides[2].Layout, raw)
+		t.Errorf("layout written: %q\n%s", m.d.Slides[3].Layout, raw)
 	}
 }
 

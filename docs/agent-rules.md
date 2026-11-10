@@ -74,6 +74,10 @@ Points: Talking points
   `<!-- background: … -->`, `<!-- class: … -->`, `<!-- eyebrow: … -->`,
   `<!-- footer: off -->`, `<!-- include: sections/01-intro.md -->`. An unknown
   directive is an error in `si check`; `si rules` lists them all.
+- `<!-- transition: morph -->` moves what two slides in a row share (the same
+  heading, picture or words, or a block named with `<!-- id: name -->` on
+  both) from its old place to its new one; use it to show one idea growing or
+  moving, not on every slide.
 - A long talk is a thin main deck plus one file per section under
   `sections/`, pulled in with `<!-- include: -->`.
 

@@ -65,6 +65,8 @@ export const api = {
   mindmap: (path: string, text: string, line: number, op: unknown) => call<any>("POST", "mindmap", { path, text, line, op }),
   /** codewin redraws the code window (or show) holding line, applying op first if given. */
   codewin: (path: string, text: string, line: number, op: unknown) => call<any>("POST", "codewin", { path, text, line, op }),
+  /** motion reads an SVG canvas as frames, applying op first if given (internal/motion). */
+  motion: (path: string, text: string, op: unknown) => call<any>("POST", "motion", { path, text, op }),
   /** codewinExport runs si code on the saved file: png, svg or gif next to it. */
   gitStatus: () => call<{ git: boolean; repo: boolean; install?: string; more?: string; branch?: string; files?: { path: string; status: string; staged: boolean }[] }>("GET", "git/status"),
   gitDiff: (path: string) => call<{ diff: string }>("GET", `git/diff?path=${q(path)}`),

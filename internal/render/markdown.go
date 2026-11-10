@@ -253,6 +253,7 @@ func (dr *deckRenderer) transform(doc ast.Node, src []byte, sc *slideCtx) {
 	type pend struct{ name, val string }
 	var pending *pend
 	var img *deck.ImageAttrs
+	morphID := ""
 	col, explicit := 0, false
 	var out []placed
 	stateOnly := func() {
@@ -284,6 +285,9 @@ func (dr *deckRenderer) transform(doc ast.Node, src []byte, sc *slideCtx) {
 					a, _ := deck.ParseImageAttrs(val) // the parser reports bad options
 					img = &a
 					continue
+				case "id":
+					morphID = val // the parser reports a bad name
+					continue
 				case "svg":
 					c = dr.canvas(val, sc)
 				case "badge":
@@ -310,6 +314,10 @@ func (dr *deckRenderer) transform(doc ast.Node, src []byte, sc *slideCtx) {
 			dr.problem(sc, "an image directive must be followed by a paragraph holding one image")
 		}
 		img = nil
+		if morphID != "" {
+			c = morphMark(c, morphID)
+			morphID = ""
+		}
 		if pending != nil {
 			c = dr.applyStep(c, pending.name, pending.val, sc)
 			pending = nil
@@ -355,6 +363,25 @@ func (dr *deckRenderer) transform(doc ast.Node, src []byte, sc *slideCtx) {
 		}
 		doc.AppendChild(doc, d)
 	}
+}
+
+// morphMark names a block for transition: morph (data-si-morph): on the
+// block's own tag when it has one, else on a wrapper.
+func morphMark(c ast.Node, id string) ast.Node {
+	switch v := c.(type) {
+	case *rawNode:
+		if i := strings.IndexAny(v.html, " >"); strings.HasPrefix(v.html, "<") && i > 0 {
+			v.html = v.html[:i] + ` data-si-morph="` + html.EscapeString(id) + `"` + v.html[i:]
+			return v
+		}
+	case *ast.FencedCodeBlock, *ast.HTMLBlock, *divNode:
+	default:
+		c.SetAttributeString("data-si-morph", []byte(id))
+		return c
+	}
+	d := &divNode{class: "si-morph", attrs: [][2]string{{"data-si-morph", id}}}
+	d.AppendChild(d, c)
+	return d
 }
 
 func (dr *deckRenderer) applyStep(c ast.Node, name, val string, sc *slideCtx) ast.Node {

@@ -43,7 +43,8 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - **Media:** colour, gradient, image and muted video backgrounds with
   overlays; sized, aligned, captioned and full-bleed images; web fonts inlined.
 - **Transitions:** fade, slide, zoom; the canvas and code windows morph
-  between slides.
+  between slides; `transition: morph` glides any heading, picture or words
+  two slides share (or a block named `<!-- id: -->`) to its new place.
 
 ## Presenting
 
@@ -158,7 +159,9 @@ an example for every rule: [RULES.md](docs/RULES.md).
   completes directives, a live preview at Fit, 16:9, phone, portrait and 4K,
   `si check` as you type; Write, Rehearse, Present and Lab modes; ⌘K.
 - **Views:** the Map editor (drag, reparent, 2D and 3D), the Window view for
-  code, the Theme view (make a theme with live preview and contrast checks).
+  code, the Theme view (make a theme with live preview and contrast checks),
+  the Motion view (draw frame 1, add frames, drag parts; si writes the
+  animated canvas and the steps that play it).
 - **History** (git: diff, commit, earlier versions, branches, pull, push) and
   **Review** (comments from a review link).
 - **`si --terminal [dir]`:** the Studio as a keyboard app: preview, storyboard,

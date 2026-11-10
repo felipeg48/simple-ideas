@@ -161,7 +161,8 @@ that is not a directive (`<!-- wobble -->`) is an error.
 |---|---|---|
 | `layout: center` | slide | [Layouts](#5-layouts-and-columns) |
 | `column` | body | [Layouts](#5-layouts-and-columns) |
-| `transition: zoom` | slide | [Transitions](#6-transitions) |
+| `transition: zoom`, `transition: morph 0.9s` | slide | [Transitions](#6-transitions) |
+| `id: promise` | next block | names the block so `transition: morph` matches it on the next slide ([Transitions](#6-transitions)) |
 | `background: assets/city.jpg opacity=0.4` | slide | [Backgrounds](#7-backgrounds) |
 | `footer: off` | slide | overrides the deck `footer` on this slide (`off` hides it, e.g. the title) |
 | `labs: [Create a Cluster](https://…), [Scale out](https://…)` | slide | turns the slide into a lab slide: a centred beaker icon, the `labs-label` heading, and a button per lab (opens in a new tab). A bare URL works too and shows a default label. |
@@ -172,7 +173,7 @@ that is not a directive (`<!-- wobble -->`) is an error.
 | `svg: assets/canvas.svg state words` | body | [SVG canvases](#10-animated-svg-canvases) |
 | `include: other.md` | deck | [Includes](#12-includes) |
 
-Body directives (`column`, `image`, `step`, `steps`, `svg`) work on the
+Body directives (`column`, `id`, `image`, `step`, `steps`, `svg`) work on the
 top-level blocks of a slide, not inside lists or quotes.
 
 ## 5. Layouts and columns
@@ -228,8 +229,47 @@ Route 7 courier log
 
 ## 6. Transitions
 
-`<!-- transition: fade|slide|zoom|none -->` sets how a slide arrives; the
+`<!-- transition: fade|slide|zoom|none|morph -->` sets how a slide arrives; the
 front matter `transition:` sets the default (`fade`).
+
+**Morph.** With `transition: morph`, what the slide shares with the slide
+before it glides from its old place and size to its new one (colour and
+opacity too); everything else fades out and in. Two things match when they
+have the same name, the same heading text, the same picture, or the same
+words, in that order. Name a block with `<!-- id: name -->` on the line
+before it when its words change between the slides:
+
+```markdown
+<!-- transition: morph -->
+## Five teams
+
+- shop, payments, warehouse, courier
+- Nobody owns the promise from end to end
+
+<!-- id: promise -->
+Two days, door to door.
+
+---
+
+<!-- transition: morph 0.9s -->
+<!-- layout: center -->
+## Five teams
+
+**Nobody owns the promise from end to end**
+
+<!-- id: promise -->
+Two days, **door to door**.
+```
+
+The heading and the line in bold match by their words, the last paragraph by
+its name. Words keep their shape as they move (they scale by font size, not
+by box); pictures, code and tables scale to their new box. `morph 0.9s` sets
+the length for that slide; `--si-morph-duration` (`.7s`) and
+`--si-morph-ease` set it for the deck. The morph runs between neighbours
+only, forward and back (going back from a morph slide morphs too); a jump,
+the overview and print show the slide as it ends. Build steps reveal after
+the morph, and only what is already shown takes part. Two slides that show
+the same SVG keep the canvas transition below.
 
 When two consecutive slides show **the same SVG file** with `svg:`, the slide
 transition is replaced by the canvas transition: the picture stays put, its
@@ -419,6 +459,34 @@ itself does not fade; only the words around the canvas do.
 build one from scratch, run `si new-canvas <name>` for a working, commented
 starter canvas plus a deck that drives it, and follow the step-by-step recipe in
 `docs/authoring-canvases.md`.
+
+**Frames, drawn in the Studio.** The Studio's Motion view (open an `.svg`,
+pick Motion) builds a canvas from frames: draw frame 1, add a frame, drag,
+resize, turn, recolour or hide parts, and set how long each move takes. It
+writes a normal canvas you can still edit by hand: parts carry
+`data-part="name"`, and one block in the `<style>` between
+`/* si motion: frame1 frame2 frame3 */` and `/* si motion end */` holds a rule
+per frame (coordinates in `viewBox` units, colours as tokens):
+
+```css
+/* si motion: frame1 frame2 frame3 */
+[data-part]{transform-box:fill-box;transform-origin:center}
+[data-state~="frame2"] [data-part="token"]{transform:translate(310px,0px)}
+[data-state~="frame3"] *{transition-duration:1.2s;transition-timing-function:cubic-bezier(.3,1.5,.5,1)}
+[data-state~="frame3"] [data-part="token"]{transform:translate(620px,40px) scale(1.2);fill:var(--si-ok)}
+/* si motion end */
+```
+
+Frame 1 stays on; each click adds the next frame and takes the one before off:
+
+```markdown
+<!-- svg: anim/token.svg frame1 -->
+<!-- step: +frame2 -->
+<!-- step: -frame2 +frame3 -->
+```
+
+A part's CSS `transform` replaces its own `transform=` attribute, so draw a
+moving part without one (or wrap it in a `<g>` and name the `<g>`).
 
 ## 11. Speaker notes and the teleprompter
 
