@@ -2,6 +2,7 @@ package render
 
 import (
 	"bytes"
+	"regexp"
 
 	"encoding/json"
 	"fmt"
@@ -187,7 +188,12 @@ func (dr *deckRenderer) cwFence(sh *cwShow) string {
 	title := firstNonEmpty(sh.steps[0].Title, o["title"], langName(sh.lang))
 	fmt.Fprintf(&b, ` aria-label="%s">`, html.EscapeString(firstNonEmpty(title, "Code")))
 	b.WriteString(`<div class="si-cw-stage"><div class="si-cw-win">`)
-	b.WriteString(cwChrome(win, title))
+	chrome := cwChrome(win, title)
+	if win == "terminal" && shellLang[strings.ToLower(sh.lang)] {
+		// a shell block is what was typed, not a file: no "$ cat title" line
+		chrome = cwPromptRE.ReplaceAllString(chrome, "")
+	}
+	b.WriteString(chrome)
 	b.WriteString(`<div class="si-cw-body" tabindex="0" role="region" aria-label="Code"><div class="si-cw-code"></div></div></div></div>`)
 	data, _ := json.Marshal(map[string]any{"steps": sh.steps})
 	fmt.Fprintf(&b, `<script type="application/json" class="si-cw-data">%s</script>`, data)
@@ -218,6 +224,11 @@ func (dr *deckRenderer) cwFence(sh *cwShow) string {
 	b.WriteString("</figure>\n")
 	return b.String()
 }
+
+// shellLang are the fence languages whose block is a command line, not a file.
+var shellLang = map[string]bool{"sh": true, "bash": true, "zsh": true, "shell": true, "console": true, "powershell": true, "ps1": true, "fish": true, "cmd": true, "bat": true}
+
+var cwPromptRE = regexp.MustCompile(`<div class="si-cw-prompt"[^>]*>.*?</div>`)
 
 // WindowChrome is a code window's bar (mac, windows, terminal; "" for none):
 // web demos frame their terminals with it.

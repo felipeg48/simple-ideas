@@ -2,7 +2,9 @@
 
 A fenced code block with `window=` is drawn as a window: macOS (traffic
 lights and a centred title), Windows (title on the left, minimise, maximise,
-close), a terminal (a tab and a `$ cat` prompt) or `none` (a plain rounded
+close), a terminal (a tab; a file gets a `$ cat <title>` line above it, while a
+shell block, `sh` `bash` `zsh` `console` `powershell`, shows only its own
+lines, so write the prompt yourself: `$ go test ./...`) or `none` (a plain rounded
 card), optionally on a backdrop, with numbered callouts you place by hand. A
 run of code blocks with the same `id=` is a **show**: one window whose steps
 morph into each other (the lines that stay glide to their new place, new lines
@@ -60,7 +62,8 @@ func send(order Order) error {
 ```
 
 ```sh window=terminal title="checkout" backdrop=graphite
-go test ./payments -count=100
+$ go test ./payments -count=100
+ok  	payments	2.41s
 ```
 
 An unknown value of `window=`, `theme=`, `backdrop=` or `transition=` is a

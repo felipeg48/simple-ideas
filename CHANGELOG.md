@@ -3,6 +3,12 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.40.1:** code windows on slides: a link to a step (`#5.2`) shows that
+  step of the show; callout notes wrap into the room beside the window instead
+  of dropping to the list under it (the list is for phones); a window repaints
+  when the slide's type settles after load (lines no longer overlap). A
+  terminal window running a shell block (`sh`, `bash`, `console`…) shows only
+  what was typed, no `$ cat <title>` line; write the `$` prompt yourself.
 - **v2.40.0:** auto-play: a deck that presents itself. **▶ Auto-play** in the
   deck's buttons (or `v`) reads each slide's `Notes:` aloud, advances at each
   `[CLICK]` (a build step, a canvas change, the next slide) and moves on after

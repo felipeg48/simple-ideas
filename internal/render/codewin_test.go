@@ -26,6 +26,11 @@ func TestCodeWindows(t *testing.T) {
 	if len(res.Problems) > 0 || strings.Count(h, `si-step si-cw-mark`) != 1 || regexp.MustCompile(`<figure class="si-cw"[^>]*data-cw-nav`).MatchString(h) {
 		t.Errorf("slide: %s", problemsText(res))
 	}
+	// a terminal: a file shows "$ cat <title>", a shell block is what was typed
+	res, _ = renderFiles(t, map[string]string{"t.md": "---\ntype: article\n---\n# T\n\n```yaml window=terminal title=\"app.yaml\"\na: 1\n```\n\n```sh window=terminal title=\"checkout\"\n$ go test ./...\n```\n"}, "t.md")
+	if h := string(res.HTML); strings.Count(h, `class="si-cw-prompt"`) != 1 || !strings.Contains(h, "cat app.yaml") || strings.Contains(h, "cat checkout") {
+		t.Error("terminal prompt: only a file gets $ cat")
+	}
 	// plain fences stay plain; no scripts
 	res, _ = renderFiles(t, map[string]string{"p.md": "# P\n\n---\n\n## Code\n\n```go\na()\n```\n"}, "p.md")
 	if h := string(res.HTML); strings.Contains(h, `class="si-cw`) || strings.Contains(h, "si code windows:") {

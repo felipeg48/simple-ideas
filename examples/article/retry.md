@@ -109,7 +109,7 @@ Thirty seconds covers the bank's batch window: we measured 21 seconds at the
 every release:
 
 ```sh window=terminal title="checkout"
-go test ./payments -run TestRetryKeepsTheKey -count=100
+$ go test ./payments -run TestRetryKeepsTheKey -count=100
 ok  	northwind/payments	3.214s
 ```
 

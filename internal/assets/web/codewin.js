@@ -39,11 +39,13 @@
     this.show(0, false);
     var marks = fig.querySelectorAll('.si-cw-mark');
     if (marks.length && window.MutationObserver) { /* build steps on a slide: one per extra step */
-      var mo = new MutationObserver(function () {
+      var sync = function (animate) {
         var k = 0; marks.forEach(function (m) { if (m.classList.contains('is-visible')) k++; });
-        if (k !== self.k) self.show(k, true);
-      });
+        if (k !== self.k) self.show(k, animate);
+      };
+      var mo = new MutationObserver(function () { sync(true); });
       marks.forEach(function (m) { mo.observe(m, { attributes: true, attributeFilter: ['class'] }); });
+      sync(false); /* a link to #5.2 reveals the steps before this window starts */
     }
     var slide = fig.closest('.si-slide');
     if (slide && window.MutationObserver) { /* the same id on the slide before: start from what it showed, then morph */
@@ -58,7 +60,11 @@
         was = now;
       }).observe(slide, { attributes: true, attributeFilter: ['class'] });
     }
-    if (window.ResizeObserver) new ResizeObserver(function () { self.place(); }).observe(this.stage);
+    /* the slide's type settles after load (container units): lines painted with an
+       older line height would overlap, so a new one repaints the step in place */
+    if (window.ResizeObserver) new ResizeObserver(function () {
+      if (self.cur && self.lh() !== self.paintedLh) self.paint(self.cur, false); else self.place();
+    }).observe(this.stage);
   }
   var W = Win.prototype;
 
@@ -80,6 +86,7 @@
 
   W.paint = function (st, animate) {
     var self = this, lh = this.lh(), keep = {}, seen = {}, hl = {}, tx = animate ? this.tx() : 'none';
+    this.paintedLh = lh;
     (st.hl || []).forEach(function (n) { hl[n] = true; });
     if (tx === 'fade' || tx === 'slide') {
       Object.keys(this.live).forEach(function (key) {
@@ -149,7 +156,11 @@
       var b = document.createElement('div'); b.className = 'si-cw-bubble'; b.setAttribute('data-n', k + 1); b.innerHTML = n.html; b.title = 'Drag to place';
       self.layer.appendChild(b);
       var path = document.createElementNS('http://www.w3.org/2000/svg', 'path'); wires.appendChild(path);
-      b.style.left = '0px'; var bw = b.offsetWidth; b.style.width = bw + 'px'; var bh = b.offsetHeight;
+      b.style.left = '0px';
+      /* a note wraps into the room beside the window; the list under it is only for no room (a phone) */
+      var room = sr.width - wr - 28, em = parseFloat(getComputedStyle(b).fontSize);
+      if (!n.at && room >= 8 * em) b.style.maxInlineSize = Math.min(room, 17 * em) + 'px';
+      var bw = b.offsetWidth; b.style.width = bw + 'px'; var bh = b.offsetHeight;
       if (!n.at && wr + 24 + bw > sr.width) listMode = true;
       function put() {
         var at = n.at || [wr + 24 - a.x, (k % 2 ? 1 : -1) * Math.max(bh, 30)];

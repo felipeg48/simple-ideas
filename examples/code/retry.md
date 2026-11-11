@@ -110,6 +110,6 @@ public sealed class PaymentClient
 The test that guards the rule runs a hundred times before every release.
 
 ```sh window=terminal title="checkout" backdrop=graphite
-go test ./payments -run TestRetryGivesUpOnDeclines -count=100
+$ go test ./payments -run TestRetryGivesUpOnDeclines -count=100
 ok  	northwind/payments	3.214s
 ```
