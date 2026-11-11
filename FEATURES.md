@@ -63,6 +63,12 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - **Record your talk:** **● Record** in the teleprompter keeps your voice and
   the slide timings; `si build --narration latest` makes the narrated video,
   `si rehearse` reports planned vs spoken per slide and words per minute.
+- **Auto-play** (`v`, **▶ Auto-play**): the deck presents itself, reading
+  each slide's `Notes:` aloud and advancing at each `[CLICK]`, with captions;
+  any key, click or the pen takes over. Voiced by `si play` (cached, Kokoro
+  by default), by `si build --autoplay[=inline]` into `<deck>.voice/`, or the
+  browser's voice; `voices:` per speaker; `#autoplay` and `si play --autoplay`
+  open it ready; `si build --mp4 --voice` films it narrated.
 - **Terminal drawer** (`` ` ``, `si play` on loopback): real shells beside the
   slides, a runbook of commands, demo scripts with Copy and Run.
 

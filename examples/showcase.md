@@ -2,6 +2,7 @@
 title: The Thursday Promise
 author: Ada Lindqvist, Operations
 speakers: Ada, Ravi
+voices: Ada=af_heart, Ravi=am_michael
 date: Spring 2026
 theme: studio
 accent: "#3657d6"

@@ -22,6 +22,30 @@ that was true when written; both are merged and released.
   hides client themes · v2.39.0 si's own demo videos (below) · v2.39.1
   `select` waits for late options.
 
+### Auto-play (v2.40.0, unreleased, on a worktree branch)
+Spec `docs/superpowers/specs/2026-11-10-autoplay.md`, all three phases.
+- `deck.Parts` (`internal/deck/say.go`): a slide's script split at `[CLICK]`
+  into plain-text parts (`{t, s, k}`); `render` puts them in `si-data.say`
+  (never with `NoSpeakerText`), with `a` (audio src) from `Options.VoiceAudio`.
+- Runtime `web/deck/05-autoplay.js`: key `v`, ▶ Auto-play button, the
+  `.si-autoplay` bar + caption; `go()` calls `apTouch()` so any move it did
+  not make pauses it, `toggleDraw(true)` too; clicks are state-derived
+  (`step < apClicks(parts, j)`), so resume never double-advances. Web Speech
+  fallback with a reading-time guard (headless has no voices).
+- `si play`: `GET /_si/voice/{slide}/{part}` (`internal/serve/voice.go`,
+  loopback, one voicing at a time, `Server.Voicer` for tests);
+  `webdemo.ForDeck` picks voices (`--voice` > front matter > si.conf >
+  Kokoro/system; `voices:` / `voice.<Name>:`), `DeckPronounce` reads every
+  `pronounce:`. `--autoplay` primes pages; `--open` adds `#autoplay`.
+- `si build --autoplay[=inline]` (`cmd/si/autoplay.go`): `talk.voice/` m4a
+  files (a voice failure is a warning: the page falls back to the browser);
+  `--mp4 --voice` builds a narration from the voiced parts
+  (`voicedNarration`, `webdemo.MixWAV`) and reuses the `--narration` path.
+- Demo: `docs/demos/presenting.md` "It presents itself" (`press v`; a click
+  on a toolbar button fails while the buttons are faded out).
+- Next: resume mid-sentence (it restarts the part), a filmed demo where the
+  deck's own voice is heard (the take films only the picture).
+
 ### si's own demo videos (v2.39.0)
 - Six scripts in `docs/demos/` (decks, presenting, studio, themes, mindmaps,
   terminal); `.gitignore` there lists what they create.

@@ -19,6 +19,8 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `timer.animation.path: ./anim` | directory of custom `<name>.js` / `<name>.svg` animations |
 | `voice: kokoro:af_heart` | the voice of `si demo run` and `si voice say` when the script and `--voice` set none (§27) |
 | `voice.style: calm, friendly` | the tone, for engines that take one (`openai`), when the script sets no `voice-style:` |
+| `voice.Ada: kokoro:af_heart` | auto-play: one speaker's voice in a deck with `speakers:` (front matter `voices:` wins) |
+| `autoplay.dwell: 5` | auto-play: seconds on a slide with no `Notes:` and no `(N min)` (default 3) |
 
 Nesting is written as dotted keys (`timer.animation.path`), not YAML.
 
@@ -45,8 +47,8 @@ voice.openai.key: sk-…        # written by si voice login openai
 ```
 
 Remappable **actions**: `overview`, `presenter`, `draw`, `timer`, `find`,
-`mode`, `fullscreen`, `help`, `terminal`, `remote`. Toggleable **features**: `draw`, `timer`,
-`presenter`, `overview`, `find`.
+`mode`, `fullscreen`, `help`, `terminal`, `remote`, `autoplay`. Toggleable **features**: `draw`, `timer`,
+`presenter`, `overview`, `find`, `autoplay`.
 
 ```
 # si.conf — flat key: value, same style as front matter (not YAML)

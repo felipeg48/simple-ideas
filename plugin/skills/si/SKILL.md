@@ -43,6 +43,8 @@ si build <dir> -o html/         # one self-contained HTML file per deck + index.
 si build <dir> -o html/ --pdf   # also a PDF per deck (needs headless Chrome)
 si build <dir> --handout        # handouts/<deck>.pdf for the audience: slides only (=points / =notes add speaker text)
 si build talk.md --narration latest  # talk.mp4 paced and voiced by a teleprompter recording (● Record in si play)
+si build talk.md --autoplay     # auto-play (v) voiced: talk.voice/<slide>-<part>.m4a beside the page (=inline: inside it)
+si build talk.md --mp4 --voice kokoro  # talk.mp4 narrated from its own Notes: (needs ffmpeg)
 si rehearse talk.md             # a recording's pace: planned vs spoken per slide, words per minute
 si theme list                   # built-in themes for theme: / --theme
 si theme check themes/acme.css  # a .css theme: wrong values, WCAG contrast light and dark (with a passing colour)
@@ -136,7 +138,10 @@ speaker's voice, addressed to the audience.
   where the speaker advances, one per step (and at most one more for the next
   slide). The teleprompter shows it as a ▶ CLICK badge; it is never read
   aloud. `The token turns red. [CLICK] Thirty seconds later the retry goes
-  through.`
+  through.` Auto-play (`v`, `si build --autoplay`) reads the script aloud
+  and advances at each cue, so the cues must match the steps (`si check`
+  warns when they do not); that is one more reason the script must be words
+  a voice can say, with no stage directions.
 
 **`Points:` is the Speaker Notes tab.** It holds the main points of the
 topic, as short bullets the speaker glances at to talk freely instead of

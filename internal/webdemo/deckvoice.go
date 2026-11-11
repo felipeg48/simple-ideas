@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 
 	"github.com/felipeg48/simple-ideas/internal/config"
@@ -56,6 +57,9 @@ func ForDeck(d *deck.Deck, cfg *config.Config, override string) (DeckVoice, []st
 	}
 	parse := func(s string) (Voice, error) {
 		if !strings.Contains(s, ":") && !isEngine(s) {
+			if names, _ := KokoroVoices(""); dv.Default.Engine != "kokoro" && slices.Contains(names, s) {
+				return Voice{Engine: "kokoro", Name: s}, nil // a Kokoro name says which engine it means
+			}
 			return Voice{Engine: dv.Default.Engine, Name: s}, nil
 		}
 		return ParseVoice(s)

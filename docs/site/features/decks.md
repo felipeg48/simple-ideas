@@ -98,7 +98,15 @@ Every deck si builds answers these keys, in `si play` or opened from a file.
 <figure><img src="img/decks/find.jpg" alt="Find: slides matching retry" loading="lazy"><figcaption><kbd>/</kbd> <b>Find</b>: type a word, or a number to jump to that slide</figcaption></figure>
 <figure><img src="img/decks/draw.jpg" alt="A ring and an underline drawn on a slide" loading="lazy"><figcaption><kbd>a</kbd> <b>Draw</b>: drag, or hold <kbd>⌥ Option</kbd> and move, so one finger on the trackpad draws; <kbd>c</kbd> colour, <kbd>z</kbd> undo, <kbd>x</kbd> clear</figcaption></figure>
 <figure><img src="img/decks/timer.jpg" alt="A break timer counting down" loading="lazy"><figcaption><kbd>t</kbd> <b>Break timer</b>: pick the minutes, project the countdown</figcaption></figure>
+<figure><img src="img/decks/autoplay.jpg" alt="The title slide with its notes as a caption and the auto-play bar" loading="lazy"><figcaption><kbd>v</kbd> <b>Auto-play</b>: the deck reads its notes aloud, with captions, and moves on at each <code>[CLICK]</code>; any key takes over</figcaption></figure>
 </div>
+
+**The deck presents itself.** Auto-play reads each slide's `Notes:` in the
+deck's voice (Kokoro `af_heart` under `si play`, `voice:` and
+`voices: Ada=af_heart, Ravi=am_michael` to choose) and advances where the
+script says `[CLICK]`: a kiosk, a rehearsal to listen to, a talk to send.
+`si build talk.md --autoplay` puts the voice beside the page, and
+`si build talk.md --mp4 --voice kokoro` films it narrated.
 
 <kbd>d</kbd> light or dark · <kbd>f</kbd> full screen · <kbd>?</kbd> every key.
 Any key can be changed in `si.conf` (`keys.draw: w`), and the key that draws

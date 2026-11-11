@@ -111,7 +111,9 @@ mirror, per-slide and total clocks with pace, previews of now and next.
 **Two presenters?** `speakers: Ana, Felipe` and `Notes[Ana]:`: a teleprompter
 each, with the hand-over. **Record your talk** with one button, then
 `si build --narration latest` makes the narrated video and `si rehearse`
-shows where you ran long.
+shows where you ran long. **Auto-play** (`v`): the deck presents itself,
+reading its `Notes:` aloud in the deck's voice and advancing at each
+`[CLICK]`; `si build --autoplay` ships the voice with the page.
 
 ![The teleprompter](docs/screenshots/readme/teleprompter.jpg)
 
@@ -248,7 +250,7 @@ lists them all, found or not, with the command for your computer.
 | Program | Used for | macOS | Linux (Debian, Ubuntu) | Windows |
 |---|---|---|---|---|
 | Chrome or Chromium | `--pdf`, `--png`, `--svg`, `--handout`, `--mp4`, `si demo` | `brew install --cask google-chrome` | `sudo apt install chromium` | `winget install Google.Chrome` |
-| ffmpeg | `--mp4`, `--narration`, `si code --gif`, `si demo run` | `brew install ffmpeg` | `sudo apt install ffmpeg` | `winget install Gyan.FFmpeg` |
+| ffmpeg | `--mp4`, `--narration`, `--autoplay` voices, `si code --gif`, `si demo run` | `brew install ffmpeg` | `sudo apt install ffmpeg` | `winget install Gyan.FFmpeg` |
 | git | the Studio's History | `xcode-select --install` | `sudo apt install git` | `winget install Git.Git` |
 | tmux | shell panes in `si --terminal` | `brew install tmux` | `sudo apt install tmux` | in WSL: `sudo apt install tmux` |
 | cloudflared | `si play --tunnel` | `brew install cloudflared` | [pkg.cloudflare.com](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) | `winget install --id Cloudflare.cloudflared` |
@@ -281,7 +283,7 @@ Other agents: `si --export skill`, `si --export agent-rules` (AGENTS.md), or
 |---|---|
 | `si new <name> --type deck\|article\|guide\|book\|website\|lab\|mindmap\|codeshow` | a starter |
 | `si play <dir\|file>` | present with live reload (`--remote`, `--audience`, `--tunnel`, `--review`, `--https`) |
-| `si build <dir\|file> -o html/` | self-contained HTML (`--pdf`, `--mp4`, `--handout`, `--narration`) |
+| `si build <dir\|file> -o html/` | self-contained HTML (`--pdf`, `--mp4`, `--handout`, `--narration`, `--autoplay`, `--voice`) |
 | `si check <dir\|file>` | every problem, with file and line |
 | `si --web [dir]` · `si --terminal [dir]` | the Studio, in the browser or the terminal |
 | `si demo test\|run <script>` | a web app's features as a test, or as narrated videos |
