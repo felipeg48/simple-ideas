@@ -12,6 +12,7 @@
 | `a` | draw: a pen layer over the slide (drag, or hold ⌥ Option / Alt and move: the cursor draws, no click; si.conf `draw.hold` changes the key) |
 | `d` | light / dark (remembered) |
 | `f` | full screen |
+| `v` | auto-play: the deck reads its `Notes:` aloud and advances at each `[CLICK]`; again pauses, Esc stops (§11) |
 | `?` | key help |
 | swipe left / right | next / previous on touch screens |
 
@@ -113,6 +114,15 @@
   time you spent on it (`← long` past 1.25×, `← fast` under 0.75×) and the
   words per minute its `Notes:` script implies at that pace. Recordings stay
   on your computer; keep `.si/` out of git.
+
+  No recording? `--voice` narrates the video from the `Notes:` themselves,
+  the way auto-play reads them (§11): each view stays while its parts are
+  said, a view with nothing to say its `(N min)` share or `--dwell` (needs
+  ffmpeg):
+
+  ```bash
+  si build talk.md --mp4 --voice kokoro:af_heart   # talk.mp4, narrated by the deck's own script
+  ```
 
   It needs headless Chrome and ffmpeg (`brew install ffmpeg`). si runs the page
   slowed down while it films, so the motion is smooth whatever the machine;

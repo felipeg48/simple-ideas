@@ -269,6 +269,25 @@ body.si-drawing .si-draw-bar{display:flex}
 .si-draw-bar .si-brush::before{content:"";width:var(--_s);height:var(--_s);border-radius:50%;background:var(--si-fg)}
 .si-draw-bar .si-brush.is-on{border-color:var(--si-accent);background:var(--si-surface-2)}
 
+/* auto-play (v): the spoken part as a caption, and a small bar to pause, stop
+   and hide the caption; the bar fades while playing until the pointer moves */
+.si-autoplay{position:fixed;left:50%;bottom:max(2.9rem,calc(env(safe-area-inset-bottom,0px) + 2.4rem));transform:translateX(-50%);z-index:23;
+  width:min(max(48rem,55vw),calc(100% - 2rem));display:flex;flex-direction:column;align-items:center;gap:.5rem;pointer-events:none;font-family:var(--si-font-body)}
+.si-autoplay>*{pointer-events:auto}
+@media (max-width:48rem){.si-autoplay{bottom:calc(env(safe-area-inset-bottom,0px) + 5.4rem)}} /* the deck's buttons wrap to two rows */
+.si-autoplay-cap{margin:0;max-width:100%;padding:.4em .8em;border-radius:.5em;background:color-mix(in srgb,var(--si-bg) 85%,transparent);color:var(--si-fg);
+  font-size:clamp(.95rem,.75rem + 1.1vw,3.2rem);line-height:1.35;text-align:center;text-wrap:balance;box-shadow:var(--si-shadow)}
+.si-autoplay-cap:empty,.si-autoplay[data-cc="off"] .si-autoplay-cap,.si-autoplay[data-state="ready"] .si-autoplay-cap{display:none}
+.si-autoplay-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.35rem .5rem;padding:.3rem .5rem;border:1px solid var(--si-line);border-radius:.7rem;
+  background:var(--si-surface);box-shadow:var(--si-shadow);font:clamp(.72rem,.62rem + .3vw,1.4rem)/1.2 var(--si-font-mono);color:var(--si-muted);transition:opacity .3s}
+.si-autoplay[data-state="playing"] .si-autoplay-bar{opacity:.35}
+body.si-ui .si-autoplay .si-autoplay-bar,.si-autoplay-bar:hover,.si-autoplay-bar:focus-within{opacity:1}
+.si-autoplay-bar button{font:inherit;color:var(--si-fg);background:var(--si-surface);border:1px solid var(--si-line);border-radius:.45em;padding:.35em .6em;cursor:pointer}
+.si-autoplay-bar button:hover,.si-autoplay-bar button:focus-visible,.si-autoplay-bar button[aria-pressed="true"]{border-color:var(--si-accent);outline:none}
+.si-autoplay[data-state="ready"] [data-si-ap="toggle"]{font-size:1.25em;padding:.5em 1em;background:var(--si-accent);color:var(--si-on-accent);border-color:var(--si-accent)}
+.si-autoplay-state{color:var(--si-accent);font-weight:600}
+.si-autoplay-voice:empty{display:none}
+
 /* reduced motion: no transitions, no animation, no travelling packets */
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{transition-duration:0s!important;transition-delay:0s!important;animation:none!important}
@@ -283,7 +302,7 @@ body.si-drawing .si-draw-bar{display:flex}
   .si-slide:last-child{break-after:auto}
   .si-inner{overflow:hidden;font-size:calc(var(--_u) * 1.7 * var(--si-scale))}
   .si-step{opacity:1;transform:none}
-  .si-bar,.si-progress,.si-help,.si-hud,.si-find,.si-anim,.si-draw,.si-draw-bar,.si-problems{display:none!important}
+  .si-bar,.si-progress,.si-help,.si-hud,.si-find,.si-anim,.si-draw,.si-draw-bar,.si-autoplay,.si-problems{display:none!important}
 }
 /* handout (si build --handout): paper sizes (mm, pt) are print-only; on screen
    nothing here applies. Slides become size containers, so they scale by their

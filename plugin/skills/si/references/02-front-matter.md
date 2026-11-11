@@ -50,6 +50,7 @@ lang: en
 | `edit-url` | URL | none | guides: base of the "Edit this page" link (§20) |
 | `header`, `footer-page` | `off` | on | a guide page without the guide's `_header.md` / `_footer.md` (§20) |
 | `repo` | `OWNER/REPO`, a github.com URL, or a local clone folder | none | the default repo of `code:` and `diff:` (§13) |
+| `voices` | `Name=voice, Name=voice` (`Ada=af_heart, Ravi=kokoro:am_michael`) | every speaker in `voice:` | auto-play in a deck with `speakers:`: each speaker's part in their own voice; a bare name is a voice of the deck's engine (§11, Auto-play) |
 | `linkedin`, `tags`, `canonical`, `cover` | text; comma-separated tags; a URL; a picture | none | `si publish` (§26): the LinkedIn post text, dev.to / Hashnode tags, the article's original URL, the picture of a LinkedIn link post |
 
 An included module's own front matter is ignored; the including deck decides.

@@ -3,6 +3,24 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.40.0:** auto-play: a deck that presents itself. **▶ Auto-play** in the
+  deck's buttons (or `v`) reads each slide's `Notes:` aloud, advances at each
+  `[CLICK]` (a build step, a canvas change, the next slide) and moves on after
+  the last part; a slide with no notes stays its `(N min)` share or
+  `autoplay.dwell` (3 s). A caption shows the line being said (CC hides it);
+  the bar pauses, resumes and stops; any key that moves the deck, a click on
+  the slide, the pen or a teleprompter's Next pauses it, and the teleprompter
+  shows *auto-play*. Under `si play` each part is voiced on demand
+  (`/_si/voice/<slide>/<part>.wav`) with the deck's voice through the voice
+  cache, one part ahead; `si build --autoplay` writes
+  `<deck>.voice/<slide>-<part>.m4a` beside the page, `--autoplay=inline` puts
+  them inside it (warns over 20 MB); with no audio the browser's own voice
+  speaks, labelled. `voices: Ada=af_heart, Ravi=am_michael` (or si.conf
+  `voice.<Name>:`) gives each speaker of `speakers:` a voice; `pronounce:`
+  applies. `si play --autoplay` and `#autoplay` open decks ready (the first
+  click or key starts them). `si build --mp4 --voice kokoro` films the deck
+  narrated from its own notes. si.conf: `keys.autoplay`, `feature.autoplay`,
+  `autoplay.dwell`. The presenting demo gains "It presents itself".
 - **v2.39.1:** web demos: `select "…" in "…"` waits for an option a page adds
   late (a list filled from the network), as other steps wait for elements;
   the shop example now offers Express a moment after the page shows. The

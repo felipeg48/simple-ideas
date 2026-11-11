@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/felipeg48/simple-ideas/internal/brand"
 	"github.com/felipeg48/simple-ideas/internal/tools"
+	"github.com/felipeg48/simple-ideas/internal/webdemo"
 	"html"
 	"io"
 	"io/fs"
@@ -67,6 +68,8 @@ Usage:
         terminal; --dump prints one slide and exits
   si play <dir|file.md> [--addr 127.0.0.1:7070] [--open] [--css <dir|file.css>]... [--remote[=tp,draw,clicker]]
         serve the decks, rendered from markdown on every request, live reload on change
+        --autoplay opens each deck ready to present itself (the Auto-play bar, key v): its
+        Notes: read aloud with the deck's voice, an advance at each [CLICK]
   si serve <dir|file.md> [--addr 127.0.0.1:7070] [--open] [--css <dir|file.css>]...
         serve everything for readers, live: decks, articles, guides (with their
         navigation) and labs; like play, without the terminal drawer
@@ -81,7 +84,10 @@ Usage:
         step, held for its share of (N min) or --dwell seconds, and the transitions and
         canvas morphs as they move (--dissolve: stills dissolving into each other);
         --narration <dir|latest>: a recording from the teleprompter's Record button paces
-        each view as you spoke it, with your voice
+        each view as you spoke it, with your voice; --voice <engine[:name]> narrates it
+        from the Notes: instead (kokoro:af_heart, system; needs ffmpeg)
+        --autoplay[=inline] voices every part of the Notes: for auto-play (v) into
+        <name>.voice/<slide>-<part>.m4a beside the page (=inline: inside it); needs ffmpeg
   si [build] <map.md> [--svg] [--png [--scale 2]] [--pdf] [--mp4]
         mind map pages: every map as <name>-<id>.svg / .png (2D, theme and watermark
         baked in), pdfs/<name>.pdf with one page per map (map › links work), and
@@ -246,6 +252,27 @@ func (h *handoutFlag) Set(v string) error {
 }
 
 // httpsFlag is --https (si's own certificate authority) or --https=tailscale.
+// autoplayFlag is --autoplay (si play: decks open ready to auto-play; si
+// build: the voice files beside each page) or --autoplay=inline (si build:
+// the voice inside the page).
+type autoplayFlag string
+
+func (a *autoplayFlag) IsBoolFlag() bool { return true }
+func (a *autoplayFlag) String() string   { return string(*a) }
+func (a *autoplayFlag) Set(v string) error {
+	switch v {
+	case "true", "files":
+		*a = "files"
+	case "inline":
+		*a = "inline"
+	case "false":
+		*a = ""
+	default:
+		return fmt.Errorf("--autoplay=%q: use --autoplay or --autoplay=inline", v)
+	}
+	return nil
+}
+
 type httpsFlag string
 
 func (h *httpsFlag) IsBoolFlag() bool { return true }
@@ -300,8 +327,10 @@ type options struct {
 	remoteAddr                                   string
 	siteOld                                      string // the old --site <text>, now --site-title
 	remote                                       remoteFlag
-	https                                        httpsFlag   // si play --remote --https[=tailscale]
-	handout                                      handoutFlag // si build --handout[=points|lines|grid]
+	https                                        httpsFlag    // si play --remote --https[=tailscale]
+	handout                                      handoutFlag  // si build --handout[=points|lines|grid]
+	autoplay                                     autoplayFlag // si play --autoplay; si build --autoplay[=inline]
+	voice                                        string       // si build --mp4 --voice engine[:name]: narrate from the Notes:
 	open, help, ver, verbose, feature            bool
 	noInline, pdf, slides, dev, web, noOpen      bool
 	share                                        bool // --share-assets
@@ -356,6 +385,8 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.remoteAddr, "remote-addr", "", "")
 	fl.Var(&o.https, "https", "")
 	fl.Var(&o.handout, "handout", "")
+	fl.Var(&o.autoplay, "autoplay", "")
+	fl.StringVar(&o.voice, "voice", "", "")
 	fl.StringVar(&o.export, "export", "", "")
 	fl.StringVar(&o.kind, "type", "", "")
 	fl.StringVar(&o.siteKind, "kind", "", "")
@@ -761,6 +792,15 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 				}
 			}
 		}
+		if o.autoplay != "" && !d.IsDoc() { // the voice of auto-play, beside the page or in it
+			if ff := tools.Find("ffmpeg"); ff == "" {
+				fmt.Fprintf(stderr, "  warning: %s: %s\n    (the page speaks with the browser's voice)\n", d.Name, tools.Need("ffmpeg", "--autoplay"))
+			} else if audio, err := voiceForBuild(d, cfg, o.voice, &webdemo.Synth{FFmpeg: ff, Cache: webdemo.VoiceCache(), Log: stderr}, ff, out, o.autoplay == "inline", stdout, stderr); err != nil {
+				fmt.Fprintf(stderr, "  warning: %s: --autoplay: %v\n    (the page speaks with the browser's voice)\n", d.Name, err)
+			} else {
+				ro.VoiceAudio = audio
+			}
+		}
 		res := render.Deck(d, ro)
 		for _, p := range res.Problems {
 			fmt.Fprintf(stderr, "  error: %s\n", p)
@@ -834,6 +874,14 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 					nar = nil
 				} else if nar.changed(d.Path) {
 					fmt.Fprintf(stderr, "si: %s: the deck changed since %s was recorded; views it never showed get the usual time\n", d.Name, filepath.Base(dir))
+				}
+			} else if o.voice != "" { // the deck's own Notes:, voiced, pace and narrate it
+				if nar, err = narrateFromNotes(d, dest, cfg, o.voice, o.dwell, stderr); err != nil {
+					fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
+					failed = true
+					nar = nil
+				} else {
+					defer os.Remove(nar.audio)
 				}
 			}
 			err := fmt.Errorf("dissolve")
@@ -1091,6 +1139,7 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		return exitProblems
 	}
 	srv.Dev = o.dev
+	srv.Autoplay = o.autoplay != ""
 	srv.Title = o.title
 	if o.tunnel {
 		o.audience = true // the tunnel carries the audience side
@@ -1190,6 +1239,9 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		hs.Shutdown(sctx)
 	}()
 	if o.open {
+		if o.autoplay != "" {
+			url += "#autoplay" // starts at once where the browser lets a page speak
+		}
 		openBrowser(url)
 	}
 	if o.audience { // the room's poll counts and questions, kept beside the talk when it ends

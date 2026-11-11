@@ -106,6 +106,7 @@ lang: en
 | `edit-url` | URL | none | guides: base of the "Edit this page" link (§20) |
 | `header`, `footer-page` | `off` | on | a guide page without the guide's `_header.md` / `_footer.md` (§20) |
 | `repo` | `OWNER/REPO`, a github.com URL, or a local clone folder | none | the default repo of `code:` and `diff:` (§13) |
+| `voices` | `Name=voice, Name=voice` (`Ada=af_heart, Ravi=kokoro:am_michael`) | every speaker in `voice:` | auto-play in a deck with `speakers:`: each speaker's part in their own voice; a bare name is a voice of the deck's engine (§11, Auto-play) |
 | `linkedin`, `tags`, `canonical`, `cover` | text; comma-separated tags; a URL; a picture | none | `si publish` (§26): the LinkedIn post text, dev.to / Hashnode tags, the article's original URL, the picture of a LinkedIn link post |
 
 An included module's own front matter is ignored; the including deck decides.
@@ -615,6 +616,64 @@ Points[Felipe]:
   Handouts with `--handout=notes` or `points` put each part under its
   speaker's name; `si rehearse` adds a planned against spoken line per speaker.
 
+**Auto-play: the deck presents itself.** Your `Notes:` are already the exact
+words and `[CLICK]` already marks every advance, so a deck can give the talk
+by itself: press **▶ Auto-play** in the deck's buttons, or `v`. It reads the
+slide's notes aloud, advances at each `[CLICK]` (a build step, a canvas
+change or the next slide, the same as →), and after the last part moves to
+the next slide. A slide with no notes stays its `(N min)` share, or 3 seconds
+(`autoplay.dwell` in si.conf). The spoken line shows as a caption (CC hides
+it); the bar pauses, resumes and stops. Any key that moves the deck, a click
+on the slide, the pen or a teleprompter's Next takes control back: auto-play
+pauses where you are, and Resume carries on from there. The teleprompter
+shows *auto-play* beside the slide number and follows along.
+
+```markdown
+---
+title: The Thursday Promise
+voice: kokoro:af_heart
+speakers: Ada, Ravi
+voices: Ada=af_heart, Ravi=am_michael
+pronounce: SLA = service level agreement
+---
+
+## Payment: declined, then paid
+
+<!-- steps -->
+- Declined by the fraud check
+- Paid on the retry
+
+Notes[Ada]: (1 min) The token reaches payments and turns red. [CLICK]
+Notes[Ravi]: Thirty seconds later the retry clears it. [CLICK]
+```
+
+Where the voice comes from:
+
+- **`si play`** voices each part when the page asks for it
+  (`GET /_si/voice/<slide>/<part>.wav`, slide from 1, part from 0), one part
+  ahead, through the same cache as `si voice say` and `si demo run`: the
+  second run is instant and only an edited part is voiced again. The voice is
+  the front matter `voice:`, else si.conf `voice:`, else Kokoro `af_heart`
+  when it is installed (`si voice install kokoro`), else the computer's own;
+  `voices:` (or si.conf `voice.<Name>:`) gives each speaker theirs;
+  `pronounce:` applies, the caption keeps the written words. Needs ffmpeg.
+  `si play talk.md --autoplay` opens decks with the bar ready (`--open` starts
+  at once where the browser lets a page speak).
+- **`si build talk.md --autoplay`** voices every part at build time into
+  `talk.voice/<slide>-<part>.m4a` beside the page, which plays them by
+  relative URL (copy the folder with the page). `--autoplay=inline` puts
+  them inside the page for a single file to share (a warning over 20 MB).
+  `--voice kokoro:bf_emma` picks another voice for the build.
+- **A deck with no audio** (a plain build, a part that failed) speaks with
+  the browser's own voice (Web Speech), labelled *browser voice*, offline.
+
+`#autoplay` at the end of the address (`talk.html#autoplay`) opens the deck
+ready; browsers let a page speak only after a click or a key, so the first
+one starts it. `si build talk.md --mp4 --voice kokoro` films the deck
+narrated from its notes, each view held while its part is said (§14, Video).
+Auto-play depends on the `[CLICK]` count: `si check` warns when it does not
+fit the slide's steps.
+
 **On another device (`si play --remote`).** Put the teleprompter on an iPad
 (or any tablet or phone) and project from the laptop. `--remote` opens a
 second listener on your network, next to the loopback one, and prints one
@@ -1017,6 +1076,7 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
 | `a` | draw: a pen layer over the slide (drag, or hold ⌥ Option / Alt and move: the cursor draws, no click; si.conf `draw.hold` changes the key) |
 | `d` | light / dark (remembered) |
 | `f` | full screen |
+| `v` | auto-play: the deck reads its `Notes:` aloud and advances at each `[CLICK]`; again pauses, Esc stops (§11) |
 | `?` | key help |
 | swipe left / right | next / previous on touch screens |
 
@@ -1118,6 +1178,15 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   time you spent on it (`← long` past 1.25×, `← fast` under 0.75×) and the
   words per minute its `Notes:` script implies at that pace. Recordings stay
   on your computer; keep `.si/` out of git.
+
+  No recording? `--voice` narrates the video from the `Notes:` themselves,
+  the way auto-play reads them (§11): each view stays while its parts are
+  said, a view with nothing to say its `(N min)` share or `--dwell` (needs
+  ffmpeg):
+
+  ```bash
+  si build talk.md --mp4 --voice kokoro:af_heart   # talk.mp4, narrated by the deck's own script
+  ```
 
   It needs headless Chrome and ffmpeg (`brew install ffmpeg`). si runs the page
   slowed down while it films, so the motion is smooth whatever the machine;
@@ -1487,6 +1556,8 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `timer.animation.path: ./anim` | directory of custom `<name>.js` / `<name>.svg` animations |
 | `voice: kokoro:af_heart` | the voice of `si demo run` and `si voice say` when the script and `--voice` set none (§27) |
 | `voice.style: calm, friendly` | the tone, for engines that take one (`openai`), when the script sets no `voice-style:` |
+| `voice.Ada: kokoro:af_heart` | auto-play: one speaker's voice in a deck with `speakers:` (front matter `voices:` wins) |
+| `autoplay.dwell: 5` | auto-play: seconds on a slide with no `Notes:` and no `(N min)` (default 3) |
 
 Nesting is written as dotted keys (`timer.animation.path`), not YAML.
 
@@ -1513,8 +1584,8 @@ voice.openai.key: sk-…        # written by si voice login openai
 ```
 
 Remappable **actions**: `overview`, `presenter`, `draw`, `timer`, `find`,
-`mode`, `fullscreen`, `help`, `terminal`, `remote`. Toggleable **features**: `draw`, `timer`,
-`presenter`, `overview`, `find`.
+`mode`, `fullscreen`, `help`, `terminal`, `remote`, `autoplay`. Toggleable **features**: `draw`, `timer`,
+`presenter`, `overview`, `find`, `autoplay`.
 
 ```
 # si.conf — flat key: value, same style as front matter (not YAML)

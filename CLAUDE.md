@@ -240,6 +240,12 @@ pass. The steps that matter:
     bullets, tables and code, pictures for canvases (hard: fluid layouts vs
     fixed boxes); (3) `si publish --to google-slides` (Drive upload with
     conversion, a Google OAuth login like LinkedIn's).
+- **Auto-play** (DONE v2.40.0, spec `docs/superpowers/specs/2026-11-10-autoplay.md`):
+  `v` / ▶ Auto-play reads `Notes:` aloud and advances at each `[CLICK]`
+  (`deck.Parts`, `web/deck/05-autoplay.js`); `si play` voices parts at
+  `/_si/voice/` (`internal/serve/voice.go`, `webdemo.ForDeck`); `si build
+  --autoplay[=inline]` writes `<deck>.voice/`; `--mp4 --voice` narrates video;
+  `voices:` per speaker. Next: resume mid-sentence.
 - **Next five** (specs, 2026-11-09; the founder wants all, one at a time):
   `docs/superpowers/specs/2026-11-09-next-five.md` indexes audience mode
   (follow, polls, Q&A), handouts (`--handout`), record your talk

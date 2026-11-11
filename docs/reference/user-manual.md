@@ -227,6 +227,7 @@ the rest fades. `morph 0.9s` sets the length.
 | `t` | break timer (configurable presets + animation layer) |
 | `a` | draw over the slide |
 | `d` / `f` / `?` | light-dark / full screen / help |
+| `v` | auto-play — the deck reads its `Notes:` aloud and advances at each `[CLICK]`; any key that moves the deck, a click or the pen pauses it |
 | `` ` `` | terminal drawer — run local commands live (`si play` on a loopback address only) |
 | `a`, then ⌥ + move | in draw mode, hold Option (Alt) and the cursor draws where it goes: one finger on a trackpad, no click (si.conf `draw.hold: shift`, `ctrl`, `meta` or `off` picks the key) |
 | `q` | `si play --remote`: the phone and tablet links as QR codes, on the projected screen (`--https`: over HTTPS, so the phone stays awake) |
@@ -247,6 +248,15 @@ teleprompter code per speaker): your script in full, the other's lines as a
 short cue, a **→ Felipe** banner when the turn passes, and your own clock.
 `speakers.control: turn` in `si.conf` lets only the speaker whose turn it is
 advance. In the terminal: `si play talk.md --terminal --notes --speaker Ana`.
+
+Auto-play: **▶ Auto-play** (or `v`) lets the deck present itself, for a
+kiosk, a rehearsal you listen to, or a talk to share. Under `si play` each
+part is voiced with the deck's voice (Kokoro `af_heart` when installed,
+`voice:` and `voices: Ada=af_heart, Ravi=am_michael` to choose) and cached;
+`si build talk.md --autoplay` writes the voice beside the page
+(`talk.voice/`), `--autoplay=inline` inside it; a plain build speaks with the
+browser's voice. Captions show the line being said; `#autoplay` in the
+address opens it ready.
 
 The **terminal drawer** (`` ` ``) slides up a tabbed, real shell for running
 commands mid-demo (`docker ps`, `psql`, …). It exists only under
@@ -441,7 +451,9 @@ si migrate <src>           # an AI migration prompt for an existing deck
 - **Record your talk:** **● Record** in the teleprompter (under `si play`)
   records your voice with every slide change; `si build talk.md --narration
   latest` turns it into the video, paced and voiced as you gave it, and `si
-  rehearse talk.md` shows where you ran long or rushed.
+  rehearse talk.md` shows where you ran long or rushed. No recording?
+  `si build talk.md --mp4 --voice kokoro` narrates the video from the
+  `Notes:` themselves.
 - **Point to it:** `<!-- qr: https://… · caption=The slides -->` puts a QR
   code on a slide or page; `si qr https://… --logo mark.png --pdf` makes one as
   a file for a poster or a badge.

@@ -74,6 +74,28 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 		}
 		pd["speakerMinutes"] = mins // each speaker's planned minutes, for their own clock
 	}
+	if !opt.NoSpeakerText {
+		// auto-play: each slide's script split at its [CLICK] cues (deck.Parts)
+		type sayPart struct {
+			deck.Part
+			Audio string `json:"a,omitempty"`
+		}
+		say, any := make([][]sayPart, len(d.Slides)), false
+		for i, ps := range d.Parts() {
+			say[i] = []sayPart{}
+			for j, p := range ps {
+				sp := sayPart{Part: p}
+				if opt.VoiceAudio != nil && p.Text != "" {
+					sp.Audio = opt.VoiceAudio(i, j)
+				}
+				say[i] = append(say[i], sp)
+				any = true
+			}
+		}
+		if any {
+			pd["say"] = say
+		}
+	}
 	data, _ := json.Marshal(pd)
 	fmt.Fprintf(&b, "<script type=\"application/json\" id=\"si-data\">%s</script>\n", data)
 	keys := map[string]string{}
@@ -100,6 +122,15 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	conf := map[string]any{"keys": keys, "features": feats, "timer": timer, "terminal": opt.Terminal, "remote": opt.Remote, "pages": opt.Pages, "live": opt.LiveReload}
 	if opt.Config != nil && opt.Config.DrawHold != "" {
 		conf["drawHold"] = opt.Config.DrawHold // si.conf draw.hold; the runtime defaults to alt
+	}
+	if opt.VoiceServer {
+		conf["voice"] = true // si play voices the parts at /_si/voice/
+	}
+	if opt.Autoplay {
+		conf["autoplay"] = true // si play --autoplay: the bar is ready when the page opens
+	}
+	if opt.Config != nil && opt.Config.AutoplayDwell > 0 {
+		conf["dwell"] = opt.Config.AutoplayDwell // si.conf autoplay.dwell; the runtime defaults to 3 s
 	}
 	if opt.Config != nil && opt.Config.SpeakersTurn {
 		conf["turn"] = true // si.conf speakers.control: turn; read by the teleprompter
@@ -241,7 +272,7 @@ const PositionJS = `<script>window.SI_LIVE=true;(function(){if(!window.EventSour
 const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <span class="si-controls">
 <button type="button" data-si-action="prev" aria-label="Previous">&larr;</button><button type="button" data-si-action="next" aria-label="Next">&rarr;</button>
-<button type="button" data-si-action="overview" title="Overview (o)">Overview</button><button type="button" data-si-action="presenter" title="Presenter teleprompter (p)">Presenter</button><button type="button" data-si-action="draw" title="Annotate (a)">Draw</button>
+<button type="button" data-si-action="overview" title="Overview (o)">Overview</button><button type="button" data-si-action="presenter" title="Presenter teleprompter (p)">Presenter</button><button type="button" data-si-action="draw" title="Annotate (a)">Draw</button><button type="button" data-si-action="autoplay" title="Auto-play: the deck reads its notes aloud (v)">&#9654; Auto-play</button>
 <button type="button" data-si-action="mode" title="Light / dark (d)">Theme</button><button type="button" data-si-action="fullscreen" title="Full screen (f)">Full screen</button><button type="button" data-si-action="help" title="Keys (?)">?</button>
 </span>
 <span class="si-counter" aria-live="polite"></span>
@@ -259,6 +290,7 @@ const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <tr><td>d</td><td>light / dark</td></tr>
 <tr><td>a</td><td>draw: pen over the slide (c colour, e erase, z undo, x clear, Esc off)</td></tr>
 <tr><td>f</td><td>full screen</td></tr>
+<tr><td>v</td><td>auto-play: the deck reads its notes aloud and advances at each click cue; any key, click or the pen takes over</td></tr>
 <tr><td>swipe</td><td>next / previous on touch screens</td></tr>
 <tr><td>#5 or #5.2</td><td>open slide 5 (at step 2)</td></tr>
 <tr><td>print</td><td>one slide per page, every step shown</td></tr>
@@ -280,6 +312,10 @@ const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <input class="si-find-input" type="text" autocomplete="off" spellcheck="false" placeholder="Search slides, or type a number to jump…" aria-label="Search slides or go to a number">
 <ul class="si-find-list" role="listbox"></ul>
 </div></div>
+<div class="si-autoplay" role="region" aria-label="Narration" data-state="ready" hidden>
+<p class="si-autoplay-cap" aria-live="polite"></p>
+<div class="si-autoplay-bar"><span class="si-autoplay-state"></span><button type="button" data-si-ap="toggle">&#9654; Start</button><button type="button" data-si-ap="cc" aria-pressed="true" title="Captions">CC</button><button type="button" data-si-ap="stop" title="Stop (Esc)">Stop</button><span class="si-autoplay-pos"></span><span class="si-autoplay-voice"></span></div>
+</div>
 <svg class="si-draw" aria-hidden="true"></svg>
 <div class="si-draw-bar" aria-label="Annotate">
 <button type="button" class="si-swatch" data-si-pen="var(--si-accent)" title="Accent" style="--_c:var(--si-accent)"></button><button type="button" class="si-swatch" data-si-pen="var(--si-crit)" title="Red" style="--_c:var(--si-crit)"></button><button type="button" class="si-swatch" data-si-pen="var(--si-ok)" title="Green" style="--_c:var(--si-ok)"></button><button type="button" class="si-swatch" data-si-pen="var(--si-fg)" title="Ink" style="--_c:var(--si-fg)"></button>

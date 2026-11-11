@@ -38,7 +38,7 @@
         type: 'state', i: cur, k: step, kmax: max, n: n, title: s.getAttribute('data-title') || '',
         minutes: s.getAttribute('data-minutes') || '', total: data.minutes, plan: data.plan, notes: notes ? notes.innerHTML : '',
         points: points ? points.innerHTML : '',
-        cur: snapshot(s), next: nx, label: label, dark: effectiveDark()
+        cur: snapshot(s), next: nx, label: label, dark: effectiveDark(), auto: !!(ap && ap.state === 'playing')
     });
   }
   function onMsg(e) {

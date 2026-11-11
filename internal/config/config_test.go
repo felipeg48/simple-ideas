@@ -126,3 +126,16 @@ func TestSpeakersControl(t *testing.T) {
 		t.Errorf("speakers.control: me should warn")
 	}
 }
+
+func TestAutoplayKeys(t *testing.T) {
+	c := Parse(strings.NewReader("keys.autoplay: P\nfeature.autoplay: off\nautoplay.dwell: 2.5s\nvoice.Ana: kokoro:af_heart\nvoice.style: calm\nautoplay.dwell: soon\n"))
+	if c.Keys["autoplay"] != "P" || c.Features["autoplay"] || c.AutoplayDwell != 2.5 {
+		t.Errorf("autoplay = key %q feature %v dwell %g", c.Keys["autoplay"], c.Features["autoplay"], c.AutoplayDwell)
+	}
+	if c.SpeakerVoices["Ana"] != "kokoro:af_heart" || c.VoiceStyle != "calm" || len(c.SpeakerVoices) != 1 {
+		t.Errorf("voices = %v, style %q", c.SpeakerVoices, c.VoiceStyle)
+	}
+	if len(c.Warnings) != 1 || !strings.Contains(c.Warnings[0], "autoplay.dwell") {
+		t.Errorf("warnings = %v", c.Warnings)
+	}
+}
