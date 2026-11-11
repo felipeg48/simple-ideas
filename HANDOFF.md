@@ -3,13 +3,14 @@
 Read this, then `FEATURE.md`, then `CLAUDE.md`. This is a Go CLI (`si`) that turns
 Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
-## Current state (2026-11-10, end of day)
+## Current state (2026-11-11)
 
-**Released and live: v2.39.1** (CI, release, docs-site all green; si 2.39.1
-installed via `make install </dev/null`; the Claude plugin updated with
-`claude plugin marketplace update simple-ideas && claude plugin update si@simple-ideas`).
-The v2.37.0 / v2.38.0 notes below say "unreleased, on a worktree branch":
-that was true when written; both are merged and released.
+**Released and live: v2.40.0** (CI, release, demos filming and docs-site all
+green; si 2.40.0 installed via `make install </dev/null`; the Claude plugin
+updated with `claude plugin marketplace update simple-ideas && claude plugin
+update si@simple-ideas`). Notes below that say "unreleased, on a worktree
+branch" (v2.37.0, v2.38.0, v2.40.0) were true when written; all are merged and
+released.
 
 ### Today's releases, in order
 - v2.34.0 `si demo test` (phase 1) · v2.35.0 `si demo run` (video + voice) ·
@@ -20,9 +21,12 @@ that was true when written; both are merged and released.
   v2.38.0 three videos per take, captions band, `.vtt`, fast-forward; `type "x"`
   at the focus; `app:` with a query kept; `SI_STUDIO_TOKEN`; `si theme list`
   hides client themes · v2.39.0 si's own demo videos (below) · v2.39.1
-  `select` waits for late options.
+  `select` waits for late options · v2.40.0 auto-play (below): `v` / ▶ reads
+  `Notes:` aloud and clicks at each `[CLICK]`, `si play --autoplay`,
+  `si build --autoplay[=inline]`, `si build --mp4 --voice`, `voices:` per
+  speaker; the CI filming run re-filmed the demos with "It presents itself".
 
-### Auto-play (v2.40.0, unreleased, on a worktree branch)
+### Auto-play (v2.40.0, released)
 Spec `docs/superpowers/specs/2026-11-10-autoplay.md`, all three phases.
 - `deck.Parts` (`internal/deck/say.go`): a slide's script split at `[CLICK]`
   into plain-text parts (`{t, s, k}`); `render` puts them in `si-data.say`
@@ -68,6 +72,9 @@ per command (`t.base`/`t.runs`); backslashes kept in quoted steps; `select`
 waits for its option; Studio demo avoids `cmd+z` (Linux).
 
 ### Next (in order; the founder wants autonomy: do not ask, decide and report)
+0. Auto-play follow-ups: resume mid-sentence (today Resume restarts the
+   part); re-screenshot the bar at 3840x2160 (enlarged after the last check);
+   a filmed demo where the deck's own voice is heard.
 1. A window step (the teleprompter opens a popup the runner does not film) and
    a drag step (drawing with `a`); then add them to `presenting.md`.
 2. Title cards capitalise the first word of `What it does:` ("si" → "Si");
@@ -85,7 +92,9 @@ waits for its option; Studio demo avoids `cmd+z` (Linux).
    install on Linux/Windows untested.
 
 ### Housekeeping
-- Notices: `si voice say "Ideas finished"` / `"Ideas needs your input"`
+- Notices: I am "Simple Ideas": `si voice say "Simple Ideas needs your
+  input"` before asking, `si voice say "Simple Ideas finished"` once at the
+  end (macOS `say` if it fails)
   (Kokoro installed in `~/Library/Caches/si/kokoro`).
 - Permissions: `.claude/settings.local.json` allows Bash, Agent, SendMessage,
   TaskStop, Monitor, ToolSearch, ListAgents; run in manual mode (auto mode's
