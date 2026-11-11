@@ -385,7 +385,7 @@ body{overflow:hidden;height:100%}
     plan = m.plan || plan; total = m.total || 0;
     document.documentElement.setAttribute('data-si-mode', m.dark ? 'dark' : 'light');
     $('title').textContent = m.title || D.title;
-    $('pos').textContent = 'slide ' + (m.i + 1) + ' / ' + m.n + (m.kmax ? '  ·  step ' + m.k + ' / ' + m.kmax : '');
+    $('pos').textContent = 'slide ' + (m.i + 1) + ' / ' + m.n + (m.kmax ? '  ·  step ' + m.k + ' / ' + m.kmax : '') + (m.auto ? '  ·  auto-play' : '');
     $('slideplan').textContent = m.minutes ? '/ ' + m.minutes + ' min' : '';
     $('planned').textContent = total ? '/ ' + total + ' min' : '';
     $('cur').innerHTML = m.cur;

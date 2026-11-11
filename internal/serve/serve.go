@@ -20,6 +20,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/render"
+	"github.com/felipeg48/simple-ideas/internal/webdemo"
 )
 
 // Server renders the decks under Root (a directory or one .md file).
@@ -36,6 +37,8 @@ type Server struct {
 	AudienceKey string           // --audience: the key of the audience pages (follow along), not the presenter's
 	Title       string           // --title / --site: the index page title; empty uses the directory name
 	Interval    time.Duration
+	Autoplay    bool           // --autoplay: decks open with the Auto-play bar ready
+	Voicer      webdemo.Voicer // auto-play voices (voice.go); nil: the voice programs, through the cache
 
 	dir     string
 	file    string // set when Root is a single deck
@@ -49,6 +52,8 @@ type Server struct {
 	rec     recorder // Record your talk (record.go)
 	rev     *reviews // review comments (review.go)
 	revOnce sync.Once
+	voiceMu sync.Mutex // one voicing at a time (voice.go)
+	warned  sync.Map   // auto-play warnings already logged
 }
 
 // New prepares a server for root.
@@ -85,10 +90,11 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /_si/position", s.pos.post)
 	mux.HandleFunc("POST /_si/position/cmd", s.pos.command)
 	mux.HandleFunc("GET /_si/position/events", s.pos.events)
-	mux.HandleFunc("POST /_si/callout", localOnly(s.callout)) // writes files: never on the remote listener
-	s.recordRoutes(mux)                                       // Record your talk: loopback only (record.go)
-	mux.HandleFunc("GET /_si/qr", localOnly(s.qrPage))        // the --remote links as codes: carries the key, loopback only
-	s.authorRoutes(mux)                                       // review comments: read, follow, reply, resolve (loopback)
+	mux.HandleFunc("GET /_si/voice/{slide}/{part}", localOnly(s.voice)) // auto-play: runs the voice programs, loopback only
+	mux.HandleFunc("POST /_si/callout", localOnly(s.callout))           // writes files: never on the remote listener
+	s.recordRoutes(mux)                                                 // Record your talk: loopback only (record.go)
+	mux.HandleFunc("GET /_si/qr", localOnly(s.qrPage))                  // the --remote links as codes: carries the key, loopback only
+	s.authorRoutes(mux)                                                 // review comments: read, follow, reply, resolve (loopback)
 	if s.Remote {
 		mux.HandleFunc("GET /_si/remote/events", s.relay.events)
 		mux.HandleFunc("POST /_si/remote/send", s.relay.send)
@@ -172,7 +178,7 @@ func (s *Server) deckPage(w http.ResponseWriter, md string, term, audience bool)
 	if v, ok := cfg.Features["terminal"]; ok && !v {
 		termOn = false
 	}
-	opt := render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Remote: s.Remote, RemoteQR: s.RemoteQR, Pages: s.pages(cfg), NoSpeakerText: audience}
+	opt := render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Remote: s.Remote, RemoteQR: s.RemoteQR, Pages: s.pages(cfg), NoSpeakerText: audience, VoiceServer: !audience, Autoplay: s.Autoplay && !audience}
 	if g := deck.FindGuide(md, s.dir); g != nil && g.Item(md) != nil { // a guide or book renders as a whole (numbering, search across pages)
 		s.writeBookPage(w, g, opt, filepath.Join(filepath.Dir(md), strings.TrimSuffix(filepath.Base(md), filepath.Ext(md))+".html"))
 		return

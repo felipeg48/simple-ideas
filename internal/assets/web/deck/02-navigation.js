@@ -95,6 +95,7 @@
     var max = maxStep(next);
     if (k === 'end') k = max;
     k = Math.max(0, Math.min(max, k || 0));
+    if (i !== cur || k !== step) apTouch(); /* a move auto-play did not make pauses it */
     if (i !== cur) {
       clearStrokes();
       var tx = next.getAttribute('data-transition') || data.transition || 'fade';

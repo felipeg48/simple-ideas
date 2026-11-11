@@ -66,6 +66,15 @@ type Options struct {
 	// NoSpeakerText leaves every Notes: and Points: out of the page: the
 	// audience's view of a deck (si play --audience).
 	NoSpeakerText bool
+	// VoiceServer: the page asks si play for each part of the script it
+	// auto-plays (GET /_si/voice/<slide>/<part>.wav). Play only.
+	VoiceServer bool
+	// VoiceAudio, when set, is the audio of one part of a slide's script
+	// (slide and part from 0) for auto-play: a relative URL or a data URI,
+	// "" for none (si build --autoplay).
+	VoiceAudio func(slide, part int) string
+	// Autoplay primes the Auto-play bar when the page opens (si play --autoplay).
+	Autoplay bool
 	// Pages are the other pages find (/) offers (see Pages); nil offers none.
 	Pages []Page
 	// Prev and Next link a lab to its neighbours built from the same
@@ -313,7 +322,7 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 			}
 		}
 		if clicks > 0 && (clicks < sc.steps || clicks > sc.steps+1) {
-			dr.warnings = append(dr.warnings, dr.at(sc, "notes: %d [CLICK] cue(s) for %d build step(s): one per step, plus at most one for the next slide", clicks, sc.steps))
+			dr.warnings = append(dr.warnings, dr.at(sc, "notes: %d [CLICK] cue(s) for %d build step(s): one per step, plus at most one for the next slide (auto-play advances at each cue)", clicks, sc.steps))
 		}
 		fmt.Fprintf(&b, `<aside class="si-notes" hidden>%s</aside>`+"\n", notes)
 	}

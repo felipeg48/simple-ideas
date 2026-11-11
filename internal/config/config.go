@@ -26,10 +26,10 @@ import (
 func fileExists(p string) bool { _, err := os.Stat(p); return err == nil }
 
 // Actions are the remappable single-key commands (keys.<action>).
-var Actions = []string{"overview", "presenter", "draw", "timer", "mode", "fullscreen", "find", "help", "terminal", "remote"}
+var Actions = []string{"overview", "presenter", "draw", "timer", "mode", "fullscreen", "find", "help", "terminal", "remote", "autoplay"}
 
 // Features are the toggleable features (feature.<name>).
-var Features = []string{"draw", "timer", "presenter", "overview", "find", "terminal"}
+var Features = []string{"draw", "timer", "presenter", "overview", "find", "terminal", "autoplay"}
 
 // Default is an annotated si.conf showing every setting at its built-in value.
 // `si --export conf` prints it. Keep it in sync with the deck.js defaults.
@@ -50,6 +50,7 @@ keys.find:       /
 keys.help:       ?
 keys.terminal:   ` + "`" + `          # backtick; play terminal drawer (si play on a loopback address only)
 keys.remote:     q          # si play --remote: the phone and tablet links as QR codes
+keys.autoplay:   v          # auto-play: the deck reads its Notes: aloud and clicks at each [CLICK]
 
 # si build --handout: the paper of handout PDFs
 handout.paper: a4      # a4 or letter
@@ -61,6 +62,11 @@ audience.save: on
 # a talk with speakers: (Notes[Name]:): who may advance the deck from a
 # teleprompter: any (default) or turn (only the speaker whose turn it is)
 speakers.control: any
+
+# auto-play (v): how long a slide with no Notes: stays, in seconds (its
+# Notes: (N min) share when it has one); voice.<Name>: a speaker's own voice
+autoplay.dwell: 3
+# voice.Ana: kokoro:af_heart
 
 # draw (a): hold this key and move to draw with the cursor, no click
 draw.hold: alt         # alt (⌥ Option), shift, ctrl, meta (⌘ Command), or off
@@ -77,6 +83,7 @@ feature.presenter: on
 feature.overview:  on
 feature.find:      on
 feature.terminal:  on   # si play loopback only; always off in a built deck and on --addr 0.0.0.0
+feature.autoplay:  on   # the Auto-play button and key
 
 # extra pages for find (/): it already offers index.html, the other decks, labs
 # and PDFs of the build; add pages outside it (relative paths or URLs)
@@ -108,6 +115,8 @@ type Config struct {
 	SpeakersTurn             bool              // speakers.control: turn: only the speaker whose turn it is advances
 	Voice                    string            // voice: engine:name for si demo run and si voice say
 	VoiceStyle               string            // voice.style: a tone for engines that take one (openai)
+	SpeakerVoices            map[string]string // voice.<Name>: one speaker's voice (auto-play of a talk with speakers:)
+	AutoplayDwell            float64           // autoplay.dwell: seconds on a slide with no Notes: (0 = 3)
 	ElevenLabsKey, OpenAIKey string            // voice.<engine>.key: kept from the user's si.conf only
 	Path                     string            // the project si.conf Load read ("" when none)
 	Warnings                 []string          // unknown keys / bad values, for the caller to report
@@ -314,6 +323,18 @@ func (c *Config) parse(r io.Reader) {
 		case k == "voice.openai.key":
 			c.OpenAIKey = v
 			c.secretLines = append(c.secretLines, fmt.Sprintf("line %d: %s", ln, k))
+		case k == "autoplay.dwell":
+			var f float64
+			if _, err := fmt.Sscanf(strings.TrimSuffix(v, "s"), "%g", &f); err != nil || f <= 0 {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: autoplay.dwell wants seconds (3 or 2.5s), got %q", ln, v))
+			} else {
+				c.AutoplayDwell = f
+			}
+		case strings.HasPrefix(k, "voice.") && !strings.HasSuffix(k, ".key") && strings.Count(k, ".") == 1:
+			if c.SpeakerVoices == nil {
+				c.SpeakerVoices = map[string]string{}
+			}
+			c.SpeakerVoices[strings.TrimPrefix(k, "voice.")] = v
 		case k == "draw.hold":
 			hold, ok := map[string]string{"alt": "alt", "option": "alt", "shift": "shift", "ctrl": "ctrl", "control": "ctrl",
 				"meta": "meta", "cmd": "meta", "command": "meta", "off": "off", "none": "off"}[strings.ToLower(v)]

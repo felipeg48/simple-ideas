@@ -8,7 +8,7 @@
   var data = JSON.parse(document.getElementById('si-data').textContent);
   /* si.conf (optional): remap command keys and turn features on/off, over the defaults */
   var cfg = window.SI_CONFIG || {};
-  var cmd = { overview: 'o', presenter: 'p', draw: 'a', timer: 't', mode: 'd', fullscreen: 'f', find: '/', help: '?' };
+  var cmd = { overview: 'o', presenter: 'p', draw: 'a', timer: 't', mode: 'd', fullscreen: 'f', find: '/', help: '?', autoplay: 'v' };
   var termEnabled = !!cfg.terminal; /* si play on a loopback address only; never in a built deck */
   if (termEnabled) cmd.terminal = '`';
   /* si play --remote: this page joins the relay; ?role=tp turns it into the
@@ -27,7 +27,7 @@
   var remoteQR = !role && window.SI_REMOTE_QR && window.SI_REMOTE_QR.links && window.SI_REMOTE_QR.links.length ? window.SI_REMOTE_QR : null;
   if (remoteQR) cmd.remote = 'q';
   if (cfg.keys) for (var _k in cfg.keys) if (cmd.hasOwnProperty(_k) && cfg.keys[_k]) cmd[_k] = cfg.keys[_k];
-  var feat = { draw: true, timer: true, presenter: true, overview: true, find: true };
+  var feat = { draw: true, timer: true, presenter: true, overview: true, find: true, autoplay: true };
   if (cfg.features) for (var _f in cfg.features) if (feat.hasOwnProperty(_f)) feat[_f] = !!cfg.features[_f];
   var byKey = {}; for (var _a in cmd) byKey[cmd[_a]] = _a;
   var slides = Array.prototype.slice.call(deck.children).filter(function (e) { return e.classList.contains('si-slide'); });

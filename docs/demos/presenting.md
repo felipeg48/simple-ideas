@@ -91,3 +91,24 @@ Say: And one key turns the whole deck dark, or light again.
 - wait 2s
 - press d
 - wait 1500ms
+
+## It presents itself
+
+What it does: the deck reads its own notes aloud, moves on where they say, and hands control back at a key.
+
+Say: And when nobody is at the keyboard, the talk can give itself.
+- start "si new talk && si build talk/talk.md -o out" as prep
+- stop prep · wait
+- go /out/talk.html#3
+- expect text "Nobody owns the promise"
+- wait 1s
+- press v
+- expect text "Playing"
+- wait 10s
+
+Say: It reads the notes, shows them as a caption, and turns the slide on its own.
+- expect text "The five hand-offs"
+- wait 2s
+- press ArrowLeft
+- expect text "Paused"
+- wait 1500ms

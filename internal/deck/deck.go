@@ -158,6 +158,7 @@ type Meta struct {
 	Timeout      string // web demo: how long a step waits (5s)
 	Setup        string // web demo: a shell command run before each feature
 	Voice        string // web demo: engine:voice of the narration
+	Voices       string // auto-play: voices: Ada=af_heart, Ravi=kokoro:am_michael (one voice per speaker)
 	VoiceStyle   string // web demo: voice-style: (openai)
 	Pronounce    string // web demo: pronounce: (the last one; internal/webdemo reads them all)
 	Start        string // web demo: start: a background program (the last one; internal/webdemo reads them all)
@@ -166,7 +167,7 @@ type Meta struct {
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voice-style", "pronounce", "start", "stop", "shell"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell"}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -525,7 +526,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "fonts": &m.Fonts, "fonts-subset": &m.FontsSubset, "repo": &m.Repo,
 		"subtitle": &m.Subtitle, "edition": &m.Edition, "session": &m.Session, "slides": &m.SlidesRef, "duration": &m.Duration,
 		"navigator": &m.Navigator, "logo": &m.Logo, "cta": &m.CTA,
-		"linkedin": &m.LinkedIn, "tags": &m.Tags, "canonical": &m.Canonical, "cover": &m.Cover, "handout": &m.Handout, "handout-url": &m.HandoutURL, "speakers": &m.Speakers, "app": &m.App, "viewport": &m.Viewport, "timeout": &m.Timeout, "setup": &m.Setup, "voice": &m.Voice, "voice-style": &m.VoiceStyle, "pronounce": &m.Pronounce, "start": &m.Start, "stop": &m.Stop, "shell": &m.Shell,
+		"linkedin": &m.LinkedIn, "tags": &m.Tags, "canonical": &m.Canonical, "cover": &m.Cover, "handout": &m.Handout, "handout-url": &m.HandoutURL, "speakers": &m.Speakers, "app": &m.App, "viewport": &m.Viewport, "timeout": &m.Timeout, "setup": &m.Setup, "voice": &m.Voice, "voices": &m.Voices, "voice-style": &m.VoiceStyle, "pronounce": &m.Pronounce, "start": &m.Start, "stop": &m.Stop, "shell": &m.Shell,
 		"layout": &m.MapLayout, "lines": &m.MapLines, "nodes": &m.MapNodes, "map-theme": &m.MapTheme, "watermark-position": &m.WatermarkPos, "favicon": &m.Favicon, "touch-icon": &m.TouchIcon, "og-image": &m.OGImage,
 		"view": &m.MapView, "camera": &m.MapCamera, "floors": &m.MapFloors, "kind": &m.MapKind, "flow": &m.MapFlow,
 	}[key]
@@ -577,6 +578,8 @@ func validateMeta(key, val string) string {
 		return oneOf("mind map floors", val, OnOff)
 	case "watermark-position":
 		return oneOf("watermark-position", val, WatermarkPos)
+	case "voices":
+		return checkVoices(val)
 	case "accent":
 		if !colourRE.MatchString(val) {
 			return fmt.Sprintf("accent %q is not a CSS colour", val)
@@ -909,6 +912,15 @@ func (d *Deck) voices(s *Slide, blocks []noteBlock, speakers []string) {
 
 // checkSpeakers warns about a speaker of `speakers:` with no lines anywhere.
 func (d *Deck) checkSpeakers() {
+	for n := range d.Meta.VoiceMap() {
+		found := false
+		for _, s := range d.Meta.SpeakerList() {
+			found = found || strings.EqualFold(s, n)
+		}
+		if !found {
+			d.Warnings = append(d.Warnings, Problem{File: rel(d.Path), Msg: fmt.Sprintf("voices: %s is not in speakers: (%s)", n, d.Meta.Speakers)})
+		}
+	}
 	for _, n := range d.Meta.SpeakerList() {
 		said := false
 		for _, s := range d.Slides {

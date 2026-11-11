@@ -6,7 +6,7 @@
   function toggleDraw(on) {
     if (!draw) return;
     if (on === undefined) on = !drawMode;
-    drawMode = on; if (!on) { drawing = false; erasing = false; }
+    drawMode = on; if (!on) { drawing = false; erasing = false; } else apTouch(); /* the pen takes over from auto-play */
     document.body.classList.toggle('si-drawing', on);
     draw.setAttribute('aria-hidden', on ? 'false' : 'true');
     syncPenUI();
@@ -143,6 +143,7 @@
     else if (a === 'help') toggleHelp();
     else if (a === 'terminal') toggleTerminal();
     else if (a === 'remote') toggleRemoteQR();
+    else if (a === 'autoplay') { if (feat.autoplay) apToggle(); }
   }
   /* the remote links as QR codes, for a phone or tablet in the room (si play --remote) */
   var rqBox = null;
@@ -174,7 +175,7 @@
     var _ht = help.querySelector('table');
     if (_ht) { var _tr = document.createElement('tr'); _tr.innerHTML = '<td>' + cmd.remote + '</td><td>remote: the phone and tablet links as QR codes</td>'; _ht.appendChild(_tr); }
   }
-  var actions = { next: forward, prev: backward, overview: function () { runCmd('overview'); }, draw: function () { runCmd('draw'); }, presenter: function () { runCmd('presenter'); }, find: function () { runCmd('find'); }, mode: toggleMode, help: function () { toggleHelp(); }, fullscreen: fullscreen };
+  var actions = { next: forward, prev: backward, overview: function () { runCmd('overview'); }, draw: function () { runCmd('draw'); }, presenter: function () { runCmd('presenter'); }, find: function () { runCmd('find'); }, mode: toggleMode, help: function () { toggleHelp(); }, fullscreen: fullscreen, autoplay: function () { runCmd('autoplay'); } };
   /* a disabled feature hides its toolbar button */
   if (!feat.overview) { var _bo = document.querySelector('[data-si-action="overview"]'); if (_bo) _bo.style.display = 'none'; }
   if (!feat.presenter) { var _bp = document.querySelector('[data-si-action="presenter"]'); if (_bp) _bp.style.display = 'none'; }
@@ -218,7 +219,7 @@
         e.preventDefault(); backward(); break;
       case 'Home': e.preventDefault(); go(0, 0); break;
       case 'End': e.preventDefault(); go(n - 1, 'end'); break;
-      case 'Escape': toggleHelp(false); if (deck.classList.contains('si-overview')) overview(false); break;
+      case 'Escape': toggleHelp(false); if (ap && ap.state !== 'off') apStop(); if (deck.classList.contains('si-overview')) overview(false); break;
       case 'S': runCmd('presenter'); break;
       case 'h': runCmd('help'); break;
       default: { var act = byKey[e.key]; if (act) { e.preventDefault(); runCmd(act); } }
