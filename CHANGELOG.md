@@ -3,6 +3,10 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.1.5:** documents: the "On this page" contents column shows its links
+  at full strength (they were muted grey, hard to read); hovering one gives
+  it a tinted row and an accent bar instead of only darkening the text, and
+  the section you are reading is tinted too.
 - **v3.1.4:** a `pronounce:` rule whose words contain the word itself
   (`VEX = vex`) no longer makes `si demo run` loop for ever before filming;
   each rule repeats at most 3 times and stops when nothing changes.

@@ -228,10 +228,10 @@ html{font-size:clamp(100%,.85rem + .3vw,150%);-webkit-text-size-adjust:100%;scro
 .si-doc-toc summary{list-style:none;margin-bottom:.7rem;font:600 .7rem/1.4 var(--si-font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--si-muted);cursor:pointer}
 .si-doc-toc summary::-webkit-details-marker{display:none}
 .si-doc-toc ol{list-style:none;margin:0;padding:0;border-left:1px solid var(--si-line)}
-.si-doc-toc li a{display:block;padding:.32em .9em;margin-left:-1px;border-left:2px solid transparent;color:var(--si-muted);text-decoration:none}
+.si-doc-toc li a{display:block;padding:.32em .9em;margin-left:-1px;border-left:2px solid transparent;border-radius:0 .35em .35em 0;color:var(--si-fg);text-decoration:none}
 .si-doc-toc li.si-toc-h3 a{padding-left:1.8em;font-size:.94em}
-.si-doc-toc li a:hover{color:var(--si-fg)}
-.si-doc-toc li a[aria-current="true"]{color:var(--si-accent);border-left-color:var(--si-accent);font-weight:600}
+.si-doc-toc li a:hover{background:color-mix(in srgb,var(--si-fg) 6%,transparent);border-left-color:color-mix(in srgb,var(--si-accent) 55%,transparent)}
+.si-doc-toc li a[aria-current="true"]{color:var(--si-accent);background:color-mix(in srgb,var(--si-accent) 10%,transparent);border-left-color:var(--si-accent);font-weight:600}
 @media (width < 56rem){
   .si-doc-toc details{padding:.9rem 1.1rem;background:var(--si-surface);border:1px solid var(--si-line);border-radius:var(--si-radius)}
   .si-doc-toc summary{margin:0}
