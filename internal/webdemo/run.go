@@ -1045,6 +1045,11 @@ func (r *runner) step(st *Step) (string, error) {
 	case "scroll", "waitfor", "note":
 		if st.Kind == "waitfor" {
 			defer r.waiting()()
+			if st.Within > 0 { // its own limit, even in a take (where steps fail fast)
+				was := r.timeout
+				r.timeout = st.Within
+				defer func() { r.timeout = was }()
+			}
 		}
 		var err error
 		if st.Kind != "note" || st.Target != (Locator{}) {

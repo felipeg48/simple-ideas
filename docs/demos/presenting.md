@@ -148,10 +148,10 @@ Say: And when nobody is at the keyboard, the talk can give itself.
 - wait 1s
 - press v
 - expect text "Playing"
-- wait 10s
+- wait 3s
 
 Say: It reads the notes, shows them as a caption, and turns the slide on its own.
-- expect text "The five hand-offs"
+- wait for "The five hand-offs" · within 60s
 - wait 2s
 - press ArrowLeft
 - expect text "Paused"

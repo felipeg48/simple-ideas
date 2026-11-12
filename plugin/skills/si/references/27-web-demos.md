@@ -65,7 +65,7 @@ Say: A test card goes through in a second.
 | `select "Express" in "Shipping"` | an option of a `<select>` (or a listbox) |
 | `check "Gift wrap"` · `uncheck …` | a checkbox or switch |
 | `hover "Help"` · `scroll to "Footer"` | move the mouse over it; scroll it into view |
-| `wait 1s` · `wait for "Saved"` | a pause; or until something appears |
+| `wait 1s` · `wait for "Saved"` | a pause; or until something appears (`· within 40s` for longer than `timeout:`, also in a film, where steps otherwise give up after 3 s) |
 | `note "Username: demo" at "Username"` | a callout in the video: a bubble pointing at the element, ringed, on screen to the end of its `Say:` block (`· for 3s` for less; `· position top\|right\|bottom\|left`, else where it fits; no `at` = a note at the top); a test checks its element is there |
 | `expect text "Paid"` | the page shows these words |
 | `expect url /orders/4711/receipt` | the address (a path, or a full URL; a `?…` or `#…` after it is fine) |

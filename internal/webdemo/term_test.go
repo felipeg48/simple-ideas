@@ -26,6 +26,7 @@ func TestTerminalSteps(t *testing.T) {
 		{`terminal "Broker" · window=mac title="the broker · 1" theme=dusk backdrop=graphite size=100x30`, Step{Kind: "terminal", Name: "Broker",
 			Opts: map[string]string{"window": "mac", "title": "the broker · 1", "theme": "dusk", "backdrop": "graphite", "size": "100x30"}}},
 		{`browser`, Step{Kind: "browser"}},
+		{`wait for "The five hand-offs" · within 40s`, Step{Kind: "waitfor", Target: Locator{Name: "The five hand-offs"}, Within: 40 * time.Second}},
 		{`type ", live"`, Step{Kind: "type", Value: Value{Text: ", live"}}},
 		{`run "./bin/send orders hello"`, Step{Kind: "run", Value: Value{Text: "./bin/send orders hello"}}},
 		{`run "make seed" · wait`, Step{Kind: "run", Value: Value{Text: "make seed"}, Block: true}},

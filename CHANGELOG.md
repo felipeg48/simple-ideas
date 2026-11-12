@@ -3,6 +3,9 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.1.3:** web demos: `wait for "…" · within 40s` waits longer than
+  `timeout:`, also while filming (where a step otherwise gives up after 3 s);
+  si's presenting demo waits that way for a deck reading its own notes.
 - **v3.1.2:** web demo videos never show a list of files: a folder `app:`
   serves a plain page where it would list a folder, and a feature whose
   first page step is a `go` opens on a plain page, not the app's root. si's

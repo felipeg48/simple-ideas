@@ -576,8 +576,14 @@ func ParseStep(line string) (*Step, error) {
 				return outputStep(st, "waitfor-output", r)
 			}
 			st.Kind = "waitfor"
-			if st.Target, rest, err = locator(r); err != nil || rest != "" {
+			parts := clauses(r)
+			if st.Target, rest, err = locator(parts[0]); err != nil || rest != "" {
 				return nil, bad(`%q: wait for needs one "text" or element`)
+			}
+			for _, c := range parts[1:] { // · within 40s: longer than timeout: (and a take's 3 s)
+				if ok, err := readyClause(c, &Ready{}, &st.Within); !ok || err != nil || !strings.HasPrefix(c, "within") {
+					return nil, bad(`%q: only · within 30s may follow wait for`)
+				}
 			}
 			break
 		}
