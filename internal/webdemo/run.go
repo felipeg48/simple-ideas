@@ -138,11 +138,20 @@ func Run(s *Script, o Options) (*Report, error) {
 	defer r.shutdown() // terminals and programs never outlive the run, even on a panic
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
-	quit := make(chan struct{})
-	defer func() { signal.Stop(sig); close(quit) }()
+	quit, stopping := make(chan struct{}), make(chan struct{})
+	defer func() {
+		signal.Stop(sig)
+		select {
+		case <-stopping: // Ctrl-C came: the handler stops everything and exits 130; never return as if the run ended
+			select {}
+		default:
+		}
+		close(quit)
+	}()
 	go func() {
 		select {
 		case <-sig: // Ctrl-C: stop what the run started, then go
+			close(stopping)
 			fmt.Fprintln(r.o.Log, "interrupted: stopping the terminals and programs")
 			r.shutdown()
 			r.pm.Lock()
