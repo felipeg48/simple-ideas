@@ -36,3 +36,16 @@ func TestVideos(t *testing.T) {
 		t.Errorf("files not copied: %v", got)
 	}
 }
+
+// A release filmed before v2.41.0 has all.mp4: the site still shows it.
+func TestVideosLegacyNames(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, "decks"), 0o755)
+	os.WriteFile(filepath.Join(dir, "decks", "all.mp4"), []byte("OLD"), 0o644)
+	got := map[string]string{}
+	t.Setenv("SI_DEMO_VIDEOS", dir)
+	out := newVideos(func(rel, text string) error { got[rel] = text; return nil }).replace("<!-- si-video: decks -->\n", "features/decks.md")
+	if !strings.Contains(out, `src="../videos/decks/decks.mp4"`) || got["videos/decks/decks.mp4"] != "OLD" {
+		t.Errorf("legacy all.mp4 not used: %q %v", out, got)
+	}
+}

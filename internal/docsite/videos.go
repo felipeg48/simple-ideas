@@ -53,8 +53,14 @@ func (v *videos) block(area, up string) (string, error) {
 	if v.dir == "" {
 		return "", nil
 	}
+	// films before v2.41.0 named the whole run all.mp4 / all.vtt: copy them under
+	// the new names, so a site built from an older release still shows its videos
+	legacy := map[string]string{}
 	if _, err := os.Stat(filepath.Join(src, area+".mp4")); err != nil {
-		return "", nil
+		if _, err := os.Stat(filepath.Join(src, "all.mp4")); err != nil {
+			return "", nil
+		}
+		legacy[area+".mp4"], legacy[area+".vtt"] = "all.mp4", "all.vtt"
 	}
 	chs := readChapters(filepath.Join(src, "chapters.txt"))
 	files := []string{area + ".mp4", area + ".vtt"}
@@ -64,7 +70,11 @@ func (v *videos) block(area, up string) (string, error) {
 	}
 	if !v.done[area] {
 		for _, f := range files {
-			raw, err := os.ReadFile(filepath.Join(src, f))
+			from := f
+			if l, ok := legacy[f]; ok {
+				from = l
+			}
+			raw, err := os.ReadFile(filepath.Join(src, from))
 			if err != nil {
 				continue // a feature without narration has no .vtt
 			}
