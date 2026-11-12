@@ -11,17 +11,27 @@ import (
 
 	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
+	"github.com/felipeg48/simple-ideas/internal/pinned"
 	"github.com/felipeg48/simple-ideas/internal/render"
 	"github.com/felipeg48/simple-ideas/internal/tools"
 	"github.com/felipeg48/simple-ideas/internal/webdemo"
 )
 
 const demoUsage = `Usage:
-  si demo test <script.md|.adoc|.json> [--feature "Name"] [--junit report.xml] [--viewport V] [-o dir]
+  si demo test <script.md|.adoc|.json|folder/|source> [--feature "Name"] [--junit report.xml] [--viewport V] [-o dir] [--trust]
         run a web demo script (type: demo with app:) in headless Chrome as a test: one line
         per step, report.html + report.json in demo-out/<script>/ (or -o dir), exit 1 on a failure;
-        --junit also writes JUnit XML (one test case per feature) for CI
-  si demo run <script> [--feature "Name"] [--voice engine:name] [--viewport V] [--junit report.xml] [-o dir]
+        --junit also writes JUnit XML (one test case per feature) for CI.
+        A folder runs every demo script in it, in name order, each in demo-out/<script>/, with one
+        combined report.html + report.json in demo-out/ and one JUnit file (a test suite per script).
+        A source: github:owner/repo@REF/path/script.md or …/folder/ (the repo fetched once at that
+        pin into ~/.si/cache/repos, its layout kept; output in demo-out/<repo>/<script>/), or
+        "https://…/script.md · sha256 HEX" (one file, its fingerprint checked)
+        --trust   run code from elsewhere (a repo, a URL, gist:/github:/URL sources of start:,
+                  prepare:, setup:, stop:, cleanup:) without asking, for this run (CI). Without it,
+                  si shows each new pin (where from, size, first lines) and asks once (remembered
+                  in ~/.si/trusted); with no terminal to ask in it refuses and says why
+  si demo run <script|folder/|source> [--feature "Name"] [--voice engine:name] [--viewport V] [--junit report.xml] [-o dir]
               [--with captions,subtitles,…] [--fast-forward 3s | --no-fast-forward] [--region "<css>" | --crop x,y,w,h]
               [--transition fade|slide|wipe|pop|zoom|circle|cut [0.4s]]
         perform the same steps on film: a drawn cursor glides to each target, clicks ripple,
@@ -53,17 +63,19 @@ const demoUsage = `Usage:
                   wipe[-…], pop, zoom, circle; else transition: in front matter. A step's own
                   · slide wins. Camera moves (zoom to, pan to, zoom out) and spotlight "…" are
                   steps (RULES.md §27, Transitions and camera)
-  Both run start: programs first and stop them at the end (and on Ctrl-C); terminal "Name"
-  steps open a real shell, filmed as a framed window (RULES.md §27, Terminals and programs).
+  Both run start:, prepare: and step: in the order written, then ## Before; setup: before each
+  feature; ## After, stop:, every program stopped, cleanup: (always: after a failure and on
+  Ctrl-C too). ## Before and ## After are never filmed. terminal "Name" steps open a real shell,
+  filmed as a framed window (RULES.md §27, Terminals and programs; Before and after).
 `
 
-// runDemo is `si demo test|run <script>`. Its flags are its own: --feature
-// takes a name here, unlike si report's --feature.
+// runDemo is `si demo test|run <script|folder|source>`. Its flags are its
+// own: --feature takes a name here, unlike si report's --feature.
 func runDemo(argv []string, stdout, stderr io.Writer) int {
 	fl := flag.NewFlagSet("si demo", flag.ContinueOnError)
 	fl.SetOutput(io.Discard)
 	var feature, junit, out, viewport, voice, region, crop, trans string
-	var help, captions, noCaptions, noFF bool
+	var help, captions, noCaptions, noFF, trust bool
 	var with multi
 	fastFwd := 3 * time.Second
 	fl.StringVar(&feature, "feature", "", "")
@@ -80,6 +92,7 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 	fl.StringVar(&trans, "transition", "", "")
 	fl.DurationVar(&fastFwd, "fast-forward", fastFwd, "")
 	fl.BoolVar(&noFF, "no-fast-forward", false, "")
+	fl.BoolVar(&trust, "trust", false, "")
 	fl.BoolVar(&help, "help", false, "")
 	fl.BoolVar(&help, "h", false, "")
 	var args []string
@@ -94,6 +107,7 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 		}
 		args, argv = append(args, argv[0]), argv[1:]
 	}
+	args = pinned.JoinTarget(args)
 	if help {
 		fmt.Fprint(stdout, demoUsage)
 		return exitOK
@@ -106,7 +120,7 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 		with = append(with, "captions")
 	}
 	if len(args) != 2 || (args[0] != "test" && args[0] != "run") {
-		fmt.Fprintf(stderr, "si demo: test or run, and one script\n\n%s", demoUsage)
+		fmt.Fprintf(stderr, "si demo: test or run, and one script, folder or source\n\n%s", demoUsage)
 		return exitUsage
 	}
 	film := args[0] == "run"
@@ -115,24 +129,6 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	if _, _, err := demoWith(with, "", ""); err != nil {
-		fmt.Fprintf(stderr, "si demo: --%v\n", err)
-		return exitUsage
-	}
-	s, err := webdemo.ParseFile(args[1])
-	if err != nil {
-		fmt.Fprintf(stderr, "si: %v\n", err)
-		return exitProblems
-	}
-	for _, w := range s.Warnings {
-		fmt.Fprintf(stderr, "warning: %s\n", w)
-	}
-	if len(s.Problems) > 0 {
-		for _, p := range s.Problems {
-			fmt.Fprintln(stderr, p)
-		}
-		return exitProblems
-	}
-	if err := s.SetViewport(viewport); err != nil {
 		fmt.Fprintf(stderr, "si demo: --%v\n", err)
 		return exitUsage
 	}
@@ -146,25 +142,151 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 			return exitUsage
 		}
 	}
-	o := webdemo.Options{Feature: feature, Log: stdout, SI: version, Region: region, Crop: crop}
+	base := webdemo.Options{Feature: feature, Log: stdout, SI: version, Region: region, Crop: crop}
 	if trans != "" {
 		t, err := webdemo.ParseTransition(trans)
 		if err != nil {
 			fmt.Fprintf(stderr, "si demo: --transition: %v\n", err)
 			return exitUsage
 		}
-		o.Transition = &t
+		base.Transition = &t
+	}
+	// the scripts: a file, a folder (every demo script in it), or the same
+	// from a repo or a URL, fetched and trusted once per pin
+	var client *pinned.Client
+	fetcher := func() *pinned.Client {
+		if client == nil {
+			client = newFetcher(trust, stderr)
+		}
+		return client
+	}
+	local, repo, err := fetchTarget(args[1], fetcher, func(p string) []string { ps, _ := demoScripts(p); return ps })
+	if err != nil {
+		fmt.Fprintf(stderr, "si: %v\n", err)
+		return exitProblems
+	}
+	paths, err := demoScripts(local)
+	if err != nil {
+		fmt.Fprintf(stderr, "si: %v\n", err)
+		return exitProblems
+	}
+	folder := len(paths) > 1 || isDir(local)
+	var scripts []*webdemo.Script
+	bad := 0
+	for _, p := range paths {
+		s, err := webdemo.ParseFile(p)
+		if err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitProblems
+		}
+		for _, w := range s.Warnings {
+			fmt.Fprintf(stderr, "warning: %s\n", w)
+		}
+		for _, p := range s.Problems {
+			fmt.Fprintln(stderr, p)
+		}
+		bad += len(s.Problems)
+		if err := s.SetViewport(viewport); err != nil {
+			fmt.Fprintf(stderr, "si demo: --%v\n", err)
+			return exitUsage
+		}
+		scripts = append(scripts, s)
+	}
+	if bad > 0 {
+		return exitProblems
+	}
+	for _, s := range scripts { // every source fetched and trusted before anything runs
+		if err := fetchSources(s, fetcher); err != nil {
+			fmt.Fprintf(stderr, "si: %s: %v\n", filepath.Base(s.Path), err)
+			return exitProblems
+		}
 	}
 	if film {
+		if base.FFmpeg = tools.Find("ffmpeg"); base.FFmpeg == "" {
+			fmt.Fprintf(stderr, "si: %s\n", tools.Need("ffmpeg", "si demo run"))
+			return exitProblems
+		}
+	}
+	if base.Chrome = findChrome(); base.Chrome == "" {
+		fmt.Fprintf(stderr, "si: %s\n", tools.Need("chrome", "si demo"))
+		return exitProblems
+	}
+	// demo-out/<script>/; a folder: demo-out/<script>/ each and the combined
+	// report in demo-out/; from a repo or a URL: demo-out/<repo>/<script>/
+	root := out
+	if root == "" {
+		root = filepath.Join("demo-out", repo)
+	}
+	suite := &webdemo.Suite{Title: filepath.Base(strings.TrimSuffix(local, string(filepath.Separator))), SI: version, Date: time.Now().Format(time.RFC3339)}
+	var last *webdemo.Report
+	code := exitOK
+	for _, s := range scripts {
+		dir := root
+		if folder || out == "" {
+			dir = filepath.Join(root, s.Name)
+		}
+		if folder {
+			fmt.Fprintf(stdout, "── %s\n", filepath.Base(s.Path))
+		}
+		rep, c := demoOne(s, base, dir, film, with, voice, fastFwd, noFF, stdout, stderr)
+		if rep == nil {
+			if !folder {
+				return c
+			}
+			code = c
+			rep = &webdemo.Report{Script: filepath.Base(s.Path), Title: firstNonEmpty(s.Title, s.Name), Failed: 1,
+				Features: []webdemo.FeatureResult{{Name: s.Name, Status: "failed", Steps: []webdemo.StepResult{{Text: "run the script", Status: "failed", Found: "it could not start (see the output)"}}}}}
+		}
+		if !rep.OK() {
+			code = exitProblems
+		}
+		rel, _ := filepath.Rel(root, dir)
+		suite.Add(rep, rel)
+		last = rep
+	}
+	if folder {
+		if err := os.MkdirAll(root, 0o755); err == nil {
+			err = suite.Write(root)
+		}
+		if err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitProblems
+		}
+		fmt.Fprintf(stdout, "si demo: %d script(s): %d passed, %d failed in %.1fs; report: %s\n", len(suite.Reports), suite.Passed, suite.Failed, suite.Seconds, filepath.Join(root, "report.html"))
+	}
+	if junit != "" {
+		var b []byte
+		var err error
+		if folder {
+			b, err = suite.JUnit()
+		} else {
+			b, err = last.JUnit()
+		}
+		if err == nil {
+			err = os.WriteFile(junit, b, 0o644)
+		}
+		if err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitProblems
+		}
+	}
+	return code
+}
+
+// demoOne runs one script with its output in out; a nil report means it
+// could not start (the code says why it ended).
+func demoOne(s *webdemo.Script, base webdemo.Options, out string, film bool, with multi, voice string, fastFwd time.Duration, noFF bool, stdout, stderr io.Writer) (*webdemo.Report, int) {
+	o := base
+	if film {
 		// --voice > front matter > si.conf beside the script > the user's si.conf > default
-		cfg := config.Load("", filepath.Join(filepath.Dir(args[1]), "si.conf"))
+		cfg := config.Load("", filepath.Join(s.Dir(), "si.conf"))
 		for _, w := range cfg.Warnings {
 			fmt.Fprintf(stderr, "warning: %s\n", w)
 		}
 		v, err := chooseVoice(voice, s.Voice, cfg.Voice)
 		if err != nil {
 			fmt.Fprintf(stderr, "si demo: %v\n", err)
-			return exitUsage
+			return nil, exitUsage
 		}
 		if s.Style == "" {
 			s.Style = cfg.VoiceStyle
@@ -177,51 +299,37 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 		if noFF || fastFwd < 0 {
 			o.FastForward = 0
 		}
-		if o.FFmpeg = tools.Find("ffmpeg"); o.FFmpeg == "" {
-			fmt.Fprintf(stderr, "si: %s\n", tools.Need("ffmpeg", "si demo run"))
-			return exitProblems
-		}
-	}
-	if o.Chrome = findChrome(); o.Chrome == "" {
-		fmt.Fprintf(stderr, "si: %s\n", tools.Need("chrome", "si demo"))
-		return exitProblems
-	}
-	if out == "" {
-		out = filepath.Join("demo-out", s.Name)
 	}
 	if err := os.MkdirAll(out, 0o755); err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
-		return exitProblems
+		return nil, exitProblems
 	}
 	o.Out = out
 	rep, err := webdemo.Run(s, o)
 	if err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
-		return exitProblems
+		return nil, exitProblems
 	}
 	if !film { // a run writes its report itself, when asked for (--with report)
 		if err := rep.Write(out); err != nil {
 			fmt.Fprintf(stderr, "si: %v\n", err)
-			return exitProblems
-		}
-	}
-	if junit != "" {
-		b, err := rep.JUnit()
-		if err == nil {
-			err = os.WriteFile(junit, b, 0o644)
-		}
-		if err != nil {
-			fmt.Fprintf(stderr, "si: %v\n", err)
-			return exitProblems
+			return nil, exitProblems
 		}
 	}
 	if film && o.With.Readme {
 		if err := demoReadme(rep, s, out, "si demo "+strings.Join(os.Args[2:], " ")); err != nil {
 			fmt.Fprintf(stderr, "si: README: %v\n", err)
-			return exitProblems
+			return nil, exitProblems
 		}
 	}
-	fmt.Fprintf(stdout, "si demo: %d passed, %d failed in %.1fs", rep.Passed, rep.Failed, rep.Seconds)
+	fmt.Fprintf(stdout, "si demo: %d passed, %d failed", rep.Passed, rep.Failed)
+	if rep.Skipped > 0 {
+		fmt.Fprintf(stdout, ", %d skipped", rep.Skipped)
+	}
+	if !rep.OK() && rep.Failed == 0 {
+		fmt.Fprint(stdout, " (a step around the features failed)")
+	}
+	fmt.Fprintf(stdout, " in %.1fs", rep.Seconds)
 	switch {
 	case !film:
 		fmt.Fprintf(stdout, "; report: %s\n", filepath.Join(out, "report.html"))
@@ -231,9 +339,9 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "; in %s: %s\n", out, strings.Join(rep.Files, ", "))
 	}
 	if !rep.OK() {
-		return exitProblems
+		return rep, exitProblems
 	}
-	return exitOK
+	return rep, exitOK
 }
 
 // demoWith is what si demo run writes besides <script>.mp4: --with (every

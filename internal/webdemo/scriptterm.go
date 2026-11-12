@@ -2,6 +2,8 @@ package webdemo
 
 import (
 	"fmt"
+
+	"github.com/felipeg48/simple-ideas/internal/pinned"
 	"regexp"
 	"strconv"
 	"strings"
@@ -11,11 +13,16 @@ import (
 // Program is a command run in the background: a front matter start: (the
 // whole run) or a start step (its feature).
 type Program struct {
-	Cmd    string
-	Name   string // as NAME (an unnamed start: is start-<n>); its log is <name>.log
-	Ready  Ready
-	Within time.Duration // how long Ready may take (0 = 30 s)
-	Line   int
+	Cmd     string
+	Name    string // as NAME (an unnamed start: is start-<n>); its log is <name>.log
+	Ready   Ready
+	Within  time.Duration // how long Ready may take (0 = 30 s)
+	Line    int
+	Text    string         // the line as written
+	Source  *pinned.Source // start: gist:…, github:…, a pinned URL (Cmd is set once fetched)
+	Args    string         // the arguments after a source
+	Dir     string         // · in <dir>, relative to the script
+	fetched bool
 }
 
 // Ready is what a started program must show before the demo goes on: a
@@ -104,10 +111,11 @@ func readyClause(c string, r *Ready, within *time.Duration) (bool, error) {
 	return false, nil
 }
 
-// start reads a front matter `start: <command> [as NAME] · wait for …`.
-func (s *Script) start(v string, line int) {
+// start reads a front matter `start: <command> [as NAME] · wait for …`
+// (· in <dir>, · sha256 <hex> for a URL source).
+func (s *Script) start(v string, line int) *Program {
 	parts := clauses(v)
-	p := &Program{Line: line}
+	p := &Program{Line: line, Text: v}
 	cmd := parts[0]
 	if q, rest, err := quoted(cmd); err == nil {
 		cmd = q
@@ -115,7 +123,7 @@ func (s *Script) start(v string, line int) {
 			p.Name = n
 		} else if rest != "" {
 			s.problem(line, "start: %q: after the quoted command, only as NAME", v)
-			return
+			return nil
 		}
 	} else if f := strings.Fields(cmd); len(f) >= 3 && f[len(f)-2] == "as" && nameRE.MatchString(f[len(f)-1]) {
 		p.Name = f[len(f)-1]
@@ -125,14 +133,32 @@ func (s *Script) start(v string, line int) {
 	p.Cmd = strings.TrimSpace(cmd)
 	if p.Cmd == "" {
 		s.problem(line, `start: needs a command (start: ./server · wait for "ready")`)
-		return
+		return nil
 	}
+	sum := ""
 	for _, c := range parts[1:] {
+		if w, rest := cutWord(c); w == "in" && rest != "" {
+			p.Dir = unquote(rest)
+			continue
+		} else if w == "sha256" {
+			sum = rest
+			continue
+		}
 		if ok, err := readyClause(c, &p.Ready, &p.Within); !ok || err != nil {
-			s.problem(line, `start: %q: after ·, write wait for "text", wait for port N, wait 3s or within 60s`, c)
-			return
+			s.problem(line, `start: %q: after ·, write wait for "text", wait for port N, wait 3s, within 60s or in <folder>`, c)
+			return nil
 		}
 	}
+	src, args, err := source(p.Cmd, sum)
+	if err != nil {
+		s.problem(line, "start: %v", err)
+		return nil
+	}
+	if src != nil && src.Folder() {
+		s.problem(line, "start: %s is a folder: a program is one script", src.Text)
+		return nil
+	}
+	p.Source, p.Args = src, args
 	if p.Name == "" {
 		p.Name = fmt.Sprintf("start-%d", len(s.Starts)+1)
 	}
@@ -142,6 +168,7 @@ func (s *Script) start(v string, line int) {
 		}
 	}
 	s.Starts = append(s.Starts, p)
+	return p
 }
 
 // termStep reads terminal, browser, run, start and stop.
@@ -329,6 +356,15 @@ func (s *Script) checkScenes(f *Feature) {
 	known := map[string]bool{}
 	for _, p := range s.Starts {
 		known[p.Name] = true
+	}
+	if s.Before != nil && f != s.Before { // programs started in ## Before live for the whole run
+		for _, b := range s.Before.Blocks {
+			for _, st := range b.Steps {
+				if st.Kind == "start" {
+					known[st.Name] = true
+				}
+			}
+		}
 	}
 	term := "" // the current terminal ("" = the browser)
 	if first := firstStep(f); s.App == "none" && first != nil && first.Kind != "terminal" {

@@ -190,6 +190,64 @@
   `{{else}}`, `{{break}}`, `{{continue}}`, `{{nil}}`, `{{true}}`, `{{false}}`. The file may also carry a top-level `name`
   (the drawer title) and `description`.
 
+### A talk that sets itself up, from anywhere
+
+A talk that shows something live (a broker, a database, a cluster) can set it
+up itself. Front matter `setup:`, `start:`, `stop:` and `cleanup:` may each
+repeat; `setup:` and `start:` run **in the order written**:
+
+```markdown
+---
+title: The orders broker, live
+setup:   mkdir -p .live && echo 3 > .live/orders     # must finish, exit 0
+start:   sh broker.sh as broker · wait for "ready"    # keeps running while you present
+setup:   echo 4 > .live/orders                        # after the broker is up
+stop:    echo "draining" > .live/state                # when si play quits, the programs still running
+cleanup: rm -rf .live                                 # last, after the programs are stopped
+---
+```
+
+| Key | When | Notes |
+|---|---|---|
+| `setup:` | before the first page, in order with `start:` | must exit 0 (within 10 minutes; `· within 30m` for longer); runs in the deck's folder (`· in <dir>` for another) |
+| `start:` | before the first page, in order with `setup:` | a program kept running while si serves the talk: `as NAME`, `· wait for "text"`, `· wait for port 5672`, `· wait 3s`, `· within 60s`, as in a web demo (§27); its output goes to `<name>.log` in `$SI_RUN_LOGS` |
+| `stop:` | when `si play` quits (Ctrl-C too), while the programs still run | |
+| `cleanup:` | last, after si has stopped every program (SIGTERM, then SIGKILL after 5 s, the whole process group) | |
+
+- **When.** `si play` and `si serve` run them before they serve the first
+  page; meanwhile every page is a **getting ready** page that shows each step
+  (waiting, running, ✓, ✗) and opens the talk once they are done. A failed step
+  is shown there and in the terminal; si then runs `stop:` and `cleanup:` and
+  exits 1. `si build` never runs them (a built deck is a file); `si check`
+  checks each line and the pin of each source. A web demo script (§27) has its
+  own meaning for these keys.
+- **The programs.** The play terminal drawer's shells have `$SI_RUN_LOGS`, the
+  folder of the programs' logs (`tail -f $SI_RUN_LOGS/broker.log`); the
+  programs run on this machine, so the drawer, the runbook's commands and the
+  talk's own `code:` reach them as they would any local program.
+- **Sources.** A line may name a script from elsewhere instead of a command,
+  with its arguments after it: `setup: github:acme/ops@v1.4/scripts/install-broker.sh --version 3`.
+  The sources, their pins and the trust question are those of a web demo (§27,
+  Scripts from anywhere): asked before running, once per pin, never silently.
+- **A talk from a repo or a URL.** `si play`, `si serve` and `si build` take
+  `github:owner/repo@REF/talks/talk.md` (or a folder, `…/talks/`): the repo is
+  fetched once at that tag or commit into `~/.si/cache/repos`, its layout kept
+  (a deck's `../images/…` still resolve), and served from there. A plain URL
+  takes its fingerprint: `si play "https://example.com/talk.md · sha256 9f2a…"`
+  (one file; pictures beside it are not fetched). The same trust rules hold:
+  the first time, si shows where it comes from, its size and first lines, and
+  asks; `--trust` says yes for one run (CI). A talk from a repo that sets
+  nothing up just plays.
+
+```bash
+si play examples/live/talk.md                    # sets up, presents, cleans up on Ctrl-C
+si play github:acme/talks@v2.1/orders/talk.md    # asked once for v2.1
+si build github:acme/talks@v2.1/orders/ --trust  # CI: build a pinned talk
+```
+
+Example: `examples/live/talk.md` (a stand-in broker, `broker.sh`, started
+before the title slide and stopped after the last).
+
 ### Studio (`si --web`)
 
 `si --web [dir] [--addr 127.0.0.1:7070] [--no-open]` opens a browser editor for

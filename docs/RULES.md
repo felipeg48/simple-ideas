@@ -102,6 +102,8 @@ lang: en
 | `subtitle`, `edition` | text | none | books: the cover's subtitle and edition (§21) |
 | `session`, `slides`, `duration` | text | none | demo scripts: the facts under the title; `duration: 14 min` is checked against the script's steps (§22) |
 | `app`, `viewport`, `timeout`, `setup`, `voice` | URL or folder; WxH or phone, tablet, desktop; seconds; a shell command; engine:voice | none; desktop; 5s | web demos: `app:` turns a demo script into a script si runs against a web app (§27) |
+| `setup`, `start`, `stop`, `cleanup` (each may repeat) | a command, or a source: `gist:ID@REV`, `github:owner/repo@REF/path`, `https://… · sha256 HEX` | none | a talk that sets up what it shows live: `si play` and `si serve` run `setup:` (must finish) and `start:` (keeps running, `· wait for "ready"`) in the order written before the first page, then `stop:`, the programs stopped, `cleanup:` when they quit; `si build` never runs them ([§14](#14-presenting-keys-touch-overview-print), A talk that sets itself up) |
+| `prepare`, `step`, `cleanup` | web demos: a command run once before the first feature (`step:` is its alias); a command run after every program stopped | none | §27, Before and after |
 | `description` | text | none | documents: the lede under the title, the index tile subtitle and `<meta name="description">` (§19, §20) |
 | `edit-url` | URL | none | guides: base of the "Edit this page" link (§20) |
 | `header`, `footer-page` | `off` | on | a guide page without the guide's `_header.md` / `_footer.md` (§20) |
@@ -1253,6 +1255,64 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   `${HOME}`, `{print $1}`, `{a: .b}`, and the Go-template keywords `{{end}}`,
   `{{else}}`, `{{break}}`, `{{continue}}`, `{{nil}}`, `{{true}}`, `{{false}}`. The file may also carry a top-level `name`
   (the drawer title) and `description`.
+
+### A talk that sets itself up, from anywhere
+
+A talk that shows something live (a broker, a database, a cluster) can set it
+up itself. Front matter `setup:`, `start:`, `stop:` and `cleanup:` may each
+repeat; `setup:` and `start:` run **in the order written**:
+
+```markdown
+---
+title: The orders broker, live
+setup:   mkdir -p .live && echo 3 > .live/orders     # must finish, exit 0
+start:   sh broker.sh as broker · wait for "ready"    # keeps running while you present
+setup:   echo 4 > .live/orders                        # after the broker is up
+stop:    echo "draining" > .live/state                # when si play quits, the programs still running
+cleanup: rm -rf .live                                 # last, after the programs are stopped
+---
+```
+
+| Key | When | Notes |
+|---|---|---|
+| `setup:` | before the first page, in order with `start:` | must exit 0 (within 10 minutes; `· within 30m` for longer); runs in the deck's folder (`· in <dir>` for another) |
+| `start:` | before the first page, in order with `setup:` | a program kept running while si serves the talk: `as NAME`, `· wait for "text"`, `· wait for port 5672`, `· wait 3s`, `· within 60s`, as in a web demo (§27); its output goes to `<name>.log` in `$SI_RUN_LOGS` |
+| `stop:` | when `si play` quits (Ctrl-C too), while the programs still run | |
+| `cleanup:` | last, after si has stopped every program (SIGTERM, then SIGKILL after 5 s, the whole process group) | |
+
+- **When.** `si play` and `si serve` run them before they serve the first
+  page; meanwhile every page is a **getting ready** page that shows each step
+  (waiting, running, ✓, ✗) and opens the talk once they are done. A failed step
+  is shown there and in the terminal; si then runs `stop:` and `cleanup:` and
+  exits 1. `si build` never runs them (a built deck is a file); `si check`
+  checks each line and the pin of each source. A web demo script (§27) has its
+  own meaning for these keys.
+- **The programs.** The play terminal drawer's shells have `$SI_RUN_LOGS`, the
+  folder of the programs' logs (`tail -f $SI_RUN_LOGS/broker.log`); the
+  programs run on this machine, so the drawer, the runbook's commands and the
+  talk's own `code:` reach them as they would any local program.
+- **Sources.** A line may name a script from elsewhere instead of a command,
+  with its arguments after it: `setup: github:acme/ops@v1.4/scripts/install-broker.sh --version 3`.
+  The sources, their pins and the trust question are those of a web demo (§27,
+  Scripts from anywhere): asked before running, once per pin, never silently.
+- **A talk from a repo or a URL.** `si play`, `si serve` and `si build` take
+  `github:owner/repo@REF/talks/talk.md` (or a folder, `…/talks/`): the repo is
+  fetched once at that tag or commit into `~/.si/cache/repos`, its layout kept
+  (a deck's `../images/…` still resolve), and served from there. A plain URL
+  takes its fingerprint: `si play "https://example.com/talk.md · sha256 9f2a…"`
+  (one file; pictures beside it are not fetched). The same trust rules hold:
+  the first time, si shows where it comes from, its size and first lines, and
+  asks; `--trust` says yes for one run (CI). A talk from a repo that sets
+  nothing up just plays.
+
+```bash
+si play examples/live/talk.md                    # sets up, presents, cleans up on Ctrl-C
+si play github:acme/talks@v2.1/orders/talk.md    # asked once for v2.1
+si build github:acme/talks@v2.1/orders/ --trust  # CI: build a pinned talk
+```
+
+Example: `examples/live/talk.md` (a stand-in broker, `broker.sh`, started
+before the title slide and stopped after the last).
 
 ### Studio (`si --web`)
 
@@ -3105,8 +3165,11 @@ Say: A load generator sends thirty messages.
 
 | Front matter | What it does |
 |---|---|
-| `start: <command> · wait for "text"` | runs the command in the background, in the script's folder, before the first feature, and waits until its output shows the text (or `· wait for port 5672`: a TCP port on 127.0.0.1 accepts; or `· wait 5s`); `· within 60s` gives it longer than 30 s. Several `start:` lines start in order. `as NAME` (after the command) names it for the steps below; else it is `start-1`, `start-2` … Its output goes to `<name>.log` beside the report. When one does not come up, every feature fails with its last lines. Not filmed. |
-| `stop: <command>` | a tear-down command run at the end of the run (passed, failed or interrupted), before the programs are stopped, e.g. `make demo-down` |
+| `start: <command> · wait for "text"` | runs the command in the background, in the script's folder, before the first feature, and waits until its output shows the text (or `· wait for port 5672`: a TCP port on 127.0.0.1 accepts; or `· wait 5s`); `· within 60s` gives it longer than 30 s. Several `start:` lines start in order, in order with `prepare:` and `step:` (see Before and after). `as NAME` (after the command) names it for the steps below; else it is `start-1`, `start-2` … Its output goes to `<name>.log` beside the report. When one does not come up, every feature fails with its last lines. Not filmed. |
+| `prepare: <command>` (alias `step:`) | runs once before the first feature, in the order written among the `start:` lines, and must exit 0 within `timeout:` (`· within 5m` for longer); a failed one fails every feature with its output |
+| `setup: <command>` | before each feature, in order when there are several; must exit 0 |
+| `stop: <command>` | after the last feature (passed, failed or interrupted), in order, while the programs still run, e.g. `make demo-down` |
+| `cleanup: <command>` | last, in order, after si has stopped every program, e.g. `rm -rf data/` |
 | `shell: bash` | the shell of the terminals: `sh`, `bash` or `zsh` (default `$SHELL`, else `sh`; `cmd` on Windows) |
 | `app: none` | a terminal-only demo: no browser; every feature begins with `terminal` |
 
@@ -3133,7 +3196,7 @@ feature, or some blocks:
 
 | Lifetime | How | Example |
 |---|---|---|
-| the whole run | front matter `start:` (and `stop:` to tear down) | the broker, the cluster |
+| the whole run | front matter `start:` (and `stop:`, `cleanup:` to tear down), or `start … as NAME` in `## Before` | the broker, the cluster |
 | one feature | `setup:` (must exit) for state; a `start` step at the top of the feature for a program, stopped when the feature ends | a seed, a steady workload |
 | some blocks | `start "…" as NAME` … `stop NAME` | a burst, a second workload |
 
@@ -3143,8 +3206,9 @@ while it keeps running.
 
 - **Stopped, always.** Each program runs in its own process group, so
   stopping it stops what it started too: SIGTERM, then SIGKILL after 5 s.
-  That happens when its feature (a `start` step) or the run (a `start:`)
-  ends, passed or failed, and on Ctrl-C. A terminal hangs up its shell and
+  That happens when its feature (a `start` step) or the run (a `start:`, or
+  a `start` step in `## Before`) ends, passed or failed, and on Ctrl-C, after
+  the `stop:` lines and before the `cleanup:` lines. A terminal hangs up its shell and
   everything running in it when its feature ends.
 - **The terminal scene** is a page si serves on 127.0.0.1 with a random key:
   xterm.js inside the code window frame. It opens in its own tab, and the
@@ -3167,7 +3231,130 @@ while it keeps running.
 
 Examples: `examples/webdemo/` (a small shop, `shop.md`, and `broken.md`,
 whose coupon does not work; `broker.md`, a tiny broker in Go started with
-`go run`, filmed in a terminal and in its console).
+`go run`, filmed in a terminal and in its console; `morning.md`, seeded and
+cleaned up around its feature).
+
+### Before and after
+
+A real demo needs more than one program and one command: start a broker,
+create its queues, load data, start a consumer, and clean all of it up
+afterwards, every time, even when a step fails.
+
+```markdown
+---
+type: demo
+app: http://127.0.0.1:8080
+start:   make demo-single-insecure · wait for port 22310   # keeps running
+prepare: ./scripts/create-queues.sh                         # must finish, exit 0
+step:    acemq-workloads run -f seed.yaml · within 5m       # step: is prepare:
+start:   ./consumer · wait for "listening"                  # a second program, after the seed
+setup:   acemq queue purge orders                           # before EACH feature
+stop:    make demo-down                                     # while the programs still run
+cleanup: rm -rf data/ tmp/                                  # always last
+---
+
+## Before
+- terminal "Ops"
+- run "acemq queue create audit" · wait
+- expect output "created"
+
+## Orders flow through
+…
+
+## After
+- terminal "Ops"
+- run "acemq queue delete audit" · wait
+```
+
+The order of a run:
+
+1. `start:`, `prepare:` and `step:` lines, **interleaved in the order written**, once;
+2. `## Before`;
+3. for each feature: its `setup:` lines, then the feature;
+4. `## After`;
+5. `stop:` lines (the programs still run), then every program stopped (SIGTERM,
+   SIGKILL after 5 s), then `cleanup:` lines.
+
+- **Always.** `stop:` and `cleanup:` run after a pass, a failure, a failed
+  `prepare:`, a failed `## Before`, and on Ctrl-C (a `prepare:` still running
+  is stopped first). Their output goes to the report and to `lifecycle.log`
+  beside it, never on film. One that fails is reported and makes the exit code
+  1; the features keep their results.
+- **`## Before` and `## After`** (any case) are not features: no clip, no
+  chapter, no narration, no title card, never filmed, not counted and not in
+  `--feature`. Any step works there (`terminal`, `run`, `start … as`, `expect
+  output`, `go`, `click`, `expect text` …). A failed step in `## Before` fails
+  the run: every feature is skipped and the report says why. `## After`
+  always runs; its failures are reported but do not change the features'
+  results (the exit code is 1). Programs started in `## Before` with
+  `start … as NAME` live for the whole run.
+- **The report** shows two extra parts, *Before the features* (the
+  `start:`/`prepare:` lines and `## Before`) and *After the features*
+  (`## After`, `stop:`, `cleanup:`); JUnit adds a test case for one that
+  failed.
+- **Many scripts at once.** `si demo test docs/demos/` and `si demo run
+  docs/demos/` run every demo script in the folder (`type: demo` with `app:`,
+  Markdown, AsciiDoc or JSON, in name order), one after another, each in its
+  own folder (`demo-out/<script>/`), with one combined `report.html` and
+  `report.json` in `demo-out/` and, with `--junit`, one JUnit file with a test
+  suite per script.
+- In JSON, `prepare`, `setup`, `stop` and `cleanup` take a string or a list;
+  the `start` programs come before the `prepare` lines (JSON keeps no order
+  between keys), and a feature named `Before` or `After` is that section.
+
+Example: `examples/webdemo/morning.md` seeds the shop's orders with
+`prepare:` and `step:`, checks them in `## Before`, copies them before each
+feature with `setup:`, and removes everything with `cleanup:`.
+
+### Scripts from anywhere
+
+Each `start:`, `prepare:`, `step:`, `setup:`, `stop:` and `cleanup:` line takes
+a command, or a script from elsewhere with its arguments after it:
+
+| Write | Means |
+|---|---|
+| `./seed.sh` (any command) | run in the script's folder (`· in <dir>` for another, relative to it) |
+| `gist:abc123@4f2e9c1` | a GitHub gist at that revision: its one file, or `gist:abc123@4f2e9c1/seed.sh` |
+| `github:owner/repo@v1.2/scripts/seed.sh` | one file of a repo at a tag or commit |
+| `github:owner/repo@v1.2/scripts/` | every script in that folder (`.sh`, `.py`, `.js` … or no extension), in name order |
+| `https://…/seed.sh · sha256 9f2a…` | a plain URL, with the SHA-256 of the file (`shasum -a 256 seed.sh`) |
+
+```markdown
+prepare: github:acme/ops@v1.4/scripts/seed.sh --orders 50
+setup:   gist:abc123@4f2e9c1/purge.sh orders
+cleanup: https://example.com/ops/down.sh · sha256 9f2a…
+```
+
+- **Pinned only.** A `gist:` without `@revision`, a `github:` without
+  `@tag` or `@commit`, or a URL without `· sha256` is a `si check` problem. A
+  URL whose file no longer has that fingerprint, or a pin whose contents
+  changed since you trusted it (a tag moved), stops the run.
+- **Asked the first time.** Before running code from elsewhere si shows each
+  source (where it comes from, its size, its first lines) and asks once; a yes
+  is remembered for that pin in `~/.si/trusted`. `--trust` answers yes for
+  one run, remembered nowhere (CI). Without a terminal to ask in and without
+  `--trust`, si refuses and says why.
+- **Cached by pin** in `~/.si/cache/scripts`: a pin is fetched once, then
+  runs offline. `github:` uses GitHub's API (`$GITHUB_TOKEN` or `$GH_TOKEN`
+  when set, sent only to the API and never printed), and `gh` when it is
+  there for a private repo. A fetched script runs as a program (its `#!` line
+  picks the interpreter; `sh` without one), in the script's folder.
+
+**Demos from anywhere.** `si demo test` and `si demo run` take the same
+places as a file or a folder:
+
+| Write | Means |
+|---|---|
+| `si demo test github:owner/repo@v2/demos/` | the repo at that pin, fetched once into `~/.si/cache/repos` with its layout kept; every demo script in the folder |
+| `si demo test github:owner/repo@v2/demos/shop.md` | one script of the repo, its folder and the rest of the repo alongside (`../../examples/…` resolves) |
+| `si demo test "https://…/shop.md · sha256 …"` | one script from the web, its fingerprint checked (files beside it are not fetched: its `app:` is a URL or `none`) |
+
+The same trust rules hold (the repo's pin is asked about once, with the
+scripts it will run); the output folder is local, `demo-out/<repo>/<script>/`.
+
+```bash
+si demo test github:acme/shop@v2.0/demos/ --trust --junit junit.xml   # CI
+```
 
 ### Transitions, camera, spotlight, windows and drag
 

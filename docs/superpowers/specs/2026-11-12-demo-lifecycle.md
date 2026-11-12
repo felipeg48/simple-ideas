@@ -1,6 +1,9 @@
 # Web demos: ordered steps, cleanup, and scripts from anywhere
 
-Status: spec, decided with the founder on 2026-11-12; not built. Three phases.
+Status: spec, decided with the founder on 2026-11-12; all three phases built
+(unreleased: `internal/pinned`, `internal/webdemo/lifecycle.go`,
+`cmd/si/stage.go`). Not built: the relative files of a script fetched from a
+plain URL (its `app:` must be a URL or `none`).
 
 ## Why
 

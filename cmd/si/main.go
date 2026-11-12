@@ -33,6 +33,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync/atomic"
+	"syscall"
 	"text/tabwriter"
 	"time"
 
@@ -42,6 +44,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/docsite"
+	"github.com/felipeg48/simple-ideas/internal/pinned"
 	"github.com/felipeg48/simple-ideas/internal/qr"
 	"github.com/felipeg48/simple-ideas/internal/render"
 	"github.com/felipeg48/simple-ideas/internal/serve"
@@ -73,6 +76,13 @@ Usage:
   si serve <dir|file.md> [--addr 127.0.0.1:7070] [--open] [--css <dir|file.css>]...
         serve everything for readers, live: decks, articles, guides (with their
         navigation) and labs; like play, without the terminal drawer
+        play and serve run a deck's own setup:, start:, stop: and cleanup: (front matter, in the
+        order written): setup: and start: before the talk (a "getting ready" page meanwhile),
+        start: programs kept running while serving, stop:, the programs, cleanup: on quit (Ctrl-C)
+  si play|serve|build github:owner/repo@REF/path[.md|/] ["https://…/talk.md · sha256 HEX"] [--trust]
+        a deck (or a folder of them) from a repo at a tag or commit (fetched once into
+        ~/.si/cache/repos, its layout kept) or from a pinned URL; code from elsewhere is shown
+        and asked about once per pin (~/.si/trusted); --trust says yes for this run (CI)
   si --web [dir] [--addr 127.0.0.1:7070] [--no-open]   the Studio: edit, preview and check decks in the browser (loopback only)
   si --terminal [dir]   the Studio in the terminal: files, live preview, problems, Rehearse, Present, Lab; edits in $EDITOR
   si [build] <dir|file.md> [--output html/] [--css <dir|file.css>]... [--no-inline-media] [--pdf]
@@ -368,6 +378,7 @@ type options struct {
 	format                                       string  // si theme export --format css|dtcg
 	use                                          bool    // si theme import --use: write theme: into si.conf
 	accent                                       string  // si theme from --accent: keep this colour
+	trust                                        bool    // si play/build/serve github:…/a URL: run code from elsewhere without asking (CI)
 	css                                          multi
 	args                                         []string
 }
@@ -462,6 +473,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.format, "format", "", "")
 	fl.BoolVar(&o.use, "use", false, "")
 	fl.StringVar(&o.accent, "accent", "", "")
+	fl.BoolVar(&o.trust, "trust", false, "")
 	for {
 		if err := fl.Parse(argv); err != nil {
 			return nil, err
@@ -553,7 +565,7 @@ func run(argv []string, stdout, stderr io.Writer) int {
 	if o.export != "" {
 		return export(o, stdout, stderr)
 	}
-	cmd, rest := o.args[0], o.args[1:]
+	cmd, rest := o.args[0], pinned.JoinTarget(o.args[1:])
 	switch cmd {
 	case "help":
 		fmt.Fprint(stdout, usage)
@@ -580,7 +592,11 @@ func run(argv []string, stdout, stderr io.Writer) int {
 			}
 			return usageErr(stderr, "play needs one <dir|file.md>")
 		}
-		return play(rest[0], o, stdout, stderr)
+		src, code := deckTarget(rest[0], o, stderr)
+		if src == "" {
+			return code
+		}
+		return play(src, o, stdout, stderr)
 	case "serve":
 		if len(rest) != 1 {
 			return usageErr(stderr, "serve needs one <dir|file.md>")
@@ -589,7 +605,11 @@ func run(argv []string, stdout, stderr io.Writer) int {
 			return usageErr(stderr, "--remote is for si play (the presenter); si serve has no teleprompter remote")
 		}
 		o.serveMode = true
-		return play(rest[0], o, stdout, stderr)
+		src, code := deckTarget(rest[0], o, stderr)
+		if src == "" {
+			return code
+		}
+		return play(src, o, stdout, stderr)
 	case "doctor":
 		return doctor(stdout)
 	case "rehearse":
@@ -674,7 +694,11 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		if len(rest) != 1 {
 			return usageErr(stderr, "build needs one <dir|file.md>")
 		}
-		return build(rest[0], o, stdout, stderr)
+		src, code := deckTarget(rest[0], o, stderr)
+		if src == "" {
+			return code
+		}
+		return build(src, o, stdout, stderr)
 	}
 	if len(o.args) != 1 {
 		return usageErr(stderr, fmt.Sprintf("unknown command %q", cmd))
@@ -1048,6 +1072,10 @@ func check(src string, budget config.Budget, stdout, stderr io.Writer) int {
 		if d.IsDemo() && d.Meta.App != "" {
 			n += webDemoProblems(f, stderr)
 		}
+		for _, p := range stageProblems(f, d) { // a deck's setup:, start:, stop:, cleanup: and their pins
+			fmt.Fprintln(stderr, p)
+			n++
+		}
 		res := render.Deck(d, render.Options{})
 		for _, p := range res.Problems {
 			fmt.Fprintf(stderr, "%s\n", p)
@@ -1149,6 +1177,19 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 	if o.https != "" && len(o.remote.roles) == 0 && !o.audience && !o.review {
 		return usageErr(stderr, "--https is for the --remote, --audience or --review listener: si play talk.md --remote --https")
 	}
+	// the talk's own setup: and start: (its sources fetched and trusted
+	// before anything listens); stop:, the programs and cleanup: when it quits
+	var client *pinned.Client
+	stages, err := deckStages(src, func() *pinned.Client {
+		if client == nil {
+			client = newFetcher(o.trust, stderr)
+		}
+		return client
+	})
+	if err != nil {
+		fmt.Fprintf(stderr, "si: %v\n", err)
+		return exitProblems
+	}
 	ln, err := net.Listen("tcp", o.addr)
 	if err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
@@ -1223,8 +1264,19 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 	stop := make(chan struct{})
 	go srv.Watch(stop)
 	hs := &http.Server{Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+	var setupFailed atomic.Bool
+	if len(stages) > 0 {
+		gate := newGate(srv.Handler(), stages)
+		hs.Handler = gate
+		fmt.Fprintf(stdout, "  getting ready: %d step(s) of setup before the talk (the page shows them)\n", len(gate.steps))
+		down := runStages(stages, gate, stdout, func() { setupFailed.Store(true); cancel() })
+		defer func() {
+			fmt.Fprintln(stdout, "si play: stop:, the programs, cleanup:")
+			down()
+		}()
+	}
 	go func() {
 		<-ctx.Done()
 		close(stop)
@@ -1257,6 +1309,9 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	if err := hs.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		fmt.Fprintf(stderr, "si: %v\n", err)
+		return exitProblems
+	}
+	if setupFailed.Load() {
 		return exitProblems
 	}
 	return exitOK

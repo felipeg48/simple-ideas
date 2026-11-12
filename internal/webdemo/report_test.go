@@ -131,6 +131,15 @@ func TestExamples(t *testing.T) {
 		if portOpen(7310) || portOpen(7311) {
 			t.Error("a broker outlived the run")
 		}
+		// morning.md: prepare: and step: seed, ## Before checks, setup: per
+		// feature, ## After, stop:, then cleanup: removes what was made
+		morning := run("morning.md")
+		if !morning.OK() || morning.Passed != 1 || morning.Before == nil || morning.After == nil || len(morning.Start) != 2 || len(morning.Teardown) != 2 {
+			t.Errorf("morning.md: %+v\n%s", morning, log.String())
+		}
+		if _, err := os.Stat(filepath.Join("..", "..", "examples", "webdemo", ".morning")); err == nil {
+			t.Error("morning.md: cleanup: left .morning behind")
+		}
 	}
 	broken := run("broken.md")
 	if broken.OK() || len(broken.Features) != 1 {

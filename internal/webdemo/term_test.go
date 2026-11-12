@@ -36,7 +36,8 @@ func TestTerminalSteps(t *testing.T) {
 		{`expect output "sent 1"`, Step{Kind: "expect-output", Value: Value{Text: "sent 1"}}},
 		{`expect output "Server startup complete" · within 30s`, Step{Kind: "expect-output", Value: Value{Text: "Server startup complete"}, Within: 30 * time.Second}},
 		{`expect no output "ERROR"`, Step{Kind: "expect-no-output", Value: Value{Text: "ERROR"}}},
-		{`wait for output "ready" · within 1m`, Step{}},
+		{`wait for output "ready" · within 1m`, Step{Kind: "waitfor-output", Value: Value{Text: "ready"}, Within: time.Minute}},
+		{`wait for output "ready" · within 1 minute`, Step{}},
 		{`wait for output "ready" · within 60s`, Step{Kind: "waitfor-output", Value: Value{Text: "ready"}, Within: time.Minute}},
 		{`start "./load --rate 100" as load · wait for "running"`, Step{Kind: "start", Name: "load", Value: Value{Text: "./load --rate 100"}, Ready: Ready{Text: "running"}}},
 		{`start "./api" as api · wait for port 8080 · within 60s`, Step{Kind: "start", Name: "api", Value: Value{Text: "./api"}, Ready: Ready{Port: 8080}, Within: time.Minute}},
@@ -112,7 +113,7 @@ func TestParseTerminalScript(t *testing.T) {
 	if len(s.Problems) > 0 {
 		t.Fatalf("problems: %v", s.Problems)
 	}
-	if s.Shell != "bash" || s.Stop != "make demo-down" || len(s.Starts) != 3 {
+	if s.Shell != "bash" || len(s.Stops) != 1 || s.Stops[0].Cmds[0] != "make demo-down" || len(s.Starts) != 3 {
 		t.Fatalf("front matter: %+v", s)
 	}
 	want := []Program{
@@ -121,13 +122,14 @@ func TestParseTerminalScript(t *testing.T) {
 		{Cmd: "./bin/worker", Name: "worker", Ready: Ready{Delay: 2 * time.Second}, Line: 7},
 	}
 	for i, p := range s.Starts {
+		p.Text = ""
 		if *p != want[i] {
 			t.Errorf("start %d: %+v", i, *p)
 		}
 	}
 	j, err := ParseJSON("/x/b.json", []byte(`{"type":"demo","app":"http://x","shell":"zsh","stop":"make down","start":["./b · wait for port 1"],
 "features":[{"name":"F","blocks":[{"say":"s","steps":["terminal \"T\"","run \"ls\""]}]}]}`))
-	if err != nil || len(j.Problems) > 0 || j.Shell != "zsh" || j.Stop != "make down" || len(j.Starts) != 1 || j.Starts[0].Ready.Port != 1 {
+	if err != nil || len(j.Problems) > 0 || j.Shell != "zsh" || len(j.Stops) != 1 || j.Stops[0].Cmds[0] != "make down" || len(j.Starts) != 1 || j.Starts[0].Ready.Port != 1 {
 		t.Errorf("json: %v %+v", err, j)
 	}
 }

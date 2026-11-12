@@ -87,6 +87,7 @@ what you chose.
 |---|---|
 | `cmd/si/main.go` | CLI: GNU-style flag parsing (interspersed, long flags), commands play, build, check, new, rules, `--export`; `cmd/si/mindmap.go`: mind map exports (`--svg`, `--png`, `--pdf` through headless Chrome and the runtime's `#si-export`) and `si mindmap import/export`; `cmd/si/code.go`: `si code` (code window exports: PNG/SVG per step, an animated GIF of a show, frames from the runtime's `#si-code-export`); `cmd/si/video.go`: `--mp4` (frames from headless Chrome, a 30 fps image sequence encoded by ffmpeg if installed; mind map Play frames from `#si-export-play`); `cmd/si/publish.go`: `si publish` (dry run unless `--yes`), `login` / `logout`; `cmd/si/qrcmd.go`: `si qr` and `printQR` (terminal codes) |
 | `internal/publish/` | `si publish` clients, stdlib only: LinkedIn (Documents + Posts API, 3-legged OAuth with a loopback redirect, `/v2/userinfo`), dev.to (Forem API), Hashnode (GraphQL); one request builder for dry run and send (secrets masked); logins in the config dir, 0600; tests against `httptest` fakes only; see `docs/publish.md` |
+| `internal/pinned/` | code and documents from elsewhere, stdlib only: `gist:ID@REV`, `github:owner/repo@REF/path` (a file, a folder of scripts, or the whole tree via the tarball API), `https://… · sha256 HEX`; pinned only, cached by pin in `~/.si/cache/{scripts,repos}`, asked once per pin (`~/.si/trusted`, `--trust` for CI, refused without a terminal); used by `si demo` and `si play/serve/build` (`cmd/si/fetched.go`, `cmd/si/stage.go`) |
 | `internal/docsite/` | `si --export docs-site`: the docs site source, one page per numbered RULES.md section (fence-aware split, `§N` and contents links rewritten; every ```markdown example gets an AsciiDoc tab, `adoc.go` + `deck.MarkdownToAdoc`), the manual as a deck, the examples si ships as live pages (`live/`), and `features.go`: one feature page per main kind of document (decks, articles, guides, mind maps, books, code) with its live example, the Markdown read from `examples/`, options, commands and rules links; `docs/site/` holds the hand-written pages (`_site.md` with the Features and Examples menus, home, examples, download); `make docs-site` builds it into `dist/docs-site` with `--share-assets` |
 | `internal/skill/` | the si Agent Skill: `SKILL.md` (when to use si, the check-and-look loop, `docs/agent-rules.md`) and `references/` (one file per RULES.md section); `si --export skill`; the Claude Code plugin under `plugin/` is its output (`go test ./internal/skill -update`; `TestPluginInSync`), listed by `.claude-plugin/marketplace.json` (the `simple-ideas` marketplace) |
 | `internal/mcp/` | a small MCP server (stdio, newline-delimited JSON-RPC, standard library): `server/discover` and `_meta` versions (2026-07-28), `initialize` for earlier clients, tools/list, tools/call; si's tools are in `cmd/si/mcp.go` (`si mcp [dir]`) |
@@ -201,6 +202,14 @@ pass. The steps that matter:
   to`/`zoom out`; `spotlight`/`focus`; `window`, `drag`; title-card casing;
   `internal/webdemo/effects.go`, `scriptfx.go`, `runfx.go`). Next: item 5
   (re-film `docs/demos/` with them, "What's new in si 3"), then v3.0.0.
+- **Demo lifecycle, sources from anywhere** (spec
+  `docs/superpowers/specs/2026-11-12-demo-lifecycle.md`, all three phases
+  built, unreleased): `start:`/`prepare:`/`step:` in order, `setup:` per
+  feature, `stop:`, `cleanup:` (always run), `## Before`/`## After`, folder
+  runs with one report; `internal/pinned` (gist:, github:, pinned URLs, trust
+  in `~/.si/trusted`, `--trust`, caches in `~/.si/cache`); `si
+  play|serve|build github:…`; a deck's own `setup:`/`start:`/`stop:`/`cleanup:`
+  run by `si play`/`si serve` (`cmd/si/stage.go`, getting-ready page).
 - **v3.0.0: web demos** (spec `docs/superpowers/specs/2026-11-10-web-demos.md`,
   decided with the founder 2026-11-10; phase 1 test mode DONE v2.34.0, phases
   2 video + 3 voice DONE v2.35.0: `si demo run`, `internal/webdemo/film.go`,

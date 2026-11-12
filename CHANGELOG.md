@@ -3,6 +3,36 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **Unreleased:** demos and talks that set themselves up, from anywhere
+  (spec `docs/superpowers/specs/2026-11-12-demo-lifecycle.md`). Web demos:
+  `start:`, `prepare:` (alias `step:`) run once, interleaved in the order
+  written (`· within 5m` for a slow one); `setup:` may repeat (before each
+  feature); `stop:` may repeat (programs still up); new `cleanup:` (after
+  every program stopped). `stop:` and `cleanup:` always run: a pass, a
+  failure, a failed `prepare:`, Ctrl-C (a running `prepare:` is stopped
+  first). `## Before` and `## After` sections: any step, never filmed, not
+  features; a failed `## Before` skips the features, `## After` always runs
+  (its failure is exit 1); programs it starts live for the run. The report
+  shows "Before the features" and "After the features"; `lifecycle.log`
+  beside it. `si demo test|run <folder>`: every demo script in name order,
+  one combined `report.html`/`report.json`, one JUnit file with a suite per
+  script. Sources for those lines: `gist:ID@REV[/file]`,
+  `github:owner/repo@REF/path.sh` or `…/dir/` (every script, name order),
+  `https://… · sha256 HEX`, arguments after; `· in <dir>`. Pinned only (`si
+  check`); asked once per pin with the source, size and first lines
+  (`~/.si/trusted`); `--trust` for CI; refused without a terminal; a pin whose
+  contents changed stops the run; cached in `~/.si/cache/scripts`; GitHub via
+  the API (`$GITHUB_TOKEN`) or `gh` for private repos. `si demo test
+  github:owner/repo@REF/demos/` (or one script, or a pinned URL): the repo
+  fetched once at that pin into `~/.si/cache/repos`, layout kept; output in
+  `demo-out/<repo>/<script>/`. Decks: `si play`, `si serve`, `si build` take
+  the same sources; a deck's front matter `setup:`, `start:`, `stop:`,
+  `cleanup:` (repeatable, in order) run around `si play`/`si serve` with a
+  getting-ready page, programs kept running (logs in `$SI_RUN_LOGS` for the
+  terminal drawer), torn down on quit; `si build` never runs them; `si check`
+  checks them. `within`, `timeout:` and other durations also take minutes
+  (`5m`, `1m30s`). Examples: `examples/webdemo/morning.md`,
+  `examples/live/talk.md`.
 - **v3.0.1:** `si check` no longer reads a web demo's `transition:` as a
   deck's: `transition: fade 0.5s` or `wipe` in a demo script was an error
   ("unknown transition") with a warning that it had no effect. A deck keeps

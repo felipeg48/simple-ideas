@@ -71,6 +71,14 @@ an example for every rule: [RULES.md](docs/RULES.md).
   open it ready; `si build --mp4 --voice` films it narrated.
 - **Terminal drawer** (`` ` ``, `si play` on loopback): real shells beside the
   slides, a runbook of commands, demo scripts with Copy and Run.
+- **A talk that sets itself up:** front matter `setup:`, `start: … · wait for
+  "ready"`, `stop:`, `cleanup:` (repeatable, in order, local commands or
+  pinned sources): `si play` and `si serve` run them before the first page (a
+  getting-ready page with each step), keep the programs running, and tear down
+  on quit; `si build` never runs them.
+- **Talks from anywhere:** `si play|serve|build github:owner/repo@REF/talk.md`
+  (or a folder, or `https://… · sha256 HEX`), fetched once per pin into
+  `~/.si/cache/repos`, asked about once, `--trust` for CI.
 
 ## From your phone
 
@@ -196,6 +204,18 @@ an example for every rule: [RULES.md](docs/RULES.md).
   `expect output of load`, `expect load exited 0`. Every program stopped by
   process group, also on Ctrl-C; logs beside the report; the terminal's last
   40 lines in the report on a failure; `app: none` for a terminal-only demo.
+- **Before and after:** `start:`, `prepare:` (alias `step:`) in the order
+  written, `setup:` before each feature, `stop:` while the programs run,
+  `cleanup:` after they stop, each repeatable; `stop:` and `cleanup:` always
+  run (a failure, a failed `prepare:`, Ctrl-C). `## Before` and `## After`
+  sections: any step, never filmed, not counted; a failed `## Before` skips
+  the features. `si demo test docs/demos/`: a folder as one suite, one
+  combined report and one JUnit file (a suite per script).
+- **Scripts from anywhere:** each of those lines takes `gist:ID@REV`,
+  `github:owner/repo@TAG/path.sh` (or a folder of scripts), or `https://… ·
+  sha256 HEX`; demos run from `github:owner/repo@REF/demos/` or a pinned URL.
+  Pinned only (`si check`), shown and asked once per pin (`~/.si/trusted`),
+  `--trust` for CI, refused without a terminal; cached by pin in `~/.si/cache`.
 - **si's own videos:** `docs/demos/` (decks, presenting, the Studio, themes,
   mind maps, the terminal) tested on every push, filmed on every minor
   release, shown on the site.

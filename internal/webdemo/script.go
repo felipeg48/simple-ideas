@@ -27,9 +27,11 @@ type Script struct {
 	Viewport  string // as written
 	W, H      int
 	Timeout   time.Duration // how long a step waits for its element or condition
-	Setup     string        // a shell command run before each feature, in the script's folder
-	Starts    []*Program    // start: programs run in the background for the whole run
-	Stop      string        // stop: a tear-down command run at the end
+	Prelude   []Prep        // start:, prepare: and step:, in the order written: once, before the first feature
+	Setups    []*Command    // setup: before each feature, in order
+	Stops     []*Command    // stop: after the last feature, while the programs still run
+	Cleanups  []*Command    // cleanup: after every program is stopped
+	Starts    []*Program    // the start: programs of Prelude, for the whole run
 	Shell     string        // shell: the shell of terminal steps ("" = $SHELL, else sh)
 	Voice     string        // engine:voice as written ("" = the default voice)
 	Style     string        // voice-style: a tone for engines that take one (openai)
@@ -39,6 +41,8 @@ type Script struct {
 	Trans     *Transition   // transition: the cut between scenes (nil = the default, fade 0.4s)
 	Pronounce []Pronounce   // pronounce: word = how to say it
 	Features  []*Feature
+	Before    *Feature  // ## Before: steps before the first feature, never filmed, not a feature
+	After     *Feature  // ## After: steps after the last feature, always run
 	Problems  []Problem // the script cannot run
 	Warnings  []Problem
 }
@@ -239,8 +243,8 @@ func (s *Script) warn(line int, format string, a ...any) {
 
 // settings applies the front matter (line: where to report a bad value).
 func (s *Script) settings(fm map[string]string, line func(string) int) {
-	s.Title, s.App, s.Setup, s.Voice, s.Viewport, s.Style = fm["title"], fm["app"], fm["setup"], fm["voice"], fm["viewport"], fm["voice-style"]
-	s.Stop, s.Shell, s.With = fm["stop"], fm["shell"], fm["with"]
+	s.Title, s.App, s.Voice, s.Viewport, s.Style = fm["title"], fm["app"], fm["voice"], fm["viewport"], fm["voice-style"]
+	s.Shell, s.With = fm["shell"], fm["with"]
 	s.Region, s.Zoom = regionValue(fm["region"])
 	if v := fm["transition"]; v != "" {
 		if t, err := ParseTransition(v); err != nil {
@@ -314,15 +318,14 @@ func atoi(s string) int {
 	return n
 }
 
-// duration reads 3s, 1.5s, 500ms or a bare number of seconds.
+// duration reads 3s, 1.5s, 500ms, 5m or a bare number of seconds.
 func duration(v string) (time.Duration, bool) {
 	v = strings.TrimSpace(v)
-	if ms, ok := strings.CutSuffix(v, "ms"); ok {
-		f, err := strconv.ParseFloat(ms, 64)
-		return time.Duration(f * float64(time.Millisecond)), err == nil && f >= 0
+	if f, err := strconv.ParseFloat(v, 64); err == nil {
+		return time.Duration(f * float64(time.Second)), f >= 0
 	}
-	f, err := strconv.ParseFloat(strings.TrimSuffix(v, "s"), 64)
-	return time.Duration(f * float64(time.Second)), err == nil && f >= 0
+	d, err := time.ParseDuration(v) // 3s, 1.5s, 500ms, 5m, 1m30s
+	return d, err == nil && d >= 0
 }
 
 var (
@@ -344,11 +347,11 @@ func Parse(path, src string) *Script {
 		}
 		return 1
 	})
-	for i := 1; i < start; i++ { // pronounce: and start: may be given more than once
+	for i := 1; i < start; i++ { // pronounce: and the lifecycle keys may be given more than once
 		if m := metaRE.FindStringSubmatch(strings.TrimSpace(lines[i])); m != nil && m[1] == "pronounce" {
 			s.pronounce(m[2], i+1)
-		} else if m != nil && m[1] == "start" {
-			s.start(m[2], i+1)
+		} else if m != nil && deck.LifecycleKeys[m[1]] {
+			s.lifecycle(m[1], m[2], i+1, false)
 		}
 	}
 	var f *Feature
@@ -373,8 +376,10 @@ func Parse(path, src string) *Script {
 			text = ""
 		case strings.HasPrefix(t, "## "):
 			f = &Feature{Name: strings.TrimSpace(strings.TrimLeft(t, "# ")), Line: no}
-			s.Features = append(s.Features, f)
 			b, text = nil, ""
+			if !s.section(f) {
+				s.Features = append(s.Features, f)
+			}
 		case strings.HasPrefix(t, "#"):
 			text = ""
 		case labelRE.MatchString(t):
@@ -431,13 +436,44 @@ func Parse(path, src string) *Script {
 	return s
 }
 
+// section takes a `## Before` or `## After` heading (any case) as the
+// script's section, not a feature; it reports whether f is one.
+func (s *Script) section(f *Feature) bool {
+	at := &s.Before
+	switch strings.ToLower(f.Name) {
+	case "before":
+	case "after":
+		at = &s.After
+	default:
+		return false
+	}
+	if *at != nil {
+		s.problem(f.Line, "a second ## %s: one per script", f.Name)
+	}
+	*at = f
+	return true
+}
+
+// sections are ## Before, the features and ## After, as they run.
+func (s *Script) sections() []*Feature {
+	var all []*Feature
+	if s.Before != nil {
+		all = append(all, s.Before)
+	}
+	all = append(all, s.Features...)
+	if s.After != nil {
+		all = append(all, s.After)
+	}
+	return all
+}
+
 // finish checks what a parse cannot see line by line.
 func (s *Script) finish() {
 	if len(s.Features) == 0 {
 		s.problem(0, "no features: each ## heading is a feature with its steps")
 	}
 	warned := map[string]bool{}
-	for _, f := range s.Features {
+	for _, f := range s.sections() {
 		n := 0
 		for _, b := range f.Blocks {
 			n += len(b.Steps)
@@ -450,8 +486,15 @@ func (s *Script) finish() {
 				}
 			}
 		}
-		if n == 0 {
+		if n == 0 && f != s.Before && f != s.After {
 			s.warn(f.Line, "feature %q has no steps", f.Name)
+		}
+		if f == s.Before || f == s.After {
+			for _, b := range f.Blocks {
+				if strings.TrimSpace(b.Say) != "" {
+					s.warn(b.Line, "## %s is never filmed: its Say: is not spoken", f.Name)
+				}
+			}
 		}
 		s.checkScenes(f)
 	}
@@ -786,12 +829,15 @@ func namedKey(p string) (keyDef, bool) {
 // jsonScript is the JSON form: the front matter keys, then features with
 // blocks of steps written as in Markdown.
 type jsonScript struct {
-	Type, Title, App, Viewport, Timeout, Setup, Voice string
-	Stop, Shell, With, Region, Transition             string
-	Style                                             string   `json:"voice-style"`
-	Pronounce                                         []string `json:"pronounce"`
-	Start                                             []string `json:"start"`
-	Features                                          []struct {
+	Type, Title, App, Viewport, Timeout, Voice string
+	Shell, With, Region, Transition            string
+	Style                                      string   `json:"voice-style"`
+	Pronounce                                  []string `json:"pronounce"`
+	Start                                      []string `json:"start"`
+	Prepare                                    strs     `json:"prepare"`
+	Step                                       strs     `json:"step"`
+	Setup, Stop, Cleanup                       strs
+	Features                                   []struct {
 		Name   string `json:"name"`
 		What   string `json:"what"`
 		Region string `json:"region"`
@@ -800,6 +846,20 @@ type jsonScript struct {
 			Steps []string `json:"steps"`
 		} `json:"blocks"`
 	} `json:"features"`
+}
+
+// strs is a JSON string or a list of them.
+type strs []string
+
+func (l *strs) UnmarshalJSON(b []byte) error {
+	var one string
+	if json.Unmarshal(b, &one) == nil {
+		if one != "" {
+			*l = strs{one}
+		}
+		return nil
+	}
+	return json.Unmarshal(b, (*[]string)(l))
 }
 
 // ParseJSON reads the JSON form of a script. Lines point at where each step's
@@ -820,7 +880,7 @@ func ParseJSON(path string, raw []byte) (*Script, error) {
 		}
 		return 0
 	}
-	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "setup": j.Setup, "voice": j.Voice, "voice-style": j.Style, "stop": j.Stop, "shell": j.Shell, "with": j.With, "region": j.Region, "transition": j.Transition}
+	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "voice": j.Voice, "voice-style": j.Style, "shell": j.Shell, "with": j.With, "region": j.Region, "transition": j.Transition}
 	s.settings(fm, func(key string) int {
 		if k := strings.Index(src, `"`+key+`"`); k >= 0 {
 			return strings.Count(src[:k], "\n") + 1
@@ -830,14 +890,24 @@ func ParseJSON(path string, raw []byte) (*Script, error) {
 	for _, p := range j.Pronounce {
 		s.pronounce(p, lineOf(p))
 	}
-	for _, p := range j.Start {
-		s.start(p, lineOf(p))
+	// JSON keeps no order between keys: the start programs come first, then
+	// prepare and step, in their lists' order
+	for _, l := range []struct {
+		key string
+		vs  []string
+	}{{"start", j.Start}, {"prepare", j.Prepare}, {"step", j.Step}, {"setup", j.Setup}, {"stop", j.Stop}, {"cleanup", j.Cleanup}} {
+		for _, v := range l.vs {
+			pos = 0
+			s.lifecycle(l.key, v, lineOf(v), false)
+		}
 	}
 	pos = 0
 	for _, jf := range j.Features {
 		f := &Feature{Name: jf.Name, What: jf.What, Line: lineOf(jf.Name)}
 		f.Region, f.Zoom = regionValue(jf.Region)
-		s.Features = append(s.Features, f)
+		if !s.section(f) {
+			s.Features = append(s.Features, f)
+		}
 		for _, jb := range jf.Blocks {
 			b := &Block{Say: jb.Say}
 			if jb.Say != "" {

@@ -48,7 +48,7 @@ func TestParseMarkdown(t *testing.T) {
 	if len(s.Problems) > 0 {
 		t.Fatalf("problems: %v", s.Problems)
 	}
-	if s.App != "http://localhost:3000" || s.W != 400 || s.H != 800 || s.Timeout != 2*time.Second || s.Setup != "make seed" {
+	if s.App != "http://localhost:3000" || s.W != 400 || s.H != 800 || s.Timeout != 2*time.Second || len(s.Setups) != 1 || s.Setups[0].Cmds[0] != "make seed" {
 		t.Errorf("settings: %+v", s)
 	}
 	if len(s.Features) != 2 {
