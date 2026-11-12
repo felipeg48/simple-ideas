@@ -3,14 +3,58 @@
 Read this, then `FEATURE.md`, then `CLAUDE.md`. This is a Go CLI (`si`) that turns
 Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
-## Current state (2026-11-11)
+## Current state (2026-11-12, end of day)
 
-**Released and live: v2.40.0** (CI, release, demos filming and docs-site all
-green; si 2.40.0 installed via `make install </dev/null`; the Claude plugin
-updated with `claude plugin marketplace update simple-ideas && claude plugin
-update si@simple-ideas`). Notes below that say "unreleased, on a worktree
-branch" (v2.37.0, v2.38.0, v2.40.0) were true when written; all are merged and
-released.
+**Released and live: v3.1.4** (CI, release, demo filming and docs-site
+green; si 3.1.4 installed with `make install </dev/null`; the plugin updated
+with `claude plugin marketplace update simple-ideas && claude plugin update
+si@simple-ideas`). Every section below marked "unreleased, worktree branch"
+is merged and released.
+
+### Releases since v2.40.0
+- v2.40.1 code shows on slides (deep links, notes wrap, repaint) · v2.40.2/3
+  unlisted site pages (PRs #1, #3) · v2.41.0 `si demo run` one file by
+  default + `--with` · v2.42.0 region capture (PR #5) · v2.42.1 `--voice
+  af_heart` · v2.43.0 `~/.si` (internal/home) + Kokoro default in
+  `~/.si/si.conf` · **v3.0.0 si 3** (transitions, camera, spotlight/focus,
+  window, drag; What's new page) · v3.0.1 demo `transition:` check · v3.1.0
+  lifecycle (start/prepare/step/setup/stop/cleanup, Before/After, folders,
+  gist/github/pinned URLs with trust, `si play github:…`) + code spans in
+  title cards (#7) · v3.1.1 crisp zoom (#6, 2× capture), system-voice
+  fallback, Ctrl-C exit 130 · v3.1.2 no file lists in demo videos ·
+  v3.1.3 `wait for … · within` · v3.1.4 self-replacing `pronounce:` loop.
+
+### How the founder works (read this)
+- **Full autonomy, never ask** (memory `full-autonomy-no-asking`): decide,
+  do, report. Only "let's talk first" or something truly theirs pauses.
+  `.claude/settings.local.json` allows Bash, Read, Edit, Write, Glob, Grep,
+  Agent and the rest; run in **manual mode** (auto mode's classifier blocks
+  background agents).
+- Spoken notices as **"Simple Ideas"**: `si voice say "Simple Ideas needs
+  your input"` / `"Simple Ideas finished"` (memory `say-notifications`).
+- Other agents open PRs or issues **without version bumps**; this session
+  merges, fills doc gaps, bumps, tags, releases (patch for fixes, minor for
+  features; minor tags re-film the demos on CI). Another session once
+  committed into this checkout on a branch (`feat/card-inline-code`): check
+  `git branch --show-current` before merging.
+- Demo videos: Kokoro af_heart always; show files and commands in a
+  terminal (`ls`, `si play`), never a browser file list.
+
+### Open items
+- Issues: none open (#6, #7 closed). Remote branches: only main.
+- Auto-play: resume mid-sentence; re-check the bar at 4K.
+- Lifecycle "Left": files beside a URL-fetched script are not fetched; JSON
+  scripts can't interleave start/prepare; AsciiDoc front matter keeps one
+  value per key; the interactive trust prompt is unit-tested only.
+- Terminal `split` view; pop/circle are plain at feature joins (xfade).
+
+### Outside this repo
+- `~/Downloads/ACCDemo/`: the AceMQ Command Center demo for the founder
+  (client work, never in si's repo or docs): `acc.html` (the prototype
+  reworked: no banner, Spring + Node.js on every tab), `acc-demo.md`
+  (marketing narration from acemq.com wording), `acc-demo.mp4` 7:05 with 10
+  chapters, `acc-demo.captions.mp4`, `screens/`, `README.md`. Re-film:
+  `cd ~/Downloads/ACCDemo && si demo run acc-demo.md --with captions,chapters -o .`
 
 ### Crisp zooms, issue #6 (unreleased, worktree branch)
 - `si demo run` supersamples: `runner.k` (`--scale`, `scale:`,
