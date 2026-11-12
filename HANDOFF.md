@@ -12,6 +12,23 @@ update si@simple-ideas`). Notes below that say "unreleased, on a worktree
 branch" (v2.37.0, v2.38.0, v2.40.0) were true when written; all are merged and
 released.
 
+### Crisp zooms, issue #6 (unreleased, worktree branch)
+- `si demo run` supersamples: `runner.k` (`--scale`, `scale:`,
+  `webdemo.DefaultScale` = 2; always 1 in `si demo test`). Chrome is launched
+  with `--force-device-scale-factor=k` (without it the screencast stays at
+  the window's 1× size even with a DPR-2 page) and `cdp.Client.Scale` sets
+  the device scale factor of every page (app, terminals; windows in
+  `attachWindow`); the screencast's max size is `W*k`.
+- Everything downstream already worked in frame pixels (`fx.scale` = frame
+  width / viewport); `cropFor`/`cropShot` now take the scale from the
+  picture's width too (a fixed `--crop` is CSS pixels). `videoArgs` gets `k`
+  and ends with `outSize(k)` (lanczos down to the viewport); `allArgs` fits
+  2× cards with lanczos; `runner.screenshot` box-filters `screenshot` steps
+  and failure shots down to the viewport (`shrink`).
+- Measured on shop.md (`--with clips`): 45 s vs 42 s wall, CPU 80 s vs 44 s,
+  peak temp frames 61 MB vs 23 MB, output files the same size. Chosen:
+  always 2×. Tests: `internal/webdemo/supersample_test.go`.
+
 ### Demo lifecycle, sources from anywhere, talks that set themselves up (unreleased, worktree branch)
 - Spec `docs/superpowers/specs/2026-11-12-demo-lifecycle.md`, all three
   phases built; CHANGELOG has an **Unreleased** entry, no version bump.

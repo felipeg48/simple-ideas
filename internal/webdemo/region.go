@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	"image/color"
 	"image/png"
 	"strconv"
 	"strings"
@@ -21,8 +22,9 @@ import (
 // rect is a crop box in device (frame) pixels.
 type rect struct{ X, Y, W, H int }
 
-// box is an element's bounding box in CSS pixels, with the page's device-pixel
-// ratio (a fixed --crop box carries DPR 1: its numbers are pixels as written).
+// box is an element's bounding box in CSS pixels, with the picture's pixels per
+// CSS pixel (cropFor and cropShot set it from the frame's width over the
+// viewport's: 2 in a supersampled take; a fixed --crop box is in CSS pixels).
 type box struct {
 	X, Y, W, H, DPR float64
 }
@@ -170,6 +172,7 @@ func (r *runner) cropFor(f *Feature, frameW, frameH int) (*rect, error) {
 	default:
 		return nil, nil
 	}
+	b.DPR = float64(frameW) / float64(r.s.W) // frame pixels per CSS pixel (a supersampled take is 2)
 	rc, ok := clampCrop(b, frameW, frameH)
 	if !ok {
 		return nil, fmt.Errorf("region is outside the %dx%d frame", frameW, frameH)
@@ -197,6 +200,7 @@ func (r *runner) cropShot(raw []byte, f *Feature) []byte {
 	} else if b, err = ParseCrop(crop); err != nil {
 		return raw
 	}
+	b.DPR = float64(img.Bounds().Dx()) / float64(r.s.W)
 	rc, ok := clampCrop(b, img.Bounds().Dx(), img.Bounds().Dy())
 	if !ok {
 		return raw
@@ -213,4 +217,69 @@ func (r *runner) cropShot(raw []byte, f *Feature) []byte {
 		return raw
 	}
 	return buf.Bytes()
+}
+
+// DefaultScale is the device pixels per CSS pixel si demo run films at: 2,
+// supersampling. Every picture of a take (frames, title cards, captions,
+// badges) is twice the viewport's size; the videos are scaled back down to it
+// at the end (lanczos), so text stays crisp, under a zoom most of all.
+// --scale 1 (or scale: 1) films at the viewport's size: faster, smaller files.
+const DefaultScale = 2
+
+// ParseScale reads --scale / scale: 1, 2 or 3 (a trailing x allowed).
+func ParseScale(s string) (int, error) {
+	k, err := strconv.Atoi(strings.TrimSuffix(strings.TrimSpace(s), "x"))
+	if err != nil || k < 1 || k > 3 {
+		return 0, fmt.Errorf("scale %q: write 1, 2 or 3 (device pixels per CSS pixel when filming; 2 is the default)", s)
+	}
+	return k, nil
+}
+
+func firstPositive(a ...int) int {
+	for _, v := range a {
+		if v > 0 {
+			return v
+		}
+	}
+	return 1
+}
+
+// screenshot is the page in front as a PNG of the viewport's size: a
+// supersampled page's picture is scaled down (shrink).
+func (r *runner) screenshot() ([]byte, error) {
+	raw, err := r.c.Screenshot()
+	if err != nil || r.k <= 1 {
+		return raw, err
+	}
+	m, err := png.Decode(bytes.NewReader(raw))
+	if err != nil {
+		return raw, nil
+	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, shrink(m, r.k)); err != nil {
+		return raw, nil
+	}
+	return buf.Bytes(), nil
+}
+
+// shrink scales m down k times, each pixel the mean of a k×k block (a box
+// filter: exact for a whole factor).
+func shrink(m image.Image, k int) *image.NRGBA {
+	b := m.Bounds()
+	w, h := b.Dx()/k, b.Dy()/k
+	out := image.NewNRGBA(image.Rect(0, 0, w, h))
+	n := uint32(k * k)
+	for y := range h {
+		for x := range w {
+			var sr, sg, sb, sa uint32
+			for j := range k {
+				for i := range k {
+					cr, cg, cb, ca := m.At(b.Min.X+x*k+i, b.Min.Y+y*k+j).RGBA()
+					sr, sg, sb, sa = sr+cr, sg+cg, sb+cb, sa+ca
+				}
+			}
+			out.Set(x, y, color.RGBA64{uint16(sr / n), uint16(sg / n), uint16(sb / n), uint16(sa / n)})
+		}
+	}
+	return out
 }

@@ -378,6 +378,7 @@ Points:
 - `--fast-forward 5s` or `--no-fast-forward` for waits
 - Cuts fade by default (0.4 s): `transition: slide`, `--transition cut`, or `· pop` after a `go`, `browser`, `terminal`, `window` step
 - `zoom to "Total"` … `zoom out`, `pan to "…"`; `Region: ".agents" · zoom` zooms in instead of cropping
+- Filmed at 2× and scaled down, so zooms stay crisp; `--scale 1` (or `scale: 1`) films at 1×: faster, less disk
 - `spotlight "Pay"` (alias `focus`), `· circle`, `· blur`, `· label "…"`, `· for 3s`, `spotlight off`
 - `window "si-presenter"` films the teleprompter popup; `window main` comes back; `drag from "A" to "B"` draws
 - Kokoro is si's own voice: `si voice install kokoro`, one command; without it, the computer's voice

@@ -53,6 +53,11 @@ type Options struct {
 	// (--transition; nil: the script's transition:, else fade 0.4s)
 	Transition *Transition
 
+	// Scale is the device pixels per CSS pixel a take is filmed at
+	// (--scale; 0: the script's scale:, else DefaultScale). The videos stay
+	// the viewport's size: frames are scaled down at the end (supersampling).
+	Scale int
+
 	// Progress gets each start:, prepare:, step:, stop: and cleanup: line's
 	// result as it ends (si play's getting-ready page; nil: none)
 	Progress func(StepResult)
@@ -91,6 +96,7 @@ type runner struct {
 	tr         Transition      // the transition of the step running (run)
 	mx, my     float64         // where the last mouse event went
 	moused     bool
+	k          int // device pixels per CSS pixel of the pages (1 in a test; Scale in a run)
 
 	// windows the app opened (window steps)
 	appTarget   string
@@ -131,7 +137,10 @@ func Run(s *Script, o Options) (*Report, error) {
 	if k := s.unresolved(); k != "" {
 		return nil, fmt.Errorf("%s was not fetched (si demo fetches the script's sources first)", k)
 	}
-	r := &runner{s: s, o: o, timeout: s.Timeout, terms: map[string]*term{}, procs: map[string]*proc{}, inner: map[string]bool{}, abort: make(chan struct{})}
+	r := &runner{s: s, o: o, timeout: s.Timeout, terms: map[string]*term{}, procs: map[string]*proc{}, inner: map[string]bool{}, abort: make(chan struct{}), k: 1}
+	if o.Video {
+		r.k = firstPositive(o.Scale, s.Scale, DefaultScale)
+	}
 	if o.Log == nil {
 		r.o.Log = io.Discard
 	}
@@ -200,11 +209,14 @@ func Run(s *Script, o Options) (*Report, error) {
 			return nil, err
 		}
 	}
-	c, err := cdp.Launch(o.Chrome, s.W, s.H)
+	// the screencast's frames are the window's pixels, whatever the page's
+	// device scale factor: the window is supersampled too
+	c, err := cdp.Launch(o.Chrome, s.W, s.H, fmt.Sprintf("--force-device-scale-factor=%d", r.k))
 	if err != nil {
 		return nil, err
 	}
 	defer c.Close()
+	c.Scale = float64(r.k)
 	r.pm.Lock()
 	r.c = c
 	r.pm.Unlock()
@@ -650,7 +662,7 @@ func (r *runner) feature(f *Feature, section bool) (fr FeatureResult, cl *clip) 
 				if sr.Output == "" && r.cur != nil {
 					sr.Output = r.cur.out.tail(40)
 				}
-				if png, err := r.c.Screenshot(); err == nil {
+				if png, err := r.screenshot(); err == nil {
 					sr.Shot = r.save(f.Name, "failed", png)
 				}
 			}
@@ -1099,7 +1111,7 @@ if(!o)return [].map.call(e.options,function(o){return o.text.trim()});e.value=o.
 		time.Sleep(st.Wait)
 		return "", nil
 	case "screenshot":
-		png, err := r.c.Screenshot()
+		png, err := r.screenshot()
 		if err != nil {
 			return "", err
 		}

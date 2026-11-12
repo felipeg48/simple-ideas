@@ -579,7 +579,8 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 		return nil, err
 	}
 	cl.Seconds = float64(n) / fps
-	if err := r.ffmpeg(videoArgs(pattern, wd, ht, crop, badges, nil, "", out(".silent.mp4"))); err != nil {
+	k := max(1, int(fx.scale+.5)) // frame pixels per output pixel
+	if err := r.ffmpeg(videoArgs(pattern, wd, ht, k, crop, badges, nil, "", out(".silent.mp4"))); err != nil {
 		return nil, err
 	}
 	wav := filepath.Join(tk.dir, "voice.wav")
@@ -603,7 +604,7 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 		}
 	}
 	if len(caps) > 0 {
-		if err := r.ffmpeg(videoArgs(pattern, wd, ht, crop, badges, caps, wav, out(".captions.mp4"))); err != nil {
+		if err := r.ffmpeg(videoArgs(pattern, wd, ht, k, crop, badges, caps, wav, out(".captions.mp4"))); err != nil {
 			return nil, err
 		}
 		cl.Captioned = true

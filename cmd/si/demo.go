@@ -33,7 +33,7 @@ const demoUsage = `Usage:
                   in ~/.si/trusted); with no terminal to ask in it refuses and says why
   si demo run <script|folder/|source> [--feature "Name"] [--voice engine:name] [--viewport V] [--junit report.xml] [-o dir]
               [--with captions,subtitles,…] [--fast-forward 3s | --no-fast-forward] [--region "<css>" | --crop x,y,w,h]
-              [--transition fade|slide|wipe|pop|zoom|circle|cut [0.4s]]
+              [--transition fade|slide|wipe|pop|zoom|circle|cut [0.4s]] [--scale 1|2]
         perform the same steps on film: a drawn cursor glides to each target, clicks ripple,
         note steps point at elements, fields typed from $VARs are blurred. Each Say: line is
         voiced first and sets the pace. Writes one file: <script>.mp4, every feature after its
@@ -63,6 +63,10 @@ const demoUsage = `Usage:
                   wipe[-…], pop, zoom, circle; else transition: in front matter. A step's own
                   · slide wins. Camera moves (zoom to, pan to, zoom out) and spotlight "…" are
                   steps (RULES.md §27, Transitions and camera)
+        --scale 2 the page is filmed at 2 device pixels per CSS pixel (the default) and every
+                  video scaled back down to the viewport: crisp text, sharp zoom to / pan to.
+                  --scale 1 films at the viewport's size (faster, less disk); else scale: in
+                  front matter
   Both run start:, prepare: and step: in the order written, then ## Before; setup: before each
   feature; ## After, stop:, every program stopped, cleanup: (always: after a failure and on
   Ctrl-C too). ## Before and ## After are never filmed. terminal "Name" steps open a real shell,
@@ -74,7 +78,7 @@ const demoUsage = `Usage:
 func runDemo(argv []string, stdout, stderr io.Writer) int {
 	fl := flag.NewFlagSet("si demo", flag.ContinueOnError)
 	fl.SetOutput(io.Discard)
-	var feature, junit, out, viewport, voice, region, crop, trans string
+	var feature, junit, out, viewport, voice, region, crop, trans, scale string
 	var help, captions, noCaptions, noFF, trust bool
 	var with multi
 	fastFwd := 3 * time.Second
@@ -90,6 +94,7 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 	fl.StringVar(&region, "region", "", "")
 	fl.StringVar(&crop, "crop", "", "")
 	fl.StringVar(&trans, "transition", "", "")
+	fl.StringVar(&scale, "scale", "", "")
 	fl.DurationVar(&fastFwd, "fast-forward", fastFwd, "")
 	fl.BoolVar(&noFF, "no-fast-forward", false, "")
 	fl.BoolVar(&trust, "trust", false, "")
@@ -150,6 +155,18 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 			return exitUsage
 		}
 		base.Transition = &t
+	}
+	if scale != "" {
+		k, err := webdemo.ParseScale(scale)
+		if err != nil {
+			fmt.Fprintf(stderr, "si demo: --%v\n", err)
+			return exitUsage
+		}
+		if !film {
+			fmt.Fprintf(stderr, "si demo: --scale is for si demo run (si demo test films nothing)\n")
+			return exitUsage
+		}
+		base.Scale = k
 	}
 	// the scripts: a file, a folder (every demo script in it), or the same
 	// from a repo or a URL, fetched and trusted once per pin

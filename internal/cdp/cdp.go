@@ -40,6 +40,7 @@ type Client struct {
 	onEvent func(Event)
 	dead    error
 	Session string
+	Scale   float64 // device pixels per CSS pixel of the pages OpenPage opens (0 = 1)
 }
 
 // Launch starts headless Chrome with the DevTools pipe, a window of w×h CSS
@@ -100,7 +101,7 @@ func (c *Client) OpenPage(ctx string, w, h int) (string, error) {
 		return "", err
 	}
 	c.Session = att.SessionID
-	return tgt.TargetID, c.Call("Emulation.setDeviceMetricsOverride", map[string]any{"width": w, "height": h, "deviceScaleFactor": 1, "mobile": false}, nil)
+	return tgt.TargetID, c.Call("Emulation.setDeviceMetricsOverride", map[string]any{"width": w, "height": h, "deviceScaleFactor": max(c.Scale, 1), "mobile": false}, nil)
 }
 
 // OnEvent sets the function that receives every event. It runs on the
