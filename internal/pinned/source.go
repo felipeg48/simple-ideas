@@ -92,7 +92,9 @@ func Parse(w, sum string) (*Source, error) {
 
 // Folder reports whether the source is a folder of a repo (every script in
 // it, or a tree of documents).
-func (s *Source) Folder() bool { return s.Kind == "github" && (s.Path == "" || strings.HasSuffix(s.Path, "/")) }
+func (s *Source) Folder() bool {
+	return s.Kind == "github" && (s.Path == "" || strings.HasSuffix(s.Path, "/"))
+}
 
 // Key is the pin: what ~/.si/trusted remembers and the cache is named by.
 func (s *Source) Key() string {

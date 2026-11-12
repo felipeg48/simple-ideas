@@ -52,6 +52,10 @@ type Options struct {
 	// Transition is the cut at scene changes and between features
 	// (--transition; nil: the script's transition:, else fade 0.4s)
 	Transition *Transition
+
+	// Progress gets each start:, prepare:, step:, stop: and cleanup: line's
+	// result as it ends (si play's getting-ready page; nil: none)
+	Progress func(StepResult)
 }
 
 // failure is a step that did not pass: what it expected, what it found, the
@@ -107,8 +111,13 @@ type runner struct {
 	cur      *term            // the terminal in front (nil: the browser)
 	procs    map[string]*proc // programs by name
 	all      []*proc
-	stopping bool    // shutdown has begun: nothing new starts
-	local    []*proc // this feature's start steps
+	stopping bool          // shutdown has begun: nothing new starts
+	local    []*proc       // this feature's start steps
+	began    bool          // the prelude has begun: stop: and cleanup: run at the end
+	abort    chan struct{} // closed when shutdown begins: a running prepare: or setup: is stopped
+	pre      []StepResult  // start:, prepare:, step: results
+	post     []StepResult  // stop: and cleanup: results
+	section  bool          // ## Before or ## After is running: not filmed, its programs live on
 	quiet    []quietCheck
 	down     sync.Once
 }
@@ -119,7 +128,10 @@ func Run(s *Script, o Options) (*Report, error) {
 	if len(s.Problems) > 0 {
 		return nil, fmt.Errorf("%s", s.Problems[0])
 	}
-	r := &runner{s: s, o: o, timeout: s.Timeout, terms: map[string]*term{}, procs: map[string]*proc{}, inner: map[string]bool{}}
+	if k := s.unresolved(); k != "" {
+		return nil, fmt.Errorf("%s was not fetched (si demo fetches the script's sources first)", k)
+	}
+	r := &runner{s: s, o: o, timeout: s.Timeout, terms: map[string]*term{}, procs: map[string]*proc{}, inner: map[string]bool{}, abort: make(chan struct{})}
 	if o.Log == nil {
 		r.o.Log = io.Discard
 	}
@@ -202,22 +214,18 @@ func Run(s *Script, o Options) (*Report, error) {
 	if len(r.features()) == 0 {
 		return nil, fmt.Errorf("no feature named %q in %s", o.Feature, filepath.Base(s.Path))
 	}
-	// start: programs, for the whole run; when one does not come up, every
+	// start:, prepare: and step:, in the order written; when one fails (a
+	// program that does not come up, a command that does not exit 0), every
 	// feature fails with its last lines
-	var down *StepResult
-	for _, p := range s.Starts {
-		fmt.Fprintf(r.o.Log, "start: %s\n", r.mask(p.Cmd))
-		t := time.Now()
-		if err := r.startProgram(p.Name, p.Cmd, p.Ready, p.Within, false); err != nil {
-			sr := StepResult{Line: p.Line, Text: "start: " + p.Cmd, Kind: "start", Status: "failed", Seconds: time.Since(t).Seconds(), Found: r.mask(err.Error())}
-			var fe *failure
-			if errors.As(err, &fe) {
-				sr.Expected, sr.Found, sr.Output = r.mask(fe.expected), r.mask(fe.found), fe.output
-			}
-			r.line(sr)
-			down = &sr
-			break
-		}
+	down := r.prelude()
+	rep.Start = r.pre
+	// ## Before: when it fails, the features are skipped
+	skip := false
+	if s.Before != nil && down == nil {
+		fmt.Fprintln(r.o.Log, "## Before")
+		fr, _ := r.feature(s.Before, true)
+		rep.Before = &fr
+		skip = fr.Status == "failed"
 	}
 	var clips []*clip
 	for _, f := range r.features() {
@@ -225,13 +233,26 @@ func Run(s *Script, o Options) (*Report, error) {
 			rep.Features = append(rep.Features, FeatureResult{Name: f.Name, What: f.What, Line: f.Line, Status: "failed", Steps: []StepResult{*down}})
 			continue
 		}
-		fr, cl := r.feature(f)
+		if skip {
+			rep.Features = append(rep.Features, FeatureResult{Name: f.Name, What: f.What, Line: f.Line, Status: "skipped",
+				Steps: []StepResult{{Text: "## Before failed", Status: "skipped"}}})
+			continue
+		}
+		fr, cl := r.feature(f, false)
 		if cl != nil {
 			clips = append(clips, cl)
 			fr.Video, fr.Silent, fr.Captioned = cl.Name+".mp4", cl.Name+".silent.mp4", cl.Name+".captions.mp4" // deliver keeps the ones made
 		}
 		rep.Features = append(rep.Features, fr)
 	}
+	// ## After always runs; then stop:, the programs, cleanup:
+	if s.After != nil {
+		fmt.Fprintln(r.o.Log, "## After")
+		fr, _ := r.feature(s.After, true)
+		rep.After = &fr
+	}
+	r.shutdown()
+	rep.Teardown = r.post
 	if len(clips) > 0 {
 		fmt.Fprintf(r.o.Log, "%s.mp4: %d feature(s) with title cards and chapters\n", s.Name, len(clips))
 		if err := r.joinAll(clips); err != nil {
@@ -497,8 +518,11 @@ func firstLine(s string) string {
 }
 
 // feature runs one feature in a fresh browser context, after setup:; in a
-// run it films it too and returns its clip.
-func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
+// run it films it too and returns its clip. A section (## Before, ## After)
+// has no setup:, is never filmed, and the programs it starts live on.
+func (r *runner) feature(f *Feature, section bool) (fr FeatureResult, cl *clip) {
+	r.section = section
+	defer func() { r.section = false }()
 	r.curFeature = f
 	fr = FeatureResult{Name: f.Name, What: f.What, Line: f.Line, Status: "passed"}
 	fmt.Fprintf(r.o.Log, "%s\n", f.Name)
@@ -509,14 +533,11 @@ func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
 		fr.Status = "failed"
 		return fr, nil
 	}
-	if r.s.Setup != "" {
-		t := time.Now()
-		out, err := shell(r.s.Setup, r.s.Dir())
-		sr := StepResult{Text: "setup: " + r.s.Setup, Status: "passed", Seconds: time.Since(t).Seconds()}
-		r.line(sr)
-		if err != nil {
-			sr.Status, sr.Expected, sr.Found = "failed", "setup: exits 0", r.mask(strings.TrimSpace(err.Error()+"\n"+out))
-			r.line(sr)
+	for _, c := range r.s.Setups {
+		if section {
+			break
+		}
+		if sr := r.command(c); sr.Status == "failed" {
 			return fail(sr)
 		}
 	}
@@ -544,7 +565,7 @@ func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
 			return fail(StepResult{Text: m, Status: "failed", Found: err.Error()})
 		}
 	}
-	if r.o.Video {
+	if r.o.Video && !section {
 		if err := r.startTake(); err != nil {
 			return fail(StepResult{Text: "film the page", Status: "failed", Found: err.Error()})
 		}
@@ -690,12 +711,6 @@ func (r *runner) line(sr StepResult) {
 	if len(sr.Candidates) > 0 {
 		fmt.Fprintf(r.o.Log, "      closest:  %s\n", strings.Join(sr.Candidates, ", "))
 	}
-}
-
-// shell runs setup: and stop: in dir.
-func shell(cmd, dir string) (string, error) {
-	out, err := shellCmd(cmd, dir).CombinedOutput()
-	return string(out), err
 }
 
 var slugRE = regexp.MustCompile(`[^a-z0-9]+`)

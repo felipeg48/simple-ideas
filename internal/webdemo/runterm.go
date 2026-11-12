@@ -53,14 +53,14 @@ func commandSecrets(s *Script) []string {
 
 // startProgram starts a program in the background and waits for it to be
 // ready.
-func (r *runner) startProgram(name, cmd string, rd Ready, within time.Duration, local bool) error {
+func (r *runner) startProgram(name, cmd string, rd Ready, within time.Duration, local bool, dir string) error {
 	t := time.Now()
 	r.pm.Lock() // held while it starts: a shutdown never misses it
 	if r.stopping {
 		r.pm.Unlock()
 		return errStopping
 	}
-	p, err := startProc(name, cmd, r.s.Dir(), logPath(r.o.Out, name), r.mask)
+	p, err := startProc(name, cmd, dir, logPath(r.o.Out, name), r.mask)
 	if err != nil {
 		r.pm.Unlock()
 		return &failure{expected: name + " starts", found: err.Error()}
@@ -82,18 +82,21 @@ func (r *runner) startProgram(name, cmd string, rd Ready, within time.Duration, 
 
 // shutdown runs stop: (while the programs still run, so it can talk to
 // them), then stops everything the run started: terminals and programs
-// (SIGTERM, SIGKILL after stopGrace, all at once). It runs once: at the end,
-// on a failure, on Ctrl-C and on a panic.
+// (SIGTERM, SIGKILL after stopGrace, all at once), then runs cleanup:. It
+// runs once: at the end, on a failure, on Ctrl-C and on a panic; stop: and
+// cleanup: run when the prelude has begun. Their results go to r.post.
 func (r *runner) shutdown() {
 	r.down.Do(func() {
-		if r.s.Stop != "" {
-			t := time.Now()
-			out, err := shell(r.s.Stop, r.s.Dir())
-			sr := StepResult{Text: "stop: " + r.s.Stop, Status: "passed", Seconds: time.Since(t).Seconds()}
-			if err != nil {
-				sr.Status, sr.Found = "failed", r.mask(err.Error()+" "+out)
+		if r.abort != nil {
+			close(r.abort) // a prepare: or setup: still running is stopped
+		}
+		r.pm.Lock()
+		began := r.began
+		r.pm.Unlock()
+		if began {
+			for _, c := range r.s.Stops {
+				r.post = append(r.post, r.command(c))
 			}
-			r.line(sr)
 		}
 		r.pm.Lock()
 		r.stopping = true
@@ -114,6 +117,11 @@ func (r *runner) shutdown() {
 		}
 		if rc != "" {
 			os.RemoveAll(rc)
+		}
+		if began {
+			for _, c := range r.s.Cleanups {
+				r.post = append(r.post, r.command(c))
+			}
 		}
 	})
 }
@@ -415,7 +423,7 @@ func (r *runner) termStep(st *Step) error {
 		r.quiet = append(r.quiet, quietCheck{t: t, from: from, text: st.Value.Text, idx: -1})
 		return nil
 	case "start":
-		return r.startProgram(st.Name, st.Value.Text, st.Ready, st.Within, true)
+		return r.startProgram(st.Name, st.Value.Text, st.Ready, st.Within, !r.section, r.s.Dir())
 	case "stop":
 		if !st.Block {
 			p.stop()

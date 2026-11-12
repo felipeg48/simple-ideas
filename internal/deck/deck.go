@@ -166,10 +166,28 @@ type Meta struct {
 	Stop         string // web demo: stop: a tear-down command
 	Shell        string // web demo: shell: of the terminal steps
 	With         string // web demo: with: what si demo run writes besides <script>.mp4
+	Prepare      string // web demo: prepare: (or step:) a command run once before the first feature (the last one; Lifecycle has them all)
+	Cleanup      string // web demo and deck: cleanup: a command run after the programs are stopped (the last one)
+
+	// Lifecycle is every setup:, start:, prepare:, step:, stop: and cleanup:
+	// line in the order written (they may repeat): a web demo reads its own,
+	// a deck runs them in si play and si serve (internal/webdemo.ParseStage)
+	Lifecycle []MetaLine
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup"}
+
+// MetaLine is one front matter line kept as written: its key, its value and
+// its line in the file.
+type MetaLine struct {
+	Key, Val string
+	Line     int
+}
+
+// LifecycleKeys are the front matter keys that may repeat and run commands
+// (si demo, si play, si serve).
+var LifecycleKeys = map[string]bool{"setup": true, "start": true, "prepare": true, "step": true, "stop": true, "cleanup": true}
 
 // Lab is one hands-on lab link on a lab slide: clickable Text opening URL.
 type Lab struct {
@@ -486,6 +504,9 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 		m := metaRE.FindStringSubmatch(t)
 		key, val := m[1], strings.Trim(m[2], `"'`)
 		keyLine[key] = i + 1
+		if LifecycleKeys[key] {
+			d.Meta.Lifecycle = append(d.Meta.Lifecycle, MetaLine{key, m[2], i + 1})
+		}
 		if !d.setMeta(key, val) {
 			d.problem(file, i+1, "unknown front matter key %q (known: %s)", key, strings.Join(MetaKeys, ", "))
 			continue
@@ -540,7 +561,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "unlisted": &m.Unlisted, "fonts": &m.Fonts, "fonts-subset": &m.FontsSubset, "repo": &m.Repo,
 		"subtitle": &m.Subtitle, "edition": &m.Edition, "session": &m.Session, "slides": &m.SlidesRef, "duration": &m.Duration,
 		"navigator": &m.Navigator, "logo": &m.Logo, "cta": &m.CTA,
-		"linkedin": &m.LinkedIn, "tags": &m.Tags, "canonical": &m.Canonical, "cover": &m.Cover, "handout": &m.Handout, "handout-url": &m.HandoutURL, "speakers": &m.Speakers, "app": &m.App, "viewport": &m.Viewport, "timeout": &m.Timeout, "setup": &m.Setup, "voice": &m.Voice, "voices": &m.Voices, "voice-style": &m.VoiceStyle, "pronounce": &m.Pronounce, "start": &m.Start, "stop": &m.Stop, "shell": &m.Shell, "with": &m.With,
+		"linkedin": &m.LinkedIn, "tags": &m.Tags, "canonical": &m.Canonical, "cover": &m.Cover, "handout": &m.Handout, "handout-url": &m.HandoutURL, "speakers": &m.Speakers, "app": &m.App, "viewport": &m.Viewport, "timeout": &m.Timeout, "setup": &m.Setup, "voice": &m.Voice, "voices": &m.Voices, "voice-style": &m.VoiceStyle, "pronounce": &m.Pronounce, "start": &m.Start, "stop": &m.Stop, "shell": &m.Shell, "with": &m.With, "prepare": &m.Prepare, "step": &m.Prepare, "cleanup": &m.Cleanup,
 		"layout": &m.MapLayout, "lines": &m.MapLines, "nodes": &m.MapNodes, "map-theme": &m.MapTheme, "watermark-position": &m.WatermarkPos, "favicon": &m.Favicon, "touch-icon": &m.TouchIcon, "og-image": &m.OGImage,
 		"view": &m.MapView, "camera": &m.MapCamera, "floors": &m.MapFloors, "kind": &m.MapKind, "flow": &m.MapFlow,
 	}[key]

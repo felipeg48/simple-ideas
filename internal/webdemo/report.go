@@ -26,6 +26,12 @@ type Report struct {
 	Failed   int             `json:"failed"`
 	Skipped  int             `json:"skipped"`
 	Features []FeatureResult `json:"features"`
+	// the run's own steps, never features: start:, prepare: and step:; ## Before;
+	// ## After; stop: and cleanup:
+	Start    []StepResult   `json:"start,omitempty"`
+	Before   *FeatureResult `json:"before,omitempty"`
+	After    *FeatureResult `json:"after,omitempty"`
+	Teardown []StepResult   `json:"teardown,omitempty"`
 	// si demo run: the whole run's video and every file it wrote, relative
 	// to the report folder
 	Video string   `json:"video,omitempty"`
@@ -77,8 +83,50 @@ func (r *Report) count() {
 	}
 }
 
-// OK reports whether every feature passed.
-func (r *Report) OK() bool { return r.Failed == 0 }
+// OK reports whether every feature passed and nothing around them failed
+// (start:, prepare:, ## Before, ## After, stop:, cleanup:).
+func (r *Report) OK() bool { return r.Failed == 0 && len(r.aroundFailed()) == 0 }
+
+// aroundFailed are the run's own parts that failed, as test cases for JUnit.
+func (r *Report) aroundFailed() []FeatureResult {
+	var out []FeatureResult
+	for _, f := range r.around() {
+		if f != nil && f.Status == "failed" {
+			out = append(out, *f)
+		}
+	}
+	return out
+}
+
+// around are the run's own parts as two pseudo-features: what ran before the
+// features (start:, prepare:, ## Before) and after them (## After, stop:,
+// cleanup:); nil when there was nothing.
+func (r *Report) around() [2]*FeatureResult {
+	part := func(name string, steps ...[]StepResult) *FeatureResult {
+		f := &FeatureResult{Name: name, Status: "passed"}
+		for _, ss := range steps {
+			for _, s := range ss {
+				f.Steps = append(f.Steps, s)
+				f.Seconds += s.Seconds
+				if s.Status == "failed" {
+					f.Status = "failed"
+				}
+			}
+		}
+		if len(f.Steps) == 0 {
+			return nil
+		}
+		return f
+	}
+	var before, after []StepResult
+	if r.Before != nil {
+		before = r.Before.Steps
+	}
+	if r.After != nil {
+		after = r.After.Steps
+	}
+	return [2]*FeatureResult{part("Before the features", r.Start, before), part("After the features", after, r.Teardown)}
+}
 
 // Write writes report.json and report.html into dir (where the screenshots
 // already are); the page inlines them, so it travels alone.
@@ -105,12 +153,29 @@ type stepView struct {
 type featureView struct {
 	FeatureResult
 	Steps []stepView
+	Aside bool // the run's own part, not a feature
 }
 
-func (r *Report) view(dir string) any {
+type reportView struct {
+	*Report
+	Views []featureView
+}
+
+func (r *Report) view(dir string) reportView {
 	var fs []featureView
+	around := r.around()
+	var all []featureView
+	if around[0] != nil {
+		all = append(all, featureView{FeatureResult: *around[0], Aside: true})
+	}
 	for _, f := range r.Features {
-		fv := featureView{FeatureResult: f}
+		all = append(all, featureView{FeatureResult: f})
+	}
+	if around[1] != nil {
+		all = append(all, featureView{FeatureResult: *around[1], Aside: true})
+	}
+	for _, fv := range all {
+		f := fv.FeatureResult
 		for _, s := range f.Steps {
 			sv := stepView{StepResult: s}
 			if s.Shot != "" {
@@ -122,18 +187,90 @@ func (r *Report) view(dir string) any {
 		}
 		fs = append(fs, fv)
 	}
-	return struct {
-		*Report
-		Views []featureView
-	}{r, fs}
+	return reportView{r, fs}
 }
 
-var reportTmpl = template.Must(template.New("r").Funcs(template.FuncMap{
-	"secs": func(f float64) string { return fmt.Sprintf("%.2fs", f) },
-}).Parse(`<!doctype html>
+// Suite is a folder's run: one report per script, in name order.
+type Suite struct {
+	Title   string    `json:"title"`
+	SI      string    `json:"si"`
+	Date    string    `json:"date"`
+	Seconds float64   `json:"seconds"`
+	Passed  int       `json:"passed"`
+	Failed  int       `json:"failed"`
+	Skipped int       `json:"skipped"`
+	Reports []*Report `json:"scripts"`
+	Dirs    []string  `json:"dirs"` // each script's folder, relative to the suite's
+}
+
+// Add counts a script's report in; dir is its folder, relative to the suite's.
+func (s *Suite) Add(r *Report, dir string) {
+	s.Reports, s.Dirs = append(s.Reports, r), append(s.Dirs, filepath.ToSlash(dir))
+	s.Passed, s.Failed, s.Skipped, s.Seconds = s.Passed+r.Passed, s.Failed+r.Failed, s.Skipped+r.Skipped, s.Seconds+r.Seconds
+}
+
+// OK reports whether every script passed.
+func (s *Suite) OK() bool {
+	for _, r := range s.Reports {
+		if !r.OK() {
+			return false
+		}
+	}
+	return true
+}
+
+// Write writes the combined report.json and report.html into dir (each
+// script's own folder below it holds its screenshots).
+func (s *Suite) Write(dir string) error {
+	b, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(dir, "report.json"), append(b, '\n'), 0o644); err != nil {
+		return err
+	}
+	var views []reportView
+	for i, r := range s.Reports {
+		views = append(views, r.view(filepath.Join(dir, filepath.FromSlash(s.Dirs[i]))))
+	}
+	var sb strings.Builder
+	if err := suiteTmpl.Execute(&sb, struct {
+		*Suite
+		Views []reportView
+	}{s, views}); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, "report.html"), []byte(sb.String()), 0o644)
+}
+
+// JUnit is the suite as JUnit XML: a test suite per script.
+func (s *Suite) JUnit() ([]byte, error) { return junit(s.Title, s.Reports) }
+
+var tmplFuncs = template.FuncMap{"secs": func(f float64) string { return fmt.Sprintf("%.2fs", f) }}
+
+var reportTmpl = template.Must(template.Must(template.New("r").Funcs(tmplFuncs).Parse(reportStyle)).Parse(`<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.Title}}: web demo report</title>
-<style>
+{{template "style"}}</head><body><main>
+<h1>{{.Title}}</h1>
+{{template "body" .}}
+</main></body></html>
+`))
+
+var suiteTmpl = template.Must(template.Must(template.New("s").Funcs(tmplFuncs).Parse(reportStyle)).Parse(`<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}}: web demo report</title>
+{{template "style"}}</head><body><main>
+<h1>{{.Title}}</h1>
+<div class="meta"><span>{{len .Reports}} script(s)</span><span>si {{.SI}}</span><span>{{.Date}}</span></div>
+<div class="sum"><span class="pill passed">{{.Passed}} passed</span><span class="pill failed">{{.Failed}} failed</span>{{if .Skipped}}<span class="pill skipped">{{.Skipped}} skipped</span>{{end}}<span class="pill">{{secs .Seconds}}</span></div>
+<nav class="toc"><ol>{{range $i, $v := .Views}}<li><a href="#s{{$i}}">{{.Title}}</a> <span class="{{if .OK}}passed{{else}}failed{{end}}">{{.Passed}} passed, {{.Failed}} failed</span></li>{{end}}</ol></nav>
+{{range $i, $v := .Views}}<article id="s{{$i}}"><h2 class="script">{{.Title}}</h2>
+{{template "body" .}}</article>{{end}}
+</main></body></html>
+`))
+
+const reportStyle = `{{define "style"}}<style>
 :root{--bg:#f7f7f4;--fg:#1d1f24;--muted:#5d6370;--card:#fff;--line:#dcdcd6;--ok:#1f7a4d;--bad:#b3261e;--skip:#7a6a1f;--accent:#1f4fa3;color-scheme:light dark}
 @media (prefers-color-scheme:dark){:root{--bg:#15171c;--fg:#e8e8e3;--muted:#a3a8b3;--card:#1e2128;--line:#343842;--ok:#5fcf95;--bad:#ff8a80;--skip:#e0c860;--accent:#8ab4ff}}
 *{box-sizing:border-box}
@@ -164,11 +301,13 @@ a{color:var(--accent)}
 .out{margin:0;padding:.6em .8em;max-height:24em;overflow:auto;background:#0f1420;color:#d8dee9;border-radius:.4em;font:.85em/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}
 .log{margin:.8em 0 0;color:var(--bad)}
 .log ul{margin:.2em 0 0;padding-left:1.2em}
-</style></head><body><main>
-<h1>{{.Title}}</h1>
-<div class="meta"><span>{{.Script}}</span><span>{{.App}}</span><span>{{.Viewport}}</span><span>{{.Chrome}}</span><span>si {{.SI}}</span><span>{{.Date}}</span></div>
+section.aside{background:transparent;border-style:dashed}
+.toc ol{list-style:decimal;padding-left:1.4em;margin:0 0 2em}.toc li{border:0;padding:.15em 0}
+h2.script{font-size:clamp(1.25rem,1.1rem + .8vw,1.8rem);margin:2em 0 .3em}
+</style>{{end}}
+{{define "body"}}<div class="meta"><span>{{.Script}}</span><span>{{.App}}</span><span>{{.Viewport}}</span><span>{{.Chrome}}</span><span>si {{.SI}}</span><span>{{.Date}}</span></div>
 <div class="sum"><span class="pill passed">{{.Passed}} passed</span><span class="pill failed">{{.Failed}} failed</span>{{if .Skipped}}<span class="pill skipped">{{.Skipped}} skipped</span>{{end}}<span class="pill">{{secs .Seconds}}</span>{{if .Video}}<a class="pill" href="{{.Video}}">▶ {{.Video}}</a>{{end}}</div>
-{{range .Views}}<section class="st-{{.Status}}">
+{{range .Views}}<section class="st-{{.Status}}{{if .Aside}} aside{{end}}">
 <header><h2>{{.Name}}</h2><span class="{{.Status}}">{{.Status}} · {{secs .Seconds}}{{if .Video}} · <a href="{{.Video}}">▶ {{.Video}}</a>{{end}}{{if .Captioned}} · <a href="{{.Captioned}}">with captions</a>{{end}}{{if .Silent}} · <a href="{{.Silent}}">picture only</a>{{end}}</span></header>
 {{if .What}}<p class="what">{{.What}}</p>{{end}}
 <ol>{{range .Steps}}<li>
@@ -177,12 +316,14 @@ a{color:var(--accent)}
 {{if .Img}}<figure><img src="{{.Img}}" alt="the page after: {{.Text}}"><figcaption>{{.Shot}}</figcaption></figure>{{end}}
 </li>{{end}}</ol>
 {{if or .Errors .Requests}}<div class="log">{{if .Errors}}<strong>Console errors</strong><ul>{{range .Errors}}<li><code>{{.}}</code></li>{{end}}</ul>{{end}}{{if .Requests}}<strong>Failed requests</strong><ul>{{range .Requests}}<li><code>{{.}}</code></li>{{end}}</ul>{{end}}</div>{{end}}
-</section>{{end}}
-</main></body></html>
-`))
+</section>{{end}}{{end}}`
 
 // JUnit is the report as JUnit XML: one test case per feature.
-func (r *Report) JUnit() ([]byte, error) {
+func (r *Report) JUnit() ([]byte, error) { return junit(r.Title, []*Report{r}) }
+
+// junit is JUnit XML with a test suite per report: a test case per feature,
+// and one per part around them that failed.
+func junit(title string, reps []*Report) ([]byte, error) {
 	type failure struct {
 		Message string `xml:"message,attr"`
 		Type    string `xml:"type,attr"`
@@ -216,52 +357,62 @@ func (r *Report) JUnit() ([]byte, error) {
 		Time     string   `xml:"time,attr"`
 		Suites   []suite
 	}
-	s := suite{Name: r.Title, Tests: len(r.Features), Failures: r.Failed, Skipped: r.Skipped, Time: fmt.Sprintf("%.3f", r.Seconds), Stamp: r.Date}
-	for _, f := range r.Features {
-		tc := testcase{Name: f.Name, Classname: strings.TrimSuffix(r.Script, filepath.Ext(r.Script)), Time: fmt.Sprintf("%.3f", f.Seconds)}
-		var log strings.Builder
-		for _, st := range f.Steps {
-			fmt.Fprintf(&log, "%s %s (%.2fs)\n", st.Status, st.Text, st.Seconds)
-			if st.Status != "failed" {
-				continue
+	all := suites{Name: title}
+	var total float64
+	for _, r := range reps {
+		fs := append(append([]FeatureResult(nil), r.Features...), r.aroundFailed()...)
+		s := suite{Name: r.Title, Tests: len(fs), Failures: r.Failed + len(fs) - len(r.Features), Skipped: r.Skipped, Time: fmt.Sprintf("%.3f", r.Seconds), Stamp: r.Date}
+		for _, f := range fs {
+			tc := testcase{Name: f.Name, Classname: strings.TrimSuffix(r.Script, filepath.Ext(r.Script)), Time: fmt.Sprintf("%.3f", f.Seconds)}
+			var log strings.Builder
+			for _, st := range f.Steps {
+				fmt.Fprintf(&log, "%s %s (%.2fs)\n", st.Status, st.Text, st.Seconds)
+				if st.Status != "failed" {
+					continue
+				}
+				var b strings.Builder
+				if st.Line > 0 {
+					fmt.Fprintf(&b, "%s:%d: ", r.Script, st.Line)
+				}
+				fmt.Fprintf(&b, "%s\n", st.Text)
+				if st.Expected != "" {
+					fmt.Fprintf(&b, "expected: %s\n", st.Expected)
+				}
+				fmt.Fprintf(&b, "found: %s\n", st.Found)
+				if len(st.Candidates) > 0 {
+					fmt.Fprintf(&b, "closest: %s\n", strings.Join(st.Candidates, ", "))
+				}
+				if st.Shot != "" {
+					fmt.Fprintf(&b, "screenshot: %s\n", st.Shot)
+				}
+				if st.Output != "" {
+					fmt.Fprintf(&b, "output (last lines):\n%s\n", st.Output)
+				}
+				msg := st.Text + ": " + st.Found
+				if st.Expected != "" {
+					msg = st.Text + ": expected " + st.Expected + ", found " + st.Found
+				}
+				tc.Failure = &failure{Message: msg, Type: "StepFailed", Text: b.String()}
 			}
-			var b strings.Builder
-			if st.Line > 0 {
-				fmt.Fprintf(&b, "%s:%d: ", r.Script, st.Line)
+			for _, e := range f.Errors {
+				fmt.Fprintf(&log, "console: %s\n", e)
 			}
-			fmt.Fprintf(&b, "%s\n", st.Text)
-			if st.Expected != "" {
-				fmt.Fprintf(&b, "expected: %s\n", st.Expected)
+			for _, e := range f.Requests {
+				fmt.Fprintf(&log, "request: %s\n", e)
 			}
-			fmt.Fprintf(&b, "found: %s\n", st.Found)
-			if len(st.Candidates) > 0 {
-				fmt.Fprintf(&b, "closest: %s\n", strings.Join(st.Candidates, ", "))
+			if f.Status == "skipped" {
+				tc.Skipped = &skipped{}
 			}
-			if st.Shot != "" {
-				fmt.Fprintf(&b, "screenshot: %s\n", st.Shot)
-			}
-			if st.Output != "" {
-				fmt.Fprintf(&b, "output (last lines):\n%s\n", st.Output)
-			}
-			msg := st.Text + ": " + st.Found
-			if st.Expected != "" {
-				msg = st.Text + ": expected " + st.Expected + ", found " + st.Found
-			}
-			tc.Failure = &failure{Message: msg, Type: "StepFailed", Text: b.String()}
+			tc.SystemOut = log.String()
+			s.Cases = append(s.Cases, tc)
 		}
-		for _, e := range f.Errors {
-			fmt.Fprintf(&log, "console: %s\n", e)
-		}
-		for _, e := range f.Requests {
-			fmt.Fprintf(&log, "request: %s\n", e)
-		}
-		if f.Status == "skipped" {
-			tc.Skipped = &skipped{}
-		}
-		tc.SystemOut = log.String()
-		s.Cases = append(s.Cases, tc)
+		all.Suites = append(all.Suites, s)
+		all.Tests += s.Tests
+		all.Failures += s.Failures
+		total += r.Seconds
 	}
-	b, err := xml.MarshalIndent(suites{Name: r.Title, Tests: s.Tests, Failures: s.Failures, Time: s.Time, Suites: []suite{s}}, "", "  ")
+	all.Time = fmt.Sprintf("%.3f", total)
+	b, err := xml.MarshalIndent(all, "", "  ")
 	if err != nil {
 		return nil, err
 	}
