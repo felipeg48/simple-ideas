@@ -67,6 +67,17 @@ Método sistemático para encontrar todos los números primos hasta un límite d
   description length; `--budget` style rules optional (`require: 20 dates, 15
   images`) so a rubric can be checked.
 
+## Orientation (both types)
+
+`orientation: landscape | portrait` (founder, 2026-11-12), for timelines and
+infographics alike:
+- **landscape (16:9)** is a slide: it behaves like one (presentable with
+  `si play`, keys, teleprompter `Notes:` allowed, build steps per era or
+  block, exportable like a deck page, droppable into a deck as a slide).
+- **portrait** (vertical, e.g. 9:16 or A4/letter tall) is a scrolling
+  poster/page for documents, phones and print.
+`aspect:` may refine the ratio (`16:9`, `4:3`, `9:16`, `a4`).
+
 ## Layouts and looks
 
 - `line`: one horizontal line, milestones alternating above/below.
