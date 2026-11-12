@@ -33,6 +33,7 @@ type Script struct {
 	Shell     string        // shell: the shell of terminal steps ("" = $SHELL, else sh)
 	Voice     string        // engine:voice as written ("" = the default voice)
 	Style     string        // voice-style: a tone for engines that take one (openai)
+	Region    string        // region: a CSS selector the clips crop to (a feature's Region: overrides)
 	Pronounce []Pronounce   // pronounce: word = how to say it
 	Features  []*Feature
 	Problems  []Problem // the script cannot run
@@ -43,6 +44,7 @@ type Script struct {
 type Feature struct {
 	Name   string
 	What   string // `What it does:`
+	Region string // `Region:` a CSS selector this feature's clip crops to ("" = the script's region, else whole page)
 	Line   int
 	Blocks []*Block
 }
@@ -222,7 +224,7 @@ func (s *Script) warn(line int, format string, a ...any) {
 // settings applies the front matter (line: where to report a bad value).
 func (s *Script) settings(fm map[string]string, line func(string) int) {
 	s.Title, s.App, s.Setup, s.Voice, s.Viewport, s.Style = fm["title"], fm["app"], fm["setup"], fm["voice"], fm["viewport"], fm["voice-style"]
-	s.Stop, s.Shell = fm["stop"], fm["shell"]
+	s.Stop, s.Shell, s.Region = fm["stop"], fm["shell"], fm["region"]
 	if s.App == "" {
 		s.problem(line("app"), "a web demo needs app: (a URL, a folder of the app next to the script, or none for a terminal-only demo)")
 	}
@@ -298,7 +300,7 @@ func duration(v string) (time.Duration, bool) {
 
 var (
 	listRE  = regexp.MustCompile(`^\s*(?:[-*+]|\d+[.)])\s+(.*)$`)
-	labelRE = regexp.MustCompile(`^(What it does|Say|Notes|Points)\s*(?:\([^)]*\))?\s*:\s*(.*)$`)
+	labelRE = regexp.MustCompile(`^(What it does|Region|Say|Notes|Points)\s*(?:\([^)]*\))?\s*:\s*(.*)$`)
 )
 
 // Parse reads a Markdown script (path names it, for messages and relative
@@ -357,6 +359,12 @@ func Parse(path, src string) *Script {
 					continue
 				}
 				f.What, text = m[2], "what"
+			case "Region":
+				if f == nil {
+					s.problem(no, "Region: belongs to a feature (a ## heading above it)")
+					continue
+				}
+				f.Region, text = strings.Trim(strings.TrimSpace(m[2]), `"'`), ""
 			case "Say":
 				if f == nil {
 					s.problem(no, "Say: belongs to a feature (a ## heading above it)")
@@ -739,13 +747,14 @@ func namedKey(p string) (keyDef, bool) {
 // blocks of steps written as in Markdown.
 type jsonScript struct {
 	Type, Title, App, Viewport, Timeout, Setup, Voice string
-	Stop, Shell                                       string
+	Stop, Shell, Region                               string
 	Style                                             string   `json:"voice-style"`
 	Pronounce                                         []string `json:"pronounce"`
 	Start                                             []string `json:"start"`
 	Features                                          []struct {
 		Name   string `json:"name"`
 		What   string `json:"what"`
+		Region string `json:"region"`
 		Blocks []struct {
 			Say   string   `json:"say"`
 			Steps []string `json:"steps"`
@@ -771,7 +780,7 @@ func ParseJSON(path string, raw []byte) (*Script, error) {
 		}
 		return 0
 	}
-	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "setup": j.Setup, "voice": j.Voice, "voice-style": j.Style, "stop": j.Stop, "shell": j.Shell}
+	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "setup": j.Setup, "voice": j.Voice, "voice-style": j.Style, "stop": j.Stop, "shell": j.Shell, "region": j.Region}
 	s.settings(fm, func(key string) int {
 		if k := strings.Index(src, `"`+key+`"`); k >= 0 {
 			return strings.Count(src[:k], "\n") + 1
@@ -786,7 +795,7 @@ func ParseJSON(path string, raw []byte) (*Script, error) {
 	}
 	pos = 0
 	for _, jf := range j.Features {
-		f := &Feature{Name: jf.Name, What: jf.What, Line: lineOf(jf.Name)}
+		f := &Feature{Name: jf.Name, What: jf.What, Region: strings.Trim(strings.TrimSpace(jf.Region), `"'`), Line: lineOf(jf.Name)}
 		s.Features = append(s.Features, f)
 		for _, jb := range jf.Blocks {
 			b := &Block{Say: jb.Say}

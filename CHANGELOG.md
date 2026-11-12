@@ -3,6 +3,15 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **Unreleased:** web demos: `si demo run` and the `screenshot` step can film a
+  region of the page instead of the whole viewport. `--region "<css>"` crops
+  every clip to that element's box (the cursor, clicks and notes still play;
+  only the output frame is cropped), `--crop x,y,w,h` crops to a fixed pixel
+  box, a `Region:` line under a `##` feature crops that feature's clip, and
+  `region:` in the front matter is the script's default. The captions variant
+  shrinks the region into the frame with its aspect kept, and `all.mp4`
+  letterboxes region clips to the viewport so the features join. Default is
+  unchanged: the whole page when no region is given.
 - **v2.40.3:** sites: an `unlisted: true` page now renders through the same
   site-page path as a listed page, so it carries the full site shell — the
   navigator (logo, menu, `cta:`), `_header.md`, `_footer.md`, the `si-doc`

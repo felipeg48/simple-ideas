@@ -435,6 +435,13 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 	if stem == "" {
 		stem = "feature"
 	}
+	// the region crop, measured now on the app page in front, before the card
+	// and caption pictures navigate it to data: URLs
+	w, h := frameSize(tk.frames[0].File, r.s.W, r.s.H)
+	crop, err := r.cropFor(f, w, h)
+	if err != nil {
+		return nil, err
+	}
 	out := func(ext string) string { return filepath.Join(r.o.Out, stem+ext) }
 	cl := &clip{Name: stem, title: f.Name, Seconds: d, Voiced: len(tk.voice) > 0}
 	fs := fastForward(tk.waits, tk.spoken, r.o.FastForward.Seconds(), d)
@@ -495,8 +502,7 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 		return nil, err
 	}
 	cl.Seconds = float64(n) / fps
-	w, h := frameSize(tk.frames[0].File, r.s.W, r.s.H)
-	if err := r.ffmpeg(videoArgs(pattern, w, h, badges, nil, "", out(".video.mp4"))); err != nil {
+	if err := r.ffmpeg(videoArgs(pattern, w, h, crop, badges, nil, "", out(".video.mp4"))); err != nil {
 		return nil, err
 	}
 	wav := out(".voice.wav")
@@ -518,7 +524,7 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 			return nil, err
 		}
 		if len(caps) > 0 {
-			if err := r.ffmpeg(videoArgs(pattern, w, h, badges, caps, wav, out(".captions.mp4"))); err != nil {
+			if err := r.ffmpeg(videoArgs(pattern, w, h, crop, badges, caps, wav, out(".captions.mp4"))); err != nil {
 				return nil, err
 			}
 			cl.Captioned = true
@@ -569,7 +575,7 @@ func (r *runner) joinAll(clips []*clip) error {
 		return err
 	}
 	defer os.Remove(meta)
-	if err := r.ffmpeg(allArgs(parts, meta, at("all.mp4"))); err != nil {
+	if err := r.ffmpeg(allArgs(parts, r.s.W, r.s.H, meta, at("all.mp4"))); err != nil {
 		return err
 	}
 	// the picture alone: all.mp4 without its sound (chapters copied along)
@@ -585,7 +591,7 @@ func (r *runner) joinAll(clips []*clip) error {
 				parts[i].Clip = at(c.Name + ".captions.mp4")
 			}
 		}
-		if err := r.ffmpeg(allArgs(parts, meta, at("all.captions.mp4"))); err != nil {
+		if err := r.ffmpeg(allArgs(parts, r.s.W, r.s.H, meta, at("all.captions.mp4"))); err != nil {
 			return err
 		}
 	}

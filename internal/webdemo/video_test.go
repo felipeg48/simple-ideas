@@ -182,17 +182,17 @@ func TestChapters(t *testing.T) {
 }
 
 func TestFFmpegArgs(t *testing.T) {
-	a := strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, nil, nil, "", "/o/a.video.mp4"), " ")
+	a := strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, nil, nil, nil, "", "/o/a.video.mp4"), " ")
 	if !strings.HasPrefix(a, "-nostdin -y") || !strings.Contains(a, "-framerate 30 -i /t/seq%05d.jpg -vf scale=") || !strings.HasSuffix(a, "+faststart /o/a.video.mp4") {
 		t.Errorf("video: %s", a)
 	}
 	badges := []pic{{"/t/ff6.png", 4, 6}}
-	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, badges, nil, "", "/o/a.video.mp4"), " ")
+	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, nil, badges, nil, "", "/o/a.video.mp4"), " ")
 	if !strings.Contains(a, "-i /t/ff6.png -filter_complex [0:v][1:v]overlay=0:0:enable='between(t,4.000,6.000)'[o1];[o1]scale=") || strings.Contains(a, "pad=") || strings.Contains(a, "aac") {
 		t.Errorf("badges: %s", a)
 	}
 	caps := []pic{{"/t/c0.png", 1, 2.5}, {"/t/c1.png", 5, 6}}
-	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, badges, caps, "/o/a.voice.wav", "/o/a.captions.mp4"), " ")
+	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, nil, badges, caps, "/o/a.voice.wav", "/o/a.captions.mp4"), " ")
 	for _, w := range []string{"-i /t/ff6.png -i /t/c0.png -i /t/c1.png -i /o/a.voice.wav -filter_complex",
 		// the badge over the picture, the picture shrunk into the top (1222x764 at 109,18 of 1440x900), the captions in the band
 		"[0:v][1:v]overlay=0:0:enable='between(t,4.000,6.000)'[o1];[o1]scale=1222:764,pad=1440:900:109:18:color=0x111318[band];" +
@@ -208,16 +208,16 @@ func TestFFmpegArgs(t *testing.T) {
 	// the band leaves the bottom 13% for the captions, whatever the frame
 	for _, wh := range [][2]int{{1440, 900}, {400, 800}, {820, 1180}, {1280, 720}} {
 		var sw, sh, x, y, W, H int
-		fmt.Sscanf(band(wh[0], wh[1]), "scale=%d:%d,pad=%d:%d:%d:%d", &sw, &sh, &W, &H, &x, &y)
+		fmt.Sscanf(band(wh[0], wh[1], wh[0], wh[1]), "scale=%d:%d,pad=%d:%d:%d:%d", &sw, &sh, &W, &H, &x, &y)
 		if W != wh[0] || H != wh[1] || sw > W || x*2+sw != W || float64(H-y-sh) < .12*float64(H) || sh%2 != 0 || sw%2 != 0 {
-			t.Errorf("band %v: %s", wh, band(wh[0], wh[1]))
+			t.Errorf("band %v: %s", wh, band(wh[0], wh[1], wh[0], wh[1]))
 		}
 	}
 	a = strings.Join(muxArgs("v.mp4", "v.wav", "o.mp4"), " ")
 	if !strings.Contains(a, "-i v.mp4 -i v.wav -map 0:v -map 1:a -c:v copy -c:a aac") || !strings.Contains(a, "-shortest") {
 		t.Errorf("mux: %s", a)
 	}
-	a = strings.Join(allArgs([]part{{Name: "A", Card: "a.png", Clip: "a.mp4", Seconds: 2}, {Name: "B", Card: "b.png", Clip: "b.mp4", Seconds: 3}}, "m.txt", "all.mp4"), " ")
+	a = strings.Join(allArgs([]part{{Name: "A", Card: "a.png", Clip: "a.mp4", Seconds: 2}, {Name: "B", Card: "b.png", Clip: "b.mp4", Seconds: 3}}, 1440, 900, "m.txt", "all.mp4"), " ")
 	for _, w := range []string{"-loop 1 -framerate 30 -t 3 -i a.png -f lavfi -t 3 -i anullsrc=r=48000:cl=stereo -i a.mp4",
 		"-i b.mp4 -i m.txt -filter_complex", "[cv0][ca0][fv0][fa0][cv1][ca1][fv1][fa1]concat=n=4:v=1:a=1[v][a]", "-map_metadata 6 -map_chapters 6", "-c:v libx264"} {
 		if !strings.Contains(a, w) {
