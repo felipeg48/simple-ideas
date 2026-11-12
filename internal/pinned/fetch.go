@@ -125,7 +125,7 @@ func (c *Client) github(p, accept string) ([]byte, error) {
 	if len(msg) > 200 {
 		msg = msg[:200]
 	}
-	return nil, fmt.Errorf("GitHub: %s: %d %s", p, code, msg)
+	return nil, fmt.Errorf("GitHub: %s: %d %s", p, code, strings.TrimPrefix(msg, fmt.Sprint(code)+": "))
 }
 
 func (c *Client) gh() string {

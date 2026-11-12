@@ -222,7 +222,6 @@ func Run(s *Script, o Options) (*Report, error) {
 	// ## Before: when it fails, the features are skipped
 	skip := false
 	if s.Before != nil && down == nil {
-		fmt.Fprintln(r.o.Log, "## Before")
 		fr, _ := r.feature(s.Before, true)
 		rep.Before = &fr
 		skip = fr.Status == "failed"
@@ -247,7 +246,6 @@ func Run(s *Script, o Options) (*Report, error) {
 	}
 	// ## After always runs; then stop:, the programs, cleanup:
 	if s.After != nil {
-		fmt.Fprintln(r.o.Log, "## After")
 		fr, _ := r.feature(s.After, true)
 		rep.After = &fr
 	}
@@ -525,7 +523,11 @@ func (r *runner) feature(f *Feature, section bool) (fr FeatureResult, cl *clip) 
 	defer func() { r.section = false }()
 	r.curFeature = f
 	fr = FeatureResult{Name: f.Name, What: f.What, Line: f.Line, Status: "passed"}
-	fmt.Fprintf(r.o.Log, "%s\n", f.Name)
+	if section {
+		fmt.Fprintf(r.o.Log, "## %s\n", f.Name)
+	} else {
+		fmt.Fprintf(r.o.Log, "%s\n", f.Name)
+	}
 	start := time.Now()
 	defer func() { fr.Seconds = time.Since(start).Seconds() }()
 	fail := func(sr StepResult) (FeatureResult, *clip) {

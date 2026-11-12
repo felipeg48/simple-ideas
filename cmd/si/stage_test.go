@@ -119,3 +119,42 @@ func readFile(p string) string {
 	b, _ := os.ReadFile(p)
 	return string(b)
 }
+
+// TestPlayLiveExample: examples/live/talk.md sets its broker up, plays, and
+// leaves nothing behind when si play stops.
+func TestPlayLiveExample(t *testing.T) {
+	if runtime.GOOS == "windows" || testing.Short() {
+		t.Skip("sh scripts, a signal")
+	}
+	t.Setenv("SI_HOME", t.TempDir())
+	live := filepath.Join("..", "..", "examples", "live")
+	var so syncBuf
+	var se bytes.Buffer
+	done := make(chan int)
+	go func() {
+		done <- run([]string{"play", filepath.Join(live, "talk.md"), "--addr", "127.0.0.1:0"}, &so, &se)
+	}()
+	ready := false
+	for i := 0; i < 400 && !ready; i++ {
+		time.Sleep(25 * time.Millisecond)
+		ready = strings.Contains(so.String(), "si play: ready")
+	}
+	if !ready {
+		t.Fatalf("not ready: %s %s", so.String(), se.String())
+	}
+	if got := strings.TrimSpace(readFile(filepath.Join(live, ".live", "orders"))); got != "4" {
+		t.Errorf("the second setup: %q", got)
+	}
+	syscall.Kill(os.Getpid(), syscall.SIGINT)
+	select {
+	case code := <-done:
+		if code != exitOK {
+			t.Errorf("exit %d: %s", code, se.String())
+		}
+	case <-time.After(20 * time.Second):
+		t.Fatal("si play did not stop")
+	}
+	if _, err := os.Stat(filepath.Join(live, ".live")); err == nil {
+		t.Error("cleanup: left .live behind")
+	}
+}
