@@ -22,7 +22,7 @@ const demoUsage = `Usage:
         per step, report.html + report.json in demo-out/<script>/ (or -o dir), exit 1 on a failure;
         --junit also writes JUnit XML (one test case per feature) for CI
   si demo run <script> [--feature "Name"] [--voice engine:name] [--viewport V] [--junit report.xml] [-o dir]
-              [--with captions,subtitles,…] [--fast-forward 3s | --no-fast-forward]
+              [--with captions,subtitles,…] [--fast-forward 3s | --no-fast-forward] [--region "<css>" | --crop x,y,w,h]
         perform the same steps on film: a drawn cursor glides to each target, clicks ripple,
         note steps point at elements, fields typed from $VARs are blurred. Each Say: line is
         voiced first and sets the pace. Writes one file: <script>.mp4, every feature after its
@@ -43,6 +43,9 @@ const demoUsage = `Usage:
                   at speed this long, then faster (a ⏩ 6× badge, at most 2s); the narration
                   never speeds up. --no-fast-forward keeps every wait at speed
         --viewport  phone (400x800), tablet (820x1180), desktop (1440x900) or WxH
+        --region "<css>"  crop every clip (and the screenshot step) to that element's box;
+                  --crop x,y,w,h crops to a fixed pixel box. A feature's Region: line and the
+                  front matter region: override; default is the whole page
   Both run start: programs first and stop them at the end (and on Ctrl-C); terminal "Name"
   steps open a real shell, filmed as a framed window (RULES.md §27, Terminals and programs).
 `
@@ -52,7 +55,7 @@ const demoUsage = `Usage:
 func runDemo(argv []string, stdout, stderr io.Writer) int {
 	fl := flag.NewFlagSet("si demo", flag.ContinueOnError)
 	fl.SetOutput(io.Discard)
-	var feature, junit, out, viewport, voice string
+	var feature, junit, out, viewport, voice, region, crop string
 	var help, captions, noCaptions, noFF bool
 	var with multi
 	fastFwd := 3 * time.Second
@@ -65,6 +68,8 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 	fl.Var(&with, "with", "")
 	fl.BoolVar(&captions, "captions", false, "")      // = --with captions
 	fl.BoolVar(&noCaptions, "no-captions", false, "") // gone in v2.41.0: an error that says why
+	fl.StringVar(&region, "region", "", "")
+	fl.StringVar(&crop, "crop", "", "")
 	fl.DurationVar(&fastFwd, "fast-forward", fastFwd, "")
 	fl.BoolVar(&noFF, "no-fast-forward", false, "")
 	fl.BoolVar(&help, "help", false, "")
@@ -123,7 +128,17 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "si demo: --%v\n", err)
 		return exitUsage
 	}
-	o := webdemo.Options{Feature: feature, Log: stdout, SI: version}
+	if region != "" && crop != "" {
+		fmt.Fprintf(stderr, "si demo: use --region or --crop, not both\n")
+		return exitUsage
+	}
+	if crop != "" {
+		if _, err := webdemo.ParseCrop(crop); err != nil {
+			fmt.Fprintf(stderr, "si demo: --%v\n", err)
+			return exitUsage
+		}
+	}
+	o := webdemo.Options{Feature: feature, Log: stdout, SI: version, Region: region, Crop: crop}
 	if film {
 		// --voice > front matter > si.conf beside the script > the user's si.conf > default
 		cfg := config.Load("", filepath.Join(filepath.Dir(args[1]), "si.conf"))

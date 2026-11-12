@@ -12,6 +12,18 @@ update si@simple-ideas`). Notes below that say "unreleased, on a worktree
 branch" (v2.37.0, v2.38.0, v2.40.0) were true when written; all are merged and
 released.
 
+### v2.41.0 and v2.42.0 (2026-11-11)
+- v2.41.0: `si demo run` writes one file, `<script>.mp4`; `--with
+  captions,silent,audio,subtitles,transcript,chapters,clips,report,readme,all`
+  (`internal/webdemo/outputs.go`), `with:` / `demo.with:`; the site reads
+  `<area>/<area>.mp4` and still accepts older `all.mp4` films.
+- v2.42.0: PR #5 (another agent) region capture: `--region "<css>"`,
+  `--crop x,y,w,h`, a feature's `Region:` line, front matter `region:`
+  (`internal/webdemo/region.go`); merged by hand on top of v2.41.0's output
+  names. Ceiling: notes and the ⏩ badge outside the region are cut.
+- Workflow the founder set: other agents open PRs without version bumps; this
+  session merges, fills doc gaps, bumps, tags and releases.
+
 ### Today's releases, in order
 - v2.34.0 `si demo test` (phase 1) · v2.35.0 `si demo run` (video + voice) ·
   v2.36.0 terminals and programs (`start:`/`stop:`, `terminal`, `run`,

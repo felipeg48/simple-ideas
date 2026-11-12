@@ -171,36 +171,61 @@ const (
 
 func even(f float64) int { return int(f/2) * 2 }
 
-// band is the filter that lays a w×h picture out for the captions variant.
-func band(w, h int) string {
-	sh := even(float64(h) * picScale)
-	sw := even(float64(w) * float64(sh) / float64(h))
-	return fmt.Sprintf("scale=%d:%d,pad=%d:%d:%d:%d:color=%s", sw, sh, w, h, (w-sw)/2, even(float64(h)*picTop), bandColor)
+// band is the filter that lays an inW×inH picture into the top of an
+// outW×outH frame for the captions variant, its aspect kept (a cropped region
+// is narrower than the frame: it is centered, the rest of the band colour).
+func band(inW, inH, outW, outH int) string {
+	sh := even(float64(outH) * picScale)
+	sw := even(float64(inW) * float64(sh) / float64(inH))
+	if sw > outW { // a wide region: fit the width instead
+		sw = even(float64(outW))
+		sh = even(float64(inH) * float64(sw) / float64(inW))
+	}
+	return fmt.Sprintf("scale=%d:%d,pad=%d:%d:%d:%d:color=%s", sw, sh, outW, outH, (outW-sw)/2, even(float64(outH)*picTop), bandColor)
 }
 
-// videoArgs encode the sequence of w×h frames with the badges over it. With
-// caps, the picture shrinks into the top of the frame (band), the captions go
-// under it and wav is the voice: the captions variant.
-func videoArgs(pattern string, w, h int, badges, caps []pic, wav, out string) []string {
+// videoArgs encode the sequence of w×h frames with the badges over it. cr
+// crops every frame (and the badges, drawn at frame size) to a region: the
+// clip is then the region's size. With caps, the picture (the region when
+// cropped) shrinks into the top of the w×h frame (band), the captions go under
+// it and wav is the voice: the captions variant.
+func videoArgs(pattern string, w, h int, cr *rect, badges, caps []pic, wav, out string) []string {
 	a := ff("-framerate", fmt.Sprint(fps), "-i", pattern)
+	cw, ch := w, h
+	crop := ""
+	if cr != nil {
+		cw, ch = cr.W, cr.H
+		crop = fmt.Sprintf("crop=%d:%d:%d:%d,", cr.W, cr.H, cr.X, cr.Y)
+	}
 	if len(badges) == 0 && len(caps) == 0 && wav == "" {
-		return append(append(a, "-vf", evenSize), append(h264, out)...)
+		return append(append(a, "-vf", crop+evenSize), append(h264, out)...)
 	}
 	var g strings.Builder
 	last, in := "0:v", 1
-	lay := func(ps []pic) {
+	if cr != nil {
+		fmt.Fprintf(&g, "[0:v]crop=%d:%d:%d:%d[c0];", cr.W, cr.H, cr.X, cr.Y)
+		last = "c0"
+	}
+	// lay overlays each picture; crop'd ones are cut to the region first so
+	// they line up with the cropped base (a badge outside the region drops off).
+	lay := func(ps []pic, cropInput bool) {
 		for _, p := range ps {
 			a = append(a, "-i", p.PNG)
-			fmt.Fprintf(&g, "[%s][%d:v]overlay=0:0:enable='between(t,%.3f,%.3f)'[o%d];", last, in, p.From, p.To, in)
+			src := fmt.Sprintf("%d:v", in)
+			if cropInput {
+				fmt.Fprintf(&g, "[%d:v]crop=%d:%d:%d:%d[p%d];", in, cr.W, cr.H, cr.X, cr.Y, in)
+				src = fmt.Sprintf("p%d", in)
+			}
+			fmt.Fprintf(&g, "[%s][%s]overlay=0:0:enable='between(t,%.3f,%.3f)'[o%d];", last, src, p.From, p.To, in)
 			last = fmt.Sprintf("o%d", in)
 			in++
 		}
 	}
-	lay(badges)
+	lay(badges, cr != nil)
 	if len(caps) > 0 {
-		fmt.Fprintf(&g, "[%s]%s[band];", last, band(w, h))
+		fmt.Fprintf(&g, "[%s]%s[band];", last, band(cw, ch, w, h))
 		last = "band"
-		lay(caps)
+		lay(caps, false) // the captions are drawn at frame size, over the w×h band
 	}
 	fmt.Fprintf(&g, "[%s]%s[v]", last, evenSize)
 	if wav != "" {
@@ -234,8 +259,12 @@ type part struct {
 }
 
 // allArgs join the parts, each clip after its card (silent), into one video
-// with the chapters in meta.
-func allArgs(parts []part, meta, out string) []string {
+// with the chapters in meta. Every card and clip is fitted into the tw×th
+// frame (region clips are smaller: they are centered, letterboxed) so concat
+// sees one size.
+func allArgs(parts []part, tw, th int, meta, out string) []string {
+	tw, th = tw&^1, th&^1
+	fit := fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,format=yuv420p", tw, th, tw, th)
 	a := ff()
 	var g strings.Builder
 	var cat strings.Builder
@@ -243,8 +272,8 @@ func allArgs(parts []part, meta, out string) []string {
 	for i, p := range parts {
 		a = append(a, "-loop", "1", "-framerate", fmt.Sprint(fps), "-t", fmt.Sprint(cardSeconds), "-i", p.Card,
 			"-f", "lavfi", "-t", fmt.Sprint(cardSeconds), "-i", "anullsrc=r=48000:cl=stereo", "-i", p.Clip)
-		fmt.Fprintf(&g, "[%d:v]%s,fps=%d[cv%d];[%d:a]aformat=sample_rates=48000:channel_layouts=stereo[ca%d];", in, evenSize, fps, i, in+1, i)
-		fmt.Fprintf(&g, "[%d:v]%s,fps=%d[fv%d];[%d:a]aresample=48000,aformat=sample_rates=48000:channel_layouts=stereo[fa%d];", in+2, evenSize, fps, i, in+2, i)
+		fmt.Fprintf(&g, "[%d:v]%s,fps=%d[cv%d];[%d:a]aformat=sample_rates=48000:channel_layouts=stereo[ca%d];", in, fit, fps, i, in+1, i)
+		fmt.Fprintf(&g, "[%d:v]%s,fps=%d[fv%d];[%d:a]aresample=48000,aformat=sample_rates=48000:channel_layouts=stereo[fa%d];", in+2, fit, fps, i, in+2, i)
 		fmt.Fprintf(&cat, "[cv%d][ca%d][fv%d][fa%d]", i, i, i, i)
 		in += 3
 	}

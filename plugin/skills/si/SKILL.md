@@ -289,7 +289,9 @@ Not everything is a slide deck. Pick the type by what the reader does:
   for names the voice gets wrong. It writes one file, `<script>.mp4`; add
   `--with` (or `with:`) only for what the author asked for (`captions`,
   `subtitles`, `clips`, `report`…), and `--with report` when you need the
-  report to debug a run. Leave `voice:` out unless the author asks for
+  report to debug a run. To film one panel, not the page, add `region:
+  ".panel"` (or a feature's `Region:` line, `--region`, `--crop x,y,w,h`);
+  keep notes inside that region, or they are cut. Leave `voice:` out unless the author asks for
   one (si picks Kokoro af_heart, else the computer's voice); never put an API
   key in the script or in a project si.conf (si ignores it there): the author
   runs `si voice login openai|elevenlabs`. Kokoro installs with `si voice

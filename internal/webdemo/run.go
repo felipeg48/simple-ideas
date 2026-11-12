@@ -42,6 +42,12 @@ type Options struct {
 	FastForward time.Duration // a wait plays at speed this long, then faster (0: never)
 	FFmpeg      string        // the ffmpeg to encode with
 	Cache       string        // where voiced lines are kept ("" = VoiceCache())
+
+	// region capture: crop the output to one element (--region "<css>") or a
+	// fixed box (--crop x,y,w,h); a feature's Region: line and front matter
+	// region: override. "" both = the whole page (the default)
+	Region string
+	Crop   string
 }
 
 // failure is a step that did not pass: what it expected, what it found, the
@@ -55,24 +61,25 @@ type failure struct {
 func (f *failure) Error() string { return f.found }
 
 type runner struct {
-	s       *Script
-	o       Options
-	c       *cdp.Client
-	base    string // the app's URL, without a trailing / or a query: paths join on it
-	start   string // where a feature opens the app: app: as written (its ?token=… kept)
-	secrets []string
-	mu      sync.Mutex
-	errs    []string // console errors and exceptions of this feature
-	reqs    []string // failed requests of this feature
-	urls    map[string]string
-	session string          // the page whose events count
-	loading int             // the page's own frame loading now (a click or a key may start a navigation)
-	inner   map[string]bool // frames inside the page (iframes): their loads never hold a step
-	shotN   int
-	tk      *take           // the feature being filmed (run)
-	stems   map[string]bool // the file stems of the clips so far (run)
-	lines   map[*Block]Line // each Say: line voiced (run)
-	timeout time.Duration   // how long a step waits for its element
+	s          *Script
+	o          Options
+	c          *cdp.Client
+	base       string // the app's URL, without a trailing / or a query: paths join on it
+	start      string // where a feature opens the app: app: as written (its ?token=… kept)
+	secrets    []string
+	mu         sync.Mutex
+	errs       []string // console errors and exceptions of this feature
+	reqs       []string // failed requests of this feature
+	urls       map[string]string
+	session    string          // the page whose events count
+	loading    int             // the page's own frame loading now (a click or a key may start a navigation)
+	inner      map[string]bool // frames inside the page (iframes): their loads never hold a step
+	shotN      int
+	curFeature *Feature        // the feature running now (for its region)
+	tk         *take           // the feature being filmed (run)
+	stems      map[string]bool // the file stems of the clips so far (run)
+	lines      map[*Block]Line // each Say: line voiced (run)
+	timeout    time.Duration   // how long a step waits for its element
 
 	// terminals and background programs (runterm.go)
 	ctx      string // the feature's browser context
@@ -479,6 +486,7 @@ func firstLine(s string) string {
 // feature runs one feature in a fresh browser context, after setup:; in a
 // run it films it too and returns its clip.
 func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
+	r.curFeature = f
 	fr = FeatureResult{Name: f.Name, What: f.What, Line: f.Line, Status: "passed"}
 	fmt.Fprintf(r.o.Log, "%s\n", f.Name)
 	start := time.Now()
@@ -1017,7 +1025,7 @@ if(!o)return [].map.call(e.options,function(o){return o.text.trim()});e.value=o.
 		if err != nil {
 			return "", err
 		}
-		return r.save(r.currentFeature(st), st.Value.Text, png), nil
+		return r.save(r.currentFeature(st), st.Value.Text, r.cropShot(png, r.curFeature)), nil
 	case "expect-text":
 		want, err := r.value(st.Value)
 		if err != nil {

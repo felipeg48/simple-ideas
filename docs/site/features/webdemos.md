@@ -153,6 +153,12 @@ sit in a dark band under it, so they never hide the command just typed.
 `--viewport phone` films the phone layout; `--feature "Pay for an order"`
 films one feature.
 
+To film one part of the app instead of the whole page, crop to an element:
+`--region ".agents-panel"` (or `region:` in front matter, or a `Region:` line
+under one feature), or a fixed box with `--crop 0,80,1200,700`. The cursor,
+clicks and notes still play; only the picture is cropped, and the whole run's
+video letterboxes the cropped clips so they join.
+
 **Long waits play faster.** A command that runs for a while, a program
 starting, a wait for some output: after its first 3 s the video plays it
 faster (it lasts 2 s at most) with a ⏩ badge in the corner. The voice is

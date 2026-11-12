@@ -362,6 +362,7 @@ A long wait plays faster, and the voice stays at its own pace. [CLICK]
 
 Points:
 - Default is one file; `--with all` makes today's full set; `--no-captions` is gone (captions are opt-in)
+- One panel only: `--region ".agents"` (or `region:`, a feature's `Region:`), or `--crop x,y,w,h`
 - `--fast-forward 5s` or `--no-fast-forward` for waits
 - Kokoro is si's own voice: `si voice install kokoro`, one command; without it, the computer's voice
 - Try a voice aloud: `si voice say "Hello" --voice kokoro:bf_emma`; `si voice list`

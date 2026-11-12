@@ -170,6 +170,55 @@ speeds up: a stretch under a `Say:` voice stays at speed, and the captions and
 chapters are timed on the faster video. `--fast-forward 5s` changes the 3 s;
 `--no-fast-forward` keeps every wait at speed.
 
+**A region, not the whole page.** By default a clip is the whole viewport. To
+film one feature of the page — a console's Agents panel, the topology lanes —
+crop every clip to it:
+
+```bash
+si demo run console.md --region "#agents-panel"
+si demo run console.md --crop 40,80,900,600
+```
+
+- `--region "<css selector>"` crops each feature's clip to that element's
+  bounding box, measured on the page (if it moved, its box at the end of the
+  take is used). The drawn cursor, the clicks and the `note` bubbles still play
+  as before; only the output frame is cropped, so the clip is the element's
+  size. `--crop x,y,w,h` crops to a fixed box in pixels instead (no element).
+  Give one or the other, not both. A `--region` that matches no element fails
+  the clip with a clear error.
+- Different features can crop to different regions in one run: a `Region:` line
+  under a `##` feature (beside its `What it does:`) crops that feature's clip,
+  and `region:` in the front matter is the default for the features that have
+  no `Region:` of their own. Quote a selector that has spaces (`region:
+  ".lane .agents"`): in front matter, a space followed by `#` starts a comment,
+  so an unquoted descendant selector would be cut short.
+- Precedence, most specific first: a feature's `Region:`, then `--region` /
+  `--crop`, then the front matter `region:`, then the whole page.
+- The captions variant shrinks the cropped region (its aspect kept) into the
+  top of the frame with the captions in the band below, as it does the whole
+  page. In `<script>.mp4` the region clips are centered and letterboxed to the
+  viewport so the features join. The `screenshot` step crops to the same region
+  (it keeps the whole page only if the region cannot be measured). The
+  fast-forward ⏩ badge sits at the frame's top right, so a region that does not
+  include that corner does not show it.
+
+```markdown
+---
+type: demo
+app: app
+region: "#console"          # the default region for every feature
+---
+
+## Agents fill the registry
+
+What it does: the agents panel fills as workers register.
+Region: ".agents-lane"      # this feature crops to the lane instead
+
+Say: Three workers register and the panel lists them.
+- go /
+- expect text "3 agents"
+```
+
 **Voices.** `voice: engine:name` in front matter, or `--voice`:
 
 | Engine | What | Default voice |

@@ -164,7 +164,9 @@ an example for every rule: [RULES.md](docs/RULES.md).
   `clips` (the same per feature), `report`, `readme` (README.md + README.html)
   or `all`; only what is asked for is made. Long waits play faster with a ⏩
   badge, the voice never (`--fast-forward 3s`, `--no-fast-forward`);
-  `--viewport phone`; a failing step ends its clip.
+  `--viewport phone`; a failing step ends its clip. `--region "<css>"` (or a feature's `Region:` line, or front matter
+  `region:`) crops every clip and the screenshot step to one element's box;
+  `--crop x,y,w,h` crops a fixed box; default is the whole page.
 - **Voices:** `kokoro:af_heart` (local, the default when installed),
   `system` (say, espeak-ng, Windows), `elevenlabs`, `openai` (`voice-style:`);
   `pronounce: si = ess eye`; lines cached, only changed lines re-voiced.

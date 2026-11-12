@@ -3,6 +3,15 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.42.0:** web demos: `si demo run` and the `screenshot` step can film a
+  region of the page instead of the whole viewport. `--region "<css>"` crops
+  every clip to that element's box (the cursor, clicks and notes still play;
+  only the output frame is cropped), `--crop x,y,w,h` crops to a fixed pixel
+  box, a `Region:` line under a `##` feature crops that feature's clip, and
+  `region:` in the front matter is the script's default. The captions variant
+  shrinks the region into the frame with its aspect kept, and `<script>.mp4`
+  letterboxes region clips to the viewport so the features join. Default is
+  unchanged: the whole page when no region is given.
 - **v2.41.0:** `si demo run` writes **one file by default**:
   `demo-out/<script>/<script>.mp4`, the whole run with its voice, a title card
   and a chapter per feature. What used to be `all.mp4` is now `<script>.mp4`.
