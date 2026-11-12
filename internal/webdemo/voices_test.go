@@ -25,3 +25,15 @@ func TestKokoroVoices(t *testing.T) {
 		t.Errorf("from the file: %v %v (English only)", fromFile, names)
 	}
 }
+
+func TestParseVoiceBareKokoroName(t *testing.T) {
+	for in, want := range map[string]string{"af_heart": "kokoro:af_heart", "am_michael": "kokoro:am_michael", "kokoro:bf_emma": "kokoro:bf_emma", "system": "system"} {
+		v, err := ParseVoice(in)
+		if err != nil || v.String() != want && !(in == "system" && v.Engine == "system") {
+			t.Errorf("ParseVoice(%q) = %v, %v; want %s", in, v, err, want)
+		}
+	}
+	if _, err := ParseVoice("heart"); err == nil {
+		t.Error("a word that is no engine and no Kokoro name must fail")
+	}
+}

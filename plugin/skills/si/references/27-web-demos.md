@@ -219,7 +219,7 @@ Say: Three workers register and the panel lists them.
 - expect text "3 agents"
 ```
 
-**Voices.** `voice: engine:name` in front matter, or `--voice`:
+**Voices.** `voice: engine:name` in front matter, or `--voice` (a Kokoro voice name alone, `--voice af_heart`, means `kokoro:af_heart`):
 
 | Engine | What | Default voice |
 |---|---|---|

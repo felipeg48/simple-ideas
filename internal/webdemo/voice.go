@@ -51,8 +51,14 @@ func ParseVoice(s string) (Voice, error) {
 			return v, nil
 		}
 	}
-	return Voice{}, fmt.Errorf("voice %q: write engine:name, engine one of %s (kokoro:af_heart)", s, strings.Join(Engines, ", "))
+	// a bare Kokoro voice name (af_heart, am_michael, bf_emma) is Kokoro's
+	if n == "" && kokoroNameRE.MatchString(e) {
+		return Voice{Engine: "kokoro", Name: e}, nil
+	}
+	return Voice{}, fmt.Errorf("voice %q: write engine:name, engine one of %s (kokoro:af_heart), or a Kokoro voice name (af_heart)", s, strings.Join(Engines, ", "))
 }
+
+var kokoroNameRE = regexp.MustCompile(`^[a-z]{2}_[a-z]+$`)
 
 func (v Voice) String() string {
 	if v.Name == "" {

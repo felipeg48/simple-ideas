@@ -3,6 +3,9 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.42.1:** voices: a Kokoro voice name alone means Kokoro:
+  `--voice af_heart` (and `voice: am_michael`) is `kokoro:af_heart`, as in
+  `voices:`.
 - **v2.42.0:** web demos: `si demo run` and the `screenshot` step can film a
   region of the page instead of the whole viewport. `--region "<css>"` crops
   every clip to that element's box (the cursor, clicks and notes still play;
