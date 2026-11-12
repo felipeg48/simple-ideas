@@ -188,9 +188,6 @@ type GuidePage struct {
 func RenderGuide(g *deck.Guide, opt Options) (pages []GuidePage, problems, warnings []deck.Problem) {
 	problems = append(problems, g.Problems...)
 	warnings = append(warnings, g.Warnings...)
-	for _, f := range g.Unlisted() {
-		warnings = append(warnings, deck.Problem{File: deck.Rel(f), Msg: "not listed in " + deck.NavFile + ": it is not built"})
-	}
 	opt.Guide = g
 	nums, kinds := g.BookNumbers()
 	for _, f := range g.Pages {
@@ -215,6 +212,22 @@ func RenderGuide(g *deck.Guide, opt Options) (pages []GuidePage, problems, warni
 	if g.IsBook() {
 		opt.Chapter, opt.ChapterKind = "", ""
 		pages, terms = finishBook(g, opt, pages, &problems)
+	}
+	// A page the nav list does not mention is normally an orphan: a warning,
+	// not built. One that says `unlisted: true` is built like any page and is a
+	// valid link target (its cta/footer/body links resolve in si check), but it
+	// stays out of the navigator menu (g.Items never holds it).
+	opt.Chapter, opt.ChapterKind = "", ""
+	for _, f := range g.Unlisted() {
+		if d, err := deck.ParseWith(f, g.Defaults()); err == nil && d.Meta.Unlisted == "true" {
+			opt.AssetPrefix = strings.Repeat("../", strings.Count(guideRel(g, f), "/"))
+			res := Deck(d, opt)
+			problems = append(problems, res.Problems...)
+			warnings = append(warnings, res.Warnings...)
+			pages = append(pages, GuidePage{File: f, Rel: guideRel(g, f), Deck: d, Result: res})
+			continue
+		}
+		warnings = append(warnings, deck.Problem{File: deck.Rel(f), Msg: "not listed in " + deck.NavFile + ": it is not built"})
 	}
 	fillGuideSearch(g, pages, terms)
 	var subs []string // links into a sub-guide, book or site are checked when that one is built

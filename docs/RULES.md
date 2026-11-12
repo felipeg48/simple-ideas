@@ -2024,6 +2024,7 @@ theme: studio
 | `version:` | a badge beside the logo, e.g. `v2.5.0 → https://…/releases/tag/v2.5.0` (the link is optional) |
 | `title: off` | on a page: no `<h1>` (a home page that opens with its own content) |
 | `cta:` on a page | a large button under that page's title and description, same `Label → page` form (a landing page's hero); hidden on paper |
+| `unlisted: true` | on a page: build it and let links to it resolve (from the navigator `cta:`, `_footer.md` or another page's body), but keep it out of the navigator menu — a "Talk to us" page a button opens, with no menu item of its own. A page that is in no menu list and is not `unlisted:` is still an orphan: a warning, not built. |
 
 `favicon:`, `touch-icon:` and `og-image:` also work in any deck's or document's
 front matter. si never adds an icon or branding of its own to pages you build.

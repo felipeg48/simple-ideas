@@ -3,6 +3,12 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **Unreleased:** sites: a page with `unlisted: true` in its front matter is
+  built and is a valid link target — the navigator `cta:`, `_footer.md` and
+  links from other pages resolve in `si check` — but it stays out of the
+  navigator menu. A page that is in no menu list and is not `unlisted:` is
+  still an orphan: warned and not built, as before. Lets a "Talk to us" page
+  live behind a cta button with no redundant menu item.
 - **v2.40.1:** code windows on slides: a link to a step (`#5.2`) shows that
   step of the show; callout notes wrap into the room beside the window instead
   of dropping to the list under it (the list is for phones); a window repaints

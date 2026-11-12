@@ -76,3 +76,82 @@ func TestArticle(t *testing.T) {
 		t.Error("articles have no step badges")
 	}
 }
+
+// A site page with `unlisted: true` is built and is a valid link target (the
+// navigator cta, _footer.md and body links to it resolve in si check), but it
+// never appears in the navigator menu. A page that is neither listed nor
+// unlisted is a genuine orphan: a warning, not built.
+func TestSiteUnlisted(t *testing.T) {
+	dir := t.TempDir()
+	for name, body := range map[string]string{
+		"_site.md":   "---\ntitle: Northwind\ncta: Talk to us → contact\n---\n- [Home](index.md)\n- [About](about.md)\n",
+		"_footer.md": "[Contact](contact.md)\n",
+		"index.md":   "# Home\n\nSee [contact us](contact.md).\n",
+		"about.md":   "# About\n",
+		"contact.md": "---\nunlisted: true\ntitle: Talk to Us\n---\n# Talk to Us\n\nEmail us.\n",
+		"orphan.md":  "# Orphan\n",
+	} {
+		p := filepath.Join(dir, name)
+		if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	g, err := deck.LoadGuide(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pages, probs, warns := RenderGuide(g, Options{})
+
+	// contact.md is built; orphan.md is not.
+	built := map[string]bool{}
+	for _, p := range pages {
+		built[p.Rel] = true
+	}
+	if !built["contact.html"] {
+		t.Error("unlisted page contact.html was not built")
+	}
+	if built["orphan.html"] {
+		t.Error("orphan.html should not be built")
+	}
+
+	// The cta/footer/body links to contact resolve: no "no such page" problem.
+	for _, p := range probs {
+		if strings.Contains(p.Msg, "no such page") {
+			t.Errorf("unexpected link problem: %s", p.Msg)
+		}
+	}
+
+	// orphan.md warns; contact.md (unlisted) does not.
+	var warnText string
+	for _, w := range warns {
+		warnText += w.File + " " + w.Msg + "\n"
+	}
+	if !strings.Contains(warnText, "orphan.md") || !strings.Contains(warnText, "not listed") {
+		t.Errorf("want an orphan warning for orphan.md, got:\n%s", warnText)
+	}
+	if strings.Contains(warnText, "contact.md") {
+		t.Errorf("unlisted page must not warn, got:\n%s", warnText)
+	}
+
+	// The navigator menu of the home page lists Home and About only, never the
+	// unlisted page — though its cta button does link to it.
+	var idx string
+	for _, p := range pages {
+		if p.Rel == "index.html" {
+			idx = string(p.Result.HTML)
+		}
+	}
+	menu := idx
+	if i := strings.Index(menu, "si-site-links"); i >= 0 {
+		menu = menu[i:]
+		if j := strings.Index(menu, "</nav>"); j >= 0 {
+			menu = menu[:j]
+		}
+	}
+	if strings.Contains(menu, "contact.html") || strings.Contains(menu, "Talk to Us") {
+		t.Errorf("unlisted page must not appear in the navigator menu:\n%s", menu)
+	}
+	if !strings.Contains(idx, `class="si-site-cta" href="contact.html"`) {
+		t.Error("the navigator cta should link to the unlisted page")
+	}
+}
