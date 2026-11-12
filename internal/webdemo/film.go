@@ -382,18 +382,66 @@ func pageHTML(body, style string) string {
 	return `<!doctype html><meta charset="utf-8"><style>:root{` + tokens() + `}html,body{margin:0;height:100%;background:transparent}` + style + `</style>` + body
 }
 
+// cardInline renders one line of a title card: a `code` span becomes a
+// coloured <code> (the accent colour, no visible backticks), a backslash
+// escapes the next character (so "\`" is a literal backtick when you are
+// explaining markdown, and "\\" a literal backslash), and nothing else is
+// treated as markdown — a "#channel" or "*star*" stays exactly as written.
+// All text is HTML-escaped; an unterminated ` is shown literally.
+func cardInline(s string) string {
+	var out strings.Builder
+	r := []rune(s)
+	for i := 0; i < len(r); {
+		switch {
+		case r[i] == '\\' && i+1 < len(r):
+			out.WriteString(html.EscapeString(string(r[i+1])))
+			i += 2
+		case r[i] == '`':
+			j, closed := i+1, false
+			var code strings.Builder
+			for j < len(r) {
+				if r[j] == '\\' && j+1 < len(r) {
+					code.WriteRune(r[j+1])
+					j += 2
+					continue
+				}
+				if r[j] == '`' {
+					closed = true
+					break
+				}
+				code.WriteRune(r[j])
+				j++
+			}
+			if closed {
+				out.WriteString(`<code>` + html.EscapeString(code.String()) + `</code>`)
+				i = j + 1
+			} else {
+				out.WriteByte('`')
+				i++
+			}
+		default:
+			out.WriteString(html.EscapeString(string(r[i])))
+			i++
+		}
+	}
+	return out.String()
+}
+
 // cardHTML is a feature's title card: the script's title, the feature, what
 // it does.
 // What it does: keeps its casing as written ("si reads…" stays lowercase).
+// The title and "what it does" accept `code` spans (see cardInline), rendered
+// in the accent colour and the mono font.
 func cardHTML(title, name, what string) string {
-	return pageHTML(`<main><p class="k">`+html.EscapeString(title)+`</p><h1>`+html.EscapeString(name)+`</h1>`+
-		map[bool]string{true: `<p class="w">` + html.EscapeString(what) + `</p>`, false: ""}[what != ""]+`</main>`,
+	return pageHTML(`<main><p class="k">`+cardInline(title)+`</p><h1>`+cardInline(name)+`</h1>`+
+		map[bool]string{true: `<p class="w">` + cardInline(what) + `</p>`, false: ""}[what != ""]+`</main>`,
 		`body{background:var(--si-bg);color:var(--si-fg);font-family:var(--si-font-body);display:grid;place-items:center;container-type:inline-size}
 main{width:min(80vw,60rem);padding:0 1rem}
 .k{margin:0 0 1.2rem;color:var(--si-muted);font-size:clamp(14px,2.2vw,26px);letter-spacing:.04em}
 h1{margin:0;font-family:var(--si-font-heading);font-weight:var(--si-heading-weight,760);letter-spacing:var(--si-heading-tracking,-.02em);font-size:clamp(28px,6vw,84px);line-height:1.05}
 h1::after{content:"";display:block;width:2.4em;height:.12em;margin-top:.35em;background:var(--si-accent);border-radius:1em}
-.w{margin:1.4rem 0 0;color:var(--si-fg);opacity:.86;font-size:clamp(16px,2.6vw,32px);line-height:1.4;max-width:34em}`)
+.w{margin:1.4rem 0 0;color:var(--si-fg);opacity:.86;font-size:clamp(16px,2.6vw,32px);line-height:1.4;max-width:34em}
+.k code,h1 code,.w code{font-family:var(--si-font-mono,ui-monospace,SFMono-Regular,Menlo,monospace);color:var(--si-code,var(--si-accent));font-size:.92em}`)
 }
 
 // captionHTML is one caption, two lines at most, centered in the band under
