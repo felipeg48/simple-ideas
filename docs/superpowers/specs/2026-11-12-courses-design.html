@@ -1,0 +1,282 @@
+<title>si Course Layouts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap">
+<style>
+/* Layout: a design board. Quiet chrome on top (controls), then the course rendered
+   in a desktop frame and a phone frame side by side, styled only by si's theme tokens. */
+:root{
+  --board:#eceef1; --panel:#ffffff; --ink:#1a1d24; --ink-2:#5b6170; --rule:#d5d9e0; --pick:#2f4fd0;
+  --f-ui:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--board:#101217;--panel:#181b22;--ink:#e8eaef;--ink-2:#9aa1af;--rule:#2b303b;--pick:#8ea4ff;color-scheme:dark}}
+:root[data-theme="dark"]{--board:#101217;--panel:#181b22;--ink:#e8eaef;--ink-2:#9aa1af;--rule:#2b303b;--pick:#8ea4ff;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--board);color:var(--ink);font:15px/1.5 var(--f-ui);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header h1{margin:0;font-size:22px;letter-spacing:-.01em;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--ink-2);max-width:72ch}
+.controls{display:flex;flex-wrap:wrap;gap:14px 22px;background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px 14px}
+.ctl{display:flex;flex-direction:column;gap:6px}
+.ctl > span{font:500 11px/1 var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{font:500 13px/1 var(--f-ui);padding:7px 10px;border-radius:7px;border:1px solid var(--rule);background:transparent;color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--pick);border-color:var(--pick);color:#fff}
+.seg button:focus-visible{outline:2px solid var(--pick);outline-offset:2px}
+.note{font-size:13px;color:var(--ink-2)}
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+@media (width < 1000px){.stage{grid-template-columns:minmax(0,1fr)}}
+.frame{border:1px solid var(--rule);border-radius:12px;overflow:hidden;background:var(--panel)}
+.frame .bar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--rule);font:12px/1 var(--f-mono);color:var(--ink-2)}
+.frame .bar i{width:9px;height:9px;border-radius:50%;background:var(--rule);display:block}
+.frame .bar b{font-weight:500;margin-left:6px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.phone{max-width:300px;margin:0 auto;border-radius:28px;padding:10px;background:var(--ink)}
+.phone .screen{border-radius:20px;overflow:hidden;height:600px}
+.cap{font:12px/1.4 var(--f-mono);color:var(--ink-2);margin-top:8px;text-align:center}
+
+/* ===== the course, drawn with si's own tokens ===== */
+.si{--sans:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;--serif:"Source Serif 4",Georgia,serif;--mono:"IBM Plex Mono",ui-monospace,monospace;
+  background:var(--si-bg);color:var(--si-fg);font:15px/1.6 var(--si-font-body);container-type:inline-size;height:640px;overflow:auto;position:relative}
+.phone .si{height:100%;font-size:14px}
+.si[data-t="studio"]{--si-font-body:var(--sans);--si-font-heading:var(--sans);--hw:760;--si-radius:.6em}
+.si[data-t="twilight"]{--si-font-body:var(--sans);--si-font-heading:var(--sans);--hw:780;--si-radius:.6em}
+.si[data-t="forest"]{--si-font-body:var(--sans);--si-font-heading:var(--serif);--hw:700;--si-radius:.6em}
+.si[data-t="newsprint"]{--si-font-body:var(--serif);--si-font-heading:var(--serif);--hw:800;--si-radius:.15em}
+.si[data-t="studio"][data-m="light"]{--si-bg:#f6f5f1;--si-fg:#16171b;--si-muted:#5d626c;--si-surface:#ffffff;--si-surface-2:#ecebe6;--si-line:#d9d6ce;--si-accent:#3657d6;--si-ok:#178a4c;--si-on-accent:#fff}
+.si[data-t="studio"][data-m="dark"]{--si-bg:#0f1116;--si-fg:#eceef3;--si-muted:#99a0ad;--si-surface:#171a22;--si-surface-2:#1e222c;--si-line:#2c313c;--si-accent:#7d9bff;--si-ok:#4ade80;--si-on-accent:#0f1116}
+.si[data-t="twilight"][data-m="light"]{--si-bg:#f5f3fa;--si-fg:#1b1830;--si-muted:#5a5672;--si-surface:#ffffff;--si-surface-2:#ebe7f4;--si-line:#d9d3e8;--si-accent:#6236c9;--si-ok:#157a45;--si-on-accent:#fff}
+.si[data-t="twilight"][data-m="dark"]{--si-bg:#12101f;--si-fg:#ece9f7;--si-muted:#a19cbc;--si-surface:#1a1730;--si-surface-2:#221e3b;--si-line:#332d52;--si-accent:#a98bff;--si-ok:#4ade80;--si-on-accent:#12101f}
+.si[data-t="forest"][data-m="light"]{--si-bg:#f3f5ef;--si-fg:#17211a;--si-muted:#536257;--si-surface:#ffffff;--si-surface-2:#e6ece2;--si-line:#d0dacb;--si-accent:#2b6a3d;--si-ok:#2b6a3d;--si-on-accent:#fff}
+.si[data-t="forest"][data-m="dark"]{--si-bg:#0e1510;--si-fg:#e3eee4;--si-muted:#93a597;--si-surface:#152019;--si-surface-2:#1b2920;--si-line:#283a2d;--si-accent:#7fd39a;--si-ok:#7fd39a;--si-on-accent:#0e1510}
+.si[data-t="newsprint"][data-m="light"]{--si-bg:#f7f5f0;--si-fg:#121212;--si-muted:#545049;--si-surface:#fffefb;--si-surface-2:#ece8df;--si-line:#d6d0c3;--si-accent:#b3001b;--si-ok:#2f6b2f;--si-on-accent:#fff}
+.si[data-t="newsprint"][data-m="dark"]{--si-bg:#141312;--si-fg:#ecebe7;--si-muted:#a7a39b;--si-surface:#1c1b19;--si-surface-2:#24221f;--si-line:#36332e;--si-accent:#ff5c6c;--si-ok:#86c27f;--si-on-accent:#141312}
+
+.si .top{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--si-line);background:var(--si-surface);position:sticky;top:0;z-index:3}
+.si .brand{font:var(--hw) 15px/1.2 var(--si-font-heading);letter-spacing:-.01em}
+.si .brand small{display:block;font:500 11px/1.2 var(--mono);color:var(--si-muted);letter-spacing:.06em;text-transform:uppercase}
+.si .overall{margin-left:auto;display:flex;align-items:center;gap:8px;font:12px/1 var(--mono);color:var(--si-muted);font-variant-numeric:tabular-nums}
+.si .overall .bar{width:110px;height:6px;border-radius:9px;background:var(--si-surface-2);overflow:hidden}
+.si .overall .bar b{display:block;height:100%;width:38%;background:var(--si-accent)}
+.si .menu-btn{display:none;border:1px solid var(--si-line);background:var(--si-surface);color:var(--si-fg);border-radius:var(--si-radius);padding:6px 10px;font:600 13px/1 var(--si-font-body)}
+
+.si .body{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:calc(100% - 52px)}
+.si[data-l="right"] .body{grid-template-columns:minmax(0,1fr) 270px}
+.si[data-l="right"] nav.course{order:2;border-left:1px solid var(--si-line);border-right:0}
+.si[data-l="top"] .body,.si[data-l="bottom"] .body{grid-template-columns:minmax(0,1fr)}
+
+nav.course{border-right:1px solid var(--si-line);background:var(--si-surface);padding:12px 10px 20px;position:sticky;top:52px;align-self:start;max-height:calc(640px - 52px);overflow:auto}
+.mod{border-radius:var(--si-radius)}
+.mod > button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:var(--si-radius);cursor:pointer;color:var(--si-fg);font:650 14px/1.3 var(--si-font-body)}
+.mod > button:hover{background:color-mix(in srgb,var(--si-fg) 6%,transparent)}
+.mod > button:focus-visible{outline:2px solid var(--si-accent);outline-offset:1px}
+.mod .num{font:500 11px/1 var(--mono);color:var(--si-muted);min-width:1.6em}
+.mod .mt{flex:1}
+.mod .mm{font:12px/1 var(--mono);color:var(--si-muted);font-variant-numeric:tabular-nums}
+.ring{width:20px;height:20px;flex:none}
+.ring circle{fill:none;stroke-width:3}
+.ring .bg{stroke:var(--si-line)}
+.ring .fg{stroke:var(--si-ok);stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%}
+.chev{width:10px;height:10px;flex:none;border-right:2px solid var(--si-muted);border-bottom:2px solid var(--si-muted);transform:rotate(-45deg);transition:transform .2s}
+.mod.open .chev{transform:rotate(45deg)}
+.lessons{list-style:none;margin:2px 0 8px;padding:0 0 0 12px;display:none}
+.mod.open .lessons{display:block}
+.lessons a{display:flex;align-items:center;gap:9px;padding:7px 10px 7px 12px;margin-left:8px;border-left:2px solid var(--si-line);border-radius:0 var(--si-radius) var(--si-radius) 0;color:var(--si-fg);text-decoration:none;font-size:14px}
+.lessons a:hover{background:color-mix(in srgb,var(--si-fg) 6%,transparent);border-left-color:color-mix(in srgb,var(--si-accent) 55%,transparent)}
+.lessons a[aria-current="page"]{background:color-mix(in srgb,var(--si-accent) 11%,transparent);border-left-color:var(--si-accent);font-weight:650}
+.lessons a .k{font:600 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:4px 6px;border-radius:5px;background:var(--si-surface-2);color:var(--si-fg);min-width:4.4em;text-align:center}
+.lessons a .k[data-k="demo"]{background:color-mix(in srgb,var(--si-accent) 18%,transparent)}
+.lessons a .lt{flex:1}
+.lessons a .lm{font:12px/1 var(--mono);color:var(--si-muted);font-variant-numeric:tabular-nums}
+.lessons a .done{width:14px;height:14px;border-radius:50%;flex:none;border:2px solid var(--si-line)}
+.lessons a .done.y{background:var(--si-ok);border-color:var(--si-ok);box-shadow:inset 0 0 0 2px var(--si-surface)}
+.lessons li.instr{display:none}
+.si[data-a="instructor"] .lessons li.instr{display:block}
+
+/* top: modules as tabs, lessons as a row under them */
+.si[data-l="top"] nav.course{position:sticky;top:52px;max-height:none;border-right:0;border-bottom:1px solid var(--si-line);padding:8px 14px;display:flex;flex-direction:column;gap:6px;z-index:2}
+.si[data-l="top"] .mods{display:flex;gap:4px;overflow-x:auto}
+.si[data-l="top"] .mod > button{width:auto;white-space:nowrap}
+.si[data-l="top"] .mod > button .chev,.si[data-l="top"] .mod > button .mm{display:none}
+.si[data-l="top"] .mod.open > button{background:color-mix(in srgb,var(--si-accent) 12%,transparent);box-shadow:inset 0 -2px 0 var(--si-accent)}
+.si[data-l="top"] .mod .lessons{display:none!important}
+.si[data-l="top"] .tabrow{display:flex;gap:6px;overflow-x:auto;list-style:none;margin:0;padding:2px 0}
+.si[data-l="top"] .tabrow a{white-space:nowrap;margin-left:0;border-left:0;border-bottom:2px solid transparent;border-radius:var(--si-radius) var(--si-radius) 0 0}
+.si[data-l="top"] .tabrow a[aria-current="page"]{border-bottom-color:var(--si-accent)}
+.si:not([data-l="top"]) .tabrow{display:none}
+
+/* bottom: a docked bar with the module, prev/next and the outline */
+.si[data-l="bottom"] nav.course{display:none}
+.dock{display:none}
+.si[data-l="bottom"] .dock{display:flex;align-items:center;gap:10px;position:sticky;bottom:0;z-index:3;margin-top:24px;padding:10px 16px;background:var(--si-surface);border-top:1px solid var(--si-line)}
+.dock .where{flex:1;min-width:0}
+.dock .where b{display:block;font:650 14px/1.2 var(--si-font-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dock .where span{font:12px/1 var(--mono);color:var(--si-muted)}
+.dock button{border:1px solid var(--si-line);background:var(--si-surface-2);color:var(--si-fg);border-radius:var(--si-radius);padding:7px 11px;font:600 13px/1 var(--si-font-body);cursor:pointer}
+.dock button.go{background:var(--si-accent);border-color:var(--si-accent);color:var(--si-on-accent)}
+
+main.lesson{padding:22px clamp(16px,5cqi,48px) 0;max-width:820px}
+.crumb{font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--si-muted);display:flex;gap:8px;flex-wrap:wrap}
+.crumb .kind{color:var(--si-accent)}
+main.lesson h1{font:var(--hw) clamp(24px,4.2cqi,34px)/1.12 var(--si-font-heading);letter-spacing:-.015em;margin:8px 0 6px;text-wrap:balance}
+.meta{display:flex;gap:14px;flex-wrap:wrap;font:12px/1 var(--mono);color:var(--si-muted);margin-bottom:16px}
+main.lesson p{margin:0 0 14px;max-width:66ch}
+.code{background:var(--si-surface-2);border:1px solid var(--si-line);border-radius:var(--si-radius);padding:12px 14px;font:13px/1.55 var(--mono);overflow-x:auto;margin:0 0 16px;white-space:pre}
+.code .c{color:var(--si-muted)} .code .k{color:var(--si-accent);font-weight:500}
+.next{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0 22px}
+.next a{flex:1 1 220px;border:1px solid var(--si-line);background:var(--si-surface);border-radius:var(--si-radius);padding:10px 12px;color:var(--si-fg);text-decoration:none}
+.next a small{display:block;font:11px/1.2 var(--mono);color:var(--si-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.next a:hover{border-color:var(--si-accent)}
+.instr-box{display:none;border:1px dashed var(--si-accent);border-radius:var(--si-radius);padding:10px 12px;margin:0 0 16px;background:color-mix(in srgb,var(--si-accent) 6%,transparent)}
+.si[data-a="instructor"] .instr-box{display:block}
+.instr-box b{font:600 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--si-accent)}
+.instr-box p{margin:6px 0 0!important;font-size:14px}
+
+/* course home */
+.home{padding:26px clamp(16px,5cqi,48px) 30px;display:none}
+.si[data-v="home"] .home{display:block}
+.si[data-v="home"] main.lesson,.si[data-v="home"] .dock{display:none}
+.home .lvl{font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--si-accent)}
+.home h1{font:var(--hw) clamp(26px,5cqi,40px)/1.08 var(--si-font-heading);letter-spacing:-.02em;margin:8px 0 8px;text-wrap:balance;max-width:20ch}
+.home .lede{color:var(--si-muted);max-width:60ch;margin:0 0 14px}
+.home .cta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:22px}
+.home .cta a{background:var(--si-accent);color:var(--si-on-accent);text-decoration:none;font-weight:650;padding:9px 14px;border-radius:var(--si-radius)}
+.home .cta span{font:12px/1 var(--mono);color:var(--si-muted)}
+.home .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}
+.home .card{border:1px solid var(--si-line);background:var(--si-surface);border-radius:var(--si-radius);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.home .card h3{margin:0;font:650 15px/1.3 var(--si-font-heading)}
+.home .card .row{display:flex;justify-content:space-between;font:12px/1 var(--mono);color:var(--si-muted)}
+.home .kinds{display:flex;gap:4px;flex-wrap:wrap}
+.home .kinds span{font:600 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:3px 5px;border-radius:4px;background:var(--si-surface-2)}
+
+/* phone: everything folds into the Menu button and a bottom bar */
+.phone .si .body{grid-template-columns:minmax(0,1fr)!important}
+.phone .si nav.course{display:none!important}
+.phone .si .menu-btn{display:inline-block}
+.phone .si .overall .bar{width:50px}
+.phone .si .dock{display:flex!important;position:sticky;bottom:0}
+.phone .si .tabrow{display:none!important}
+@media (prefers-reduced-motion:reduce){.chev{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Course layouts</h1>
+    <p>One course in si, drawn with si's own themes. Switch the menu layout, theme, light or dark, learner or instructor, and the page: the phone shows how every layout folds into one Menu button and a bottom bar.</p>
+  </header>
+
+  <div class="controls" role="group" aria-label="Design options">
+    <div class="ctl"><span>Menu (nav:)</span><div class="seg" data-ctl="l">
+      <button id="l-left" data-v="left" aria-pressed="true">left · accordion · sticky</button>
+      <button id="l-right" data-v="right" aria-pressed="false">right · accordion</button>
+      <button id="l-top" data-v="top" aria-pressed="false">top · tabs</button>
+      <button id="l-bottom" data-v="bottom" aria-pressed="false">bottom bar</button></div></div>
+    <div class="ctl"><span>Theme</span><div class="seg" data-ctl="t">
+      <button id="t-studio" data-v="studio" aria-pressed="true">Studio</button>
+      <button id="t-twilight" data-v="twilight" aria-pressed="false">Twilight</button>
+      <button id="t-forest" data-v="forest" aria-pressed="false">Forest</button>
+      <button id="t-newsprint" data-v="newsprint" aria-pressed="false">Newsprint</button></div></div>
+    <div class="ctl"><span>Mode</span><div class="seg" data-ctl="m">
+      <button id="m-light" data-v="light" aria-pressed="true">Light</button>
+      <button id="m-dark" data-v="dark" aria-pressed="false">Dark</button></div></div>
+    <div class="ctl"><span>Audience</span><div class="seg" data-ctl="a">
+      <button id="a-learner" data-v="learner" aria-pressed="true">Learner</button>
+      <button id="a-instructor" data-v="instructor" aria-pressed="false">Instructor</button></div></div>
+    <div class="ctl"><span>Page</span><div class="seg" data-ctl="v">
+      <button id="v-lesson" data-v="lesson" aria-pressed="true">A lesson</button>
+      <button id="v-home" data-v="home" aria-pressed="false">Course home</button></div></div>
+  </div>
+
+  <div class="stage">
+    <div>
+      <div class="frame"><div class="bar"><i></i><i></i><i></i><b id="url">course/02-transactions/retries.html</b></div>
+        <div id="desk"></div></div>
+      <div class="cap">1440 wide · menu text full strength · hover: tinted row and accent bar</div>
+    </div>
+    <div>
+      <div class="phone"><div class="screen" id="phone"></div></div>
+      <div class="cap">400 wide · every layout</div>
+    </div>
+  </div>
+</div>
+
+<template id="course">
+  <div class="si">
+    <div class="top">
+      <button class="menu-btn" type="button">Menu</button>
+      <div class="brand">Distributed SQL from Python<small>Course · 6 modules · 4 h 10 min</small></div>
+      <div class="overall"><span>38 %</span><span class="bar"><b></b></span></div>
+    </div>
+    <div class="body">
+      <nav class="course" aria-label="Course">
+        <div class="mods"></div>
+        <ul class="tabrow"></ul>
+      </nav>
+      <div>
+        <section class="home">
+          <div class="lvl">Intermediate · 4 h 10 min · 6 modules</div>
+          <h1>Distributed SQL from Python</h1>
+          <p class="lede">Connect, write and retry safely from Python, then spread one database across regions. Readings, slides, short videos, hands-on labs and quizzes.</p>
+          <div class="cta"><a href="#">Continue: Retries that never double-charge</a><span>Module 2 · lesson 3 of 6</span></div>
+          <div class="grid"></div>
+        </section>
+        <main class="lesson">
+          <div class="crumb"><span>Module 2 · Transactions and retries</span><span>·</span><span class="kind">Reading</span></div>
+          <h1>Retries that never double-charge</h1>
+          <div class="meta"><span>12 min</span><span>Lesson 3 of 6</span><span>Then: lab, 25 min</span></div>
+          <div class="instr-box"><b>Instructor</b><p>Run the contention demo before this reading (Module 2, Demo · 8 min). Pause on the error code; most learners have never seen 40001.</p></div>
+          <p>A serializable database will sometimes ask a transaction to start again. That is not a failure: it is the price of never reading a half-written row. The client's job is to retry the whole transaction, with the same idempotency key, so a retry can never charge twice.</p>
+<pre class="code"><span class="k">def</span> charge(conn, order):
+    <span class="k">for</span> attempt <span class="k">in</span> range(<span class="k">5</span>):
+        <span class="k">try</span>:
+            <span class="k">with</span> conn.transaction():
+                pay(conn, order, key=order.id)   <span class="c"># same key every attempt</span>
+            <span class="k">return</span>
+        <span class="k">except</span> SerializationFailure:      <span class="c"># SQLSTATE 40001</span>
+            backoff(attempt)</pre>
+          <p>Retry the transaction, not the statement. Retrying one statement inside a transaction the server has already aborted only repeats the error.</p>
+          <div class="next"><a href="#"><small>Previous · Slides</small>How a transaction commits</a><a href="#"><small>Next · Lab · 25 min</small>Make your writes retry</a></div>
+        </main>
+        <div class="dock"><div class="where"><b>Retries that never double-charge</b><span>Module 2 · 3 / 6 · 12 min</span></div><button type="button">Outline</button><button type="button">Back</button><button type="button" class="go">Next</button></div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+const MODS=[
+ {t:"Connecting",m:"35 min",p:1,ls:[["reading","Why distributed SQL","8",1],["slides","The architecture in five slides","10",1],["video","Your first query","6",1],["lab","Connect from Python","11",1]]},
+ {t:"Transactions and retries",m:"58 min",p:.5,open:1,ls:[["slides","How a transaction commits","9",1],["demo","A retry under contention","8",0,1],["reading","Retries that never double-charge","12",0,0,1],["lab","Make your writes retry","25",0],["quiz","Check yourself","4",0]]},
+ {t:"Schema design",m:"42 min",p:0,ls:[["reading","Keys that spread the load","14",0],["video","Hot spots, seen live","7",0],["lab","Fix a hot index","21",0]]},
+ {t:"Reading fast",m:"36 min",p:0,ls:[["slides","Follower reads","8",0],["lab","Stale reads on purpose","20",0],["quiz","Check yourself","8",0]]},
+ {t:"Many regions",m:"51 min",p:0,ls:[["reading","Regions, zones, survival goals","15",0],["demo","Losing a region","10",0,1],["lab","A table per region","26",0]]},
+ {t:"Shipping it",m:"28 min",p:0,ls:[["reading","Migrations without downtime","13",0],["quiz","Final check","15",0]]}];
+const KL={reading:"Read",slides:"Slides",video:"Video",lab:"Lab",demo:"Demo",quiz:"Quiz"};
+const ring=p=>{const c=2*Math.PI*7;return `<svg class="ring" viewBox="0 0 20 20" aria-label="${Math.round(p*100)} % done"><circle class="bg" cx="10" cy="10" r="7"/><circle class="fg" cx="10" cy="10" r="7" stroke-dasharray="${c*p} ${c}"/></svg>`};
+const state={l:"left",t:"studio",m:"light",a:"learner",v:"lesson"};
+function lessonHTML(l){const [k,t,min,done,instr,cur]=l;return `<li${instr?' class="instr"':''}><a href="#"${cur?' aria-current="page"':''}><span class="k" data-k="${k}">${KL[k]}</span><span class="lt">${t}</span><span class="lm">${min}m</span><span class="done${done?' y':''}"></span></a></li>`}
+function build(host){
+  host.innerHTML="";host.appendChild(document.getElementById("course").content.cloneNode(true));
+  const si=host.querySelector(".si"), mods=si.querySelector(".mods"), row=si.querySelector(".tabrow"), grid=si.querySelector(".grid");
+  MODS.forEach((m,i)=>{const d=document.createElement("div");d.className="mod"+(m.open?" open":"");
+    d.innerHTML=`<button type="button" aria-expanded="${!!m.open}"><span class="num">${String(i+1).padStart(2,"0")}</span>${ring(m.p)}<span class="mt">${m.t}</span><span class="mm">${m.m}</span><span class="chev"></span></button><ul class="lessons">${m.ls.map(lessonHTML).join("")}</ul>`;
+    d.querySelector("button").addEventListener("click",()=>{const was=d.classList.contains("open");
+      mods.querySelectorAll(".mod").forEach(x=>{x.classList.remove("open");x.querySelector("button").setAttribute("aria-expanded","false")});
+      if(!was||si.dataset.l==="top"){d.classList.add("open");d.querySelector("button").setAttribute("aria-expanded","true")}
+      row.innerHTML=(si.dataset.l==="top"&&d.classList.contains("open"))?m.ls.map(lessonHTML).join(""):row.innerHTML;});
+    mods.appendChild(d);
+    const c=document.createElement("div");c.className="card";
+    c.innerHTML=`<div class="row"><span>Module ${i+1}</span><span>${m.m}</span></div><h3>${m.t}</h3><div class="kinds">${[...new Set(m.ls.filter(l=>!l[4]).map(l=>KL[l[0]]))].map(k=>`<span>${k}</span>`).join("")}</div><div class="row"><span>${m.ls.filter(l=>!l[4]).length} lessons</span><span>${Math.round(m.p*100)} %</span></div>`;
+    grid.appendChild(c);});
+  row.innerHTML=MODS[1].ls.map(lessonHTML).join("");
+  return si}
+const desk=build(document.getElementById("desk")), phone=build(document.getElementById("phone"));
+function apply(){for(const si of [desk,phone]){si.dataset.l=state.l;si.dataset.t=state.t;si.dataset.m=state.m;si.dataset.a=state.a;si.dataset.v=state.v}
+  document.getElementById("url").textContent=state.v==="home"?"course/index.html":"course/02-transactions/retries.html"}
+document.querySelectorAll(".seg").forEach(seg=>seg.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  seg.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));state[seg.dataset.ctl]=b.dataset.v;apply()}));
+apply();
+</script>
