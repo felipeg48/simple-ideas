@@ -182,17 +182,17 @@ func TestChapters(t *testing.T) {
 }
 
 func TestFFmpegArgs(t *testing.T) {
-	a := strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, nil, nil, nil, "", "/o/a.video.mp4"), " ")
+	a := strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, 1, nil, nil, nil, "", "/o/a.video.mp4"), " ")
 	if !strings.HasPrefix(a, "-nostdin -y") || !strings.Contains(a, "-framerate 30 -i /t/seq%05d.jpg -vf scale=") || !strings.HasSuffix(a, "+faststart /o/a.video.mp4") {
 		t.Errorf("video: %s", a)
 	}
 	badges := []pic{{"/t/ff6.png", 4, 6}}
-	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, nil, badges, nil, "", "/o/a.video.mp4"), " ")
+	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, 1, nil, badges, nil, "", "/o/a.video.mp4"), " ")
 	if !strings.Contains(a, "-i /t/ff6.png -filter_complex [0:v][1:v]overlay=0:0:enable='between(t,4.000,6.000)'[o1];[o1]scale=") || strings.Contains(a, "pad=") || strings.Contains(a, "aac") {
 		t.Errorf("badges: %s", a)
 	}
 	caps := []pic{{"/t/c0.png", 1, 2.5}, {"/t/c1.png", 5, 6}}
-	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, nil, badges, caps, "/o/a.voice.wav", "/o/a.captions.mp4"), " ")
+	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, 1, nil, badges, caps, "/o/a.voice.wav", "/o/a.captions.mp4"), " ")
 	for _, w := range []string{"-i /t/ff6.png -i /t/c0.png -i /t/c1.png -i /o/a.voice.wav -filter_complex",
 		// the badge over the picture, the picture shrunk into the top (1222x764 at 109,18 of 1440x900), the captions in the band
 		"[0:v][1:v]overlay=0:0:enable='between(t,4.000,6.000)'[o1];[o1]scale=1222:764,pad=1440:900:109:18:color=0x111318[band];" +

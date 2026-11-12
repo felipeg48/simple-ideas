@@ -148,7 +148,11 @@ var ffHead = []string{"-nostdin", "-y", "-hide_banner", "-loglevel", "error"}
 
 func ff(a ...string) []string { return append(append([]string(nil), ffHead...), a...) }
 
-const evenSize = "scale=trunc(iw/2)*2:trunc(ih/2)*2:out_range=tv,setsar=1,format=yuv420p"
+// outSize is the last filter of a clip: frames k times the viewport's size
+// (a supersampled take) scaled down to it with lanczos, to even sizes.
+func outSize(k int) string {
+	return fmt.Sprintf("scale=trunc(iw/%d/2)*2:trunc(ih/%d/2)*2:flags=lanczos:out_range=tv,setsar=1,format=yuv420p", max(k, 1), max(k, 1))
+}
 
 var h264 = []string{"-c:v", "libx264", "-preset", "medium", "-crf", "20", "-r", fmt.Sprint(fps), "-movflags", "+faststart"}
 
@@ -193,8 +197,11 @@ func band(inW, inH, outW, outH int) string {
 // crops every frame (and the badges, drawn at frame size) to a region: the
 // clip is then the region's size. With caps, the picture (the region when
 // cropped) shrinks into the top of the w×h frame (band), the captions go under
-// it and wav is the voice: the captions variant.
-func videoArgs(pattern string, w, h int, cr *rect, badges, caps []pic, wav, out string) []string {
+// it and wav is the voice: the captions variant. Frames, badges and captions
+// are k times the viewport's size (cr in frame pixels); the clip is scaled
+// down k times at the end (outSize).
+func videoArgs(pattern string, w, h, k int, cr *rect, badges, caps []pic, wav, out string) []string {
+	evenSize := outSize(k)
 	a := ff("-framerate", fmt.Sprint(fps), "-i", pattern)
 	cw, ch := w, h
 	crop := ""
@@ -274,7 +281,7 @@ func allArgs(parts []part, tw, th int, tr Transition, meta, out string) []string
 		return xfadeArgs(parts, tw, th, tr, meta, out)
 	}
 	tw, th = tw&^1, th&^1
-	fit := fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,format=yuv420p", tw, th, tw, th)
+	fit := fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease:flags=lanczos,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,format=yuv420p", tw, th, tw, th)
 	a := ff()
 	var g strings.Builder
 	var cat strings.Builder
@@ -303,7 +310,7 @@ var xfadeNames = map[string]string{"fade": "fade", "pop": "fade", "zoom": "zoomi
 // it would have ended; the sound is concatenated as with cuts.
 func xfadeArgs(parts []part, tw, th int, tr Transition, meta, out string) []string {
 	tw, th = tw&^1, th&^1
-	fit := fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,format=yuv420p", tw, th, tw, th)
+	fit := fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease:flags=lanczos,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,format=yuv420p", tw, th, tw, th)
 	name := xfadeNames[tr.Kind]
 	if name == "" {
 		name = "fade"

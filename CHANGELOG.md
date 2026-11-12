@@ -3,6 +3,16 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **Unreleased:** Fixed: zooms are crisp (issue #6). `si demo run` films
+  the page, its terminals and windows at 2 device pixels per CSS pixel
+  (Chrome's window and the page: 2880×1800 frames for 1440×900) and scales
+  every video back down to the viewport with lanczos; camera crops, region
+  crops, transitions, title cards, captions and fast-forward badges all work
+  on the 2× frames, so a 3× `zoom to` magnifies at most 1.5× instead of 3×.
+  Videos and `screenshot` steps keep the viewport's size. `--scale 1` (or
+  `scale: 1` in front matter) films at 1× as before. On the shop example:
+  45 s instead of 42 s, 61 MB of temporary frames instead of 23 MB, same
+  file sizes.
 - **v3.1.0:** demos and talks that set themselves up, from anywhere
   (spec `docs/superpowers/specs/2026-11-12-demo-lifecycle.md`). Web demos:
   `start:`, `prepare:` (alias `step:`) run once, interleaved in the order

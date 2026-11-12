@@ -39,6 +39,7 @@ type Script struct {
 	Region    string        // region: a CSS selector the clips crop to (a feature's Region: overrides)
 	Zoom      bool          // region: … · zoom: the clips open on the whole page and zoom into the region
 	Trans     *Transition   // transition: the cut between scenes (nil = the default, fade 0.4s)
+	Scale     int           // scale: device pixels per CSS pixel when filming (0 = the default; 1 films at the viewport's size)
 	Pronounce []Pronounce   // pronounce: word = how to say it
 	Features  []*Feature
 	Before    *Feature  // ## Before: steps before the first feature, never filmed, not a feature
@@ -251,6 +252,13 @@ func (s *Script) settings(fm map[string]string, line func(string) int) {
 			s.problem(line("transition"), "%v", err)
 		} else {
 			s.Trans = &t
+		}
+	}
+	if v := fm["scale"]; v != "" {
+		if k, err := ParseScale(v); err != nil {
+			s.problem(line("scale"), "%v", err)
+		} else {
+			s.Scale = k
 		}
 	}
 	if err := new(With).Add(s.With); err != nil {
@@ -830,7 +838,7 @@ func namedKey(p string) (keyDef, bool) {
 // blocks of steps written as in Markdown.
 type jsonScript struct {
 	Type, Title, App, Viewport, Timeout, Voice string
-	Shell, With, Region, Transition            string
+	Shell, With, Region, Transition, Scale     string
 	Style                                      string   `json:"voice-style"`
 	Pronounce                                  []string `json:"pronounce"`
 	Start                                      []string `json:"start"`
@@ -880,7 +888,7 @@ func ParseJSON(path string, raw []byte) (*Script, error) {
 		}
 		return 0
 	}
-	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "voice": j.Voice, "voice-style": j.Style, "shell": j.Shell, "with": j.With, "region": j.Region, "transition": j.Transition}
+	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "voice": j.Voice, "voice-style": j.Style, "shell": j.Shell, "with": j.With, "region": j.Region, "transition": j.Transition, "scale": j.Scale}
 	s.settings(fm, func(key string) int {
 		if k := strings.Index(src, `"`+key+`"`); k >= 0 {
 			return strings.Count(src[:k], "\n") + 1

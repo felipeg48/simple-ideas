@@ -3426,6 +3426,12 @@ Say: The total updates as you choose.
   scrolled into view first). The move is a crop of each frame, scaled back
   to the frame's size, so the video keeps its size; the drawn cursor, notes
   and spotlight are in the page and zoom with it.
+- The take is supersampled: the page, its terminals and windows are filmed
+  at 2 device pixels per CSS pixel (2880×1800 for a 1440×900 viewport), and
+  every video is scaled back down to the viewport's size at the end
+  (lanczos), so text stays crisp, even 3× zoomed. `--scale 1` (or
+  `scale: 1` in front matter) films at the viewport's size: a little faster,
+  less temporary disk, softer zooms.
 - A scene change (`terminal`, `browser`, `window`) starts the new scene
   zoomed out.
 - With a region (`--region`, `Region:`, `region:`) the camera works inside

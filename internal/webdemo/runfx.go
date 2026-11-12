@@ -276,7 +276,7 @@ func (r *runner) attachWindow(id string) (string, error) {
 			return "", err
 		}
 	}
-	r.c.CallIn(s, "Emulation.setDeviceMetricsOverride", map[string]any{"width": r.s.W, "height": r.s.H, "deviceScaleFactor": 1, "mobile": false}, nil)
+	r.c.CallIn(s, "Emulation.setDeviceMetricsOverride", map[string]any{"width": r.s.W, "height": r.s.H, "deviceScaleFactor": r.k, "mobile": false}, nil)
 	if r.tk != nil {
 		r.c.CallIn(s, "Page.addScriptToEvaluateOnNewDocument", map[string]any{"source": overlaySource()}, nil)
 		r.c.CallIn(s, "Runtime.evaluate", map[string]any{"expression": overlaySource()}, nil)

@@ -175,7 +175,7 @@ func (r *runner) show(session string) error {
 }
 
 func (r *runner) screencast() error {
-	return r.c.Call("Page.startScreencast", map[string]any{"format": "jpeg", "quality": 90, "maxWidth": r.s.W, "maxHeight": r.s.H, "everyNthFrame": 1}, nil)
+	return r.c.Call("Page.startScreencast", map[string]any{"format": "jpeg", "quality": 90, "maxWidth": r.s.W * r.k, "maxHeight": r.s.H * r.k, "everyNthFrame": 1}, nil)
 }
 
 var errStopping = fmt.Errorf("the run is stopping")
