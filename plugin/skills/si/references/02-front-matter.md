@@ -46,6 +46,8 @@ lang: en
 | `subtitle`, `edition` | text | none | books: the cover's subtitle and edition (§21) |
 | `session`, `slides`, `duration` | text | none | demo scripts: the facts under the title; `duration: 14 min` is checked against the script's steps (§22) |
 | `app`, `viewport`, `timeout`, `setup`, `voice` | URL or folder; WxH or phone, tablet, desktop; seconds; a shell command; engine:voice | none; desktop; 5s | web demos: `app:` turns a demo script into a script si runs against a web app (§27) |
+| `setup`, `start`, `stop`, `cleanup` (each may repeat) | a command, or a source: `gist:ID@REV`, `github:owner/repo@REF/path`, `https://… · sha256 HEX` | none | a talk that sets up what it shows live: `si play` and `si serve` run `setup:` (must finish) and `start:` (keeps running, `· wait for "ready"`) in the order written before the first page, then `stop:`, the programs stopped, `cleanup:` when they quit; `si build` never runs them ([§14](#14-presenting-keys-touch-overview-print), A talk that sets itself up) |
+| `prepare`, `step`, `cleanup` | web demos: a command run once before the first feature (`step:` is its alias); a command run after every program stopped | none | §27, Before and after |
 | `description` | text | none | documents: the lede under the title, the index tile subtitle and `<meta name="description">` (§19, §20) |
 | `edit-url` | URL | none | guides: base of the "Edit this page" link (§20) |
 | `header`, `footer-page` | `off` | on | a guide page without the guide's `_header.md` / `_footer.md` (§20) |

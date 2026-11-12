@@ -288,6 +288,61 @@ main` comes back. `drag from "Shop" to "Doorstep"` (or `from 400,300 to
 900,420`, or `by 300,80`) presses, moves and lets go with the drawn cursor,
 enough to draw a stroke on a slide or move a topic on a map.
 
+## Before and after, and from anywhere
+
+A real demo needs more than one program: start a broker, create its queues,
+load data, start a consumer, and clean it all up afterwards, every time,
+even when a step fails. The front matter says it in the order it happens:
+
+```markdown
+---
+type: demo
+app: http://127.0.0.1:8080
+start:   make demo-single-insecure · wait for port 22310
+prepare: ./scripts/create-queues.sh
+step:    github:acme/ops@v1.4/scripts/seed.sh --orders 50
+start:   ./consumer · wait for "listening"
+setup:   acme queue purge orders
+stop:    make demo-down
+cleanup: rm -rf data/ tmp/
+---
+
+## Before
+- terminal "Ops"
+- run "acme queue list" · wait
+- expect output "orders"
+```
+
+`start:`, `prepare:` and `step:` run once, in the order written; `setup:`
+runs before each feature; after the last one `stop:` runs while the programs
+are still up, si stops every program, and `cleanup:` runs last. `stop:` and
+`cleanup:` always run: after a pass, a failure, a failed `prepare:`, and on
+Ctrl-C. `## Before` and `## After` hold steps around the features, terminal
+or browser, never filmed and not counted; a failed `## Before` skips the
+features, and the report shows both parts with the features between them.
+The example `examples/webdemo/morning.md` seeds the shop's orders, checks
+them, and leaves nothing behind.
+
+A folder runs as one suite: `si demo test docs/demos/` runs every demo
+script in it, each in its own folder, with one combined report and one JUnit
+file, a test suite per script.
+
+The scripts a demo needs can come from elsewhere, always pinned:
+`gist:ID@REVISION`, `github:owner/repo@v1.2/scripts/seed.sh` (or a whole
+`scripts/` folder, in name order), or `https://…/seed.sh · sha256 …`. So can
+the demos themselves:
+
+```bash
+si demo test github:acme/shop@v2.0/demos/              # the repo at v2.0, every demo in demos/
+si demo test github:acme/shop@v2.0/demos/checkout.md   # one script, the repo around it
+si demo test "https://example.com/demos/checkout.md · sha256 9f2a…"
+```
+
+The first time, si shows where the code comes from, its size and its first
+lines, and asks; the answer is remembered for that pin in `~/.si/trusted`,
+and a pin whose contents changed does not run. `--trust` says yes for one run
+in CI; without a terminal and without `--trust`, si refuses and says why.
+
 ## si's own demos
 
 The videos on this site are web demos too: six scripts in
@@ -295,7 +350,9 @@ The videos on this site are web demos too: six scripts in
 drive si in a terminal, a browser and the Studio. Every push checks them with
 `si demo test`; every minor release films them with the Kokoro voice. They are
 a good place to see terminals, background programs and the Studio in one
-script.
+script. `si demo test docs/demos/` runs them all as one suite, and so does
+`si demo test github:felipeg48/simple-ideas@<commit>/docs/demos/` from
+anywhere.
 
 ## Voices
 

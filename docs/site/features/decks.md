@@ -200,6 +200,39 @@ the teleprompter's **Q&A** tab; *Show on screen* puts one on the slide.
 
 [Try it, as the room does](audience-demo.md) · [Audience →](audience.md)
 
+## A talk that sets itself up
+
+A talk that shows something live can set it up itself. Front matter
+`setup:` (must finish) and `start:` (keeps running) run in the order
+written, before the first page; `stop:` and `cleanup:` run when you stop:
+
+```markdown
+---
+title: The orders broker, live
+setup:   mkdir -p .live && echo 3 > .live/orders
+start:   sh broker.sh as broker · wait for "ready"
+stop:    echo "draining" > .live/state
+cleanup: rm -rf .live
+---
+```
+
+`si play` shows a **getting ready** page with each step while they run, then
+the talk; the broker keeps running while you present (its log is in
+`$SI_RUN_LOGS` in the terminal drawer), and Ctrl-C stops it and cleans up.
+`si build` never runs them. A line can name a pinned script instead of a
+command: `setup: github:acme/ops@v1.4/install-broker.sh`.
+
+The talk itself can come from a repo or a URL, fetched once at its pin and
+asked about once:
+
+```bash
+si play github:acme/talks@v2.1/orders/talk.md
+si build github:acme/talks@v2.1/orders/ --trust     # CI
+si play "https://example.com/talk.md · sha256 9f2a…"
+```
+
+Example: `examples/live/talk.md`.
+
 ## Share it
 
 ```bash

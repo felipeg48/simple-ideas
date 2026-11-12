@@ -12,6 +12,43 @@ update si@simple-ideas`). Notes below that say "unreleased, on a worktree
 branch" (v2.37.0, v2.38.0, v2.40.0) were true when written; all are merged and
 released.
 
+### Demo lifecycle, sources from anywhere, talks that set themselves up (unreleased, worktree branch)
+- Spec `docs/superpowers/specs/2026-11-12-demo-lifecycle.md`, all three
+  phases built; CHANGELOG has an **Unreleased** entry, no version bump.
+- `internal/pinned`: `Source` (`gist:ID@REV[/file]`, `github:o/r@REF/path`
+  or `/dir/`, URL + `· sha256`), `Parse`/`ParseTarget`/`JoinTarget`;
+  `Client.Scripts` (gist/contents API, a URL checked by sha256; cached in
+  `~/.si/cache/scripts/<sha(pin)>`), `Client.Tree` (the tarball API, layout
+  kept, `~/.si/cache/repos/<owner>/<repo>@<ref>` + `.sum`, the tree's sha256);
+  `Trust` (`~/.si/trusted`, "<pin> <sha256>" lines; `--trust` = yes, not
+  written; no terminal (a pipe or /dev/null) = refused with the reason; a pin
+  whose sha changed = refused even with --trust). gh is used only against the
+  default API after a 401/403/404; `SI_GITHUB_API` points tests at httptest.
+- `internal/webdemo/lifecycle.go`: `Command`, `Prep` (`Script.Prelude`, in
+  written order), `Setups`/`Stops`/`Cleanups`; `Script.Resolve(get)` fills
+  `Cmds` with each fetched script quoted plus the args; `runner.prelude`,
+  `runner.command` (`runTimed`: own process group, `WaitDelay`, aborted when
+  shutdown begins), `shutdown` = stop: → programs → cleanup: (only once the
+  prelude began). `## Before`/`## After` are `Script.Before/After`, run by
+  `feature(f, section=true)` (no setup:, no take, programs not local).
+  `Report.Start/Before/After/Teardown`, `around()` for the HTML and JUnit;
+  `Suite` for folder runs (`report.json` = the suite).
+- Decks: `deck.Meta.Lifecycle` keeps every lifecycle line in order;
+  `webdemo.ParseStage` reads them with deck meaning (setup: = prelude);
+  `webdemo.Stage` (Up/Down) is a runner without Chrome. `cmd/si/stage.go`:
+  `deckStages`, the `readyGate` (getting-ready page + `/_si/ready` JSON),
+  `runStages` (sets `$SI_RUN_LOGS`), `deckTarget`. `cmd/si/fetched.go`:
+  `fetchTarget`, `demoScripts`, `fetchSources`.
+- Real check (2026-11-12, with bin/si, fresh SI_HOME): `si demo test
+  github:felipeg48/simple-ideas@7492470…/docs/demos/effects.md --trust` 4/4;
+  the folder form ran all 8 scripts, 27 passed + webdemos.md 3/3 once Kokoro
+  was reachable (it films with the installed `si`); no-TTY refusal, a wrong
+  commit (404), a wrong sha256 and a changed tree all refused; `si play
+  github:…/examples/showcase.md --trust` served the deck (HTTP 200).
+- Left: a URL-fetched script's relative files are not fetched (its app: must
+  be a URL or none); JSON scripts cannot interleave start/prepare; AsciiDoc
+  front matter keeps one value per key.
+
 ### si 3, items 1–4 (unreleased, worktree branch; target v3.0.0)
 - Spec `docs/superpowers/specs/2026-11-12-si-3.md`. Item 5 (re-filming
   `docs/demos/`, the "What's new" page) is still to do; no version bump yet

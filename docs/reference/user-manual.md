@@ -263,6 +263,15 @@ commands mid-demo (`docker ps`, `psql`, …). It exists only under
 `si play` bound to a loopback address — never in a built deck, never on
 `--addr 0.0.0.0`. See `docs/terminal.md`.
 
+A talk that shows something live can set it up itself: front matter
+`setup:` (must finish), `start:` (keeps running, `· wait for "ready"`),
+`stop:` and `cleanup:`, each repeatable, in the order written. `si play` and
+`si serve` run them before the first page (a **getting ready** page shows each
+step), keep the programs running while you present, and stop and clean up
+when they quit; `si build` never runs them. A talk can also come from a repo
+or a URL: `si play github:acme/talks@v2.1/orders/talk.md`, asked once per pin
+(`--trust` for CI). Example: `examples/live/talk.md`.
+
 ---
 
 ## Present from your phone
@@ -411,6 +420,39 @@ Points:
 - Programs stop by process group: SIGTERM, SIGKILL after 5 s, also on Ctrl-C
 - A failure shows the terminal's last 40 lines in the report and JUnit
 - Example: `examples/webdemo/broker.md` (a tiny Go broker, `go run`)
+
+---
+
+## Before, after, and from anywhere
+
+```markdown
+start:   make demo-up · wait for port 22310
+prepare: ./scripts/create-queues.sh
+step:    github:acme/ops@v1.4/scripts/seed.sh --orders 50
+setup:   acme queue purge orders
+stop:    make demo-down
+cleanup: rm -rf data/
+```
+
+- `start:`, `prepare:`, `step:` in the order written; `setup:` before each feature
+- `## Before` and `## After`: steps around the features, never filmed, not counted
+- `stop:` and `cleanup:` always run: a pass, a failure, Ctrl-C
+- `si demo test docs/demos/`: every script, one report, one JUnit
+- `gist:`, `github:…@tag`, `https://… · sha256`: pinned, asked once, `--trust` for CI
+
+Notes: (1 min)
+A real demo needs more than one program. The script starts the broker,
+creates its queues, seeds the data and starts a consumer, in the order you
+wrote them. Before and After sections run steps around the features without
+filming them. When the run ends, whatever happened, it stops what it started
+and cleans up. A whole folder of demos runs as one suite, and the scripts it
+needs can come from a gist, a repo or a URL, each pinned and trusted once. [CLICK]
+
+Points:
+- A failed `prepare:` fails every feature with its output; a failed `## Before` skips them
+- `~/.si/trusted` remembers a yes per pin; a pin whose contents changed stops the run
+- Demos from a repo: `si demo test github:owner/repo@v2/demos/` (output in `demo-out/<repo>/`)
+- Example: `examples/webdemo/morning.md`
 
 ---
 
