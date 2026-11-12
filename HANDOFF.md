@@ -38,6 +38,19 @@ released.
 - Ceilings: `pop` at joins is a plain fade (no xfade equivalent); camera
   boxes are measured once at the step; `window` numbering is first-seen order.
 
+### si 3 (v3.0.0, 2026-11-12)
+Spec `docs/superpowers/specs/2026-11-12-si-3.md`, all done: transitions
+(default fade 0.4s), camera (`zoom to`/`pan to`/`zoom out`, `Region: … · zoom`),
+`spotlight` (alias `focus`, darkens 60 %, `· blur`), `window` (popups such as
+the teleprompter) and `drag`; title cards keep casing; `internal/webdemo/
+scriptfx.go`, `runfx.go`, `effects.go`. Fixes while filming: Chrome launched
+with `--disable-renderer-backgrounding --disable-backgrounding-occluded-windows
+--disable-background-timer-throttling` (a filmed popup froze), `claim()`
+re-injects the overlay when a page wrote over it, the spotlight colour is a
+fixed dark (not `--si-fg`). docs/demos/presenting.md films the teleprompter
+and drawing; studio.md uses a spotlight and `zoom to .frame-shell`. Site page
+`docs/site/whats-new.md` (menu "What's new in si 3"), README section.
+
 ### v2.41.0 and v2.42.0 (2026-11-11)
 - v2.41.0: `si demo run` writes one file, `<script>.mp4`; `--with
   captions,silent,audio,subtitles,transcript,chapters,clips,report,readme,all`

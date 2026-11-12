@@ -12,7 +12,8 @@ setup: rm -rf talk out
 # Presenting a deck
 
 The built deck in front of an audience: moving through it, finding a slide,
-seeing them all at once, a break, light and dark. Every key works the same in
+seeing them all at once, the teleprompter, drawing on a slide, a break, light
+and dark, and a deck that presents itself. Every key works the same in
 `si play` and in the built file.
 
 ## Move through the talk
@@ -68,6 +69,49 @@ Say: Search finds a word on any slide, and jumps straight to it.
 - press Enter
 - expect text "retry"
 - wait 2s
+
+## The teleprompter
+
+What it does: the speaker's script in large type, with clocks and the next slide, in its own window.
+
+Say: The teleprompter opens in a window of its own, for the speaker's screen.
+- start "si new talk && si build talk/talk.md -o out" as prep
+- stop prep · wait
+- go /out/talk.html#2
+- expect text "One promise"
+- wait 1s
+- press p
+- window "si-presenter" · pop
+- expect text "Teleprompter"
+- wait 2s
+
+Say: The script is in large type, with the clocks and the next slide beside it.
+- spotlight #prompt · label "What you say, word for word"
+- wait 3s
+- spotlight off
+
+Say: Back on the slides, the audience never sees any of it.
+- window main · fade
+- expect text "One promise"
+- wait 2s
+
+## Draw on a slide
+
+What it does: a pen over the slide, to circle a number or underline a word while you talk.
+
+Say: A pen over the slide circles what matters, while you talk.
+- start "si new talk && si build talk/talk.md -o out" as prep
+- stop prep · wait
+- go /out/talk.html#5
+- expect text "The journey on one screen"
+- wait 1s
+- press a
+- wait 500ms
+- drag from 560,250 to 760,250
+- drag by 0,60
+- wait 2s
+- press Escape
+- wait 1s
 
 ## Take a break, light or dark
 

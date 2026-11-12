@@ -102,8 +102,8 @@ font:600 15px/1.35 var(--si-font-body,system-ui,sans-serif);box-shadow:0 .5em 1.
 .note.free::before{display:none}
 @keyframes pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
 .ring{position:fixed;border:3px solid var(--si-accent,#2563eb);border-radius:calc(var(--si-radius,.55em) + 2px);box-shadow:0 0 0 4px color-mix(in srgb,var(--si-accent,#2563eb) 25%,transparent)}
-.spot{position:fixed;inset:0;background:color-mix(in srgb,var(--si-fg,#111) 60%,transparent);opacity:0;transition:opacity .4s ease}
-.spot.blurred{background:color-mix(in srgb,var(--si-fg,#111) 18%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.spot{position:fixed;inset:0;background:rgb(8 10 14 / .6);opacity:0;transition:opacity .4s ease}
+.spot.blurred{background:rgb(8 10 14 / .18);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .spot.on{opacity:1}
 .spot[hidden],.spot-ring[hidden],.spot-label[hidden]{display:none}
 .spot-ring{position:fixed;border:2px solid var(--si-accent,#2563eb);box-shadow:0 0 0 4px color-mix(in srgb,var(--si-accent,#2563eb) 30%,transparent)}
@@ -203,6 +203,13 @@ func (r *runner) claim() {
 		return
 	}
 	v, err := r.c.Eval(`(function(d){if(!d)return 'none';if(d.fresh){d.fresh=false;return 'new'}return 'ok'})(window.__siDemo)`)
+	if err == nil && string(v) == `"none"` {
+		// a page written by script after it opened (the teleprompter popup's
+		// document.write) wiped the overlay: put it back
+		if _, err = r.c.Eval(overlaySource()); err == nil {
+			v, err = r.c.Eval(`(function(d){if(!d)return 'none';d.fresh=false;return 'new'})(window.__siDemo)`)
+		}
+	}
 	if err != nil || string(v) != `"new"` {
 		return
 	}

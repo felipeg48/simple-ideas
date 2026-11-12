@@ -54,6 +54,9 @@ func Launch(chrome string, w, h int, extra ...string) (*Client, error) {
 		return nil, err
 	}
 	args := append([]string{"--headless=new", "--use-mock-keychain", "--password-store=basic", "--remote-debugging-pipe", "--hide-scrollbars", "--no-first-run", "--no-default-browser-check",
+		// a page not in front (a popup like the teleprompter, a tab behind)
+		// must keep drawing and ticking, or a filmed window freezes
+		"--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows", "--disable-background-timer-throttling",
 		fmt.Sprintf("--window-size=%d,%d", w, h)}, extra...)
 	cmd := exec.Command(chrome, append(args, "about:blank")...)
 	cmd.ExtraFiles = []*os.File{toChrome, fromChrome}

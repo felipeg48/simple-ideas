@@ -33,7 +33,9 @@ Say: Change the title, and the preview follows as you type.
 - press End
 - type ", live"
 - expect text "The Thursday Promise, live"
+- zoom to .frame-shell · 0.8s
 - wait 2s
+- zoom out
 
 ## Problems as you type
 
@@ -48,8 +50,9 @@ Say: A typo in a directive shows up as a problem at once, with its line.
 - press Enter
 - type "<!-- layuot: center -->"
 - expect text "1 problem"
-- note "si check, as you type" at "1 problem"
-- wait 2s
+- spotlight "1 problem" · label "si check, as you type"
+- wait 2500ms
+- spotlight off
 
 Say: Delete the line, and the problem is gone.
 - press End

@@ -3,7 +3,9 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
-- **Unreleased (si 3):** web demo videos are edited like a video. Every scene
+- **v3.0.0 (si 3):** decks that present themselves, demos that film
+  themselves; the release that completes web demos (a "What's new in si 3"
+  page on the site). Web demo videos are edited like a video. Every scene
   change (a `go` that loads a page, `terminal` ↔ `browser`, a `window`
   switch, card ↔ clip in `<script>.mp4`) is now a transition, `fade 0.4s` by
   default (it was a hard cut; while a page loads its last frame holds):
@@ -18,7 +20,12 @@ binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
   `spotlight off`); `window "name"` / `window 2` / `window main` (perform and
   film a popup or tab, such as si's teleprompter); `drag from "A" to "B"`,
   `drag from X,Y to X,Y`, `drag by DX,DY`. Title cards keep `What it does:`
-  as written: "si reads…" is no longer "Si reads…".
+  as written: "si reads…" is no longer "Si reads…". Fixed: a window that is
+  not in front (a popup, a tab behind) keeps drawing, so a filmed teleprompter
+  no longer freezes; a page written by script after it opened gets the
+  overlay back; the spotlight always darkens (it took the page's text colour,
+  which brightens a dark page). si's own demos film the teleprompter, drawing
+  on a slide, a spotlight and a zoom.
 - **v2.43.0:** si has one folder of its own, `~/.si` (`$SI_HOME` moves it):
   your si.conf (`~/.si/si.conf`), logins (`publish.json`), the certificate
   authority (`ca/`), running sessions (`sessions/`), Kokoro (`kokoro/`) and the

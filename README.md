@@ -76,6 +76,16 @@ Prefer AsciiDoc? Name the file `.adoc`: every feature works the same
 ([docs/asciidoc.md](docs/asciidoc.md)), and every example on the site has an
 AsciiDoc tab.
 
+## What's new in si 3
+
+**Decks that present themselves, demos that film themselves.** One Markdown
+script drives a web app, a terminal or a deck, checks every step as a test,
+and comes out as a narrated video: transitions between scenes, camera moves
+(`zoom to`, `pan to`), a `spotlight` on what matters, popups like the
+teleprompter, drawing with the mouse, Kokoro's voice, captions, chapters.
+Decks read their own notes aloud (`v`, auto-play). The whole story:
+[What's new in si 3](https://simple-ideas.org/whats-new.html).
+
 ## Watch it
 
 Short narrated videos of si itself, filmed from scripts in
