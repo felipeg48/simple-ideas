@@ -273,6 +273,9 @@ pass. The steps that matter:
   instructor guide), phase 4 (`si publish --to skilljar`), the Studio
   "New…" course entry, quiz answers out of the page source: the founder's
   next task (HANDOFF "NEXT TASK").
+- **Timelines, then infographics** (spec
+  `docs/superpowers/specs/2026-11-12-timelines-infographics.md`, after
+  courses): `type: timeline` 16:9 pages and a ```timeline fence; mockups first.
 - **Auto-play** (DONE v2.40.0, spec `docs/superpowers/specs/2026-11-10-autoplay.md`):
   `v` / ▶ Auto-play reads `Notes:` aloud and advances at each `[CLICK]`
   (`deck.Parts`, `web/deck/05-autoplay.js`); `si play` voices parts at

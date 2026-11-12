@@ -30,6 +30,14 @@ Finish courses, in this order, then release (minor: v3.3.0):
 Docs with each (RULES §28, manual, agent-rules + skill, FEATURES,
 CHANGELOG, README, docs site Courses page, HANDOFF, CLAUDE.md roadmap).
 
+**Then: timelines** (`docs/superpowers/specs/2026-11-12-timelines-infographics.md`):
+`type: timeline` (16:9, eras with colours, milestones with pictures and
+captions, sources, layouts line/vertical/snake/eras/cards, every theme;
+`--png/--pdf/--svg`; a ```timeline fence for slides). First make design
+mockups (layouts × themes) for the founder to approve, using their sample
+(the 30 "Hitos en Algoritmos y Complejidad Computacional", Spanish, Mexico).
+`type: infographic` comes after.
+
 ### Courses (v3.2.0, 2026-11-12)
 Phases 1 and 2 of `docs/superpowers/specs/2026-11-12-courses.md`, built to
 the approved mockup `2026-11-12-courses-design.html`. A course is a guide
