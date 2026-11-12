@@ -196,6 +196,11 @@ pass. The steps that matter:
 
 ## Roadmap ideas
 
+- **si 3** (spec `docs/superpowers/specs/2026-11-12-si-3.md`): items 1–4
+  DONE, unreleased (transitions, default fade 0.4s; camera `zoom to`/`pan
+  to`/`zoom out`; `spotlight`/`focus`; `window`, `drag`; title-card casing;
+  `internal/webdemo/effects.go`, `scriptfx.go`, `runfx.go`). Next: item 5
+  (re-film `docs/demos/` with them, "What's new in si 3"), then v3.0.0.
 - **v3.0.0: web demos** (spec `docs/superpowers/specs/2026-11-10-web-demos.md`,
   decided with the founder 2026-11-10; phase 1 test mode DONE v2.34.0, phases
   2 video + 3 voice DONE v2.35.0: `si demo run`, `internal/webdemo/film.go`,

@@ -3,6 +3,22 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **Unreleased (si 3):** web demo videos are edited like a video. Every scene
+  change (a `go` that loads a page, `terminal` ↔ `browser`, a `window`
+  switch, card ↔ clip in `<script>.mp4`) is now a transition, `fade 0.4s` by
+  default (it was a hard cut; while a page loads its last frame holds):
+  `transition: slide 0.6s` in front matter, `--transition`, or `· pop` after
+  one step; `cut`, `fade`, `slide[-left|-right|-up|-down]`, `wipe[-…]`, `pop`,
+  `zoom`, `circle` (from the cursor); `si check` reports an unknown name. The
+  video keeps its length, so the voice, captions and chapters keep their
+  times. New steps: `zoom to "…"`, `pan to "…"`, `zoom out` (`· 0.8s`; a
+  crop of each frame, eased, inside the region when there is one) and
+  `Region: … · zoom` (open on the page, zoom into the region); `spotlight
+  "…"` (alias `focus`; `· circle`, `· blur`, `· label "…"`, `· for 3s`,
+  `spotlight off`); `window "name"` / `window 2` / `window main` (perform and
+  film a popup or tab, such as si's teleprompter); `drag from "A" to "B"`,
+  `drag from X,Y to X,Y`, `drag by DX,DY`. Title cards keep `What it does:`
+  as written: "si reads…" is no longer "Si reads…".
 - **v2.43.0:** si has one folder of its own, `~/.si` (`$SI_HOME` moves it):
   your si.conf (`~/.si/si.conf`), logins (`publish.json`), the certificate
   authority (`ca/`), running sessions (`sessions/`), Kokoro (`kokoro/`) and the

@@ -281,6 +281,17 @@ Not everything is a slide deck. Pick the type by what the reader does:
   and `expect NAME exited 0`. Every program is stopped for you; do not add
   `kill` steps. Run `si check` (it follows the scenes), then `si demo test`;
   a failed `expect output` shows the terminal's last 40 lines.
+- **Web demo videos that edit themselves** (RULES.md §27, Transitions, camera,
+  spotlight, windows and drag): every scene change already fades (0.4 s); set
+  `transition: slide` (or `cut`) in front matter, or `· pop` after one `go`,
+  `browser`, `terminal "…"` or `window …` step, only when the author asks.
+  Use `zoom to "Element"` … `zoom out` for the one or two moments the viewer
+  must read something small, and `spotlight "Element"` (`· label "…"`) when
+  the narration points at one control; both are checks in `si demo test`.
+  `window "name"` films a popup or tab the app opened (`window main` comes
+  back); `drag from "A" to "B"` (or `from X,Y to X,Y`, `by DX,DY`) is a real
+  drag. `What it does:` is shown as written: start it lower case only when the
+  word is (si).
 - **Sites** take opt-in branding in `_site.md`: `logo: brand/mark.svg Name` (a
   picture with the name), `favicon:`, `touch-icon:`, `og-image:` (an https URL)
   and `version: v1.2.0 → <release notes URL>`. Never add si's own logo to a

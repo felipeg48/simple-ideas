@@ -350,6 +350,7 @@ SHOP_PASSWORD=shop-demo si demo run shop.md
 - More on request: `--with captions,subtitles` (or `with:` in front matter, `demo.with:` in si.conf)
 - `captions` `silent` `audio` `subtitles` `transcript` `chapters` `clips` `report` `readme` `all`
 - Long waits play faster, with a ⏩ badge; the voice never speeds up
+- Scenes fade into each other; `zoom to`, `spotlight`, `window` and `drag` steps
 
 Notes: (1 min)
 The same script makes the video. Every Say line is spoken first, so the
@@ -358,12 +359,18 @@ button, notes point at the fields that matter, and passwords are blurred.
 You get one file: the whole run, a title card and a chapter per feature.
 Ask for more when you need it: captions in a band under the picture,
 subtitles, the narration alone, a transcript, a clip per feature, the report.
-A long wait plays faster, and the voice stays at its own pace. [CLICK]
+A long wait plays faster, and the voice stays at its own pace.
+Scenes fade into each other, the picture can zoom in on what matters, a
+spotlight dims the rest, and the teleprompter window is filmed too. [CLICK]
 
 Points:
 - Default is one file; `--with all` makes today's full set; `--no-captions` is gone (captions are opt-in)
 - One panel only: `--region ".agents"` (or `region:`, a feature's `Region:`), or `--crop x,y,w,h`
 - `--fast-forward 5s` or `--no-fast-forward` for waits
+- Cuts fade by default (0.4 s): `transition: slide`, `--transition cut`, or `· pop` after a `go`, `browser`, `terminal`, `window` step
+- `zoom to "Total"` … `zoom out`, `pan to "…"`; `Region: ".agents" · zoom` zooms in instead of cropping
+- `spotlight "Pay"` (alias `focus`), `· circle`, `· blur`, `· label "…"`, `· for 3s`, `spotlight off`
+- `window "si-presenter"` films the teleprompter popup; `window main` comes back; `drag from "A" to "B"` draws
 - Kokoro is si's own voice: `si voice install kokoro`, one command; without it, the computer's voice
 - Try a voice aloud: `si voice say "Hello" --voice kokoro:bf_emma`; `si voice list`
 - Cloud keys: `si voice login openai` keeps the key in your own si.conf, never the project's

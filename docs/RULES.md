@@ -2852,6 +2852,10 @@ Say: A test card goes through in a second.
 | `expect "Pay" disabled` | `visible`, `hidden`, `enabled`, `disabled`, `checked`, `unchecked` |
 | `expect no errors` | no console errors and no failed requests (HTTP 400 and above) so far |
 | `screenshot receipt` | a named picture in the report |
+| `zoom to "Total"` · `pan to "…"` · `zoom out` | camera moves in the video (see Transitions, camera, spotlight, windows and drag below) |
+| `spotlight "Pay"` (alias `focus`) | dims the rest of the page around the element; `· circle`, `· blur`, `· label "…"`, `· for 3s`, `spotlight off` |
+| `window "si-presenter"` · `window 2` · `window main` | perform and film a popup or tab the app opened, then come back |
+| `drag from "A" to "B"` · `drag by 300,80` | a real drag, the drawn cursor gliding with the button held |
 
 **Elements** are found the way a person names them: `"Pay"` matches visible
 text, a `<label>`, an `aria-label`, a placeholder, a title or an alt text
@@ -3164,3 +3168,135 @@ while it keeps running.
 Examples: `examples/webdemo/` (a small shop, `shop.md`, and `broken.md`,
 whose coupon does not work; `broker.md`, a tiny broker in Go started with
 `go run`, filmed in a terminal and in its console).
+
+### Transitions, camera, spotlight, windows and drag
+
+A demo video cuts where the scene changes: a `go` that loads a page, a
+`terminal` or `browser` switch, a `window` switch, and between features in
+`<script>.mp4` (title card → clip → next card). Each of those cuts is a
+**transition**, `fade 0.4s` unless the script says otherwise; while a page
+loads, the old scene's last frame holds, so the video never shows a blank
+page. The transitions are drawn when the video is encoded, from the take's own
+frames: the length of the video never changes, so the voice is never cut or
+sped up and the captions, badges and chapters keep their times.
+
+```markdown
+---
+type: demo
+app: app
+transition: slide 0.6s      # every cut of this script (cut = the old hard cuts)
+---
+
+## Pay for an order
+
+Say: The order page loads.
+- go /order.html?id=4711 · fade
+- terminal "Client" · pop
+- run "curl -s localhost:8080/orders/4711"
+- browser · wipe
+```
+
+| Transition | What it looks like |
+|---|---|
+| `cut` | no transition (before v3) |
+| `fade` | the old scene dissolves into the new (the default, 0.4 s) |
+| `slide` (`slide-left`), `slide-right`, `slide-up`, `slide-down` | the new scene pushes the old one out, moving that way |
+| `wipe` (`wipe-left`), `wipe-right`, `wipe-up`, `wipe-down` | an edge sweeps across, showing the new scene behind it |
+| `pop` | the new scene grows in from 92 % as it fades in |
+| `zoom` | the old scene grows and fades into the new |
+| `circle` | the new scene opens in a circle from the cursor |
+
+- The length follows the name (`fade 0.8s`, `slide 500ms`; 0.1 s to 5 s).
+- Which one: the step's own (`- go /orders · slide`, after `go`, `browser`,
+  `terminal "…"` and `window …`), else `--transition`, else `transition:`
+  in front matter, else `fade 0.4s`. Between features `<script>.mp4` uses the
+  script's (or `--transition`'s): ffmpeg's `xfade`, `pop` there is a fade and
+  `circle` opens from the centre. Each card and clip still starts where it
+  would with cuts, so the chapters do not move.
+- `si check` reports an unknown name with its line.
+
+**Camera moves.** The picture can glide closer to what the narration is
+about, and back:
+
+```markdown
+Say: The total updates as you choose.
+- select "Express" in "Shipping"
+- zoom to #total                # glide in to the element (with a margin), and stay
+- pan to "Gift wrap" · 1.2s     # glide across at the same zoom
+- zoom out                      # back to the whole page
+```
+
+| Step | What it does |
+|---|---|
+| `zoom to "Element"` | the picture glides from where it is to the element's box with a margin, grown to the video's shape (never closer than 3×), and stays there |
+| `pan to "Element"` | glides to the element at the current zoom |
+| `zoom out` | back to the whole picture |
+| `… · 0.8s` | the move's length (default 0.8 s, eased at both ends); the next step waits for it |
+
+- The box is measured on the page when the step runs (the element is
+  scrolled into view first). The move is a crop of each frame, scaled back
+  to the frame's size, so the video keeps its size; the drawn cursor, notes
+  and spotlight are in the page and zoom with it.
+- A scene change (`terminal`, `browser`, `window`) starts the new scene
+  zoomed out.
+- With a region (`--region`, `Region:`, `region:`) the camera works inside
+  it: `zoom to` frames an element in the region at the region's shape, and
+  `zoom out` comes back to the region. `Region: ".agents" · zoom` (and
+  `region: … · zoom`, `--region ".agents · zoom"`) instead opens the clip on
+  the whole page and, a second in, zooms into the region (measured as a
+  crop is, at the end of the take) and stays there.
+- The camera works with fast-forward (a move keeps its length wherever it
+  falls), the transitions and the captions band.
+- In `si demo test` a camera step checks its element is there; nothing moves.
+
+**Spotlight** (alias `focus`) dims the rest of the page around one element:
+
+```markdown
+- spotlight "Pay"                                 # the rest dimmed to 60 %, a rounded box around Pay
+- spotlight "Pay" · circle                        # a round cut-out
+- spotlight "Agents panel" · label "Focus" · for 3s
+- focus "Pay" · blur                              # blur the rest instead of darkening it
+- spotlight off
+```
+
+- The dark layer fades in and the cut-out shrinks from the whole screen onto
+  the element, then follows it (it scrolls, it grows). `· label "…"` puts a
+  tag on the cut-out's edge, in the notes' style. The ring and the label take
+  the accent colour (`--si-accent`) and the dark layer the text colour
+  (`--si-fg`) of si's studio theme.
+- It ends at `spotlight off`, after `· for 3s`, or with its `Say:` block;
+  `note` bubbles and the cursor stay above it.
+- In `si demo test` it checks the element is there and draws nothing.
+
+**Windows.** An app may open a popup or a tab: si's own teleprompter (`p` in
+a deck), a sign-in window, a print preview. `window` moves the performing and
+the filming to it:
+
+```markdown
+- press p
+- window "si-presenter" · pop     # by window name, title or address (a part of it, any case)
+- expect text "Teleprompter"
+- window main                     # back to the app's page (window 1)
+- window 2                        # the first page the app opened, 3 the next …
+```
+
+The page is found among the pages the feature has open (up to `timeout:`),
+given the video's viewport, and filmed from then on, with the cursor, notes
+and spotlight. A window that never shows fails with the names, titles and
+addresses that were open. Works in `si demo test` as well.
+
+**Drag.** A real press, move and release, with the drawn cursor gliding and
+the button held: drawing on a slide (`a` in a deck), moving map topics,
+sliders, sortable lists:
+
+```markdown
+- drag from "Shop" to "Doorstep"      # element to element (their centres)
+- drag from 400,300 to 900,420        # points, in CSS pixels of the viewport
+- drag by 300,80                      # from where the cursor is
+```
+
+The pointer moves in 30 small steps (about a second on film), so a page that
+follows `pointermove` sees a stroke, not a jump.
+
+**Title cards** show `What it does:` as written: `si reads the notes…` stays
+lower case.

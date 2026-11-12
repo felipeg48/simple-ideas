@@ -12,6 +12,32 @@ update si@simple-ideas`). Notes below that say "unreleased, on a worktree
 branch" (v2.37.0, v2.38.0, v2.40.0) were true when written; all are merged and
 released.
 
+### si 3, items 1–4 (unreleased, worktree branch; target v3.0.0)
+- Spec `docs/superpowers/specs/2026-11-12-si-3.md`. Item 5 (re-filming
+  `docs/demos/`, the "What's new" page) is still to do; no version bump yet
+  (CHANGELOG has an **Unreleased** entry).
+- Parsing: `internal/webdemo/scriptfx.go` (`ParseTransition`, `· <name>` after
+  go/browser/terminal/window, `zoom to`/`pan to`/`zoom out`, `spotlight`/
+  `focus`, `window`, `drag`, `regionValue` for `… · zoom`).
+- The take records `cuts` (From = old scene's last moment, To = new scene in
+  front) and camera `moves` (`internal/webdemo/runfx.go`: `cutting`,
+  `cameraMove`, `spotlight`, `window`, `drag`; `show` in runterm.go records
+  scene switches and resets the camera).
+- Encode: `internal/webdemo/effects.go` — `plan` decides every 30 fps output
+  frame (source frame, camera rect via `resolveMoves`/`camAt`, transition
+  progress), `drawShots` draws the non-plain ones in Go (YCbCr planes,
+  bilinear, every core) and hard-links the rest; the video's length never
+  changes. Feature joins use ffmpeg `xfade` (`xfadeArgs` in encode.go: each
+  card/clip held tr.Dur longer, so chapters keep their times).
+- Zoom vs region: with a crop region the camera's view is the region;
+  `· zoom` drops the crop and adds a zoom move at 1 s to the region's box.
+- Terminal tab frames are 1280x713-ish, not the viewport: a transition
+  stretches them to the other scene's size (`resize`), as ffmpeg did.
+- Spotlight is in `overlay.js` (`d.spot` / `d.unspot`, a clip-path evenodd
+  hole animated in rAF); ends with its Say: block (`endBlock`).
+- Ceilings: `pop` at joins is a plain fade (no xfade equivalent); camera
+  boxes are measured once at the step; `window` numbering is first-seen order.
+
 ### v2.41.0 and v2.42.0 (2026-11-11)
 - v2.41.0: `si demo run` writes one file, `<script>.mp4`; `--with
   captions,silent,audio,subtitles,transcript,chapters,clips,report,readme,all`

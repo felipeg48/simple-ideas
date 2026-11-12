@@ -226,6 +226,68 @@ report, secrets masked; a failure shows the terminal's last 40 lines in the
 report and in JUnit. The example `examples/webdemo/broker.md` starts a tiny
 broker written in Go with `go run`, so CI runs it too.
 
+## Edited like a video
+
+A demo film cuts where the scene changes: a `go` that loads a page, a switch
+to a terminal or back, a popup, the next feature's title card. Each of those
+cuts fades in 0.4 s, and while a page loads the last frame holds, so there is
+never a blank page on screen. `transition: slide 0.6s` in front matter
+changes every cut of the script (`cut` brings the hard cuts back), and one
+step can pick its own:
+
+```markdown
+- go /order.html?id=4711 · fade
+- terminal "Client" · pop
+- browser · wipe
+```
+
+The names are `cut`, `fade`, `slide` (and `-left`, `-right`, `-up`,
+`-down`), `wipe` (the same four), `pop`, `zoom` and `circle`, which opens
+from the cursor. They are drawn from the take's frames when the video is
+encoded, so the narration, the captions and the chapters keep their times.
+
+The camera can move in on what the narration is about:
+
+```markdown
+Say: Order 4711 is still waiting for payment.
+- select "Express" in "Shipping"
+- check "Gift wrap"
+- zoom to #total
+
+Say: Help is one question mark away.
+- zoom out
+- hover "Help"
+```
+
+![A frame of the shop demo zoomed in on the order: the Shipping list set to Express, Gift wrap checked, and the total, €54.90, large in the frame with the cursor beside it.](img/webdemos/zoom.jpg)
+
+`zoom to` glides to the element with a margin and stays, `pan to` glides
+across at the same zoom, `zoom out` comes back, and `· 1.2s` sets how long
+the move takes. With a region, the camera stays inside it; `Region: ".agents"
+· zoom` opens a feature on the whole page and then zooms into the region.
+
+A spotlight dims the rest of the page around one element:
+
+```markdown
+Say: Pay sits at the bottom, under the delivery promise.
+- scroll to [data-testid=pay]
+- spotlight [data-testid=pay] · label "One tap to pay"
+- click role=button "Pay"
+```
+
+![A frame of the shop demo with the page darkened except a rounded cut-out around the Pay button, ringed in blue, with a small blue tag above it reading "One tap to pay".](img/webdemos/spotlight.jpg)
+
+The dark layer fades in and the cut-out closes from the whole screen onto the
+element, then follows it; `· circle` makes it round, `· blur` blurs the page
+instead of darkening it, `· for 3s` ends it early, and it ends with its
+`Say:` block or at `spotlight off`. `focus` is the same step.
+
+Two more steps reach what a click cannot. `window "si-presenter"` films a
+popup or a tab the app opened, si's own teleprompter for one, and `window
+main` comes back. `drag from "Shop" to "Doorstep"` (or `from 400,300 to
+900,420`, or `by 300,80`) presses, moves and lets go with the drawn cursor,
+enough to draw a stroke on a slide or move a topic on a map.
+
 ## si's own demos
 
 The videos on this site are web demos too: six scripts in

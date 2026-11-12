@@ -167,6 +167,15 @@ an example for every rule: [RULES.md](docs/RULES.md).
   `--viewport phone`; a failing step ends its clip. `--region "<css>"` (or a feature's `Region:` line, or front matter
   `region:`) crops every clip and the screenshot step to one element's box;
   `--crop x,y,w,h` crops a fixed box; default is the whole page.
+- **Edited like a video:** every scene change (a `go`, `terminal` ↔
+  `browser`, a `window`, the feature joins) is a transition, `fade 0.4s` by
+  default (`transition:`, `--transition`, a step's `· slide`; `cut`, `fade`,
+  `slide`, `wipe`, `pop`, `zoom`, `circle`), drawn from the take's frames with
+  the voice, captions and chapters untouched. Camera moves `zoom to "…"`,
+  `pan to "…"`, `zoom out` (and `Region: … · zoom`); `spotlight "…"` (alias
+  `focus`: dark or `· blur`, `· circle`, `· label "…"`, `· for 3s`);
+  `window "si-presenter"` films a popup or tab (`window main` returns);
+  `drag from "A" to "B"` / `by DX,DY` is a real drag with the drawn cursor.
 - **Voices:** `kokoro:af_heart` (local, the default when installed),
   `system` (say, espeak-ng, Windows), `elevenlabs`, `openai` (`voice-style:`);
   `pronounce: si = ess eye`; lines cached, only changed lines re-voiced.
