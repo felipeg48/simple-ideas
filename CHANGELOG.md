@@ -3,6 +3,9 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **Unreleased:** `si demo run` with a voice this computer cannot use (a
+  script asking for Kokoro where it is not installed) speaks with the system
+  voice and says so, instead of stopping, like auto-play and `si voice say`.
 - **v3.1.0:** demos and talks that set themselves up, from anywhere
   (spec `docs/superpowers/specs/2026-11-12-demo-lifecycle.md`). Web demos:
   `start:`, `prepare:` (alias `step:`) run once, interleaved in the order

@@ -356,7 +356,15 @@ func (r *runner) voiceLines() error {
 		return nil
 	}
 	if why := v.Ready(); why != "" {
-		return fmt.Errorf("%s", why)
+		// like auto-play and si voice say: a voice this computer cannot use
+		// gives way to its own voice, with a warning, rather than no video
+		sys := Voice{Engine: "system"}
+		if v.Engine == "system" || sys.Ready() != "" {
+			return fmt.Errorf("%s", why)
+		}
+		first, _, _ := strings.Cut(why, "\n")
+		fmt.Fprintf(r.o.Log, "si demo: %s; speaking with the system voice (si voice install kokoro for %s)\n", strings.TrimSuffix(first, "."), v)
+		v = sys
 	}
 	cache := r.o.Cache
 	if cache == "" {
