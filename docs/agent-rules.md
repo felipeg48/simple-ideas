@@ -279,8 +279,10 @@ Not everything is a slide deck. Pick the type by what the reader does:
   picture with the name), `favicon:`, `touch-icon:`, `og-image:` (an https URL)
   and `version: v1.2.0 → <release notes URL>`. Never add si's own logo to a
   page you build for someone. A page only a button or a link should reach (a
-  contact page behind `cta:`) takes `unlisted: true`: built, linkable, not in
-  the menu; a page in no menu and not unlisted is an orphan and is not built.
+  contact page behind `cta:`) takes `unlisted: true`: built as a full site page
+  (same navigator, header, footer, shell and theme as the listed pages),
+  linkable, only kept out of the menu; a page in no menu and not unlisted is an
+  orphan and is not built.
 - Problems with si itself: `si report` prints a prefilled GitHub issue link;
   `si --version --verbose` shows the build, links and credits.
 - `si --export example --type guide` (or `article`, `lab`, `book`, `all`)

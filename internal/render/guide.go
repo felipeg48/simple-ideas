@@ -190,23 +190,31 @@ func RenderGuide(g *deck.Guide, opt Options) (pages []GuidePage, problems, warni
 	warnings = append(warnings, g.Warnings...)
 	opt.Guide = g
 	nums, kinds := g.BookNumbers()
+	// renderPage builds one page of the guide. Listed and unlisted pages both go
+	// through it, so an unlisted page gets the identical render as a listed one
+	// (for a site: the navigator, _header.md, _footer.md and the si-doc body
+	// wrapper); it only stays out of the navigator menu.
+	renderPage := func(f string, d *deck.Deck) {
+		opt.AssetPrefix = strings.Repeat("../", strings.Count(guideRel(g, f), "/"))
+		res := Deck(d, opt)
+		problems = append(problems, res.Problems...)
+		warnings = append(warnings, res.Warnings...)
+		pages = append(pages, GuidePage{File: f, Rel: guideRel(g, f), Deck: d, Result: res})
+	}
 	for _, f := range g.Pages {
 		d, err := deck.ParseWith(f, g.Defaults())
 		if err != nil {
 			problems = append(problems, deck.Problem{File: deck.Rel(f), Msg: err.Error()})
 			continue
 		}
+		opt.Chapter, opt.ChapterKind = "", ""
 		if g.IsBook() {
 			opt.Chapter, opt.ChapterKind = nums[f], kinds[f]
 			if guideRel(g, f) == "index.html" {
 				problems = append(problems, deck.Problem{File: deck.Rel(f), Msg: "a book's index.html is its cover: name this page preface.md (or anything but index.md)"})
 			}
 		}
-		opt.AssetPrefix = strings.Repeat("../", strings.Count(guideRel(g, f), "/"))
-		res := Deck(d, opt)
-		problems = append(problems, res.Problems...)
-		warnings = append(warnings, res.Warnings...)
-		pages = append(pages, GuidePage{File: f, Rel: guideRel(g, f), Deck: d, Result: res})
+		renderPage(f, d)
 	}
 	var terms []ixEntry
 	if g.IsBook() {
@@ -214,17 +222,15 @@ func RenderGuide(g *deck.Guide, opt Options) (pages []GuidePage, problems, warni
 		pages, terms = finishBook(g, opt, pages, &problems)
 	}
 	// A page the nav list does not mention is normally an orphan: a warning,
-	// not built. One that says `unlisted: true` is built like any page and is a
-	// valid link target (its cta/footer/body links resolve in si check), but it
-	// stays out of the navigator menu (g.Items never holds it).
+	// not built. One that says `unlisted: true` is built through renderPage, the
+	// same path as a listed page, so it carries the full site shell (navigator,
+	// _header.md, _footer.md, the si-doc body wrapper and theme); it is only kept
+	// out of the navigator menu (g.Items never holds it) and raises no orphan
+	// warning. Its cta/footer/body links resolve in si check like any page's.
 	opt.Chapter, opt.ChapterKind = "", ""
 	for _, f := range g.Unlisted() {
 		if d, err := deck.ParseWith(f, g.Defaults()); err == nil && d.Meta.Unlisted == "true" {
-			opt.AssetPrefix = strings.Repeat("../", strings.Count(guideRel(g, f), "/"))
-			res := Deck(d, opt)
-			problems = append(problems, res.Problems...)
-			warnings = append(warnings, res.Warnings...)
-			pages = append(pages, GuidePage{File: f, Rel: guideRel(g, f), Deck: d, Result: res})
+			renderPage(f, d)
 			continue
 		}
 		warnings = append(warnings, deck.Problem{File: deck.Rel(f), Msg: "not listed in " + deck.NavFile + ": it is not built"})

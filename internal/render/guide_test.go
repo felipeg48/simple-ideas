@@ -85,6 +85,7 @@ func TestSiteUnlisted(t *testing.T) {
 	dir := t.TempDir()
 	for name, body := range map[string]string{
 		"_site.md":   "---\ntitle: Northwind\ncta: Talk to us → contact\n---\n- [Home](index.md)\n- [About](about.md)\n",
+		"_header.md": "Northwind brand bar\n",
 		"_footer.md": "[Contact](contact.md)\n",
 		"index.md":   "# Home\n\nSee [contact us](contact.md).\n",
 		"about.md":   "# About\n",
@@ -135,10 +136,13 @@ func TestSiteUnlisted(t *testing.T) {
 
 	// The navigator menu of the home page lists Home and About only, never the
 	// unlisted page — though its cta button does link to it.
-	var idx string
+	var idx, contact string
 	for _, p := range pages {
-		if p.Rel == "index.html" {
+		switch p.Rel {
+		case "index.html":
 			idx = string(p.Result.HTML)
+		case "contact.html":
+			contact = string(p.Result.HTML)
 		}
 	}
 	menu := idx
@@ -153,5 +157,46 @@ func TestSiteUnlisted(t *testing.T) {
 	}
 	if !strings.Contains(idx, `class="si-site-cta" href="contact.html"`) {
 		t.Error("the navigator cta should link to the unlisted page")
+	}
+
+	// The unlisted page renders through the SAME site-page path as a listed
+	// page: it carries the full site shell — the si-doc body wrapper, the
+	// navigator (logo, menu, cta), _header.md and _footer.md — not a standalone
+	// document. The only difference from a listed page is the missing menu item
+	// (checked above). Everything below compares contact.html (unlisted) to
+	// index.html (listed) in this same fixture.
+	for _, want := range []string{
+		`<body class="si-doc"`,                 // the site/doc body wrapper, not a bare <body>
+		`data-si-doc="page"`,                   // the same page kind a listed page gets
+		`data-si-guide="index.html|Northwind"`, // bound to the guide
+		`data-si-page="contact.html"`,          // its own page id
+		`<header class="si-site-nav"`,          // the navigator / topbar
+		`class="si-site-logo"`,                 // logo in the topbar
+		`class="si-site-cta"`,                  // the cta button
+		`Northwind brand bar`,                  // _header.md content
+		`si-doc-sitefoot`,                      // _footer.md footer block
+	} {
+		if !strings.Contains(contact, want) {
+			t.Errorf("unlisted page is missing %q — it must render in the full site shell, not standalone", want)
+		}
+	}
+	// The navigator chrome (logo, menu items, cta) is identical to a listed
+	// page's, aside from the aria-current self-highlight a page puts on its own
+	// menu item (the unlisted page has none, as it is not in the menu).
+	nav := func(h string) string {
+		i := strings.Index(h, `<header class="si-site-nav"`)
+		if i < 0 {
+			return ""
+		}
+		h = h[i:]
+		if j := strings.Index(h, "</header>"); j >= 0 {
+			h = h[:j]
+		}
+		return strings.ReplaceAll(h, ` aria-current="page"`, "")
+	}
+	if cn, in := nav(contact), nav(idx); cn == "" {
+		t.Error("unlisted page has no navigator: it rendered standalone, outside the site shell")
+	} else if cn != in {
+		t.Errorf("unlisted page's navigator differs from a listed page's:\nlisted:   %s\nunlisted: %s", in, cn)
 	}
 }

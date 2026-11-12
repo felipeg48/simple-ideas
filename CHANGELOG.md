@@ -3,6 +3,13 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.40.3:** sites: an `unlisted: true` page now renders through the same
+  site-page path as a listed page, so it carries the full site shell — the
+  navigator (logo, menu, `cta:`), `_header.md`, `_footer.md`, the `si-doc`
+  body wrapper and the theme — instead of a standalone document. It still
+  stays out of the navigator menu and raises no orphan warning; that remains
+  its only difference from a listed page. Listed and unlisted pages now share
+  one render path, so the two cannot drift.
 - **v2.40.2:** sites: a page with `unlisted: true` in its front matter is
   built and is a valid link target — the navigator `cta:`, `_footer.md` and
   links from other pages resolve in `si check` — but it stays out of the
