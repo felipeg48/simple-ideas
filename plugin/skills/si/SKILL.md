@@ -212,6 +212,22 @@ Not everything is a slide deck. Pick the type by what the reader does:
   useful (`install.md#step-2-start-the-stack`). Shared bands go in
   `_header.md` / `_footer.md`. Run `si check <guide>`: it reports missing
   pages, broken links and anchors, and pages `_nav.md` forgot.
+- **Navigator layout:** `nav:` in `_nav.md`, `_site.md` or `_course.md` (or
+  si.conf) places the menu: `left` (default), `right`, `top`, `bottom`, plus
+  `sticky` / `not-sticky`, `accordion`, `collapsed`, `numbered` (RULES.md §20,
+  §28). Do not hand-style the menu: themes draw it from the `--si-*` tokens.
+- **Courses** (RULES.md §28): a folder with `_course.md`; top-level items are
+  modules (`- Module 1: Title`), the links under them lessons. A lesson's kind
+  comes from its target: a page is a reading, `type: deck` slides, a `.mp4` (or
+  a `type: demo` with `app:`) a video, `type: lab` a lab, `type: demo` without
+  `app:` an instructor demo, `type: quiz` a quiz; `· kind=…`, `· minutes=…`,
+  `· prerequisites=…` after a link override. Give each lesson a one-sentence
+  `description:` and, when the estimate is wrong, `minutes:`. Quizzes: `## `
+  questions, `- [x]` right answers, `> Explanation: …`, `pass: 70%`; a
+  ```` ```quiz ```` fence works in any lesson. A lab's answer goes between
+  `<!-- solution -->` and `<!-- end -->`. A note only the instructor sees is
+  `instructor: …` in a lesson's front matter, never in its text. Learner build
+  `si build course/`, instructor build `--instructor`; `si check course/`.
 - **Steps:** in a lab or a guide, `## Step 1: Start the stack` shows a
   numbered badge. Put the time and prerequisites in a key/value table at the
   top (`| | |` header, then `| **Time** | 10 minutes |`).
@@ -348,7 +364,7 @@ Not everything is a slide deck. Pick the type by what the reader does:
   orphan and is not built.
 - Problems with si itself: `si report` prints a prefilled GitHub issue link;
   `si --version --verbose` shows the build, links and credits.
-- `si --export example --type guide` (or `article`, `lab`, `book`, `all`)
+- `si --export example --type guide` (or `article`, `lab`, `book`, `course`, `all`)
   writes a working example to copy from.
 
 ## Slide content
@@ -405,3 +421,4 @@ Not everything is a slide deck. Pick the type by what the reader does:
 - [25. Code windows and code shows](references/25-code-windows-and-code-shows.md)
 - [26. Publishing](references/26-publishing.md)
 - [27. Web demos](references/27-web-demos.md)
+- [28. Courses](references/28-courses.md)

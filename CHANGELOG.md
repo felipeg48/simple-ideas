@@ -3,6 +3,29 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.2.0:** courses. A folder with a `_course.md` is a course: modules of
+  lessons whose kind comes from what they link to (a page is a reading, a
+  deck slides that present themselves, a `.mp4` or a web demo a video,
+  `type: lab` a lab, `type: demo` an instructor demo, `type: quiz` a quiz;
+  `· kind=` overrides), with minutes (front matter or estimated) and
+  prerequisites. `si build course/` writes the learner's website bundle (a
+  course home with Start / Continue and module cards, one page per lesson,
+  videos copied beside them, a completion page, shared scripts once; `--zip`
+  as well; filmed web demo lessons re-filmed when stale unless `--no-film`);
+  `--instructor` (and `si play`) the instructor's, with demo runbooks, the
+  teleprompter, instructor notes and open lab solutions. The course shell
+  follows the approved mockup: a module accordion with progress rings and
+  minutes, lesson kind labels and done ticks, full-strength menu text with
+  tinted hovers and accent bars, a top bar with the course's progress, and on
+  a phone a Menu button and a bottom bar. Quizzes: `type: quiz` pages and
+  ```` ```quiz ```` fences (`- [x]`, `> Explanation:`, `pass: 70%`), scored
+  in the page. Progress (ticks, rings, Continue, completion, `certificate:
+  on`) is kept in the learner's browser. Labs: `<!-- solution -->` … `<!--
+  end -->` folds an answer for learners. `nav:` (left, right, top, bottom ·
+  sticky · accordion, collapsed, numbered) also places the menu of guides,
+  books and sites, and si.conf takes a default. `si new <name> --type
+  course`, `si --export example --type course`, `si check` on courses;
+  RULES.md §28, a Courses page and a live example course on the docs site.
 - **v3.1.5:** documents: the "On this page" contents column shows its links
   at full strength (they were muted grey, hard to read); hovering one gives
   it a tinted row and an accent bar instead of only darkening the text, and

@@ -91,6 +91,11 @@ type Options struct {
 	// BookPDF is the href of the book's PDF, shown on the cover and the bar.
 	BookPDF  string
 	bookPage string // a generated book page: "cover", "contents", "index", "book"
+	// Instructor builds a course for the instructor (si build --instructor,
+	// si play): the instructor demos, the decks' speaker notes, the
+	// instructor notes and the lab solutions open. False is the learner's.
+	Instructor bool
+	coursePage string // a generated course page: "home", "complete"; "" for a lesson
 }
 
 // DocLink is a link to another lab page.
@@ -120,6 +125,7 @@ type deckRenderer struct {
 	files         map[string]string
 	svgN          int
 	stageN        int
+	quizN         int               // quizzes on the page, for unique input names
 	callouts      map[ast.Node]bool // fenced code blocks followed by a <N> callout list
 	sec, fig, tbl int               // book: section, figure and table counters of the chapter
 	labels        map[string]string // book: id -> label of numbered sections, figures, tables

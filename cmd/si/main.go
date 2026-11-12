@@ -53,7 +53,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "3.1.5"
+const version = "3.2.0"
 
 // Exit codes.
 const (
@@ -155,11 +155,11 @@ Usage:
   si check <dir|file.md> [--budget]
         validate decks: title, directives, assets, includes; exit 1 on a problem;
         --budget (or budget.page / budget.3d in si.conf) also fails pages over 1 MB (3D: 1.5 MB)
-  si new <name> [--type deck|article|guide|book|site|website|page|lab|demo|mindmap|mindmap3d|codeshow]
+  si new <name> [--type deck|article|guide|book|course|site|website|page|lab|demo|mindmap|mindmap3d|codeshow]
         [--kind resume|portfolio|landing]
         scaffold <name>/ with a deck that uses every rule; with --type, a small
-        starter of that type (<name>.md, or a <name>/ folder for guide, book and
-        site), added to the menu of the guide or site it is created in; a website
+        starter of that type (<name>.md, or a <name>/ folder for guide, book,
+        course and site), added to the menu of the guide or site it is created in; a website
         starts from a kind with --type website --kind resume (or --type resume)
   si fix <dir|file.md>... [--write]
         turn raw-HTML components into si syntax: <span class="hl"> into ==text==,
@@ -197,7 +197,7 @@ Usage:
         rules:     RULES.md
         conf:      a starter si.conf with the default keys and features
         example:   an example to copy from (default output: ./si-example); --type picks it:
-                   deck (default; also slides, mindmap: the showcase with its mind maps), article, guide (also tutorial), lab, book (also reference), demo, site, all
+                   deck (default; also slides, mindmap: the showcase with its mind maps), article, guide (also tutorial), lab, book (also reference), course, demo, site, all
         themes:    one sample deck per built-in theme (default: ./si-themes)
         docs-site: the si docs site source (rules pages generated from RULES.md, the manual,
                    live examples; default: ./si-docs-site); then si build it
@@ -225,6 +225,10 @@ Flags (GNU style, before or after the path):
                         (each phone trusts it once, from the "first time" code) or a Tailscale certificate
       --offline         code: / diff: use the cache only (CI, a plane); fails on what was never fetched
       --no-instructor   build: leave the instructor demo scripts (type: demo) out of a participant build
+      --instructor      build a course (_course.md) for the instructor: the demos' runbooks, the decks' teleprompter,
+                        instructor notes, lab solutions open (the default build is the learner's)
+      --zip             build a course: also write <course>.zip beside the output folder
+      --no-film         build a course: do not film its web demo lessons (si demo run) when their video is missing or old
       --open            play: open the browser
       --dev             play: hot reload — morph changed slides in place (keeps the current slide, step and overview)
       --no-inline-media build: copy images and videos next to the HTML instead of data URIs (also shares three.js, as below)
@@ -353,6 +357,7 @@ type options struct {
 	serveMode                                    bool    // si serve: play without the terminal (everything, for readers)
 	offline                                      bool    // code: / diff: from the cache only
 	noInstructor                                 bool    // si build: leave type: demo scripts out (a participant build)
+	instructor, zip, noFilm                      bool    // si build course/: --instructor, --zip, --no-film
 	svg, png                                     bool    // si build: mind map pages also as SVG / PNG
 	scale                                        float64 // si build --png: device pixels per CSS pixel
 	dwell                                        float64 // si build deck.md --mp4: seconds on every slide view
@@ -404,6 +409,9 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.siteKind, "kind", "", "")
 	fl.BoolVar(&o.offline, "offline", false, "")
 	fl.BoolVar(&o.noInstructor, "no-instructor", false, "")
+	fl.BoolVar(&o.instructor, "instructor", false, "")
+	fl.BoolVar(&o.zip, "zip", false, "")
+	fl.BoolVar(&o.noFilm, "no-film", false, "")
 	fl.BoolVar(&o.open, "open", false, "")
 	fl.BoolVar(&o.dev, "dev", false, "")
 	fl.BoolVar(&o.web, "web", false, "")
@@ -1136,7 +1144,7 @@ func checkGuides(guides []*deck.Guide, prior int, stdout, stderr io.Writer) int 
 		guides = append(guides, subGuidesOf(guides[i].Items)...)
 	}
 	for _, g := range guides {
-		ps, probs, warns := render.RenderGuide(g, render.Options{})
+		ps, probs, warns := render.RenderGuide(g, render.Options{Instructor: true}) // a course: every lesson, the instructor demos too
 		pages += len(ps)
 		for _, p := range probs {
 			fmt.Fprintf(stderr, "%s\n", p)
@@ -1169,6 +1177,7 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	srv.Dev = o.dev
 	srv.Autoplay = o.autoplay != ""
+	srv.Instructor = !o.serveMode || o.instructor // a course: si play is the instructor's, si serve the learner's
 	srv.Title = o.title
 	if o.tunnel {
 		o.audience = true // the tunnel carries the audience side
@@ -1708,7 +1717,7 @@ func export(o *options, stdout, stderr io.Writer) int {
 		}
 		kind, ok := exampleKinds[strings.ToLower(o.kind)]
 		if !ok {
-			return usageErr(stderr, fmt.Sprintf("unknown --type %q (deck, article, guide, lab, book, demo, site, mindmap, all)", o.kind))
+			return usageErr(stderr, fmt.Sprintf("unknown --type %q (deck, article, guide, lab, book, course, demo, site, mindmap, all)", o.kind))
 		}
 		if err := writeExampleKind(out, kind); err != nil {
 			fmt.Fprintf(stderr, "si: %v\n", err)
@@ -1806,7 +1815,13 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 	if o.noInline {
 		mode = render.MediaCopy
 	}
-	ro := render.Options{UserCSS: css, Media: mode, Theme: o.theme, Config: cfg, SharedAssets: o.share || o.noInline}
+	ro := render.Options{UserCSS: css, Media: mode, Theme: o.theme, Config: cfg, SharedAssets: o.share || o.noInline || g.IsCourse(), Instructor: o.instructor}
+	if g.IsCourse() && !o.noFilm {
+		filmStale(g, stdout, stderr)
+		if fresh, err := deck.LoadGuide(g.Dir); err == nil {
+			g = fresh // the new videos' lengths
+		}
+	}
 	chrome := ""
 	if o.pdf && g.IsBook() {
 		if chrome = findChrome(); chrome == "" {
@@ -1845,7 +1860,13 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 			fmt.Fprintf(stderr, "si: %v\n", err)
 			return "", false
 		}
-		fmt.Fprintf(stdout, "  %-40s %s  %4d KB\n", filepath.ToSlash(filepath.Join(filepath.Base(out), p.Rel)), p.Deck.Meta.Type, len(p.Result.HTML)/1024)
+		what := p.Deck.Meta.Type
+		if it := g.Item(p.File); g.IsCourse() && it != nil {
+			what = it.Kind
+		} else if g.IsCourse() {
+			what = strings.TrimSuffix(p.Rel, ".html") // home, complete
+		}
+		fmt.Fprintf(stdout, "  %-40s %s  %4d KB\n", filepath.ToSlash(filepath.Join(filepath.Base(out), p.Rel)), what, len(p.Result.HTML)/1024)
 	}
 	if len(pages) == 0 {
 		return "", false
@@ -1881,6 +1902,20 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 		kind = "book"
 	} else if g.IsSite() {
 		kind = "site"
+	} else if g.IsCourse() {
+		kind = "course"
+		if o.instructor {
+			kind = "course (instructor)"
+		}
+		home = "index.html"
+		if o.zip {
+			if zp, err := zipDir(out, filepath.Join(filepath.Dir(filepath.Clean(out)), filepath.Base(g.Dir)+".zip")); err != nil {
+				fmt.Fprintf(stderr, "si: --zip: %v\n", err)
+				ok = false
+			} else {
+				fmt.Fprintf(stdout, "  %-40s (zip, %d KB)\n", filepath.ToSlash(zp), fileKB(zp))
+			}
+		}
 	}
 	fmt.Fprintf(stdout, "si: %s %q, %d page(s) -> %s\n", kind, g.Meta.Title, len(pages), out)
 	return home, ok
@@ -1921,7 +1956,7 @@ func scaffold(name string, stdout, stderr io.Writer) int {
 // exampleKinds maps --type (and its aliases) to an example set.
 var exampleKinds = map[string]string{"": "deck", "deck": "deck", "slides": "deck", "article": "article",
 	"guide": "guide", "guides": "guide", "tutorial": "guide", "tutorials": "guide", "lab": "lab",
-	"book": "book", "reference": "book", "demo": "demo", "site": "site", "website": "site", "all": "all", "mindmap": "deck", "mindmaps": "deck"}
+	"book": "book", "reference": "book", "demo": "demo", "site": "site", "website": "site", "all": "all", "mindmap": "deck", "mindmaps": "deck", "course": "course", "courses": "course"}
 
 // writeExampleKind writes one example set into dir (which must not exist or
 // be empty): deck = the showcase decks (today's export), article = the article
@@ -1935,7 +1970,7 @@ func writeExampleKind(dir, kind string) error {
 		top, _, _ := strings.Cut(p, "/")
 		switch kind {
 		case "deck":
-			return p, top != "article" && top != "guide" && top != "book" && top != "site"
+			return p, top != "article" && top != "guide" && top != "book" && top != "site" && top != "course"
 		case "book":
 			r, ok := strings.CutPrefix(p, "book/")
 			return r, ok
@@ -1950,6 +1985,9 @@ func writeExampleKind(dir, kind string) error {
 			return r, ok
 		case "site":
 			r, ok := strings.CutPrefix(p, "site/")
+			return r, ok
+		case "course":
+			r, ok := strings.CutPrefix(p, "course/")
 			return r, ok
 		case "lab":
 			return p, p == "order-lab.md" || p == "assets/floor.svg"
@@ -1991,7 +2029,7 @@ func writeExamples(dir, mainName string) error {
 		if strings.HasSuffix(p, ".go") {
 			return nil
 		}
-		if top, _, _ := strings.Cut(p, "/"); top == "article" || top == "guide" || top == "book" {
+		if top, _, _ := strings.Cut(p, "/"); top == "article" || top == "guide" || top == "book" || top == "course" {
 			if e.IsDir() {
 				return fs.SkipDir // si new scaffolds a deck; the document examples are --export example --type
 			}
@@ -2130,6 +2168,8 @@ func guideKindOf(g *deck.Guide) string {
 		return "book"
 	case g.IsSite():
 		return "site"
+	case g.IsCourse():
+		return "course"
 	}
 	return "guide"
 }
@@ -2137,6 +2177,19 @@ func guideKindOf(g *deck.Guide) string {
 // newStarter writes a small starter of one type (si new <name> --type <kind>).
 func newStarter(name, kind string, stdout, stderr io.Writer) int {
 	kind = strings.ToLower(kind)
+	if kind == "course" || kind == "courses" { // the example course: every kind of lesson, a video included
+		dir := strings.TrimSuffix(name, "/")
+		if _, err := os.Lstat(dir); err == nil {
+			fmt.Fprintf(stderr, "si: %s already exists; si new never overwrites\n", dir)
+			return exitProblems
+		}
+		if err := writeExampleKind(dir, "course"); err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitProblems
+		}
+		fmt.Fprintf(stdout, "si: created %s/ (a course: _course.md, a reading, slides, a video, a lab, an instructor demo, quizzes)\n  si serve %s --open\n  si build %s -o %s-html\n", dir, dir, dir, dir)
+		return exitOK
+	}
 	if alias, ok := map[string]string{"slides": "deck", "tutorial": "guide", "reference": "book", "mindmap-3d": "mindmap3d", "code": "codeshow", "website": "site"}[kind]; ok {
 		kind = alias
 	}

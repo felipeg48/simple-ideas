@@ -186,6 +186,9 @@ type GuidePage struct {
 // is a problem. Pages under the folder that _nav.md does not list are
 // warnings. opt.Guide is set per page.
 func RenderGuide(g *deck.Guide, opt Options) (pages []GuidePage, problems, warnings []deck.Problem) {
+	if g.IsCourse() {
+		return renderCourse(g, opt)
+	}
 	problems = append(problems, g.Problems...)
 	warnings = append(warnings, g.Warnings...)
 	opt.Guide = g

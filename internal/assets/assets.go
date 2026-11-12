@@ -95,6 +95,15 @@ var ThreeLicense string
 //go:embed web/doc.css
 var DocCSS string
 
+// CourseCSS and CourseJS are a course's shell (navigator layouts, home,
+// completion page) and its runtime (menus, progress in localStorage).
+//
+//go:embed web/course.css
+var CourseCSS string
+
+//go:embed web/course.js
+var CourseJS string
+
 // DocJS is the lab document runtime: copy buttons, d for light/dark, the
 // table of contents highlight, Mermaid.
 //

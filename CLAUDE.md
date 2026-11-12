@@ -260,6 +260,17 @@ pass. The steps that matter:
     bullets, tables and code, pictures for canvases (hard: fluid layouts vs
     fixed boxes); (3) `si publish --to google-slides` (Drive upload with
     conversion, a Google OAuth login like LinkedIn's).
+- **Courses** (phases 1–2 DONE v3.2.0, spec
+  `docs/superpowers/specs/2026-11-12-courses.md`, mockup
+  `2026-11-12-courses-design.html`): `_course.md` (modules, lessons, kinds
+  by link target, `· kind=`, minutes, prerequisites), learner / `--instructor`
+  builds, `nav:` layouts (courses, guides, books, sites), course home,
+  website bundle (`--zip`, videos copied, `--no-film`), `type: quiz` + the
+  quiz fence, progress in localStorage, `complete.html` (`certificate: on`),
+  `<!-- solution -->`; `internal/deck/course.go`, `quiz.go`,
+  `internal/render/course.go`, `quiz.go`, `web/course.css`, `web/course.js`;
+  RULES.md §28. Next: phase 3 (`--scorm` SCORM 1.2, `--pdf` workbook and
+  instructor guide), phase 4 (`si publish --to skilljar`).
 - **Auto-play** (DONE v2.40.0, spec `docs/superpowers/specs/2026-11-10-autoplay.md`):
   `v` / ▶ Auto-play reads `Notes:` aloud and advances at each `[CLICK]`
   (`deck.Parts`, `web/deck/05-autoplay.js`); `si play` voices parts at

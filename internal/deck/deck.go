@@ -66,7 +66,8 @@ var Directives = map[string]string{
 	"badge":      "body",  // a small status pill
 	"accordion":  "body",  // the ### sections that follow, one open at a time
 	"modal":      "body",  // a dialog up to <!-- end -->, opened by a link to #id
-	"end":        "body",  // ends a modal
+	"end":        "body",  // ends a modal or a solution
+	"solution":   "body",  // a lab's answer up to <!-- end -->: folded for learners, open for instructors
 	"carousel":   "body",  // the image paragraphs that follow
 	"event":      "body",  // a countdown toast as a date nears
 	"embed":      "body",  // a deck, document or guide/book/site, framed, as a card, in full or one section
@@ -169,6 +170,16 @@ type Meta struct {
 	Prepare      string // web demo: prepare: (or step:) a command run once before the first feature (the last one; Lifecycle has them all)
 	Cleanup      string // web demo and deck: cleanup: a command run after the programs are stopped (the last one)
 
+	// courses (_course.md, and the lessons it lists)
+	Nav             string // nav: the navigator layout of a course, guide, book or site: left|right|top|bottom · sticky · accordion|tabs|collapsed · numbered
+	Level           string // course: beginner, intermediate … (shown on the course home)
+	InstructorDemos string // course: hide (default) or show-placeholder: what a learner build does with the instructor demos
+	Certificate     string // course: on adds a printable certificate to the completion page
+	Pass            string // quiz: the pass mark, "70%"
+	Minutes         string // lesson: its length in minutes (else estimated)
+	Prerequisites   string // course or lesson: what to know first (shown, not enforced)
+	Instructor      string // lesson: a note only the instructor build shows, in a box above the lesson
+
 	// Lifecycle is every setup:, start:, prepare:, step:, stop: and cleanup:
 	// line in the order written (they may repeat): a web demo reads its own,
 	// a deck runs them in si play and si serve (internal/webdemo.ParseStage)
@@ -176,7 +187,7 @@ type Meta struct {
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup", "nav", "level", "instructor-demos", "certificate", "pass", "minutes", "prerequisites", "instructor"}
 
 // MetaLine is one front matter line kept as written: its key, its value and
 // its line in the file.
@@ -266,7 +277,7 @@ type Deck struct {
 }
 
 // Types are the accepted values of the `type` front matter key.
-var Types = []string{"deck", "lab", "article", "guide", "book", "demo", "site", "page", "mindmap"}
+var Types = []string{"deck", "lab", "article", "guide", "book", "demo", "site", "page", "mindmap", "quiz", "course"}
 
 // IsLab reports whether the file is a lab document (`type: lab`).
 func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
@@ -274,7 +285,7 @@ func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
 // IsDoc reports whether the file is a document (lab, article or guide page):
 // one readable page, not slides.
 func (d *Deck) IsDoc() bool {
-	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide" || d.Meta.Type == "demo" || d.Meta.Type == "page" || d.Meta.Type == "mindmap"
+	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide" || d.Meta.Type == "demo" || d.Meta.Type == "page" || d.Meta.Type == "mindmap" || d.Meta.Type == "quiz"
 }
 
 // IsMindmap reports whether the file is a mind map page (`type: mindmap`).
@@ -563,6 +574,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"navigator": &m.Navigator, "logo": &m.Logo, "cta": &m.CTA,
 		"linkedin": &m.LinkedIn, "tags": &m.Tags, "canonical": &m.Canonical, "cover": &m.Cover, "handout": &m.Handout, "handout-url": &m.HandoutURL, "speakers": &m.Speakers, "app": &m.App, "viewport": &m.Viewport, "timeout": &m.Timeout, "setup": &m.Setup, "voice": &m.Voice, "voices": &m.Voices, "voice-style": &m.VoiceStyle, "pronounce": &m.Pronounce, "start": &m.Start, "stop": &m.Stop, "shell": &m.Shell, "with": &m.With, "prepare": &m.Prepare, "step": &m.Prepare, "cleanup": &m.Cleanup,
 		"layout": &m.MapLayout, "lines": &m.MapLines, "nodes": &m.MapNodes, "map-theme": &m.MapTheme, "watermark-position": &m.WatermarkPos, "favicon": &m.Favicon, "touch-icon": &m.TouchIcon, "og-image": &m.OGImage,
+		"nav": &m.Nav, "level": &m.Level, "instructor-demos": &m.InstructorDemos, "certificate": &m.Certificate, "pass": &m.Pass, "minutes": &m.Minutes, "prerequisites": &m.Prerequisites, "instructor": &m.Instructor,
 		"view": &m.MapView, "camera": &m.MapCamera, "floors": &m.MapFloors, "kind": &m.MapKind, "flow": &m.MapFlow,
 	}[key]
 	if ptr == nil {
@@ -585,6 +597,22 @@ func validateMeta(key, val string) string {
 		return oneOf("theme", val, assets.ThemeNames())
 	case "type":
 		return oneOf("type", val, Types)
+	case "nav":
+		if _, err := ParseNav(val); err != nil {
+			return err.Error()
+		}
+	case "instructor-demos":
+		return oneOf("instructor-demos", val, []string{"hide", "show-placeholder"})
+	case "certificate":
+		return oneOf("certificate", val, []string{"on", "off"})
+	case "pass":
+		if _, ok := ParsePass(val); !ok {
+			return fmt.Sprintf("pass: want a mark from 0%% to 100%%, like 70%%, not %q", val)
+		}
+	case "minutes":
+		if n, err := strconv.ParseFloat(val, 64); err != nil || n <= 0 {
+			return fmt.Sprintf("minutes: want a number of minutes, like 12, not %q", val)
+		}
 	case "mode":
 		return oneOf("mode", val, Modes)
 	case "transition":
@@ -1164,4 +1192,4 @@ var durationRE = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*min`)
 
 // docDirectives are the directives a document uses (the rest are deck-only).
 var docDirectives = map[string]bool{"tabs": true, "callout": true, "slides": true, "alert": true, "badge": true, "logo": true, "qr": true, "poll": true, "cloud": true, "cards": true, "accordion": true,
-	"modal": true, "end": true, "carousel": true, "event": true, "embed": true}
+	"modal": true, "solution": true, "end": true, "carousel": true, "event": true, "embed": true}

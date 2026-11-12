@@ -87,7 +87,7 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 		size, kind := fmt.Sprintf("%d slides%s", e.Slides, mins), "deck"
 		if e.Lab {
 			size, kind = e.SizeLabel(), "lab"
-			if e.Kind == "guide" || e.Kind == "book" || e.Kind == "article" || e.Kind == "mindmap" {
+			if e.Kind == "guide" || e.Kind == "book" || e.Kind == "article" || e.Kind == "mindmap" || e.Kind == "course" {
 				kind = e.Kind
 			}
 		}
@@ -144,6 +144,8 @@ func (e IndexEntry) SizeLabel() string {
 		return fmt.Sprintf("%d pages", e.Sections)
 	case "book":
 		return fmt.Sprintf("%d chapters", e.Sections)
+	case "course":
+		return fmt.Sprintf("%d lessons", e.Sections)
 	case "mindmap":
 		if e.Sections == 1 {
 			return "1 map"

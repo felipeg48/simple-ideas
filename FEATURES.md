@@ -113,6 +113,16 @@ an example for every rule: [RULES.md](docs/RULES.md).
   checked links and anchors; labs with steps and checks.
 - **Books:** a cover, parts and chapters, numbered figures and tables,
   cross-references, an index, a one-file edition and PDF.
+- **Courses:** a `_course.md` of modules and lessons (readings, slides that
+  present themselves, videos, labs, instructor demos, quizzes), a course home
+  with Continue, progress rings and ticks kept in the browser, a completion
+  page with a printable certificate; learner and instructor builds, a website
+  bundle (`--zip`).
+- **Quizzes:** `type: quiz` pages and ```` ```quiz ```` fences: single and
+  multiple choice, explanations, a score and a pass mark.
+- **Navigator layouts:** `nav:` puts the menu of a course, guide, book or site
+  left, right, top or bottom, sticky or not, as an accordion, collapsed or
+  numbered; on a phone it folds into a Menu button.
 - **Demo scripts:** facts, `> Say:` lines, commands with expected output.
 - **Plugins:** alerts, badges, logos, QR codes, event countdowns, accordions,
   modals, carousels, cards, tabs, `embed:` (cards, sections, whole documents,

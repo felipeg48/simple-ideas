@@ -162,6 +162,15 @@ an index, and a one-file edition and PDF.
 
 ![A book cover page](docs/screenshots/readme/book.jpg)
 
+### Courses
+
+Modules of readings, slides, videos, labs, instructor demos and quizzes, with
+progress kept in the learner's browser, Continue, and a certificate; one
+`si build` makes the website bundle, `--instructor` the teacher's edition.
+[Courses →](https://simple-ideas.org/features/courses.html)
+
+![A course lesson with its module menu](docs/screenshots/readme/course.jpg)
+
 ### Mind Maps
 
 A nested list becomes a map: four layouts, line and topic styles, badges,
@@ -292,7 +301,7 @@ Other agents: `si --export skill`, `si --export agent-rules` (AGENTS.md), or
 
 | | |
 |---|---|
-| `si new <name> --type deck\|article\|guide\|book\|website\|lab\|mindmap\|codeshow` | a starter |
+| `si new <name> --type deck\|article\|guide\|book\|course\|website\|lab\|mindmap\|codeshow` | a starter |
 | `si play <dir\|file>` | present with live reload (`--remote`, `--audience`, `--tunnel`, `--review`, `--https`) |
 | `si build <dir\|file> -o html/` | self-contained HTML (`--pdf`, `--mp4`, `--handout`, `--narration`, `--autoplay`, `--voice`) |
 | `si check <dir\|file>` | every problem, with file and line |

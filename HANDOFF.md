@@ -11,6 +11,24 @@ with `claude plugin marketplace update simple-ideas && claude plugin update
 si@simple-ideas`). Every section below marked "unreleased, worktree branch"
 is merged and released.
 
+### Courses (v3.2.0, 2026-11-12)
+Phases 1 and 2 of `docs/superpowers/specs/2026-11-12-courses.md`, built to
+the approved mockup `2026-11-12-courses-design.html`. A course is a guide
+with `type: course` (`_course.md`, `deck.CourseFile`): `internal/deck/course.go`
+(lesson kinds, minutes incl. an MP4 mvhd reader, `ForAudience`, `ParseNav`,
+`ParsePass`), `internal/deck/quiz.go` (`ParseQuiz`, `Score`, the same rule
+as doc.js), `internal/render/course.go` (`renderCourse` via `RenderGuide`,
+the shell, home `index.html`, `complete.html`, slides lessons as a srcdoc
+iframe, video lessons copied), `internal/render/quiz.go` (the fence and
+`type: quiz` pages), `<!-- solution -->` in `plugins.go`, `nav:` for guides
+(`guideNavAttrs`) and sites (`siteNav`), `web/course.css` + `web/course.js`
+(progress in localStorage `si-course:<guide key>`), `cmd/si/course.go`
+(`filmStale`, `zipDir`); `si serve` = learner, `si play` = instructor
+(`serve.Server.Instructor`). Example: `examples/course/` (a first web page;
+`page-load.mp4` filmed from a 5-slide deck, 52 KB). Not built: phase 3
+(SCORM, `--pdf` workbook) and phase 4 (SkillJar). Ideas: the Studio's "New…"
+does not list courses yet; quiz answers are in the page (not an exam).
+
 ### Releases since v2.40.0
 - v2.40.1 code shows on slides (deep links, notes wrap, repaint) · v2.40.2/3
   unlisted site pages (PRs #1, #3) · v2.41.0 `si demo run` one file by

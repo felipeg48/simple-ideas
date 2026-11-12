@@ -123,6 +123,14 @@ func (r *nodeRenderer) fence(
 		w.WriteString(r.dr.mindmapFence(body, attrs, dir))
 		return ast.WalkSkipChildren, nil
 	}
+	if lang == "quiz" && r.dr.doc {
+		attrs := map[string]string{}
+		if n.Info != nil {
+			attrs = fenceAttrs(string(n.Info.Segment.Value(src)))
+		}
+		w.WriteString(r.dr.quizHTML(body, attrs["pass"]))
+		return ast.WalkSkipChildren, nil
+	}
 	if lang == "stage" {
 		r.dr.stageN++
 		svg, stepOps, err := genStage(body, r.dr.stageN)

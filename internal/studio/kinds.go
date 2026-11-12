@@ -43,6 +43,8 @@ func guideKind(g *deck.Guide) string {
 	switch {
 	case g.IsSite():
 		return "site"
+	case g.IsCourse():
+		return "course"
 	case g.IsBook():
 		return "book"
 	}
@@ -75,8 +77,10 @@ func pageURL(rel string) string { return "/" + strings.TrimSuffix(rel, filepath.
 
 // navPath is the guide's _site.md or _nav.md.
 func navPath(g *deck.Guide) string {
-	if p := filepath.Join(g.Dir, deck.SiteFile); fileExists(p) {
-		return p
+	for _, n := range []string{deck.CourseFile, deck.SiteFile} {
+		if p := filepath.Join(g.Dir, n); fileExists(p) {
+			return p
+		}
 	}
 	return filepath.Join(g.Dir, deck.NavFile)
 }

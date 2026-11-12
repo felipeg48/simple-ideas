@@ -30,7 +30,7 @@ const (
 
 // navFile is the guide or site file of dir, "" if it has none.
 func navFile(dir string) string {
-	for _, n := range []string{SiteFile, NavFile} {
+	for _, n := range []string{CourseFile, SiteFile, NavFile} {
 		if st, err := os.Stat(filepath.Join(dir, n)); err == nil && !st.IsDir() {
 			return filepath.Join(dir, n)
 		}
@@ -38,7 +38,7 @@ func navFile(dir string) string {
 	return ""
 }
 
-// IsGuideDir reports whether dir holds a _nav.md or a _site.md.
+// IsGuideDir reports whether dir holds a _nav.md, a _site.md or a _course.md.
 func IsGuideDir(dir string) bool { return navFile(dir) != "" }
 
 // Guide is a parsed _nav.md.
@@ -60,6 +60,13 @@ type NavItem struct {
 	Children []*NavItem
 	Parent   *NavItem
 	Sub      string // a link to a folder that is a guide, book or site of its own: that folder
+
+	// a course lesson (or module)
+	Kind          string // reading, slides, video, lab, demo, quiz
+	Minutes       int    // its length (front matter minutes:, `· minutes=`, else estimated)
+	Video         string // a video lesson: the video file (absolute)
+	Script        string // a filmed demo lesson: its script (the video is <script>.mp4)
+	Prerequisites string // what to know first (shown, not enforced)
 }
 
 var navItemRE = regexp.MustCompile(`^(\s*)[-*+]\s+(.*?)\s*$`)
@@ -73,7 +80,7 @@ func LoadGuide(dir string) (*Guide, error) {
 	}
 	nav := navFile(abs)
 	if nav == "" {
-		return nil, fmt.Errorf("%s has no %s or %s", abs, NavFile, SiteFile)
+		return nil, fmt.Errorf("%s has no %s, %s or %s", abs, NavFile, SiteFile, CourseFile)
 	}
 	raw, err := os.ReadFile(nav)
 	if err != nil {
@@ -87,6 +94,11 @@ func LoadGuide(dir string) (*Guide, error) {
 	if filepath.Base(nav) == SiteFile && g.Meta.Type == "" {
 		g.Meta.Type = "site"
 	}
+	if filepath.Base(nav) == CourseFile && g.Meta.Type == "" {
+		g.Meta.Type = "course"
+	}
+	course := g.IsCourse()
+	opts := map[*NavItem]map[string]string{}
 	if g.Meta.Title == "" {
 		g.Meta.Title = filepath.Base(abs)
 	}
@@ -107,8 +119,13 @@ func LoadGuide(dir string) (*Guide, error) {
 			g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: "_nav.md: want a list item (`- [Title](page.md)` or `- Section`)"})
 			continue
 		}
-		it := &NavItem{Title: m[2], Line: no}
-		if lm := navLinkRE.FindStringSubmatch(m[2]); lm != nil {
+		text, o := m[2], map[string]string(nil)
+		if course {
+			text, o = itemOpts(text)
+		}
+		it := &NavItem{Title: text, Line: no}
+		opts[it] = o
+		if lm := navLinkRE.FindStringSubmatch(text); lm != nil {
 			it.Title, it.Href = lm[1], lm[2]
 			if local := !strings.Contains(it.Href, "://") && !strings.HasPrefix(it.Href, "mailto:"); local {
 				path, _, _ := strings.Cut(it.Href, "#")
@@ -117,6 +134,14 @@ func LoadGuide(dir string) (*Guide, error) {
 				switch {
 				case err == nil && st.IsDir() && IsGuideDir(f):
 					it.Sub = f // a guide, book or site of its own, linked from this menu
+				case course && IsVideoPath(f) && strings.HasPrefix(f, abs+string(filepath.Separator)):
+					if _, err := os.Stat(f); err != nil {
+						g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: fmt.Sprintf("_course.md: missing video %s", it.Href)})
+					} else {
+						seen[f] = no
+						it.File = f
+						g.Pages = append(g.Pages, f)
+					}
 				case !isDeckFile(filepath.Base(f)):
 					g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: fmt.Sprintf("_nav.md: %s is not a .md or .adoc page", it.Href)})
 				case !strings.HasPrefix(f, abs+string(filepath.Separator)):
@@ -148,7 +173,10 @@ func LoadGuide(dir string) (*Guide, error) {
 		stack = append(stack, level{ind, it})
 	}
 	if len(g.Pages) == 0 {
-		g.Problems = append(g.Problems, Problem{File: rel, Line: start + 1, Msg: "_nav.md lists no pages"})
+		g.Problems = append(g.Problems, Problem{File: rel, Line: start + 1, Msg: filepath.Base(nav) + " lists no pages"})
+	}
+	if course {
+		g.courseLessons(opts)
 	}
 	return g, nil
 }
@@ -182,6 +210,9 @@ func (g *Guide) Defaults() Meta {
 	m := g.Meta
 	m.Type, m.Title, m.Description, m.Subtitle = "guide", "", "", ""
 	m.Fonts = absFontFiles(m.Fonts, g.Dir)
+	if g.IsCourse() { // course-wide keys a lesson must not inherit
+		m.Duration, m.Minutes, m.Prerequisites, m.Instructor, m.Level, m.Certificate = "", "", "", "", "", ""
+	}
 	if g.IsSite() {
 		m.Type = "page" // a site's pages are plain pages unless they say otherwise (type: deck, article, lab …)
 		m.Navigator, m.Logo, m.CTA = "", "", ""

@@ -108,6 +108,7 @@ feature.autoplay:  on   # the Auto-play button and key
 type Config struct {
 	Theme                    string            // default theme, or ""
 	Fonts                    string            // default fonts: (a deck's own fonts: wins)
+	Nav                      string            // nav: the default layout of a guide, book, site or course navigator (a _nav.md, _site.md or _course.md nav: wins)
 	FontsSubset              string            // default fonts-subset:
 	Keys                     map[string]string // action -> key
 	Features                 map[string]bool   // feature -> enabled
@@ -263,6 +264,8 @@ func (c *Config) parse(r io.Reader) {
 			c.Theme = v
 		case k == "fonts":
 			c.Fonts = v
+		case k == "nav":
+			c.Nav = v
 		case k == "fonts-subset":
 			c.FontsSubset = v
 		case k == "timer.time":

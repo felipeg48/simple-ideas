@@ -457,6 +457,43 @@ Points:
 
 ---
 
+## Courses
+
+```markdown
+---
+title: A first web page
+level: beginner
+nav: left · accordion · sticky
+---
+- Module 1: How the web works
+  - [What a browser does](01-web/browser.md)
+  - [From address to pixels](01-web/journey.md)
+  - [A page loads](01-web/page-load.mp4)
+- Module 2: Writing HTML
+  - [Build your first page](02-html/first-page.md)
+  - [Check yourself](02-html/quiz.md)
+```
+
+- Readings, slides, videos, labs, instructor demos and quizzes, in modules
+- `si build course/ -o html/`: a website bundle with a home page; `--zip`, `--instructor`
+- Progress stays in the learner's browser: ticks, rings, Continue, a certificate
+
+Notes: (1 min)
+A course is what si already makes, put in order. The list in the course file
+holds the modules, and each link under a module is a lesson: a page is a
+reading, a deck becomes slides that present themselves, a video file plays
+in the page, a lab can be ticked off, and a quiz is scored. The learner's
+build leaves the instructor demos out, and the instructor's build keeps them
+with the teleprompter and the lab solutions. [CLICK]
+
+Points:
+- Lesson kinds come from the link target; `· kind=` overrides
+- `nav:` also places the menu of guides, books and sites: left, right, top, bottom
+- `si new web-course --type course` writes an example with every kind
+- RULES.md §28
+
+---
+
 ## The CLI
 
 ```bash
@@ -468,7 +505,8 @@ si demo test shop.md       # run a web demo script against a web app as a test (
 si demo run shop.md        # the same, filmed and narrated: shop.mp4 with chapters; --with captions,subtitles,clips,report,… for more
 si doctor                  # the optional programs (Chrome, ffmpeg, git…): found or not, how to install each
 si new <name>              # scaffold a deck (the showcase, every rule)
-si new <name> --type article   # a small starter: deck, article, guide, book, site, page, lab, demo, mindmap, mindmap3d, codeshow
+si new <name> --type article   # a small starter: deck, article, guide, book, course, site, page, lab, demo, mindmap, mindmap3d, codeshow
+si build course/ -o html/ --zip   # a course as a website bundle (+ zip); --instructor for the instructor's edition
 si new <name> --type website --kind resume   # a website made for one job: resume, portfolio, landing
 si publish talk.md --to linkedin   # a dry run of the post; --yes sends it (also devto, hashnode, ghost, wordpress)
 si code show.md --mp4      # a code show as video (si build map.md --mp4: a mind map's Play; needs ffmpeg)

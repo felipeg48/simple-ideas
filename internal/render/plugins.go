@@ -24,7 +24,7 @@ import (
 //	<!-- embed: … -->             see embed.go
 
 // Plugins are the plugin directive names (documents only).
-var Plugins = []string{"alert", "badge", "logo", "qr", "poll", "cloud", "accordion", "modal", "end", "carousel", "event", "embed"}
+var Plugins = []string{"alert", "badge", "logo", "qr", "poll", "cloud", "accordion", "modal", "solution", "end", "carousel", "event", "embed"}
 
 // pluginKinds are the looks of an alert or a badge.
 var pluginKinds = map[string]bool{"info": true, "ok": true, "warn": true, "crit": true}
@@ -241,8 +241,33 @@ func (dr *deckRenderer) plugins(doc ast.Node, src []byte, s *deck.Slide, sc *sli
 			}
 			doc.ReplaceChild(doc, c, dlg)
 			next = k
+		case "solution": // a lab's answer: folded behind a button for learners, open in an instructor build
+			sol := &divNode{tag: "details", class: "si-solution", open: "<summary>Show the solution</summary>\n"}
+			if dr.opt.Instructor {
+				sol.attrs = [][2]string{{"open", ""}}
+			}
+			closed := false
+			k := next
+			for k != nil {
+				kn := k.NextSibling()
+				if kh, ok := k.(*ast.HTMLBlock); ok {
+					if n, _, ok := deck.ParseDirective(blockText(kh, src)); ok && n == "end" {
+						doc.RemoveChild(doc, k)
+						closed, k = true, kn
+						break
+					}
+				}
+				doc.RemoveChild(doc, k)
+				sol.AppendChild(sol, k)
+				k = kn
+			}
+			if !closed {
+				dr.problem(sc, "solution: no <!-- end --> after it")
+			}
+			doc.ReplaceChild(doc, c, sol)
+			next = k
 		case "end":
-			dr.problem(sc, "end: without a <!-- modal: … --> before it")
+			dr.problem(sc, "end: without a <!-- modal: … --> or <!-- solution --> before it")
 			doc.RemoveChild(doc, c)
 		case "carousel":
 			_, opts, _ := pluginParts("·" + strings.ReplaceAll(val, " ", "·"))

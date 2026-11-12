@@ -38,6 +38,7 @@ type Server struct {
 	Title       string           // --title / --site: the index page title; empty uses the directory name
 	Interval    time.Duration
 	Autoplay    bool           // --autoplay: decks open with the Auto-play bar ready
+	Instructor  bool           // a course renders for the instructor (si play; si serve --instructor), else the learner
 	Voicer      webdemo.Voicer // auto-play voices (voice.go); nil: the voice programs, through the cache
 
 	dir     string
@@ -121,6 +122,7 @@ func (s *Server) Handler() http.Handler {
 			http.Redirect(w, r, "/"+strings.TrimSuffix(filepath.Base(s.file), ".md")+".html", http.StatusFound)
 		case p == "/" && s.source("/index") != "":
 			http.Redirect(w, r, "/index.html", http.StatusFound) // a site's (or folder's) own index.md is the home page
+		case p == "/index.html" && s.source("/index") == "" && s.bookPage(w, p): // a course home, a book cover
 		case p == "/" || (p == "/index.html" && s.source("/index") == ""):
 			if g, err := deck.LoadGuide(s.dir); err == nil && len(g.Pages) > 0 {
 				http.Redirect(w, r, "/"+guideHome(g), http.StatusFound) // serving a guide folder: open its first page
@@ -178,7 +180,7 @@ func (s *Server) deckPage(w http.ResponseWriter, md string, term, audience bool)
 	if v, ok := cfg.Features["terminal"]; ok && !v {
 		termOn = false
 	}
-	opt := render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Remote: s.Remote, RemoteQR: s.RemoteQR, Pages: s.pages(cfg), NoSpeakerText: audience, VoiceServer: !audience, Autoplay: s.Autoplay && !audience}
+	opt := render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Remote: s.Remote, RemoteQR: s.RemoteQR, Pages: s.pages(cfg), NoSpeakerText: audience, VoiceServer: !audience, Autoplay: s.Autoplay && !audience, Instructor: s.Instructor && !audience}
 	if g := deck.FindGuide(md, s.dir); g != nil && g.Item(md) != nil { // a guide or book renders as a whole (numbering, search across pages)
 		s.writeBookPage(w, g, opt, filepath.Join(filepath.Dir(md), strings.TrimSuffix(filepath.Base(md), filepath.Ext(md))+".html"))
 		return
@@ -202,16 +204,17 @@ func fileExists(p string) bool { _, err := os.Stat(p); return err == nil }
 // bookPage serves a book's generated page at URL path p, if p is one.
 func (s *Server) bookPage(w http.ResponseWriter, p string) bool {
 	name := path.Base(p)
-	if name != "index.html" && name != "contents.html" && name != "book-index.html" && name != "book.html" {
-		return false
-	}
 	file := filepath.Join(s.dir, filepath.FromSlash(p))
 	g := deck.FindGuide(file, s.dir)
-	if g == nil || !g.IsBook() || filepath.Dir(file) != g.Dir {
+	switch {
+	case g != nil && g.IsCourse(): // the home, the completion page, a video lesson
+	case name != "index.html" && name != "contents.html" && name != "book-index.html" && name != "book.html":
+		return false
+	case g == nil || !g.IsBook() || filepath.Dir(file) != g.Dir:
 		return false
 	}
 	cfg := config.Load(s.Conf, filepath.Join(s.dir, "si.conf"))
-	opt := render.Options{LiveReload: true, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg}
+	opt := render.Options{LiveReload: true, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Instructor: s.Instructor}
 	s.writeBookPage(w, g, opt, file)
 	return true
 }
@@ -249,7 +252,7 @@ func (s *Server) source(stem string) string {
 
 // guideHome is the first page of a guide, relative to its folder.
 func guideHome(g *deck.Guide) string {
-	if g.IsBook() {
+	if g.IsBook() || g.IsCourse() {
 		return "index.html" // the cover
 	}
 	r, _ := filepath.Rel(g.Dir, g.Pages[0])
@@ -416,6 +419,8 @@ func guideKind(g *deck.Guide) string {
 		return "book"
 	case g.IsSite():
 		return "site"
+	case g.IsCourse():
+		return "course"
 	}
 	return "guide"
 }

@@ -31,6 +31,11 @@ func Document(d *deck.Deck, opt Options) Result {
 	var toc []tocEntry
 	sl, title := newSlugger(), html.UnescapeString(plain(dr.inline(d.Title())))
 	for _, s := range d.Slides { // one part per run of lines of one file
+		if d.Meta.Type == "quiz" {
+			q := *s
+			q.Body = quizPage(s.Body, d.Meta.Pass)
+			s = &q
+		}
 		h, t := dr.docBody(s, sl, &title)
 		body.WriteString(h)
 		toc = append(toc, t...)
@@ -305,6 +310,9 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	if dr.mindmap {
 		mmCSS = assets.MindmapCSS
 	}
+	if g != nil && g.IsCourse() {
+		mmCSS += assets.CourseCSS
+	}
 	b.WriteString(`<style id="si-css">` + "\n" + assets.LayerOrder + assets.DocCSS + dr.themeCSS + dr.accentCSS() + mmCSS + "</style>\n")
 	dr.codewinCSS(&b)
 	dr.userAndMode(&b, modeAttr)
@@ -318,6 +326,9 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	}
 	if g != nil {
 		bodyAttrs += fmt.Sprintf(` data-si-guide="%s" data-si-page="%s"`, html.EscapeString(guideRel(g, g.Pages[0])+"|"+g.Meta.Title), html.EscapeString(guideRel(g, d.Path)))
+		if g.IsCourse() {
+			bodyAttrs += ` data-si-course`
+		}
 	}
 	if wm := dr.watermark(nil); wm != "" { // labs, articles, guides, books, demos: one fixed layer, repeated on every printed page
 		var decls []string
@@ -381,7 +392,11 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 		tocHTML = t.String()
 	}
 
-	if g != nil && g.IsSite() {
+	if g != nil && g.IsCourse() {
+		var sb strings.Builder
+		dr.coursePage(&sb, body, lede)
+		b.WriteString(sb.String())
+	} else if g != nil && g.IsSite() {
 		var sb strings.Builder
 		dr.sitePage(&sb, body, lede, metaHTML, tocHTML)
 		b.WriteString(sb.String())
@@ -420,10 +435,11 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 		if !side {
 			layout = "book-page"
 		}
-		fmt.Fprintf(&b, "<div class=\"si-doc-layout\" data-layout=\"%s\">\n", layout)
+		layoutAttrs, navAttrs := dr.guideNavAttrs(g)
+		fmt.Fprintf(&b, "<div class=\"si-doc-layout\" data-layout=\"%s\"%s>\n", layout, layoutAttrs)
 		if side {
-			fmt.Fprintf(&b, "<nav class=\"si-doc-nav\" aria-label=\"%s\"><details open><summary>Contents <small class=\"si-doc-progress\"></small></summary>\n%s\n</details></nav>\n",
-				html.EscapeString(g.Meta.Title), navTree(g, d.Path, toc))
+			fmt.Fprintf(&b, "<nav class=\"si-doc-nav\" aria-label=\"%s\"%s><details open><summary>Contents <small class=\"si-doc-progress\"></small></summary>\n%s\n</details></nav>\n",
+				html.EscapeString(g.Meta.Title), navAttrs, navTree(g, d.Path, toc))
 		}
 		b.WriteString("<main class=\"si-doc-body\">\n" + guideCrumb(g, d.Path))
 		if dr.opt.Chapter != "" {
@@ -474,6 +490,9 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	dr.problemsBanner(&b, problems)
 	dr.mermaidScript(&b)
 	b.WriteString("<script>\n" + assets.DocJS + "</script>\n")
+	if g != nil && g.IsCourse() {
+		b.WriteString("<script>\n" + assets.CourseJS + "</script>\n")
+	}
 	if dr.mindmap {
 		b.WriteString(dr.mindmapScripts())
 	}
@@ -481,6 +500,42 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	dr.reload(&b)
 	b.WriteString("</body>\n</html>\n")
 	return b.Bytes()
+}
+
+// navValue is a navigator's nav: (from _nav.md, _site.md or _course.md),
+// else si.conf nav:.
+func (dr *deckRenderer) navValue(g *deck.Guide) deck.NavLayout {
+	v := g.Meta.Nav
+	if v == "" && dr.opt.Config != nil {
+		v = dr.opt.Config.Nav
+	}
+	n, err := deck.ParseNav(v)
+	if err != nil {
+		dr.problem(nil, "%v", err)
+	}
+	return n
+}
+
+// guideNavAttrs are the attributes nav: puts on a guide's (or book's) layout
+// (position, not sticky) and on its navigation (accordion, collapsed,
+// numbered); empty without nav:.
+func (dr *deckRenderer) guideNavAttrs(g *deck.Guide) (layout, nav string) {
+	n := dr.navValue(g)
+	if n.Pos != "" && n.Pos != "left" {
+		layout += ` data-nav="` + n.Pos + `"`
+	}
+	if n.StickySet && !n.Sticky {
+		layout += ` data-nav-static`
+	}
+	for _, f := range []struct {
+		on   bool
+		name string
+	}{{n.Accordion, "accordion"}, {n.Collapsed, "collapsed"}, {n.Numbered, "numbered"}} {
+		if f.on {
+			nav += " data-" + f.name
+		}
+	}
+	return layout, nav
 }
 
 func firstNonEmpty(v ...string) string {

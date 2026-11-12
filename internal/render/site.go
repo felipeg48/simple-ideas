@@ -42,6 +42,22 @@ func subHome(page, dir string) string {
 
 func (dr *deckRenderer) siteNav(g *deck.Guide, page string) string {
 	kind := g.Meta.Navigator
+	nl := dr.navValue(g)
+	if kind == "" { // nav: left/right is a sidebar, top/bottom a top bar
+		switch nl.Pos {
+		case "left", "right":
+			kind = "sidebar"
+		case "top", "bottom":
+			kind = "topbar"
+		}
+	}
+	extra := ""
+	if nl.Pos == "right" || nl.Pos == "bottom" {
+		extra += ` data-pos="` + nl.Pos + `"`
+	}
+	if nl.StickySet && !nl.Sticky {
+		extra += ` data-static`
+	}
 	switch kind {
 	case "", "topbar":
 		kind = "topbar"
@@ -124,10 +140,10 @@ func (dr *deckRenderer) siteNav(g *deck.Guide, page string) string {
 	cta := ctaLink(g.Meta.CTA, g.Dir, page)
 	tools := `<button type="button" class="si-doc-search" data-si-action="search" title="Search (/)" aria-label="Search">` + searchIconSVG + `<span>Search</span><kbd>/</kbd></button>` +
 		`<button type="button" class="si-doc-mode" data-si-action="mode" title="Light / dark (d)" aria-label="Light / dark">` + modeIconSVG + `</button>`
-	return fmt.Sprintf(`<header class="si-site-nav" data-nav="%s"><div class="si-site-in"><a class="si-site-logo" href="%s">%s</a>`+
+	return fmt.Sprintf(`<header class="si-site-nav" data-nav="%s"%s><div class="si-site-in"><a class="si-site-logo" href="%s">%s</a>`+
 		`<details class="si-site-menu"><summary>Menu</summary><nav class="si-site-links" aria-label="%s">%s</nav></details>`+
 		`<div class="si-site-tools">%s%s</div></div></header>`+"\n",
-		kind, html.EscapeString(siteHome(g, page)), logo, html.EscapeString(g.Meta.Title), menu.String(), cta, tools)
+		kind, extra, html.EscapeString(siteHome(g, page)), logo, html.EscapeString(g.Meta.Title), menu.String(), cta, tools)
 }
 
 func fileExists(p string) bool {

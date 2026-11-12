@@ -291,6 +291,64 @@
     if (curLink && curLink.scrollIntoView && nd && nd.open) curLink.scrollIntoView({ block: 'nearest' });
   }
 
+  /* ---------- guide nav: nav: accordion / collapsed fold the sections; the current page's stays open ---------- */
+  var gnav = document.querySelector('.si-doc-nav[data-accordion], .si-doc-nav[data-collapsed]');
+  if (gnav) {
+    var secs = gnav.querySelectorAll('li.si-nav-sec');
+    Array.prototype.forEach.call(secs, function (li) {
+      var head = li.querySelector(':scope > span');
+      if (!head) return;
+      head.setAttribute('role', 'button'); head.setAttribute('tabindex', '0');
+      var open = !!li.querySelector('a[aria-current="page"]');
+      li.classList.toggle('is-open', open); head.setAttribute('aria-expanded', String(open));
+      var flip = function () {
+        var to = !li.classList.contains('is-open');
+        if (gnav.hasAttribute('data-accordion')) Array.prototype.forEach.call(secs, function (o) { if (o !== li) { o.classList.remove('is-open'); var h = o.querySelector(':scope > span'); if (h) h.setAttribute('aria-expanded', 'false'); } });
+        li.classList.toggle('is-open', to); head.setAttribute('aria-expanded', String(to));
+      };
+      head.addEventListener('click', flip);
+      head.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
+    });
+  }
+
+  /* ---------- quizzes: check the answers, show why, score against the pass mark (deck.Score is the same rule) ---------- */
+  Array.prototype.forEach.call(document.querySelectorAll('form.si-quiz'), function (f) {
+    var pass = +f.getAttribute('data-pass') || 0;
+    var checkBtn = f.querySelector('.si-quiz-check'), again = f.querySelector('.si-quiz-again'), score = f.querySelector('.si-quiz-score');
+    var qs = f.querySelectorAll('.si-quiz-q');
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var missing = Array.prototype.filter.call(qs, function (q) { return !q.querySelector('input:checked'); }).length;
+      if (missing) { score.textContent = missing === 1 ? 'Answer the last question first.' : 'Answer every question first (' + missing + ' to go).'; return; }
+      var right = 0;
+      Array.prototype.forEach.call(qs, function (q) {
+        var good = true;
+        Array.prototype.forEach.call(q.querySelectorAll('input'), function (i) {
+          var ok = i.hasAttribute('data-ok'), l = i.closest('label');
+          if (ok !== i.checked) good = false;
+          l.classList.toggle('is-ok', ok); l.classList.toggle('is-wrong', i.checked && !ok);
+          i.disabled = true;
+        });
+        q.classList.toggle('is-right', good); q.classList.toggle('is-wrong', !good);
+        var why = q.querySelector('.si-quiz-why'); if (why) why.hidden = false;
+        if (good) right++;
+      });
+      var pct = qs.length ? Math.round(100 * right / qs.length) : 0, passed = pct >= pass;
+      score.textContent = right + ' of ' + qs.length + ' right, ' + pct + ' %' + (pass ? (passed ? '. Passed.' : '. The pass mark is ' + pass + ' %.') : '.');
+      f.classList.toggle('is-passed', passed); f.classList.toggle('is-failed', !passed);
+      checkBtn.hidden = true; again.hidden = false;
+      if (passed) {
+        f.setAttribute('data-passed', '');
+        try { document.dispatchEvent(new CustomEvent('si-quiz-pass', { detail: { score: pct } })); } catch (x) {}
+      }
+    });
+    again.addEventListener('click', function () {
+      Array.prototype.forEach.call(f.querySelectorAll('input'), function (i) { i.disabled = false; i.checked = false; var l = i.closest('label'); l.classList.remove('is-ok', 'is-wrong'); });
+      Array.prototype.forEach.call(qs, function (q) { q.classList.remove('is-right', 'is-wrong'); var why = q.querySelector('.si-quiz-why'); if (why) why.hidden = true; });
+      f.classList.remove('is-passed', 'is-failed'); score.textContent = ''; checkBtn.hidden = false; again.hidden = true;
+    });
+  });
+
   /* ---------- Mermaid (only when the lab has a mermaid fence and the script loaded) ---------- */
   var mermaidSrc = null;
   function cssVar(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }

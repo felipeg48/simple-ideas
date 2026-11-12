@@ -72,6 +72,22 @@ edit-url: https://github.com/acme/order-journey/edit/main/docs
   `out/<subfolder>/` and becomes one GUIDE tile on the index.
 - **`si serve <folder>`** serves decks, articles, guides and labs with live
   reload; a guide folder URL opens its first page.
+- **`nav:`** in `_nav.md` (or `nav:` in si.conf for every guide) places the
+  navigation: `left` (the default), `right`, `top` (a bar over the page whose
+  sections open as lists) or `bottom` (a bar docked at the foot of the window,
+  opening upwards); add `not-sticky` to let it scroll away, `accordion` (one
+  section open at a time; the current page's stays open) or `collapsed`
+  (every section closed but the current one), and `numbered`. A book takes
+  the same values; a `_site.md` takes the position and `not-sticky` (`left`
+  and `right` are a sidebar, `top` and `bottom` a top bar). Section 28 shows
+  every value.
+
+  ```markdown
+  ---
+  title: The order journey
+  nav: right · accordion · numbered
+  ---
+  ```
 
 Example: `si --export example --type guide` (or `--type all` for every kind
 side by side, then `si serve si-example`).

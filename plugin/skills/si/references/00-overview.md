@@ -44,3 +44,4 @@ this file; `examples/showcase.md` uses every rule in a real talk.
 25. [Code windows and code shows](#25-code-windows-and-code-shows)
 26. [Publishing](#26-publishing)
 27. [Web demos](#27-web-demos)
+28. [Courses](#28-courses)

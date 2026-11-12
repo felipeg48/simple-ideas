@@ -193,6 +193,8 @@ func (dr *deckRenderer) embedFolder(dir, path string, sc *slideCtx) string {
 		kind = "book"
 	} else if g.IsSite() {
 		kind = "site"
+	} else if g.IsCourse() {
+		kind = "course"
 	}
 	nums, _ := g.BookNumbers()
 	var items [][2]string
@@ -202,13 +204,15 @@ func (dr *deckRenderer) embedFolder(dir, path string, sc *slideCtx) string {
 		}
 	}
 	home := "index.html"
-	if !g.IsBook() && !fileExists(filepath.Join(g.Dir, "index.md")) {
+	if !g.IsBook() && !g.IsCourse() && !fileExists(filepath.Join(g.Dir, "index.md")) {
 		r, _ := filepath.Rel(g.Dir, g.Pages[0])
 		home = filepath.ToSlash(strings.TrimSuffix(r, filepath.Ext(r)) + ".html")
 	}
 	facts := []string{fmt.Sprintf("%d pages", len(g.Pages))}
 	if g.IsBook() {
 		facts = []string{fmt.Sprintf("%d chapters", len(nums))}
+	} else if g.IsCourse() {
+		facts = []string{fmt.Sprintf("%d modules", len(g.Items)), fmt.Sprintf("%d lessons", len(g.Pages))}
 	}
 	return embedCard(kind, g.Meta.Title, firstNonEmpty(g.Meta.Description, g.Meta.Subtitle), strings.TrimSuffix(path, "/")+"/"+home, facts, items)
 }
