@@ -22,7 +22,7 @@ What it does: every command and its options, one keystroke away.
 
 Say: Everything starts from one command. Ask it for help.
 - terminal "si" · window=mac theme=night backdrop=graphite
-- run "si --help | head -22" · wait
+- run "si --help | head -26" · wait
 - expect output "markdown in, animated fluid HTML slide decks out"
 
 Say: Play serves a deck with live reload. Build writes one HTML file you can share.

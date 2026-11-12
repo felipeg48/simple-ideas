@@ -71,6 +71,8 @@ jobs:
           go-version-file: go.mod
       - name: build si
         run: make build && echo "$PWD/bin" >> "$GITHUB_PATH"
+      - name: ffmpeg and a voice (webdemos.md films a short demo inside its test)
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg espeak-ng
       - name: si demo test docs/demos
         working-directory: docs/demos
         run: |
