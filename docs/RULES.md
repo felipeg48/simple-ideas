@@ -2971,7 +2971,9 @@ failing step ends that feature's clip there (in a run a step waits at most 3 s)
 and goes into the report; the other features still run.
 
 **One file by default:** `demo-out/<script>/<script>.mp4` (or `-o dir`), every
-feature after a title card (the feature and its `What it does:`), picture and
+feature after a title card (the feature and its `What it does:`, as written;
+a `` `code` `` span there shows in the accent colour, or `--si-code`, with no
+backticks, and `` \` `` is a literal backtick), picture and
 voice (H.264 + AAC, 30 fps), a chapter per feature embedded. The run still
 checks every step, prints ✓ / ✗ and exits 1 when one failed. Anything else is
 asked for with `--with`, a comma list that may repeat (`--with captions

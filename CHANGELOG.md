@@ -3,7 +3,7 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
-- **Unreleased:** demos and talks that set themselves up, from anywhere
+- **v3.1.0:** demos and talks that set themselves up, from anywhere
   (spec `docs/superpowers/specs/2026-11-12-demo-lifecycle.md`). Web demos:
   `start:`, `prepare:` (alias `step:`) run once, interleaved in the order
   written (`· within 5m` for a slow one); `setup:` may repeat (before each
@@ -32,7 +32,10 @@ binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
   terminal drawer), torn down on quit; `si build` never runs them; `si check`
   checks them. `within`, `timeout:` and other durations also take minutes
   (`5m`, `1m30s`). Examples: `examples/webdemo/morning.md`,
-  `examples/live/talk.md`.
+  `examples/live/talk.md`. Title cards render `` `code` `` spans in `What it
+  does:` and the feature name (accent colour or `--si-code`, mono font, no
+  visible backticks; `` \` `` and `\\` escape; issue #7).
+
 - **v3.0.1:** `si check` no longer reads a web demo's `transition:` as a
   deck's: `transition: fade 0.5s` or `wipe` in a demo script was an error
   ("unknown transition") with a warning that it had no effect. A deck keeps
