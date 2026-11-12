@@ -5,11 +5,30 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-12, end of day)
 
-**Released and live: v3.1.4** (CI, release, demo filming and docs-site
-green; si 3.1.4 installed with `make install </dev/null`; the plugin updated
-with `claude plugin marketplace update simple-ideas && claude plugin update
-si@simple-ideas`). Every section below marked "unreleased, worktree branch"
-is merged and released.
+**Released and live: v3.2.0, courses** (CI, release, demo filming and
+docs-site green; si 3.2.0 installed with `make install </dev/null`; update
+the plugin with `claude plugin marketplace update simple-ideas && claude
+plugin update si@simple-ideas`). Every section below marked "unreleased,
+worktree branch" is merged and released.
+
+### NEXT TASK (the founder's order for the next session)
+Finish courses, in this order, then release (minor: v3.3.0):
+1. **Phase 3** of `docs/superpowers/specs/2026-11-12-courses.md`:
+   `si build course/ --scorm` (SCORM 1.2 `imsmanifest.xml`, one SCO per
+   lesson or `--scorm=single`, cmi status/score/suspend data from the
+   localStorage progress in `web/course.js`, validated in tests) and
+   `--pdf` (learner workbook; `--instructor --pdf` instructor guide).
+2. **Phase 4**: `si publish login skilljar`, `si publish course/ --to
+   skilljar` (dry run unless `--yes`; check SkillJar's API docs first;
+   ids in `.si/publish/skilljar.json`; httptest fakes only; instructor
+   demos never published), in `internal/publish/`.
+3. **Studio "New…"** lists courses (`internal/studio/kinds.go`, the start
+   gallery).
+4. **Quiz answers**: keep them out of the page source where possible (e.g.
+   hashed answers checked in course.js; SCORM scores still reported) and
+   say plainly in RULES §28 that a quiz is a self-check, not a secure exam.
+Docs with each (RULES §28, manual, agent-rules + skill, FEATURES,
+CHANGELOG, README, docs site Courses page, HANDOFF, CLAUDE.md roadmap).
 
 ### Courses (v3.2.0, 2026-11-12)
 Phases 1 and 2 of `docs/superpowers/specs/2026-11-12-courses.md`, built to

@@ -270,7 +270,9 @@ pass. The steps that matter:
   `<!-- solution -->`; `internal/deck/course.go`, `quiz.go`,
   `internal/render/course.go`, `quiz.go`, `web/course.css`, `web/course.js`;
   RULES.md §28. Next: phase 3 (`--scorm` SCORM 1.2, `--pdf` workbook and
-  instructor guide), phase 4 (`si publish --to skilljar`).
+  instructor guide), phase 4 (`si publish --to skilljar`), the Studio
+  "New…" course entry, quiz answers out of the page source: the founder's
+  next task (HANDOFF "NEXT TASK").
 - **Auto-play** (DONE v2.40.0, spec `docs/superpowers/specs/2026-11-10-autoplay.md`):
   `v` / ▶ Auto-play reads `Notes:` aloud and advances at each `[CLICK]`
   (`deck.Parts`, `web/deck/05-autoplay.js`); `si play` voices parts at
