@@ -165,3 +165,21 @@ func TestDemoRemote(t *testing.T) {
 		t.Errorf("unpinned: %d %s", code, se.String())
 	}
 }
+
+// TestDeckRemote: si build takes a deck from a repo at a pin (and refuses
+// without a terminal and without --trust).
+func TestDeckRemote(t *testing.T) {
+	fakeHub(t, map[string]string{"talks/talk.md": "---\ntitle: From a repo\n---\n# From a repo\n\nIt came from GitHub.\n", "talks/img/x.txt": "x"})
+	out := t.TempDir()
+	var so, se bytes.Buffer
+	if code := run([]string{"build", "github:acme/demos@v1/talks/talk.md", "-o", out}, &so, &se); code != exitProblems || !strings.Contains(se.String(), "--trust") {
+		t.Fatalf("no --trust: %d %s", code, se.String())
+	}
+	se.Reset()
+	if code := run([]string{"build", "github:acme/demos@v1/talks/talk.md", "-o", out, "--trust"}, &so, &se); code != exitOK {
+		t.Fatalf("--trust: %d %s", code, se.String())
+	}
+	if b, err := os.ReadFile(filepath.Join(out, "talk.html")); err != nil || !strings.Contains(string(b), "It came from GitHub.") {
+		t.Errorf("built: %v", err)
+	}
+}
