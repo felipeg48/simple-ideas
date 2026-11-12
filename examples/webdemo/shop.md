@@ -41,13 +41,16 @@ Say: Order 4711 is still waiting for payment.
 - check "Gift wrap"
 - expect "Gift wrap" checked
 - expect text "Total: €54.90"
+- zoom to #total
 
 Say: Help is one question mark away.
+- zoom out
 - hover "Help"
 - expect "Questions? Call us on 555-0100." visible
 
 Say: Pay sits at the bottom, under the delivery promise.
 - scroll to [data-testid=pay]
+- spotlight [data-testid=pay] · label "One tap to pay"
 - click role=button "Pay"
 - expect "Confirm" disabled
 - type "4242 4242 4242 4242" into "Card number"

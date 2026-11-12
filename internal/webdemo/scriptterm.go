@@ -151,11 +151,11 @@ func termStep(st *Step, word, rest string) (*Step, error) {
 	bad := func(format string) (*Step, error) { return nil, fmt.Errorf(format, st.Text) }
 	switch word {
 	case "browser":
-		if rest != "" {
-			return bad("%q: browser takes nothing (it switches back to the app)")
+		if head != "" {
+			return bad("%q: browser takes nothing but a transition (it switches back to the app): browser · slide")
 		}
 		st.Kind = "browser"
-		return st, nil
+		return st, transClauses(st, parts[1:])
 	case "terminal":
 		name, tail, err := quoted(head)
 		if err != nil || name == "" || tail != "" {
@@ -163,6 +163,12 @@ func termStep(st *Step, word, rest string) (*Step, error) {
 		}
 		st.Kind, st.Name, st.Opts = "terminal", name, map[string]string{}
 		for _, c := range parts[1:] {
+			if !strings.Contains(c, "=") { // terminal "Client" · pop
+				if err := transClauses(st, []string{c}); err != nil {
+					return nil, err
+				}
+				continue
+			}
 			for c != "" {
 				k, v, ok := strings.Cut(c, "=")
 				if !ok {
@@ -310,7 +316,8 @@ func procState(st *Step, rest string) (bool, error) {
 
 // inBrowser are the steps that act on the app's page.
 var inBrowser = map[string]bool{"go": true, "click": true, "hover": true, "check": true, "uncheck": true, "scroll": true, "type": true, "select": true,
-	"waitfor": true, "expect-text": true, "expect-url": true, "expect-state": true, "expect-errors": true}
+	"waitfor": true, "expect-text": true, "expect-url": true, "expect-state": true, "expect-errors": true,
+	"zoom": true, "pan": true, "spotlight": true, "drag": true}
 
 // inTerminal are the steps that act on the current terminal.
 var inTerminal = map[string]bool{"run": true, "expect-output": true, "expect-no-output": true, "waitfor-output": true}
@@ -334,9 +341,9 @@ func (s *Script) checkScenes(f *Feature) {
 				s.problem(st.Line, "%q: app: none has no browser (a terminal-only demo)", st.Text)
 			case st.Kind == "terminal":
 				term = st.Name
-			case st.Kind == "browser":
+			case st.Kind == "browser" || st.Kind == "window":
 				term = ""
-			case inBrowser[st.Kind] && term != "":
+			case inBrowser[st.Kind] && term != "" && st.Opts["off"] == "":
 				s.problem(st.Line, "%q acts on the app, but terminal %q is in front: write - browser before it", st.Text, term)
 			case (inTerminal[st.Kind] && st.Name == "") || (st.Kind == "note" && st.AtLine):
 				if term == "" {

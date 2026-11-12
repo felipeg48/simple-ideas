@@ -31,13 +31,18 @@ type frame struct {
 // sequence links frames into a 30 fps image sequence (seq00000.jpg …) of the
 // d seconds of the take as the video plays them (fs: the stretches played
 // faster): output frame k shows the last frame that came at or before the
-// take time it maps to. It returns the ffmpeg input pattern and the number of
-// frames.
-func sequence(frames []frame, d float64, fs []fast, dir string) (string, int, error) {
+// take time it maps to. fx (nil: none) adds the take's transitions and camera
+// moves (effects.go); a w×h frame. It returns the ffmpeg input pattern and the
+// number of frames.
+func sequence(frames []frame, d float64, fs []fast, dir string, fx *effects, w, h int) (string, int, error) {
 	if len(frames) == 0 {
 		return "", 0, fmt.Errorf("no frames were filmed")
 	}
 	sort.SliceStable(frames, func(i, j int) bool { return frames[i].At < frames[j].At })
+	if !fx.none() {
+		shots := plan(frames, d, fs, fx, w, h)
+		return filepath.Join(dir, "seq%05d.jpg"), len(shots), drawShots(frames, shots, fx.view, dir)
+	}
 	n := max(1, int(outT(fs, d)*fps+.5))
 	j := 0
 	for k := 0; k < n; k++ {
@@ -261,8 +266,13 @@ type part struct {
 // allArgs join the parts, each clip after its card (silent), into one video
 // with the chapters in meta. Every card and clip is fitted into the tw×th
 // frame (region clips are smaller: they are centered, letterboxed) so concat
-// sees one size.
-func allArgs(parts []part, tw, th int, meta, out string) []string {
+// sees one size. A transition other than cut overlaps each card and clip with
+// the next (xfade): the outgoing one is held tr.Dur longer, so every part
+// starts where it did with cuts and the chapters keep their times.
+func allArgs(parts []part, tw, th int, tr Transition, meta, out string) []string {
+	if tr.Kind != "cut" && tr.Dur > 0 {
+		return xfadeArgs(parts, tw, th, tr, meta, out)
+	}
 	tw, th = tw&^1, th&^1
 	fit := fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,format=yuv420p", tw, th, tw, th)
 	a := ff()
@@ -280,6 +290,53 @@ func allArgs(parts []part, tw, th int, meta, out string) []string {
 	fmt.Fprintf(&g, "%sconcat=n=%d:v=1:a=1[v][a]", cat.String(), 2*len(parts))
 	a = append(a, "-i", meta, "-filter_complex", g.String(), "-map", "[v]", "-map", "[a]", "-map_metadata", fmt.Sprint(in), "-map_chapters", fmt.Sprint(in))
 	a = append(a, h264[:6]...) // codec, preset, crf
+	return append(append(a, aac...), "-r", fmt.Sprint(fps), "-movflags", "+faststart", out)
+}
+
+// xfadeNames are the xfade transitions for si's names (pop has none: a fade).
+var xfadeNames = map[string]string{"fade": "fade", "pop": "fade", "zoom": "zoomin", "circle": "circleopen",
+	"slide-left": "slideleft", "slide-right": "slideright", "slide-up": "slideup", "slide-down": "slidedown",
+	"wipe-left": "wipeleft", "wipe-right": "wiperight", "wipe-up": "wipeup", "wipe-down": "wipedown"}
+
+// xfadeArgs is allArgs with transitions: card, clip, card, clip … each
+// (but the last) held tr.Dur longer and blended into the next at the time
+// it would have ended; the sound is concatenated as with cuts.
+func xfadeArgs(parts []part, tw, th int, tr Transition, meta, out string) []string {
+	tw, th = tw&^1, th&^1
+	fit := fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,format=yuv420p", tw, th, tw, th)
+	name := xfadeNames[tr.Kind]
+	if name == "" {
+		name = "fade"
+	}
+	a := ff()
+	var g, cat strings.Builder
+	in := 0
+	var segs []string // the video segments in order
+	var lens []float64
+	for i, p := range parts {
+		clipLen := float64(max(1, int(p.Seconds*fps+.5))) / fps
+		a = append(a, "-loop", "1", "-framerate", fmt.Sprint(fps), "-t", fmt.Sprintf("%.3f", cardSeconds+tr.Dur), "-i", p.Card,
+			"-f", "lavfi", "-t", fmt.Sprint(cardSeconds), "-i", "anullsrc=r=48000:cl=stereo", "-i", p.Clip)
+		fmt.Fprintf(&g, "[%d:v]%s,fps=%d,settb=1/%d[cv%d];[%d:a]aformat=sample_rates=48000:channel_layouts=stereo[ca%d];", in, fit, fps, fps, i, in+1, i)
+		pad := ""
+		if i < len(parts)-1 {
+			pad = fmt.Sprintf(",tpad=stop_mode=clone:stop_duration=%.3f", tr.Dur)
+		}
+		fmt.Fprintf(&g, "[%d:v]%s,fps=%d%s,settb=1/%d[fv%d];[%d:a]aresample=48000,aformat=sample_rates=48000:channel_layouts=stereo[fa%d];", in+2, fit, fps, pad, fps, i, in+2, i)
+		fmt.Fprintf(&cat, "[ca%d][fa%d]", i, i)
+		segs = append(segs, fmt.Sprintf("cv%d", i), fmt.Sprintf("fv%d", i))
+		lens = append(lens, cardSeconds, clipLen)
+		in += 3
+	}
+	last, t := segs[0], 0.0
+	for k := 1; k < len(segs); k++ {
+		t += lens[k-1]
+		fmt.Fprintf(&g, "[%s][%s]xfade=transition=%s:duration=%.3f:offset=%.3f[x%d];", last, segs[k], name, tr.Dur, t, k)
+		last = fmt.Sprintf("x%d", k)
+	}
+	fmt.Fprintf(&g, "[%s]null[v];%sconcat=n=%d:v=0:a=1[a]", last, cat.String(), 2*len(parts))
+	a = append(a, "-i", meta, "-filter_complex", g.String(), "-map", "[v]", "-map", "[a]", "-map_metadata", fmt.Sprint(in), "-map_chapters", fmt.Sprint(in))
+	a = append(a, h264[:6]...)
 	return append(append(a, aac...), "-r", fmt.Sprint(fps), "-movflags", "+faststart", out)
 }
 

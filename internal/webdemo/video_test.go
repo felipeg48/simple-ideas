@@ -139,7 +139,7 @@ func TestFastForward(t *testing.T) {
 	a, b := filepath.Join(dir, "a.jpg"), filepath.Join(dir, "b.jpg")
 	os.WriteFile(a, []byte("a"), 0o644)
 	os.WriteFile(b, []byte("b"), 0o644)
-	_, n, err := sequence([]frame{{a, 0}, {b, 39.5}}, 41, fs, dir)
+	_, n, err := sequence([]frame{{a, 0}, {b, 39.5}}, 41, fs, dir, nil, 0, 0)
 	if err != nil || n != int(outT(fs, 41)*fps+.5) {
 		t.Fatalf("sequence: %d %v", n, err)
 	}
@@ -217,7 +217,7 @@ func TestFFmpegArgs(t *testing.T) {
 	if !strings.Contains(a, "-i v.mp4 -i v.wav -map 0:v -map 1:a -c:v copy -c:a aac") || !strings.Contains(a, "-shortest") {
 		t.Errorf("mux: %s", a)
 	}
-	a = strings.Join(allArgs([]part{{Name: "A", Card: "a.png", Clip: "a.mp4", Seconds: 2}, {Name: "B", Card: "b.png", Clip: "b.mp4", Seconds: 3}}, 1440, 900, "m.txt", "all.mp4"), " ")
+	a = strings.Join(allArgs([]part{{Name: "A", Card: "a.png", Clip: "a.mp4", Seconds: 2}, {Name: "B", Card: "b.png", Clip: "b.mp4", Seconds: 3}}, 1440, 900, Transition{Kind: "cut"}, "m.txt", "all.mp4"), " ")
 	for _, w := range []string{"-loop 1 -framerate 30 -t 3 -i a.png -f lavfi -t 3 -i anullsrc=r=48000:cl=stereo -i a.mp4",
 		"-i b.mp4 -i m.txt -filter_complex", "[cv0][ca0][fv0][fa0][cv1][ca1][fv1][fa1]concat=n=4:v=1:a=1[v][a]", "-map_metadata 6 -map_chapters 6", "-c:v libx264"} {
 		if !strings.Contains(a, w) {

@@ -35,6 +35,8 @@ type Script struct {
 	Style     string        // voice-style: a tone for engines that take one (openai)
 	With      string        // with: what si demo run writes besides <script>.mp4 (WithNames), as written
 	Region    string        // region: a CSS selector the clips crop to (a feature's Region: overrides)
+	Zoom      bool          // region: … · zoom: the clips open on the whole page and zoom into the region
+	Trans     *Transition   // transition: the cut between scenes (nil = the default, fade 0.4s)
 	Pronounce []Pronounce   // pronounce: word = how to say it
 	Features  []*Feature
 	Problems  []Problem // the script cannot run
@@ -46,6 +48,7 @@ type Feature struct {
 	Name   string
 	What   string // `What it does:`
 	Region string // `Region:` a CSS selector this feature's clip crops to ("" = the script's region, else whole page)
+	Zoom   bool   // Region: … · zoom: the clip zooms into the region instead of starting cropped
 	Line   int
 	Blocks []*Block
 }
@@ -111,7 +114,19 @@ type Step struct {
 	Block  bool              // run … · wait, stop NAME · wait
 	Within time.Duration     // · within 30s
 	Ready  Ready             // start …: what to wait for before going on
-	Code   int               // expect NAME exited N; run … · exit N (-1: · fails, any non-zero)
+	Code   int               // expect NAME exited N; run … · exit N (-1: · fails, any non-zero); window N
+
+	Trans *Transition   // go, browser, terminal, window: … · slide 0.6s (nil = the script's)
+	Dur   time.Duration // zoom to, pan to, zoom out: … · 0.8s (0 = 0.8s)
+	Drag  *Drag         // drag from … to …, drag by DX,DY
+}
+
+// Drag is where a drag starts and ends: elements, or points in CSS pixels;
+// By moves from where the cursor is.
+type Drag struct {
+	From, To     Locator
+	FromXY, ToXY *[2]float64
+	By           *[2]float64
 }
 
 // Problem is an error or warning at a line of the script.
@@ -137,7 +152,7 @@ var Viewports = map[string][2]int{"phone": {400, 800}, "tablet": {820, 1180}, "d
 
 // StepWords are the step names, for messages and docs.
 var StepWords = []string{"go", "click", "type", "press", "select", "check", "uncheck", "hover", "scroll to", "wait", "wait for", "note", "expect", "screenshot",
-	"terminal", "run", "browser", "start", "stop"}
+	"terminal", "run", "browser", "start", "stop", "window", "drag", "zoom to", "pan to", "zoom out", "spotlight", "focus"}
 
 // IsWebDemo reports whether a Markdown or AsciiDoc source is a web demo:
 // `type: demo` with an `app:` in its front matter.
@@ -225,7 +240,15 @@ func (s *Script) warn(line int, format string, a ...any) {
 // settings applies the front matter (line: where to report a bad value).
 func (s *Script) settings(fm map[string]string, line func(string) int) {
 	s.Title, s.App, s.Setup, s.Voice, s.Viewport, s.Style = fm["title"], fm["app"], fm["setup"], fm["voice"], fm["viewport"], fm["voice-style"]
-	s.Stop, s.Shell, s.With, s.Region = fm["stop"], fm["shell"], fm["with"], fm["region"]
+	s.Stop, s.Shell, s.With = fm["stop"], fm["shell"], fm["with"]
+	s.Region, s.Zoom = regionValue(fm["region"])
+	if v := fm["transition"]; v != "" {
+		if t, err := ParseTransition(v); err != nil {
+			s.problem(line("transition"), "%v", err)
+		} else {
+			s.Trans = &t
+		}
+	}
 	if err := new(With).Add(s.With); err != nil {
 		s.problem(line("with"), "%v", err)
 	}
@@ -368,7 +391,8 @@ func Parse(path, src string) *Script {
 					s.problem(no, "Region: belongs to a feature (a ## heading above it)")
 					continue
 				}
-				f.Region, text = strings.Trim(strings.TrimSpace(m[2]), `"'`), ""
+				f.Region, f.Zoom = regionValue(m[2])
+				text = ""
 			case "Say":
 				if f == nil {
 					s.problem(no, "Say: belongs to a feature (a ## heading above it)")
@@ -441,10 +465,22 @@ func ParseStep(line string) (*Step, error) {
 	bad := func(format string) error { return fmt.Errorf(format, st.Text) }
 	switch word {
 	case "go":
-		if rest == "" {
+		parts := clauses(rest)
+		if parts[0] == "" {
 			return nil, bad("%q: go needs a path (/login) or a URL")
 		}
-		st.Kind, st.Value.Text = "go", unquote(rest)
+		st.Kind, st.Value.Text = "go", unquote(parts[0])
+		if err := transClauses(st, parts[1:]); err != nil {
+			return nil, err
+		}
+	case "window":
+		return windowStep(st, rest)
+	case "drag":
+		return dragStep(st, rest)
+	case "zoom", "pan":
+		return cameraStep(st, word, rest)
+	case "spotlight", "focus":
+		return spotStep(st, rest)
 	case "click", "hover", "check", "uncheck":
 		st.Kind = word
 		if st.Target, rest, err = locator(rest); err != nil || rest != "" {
@@ -751,7 +787,7 @@ func namedKey(p string) (keyDef, bool) {
 // blocks of steps written as in Markdown.
 type jsonScript struct {
 	Type, Title, App, Viewport, Timeout, Setup, Voice string
-	Stop, Shell, With, Region                         string
+	Stop, Shell, With, Region, Transition             string
 	Style                                             string   `json:"voice-style"`
 	Pronounce                                         []string `json:"pronounce"`
 	Start                                             []string `json:"start"`
@@ -784,7 +820,7 @@ func ParseJSON(path string, raw []byte) (*Script, error) {
 		}
 		return 0
 	}
-	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "setup": j.Setup, "voice": j.Voice, "voice-style": j.Style, "stop": j.Stop, "shell": j.Shell, "with": j.With, "region": j.Region}
+	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "setup": j.Setup, "voice": j.Voice, "voice-style": j.Style, "stop": j.Stop, "shell": j.Shell, "with": j.With, "region": j.Region, "transition": j.Transition}
 	s.settings(fm, func(key string) int {
 		if k := strings.Index(src, `"`+key+`"`); k >= 0 {
 			return strings.Count(src[:k], "\n") + 1
@@ -799,7 +835,8 @@ func ParseJSON(path string, raw []byte) (*Script, error) {
 	}
 	pos = 0
 	for _, jf := range j.Features {
-		f := &Feature{Name: jf.Name, What: jf.What, Region: strings.Trim(strings.TrimSpace(jf.Region), `"'`), Line: lineOf(jf.Name)}
+		f := &Feature{Name: jf.Name, What: jf.What, Line: lineOf(jf.Name)}
+		f.Region, f.Zoom = regionValue(jf.Region)
 		s.Features = append(s.Features, f)
 		for _, jb := range jf.Blocks {
 			b := &Block{Say: jb.Say}

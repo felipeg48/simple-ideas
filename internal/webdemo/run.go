@@ -48,6 +48,10 @@ type Options struct {
 	// region: override. "" both = the whole page (the default)
 	Region string
 	Crop   string
+
+	// Transition is the cut at scene changes and between features
+	// (--transition; nil: the script's transition:, else fade 0.4s)
+	Transition *Transition
 }
 
 // failure is a step that did not pass: what it expected, what it found, the
@@ -80,6 +84,15 @@ type runner struct {
 	stems      map[string]bool // the file stems of the clips so far (run)
 	lines      map[*Block]Line // each Say: line voiced (run)
 	timeout    time.Duration   // how long a step waits for its element
+	tr         Transition      // the transition of the step running (run)
+	mx, my     float64         // where the last mouse event went
+	moused     bool
+
+	// windows the app opened (window steps)
+	appTarget   string
+	termTargets map[string]bool
+	wins        []string          // their target ids, in the order seen
+	winSess     map[string]string // target id -> session
 
 	// terminals and background programs (runterm.go)
 	ctx      string // the feature's browser context
@@ -517,9 +530,11 @@ func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
 	r.mu.Lock()
 	r.errs, r.reqs, r.urls, r.loading, r.inner = nil, nil, map[string]string{}, 0, map[string]bool{}
 	r.mu.Unlock()
-	if _, err := r.c.OpenPage(ctx.BrowserContextID, r.s.W, r.s.H); err != nil {
+	tid, err := r.c.OpenPage(ctx.BrowserContextID, r.s.W, r.s.H)
+	if err != nil {
 		return fail(StepResult{Text: "open a page", Status: "failed", Found: err.Error()})
 	}
+	r.appTarget, r.termTargets, r.wins, r.winSess, r.moused = tid, map[string]bool{}, nil, map[string]string{}, false
 	r.mu.Lock()
 	r.session = r.c.Session
 	r.mu.Unlock()
@@ -568,6 +583,7 @@ func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
 				r.pace(i, len(b.Steps))
 			}
 			t := time.Now()
+			r.tr = r.transition(st)
 			shot, err := r.step(st)
 			sr.Seconds = time.Since(t).Seconds()
 			if r.tk != nil {
@@ -846,6 +862,7 @@ func (r *runner) element(l Locator, want string, act bool) (found, error) {
 }
 
 func (r *runner) mouse(typ string, x, y float64, extra map[string]any) error {
+	r.mx, r.my, r.moused = x, y, true
 	p := map[string]any{"type": typ, "x": x, "y": y}
 	for k, v := range extra {
 		p[k] = v
@@ -893,7 +910,34 @@ func (r *runner) step(st *Step) (string, error) {
 	}
 	switch st.Kind {
 	case "go":
-		return "", r.navigate(r.resolve(st.Value.Text))
+		done := r.cutting()
+		err := r.navigate(r.resolve(st.Value.Text))
+		done()
+		return "", err
+	case "window":
+		return "", r.window(st)
+	case "drag":
+		return "", r.drag(st)
+	case "zoom", "pan":
+		if _, err := r.element(st.Target, "any", false); err != nil {
+			return "", err
+		}
+		return "", r.cameraMove(st)
+	case "zoom-out":
+		return "", r.cameraMove(st)
+	case "spotlight":
+		if st.Opts["off"] != "" {
+			if r.tk != nil {
+				r.js(`__siDemo.unspot()`)
+				r.tk.spot = nil
+			}
+			return "", nil
+		}
+		if _, err := r.element(st.Target, "any", false); err != nil {
+			return "", err
+		}
+		r.spotlight(st)
+		return "", nil
 	case "click":
 		f, err := r.element(st.Target, "click", true)
 		if err != nil {

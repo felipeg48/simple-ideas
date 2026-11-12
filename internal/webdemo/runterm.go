@@ -147,9 +147,10 @@ func (r *runner) show(session string) error {
 		return nil
 	}
 	if r.tk != nil {
-		r.js(`window.__siDemo&&__siDemo.clearNotes()`)
-		r.tk.notes = nil
+		r.js(`window.__siDemo&&(__siDemo.clearNotes(),__siDemo.unspot())`)
+		r.tk.notes, r.tk.spot = nil, nil
 	}
+	done := r.cutting()
 	r.c.Session = session
 	r.c.Call("Page.bringToFront", nil, nil)
 	if r.tk == nil || !r.tk.on {
@@ -160,7 +161,9 @@ func (r *runner) show(session string) error {
 	r.film = session
 	r.mu.Unlock()
 	r.c.CallIn(old, "Page.stopScreencast", nil, nil)
-	return r.screencast()
+	err := r.screencast()
+	done()
+	return err
 }
 
 func (r *runner) screencast() error {
@@ -211,9 +214,11 @@ func (r *runner) terminal(st *Step) error {
 			return err
 		}
 		prev := r.c.Session
-		if _, err := r.c.OpenPage(r.ctx, r.s.W, r.s.H); err != nil {
+		tid, err := r.c.OpenPage(r.ctx, r.s.W, r.s.H)
+		if err != nil {
 			return err
 		}
+		r.termTargets[tid] = true
 		t.session = r.c.Session
 		err = r.loadTerm(t)
 		r.c.Session = prev
@@ -285,7 +290,11 @@ func (r *runner) browser() error {
 	r.cur = nil
 	if !r.home {
 		r.home = true
-		return r.navigate(r.start)
+		err := r.navigate(r.start)
+		if tk := r.tk; tk != nil && tk.on && len(tk.cuts) > 0 { // the old scene holds until the app has loaded
+			tk.cuts[len(tk.cuts)-1].To = time.Since(tk.t0).Seconds()
+		}
+		return err
 	}
 	return nil
 }

@@ -42,6 +42,9 @@ type take struct {
 	noted  time.Time // when the last note went up
 	spoken []span    // when the voice speaks
 	waits  []span    // the steps that wait (the video may fast-forward them)
+	cuts   []cutAt   // the scene changes (transitions are drawn at encode)
+	moves  []move    // the camera moves (drawn at encode)
+	spot   *liveNote // the spotlight on now (nil: none)
 }
 
 // waiting marks a step that waits (a command, a program, some output); call
@@ -99,6 +102,12 @@ font:600 15px/1.35 var(--si-font-body,system-ui,sans-serif);box-shadow:0 .5em 1.
 .note.free::before{display:none}
 @keyframes pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
 .ring{position:fixed;border:3px solid var(--si-accent,#2563eb);border-radius:calc(var(--si-radius,.55em) + 2px);box-shadow:0 0 0 4px color-mix(in srgb,var(--si-accent,#2563eb) 25%,transparent)}
+.spot{position:fixed;inset:0;background:color-mix(in srgb,var(--si-fg,#111) 60%,transparent);opacity:0;transition:opacity .4s ease}
+.spot.blurred{background:color-mix(in srgb,var(--si-fg,#111) 18%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.spot.on{opacity:1}
+.spot[hidden],.spot-ring[hidden],.spot-label[hidden]{display:none}
+.spot-ring{position:fixed;border:2px solid var(--si-accent,#2563eb);box-shadow:0 0 0 4px color-mix(in srgb,var(--si-accent,#2563eb) 30%,transparent)}
+.spot-label{animation:none}.spot-label::before{display:none}
 .blur{position:fixed;backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);background:color-mix(in srgb,var(--si-surface,#fff) 35%,transparent);border-radius:4px}
 `
 }
@@ -202,6 +211,9 @@ func (r *runner) claim() {
 	}
 	for _, n := range tk.notes {
 		r.showNote(n, true)
+	}
+	if tk.spot != nil {
+		r.showSpot(tk.spot, true)
 	}
 }
 
@@ -325,6 +337,10 @@ func (r *runner) endBlock() {
 	}
 	tk.notes = keep
 	r.expire()
+	if tk.spot != nil && tk.spot.until.IsZero() { // a spotlight ends with its Say: block
+		r.js(`__siDemo.unspot()`)
+		tk.spot = nil
+	}
 }
 
 // typeSlowly types text at a person's pace.
@@ -361,10 +377,8 @@ func pageHTML(body, style string) string {
 
 // cardHTML is a feature's title card: the script's title, the feature, what
 // it does.
+// What it does: keeps its casing as written ("si reads…" stays lowercase).
 func cardHTML(title, name, what string) string {
-	if r := []rune(what); len(r) > 0 {
-		what = strings.ToUpper(string(r[0])) + string(r[1:])
-	}
 	return pageHTML(`<main><p class="k">`+html.EscapeString(title)+`</p><h1>`+html.EscapeString(name)+`</h1>`+
 		map[bool]string{true: `<p class="w">` + html.EscapeString(what) + `</p>`, false: ""}[what != ""]+`</main>`,
 		`body{background:var(--si-bg);color:var(--si-fg);font-family:var(--si-font-body);display:grid;place-items:center;container-type:inline-size}
@@ -442,6 +456,14 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 	if err != nil {
 		return nil, err
 	}
+	fx := &effects{cuts: tk.cuts, moves: tk.moves, view: rect{0, 0, wd, ht}, scale: float64(wd) / float64(r.s.W)}
+	if crop != nil && r.regionZoom(f) { // the clip opens on the whole page and zooms into the region
+		b := box{X: float64(crop.X) / fx.scale, Y: float64(crop.Y) / fx.scale, W: float64(crop.W) / fx.scale, H: float64(crop.H) / fx.scale}
+		fx.moves = append([]move{{At: 1, Dur: 1, Kind: "zoom", B: b}}, fx.moves...)
+		crop = nil
+	} else if crop != nil {
+		fx.view = *crop // the camera frames the region: zoom out comes back to it
+	}
 	out := func(ext string) string { return filepath.Join(r.o.Out, stem+ext) }
 	cl := &clip{Name: stem, feature: f, Seconds: d, Voiced: len(tk.voice) > 0}
 	fs := fastForward(tk.waits, tk.spoken, r.o.FastForward.Seconds(), d)
@@ -497,7 +519,7 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 	if err != nil {
 		return nil, err
 	}
-	pattern, n, err := sequence(tk.frames, d, fs, seq)
+	pattern, n, err := sequence(tk.frames, d, fs, seq, fx, wd, ht)
 	if err != nil {
 		return nil, err
 	}
@@ -595,7 +617,7 @@ func (r *runner) joinAll(clips []*clip) error {
 		return err
 	}
 	defer os.Remove(meta)
-	if err := r.ffmpeg(allArgs(parts, r.s.W, r.s.H, meta, at(".mp4"))); err != nil {
+	if err := r.ffmpeg(allArgs(parts, r.s.W, r.s.H, r.transition(nil), meta, at(".mp4"))); err != nil {
 		return err
 	}
 	if w.Silent { // the picture alone: <script>.mp4 without its sound (chapters copied along)
@@ -609,7 +631,7 @@ func (r *runner) joinAll(clips []*clip) error {
 				parts[i].Clip = filepath.Join(r.o.Out, c.Name+".captions.mp4")
 			}
 		}
-		if err := r.ffmpeg(allArgs(parts, r.s.W, r.s.H, meta, at(".captions.mp4"))); err != nil {
+		if err := r.ffmpeg(allArgs(parts, r.s.W, r.s.H, r.transition(nil), meta, at(".captions.mp4"))); err != nil {
 			return err
 		}
 	}

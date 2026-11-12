@@ -125,13 +125,29 @@ func (r *runner) regionSpec(f *Feature) (sel, crop string) {
 	case f != nil && f.Region != "":
 		return f.Region, ""
 	case r.o.Region != "":
-		return r.o.Region, ""
+		sel, _ := regionValue(r.o.Region)
+		return sel, ""
 	case r.o.Crop != "":
 		return "", r.o.Crop
 	case r.s.Region != "":
 		return r.s.Region, ""
 	}
 	return "", ""
+}
+
+// regionZoom: feature f's region is written with · zoom (the clip zooms into
+// it instead of starting cropped).
+func (r *runner) regionZoom(f *Feature) bool {
+	switch {
+	case f != nil && f.Region != "":
+		return f.Zoom
+	case r.o.Region != "":
+		_, z := regionValue(r.o.Region)
+		return z
+	case r.o.Crop != "":
+		return false
+	}
+	return r.s.Zoom
 }
 
 // cropFor resolves feature f's region to a device-pixel rect against a
