@@ -3,7 +3,7 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
-- **Unreleased:** sites: a page with `unlisted: true` in its front matter is
+- **v2.40.2:** sites: a page with `unlisted: true` in its front matter is
   built and is a valid link target — the navigator `cta:`, `_footer.md` and
   links from other pages resolve in `si check` — but it stays out of the
   navigator menu. A page that is in no menu list and is not `unlisted:` is

@@ -91,6 +91,7 @@ inside the folder adds the line for you.
 | `navigator:` | `topbar` (logo left, menu, a button right), `topbar-centred`, `mega` (sections open as wide panels) or `sidebar` (a column on the left); on a phone every navigator folds into a **Menu** button |
 | `logo:` | your name, a picture, or both: `logo: brand/mark.svg Northwind` |
 | `cta:` | the highlighted button: `Label → page` or `→ https://…` |
+| `unlisted: true` | on a page: built and linkable (from `cta:`, the footer or another page) but kept out of the menu, like a "Talk to us" page a button opens |
 | `theme:` · `fonts:` | any theme, light and dark, and your own fonts |
 | `favicon:` · `og-image:` | the tab icon and the picture link previews show |
 | `footer:` | your footer, or a `_footer.md` with links |
