@@ -26,6 +26,10 @@ type Report struct {
 	Failed   int             `json:"failed"`
 	Skipped  int             `json:"skipped"`
 	Features []FeatureResult `json:"features"`
+	// si demo run: the whole run's video and every file it wrote, relative
+	// to the report folder
+	Video string   `json:"video,omitempty"`
+	Files []string `json:"files,omitempty"`
 }
 
 // FeatureResult is one feature's run.
@@ -163,7 +167,7 @@ a{color:var(--accent)}
 </style></head><body><main>
 <h1>{{.Title}}</h1>
 <div class="meta"><span>{{.Script}}</span><span>{{.App}}</span><span>{{.Viewport}}</span><span>{{.Chrome}}</span><span>si {{.SI}}</span><span>{{.Date}}</span></div>
-<div class="sum"><span class="pill passed">{{.Passed}} passed</span><span class="pill failed">{{.Failed}} failed</span>{{if .Skipped}}<span class="pill skipped">{{.Skipped}} skipped</span>{{end}}<span class="pill">{{secs .Seconds}}</span></div>
+<div class="sum"><span class="pill passed">{{.Passed}} passed</span><span class="pill failed">{{.Failed}} failed</span>{{if .Skipped}}<span class="pill skipped">{{.Skipped}} skipped</span>{{end}}<span class="pill">{{secs .Seconds}}</span>{{if .Video}}<a class="pill" href="{{.Video}}">▶ {{.Video}}</a>{{end}}</div>
 {{range .Views}}<section class="st-{{.Status}}">
 <header><h2>{{.Name}}</h2><span class="{{.Status}}">{{.Status}} · {{secs .Seconds}}{{if .Video}} · <a href="{{.Video}}">▶ {{.Video}}</a>{{end}}{{if .Captioned}} · <a href="{{.Captioned}}">with captions</a>{{end}}{{if .Silent}} · <a href="{{.Silent}}">picture only</a>{{end}}</span></header>
 {{if .What}}<p class="what">{{.What}}</p>{{end}}

@@ -396,14 +396,14 @@ func adocHeader(lines []string, out *[]string) int {
 				fm["author"] = a[2]
 			case "revdate", "date":
 				fm["date"] = a[2]
-			case "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "type", "app", "viewport", "timeout", "setup", "voice", "voice-style", "pronounce", "start", "stop", "shell":
+			case "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "type", "app", "viewport", "timeout", "setup", "voice", "voice-style", "pronounce", "start", "stop", "shell", "with":
 				fm[strings.ToLower(a[1])] = a[2]
 			}
 		}
 		i++
 	}
 	*out = append(*out, "---", "title: "+title)
-	for _, k := range []string{"author", "date", "type", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "app", "viewport", "timeout", "setup", "voice", "voice-style", "pronounce", "start", "stop", "shell"} {
+	for _, k := range []string{"author", "date", "type", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "app", "viewport", "timeout", "setup", "voice", "voice-style", "pronounce", "start", "stop", "shell", "with"} {
 		if v, ok := fm[k]; ok && v != "" {
 			*out = append(*out, k+": "+v)
 		}

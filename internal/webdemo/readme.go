@@ -4,35 +4,25 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 )
 
-// describe says what a file of the output folder is.
-func describe(name string) string {
+// describe says what a file of a run's output folder is (script: the
+// script's name, the stem of the whole run's files).
+func describe(name, script string) string {
 	switch name {
-	case "all.mp4":
-		return "every feature in one video: a title card each, chapters embedded"
-	case "all.video.mp4":
+	case script + ".mp4":
+		return "every feature in one video: picture and narration, a title card each, chapters embedded"
+	case script + ".silent.mp4":
 		return "every feature, the picture alone (no sound), chapters embedded"
-	case "all.captions.mp4":
+	case script + ".captions.mp4":
 		return "every feature with the narration and the captions under the picture, chapters embedded"
-	case "all.srt", "all.vtt":
-		return "captions of all.mp4, timed"
-	}
-	for _, k := range []struct{ suffix, what string }{
-		{".video.mp4", "the picture alone: no sound, no captions"},
-		{".captions.mp4", "picture, narration and the captions in a band under the picture"},
-		{".voice.m4a", "the narration alone (AAC)"},
-		{".voice.wav", "the narration alone (WAV), to edit or re-voice"},
-		{".srt", "captions of the narration, timed (SubRip)"},
-		{".vtt", "the same captions as WebVTT, for a web page's captions track"},
-	} {
-		if strings.HasSuffix(name, k.suffix) {
-			return k.what
-		}
-	}
-	switch name {
+	case script + ".m4a":
+		return "the narration of " + script + ".mp4 alone (AAC), on its clock"
+	case script + ".srt", script + ".vtt":
+		return "captions of " + script + ".mp4, timed"
+	case script + ".txt":
+		return "the transcript: what each feature says, as prose"
 	case "chapters.txt":
 		return "chapter lines for a YouTube description"
 	case "report.html":
@@ -44,33 +34,43 @@ func describe(name string) string {
 	case "shots":
 		return "the pictures of the report (screenshot steps, failures)"
 	}
-	if strings.HasSuffix(name, ".mp4") {
-		return "the feature: picture and narration (H.264 + AAC), no captions"
+	for _, k := range []struct{ suffix, what string }{
+		{".silent.mp4", "the feature, the picture alone: no sound, no captions"},
+		{".captions.mp4", "the feature: picture, narration and the captions in a band under the picture"},
+		{".m4a", "the feature's narration alone (AAC)"},
+		{".srt", "the feature's captions, timed (SubRip)"},
+		{".vtt", "the same captions as WebVTT, for a web page's captions track"},
+		{".log", "a start: program's output"},
+		{".mp4", "the feature: picture and narration (H.264 + AAC), no captions"},
+	} {
+		if strings.HasSuffix(name, k.suffix) {
+			return k.what
+		}
 	}
 	return ""
 }
 
-// Readme is README.md of an output folder: every file, each feature with its
-// video, the script, how it was made. how is the command that made it.
-func Readme(rep *Report, s *Script, dir, how string) string {
+// Readme is README.md of an output folder: the files the run made
+// (rep.Files), the whole run's video, each feature with its clip when there
+// are clips, the script, how it was made. how is the command that made it.
+func Readme(rep *Report, s *Script, how string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "---\ntype: article\ntitle: %q\n---\n\n# %s\n\n", rep.Title, rep.Title)
 	fmt.Fprintf(&b, "Made by `si demo run` from `%s`: %d feature(s), %d passed, %d failed.\n\n", rep.Script, len(rep.Features), rep.Passed, rep.Failed)
-	b.WriteString("## Files\n\n| File | What |\n|---|---|\n")
-	ents, _ := os.ReadDir(dir)
-	var names []string
-	for _, e := range ents {
-		if !strings.HasPrefix(e.Name(), ".") && describe(e.Name()) != "" {
-			names = append(names, e.Name())
-		}
+	has := map[string]bool{}
+	for _, f := range rep.Files {
+		has[f] = true
 	}
-	sort.Strings(names)
-	for _, n := range names {
+	if rep.Video != "" {
+		b.WriteString(video(rep.Video, has))
+	}
+	b.WriteString("## Files\n\n| File | What |\n|---|---|\n")
+	for _, n := range rep.Files {
 		link := n
 		if n == "shots" {
 			link = "shots/"
 		}
-		fmt.Fprintf(&b, "| [%s](%s) | %s |\n", n, link, describe(n))
+		fmt.Fprintf(&b, "| [%s](%s) | %s |\n", n, link, describe(n, s.Name))
 	}
 	b.WriteString("\n## Features\n\n")
 	for _, f := range rep.Features {
@@ -79,27 +79,18 @@ func Readme(rep *Report, s *Script, dir, how string) string {
 			fmt.Fprintf(&b, "%s\n\n", f.What)
 		}
 		fmt.Fprintf(&b, "%s in %.1fs.", strings.ToUpper(f.Status[:1])+f.Status[1:], f.Seconds)
-		if f.Video != "" {
-			stem := strings.TrimSuffix(f.Video, ".mp4")
-			has := func(ext string) bool { _, err := os.Stat(filepath.Join(dir, stem+ext)); return err == nil }
-			fmt.Fprintf(&b, " [%s](%s)", f.Video, f.Video)
-			if has(".captions.mp4") {
-				fmt.Fprintf(&b, " · [with captions](%s.captions.mp4)", stem)
-			}
-			if has(".video.mp4") {
-				fmt.Fprintf(&b, " · [picture only](%s.video.mp4)", stem)
-			}
-			track := ""
-			if has(".srt") {
-				fmt.Fprintf(&b, " · [captions](%s.srt) · [narration](%s.voice.m4a)", stem, stem)
-			}
-			if has(".vtt") {
-				track = fmt.Sprintf(`<track kind="captions" src="%s.vtt" srclang="en" label="Captions" default>`, stem)
-			}
-			fmt.Fprintf(&b, "\n\n<video controls preload=\"metadata\" src=\"%s\" style=\"width:100%%;height:auto\">%s</video>\n\n", f.Video, track)
-		} else {
+		if f.Video == "" {
 			b.WriteString("\n\n")
+			continue
 		}
+		stem := strings.TrimSuffix(f.Video, ".mp4")
+		fmt.Fprintf(&b, " [%s](%s)", f.Video, f.Video)
+		for _, k := range []struct{ ext, label string }{{".captions.mp4", "with captions"}, {".silent.mp4", "picture only"}, {".srt", "captions"}, {".m4a", "narration"}} {
+			if has[stem+k.ext] {
+				fmt.Fprintf(&b, " · [%s](%s%s)", k.label, stem, k.ext)
+			}
+		}
+		b.WriteString("\n\n" + video(f.Video, has))
 	}
 	if raw, err := os.ReadFile(s.Path); err == nil {
 		lang := strings.TrimPrefix(filepath.Ext(s.Path), ".")
@@ -115,4 +106,14 @@ func Readme(rep *Report, s *Script, dir, how string) string {
 	}
 	fmt.Fprintf(&b, "- App: %s, viewport %s\n- Browser: %s (headless, over the DevTools protocol)\n- Video: ffmpeg, 30 fps H.264, AAC\n- si %s, %s\n", rep.App, rep.Viewport, rep.Chrome, rep.SI, rep.Date)
 	return b.String()
+}
+
+// video is a <video> of name, with its .vtt as the captions track when it
+// was made.
+func video(name string, has map[string]bool) string {
+	track := ""
+	if vtt := strings.TrimSuffix(name, ".mp4") + ".vtt"; has[vtt] {
+		track = fmt.Sprintf(`<track kind="captions" src="%s" srclang="en" label="Captions" default>`, vtt)
+	}
+	return fmt.Sprintf("<video controls preload=\"metadata\" src=\"%s\" style=\"width:100%%;height:auto\">%s</video>\n\n", name, track)
 }

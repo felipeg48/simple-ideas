@@ -76,6 +76,10 @@ draw.hold: alt         # alt (⌥ Option), shift, ctrl, meta (⌘ Command), or o
 # voice.style: warm and unhurried   # a tone, for engines that take one (openai)
 # API keys never go here: si voice login elevenlabs|openai keeps them in your
 # own si.conf (si voice login prints where), which never goes to git
+# si demo run writes <script>.mp4 alone; more with --with, with: or this
+# (captions, silent, audio, subtitles, transcript, chapters, clips, report,
+# readme, all)
+# demo.with: subtitles, chapters
 
 feature.draw:      on
 feature.timer:     on
@@ -115,6 +119,7 @@ type Config struct {
 	SpeakersTurn             bool              // speakers.control: turn: only the speaker whose turn it is advances
 	Voice                    string            // voice: engine:name for si demo run and si voice say
 	VoiceStyle               string            // voice.style: a tone for engines that take one (openai)
+	DemoWith                 string            // demo.with: what si demo run writes besides <script>.mp4 (a comma list)
 	SpeakerVoices            map[string]string // voice.<Name>: one speaker's voice (auto-play of a talk with speakers:)
 	AutoplayDwell            float64           // autoplay.dwell: seconds on a slide with no Notes: (0 = 3)
 	ElevenLabsKey, OpenAIKey string            // voice.<engine>.key: kept from the user's si.conf only
@@ -317,6 +322,8 @@ func (c *Config) parse(r io.Reader) {
 			c.Voice = v
 		case k == "voice.style":
 			c.VoiceStyle = v
+		case k == "demo.with":
+			c.DemoWith = v
 		case k == "voice.elevenlabs.key":
 			c.ElevenLabsKey = v
 			c.secretLines = append(c.secretLines, fmt.Sprintf("line %d: %s", ln, k))

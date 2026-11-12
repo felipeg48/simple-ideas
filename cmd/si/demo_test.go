@@ -6,7 +6,57 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/felipeg48/simple-ideas/internal/webdemo"
 )
+
+func TestDemoWithFlags(t *testing.T) {
+	dir := t.TempDir()
+	ok := filepath.Join(dir, "ok.md")
+	os.WriteFile(ok, []byte("---\ntype: demo\napp: http://localhost:1\n---\n\n## A\n\n- go /\n"), 0o644)
+	for _, c := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"demo", "run", ok, "--with", "captions,subtitels"}, `si demo: --with "subtitels": use captions, silent, audio`},
+		{[]string{"demo", "run", ok, "--with", "captions", "--with", "nope"}, `--with "nope"`},
+		{[]string{"demo", "run", ok, "--no-captions"}, "--no-captions is gone: si demo run makes no captions unless asked (--with captions)"},
+		{[]string{"demo", "test", ok, "--with", "report"}, "--with and --captions are for si demo run"},
+	} {
+		var out, errb bytes.Buffer
+		if code := run(c.args, &out, &errb); code != exitUsage || !strings.Contains(errb.String(), c.want) {
+			t.Errorf("%q: exit %d, %s", c.args, code, errb.String())
+		}
+	}
+	var fm bytes.Buffer
+	bad := filepath.Join(dir, "bad.md")
+	os.WriteFile(bad, []byte("---\ntype: demo\napp: http://localhost:1\nwith: clips, reprot\n---\n\n## A\n\n- go /\n"), 0o644)
+	if code := run([]string{"check", bad}, &fm, &fm); code != exitProblems || !strings.Contains(fm.String(), `bad.md:4: with "reprot"`) {
+		t.Errorf("si check with: %d %s", code, fm.String())
+	}
+}
+
+func TestDemoWithPrecedence(t *testing.T) {
+	for _, c := range []struct {
+		flags       []string
+		front, conf string
+		want        webdemo.With
+		warn, err   string
+	}{
+		{nil, "", "", webdemo.With{}, "", ""},
+		{nil, "", "subtitles, chapters", webdemo.With{Subtitles: true, Chapters: true}, "", ""},
+		{nil, "captions", "subtitles", webdemo.With{Captions: true}, "", ""},
+		{[]string{"clips", "report"}, "captions", "subtitles", webdemo.With{Clips: true, Report: true}, "", ""},
+		{[]string{"captions"}, "", "", webdemo.With{Captions: true}, "", ""}, // --captions
+		{nil, "", "subtitles, nope", webdemo.With{}, `si.conf: demo.with "nope"`, ""},
+		{[]string{"nope"}, "", "", webdemo.With{}, "", `with "nope"`},
+	} {
+		w, warn, err := demoWith(c.flags, c.front, c.conf)
+		if w != c.want || !strings.HasPrefix(warn, c.warn) || (c.err == "") != (err == nil) || (err != nil && !strings.HasPrefix(err.Error(), c.err)) {
+			t.Errorf("%q %q %q: %+v %q %v", c.flags, c.front, c.conf, w, warn, err)
+		}
+	}
+}
 
 func TestDemoCommand(t *testing.T) {
 	var out, errb bytes.Buffer
@@ -14,7 +64,7 @@ func TestDemoCommand(t *testing.T) {
 		t.Errorf("si demo: exit %d", code)
 	}
 	errb.Reset()
-	if code := run([]string{"demo", "--help"}, &out, &errb); code != exitOK || !strings.Contains(out.String(), "si demo test") || !strings.Contains(out.String(), "--captions") {
+	if code := run([]string{"demo", "--help"}, &out, &errb); code != exitOK || !strings.Contains(out.String(), "si demo test") || !strings.Contains(out.String(), "--with") {
 		t.Errorf("si demo --help: %d %s", code, out.String())
 	}
 	out.Reset()

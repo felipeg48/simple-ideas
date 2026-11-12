@@ -13,7 +13,8 @@ import (
 // The demo videos of si itself (docs/demos, filmed by `si demo run` in the
 // demos workflow) on the site. A page asks for an area's videos with a
 // <!-- si-video: decks --> line; when $SI_DEMO_VIDEOS names a folder holding
-// <area>/all.mp4 (the run's output), the line becomes the whole video with
+// <area>/<area>.mp4 (the run of docs/demos/<area>.md, with clips, subtitles
+// and chapters), the line becomes the whole video with
 // captions and chapters, then each feature's clip, and the files are copied
 // into videos/<area>/. Without the videos (a local build) the line goes away.
 
@@ -52,11 +53,11 @@ func (v *videos) block(area, up string) (string, error) {
 	if v.dir == "" {
 		return "", nil
 	}
-	if _, err := os.Stat(filepath.Join(src, "all.mp4")); err != nil {
+	if _, err := os.Stat(filepath.Join(src, area+".mp4")); err != nil {
 		return "", nil
 	}
 	chs := readChapters(filepath.Join(src, "chapters.txt"))
-	files := []string{"all.mp4", "all.vtt"}
+	files := []string{area + ".mp4", area + ".vtt"}
 	for _, c := range chs {
 		s := slugOf(c.title)
 		files = append(files, s+".mp4", s+".vtt")
@@ -76,7 +77,7 @@ func (v *videos) block(area, up string) (string, error) {
 	base := up + "videos/" + area + "/"
 	var b strings.Builder
 	b.WriteString("<div class=\"demo-video\">\n")
-	fmt.Fprintf(&b, "<video controls preload=\"metadata\" playsinline src=\"%sall.mp4\"><track kind=\"captions\" srclang=\"en\" label=\"English\" src=\"%sall.vtt\"></video>\n", base, base)
+	fmt.Fprintf(&b, "<video controls preload=\"metadata\" playsinline src=\"%s%s.mp4\"><track kind=\"captions\" srclang=\"en\" label=\"English\" src=\"%s%s.vtt\"></video>\n", base, area, base, area)
 	if len(chs) > 0 {
 		b.WriteString("<ol class=\"demo-chapters\">")
 		for _, c := range chs {

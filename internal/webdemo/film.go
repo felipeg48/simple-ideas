@@ -395,10 +395,10 @@ background:rgb(17 19 24/.78);color:#fff;font:700 clamp(14px,2vw,30px)/1 var(--si
 svg{width:1.2em;height:.8em}`)
 }
 
-// clip is what a feature's take wrote.
+// clip is what a feature's take wrote (in the run's work folder).
 type clip struct {
 	Name      string // file stem: <feature slug>
-	title     string // the feature's name
+	feature   *Feature
 	Seconds   float64
 	Card      string // the title card (temporary)
 	Voiced    bool
@@ -421,9 +421,11 @@ func frameSize(file string, w, h int) (int, int) {
 }
 
 // finishTake renders the feature's card, captions and badges, then writes
-// its files from the one take: .video.mp4 (picture), .mp4 (picture and
-// voice), .captions.mp4 (picture, voice, captions under it), .voice.wav/.m4a,
-// .srt and .vtt. Long waits play faster in all three (fastForward).
+// its files from the one take into the work folder: .silent.mp4 (picture)
+// and .mp4 (picture and voice) always, since <script>.mp4 is made of them;
+// .captions.mp4 (picture, voice, captions under it) with captions; .m4a,
+// .srt and .vtt when the clips are kept with audio or subtitles. Long waits
+// play faster in every video (fastForward).
 func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 	tk := r.tk
 	defer func() {
@@ -431,12 +433,10 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 		r.tk = nil
 		r.mu.Unlock()
 	}()
-	stem := slug(f.Name)
-	if stem == "" {
-		stem = "feature"
-	}
+	stem := r.stem(f.Name)
+	w := r.o.With
 	out := func(ext string) string { return filepath.Join(r.o.Out, stem+ext) }
-	cl := &clip{Name: stem, title: f.Name, Seconds: d, Voiced: len(tk.voice) > 0}
+	cl := &clip{Name: stem, feature: f, Seconds: d, Voiced: len(tk.voice) > 0}
 	fs := fastForward(tk.waits, tk.spoken, r.o.FastForward.Seconds(), d)
 	cl.Fast = fs
 	for _, c := range tk.caps { // a caption never outlives the clip
@@ -469,7 +469,7 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 		badges = append(badges, pic{drawn[x.X], outT(fs, x.From), outT(fs, x.To)})
 	}
 	var caps []pic
-	if cl.Voiced && !r.o.NoCaptions {
+	if cl.Voiced && w.Captions {
 		for i, c := range cl.Caps {
 			file, err := picture(captionHTML(c.Text), fmt.Sprintf("cap%03d.png", i))
 			if err != nil {
@@ -495,39 +495,56 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 		return nil, err
 	}
 	cl.Seconds = float64(n) / fps
-	w, h := frameSize(tk.frames[0].File, r.s.W, r.s.H)
-	if err := r.ffmpeg(videoArgs(pattern, w, h, badges, nil, "", out(".video.mp4"))); err != nil {
+	wd, ht := frameSize(tk.frames[0].File, r.s.W, r.s.H)
+	if err := r.ffmpeg(videoArgs(pattern, wd, ht, badges, nil, "", out(".silent.mp4"))); err != nil {
 		return nil, err
 	}
-	wav := out(".voice.wav")
+	wav := filepath.Join(tk.dir, "voice.wav")
 	if err := mixWAV(wav, cl.Seconds, voice); err != nil {
 		return nil, err
 	}
-	if err := r.ffmpeg(muxArgs(out(".video.mp4"), wav, out(".mp4"))); err != nil {
+	if err := r.ffmpeg(muxArgs(out(".silent.mp4"), wav, out(".mp4"))); err != nil {
 		return nil, err
 	}
-	os.Remove(out(".captions.mp4")) // not left over from an earlier run
-	if cl.Voiced {
-		if err := r.ffmpeg(m4aArgs(wav, out(".voice.m4a"))); err != nil {
+	if cl.Voiced && w.Clips && w.Audio {
+		if err := r.ffmpeg(m4aArgs(wav, out(".m4a"))); err != nil {
 			return nil, err
 		}
+	}
+	if cl.Voiced && w.Clips && w.Subtitles {
 		if err := os.WriteFile(out(".srt"), []byte(srt(cl.Caps)), 0o644); err != nil {
 			return nil, err
 		}
 		if err := os.WriteFile(out(".vtt"), []byte(vtt(cl.Caps)), 0o644); err != nil {
 			return nil, err
 		}
-		if len(caps) > 0 {
-			if err := r.ffmpeg(videoArgs(pattern, w, h, badges, caps, wav, out(".captions.mp4"))); err != nil {
-				return nil, err
-			}
-			cl.Captioned = true
+	}
+	if len(caps) > 0 {
+		if err := r.ffmpeg(videoArgs(pattern, wd, ht, badges, caps, wav, out(".captions.mp4"))); err != nil {
+			return nil, err
 		}
-	} else {
-		os.Remove(wav)
+		cl.Captioned = true
 	}
 	os.RemoveAll(tk.dir)
 	return cl, nil
+}
+
+// stem is a feature's file stem: its slug, never the script's name (that is
+// <script>.mp4) nor a stem taken already.
+func (r *runner) stem(name string) string {
+	base := slug(name)
+	if base == "" {
+		base = "feature"
+	}
+	if r.stems == nil {
+		r.stems = map[string]bool{r.s.Name: true}
+	}
+	stem := base
+	for i := 2; r.stems[stem]; i++ {
+		stem = fmt.Sprintf("%s-%d", base, i)
+	}
+	r.stems[stem] = true
+	return stem
 }
 
 func (r *runner) title() string {
@@ -544,59 +561,73 @@ func (r *runner) ffmpeg(args []string) error {
 	return nil
 }
 
-// joinAll writes all.mp4 (every clip after its title card, chapters inside),
-// all.video.mp4 (its picture alone), all.captions.mp4 (the captions
-// variants joined), all.srt and all.vtt when there is narration, and
-// chapters.txt.
+// joinAll writes <script>.mp4 (every clip after its title card, chapters
+// inside) into the work folder, and what With asks for besides: .silent.mp4
+// (its picture alone), .captions.mp4 (the captions variants joined), .m4a
+// (its sound alone), .srt and .vtt, .txt (the transcript) and chapters.txt.
 func (r *runner) joinAll(clips []*clip) error {
 	defer func() {
 		for _, c := range clips {
 			os.Remove(c.Card)
 		}
 	}()
-	at := func(name string) string { return filepath.Join(r.o.Out, name) }
+	w := r.o.With
+	at := func(ext string) string { return filepath.Join(r.o.Out, r.s.Name+ext) }
 	var parts []part
 	var caps [][]caption
+	var feats []*Feature
 	voiced, captioned := false, false
 	for _, c := range clips {
-		parts = append(parts, part{Name: c.title, Card: c.Card, Clip: at(c.Name + ".mp4"), Seconds: c.Seconds})
+		parts = append(parts, part{Name: c.feature.Name, Card: c.Card, Clip: filepath.Join(r.o.Out, c.Name+".mp4"), Seconds: c.Seconds})
 		caps = append(caps, c.Caps)
+		feats = append(feats, c.feature)
 		voiced, captioned = voiced || c.Voiced, captioned || c.Captioned
 	}
 	cs := chapters(parts)
-	meta := at(".chapters.ffmeta")
+	meta := filepath.Join(r.o.Out, ".chapters.ffmeta")
 	if err := os.WriteFile(meta, []byte(ffmetadata(r.title(), cs)), 0o644); err != nil {
 		return err
 	}
 	defer os.Remove(meta)
-	if err := r.ffmpeg(allArgs(parts, meta, at("all.mp4"))); err != nil {
+	if err := r.ffmpeg(allArgs(parts, meta, at(".mp4"))); err != nil {
 		return err
 	}
-	// the picture alone: all.mp4 without its sound (chapters copied along)
-	if err := r.ffmpeg(ff("-i", at("all.mp4"), "-map", "0:v", "-c", "copy", "-movflags", "+faststart", at("all.video.mp4"))); err != nil {
-		return err
-	}
-	for _, name := range []string{"all.captions.mp4", "all.srt", "all.vtt"} {
-		os.Remove(at(name)) // not left over from an earlier run
+	if w.Silent { // the picture alone: <script>.mp4 without its sound (chapters copied along)
+		if err := r.ffmpeg(ff("-i", at(".mp4"), "-map", "0:v", "-c", "copy", "-movflags", "+faststart", at(".silent.mp4"))); err != nil {
+			return err
+		}
 	}
 	if captioned {
 		for i, c := range clips {
 			if c.Captioned {
-				parts[i].Clip = at(c.Name + ".captions.mp4")
+				parts[i].Clip = filepath.Join(r.o.Out, c.Name+".captions.mp4")
 			}
 		}
-		if err := r.ffmpeg(allArgs(parts, meta, at("all.captions.mp4"))); err != nil {
+		if err := r.ffmpeg(allArgs(parts, meta, at(".captions.mp4"))); err != nil {
 			return err
 		}
 	}
-	if voiced {
+	if voiced && w.Audio { // the sound alone, on the video's clock
+		if err := r.ffmpeg(ff("-i", at(".mp4"), "-vn", "-c:a", "copy", at(".m4a"))); err != nil {
+			return err
+		}
+	}
+	if voiced && w.Subtitles {
 		all := joinCaptions(cs, caps)
-		if err := os.WriteFile(at("all.srt"), []byte(srt(all)), 0o644); err != nil {
+		if err := os.WriteFile(at(".srt"), []byte(srt(all)), 0o644); err != nil {
 			return err
 		}
-		if err := os.WriteFile(at("all.vtt"), []byte(vtt(all)), 0o644); err != nil {
+		if err := os.WriteFile(at(".vtt"), []byte(vtt(all)), 0o644); err != nil {
 			return err
 		}
 	}
-	return os.WriteFile(at("chapters.txt"), []byte(youtube(cs)), 0o644)
+	if voiced && w.Transcript {
+		if err := os.WriteFile(at(".txt"), []byte(transcript(feats)), 0o644); err != nil {
+			return err
+		}
+	}
+	if w.Chapters {
+		return os.WriteFile(filepath.Join(r.o.Out, "chapters.txt"), []byte(youtube(cs)), 0o644)
+	}
+	return nil
 }

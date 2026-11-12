@@ -31,6 +31,18 @@ func writeUser(t *testing.T, text string, mode os.FileMode) string {
 	return p
 }
 
+func TestDemoWith(t *testing.T) {
+	writeUser(t, "demo.with: subtitles, chapters\n", 0o600)
+	if c := Load(""); c.DemoWith != "subtitles, chapters" {
+		t.Errorf("user: %q", c.DemoWith)
+	}
+	proj := filepath.Join(t.TempDir(), "si.conf")
+	os.WriteFile(proj, []byte("demo.with: captions\n"), 0o644)
+	if c := Load("", proj); c.DemoWith != "captions" || len(c.Warnings) > 0 {
+		t.Errorf("project over user: %q %v", c.DemoWith, c.Warnings)
+	}
+}
+
 func TestUserAndProject(t *testing.T) {
 	user := writeUser(t, "theme: paper\nvoice: openai:nova\nvoice.style: calm\nvoice.openai.key: sk-user-1234567890\n", 0o600)
 	proj := filepath.Join(t.TempDir(), "si.conf")

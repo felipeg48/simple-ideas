@@ -29,14 +29,16 @@ var locateJS string
 type Options struct {
 	Chrome  string    // the browser to drive
 	Feature string    // run only the feature with this name ("" = all)
-	Out     string    // where the screenshots go (the report folder)
+	Out     string    // where the screenshots go (the report folder); in a run, where its files go
 	Log     io.Writer // one line per step (nil: quiet)
 	SI      string    // si's version, for the report
 
-	// si demo run: film each feature (Video), narrated by Voice
+	// si demo run: film each feature (Video), narrated by Voice; With is what
+	// it writes besides <script>.mp4 (the run works in a folder of its own
+	// inside Out, then moves just those files out)
 	Video       bool
 	Voice       Voice
-	NoCaptions  bool          // skip the .captions.mp4 variants
+	With        With
 	FastForward time.Duration // a wait plays at speed this long, then faster (0: never)
 	FFmpeg      string        // the ffmpeg to encode with
 	Cache       string        // where voiced lines are kept ("" = VoiceCache())
@@ -68,6 +70,7 @@ type runner struct {
 	inner   map[string]bool // frames inside the page (iframes): their loads never hold a step
 	shotN   int
 	tk      *take           // the feature being filmed (run)
+	stems   map[string]bool // the file stems of the clips so far (run)
 	lines   map[*Block]Line // each Say: line voiced (run)
 	timeout time.Duration   // how long a step waits for its element
 
@@ -126,6 +129,14 @@ func Run(s *Script, o Options) (*Report, error) {
 		if err := r.voiceLines(); err != nil {
 			return nil, err
 		}
+		// everything is made in a folder of its own beside the output; only
+		// what With asks for leaves it (deliver)
+		work, err := os.MkdirTemp(o.Out, ".si-run-")
+		if err != nil {
+			return nil, err
+		}
+		defer func() { r.shutdown(); os.RemoveAll(work) }() // its programs' logs are closed first
+		r.o.Out = work
 	}
 	base, stop, err := serveApp(s)
 	if err != nil {
@@ -143,8 +154,8 @@ func Run(s *Script, o Options) (*Report, error) {
 		}
 	}
 	r.secrets = append(r.secrets, commandSecrets(s)...)
-	if o.Out != "" {
-		if err := os.MkdirAll(filepath.Join(o.Out, "shots"), 0o755); err != nil {
+	if r.o.Out != "" {
+		if err := os.MkdirAll(filepath.Join(r.o.Out, "shots"), 0o755); err != nil {
 			return nil, err
 		}
 	}
@@ -197,22 +208,82 @@ func Run(s *Script, o Options) (*Report, error) {
 		fr, cl := r.feature(f)
 		if cl != nil {
 			clips = append(clips, cl)
-			fr.Video, fr.Silent = cl.Name+".mp4", cl.Name+".video.mp4"
-			if cl.Captioned {
-				fr.Captioned = cl.Name + ".captions.mp4"
-			}
+			fr.Video, fr.Silent, fr.Captioned = cl.Name+".mp4", cl.Name+".silent.mp4", cl.Name+".captions.mp4" // deliver keeps the ones made
 		}
 		rep.Features = append(rep.Features, fr)
 	}
 	if len(clips) > 0 {
-		fmt.Fprintf(r.o.Log, "all.mp4: %d feature(s) with title cards and chapters\n", len(clips))
+		fmt.Fprintf(r.o.Log, "%s.mp4: %d feature(s) with title cards and chapters\n", s.Name, len(clips))
 		if err := r.joinAll(clips); err != nil {
 			return nil, err
 		}
 	}
 	rep.Seconds = time.Since(start).Seconds()
 	rep.count()
+	if o.Video {
+		if err := r.deliver(rep, clips, o.Out); err != nil {
+			return nil, err
+		}
+	}
 	return rep, nil
+}
+
+// madeLater are files of the plan written after the videos: the report here
+// (deliver), the README by si demo run.
+var madeLater = map[string]bool{"report.html": true, "report.json": true, "README.md": true, "README.html": true}
+
+// deliver writes the report when asked for, then moves the files With asks
+// for from the work folder to out; rep.Files lists them, and the report
+// links only those.
+func (r *runner) deliver(rep *Report, clips []*clip, out string) error {
+	var ps []Planned
+	for _, c := range clips {
+		ps = append(ps, Planned{c.Name, c.Voiced})
+	}
+	work := r.o.Out
+	made := map[string]bool{}
+	rep.Files = nil
+	for _, f := range r.o.With.Files(r.s.Name, ps) {
+		if _, err := os.Stat(filepath.Join(work, f)); err == nil || madeLater[f] {
+			made[f] = true
+			rep.Files = append(rep.Files, f)
+		}
+	}
+	if made[r.s.Name+".mp4"] {
+		rep.Video = r.s.Name + ".mp4"
+	}
+	for i := range rep.Features {
+		f := &rep.Features[i]
+		for _, p := range []*string{&f.Video, &f.Silent, &f.Captioned} {
+			if !made[*p] {
+				*p = ""
+			}
+		}
+	}
+	if r.o.With.Report {
+		if err := rep.Write(work); err != nil {
+			return err
+		}
+		logs, _ := filepath.Glob(filepath.Join(work, "*.log")) // the start: programs' logs go with the report
+		for _, l := range logs {
+			rep.Files = append(rep.Files, filepath.Base(l))
+		}
+	}
+	if out == "" {
+		return nil
+	}
+	for _, f := range rep.Files {
+		src := filepath.Join(work, f)
+		if _, err := os.Stat(src); err != nil {
+			continue // the README, written next
+		}
+		dst := filepath.Join(out, f)
+		os.RemoveAll(dst)
+		if err := os.Rename(src, dst); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // features are the features this run performs (--feature, or all).
@@ -545,9 +616,9 @@ func (r *runner) feature(f *Feature) (fr FeatureResult, cl *clip) {
 			fr.Steps = append(fr.Steps, StepResult{Text: "make the video", Status: "failed", Found: err.Error()})
 			cl = nil
 		} else {
-			files := cl.Name + ".mp4 · " + cl.Name + ".video.mp4"
-			if cl.Captioned {
-				files += " · " + cl.Name + ".captions.mp4"
+			files := "filmed"
+			if r.o.With.Clips {
+				files = cl.Name + ".mp4"
 			}
 			ff := ""
 			if len(cl.Fast) > 0 {

@@ -312,25 +312,27 @@ func TestMixWAV(t *testing.T) {
 
 func TestReadme(t *testing.T) {
 	dir := t.TempDir()
-	for _, f := range []string{"pay.mp4", "pay.video.mp4", "pay.captions.mp4", "pay.srt", "pay.vtt", "pay.voice.m4a", "all.mp4", "all.video.mp4", "all.captions.mp4", "all.vtt",
-		"chapters.txt", "report.html", ".card-pay.png"} {
-		os.WriteFile(filepath.Join(dir, f), nil, 0o644)
-	}
 	script := filepath.Join(dir, "shop.md")
 	os.WriteFile(script, []byte("---\ntype: demo\n---\n## Pay\n"), 0o644)
-	rep := &Report{Script: "shop.md", Title: "Shop", Voice: "kokoro:af_heart", Passed: 1, Features: []FeatureResult{{Name: "Pay", What: "pays", Status: "passed", Seconds: 3, Video: "pay.mp4"}}}
-	md := Readme(rep, &Script{Path: script}, dir, "si demo run shop.md")
-	for _, w := range []string{"type: article", "| [all.mp4](all.mp4) | every feature", "| [pay.srt](pay.srt) | captions",
-		"| [all.video.mp4](all.video.mp4) | every feature, the picture alone", "| [all.captions.mp4](all.captions.mp4) | every feature with the narration and the captions",
-		"| [pay.captions.mp4](pay.captions.mp4) | picture, narration and the captions in a band", "| [pay.video.mp4](pay.video.mp4) | the picture alone", "| [pay.vtt](pay.vtt) | the same captions as WebVTT",
+	files := []string{"shop.mp4", "shop.silent.mp4", "shop.captions.mp4", "shop.vtt", "shop.txt", "chapters.txt", "pay.mp4", "pay.captions.mp4", "pay.srt", "pay.vtt", "report.html", "README.md", "README.html"}
+	rep := &Report{Script: "shop.md", Title: "Shop", Voice: "kokoro:af_heart", Passed: 1, Video: "shop.mp4", Files: files,
+		Features: []FeatureResult{{Name: "Pay", What: "pays", Status: "passed", Seconds: 3, Video: "pay.mp4"}}}
+	md := Readme(rep, &Script{Path: script, Name: "shop"}, "si demo run shop.md")
+	for _, w := range []string{"type: article", "| [shop.mp4](shop.mp4) | every feature in one video", "| [pay.srt](pay.srt) | the feature's captions",
+		"| [shop.silent.mp4](shop.silent.mp4) | every feature, the picture alone", "| [shop.captions.mp4](shop.captions.mp4) | every feature with the narration and the captions",
+		"| [shop.txt](shop.txt) | the transcript", "| [pay.captions.mp4](pay.captions.mp4) | the feature: picture, narration and the captions in a band", "| [pay.vtt](pay.vtt) | the same captions as WebVTT",
+		`<video controls preload="metadata" src="shop.mp4" style="width:100%;height:auto"><track kind="captions" src="shop.vtt" srclang="en" label="Captions" default></video>`,
 		`<video controls preload="metadata" src="pay.mp4" style="width:100%;height:auto"><track kind="captions" src="pay.vtt" srclang="en" label="Captions" default></video>`,
-		"[pay.mp4](pay.mp4) · [with captions](pay.captions.mp4) · [picture only](pay.video.mp4) · [captions](pay.srt)", "~~~~markdown\n---\ntype: demo", "- Voice: kokoro:af_heart", "`si demo run shop.md`"} {
+		"[pay.mp4](pay.mp4) · [with captions](pay.captions.mp4) · [captions](pay.srt)\n", "~~~~markdown\n---\ntype: demo", "- Voice: kokoro:af_heart", "`si demo run shop.md`"} {
 		if !strings.Contains(md, w) {
 			t.Errorf("README.md lacks %q:\n%s", w, md)
 		}
 	}
-	if strings.Contains(md, ".card-") {
-		t.Error("README lists a temporary file")
+	// only what was made: no picture-only clip, no narration file, no report.json
+	for _, w := range []string{"pay.silent.mp4", "pay.m4a", "report.json", "shop.m4a"} {
+		if strings.Contains(md, w) {
+			t.Errorf("README links %s, which was not made", w)
+		}
 	}
 }
 
@@ -351,21 +353,24 @@ func TestRunFilmsAFeature(t *testing.T) {
 	}
 	out := filepath.Join(dir, "out")
 	os.MkdirAll(out, 0o755)
-	rep, err := Run(s, Options{Chrome: chrome, FFmpeg: ffmpeg, Out: out, Video: true, Voice: Voice{Engine: "system"}, Cache: filepath.Join(dir, "cache")})
+	rep, err := Run(s, Options{Chrome: chrome, FFmpeg: ffmpeg, Out: out, Video: true, Voice: Voice{Engine: "system"}, Cache: filepath.Join(dir, "cache"),
+		With: With{Clips: true, Chapters: true, Subtitles: true, Report: true}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	f := rep.Features[0]
-	if f.Status != "failed" || f.Video != "sign-in.mp4" || f.Steps[4].Status != "skipped" {
+	if f.Status != "failed" || f.Video != "sign-in.mp4" || f.Silent != "" || f.Steps[4].Status != "skipped" {
 		t.Errorf("feature: %+v", f)
 	}
-	for _, name := range []string{"sign-in.mp4", "sign-in.video.mp4", "all.mp4", "chapters.txt"} {
-		if st, err := os.Stat(filepath.Join(out, name)); err != nil || st.Size() == 0 {
-			t.Errorf("%s: %v", name, err)
-		}
+	// no narration: no subtitles; the work folder is gone
+	want := []string{"chapters.txt", "film.mp4", "report.html", "report.json", "shots", "sign-in.mp4"}
+	ents, _ := os.ReadDir(out)
+	var got []string
+	for _, e := range ents {
+		got = append(got, e.Name())
 	}
-	if _, err := os.Stat(filepath.Join(out, "sign-in.srt")); err == nil {
-		t.Error("an .srt without narration")
+	if strings.Join(got, " ") != strings.Join(want, " ") {
+		t.Errorf("out: %v, want %v", got, want)
 	}
 	if raw, _ := os.ReadFile(filepath.Join(out, "chapters.txt")); string(raw) != "0:00 Sign in\n" {
 		t.Errorf("chapters.txt: %q", raw)

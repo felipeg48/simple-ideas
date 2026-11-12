@@ -3,7 +3,7 @@ name: demos
 # Films docs/demos (si demo run, Kokoro af_heart) on every minor release tag
 # (v2.N.0, not patch tags) and on demand, on macOS so fonts and windows match
 # the site's pictures. The videos go to the release as si-demo-videos.tar.gz
-# (plus each area's all.mp4), never into git; the docs-site workflow puts the
+# (plus each area's <area>.mp4), never into git; the docs-site workflow puts the
 # newest ones on the site.
 on:
   push:
@@ -52,7 +52,7 @@ jobs:
         run: |
           status=0
           for d in *.md; do
-            si demo run "$d" -o "../../dist/demos/${d%.md}" || status=1
+            si demo run "$d" -o "../../dist/demos/${d%.md}" --with clips,subtitles,chapters,report || status=1
           done
           exit $status
       - name: the release to attach to
@@ -68,7 +68,7 @@ jobs:
         run: |
           cd dist
           tar czf si-demo-videos.tar.gz demos
-          for a in demos/*/; do n="$(basename "$a")"; [ -f "$a/all.mp4" ] && cp "$a/all.mp4" "si-demo-$n.mp4"; done
+          for a in demos/*/; do n="$(basename "$a")"; [ -f "$a/$n.mp4" ] && cp "$a/$n.mp4" "si-demo-$n.mp4"; done
           gh release upload "${{ steps.tag.outputs.tag }}" si-demo-videos.tar.gz si-demo-*.mp4 --clobber
       - name: rebuild the site with the new videos
         env:

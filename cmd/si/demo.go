@@ -22,21 +22,23 @@ const demoUsage = `Usage:
         per step, report.html + report.json in demo-out/<script>/ (or -o dir), exit 1 on a failure;
         --junit also writes JUnit XML (one test case per feature) for CI
   si demo run <script> [--feature "Name"] [--voice engine:name] [--viewport V] [--junit report.xml] [-o dir]
-              [--no-captions] [--fast-forward 3s | --no-fast-forward]
+              [--with captions,subtitles,…] [--fast-forward 3s | --no-fast-forward]
         perform the same steps on film: a drawn cursor glides to each target, clicks ripple,
         note steps point at elements, fields typed from $VARs are blurred. Each Say: line is
-        voiced first and sets the pace. Writes three videos per feature from one take:
-        <feature>.video.mp4 (picture only), <feature>.mp4 (picture + voice) and
-        <feature>.captions.mp4 (picture shrunk above a band with the captions, never over it);
-        .voice.wav/.m4a, .srt and .vtt; all.mp4, all.video.mp4, all.captions.mp4 (a title card
-        per feature, chapters inside), all.srt/.vtt, chapters.txt (YouTube), the report and
-        README.md + README.html.
+        voiced first and sets the pace. Writes one file: <script>.mp4, every feature after its
+        title card, picture and voice, chapters inside. Every step is still checked (✓/✗,
+        exit 1 on a failure). More only when asked for:
+        --with    a comma list (may repeat): captions (<script>.captions.mp4, the picture shrunk
+                  above a band with the captions), silent (<script>.silent.mp4, no sound),
+                  audio (<script>.m4a), subtitles (<script>.srt + .vtt), transcript
+                  (<script>.txt, what Say: says), chapters (chapters.txt for YouTube), clips
+                  (<feature>.mp4 each, plus the kinds above per feature), report (report.html +
+                  report.json), readme (README.md + README.html) or all. Default: with: in
+                  front matter, else demo.with: in si.conf, else none. --captions = --with captions
         --voice   kokoro[:af_heart] (the default when installed), system[:name] (say, espeak-ng,
                   Windows voices), elevenlabs:<voice id> and openai[:alloy] (a key: si voice
                   login; voice-style: sets openai's tone); else voice: in front matter or si.conf.
                   si voice install kokoro sets Kokoro up; si voice say "line" tries a voice
-        --no-captions  skip the .captions.mp4 videos (faster; .srt and .vtt are still written).
-                  --captions is accepted and does nothing: captions are always made
         --fast-forward 3s  a wait (run … · wait, wait for output, start … · wait for …) plays
                   at speed this long, then faster (a ⏩ 6× badge, at most 2s); the narration
                   never speeds up. --no-fast-forward keeps every wait at speed
@@ -51,7 +53,8 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 	fl := flag.NewFlagSet("si demo", flag.ContinueOnError)
 	fl.SetOutput(io.Discard)
 	var feature, junit, out, viewport, voice string
-	var help, noCaptions, noFF bool
+	var help, captions, noCaptions, noFF bool
+	var with multi
 	fastFwd := 3 * time.Second
 	fl.StringVar(&feature, "feature", "", "")
 	fl.StringVar(&junit, "junit", "", "")
@@ -59,8 +62,9 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 	fl.StringVar(&out, "o", "", "")
 	fl.StringVar(&viewport, "viewport", "", "")
 	fl.StringVar(&voice, "voice", "", "")
-	fl.Bool("captions", false, "") // captions are always made now (v2.38.0); kept so old commands still run
-	fl.BoolVar(&noCaptions, "no-captions", false, "")
+	fl.Var(&with, "with", "")
+	fl.BoolVar(&captions, "captions", false, "")      // = --with captions
+	fl.BoolVar(&noCaptions, "no-captions", false, "") // gone in v2.41.0: an error that says why
 	fl.DurationVar(&fastFwd, "fast-forward", fastFwd, "")
 	fl.BoolVar(&noFF, "no-fast-forward", false, "")
 	fl.BoolVar(&help, "help", false, "")
@@ -81,11 +85,26 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 		fmt.Fprint(stdout, demoUsage)
 		return exitOK
 	}
+	if noCaptions {
+		fmt.Fprintf(stderr, "si demo: --no-captions is gone: si demo run makes no captions unless asked (--with captions)\n")
+		return exitUsage
+	}
+	if captions {
+		with = append(with, "captions")
+	}
 	if len(args) != 2 || (args[0] != "test" && args[0] != "run") {
 		fmt.Fprintf(stderr, "si demo: test or run, and one script\n\n%s", demoUsage)
 		return exitUsage
 	}
 	film := args[0] == "run"
+	if !film && len(with) > 0 {
+		fmt.Fprintf(stderr, "si demo: --with and --captions are for si demo run (si demo test always writes the report)\n")
+		return exitUsage
+	}
+	if _, _, err := demoWith(with, "", ""); err != nil {
+		fmt.Fprintf(stderr, "si demo: --%v\n", err)
+		return exitUsage
+	}
 	s, err := webdemo.ParseFile(args[1])
 	if err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
@@ -119,7 +138,11 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 		if s.Style == "" {
 			s.Style = cfg.VoiceStyle
 		}
-		o.Video, o.Voice, o.NoCaptions, o.FastForward = true, v, noCaptions, fastFwd
+		w, warn, _ := demoWith(with, s.With, cfg.DemoWith) // --with was checked above, with: by the parse
+		if warn != "" {
+			fmt.Fprintf(stderr, "warning: %s\n", warn)
+		}
+		o.Video, o.Voice, o.With, o.FastForward = true, v, w, fastFwd
 		if noFF || fastFwd < 0 {
 			o.FastForward = 0
 		}
@@ -145,9 +168,11 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "si: %v\n", err)
 		return exitProblems
 	}
-	if err := rep.Write(out); err != nil {
-		fmt.Fprintf(stderr, "si: %v\n", err)
-		return exitProblems
+	if !film { // a run writes its report itself, when asked for (--with report)
+		if err := rep.Write(out); err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitProblems
+		}
 	}
 	if junit != "" {
 		b, err := rep.JUnit()
@@ -159,20 +184,50 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 			return exitProblems
 		}
 	}
-	if film {
+	if film && o.With.Readme {
 		if err := demoReadme(rep, s, out, "si demo "+strings.Join(os.Args[2:], " ")); err != nil {
 			fmt.Fprintf(stderr, "si: README: %v\n", err)
 			return exitProblems
 		}
 	}
-	fmt.Fprintf(stdout, "si demo: %d passed, %d failed in %.1fs; report: %s\n", rep.Passed, rep.Failed, rep.Seconds, filepath.Join(out, "report.html"))
-	if film {
-		fmt.Fprintf(stdout, "videos: %s\n", filepath.Join(out, "README.html"))
+	fmt.Fprintf(stdout, "si demo: %d passed, %d failed in %.1fs", rep.Passed, rep.Failed, rep.Seconds)
+	switch {
+	case !film:
+		fmt.Fprintf(stdout, "; report: %s\n", filepath.Join(out, "report.html"))
+	case len(rep.Files) == 0:
+		fmt.Fprintln(stdout, "; nothing filmed")
+	default:
+		fmt.Fprintf(stdout, "; in %s: %s\n", out, strings.Join(rep.Files, ", "))
 	}
 	if !rep.OK() {
 		return exitProblems
 	}
 	return exitOK
+}
+
+// demoWith is what si demo run writes besides <script>.mp4: --with (every
+// list given) > with: in front matter > demo.with: in si.conf (the project's
+// over the user's, as config.Load merges them) > nothing. A bad --with or
+// with: is an error; a bad si.conf value is a warning and counts as none.
+func demoWith(flags []string, front, conf string) (webdemo.With, string, error) {
+	var w webdemo.With
+	switch {
+	case len(flags) > 0:
+		for _, f := range flags {
+			if err := w.Add(f); err != nil {
+				return webdemo.With{}, "", err
+			}
+		}
+	case front != "":
+		if err := w.Add(front); err != nil {
+			return webdemo.With{}, "", err
+		}
+	default:
+		if err := w.Add(conf); err != nil {
+			return webdemo.With{}, "si.conf: demo." + err.Error(), nil
+		}
+	}
+	return w, "", nil
 }
 
 func firstNonEmpty(a ...string) string {
@@ -188,7 +243,7 @@ func firstNonEmpty(a ...string) string {
 // videos linked (not inlined), README.html.
 func demoReadme(rep *webdemo.Report, s *webdemo.Script, out, how string) error {
 	md := filepath.Join(out, "README.md")
-	if err := os.WriteFile(md, []byte(webdemo.Readme(rep, s, out, how)), 0o644); err != nil {
+	if err := os.WriteFile(md, []byte(webdemo.Readme(rep, s, how)), 0o644); err != nil {
 		return err
 	}
 	d, err := deck.Parse(md)

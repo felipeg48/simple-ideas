@@ -33,6 +33,7 @@ type Script struct {
 	Shell     string        // shell: the shell of terminal steps ("" = $SHELL, else sh)
 	Voice     string        // engine:voice as written ("" = the default voice)
 	Style     string        // voice-style: a tone for engines that take one (openai)
+	With      string        // with: what si demo run writes besides <script>.mp4 (WithNames), as written
 	Pronounce []Pronounce   // pronounce: word = how to say it
 	Features  []*Feature
 	Problems  []Problem // the script cannot run
@@ -222,7 +223,10 @@ func (s *Script) warn(line int, format string, a ...any) {
 // settings applies the front matter (line: where to report a bad value).
 func (s *Script) settings(fm map[string]string, line func(string) int) {
 	s.Title, s.App, s.Setup, s.Voice, s.Viewport, s.Style = fm["title"], fm["app"], fm["setup"], fm["voice"], fm["viewport"], fm["voice-style"]
-	s.Stop, s.Shell = fm["stop"], fm["shell"]
+	s.Stop, s.Shell, s.With = fm["stop"], fm["shell"], fm["with"]
+	if err := new(With).Add(s.With); err != nil {
+		s.problem(line("with"), "%v", err)
+	}
 	if s.App == "" {
 		s.problem(line("app"), "a web demo needs app: (a URL, a folder of the app next to the script, or none for a terminal-only demo)")
 	}
@@ -739,7 +743,7 @@ func namedKey(p string) (keyDef, bool) {
 // blocks of steps written as in Markdown.
 type jsonScript struct {
 	Type, Title, App, Viewport, Timeout, Setup, Voice string
-	Stop, Shell                                       string
+	Stop, Shell, With                                 string
 	Style                                             string   `json:"voice-style"`
 	Pronounce                                         []string `json:"pronounce"`
 	Start                                             []string `json:"start"`
@@ -771,7 +775,7 @@ func ParseJSON(path string, raw []byte) (*Script, error) {
 		}
 		return 0
 	}
-	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "setup": j.Setup, "voice": j.Voice, "voice-style": j.Style, "stop": j.Stop, "shell": j.Shell}
+	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "setup": j.Setup, "voice": j.Voice, "voice-style": j.Style, "stop": j.Stop, "shell": j.Shell, "with": j.With}
 	s.settings(fm, func(key string) int {
 		if k := strings.Index(src, `"`+key+`"`); k >= 0 {
 			return strings.Count(src[:k], "\n") + 1
