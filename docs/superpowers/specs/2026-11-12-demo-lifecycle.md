@@ -1,6 +1,6 @@
 # Web demos: ordered steps, cleanup, and scripts from anywhere
 
-Status: spec, decided with the founder on 2026-11-12; not built. Two phases.
+Status: spec, decided with the founder on 2026-11-12; not built. Three phases.
 
 ## Why
 
@@ -106,6 +106,37 @@ cleanup: rm -rf data/ tmp/                                  # always last
 | `si demo test https://…/shop.md · sha256 …` | one script from the web (its relative files fetched next to it, pinned the same way) |
 
 Same trust rules; the output folder is local (`demo-out/<repo>/<script>/`).
+
+## Phase 3: decks from anywhere, with their own setup
+
+The founder (2026-11-12): present a talk from a repo or a URL, with the
+environment it needs set up first.
+
+- `si play`, `si build` and `si serve` take the same places as `si demo test`:
+  a folder (as today), `github:owner/repo@REF/talks/` or `…/talk.md`, a
+  pinned URL (`https://…/talk.md · sha256 …`; its relative files fetched
+  alongside, pinned). Cloned or fetched into `~/.si/cache/repos`, served from
+  there; the same trust rules (asked once per pin, `--trust`).
+- A deck (any document `si play` serves) may set up what the talk shows live:
+  front matter `setup:` (must finish), `start:` (keeps running, `· wait for
+  …`), `stop:` and `cleanup:`, each repeatable, in the order written, with the
+  same sources (`./script.sh`, `gist:`, `github:`, a pinned URL).
+  ```markdown
+  ---
+  title: The orders broker, live
+  setup: github:acme/ops@v1.4/scripts/install-broker.sh
+  start: ./bin/broker --port 5672 · wait for "ready"
+  stop:  ./bin/broker stop
+  ---
+  ```
+- When: `si play` runs them before it serves the first page (a "getting
+  ready" page shows meanwhile with each step's progress), keeps `start:`
+  programs running while it serves, and runs `stop:`/`cleanup:` when it quits
+  (Ctrl-C included). The terminal drawer and the runbook see the started
+  programs. `si build` never runs them (a built deck is a file); `si check`
+  checks their sources and pins.
+- Remote setup asks before running, every time it changed (pin), never
+  silently; a deck from a repo that sets up nothing just plays.
 
 ## Tests
 
