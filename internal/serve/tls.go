@@ -22,6 +22,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/home"
 	"html"
 	"math/big"
 	"net"
@@ -42,16 +43,12 @@ type LocalCA struct {
 	key     *ecdsa.PrivateKey
 }
 
-// CADir is where the authority lives: $SI_CA_DIR, else <config dir>/si/ca.
+// CADir is where the authority lives: $SI_CA_DIR, else ~/.si/ca.
 func CADir() (string, error) {
 	if d := os.Getenv("SI_CA_DIR"); d != "" {
 		return d, nil
 	}
-	d, err := os.UserConfigDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(d, "si", "ca"), nil
+	return home.Path("ca", home.Config), nil
 }
 
 // privateNets are the only addresses the authority may vouch for.

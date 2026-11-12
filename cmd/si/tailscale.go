@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/home"
 	"github.com/felipeg48/simple-ideas/internal/tools"
 	"os"
 	"os/exec"
@@ -33,11 +34,7 @@ func tailscaleCert() (string, tls.Certificate, error) {
 	if err != nil {
 		return "", tls.Certificate{}, err
 	}
-	dir, err := os.UserCacheDir()
-	if err != nil {
-		return "", tls.Certificate{}, err
-	}
-	dir = filepath.Join(dir, "si", "tailscale")
+	dir := home.Path("cache/tailscale", home.Cache, "tailscale")
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", tls.Certificate{}, err
 	}

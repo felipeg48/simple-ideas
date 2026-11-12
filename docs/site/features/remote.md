@@ -24,8 +24,7 @@ Do this once per laptop and once per phone or tablet. After that, every talk
 is: run `si play talk.md --remote --https`, scan the code.
 
 **On the laptop: nothing.** The first `--https` run makes a certificate
-authority for this laptop (in `~/Library/Application Support/si/ca/` on a
-Mac). It lasts ten years, its key never leaves the laptop, and it can only
+authority for this laptop (in `~/.si/ca/`). It lasts ten years, its key never leaves the laptop, and it can only
 vouch for local addresses: it can never be used to fake a public website.
 Every run signs a fresh certificate for whatever addresses the laptop has
 that day, so a new venue, Wi-Fi or address needs nothing redone.

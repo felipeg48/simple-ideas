@@ -117,6 +117,13 @@ func runVoice(argv []string, stdout, stderr io.Writer) int {
 			return exitProblems
 		}
 		fmt.Fprintf(stdout, "Kokoro is ready: si voice say \"Hello\" --voice kokoro:af_heart\n")
+		// make it the default everywhere (si demo run, auto-play, si voice say),
+		// unless the user's si.conf already names a voice
+		if up := config.UserPath(); up != "" && filepath.Clean(dir) == filepath.Clean(tools.KokoroDir()) && config.Load(up).Voice == "" {
+			if err := config.SetKey(up, "voice", "kokoro:af_heart"); err == nil {
+				fmt.Fprintf(stdout, "Default voice: kokoro:af_heart (voice: in %s)\n", up)
+			}
+		}
 		if filepath.Clean(dir) != filepath.Clean(tools.KokoroDir()) {
 			fmt.Fprintf(stdout, "(it is in another folder: set SI_KOKORO_DIR=%s so si finds it)\n", dir)
 		}

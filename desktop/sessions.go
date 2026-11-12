@@ -34,6 +34,16 @@ func sessionsDir() string {
 	if d := os.Getenv("SI_SESSIONS_DIR"); d != "" {
 		return d
 	}
+	// si v2.43.0+ writes ~/.si/sessions ($SI_HOME/sessions); older si wrote
+	// <config dir>/si/sessions
+	if h := os.Getenv("SI_HOME"); h != "" {
+		return filepath.Join(h, "sessions")
+	}
+	if h, err := os.UserHomeDir(); err == nil {
+		if st, err := os.Stat(filepath.Join(h, ".si", "sessions")); err == nil && st.IsDir() {
+			return filepath.Join(h, ".si", "sessions")
+		}
+	}
 	d, err := os.UserConfigDir()
 	if err != nil {
 		return ""

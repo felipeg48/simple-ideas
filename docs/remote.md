@@ -133,8 +133,7 @@ si play talk.md --remote --https=tailscale   # a real certificate for machine.ta
 ```
 
 **`--https`** (`internal/serve/tls.go`). si keeps a certificate authority of
-its own in `<config dir>/si/ca/` (macOS: `~/Library/Application
-Support/si/ca/`; `$SI_CA_DIR` overrides), made on first use: an ECDSA P-256
+its own in `~/.si/ca/` (`$SI_CA_DIR` overrides), made on first use: an ECDSA P-256
 key (file mode 0600) and a 10-year certificate whose **name constraints**
 allow only private and Tailscale addresses (10/8, 172.16/12, 192.168/16,
 100.64/10, 127/8, 169.254/16) and `.local` names. It cannot vouch for a

@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/home"
 	"io"
 	"net/http"
 	"os"
@@ -45,16 +46,12 @@ type Creds struct {
 	} `json:"wordpress"`
 }
 
-// Path is the credentials file: $SI_PUBLISH_CONFIG, else <config dir>/si/publish.json.
+// Path is the credentials file: $SI_PUBLISH_CONFIG, else ~/.si/publish.json.
 func Path() (string, error) {
 	if p := os.Getenv("SI_PUBLISH_CONFIG"); p != "" {
 		return p, nil
 	}
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(dir, "si", "publish.json"), nil
+	return home.Path("publish.json", home.Config), nil
 }
 
 // Load reads the stored logins; a missing file is no logins.

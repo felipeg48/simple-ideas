@@ -3,6 +3,15 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.43.0:** si has one folder of its own, `~/.si` (`$SI_HOME` moves it):
+  your si.conf (`~/.si/si.conf`), logins (`publish.json`), the certificate
+  authority (`ca/`), running sessions (`sessions/`), Kokoro (`kokoro/`) and the
+  caches (`cache/voice`, `cache/fetch`, `cache/tailscale`). They used to live
+  in the system's config and cache folders (`~/Library/Application Support/si`
+  and `~/Library/Caches/si` on a Mac); each moves into `~/.si` the first time
+  si uses it, so nothing is lost. `si voice install kokoro` now also writes
+  `voice: kokoro:af_heart` into `~/.si/si.conf` when it names no voice, so
+  Kokoro is the default everywhere.
 - **v2.42.1:** voices: a Kokoro voice name alone means Kokoro:
   `--voice af_heart` (and `voice: am_michael`) is `kokoro:af_heart`, as in
   `voices:`.

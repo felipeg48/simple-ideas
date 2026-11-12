@@ -111,7 +111,7 @@ window no longer quits the app; Quit (here or ⌘Q) does. The app does not
 start at login.
 
 How it knows: each `si play` / `si serve` writes
-`<config dir>/si/sessions/<pid>.json` (pid, folder or deck, loopback URL,
+`~/.si/sessions/<pid>.json` (pid, folder or deck, loopback URL,
 the QR page) and deletes it when it stops (`internal/serve/session.go`); the
 app reads them when the menu opens, skips non-loopback ones, and deletes the
 files of sessions whose process is gone (`desktop/sessions.go`). Stop only

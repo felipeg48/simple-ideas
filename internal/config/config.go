@@ -16,6 +16,7 @@ package config
 import (
 	"bufio"
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/home"
 	"io"
 	"os"
 	"path/filepath"
@@ -360,15 +361,9 @@ func (c *Config) parse(r io.Reader) {
 	}
 }
 
-// UserPath is the user's own si.conf, <config dir>/si/si.conf: settings that
-// follow the user from project to project, API keys included.
-func UserPath() string {
-	d, err := os.UserConfigDir()
-	if err != nil {
-		return ""
-	}
-	return filepath.Join(d, "si", "si.conf")
-}
+// UserPath is the user's own si.conf, ~/.si/si.conf: settings that follow the
+// user from project to project, API keys included.
+func UserPath() string { return home.Path("si.conf", home.Config) }
 
 // readFile parses the file at p into c (its values win) and reports whether
 // it exists. Its warnings carry its path; a .css theme it sets is relative

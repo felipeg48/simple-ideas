@@ -6,6 +6,7 @@ package tools
 
 import (
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/home"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -137,16 +138,12 @@ var All = []Tool{
 }
 
 // KokoroDir is where Kokoro's model files are: $SI_KOKORO_DIR, else
-// <user cache>/si/kokoro.
+// ~/.si/kokoro.
 func KokoroDir() string {
 	if d := os.Getenv("SI_KOKORO_DIR"); d != "" {
 		return d
 	}
-	d, err := os.UserCacheDir()
-	if err != nil {
-		d = os.TempDir()
-	}
-	return filepath.Join(d, "si", "kokoro")
+	return home.Path("kokoro", home.Cache)
 }
 
 // KokoroPython is the Python that has kokoro-onnx: $SI_KOKORO_PYTHON, else

@@ -3,6 +3,7 @@ package serve
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/home"
 	"html"
 	"net/http"
 	"os"
@@ -25,16 +26,12 @@ type Session struct {
 }
 
 // SessionsDir is where sessions are listed: $SI_SESSIONS_DIR, else
-// <config dir>/si/sessions.
+// ~/.si/sessions.
 func SessionsDir() (string, error) {
 	if d := os.Getenv("SI_SESSIONS_DIR"); d != "" {
 		return d, nil
 	}
-	d, err := os.UserConfigDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(d, "si", "sessions"), nil
+	return home.Path("sessions", home.Config), nil
 }
 
 // WriteSession lists this process as a session; the returned func removes

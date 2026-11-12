@@ -1562,11 +1562,15 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 
 Nesting is written as dotted keys (`timer.animation.path`), not YAML.
 
-**Your own si.conf.** Besides the project's, si reads one si.conf of yours in
-the user config folder: `~/Library/Application Support/si/si.conf` on macOS,
-`~/.config/si/si.conf` on Linux, `%AppData%\si\si.conf` on Windows. It is
-read first, so the project's file wins key by key; put there what follows you
-from project to project (a theme you like, `voice:`).
+**Your own si.conf.** Besides the project's, si reads one si.conf of yours:
+`~/.si/si.conf` (on every system; `$SI_HOME` moves the whole `~/.si`
+folder). It is read first, so the project's file wins key by key; put there
+what follows you from project to project (a theme you like, `voice:`).
+`~/.si` is si's own folder: your si.conf, logins (`publish.json`), the
+certificate authority (`ca/`), running sessions (`sessions/`), Kokoro
+(`kokoro/`) and caches (`cache/`). si before v2.43.0 kept them in the system's
+config and cache folders; they move into `~/.si` the first time they are
+used.
 
 It is also the only place for **API keys**: `voice.elevenlabs.key:` and
 `voice.openai.key:`. A project si.conf goes to git with the decks, so a key in
@@ -1578,7 +1582,7 @@ there with the file readable by you only (si warns when others can read it);
 one.
 
 ```
-# <config dir>/si/si.conf — yours, not the project's
+# ~/.si/si.conf — yours, not the project's
 theme: slate
 voice: kokoro:bf_emma
 voice.openai.key: sk-…        # written by si voice login openai
@@ -3019,11 +3023,13 @@ si voice install kokoro
 ```
 
 It makes a Python venv with `kokoro-onnx` in the folder `si doctor` names
-(`<user cache>/si/kokoro`, or `SI_KOKORO_DIR`) and downloads the model files
+(`~/.si/kokoro`, or `SI_KOKORO_DIR`) and downloads the model files
 `kokoro-v1.0.onnx` and `voices-v1.0.bin` (about 350 MB, checked by SHA-256).
 It needs Python 3.10 to 3.13 and changes nothing else on the computer; run it
 again to repair, `si voice uninstall kokoro` to remove it. si uses that venv
-on its own (`SI_KOKORO_PYTHON` picks another Python).
+on its own (`SI_KOKORO_PYTHON` picks another Python), and when your
+`~/.si/si.conf` names no voice yet it writes `voice: kokoro:af_heart` there,
+so every demo, auto-play and `si voice say` uses Kokoro by default.
 
 The cloud engines need an API key. `si voice login openai` (or `elevenlabs`)
 asks for it without echo and keeps it in your own si.conf, readable by you

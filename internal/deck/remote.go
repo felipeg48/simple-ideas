@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/home"
 	"io"
 	"net/http"
 	"os"
@@ -47,11 +48,7 @@ func fetchCacheDir() string {
 	if d := os.Getenv("SI_CACHE_DIR"); d != "" { // tests: a fresh cache, never the user's
 		return d
 	}
-	d, err := os.UserCacheDir()
-	if err != nil {
-		d = os.TempDir()
-	}
-	return filepath.Join(d, "si", "fetch")
+	return home.Path("cache/fetch", home.Cache, "fetch")
 }
 
 var (

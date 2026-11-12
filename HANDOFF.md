@@ -128,7 +128,7 @@ waits for its option; Studio demo avoids `cmd+z` (Linux).
 - Notices: I am "Simple Ideas": `si voice say "Simple Ideas needs your
   input"` before asking, `si voice say "Simple Ideas finished"` once at the
   end (macOS `say` if it fails)
-  (Kokoro installed in `~/Library/Caches/si/kokoro`).
+  (Kokoro installed in `~/.si/kokoro`; si's global folder is `~/.si`, v2.43.0, `internal/home`).
 - Permissions: `.claude/settings.local.json` allows Bash, Agent, SendMessage,
   TaskStop, Monitor, ToolSearch, ListAgents; run in manual mode (auto mode's
   classifier blocked background agents).

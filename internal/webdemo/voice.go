@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/home"
 	"io"
 	"net/http"
 	"os"
@@ -94,14 +95,8 @@ func cacheKey(v Voice, spoken string) string {
 	return hex.EncodeToString(h[:16])
 }
 
-// VoiceCache is the cache folder: <user cache>/si/voice.
-func VoiceCache() string {
-	d, err := os.UserCacheDir()
-	if err != nil {
-		d = os.TempDir()
-	}
-	return filepath.Join(d, "si", "voice")
-}
+// VoiceCache is the cache folder: ~/.si/cache/voice.
+func VoiceCache() string { return home.Path("cache/voice", home.Cache, "voice") }
 
 // Ready says why a voice cannot speak on this computer ("" when it can).
 func (v Voice) Ready() string {

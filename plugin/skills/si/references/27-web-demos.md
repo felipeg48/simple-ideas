@@ -240,11 +240,13 @@ si voice install kokoro
 ```
 
 It makes a Python venv with `kokoro-onnx` in the folder `si doctor` names
-(`<user cache>/si/kokoro`, or `SI_KOKORO_DIR`) and downloads the model files
+(`~/.si/kokoro`, or `SI_KOKORO_DIR`) and downloads the model files
 `kokoro-v1.0.onnx` and `voices-v1.0.bin` (about 350 MB, checked by SHA-256).
 It needs Python 3.10 to 3.13 and changes nothing else on the computer; run it
 again to repair, `si voice uninstall kokoro` to remove it. si uses that venv
-on its own (`SI_KOKORO_PYTHON` picks another Python).
+on its own (`SI_KOKORO_PYTHON` picks another Python), and when your
+`~/.si/si.conf` names no voice yet it writes `voice: kokoro:af_heart` there,
+so every demo, auto-play and `si voice say` uses Kokoro by default.
 
 The cloud engines need an API key. `si voice login openai` (or `elevenlabs`)
 asks for it without echo and keeps it in your own si.conf, readable by you
