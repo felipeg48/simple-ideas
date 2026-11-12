@@ -19,6 +19,7 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `timer.animation.path: ./anim` | directory of custom `<name>.js` / `<name>.svg` animations |
 | `voice: kokoro:af_heart` | the voice of `si demo run` and `si voice say` when the script and `--voice` set none (§27) |
 | `voice.style: calm, friendly` | the tone, for engines that take one (`openai`), when the script sets no `voice-style:` |
+| `demo.with: subtitles, chapters` | what `si demo run` writes besides `<script>.mp4` when `--with` and the script's `with:` say nothing (§27) |
 | `voice.Ada: kokoro:af_heart` | auto-play: one speaker's voice in a deck with `speakers:` (front matter `voices:` wins) |
 | `autoplay.dwell: 5` | auto-play: seconds on a slide with no `Notes:` and no `(N min)` (default 3) |
 

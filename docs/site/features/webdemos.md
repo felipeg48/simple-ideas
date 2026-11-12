@@ -125,24 +125,31 @@ steps need longer waits for them, so there is no dead air and no voice
 talking over the wrong screen. A step that fails ends that feature's clip
 there and goes into the report.
 
-In `demo-out/shop/`:
+You get one file, `demo-out/shop/shop.mp4`: every feature after a title card,
+picture and voice, a chapter each. The rest is there when you ask for it,
+with `--with` (a comma list; `with:` in the script or `demo.with:` in si.conf
+sets your usual):
 
-| File | What |
+| `--with` | Writes |
 |---|---|
-| `pay-for-an-order.mp4` | the feature, picture and voice |
-| `pay-for-an-order.video.mp4` | the picture alone, no sound |
-| `pay-for-an-order.captions.mp4` | picture, voice and captions in a band under the picture |
-| `pay-for-an-order.voice.m4a` · `.wav` | the narration alone |
-| `pay-for-an-order.srt` · `.vtt` | captions, timed (SubRip, and WebVTT for the web) |
-| `all.mp4` · `all.video.mp4` · `all.captions.mp4` | every feature after a title card, chapters inside |
-| `all.srt` · `all.vtt` | the captions of `all.mp4` |
-| `chapters.txt` | `0:00 Sign in` lines for a YouTube description |
-| `report.html` · `report.json` | the run, linked to the clips |
-| `README.md` · `README.html` | every file, each video in the page with its captions track, the script, how it was made |
+| `captions` | `shop.captions.mp4`: picture, voice and captions in a band under the picture |
+| `silent` | `shop.silent.mp4`: the picture alone, no sound |
+| `audio` | `shop.m4a`: the narration alone |
+| `subtitles` | `shop.srt` · `shop.vtt`: captions, timed (SubRip, and WebVTT for the web) |
+| `transcript` | `shop.txt`: what each feature says, as prose |
+| `chapters` | `chapters.txt`: `0:00 Sign in` lines for a YouTube description |
+| `clips` | the same per feature: `pay-for-an-order.mp4`, and its `.captions.mp4`, `.silent.mp4`, `.m4a`, `.srt`, `.vtt` when asked for |
+| `report` | `report.html` · `report.json`: the run, linked to the videos |
+| `readme` | `README.md` · `README.html`: the files, the video in the page with its captions track, the script, how it was made |
+| `all` | everything above |
 
-The three videos come from one take. In the captions video the picture shrinks
-into the top of the frame and the captions sit in a dark band under it, so
-they never hide the command just typed. `--no-captions` skips those videos;
+```bash
+si demo run shop.md --with captions,subtitles,clips
+```
+
+Every video comes from one take, and only what you ask for is made. In the
+captions video the picture shrinks into the top of the frame and the captions
+sit in a dark band under it, so they never hide the command just typed.
 `--viewport phone` films the phone layout; `--feature "Pay for an order"`
 films one feature.
 

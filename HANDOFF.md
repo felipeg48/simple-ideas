@@ -26,6 +26,27 @@ released.
   `si build --autoplay[=inline]`, `si build --mp4 --voice`, `voices:` per
   speaker; the CI filming run re-filmed the demos with "It presents itself".
 
+### si demo run: one file by default (v2.41.0, unreleased, on a worktree branch)
+- `si demo run` writes only `<out>/<script>.mp4` (was `all.mp4`); the rest
+  is opt-in: `internal/webdemo/outputs.go` `With` (captions, silent, audio,
+  subtitles, transcript, chapters, clips, report, readme, all; `Add` parses a
+  comma list), `With.Files` (the plan: options + filmed features → file
+  names, table-tested) and `transcript` (`<script>.txt`, Say: as written).
+- `Run` (run mode) works in `<out>/.si-run-*` (`MkdirTemp`), `finishTake` /
+  `joinAll` make only what `With` needs (per-feature `.silent.mp4` + `.mp4`
+  always, as `<script>.mp4` is joined from them; captions PNGs/encodes only
+  with captions), then `deliver` writes the report (with `report`), filters
+  the report's links to what exists, renames the planned files out and sets
+  `Report.Files` / `Report.Video`; the work folder is removed after the
+  programs stop. `cmd/si/demo.go`: `--with` (multi), `--captions` = `--with
+  captions`, `--no-captions` a usage error, `demoWith` (precedence --with >
+  `with:` > `demo.with` from config.Load). `with:` is a deck MetaKey and a
+  webdemo front-matter check. Feature stems never equal the script name
+  (`runner.stem` adds `-2`).
+- Docs site: `internal/docsite/videos.go` reads `<area>/<area>.mp4` + `.vtt`;
+  `.github/workflows/demos.yml` films with `--with
+  clips,subtitles,chapters,report` and attaches `<area>/<area>.mp4`.
+
 ### Auto-play (v2.40.0, released)
 Spec `docs/superpowers/specs/2026-11-10-autoplay.md`, all three phases.
 - `deck.Parts` (`internal/deck/say.go`): a slide's script split at `[CLICK]`

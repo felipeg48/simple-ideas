@@ -217,6 +217,11 @@ pass. The steps that matter:
   `.captions.mp4` (picture shrunk above a captions band, never covered), `.vtt`
   beside `.srt`, long waits fast-forwarded with a badge (`fast-forward` in
   `encode.go`; the voice never sped up).
+  **One file by default** (DONE v2.41.0, `internal/webdemo/outputs.go`):
+  `si demo run` writes `<script>.mp4` (was `all.mp4`) alone; `--with
+  captions,silent,audio,subtitles,transcript,chapters,clips,report,readme,all`
+  (or `with:`, si.conf `demo.with:`) for the rest, made in a temp folder and
+  moved out by `deliver`; `--no-captions` is gone.
   **`si voice`** (DONE v2.37.0, `cmd/si/voice.go`, `internal/tools/kokoro.go`):
   `install kokoro` (venv + kokoro-onnx 0.6.1 + SHA-256-pinned models in the
   user cache), `say` (plays like macOS say, falls back to system), `list`,

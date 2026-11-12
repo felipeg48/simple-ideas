@@ -1556,6 +1556,7 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `timer.animation.path: ./anim` | directory of custom `<name>.js` / `<name>.svg` animations |
 | `voice: kokoro:af_heart` | the voice of `si demo run` and `si voice say` when the script and `--voice` set none (§27) |
 | `voice.style: calm, friendly` | the tone, for engines that take one (`openai`), when the script sets no `voice-style:` |
+| `demo.with: subtitles, chapters` | what `si demo run` writes besides `<script>.mp4` when `--with` and the script's `with:` say nothing (§27) |
 | `voice.Ada: kokoro:af_heart` | auto-play: one speaker's voice in a deck with `speakers:` (front matter `voices:` wins) |
 | `autoplay.dwell: 5` | auto-play: seconds on a slide with no `Notes:` and no `(N min)` (default 3) |
 
@@ -2889,7 +2890,8 @@ si demo: 0 passed, 1 failed in 6.9s; report: demo-out/shop/report.html
 SHOP_PASSWORD=shop-demo si demo run shop.md
 si demo run shop.md --feature "Pay for an order" --viewport phone
 si demo run shop.md --voice system:Samantha -o videos/
-si demo run broker.md --fast-forward 5s --no-captions
+si demo run broker.md --fast-forward 5s --with captions,subtitles
+si demo run shop.md --with clips,report --with readme
 ```
 
 The same steps, filmed: a drawn cursor glides to each element and clicks
@@ -2900,26 +2902,44 @@ words, and a block whose steps need longer than its words waits for them. A
 failing step ends that feature's clip there (in a run a step waits at most 3 s)
 and goes into the report; the other features still run.
 
-It writes into `demo-out/<script>/` (or `-o dir`):
+**One file by default:** `demo-out/<script>/<script>.mp4` (or `-o dir`), every
+feature after a title card (the feature and its `What it does:`), picture and
+voice (H.264 + AAC, 30 fps), a chapter per feature embedded. The run still
+checks every step, prints ✓ / ✗ and exits 1 when one failed. Anything else is
+asked for with `--with`, a comma list that may repeat (`--with captions
+--with subtitles` is `--with captions,subtitles`):
 
-| File | What |
+| `--with` | Writes |
 |---|---|
-| `<feature>.mp4` | the feature, picture and voice (H.264 + AAC, 30 fps), no captions |
-| `<feature>.video.mp4` | the picture alone: no sound, no captions |
-| `<feature>.captions.mp4` | picture, voice and captions: the picture shrinks (aspect kept) into the top of the same frame, centered on a near-black backdrop, and the captions (white, two lines at most) sit in a band under it, so they never cover the picture |
-| `<feature>.voice.wav` · `.voice.m4a` | the narration alone, to edit or re-voice |
-| `<feature>.srt` · `<feature>.vtt` | captions of the `Say:` lines, timed: SubRip, and WebVTT for a web page's `<track>` |
-| `all.mp4` · `all.video.mp4` · `all.captions.mp4` | every feature, each after a title card (the feature and its `What it does:`), chapters embedded: with voice, picture only, with voice and captions |
-| `all.srt` · `all.vtt` | the captions of `all.mp4` |
-| `chapters.txt` | YouTube chapter lines: `0:00 Sign in` |
-| `report.html` · `report.json` | the run, each feature linked to its clip |
-| `README.md` · `README.html` | the folder: every file, each feature with its video (linked, not inlined), the script, how it was made |
+| `captions` | `<script>.captions.mp4`: picture, voice and captions; the picture shrinks (aspect kept) into the top of the same frame, centered on a near-black backdrop, and the captions (white, two lines at most) sit in a band under it, so they never cover the picture |
+| `silent` | `<script>.silent.mp4`: the picture alone, no sound (chapters kept) |
+| `audio` | `<script>.m4a`: the narration alone, on the video's clock |
+| `subtitles` | `<script>.srt` + `<script>.vtt`: the `Say:` lines timed, SubRip, and WebVTT for a web page's `<track>` |
+| `transcript` | `<script>.txt`: each feature's name, then what its `Say:` lines say as one paragraph (the words as written, not as `pronounce:` makes the voice say them) |
+| `chapters` | `chapters.txt`: YouTube chapter lines, `0:00 Sign in` |
+| `clips` | the same per feature: `<feature>.mp4` always, plus `<feature>.captions.mp4`, `.silent.mp4`, `.m4a`, `.srt`, `.vtt` for the kinds asked for |
+| `report` | `report.html` + `report.json` (and `shots/`): the run, linked to the videos it made |
+| `readme` | `README.md` + `README.html`: the files made, the video in the page, the script, how it was made |
+| `all` | all of the above |
 
-`<feature>` is the heading in lower case with dashes (`pay-for-an-order`).
-The three videos come from one take; a feature without `Say:` lines gets
-`.video.mp4` and a `.mp4` with silent sound only. `--no-captions` skips the
-`.captions.mp4` files (a faster run; the `.srt` and `.vtt` are still written);
-`--captions`, from before v2.38.0, is accepted and does nothing.
+```markdown
+---
+type: demo
+app: app
+with: captions, subtitles
+---
+```
+
+`with:` in the script's front matter, or `demo.with:` in a si.conf (§16), sets
+what a run makes when `--with` is not given: `--with` (or `--captions`, the
+same as `--with captions`), else `with:`, else the si.conf beside the script,
+else your own si.conf, else nothing. `si check` reports an unknown name with
+its line. Only what is asked for is made: a run without captions renders no
+captions, and the work in between stays in a temporary folder that goes away.
+Captions, audio, subtitles and the transcript need `Say:` lines; a feature
+without them has none. `<feature>` is the heading in lower case with dashes
+(`pay-for-an-order`). `--no-captions`, from v2.38.0, is gone: captions are
+made only when asked for.
 
 **Long waits play faster.** A step that waits (`run … · wait`, `stop … ·
 wait`, `wait for output`, `expect output … within`, `wait for "…"`, `start … ·

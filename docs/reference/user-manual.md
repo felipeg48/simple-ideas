@@ -346,21 +346,23 @@ SHOP_PASSWORD=shop-demo si demo run shop.md
 - Each `Say:` line voiced first: the narration sets the pace
 - `voice: kokoro:af_heart` (the default when installed), `system`, `elevenlabs`, `openai`
 - `pronounce: si = ess eye`: the voice says it, the captions keep the word
-- Three videos per feature: `.video.mp4` (picture), `.mp4` (+ voice), `.captions.mp4` (captions under the picture)
-- `all.mp4` (and its two variants) with chapters, `chapters.txt`, `.srt` + `.vtt`, README.html
+- One file: `shop.mp4`, every feature after a title card, chapters inside
+- More on request: `--with captions,subtitles` (or `with:` in front matter, `demo.with:` in si.conf)
+- `captions` `silent` `audio` `subtitles` `transcript` `chapters` `clips` `report` `readme` `all`
 - Long waits play faster, with a ⏩ badge; the voice never speeds up
 
 Notes: (1 min)
-The same script makes the videos. Every Say line is spoken first, so the
+The same script makes the video. Every Say line is spoken first, so the
 words set the pace and the steps fit between them. A cursor glides to each
 button, notes point at the fields that matter, and passwords are blurred.
-Each feature comes out three ways: the picture alone, with the voice, and with
-captions in a band under the picture, so they never hide what was typed. A
-long wait plays faster, and the voice stays at its own pace. You also get one
-video with chapters for YouTube and a page that lists it all. [CLICK]
+You get one file: the whole run, a title card and a chapter per feature.
+Ask for more when you need it: captions in a band under the picture,
+subtitles, the narration alone, a transcript, a clip per feature, the report.
+A long wait plays faster, and the voice stays at its own pace. [CLICK]
 
 Points:
-- `--no-captions` skips the captions videos; `--fast-forward 5s` or `--no-fast-forward` for waits
+- Default is one file; `--with all` makes today's full set; `--no-captions` is gone (captions are opt-in)
+- `--fast-forward 5s` or `--no-fast-forward` for waits
 - Kokoro is si's own voice: `si voice install kokoro`, one command; without it, the computer's voice
 - Try a voice aloud: `si voice say "Hello" --voice kokoro:bf_emma`; `si voice list`
 - Cloud keys: `si voice login openai` keeps the key in your own si.conf, never the project's
@@ -412,7 +414,7 @@ si build <dir> --pdf       # self-contained HTML (+ PDF)
 si build talk.md --handout # handouts/talk.pdf: slides only; =lines, =points, =notes add space or speaker text
 si check <dir>             # validate; exit 1 on a problem
 si demo test shop.md       # run a web demo script against a web app as a test (report.html, --junit)
-si demo run shop.md        # the same, filmed and narrated: <feature>.mp4, .video.mp4, .captions.mp4, all.mp4 with chapters, .srt/.vtt
+si demo run shop.md        # the same, filmed and narrated: shop.mp4 with chapters; --with captions,subtitles,clips,report,… for more
 si doctor                  # the optional programs (Chrome, ffmpeg, git…): found or not, how to install each
 si new <name>              # scaffold a deck (the showcase, every rule)
 si new <name> --type article   # a small starter: deck, article, guide, book, site, page, lab, demo, mindmap, mindmap3d, codeshow

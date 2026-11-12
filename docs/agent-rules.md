@@ -36,10 +36,11 @@ si play talk.md --audience      # the room follows on their phones; <!-- qr: aud
 si play talk.md --tunnel        # the same for a remote audience (a video call): a temporary public link
 si demo test shop.md            # a web demo script (type: demo + app:) run against the web app in headless Chrome:
                                 # report.html + report.json in demo-out/shop/, exit 1 on a failure, --junit junit.xml for CI
-si demo run shop.md             # the same steps filmed and narrated, three videos per feature: .video.mp4 (picture),
-                                # .mp4 (+ voice), .captions.mp4 (captions in a band under the picture); all.mp4 (and
-                                # all.video.mp4, all.captions.mp4) with chapters, chapters.txt, .srt + .vtt, README.html;
-                                # long waits play faster (--fast-forward 3s, --no-fast-forward); --no-captions, --voice, --viewport
+si demo run shop.md             # the same steps filmed and narrated: ONE file, demo-out/shop/shop.mp4 (title cards,
+                                # chapters); more only with --with (comma list, may repeat; or with: in front matter,
+                                # demo.with: in si.conf): captions, silent, audio, subtitles (.srt + .vtt), transcript
+                                # (.txt), chapters (chapters.txt), clips (per feature), report, readme, all;
+                                # long waits play faster (--fast-forward 3s, --no-fast-forward); --voice, --viewport
 ```
 
 ## A deck
@@ -260,7 +261,10 @@ Not everything is a slide deck. Pick the type by what the reader does:
   `si demo run <script>` films the same steps: keep each `Say:` short (one or
   two sentences: the words set the pace), use `note "…" at "Field"` for what
   the viewer must read (a demo login), and `pronounce: word = how to say it`
-  for names the voice gets wrong. Leave `voice:` out unless the author asks for
+  for names the voice gets wrong. It writes one file, `<script>.mp4`; add
+  `--with` (or `with:`) only for what the author asked for (`captions`,
+  `subtitles`, `clips`, `report`…), and `--with report` when you need the
+  report to debug a run. Leave `voice:` out unless the author asks for
   one (si picks Kokoro af_heart, else the computer's voice); never put an API
   key in the script or in a project si.conf (si ignores it there): the author
   runs `si voice login openai|elevenlabs`. Kokoro installs with `si voice

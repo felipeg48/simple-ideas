@@ -9,6 +9,7 @@ shell: bash
 start: go run ./broker serve --port 7310 as broker · wait for port 7310 · within 120s
 setup: go run ./broker reset --port 7310
 stop: go run ./broker reset --port 7310
+with: subtitles, chapters
 ---
 
 # A message broker, from the terminal to its console

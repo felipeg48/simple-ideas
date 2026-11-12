@@ -125,10 +125,11 @@ Usage:
         run a web demo script (type: demo with app:, a URL or the app's folder) in headless
         Chrome as a test: clicks, typing, expectations; report.html + report.json in
         demo-out/<script>/, exit 1 on a failure; --junit writes JUnit XML for CI
-  si demo run <script.md> [--feature "Name"] [--captions] [--voice engine:name] [--viewport phone|tablet|WxH] [-o dir]
+  si demo run <script.md> [--feature "Name"] [--with captions,…] [--voice engine:name] [--viewport phone|tablet|WxH] [-o dir]
         the same steps filmed with a drawn cursor, notes and blurred secrets, narrated from
-        the Say: lines (kokoro, system, elevenlabs, openai): <feature>.mp4 each, all.mp4 with
-        chapters, chapters.txt, .srt captions (--captions burns them in), the report, README
+        the Say: lines (kokoro, system, elevenlabs, openai): one file, <script>.mp4 with a
+        chapter per feature; --with captions, silent, audio, subtitles, transcript, chapters,
+        clips, report, readme or all for more (si demo --help)
   si voice say "text" [--voice engine:name] [-o out.wav] | list [engine]
         say a line aloud with the narration voice (like macOS say; -o saves a WAV), list voices
   si voice install|uninstall kokoro [--dir D]

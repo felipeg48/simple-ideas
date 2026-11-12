@@ -3,6 +3,25 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v2.41.0:** `si demo run` writes **one file by default**:
+  `demo-out/<script>/<script>.mp4`, the whole run with its voice, a title card
+  and a chapter per feature. What used to be `all.mp4` is now `<script>.mp4`.
+  Everything else is asked for with `--with`, a comma list that may repeat:
+  `captions` (`<script>.captions.mp4`), `silent` (`<script>.silent.mp4`, was
+  `all.video.mp4`), `audio` (`<script>.m4a`), `subtitles` (`<script>.srt` +
+  `.vtt`), `transcript` (`<script>.txt`, new: what the `Say:` lines say, as
+  prose), `chapters` (`chapters.txt`), `clips` (the same kinds per feature:
+  `<feature>.mp4`, `.captions.mp4`, `.silent.mp4` (was `.video.mp4`), `.m4a`
+  (was `.voice.m4a`), `.srt`, `.vtt`), `report`, `readme` and `all`. `with:`
+  in the script's front matter and `demo.with:` in si.conf set a default
+  (`--with` > `with:` > the project's si.conf > yours); `si check` reports an
+  unknown name. The run still checks every step and exits 1 on a failure, but
+  writes the report only with `--with report`. Only the work asked for is
+  done (no captions rendered unless wanted), in a temporary folder that goes
+  away. `--captions` is now `--with captions`; **`--no-captions` is gone**
+  (a usage error: captions are opt-in). The `.voice.wav` is no longer kept.
+  `si demo test` is unchanged. The docs site reads `<area>/<area>.mp4`, and the
+  demos workflow films with `--with clips,subtitles,chapters,report`.
 - **v2.40.3:** sites: an `unlisted: true` page now renders through the same
   site-page path as a listed page, so it carries the full site shell — the
   navigator (logo, menu, `cta:`), `_header.md`, `_footer.md`, the `si-doc`
