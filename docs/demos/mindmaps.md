@@ -27,7 +27,12 @@ Say: A mind map starts as a list. One command writes a small one.
 - wait 2s
 
 Say: Play draws it as a map.
-- start "si play ideas.md --addr 127.0.0.1:7395" as play · wait for port 7395
+- terminal "play" · window=mac theme=night backdrop=graphite
+- run "si play ideas.md --addr 127.0.0.1:7395"
+- wait for output "serving"
+- note "Served, with live reload" at line "serving"
+- wait 1500ms
+- terminal "si"
 - browser
 - go /ideas.html
 - expect text "First idea"
@@ -48,7 +53,12 @@ Say: Here is a bigger map, in 3D. The linked maps float above it as floors.
 - terminal "si" · window=mac theme=night backdrop=graphite
 - start "si new talk" as scaffold
 - stop scaffold · wait
-- start "si play talk --addr 127.0.0.1:7395" as play · wait for port 7395
+- terminal "play" · window=mac theme=night backdrop=graphite
+- run "si play talk --addr 127.0.0.1:7395"
+- wait for output "serving"
+- note "Served, with live reload" at line "serving"
+- wait 1500ms
+- terminal "si"
 - browser
 - go /mindmap/thursday.html
 - expect text "The Thursday Promise"

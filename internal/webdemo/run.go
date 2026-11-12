@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -427,10 +428,30 @@ func serveApp(s *Script) (string, func(), error) {
 	if err != nil {
 		return "", nil, err
 	}
-	srv := &http.Server{Handler: http.FileServer(http.Dir(dir))}
+	srv := &http.Server{Handler: noListing(dir, http.FileServer(http.Dir(dir)))}
 	go srv.Serve(ln)
 	return "http://" + ln.Addr().String(), func() { srv.Close() }, nil
 }
+
+// noListing serves a folder app without ever listing its files: a folder
+// with no index.html is a blank page, so a film never shows a file list.
+func noListing(dir string, files http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, q *http.Request) {
+		p := filepath.Join(dir, filepath.FromSlash(path.Clean("/"+q.URL.Path)))
+		if st, err := os.Stat(p); err == nil && st.IsDir() {
+			if _, err := os.Stat(filepath.Join(p, "index.html")); err != nil {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				io.WriteString(w, blankPage)
+				return
+			}
+		}
+		files.ServeHTTP(w, q)
+	})
+}
+
+// blankPage is where a feature opens when its first browser step is a go: a
+// plain page, never the app's root (a folder's root would be a file list).
+const blankPage = `<!doctype html><meta charset="utf-8"><title></title><style>html,body{margin:0;height:100%;background:#f6f5f2}@media (prefers-color-scheme:dark){html,body{background:#111318}}</style>`
 
 func (r *runner) mask(s string) string {
 	for _, v := range r.secrets {
@@ -609,14 +630,20 @@ func (r *runner) feature(f *Feature, section bool) (fr FeatureResult, cl *clip) 
 		}
 	} else {
 		r.home = true
-		if err := r.navigate(r.start); err != nil {
+		open, still := r.start, 800*time.Millisecond
+		if b := firstBrowserStep(f); b != nil && b.Kind == "go" {
+			// the feature goes somewhere first: start on a plain page, not the
+			// app's root (a folder app's root would flash its files)
+			open, still = "data:text/html;charset=utf-8,"+url.PathEscape(blankPage), 0
+		}
+		if err := r.navigate(open); err != nil {
 			return fail(StepResult{Text: "open " + r.base, Status: "failed", Found: err.Error()})
 		}
 		if r.tk != nil {
 			if err := r.roll(); err != nil {
 				return fail(StepResult{Text: "film the page", Status: "failed", Found: err.Error()})
 			}
-			time.Sleep(800 * time.Millisecond) // the page, before anything moves
+			time.Sleep(still) // the page, before anything moves
 		}
 	}
 	failed := false
@@ -718,6 +745,21 @@ func (r *runner) feature(f *Feature, section bool) (fr FeatureResult, cl *clip) 
 		fr.Requests[i] = r.mask(fr.Requests[i])
 	}
 	return fr, cl
+}
+
+// firstBrowserStep is the feature's first step that acts on the browser page
+// (steps that only start or stop programs, or wait, come before it unseen).
+func firstBrowserStep(f *Feature) *Step {
+	for _, b := range f.Blocks {
+		for _, st := range b.Steps {
+			switch st.Kind {
+			case "start", "stop", "wait", "expect-proc":
+				continue
+			}
+			return st
+		}
+	}
+	return nil
 }
 
 func firstStep(f *Feature) *Step {

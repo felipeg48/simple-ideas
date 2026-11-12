@@ -23,7 +23,12 @@ Say: si comes with nine themes. Each one is a single word.
 - terminal "si" · window=mac theme=night backdrop=graphite
 - start "si new talk" as scaffold
 - stop scaffold · wait
-- start "si play talk --addr 127.0.0.1:7394" as play · wait for port 7394
+- terminal "play" · window=mac theme=night backdrop=graphite
+- run "si play talk --addr 127.0.0.1:7394"
+- wait for output "serving"
+- note "Served, with live reload" at line "serving"
+- wait 1500ms
+- terminal "si"
 - run "si theme list" · wait
 - expect output "newsprint"
 - note "Nine looks" at line "NAME"
@@ -61,7 +66,12 @@ Say: Start from the company logo.
 - terminal "si" · window=mac theme=night backdrop=graphite
 - start "si new talk" as scaffold
 - stop scaffold · wait
-- start "si play talk --addr 127.0.0.1:7394" as play · wait for port 7394
+- terminal "play" · window=mac theme=night backdrop=graphite
+- run "si play talk --addr 127.0.0.1:7394"
+- wait for output "serving"
+- note "Served, with live reload" at line "serving"
+- wait 1500ms
+- terminal "si"
 - run "si theme from talk/assets/northwind.svg -o talk/northwind.css" · wait
 - expect output "northwind.css"
 - note "The colours si found" at line "colours"

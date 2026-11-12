@@ -3,6 +3,11 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.1.2:** web demo videos never show a list of files: a folder `app:`
+  serves a plain page where it would list a folder, and a feature whose
+  first page step is a `go` opens on a plain page, not the app's root. si's
+  own demos show the talk's files with `ls` and `si play` in a terminal
+  instead.
 - **v3.1.1:** `si demo run` with a voice this computer cannot use (a script
   asking for Kokoro where it is not installed) speaks with the system voice
   and says so, instead of stopping, like auto-play and `si voice say`.

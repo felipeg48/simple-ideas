@@ -1,12 +1,14 @@
 ---
 type: demo
 title: Presenting a deck
-app: .
+app: http://127.0.0.1:7395
 viewport: 1440x900
 timeout: 15s
 voice: kokoro:af_heart
 pronounce: si = ess eye
-setup: rm -rf talk out
+prepare: rm -rf talk && si new talk
+start: si play talk --addr 127.0.0.1:7395 · wait for port 7395
+cleanup: rm -rf talk
 ---
 
 # Presenting a deck
@@ -20,10 +22,18 @@ and dark, and a deck that presents itself. Every key works the same in
 
 What it does: arrows move slide by slide, and a slide with steps reveals them one click at a time.
 
-Say: Here is the talk, built to a single file and opened in a browser.
-- start "si new talk && si build talk/talk.md -o out" as prep
-- stop prep · wait
-- go /out/talk.html
+Say: Here is the talk: one Markdown file, with its pictures beside it.
+- terminal "si" · window=mac theme=night backdrop=graphite
+- run "ls talk" · wait
+- expect output "talk.md"
+- note "The whole talk" at line "talk.md"
+- wait 1500ms
+
+Say: si play serves it, and the slides open in the browser.
+- run "si play talk --addr 127.0.0.1:7396"
+- wait for output "serving talk"
+- browser · fade
+- go http://127.0.0.1:7396/talk.html
 - expect text "The Thursday Promise"
 - wait 2s
 
@@ -39,7 +49,7 @@ Say: The arrow keys move on. This slide reveals its points one by one.
 - wait 1s
 
 Say: The picture on the next slides keeps its place, and only what changes moves.
-- go /out/talk.html#5
+- go /talk.html#5
 - expect text "The journey on one screen"
 - wait 1500ms
 - press ArrowRight
@@ -51,9 +61,7 @@ Say: The picture on the next slides keeps its place, and only what changes moves
 What it does: every slide at a glance, and a search across the whole talk.
 
 Say: The overview shows every slide at once. Pick one, and you are there.
-- start "si new talk && si build talk/talk.md -o out" as prep
-- stop prep · wait
-- go /out/talk.html
+- go /talk.html
 - expect text "The Thursday Promise"
 - wait 1s
 - press o
@@ -75,9 +83,7 @@ Say: Search finds a word on any slide, and jumps straight to it.
 What it does: the speaker's script in large type, with clocks and the next slide, in its own window.
 
 Say: The teleprompter opens in a window of its own, for the speaker's screen.
-- start "si new talk && si build talk/talk.md -o out" as prep
-- stop prep · wait
-- go /out/talk.html#2
+- go /talk.html#2
 - expect text "One promise"
 - wait 1s
 - press p
@@ -100,9 +106,7 @@ Say: Back on the slides, the audience never sees any of it.
 What it does: a pen over the slide, to circle a number or underline a word while you talk.
 
 Say: A pen over the slide circles what matters, while you talk.
-- start "si new talk && si build talk/talk.md -o out" as prep
-- stop prep · wait
-- go /out/talk.html#5
+- go /talk.html#5
 - expect text "The journey on one screen"
 - wait 1s
 - press a
@@ -118,9 +122,7 @@ Say: A pen over the slide circles what matters, while you talk.
 What it does: a break timer on screen, and the same deck in light or dark.
 
 Say: A break? One key puts a timer on the screen.
-- start "si new talk && si build talk/talk.md -o out" as prep
-- stop prep · wait
-- go /out/talk.html#2
+- go /talk.html#2
 - expect text "One promise"
 - wait 1s
 - press t
@@ -141,9 +143,7 @@ Say: And one key turns the whole deck dark, or light again.
 What it does: the deck reads its own notes aloud, moves on where they say, and hands control back at a key.
 
 Say: And when nobody is at the keyboard, the talk can give itself.
-- start "si new talk && si build talk/talk.md -o out" as prep
-- stop prep · wait
-- go /out/talk.html#3
+- go /talk.html#3
 - expect text "Nobody owns the promise"
 - wait 1s
 - press v

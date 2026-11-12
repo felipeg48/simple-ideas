@@ -44,7 +44,10 @@ Say: A test card goes through in a second.
 
 - Each `##` heading is a **feature**: one test case, run in a fresh browser
   (no cookies or storage from the one before), after `setup:` and with the
-  app's first page open.
+  app's first page open; a feature whose first page step is a `go` opens on a
+  plain page instead, so the video goes straight to that page. A folder `app:`
+  never lists its files: a folder without `index.html` is a plain page (show
+  files in a `terminal` with `ls` when they matter).
 - `What it does:` describes the feature (the report's summary). Each `Say:`
   line is the narration of the steps under it, up to the next `Say:`.
   `Notes:` and `Points:` keep their usual meaning and are not steps.
