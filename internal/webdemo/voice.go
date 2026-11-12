@@ -82,8 +82,15 @@ func DefaultVoice() Voice {
 func Spoken(text string, ps []Pronounce) string {
 	for _, p := range ps {
 		re := regexp.MustCompile(`(?i)(^|[^\pL\pN_])` + regexp.QuoteMeta(p.Word) + `($|[^\pL\pN_])`)
-		for re.MatchString(text) { // overlapping neighbours ("si si") need a second pass
-			text = re.ReplaceAllString(text, "${1}"+strings.ReplaceAll(p.Say, "$", "$$")+"${2}")
+		// overlapping neighbours ("si si") need a second pass; stop when nothing
+		// changes, and after 3 passes: a rule whose words contain the word
+		// itself (VEX = vex, a = a b) would otherwise loop for ever
+		for pass := 0; pass < 3 && re.MatchString(text); pass++ {
+			next := re.ReplaceAllString(text, "${1}"+strings.ReplaceAll(p.Say, "$", "$$")+"${2}")
+			if next == text {
+				break
+			}
+			text = next
 		}
 	}
 	return text

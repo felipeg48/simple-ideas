@@ -37,3 +37,11 @@ func TestParseVoiceBareKokoroName(t *testing.T) {
 		t.Error("a word that is no engine and no Kokoro name must fail")
 	}
 }
+
+// A rule whose words contain the word itself must not loop.
+func TestSpokenSelfReplacing(t *testing.T) {
+	ps := []Pronounce{{Word: "VEX", Say: "vex"}, {Word: "a", Say: "a b"}, {Word: "si", Say: "ess eye"}}
+	if got := Spoken("VEX and a, si si", ps); got != "vex and a b b b, ess eye ess eye" {
+		t.Errorf("Spoken = %q", got)
+	}
+}

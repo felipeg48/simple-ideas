@@ -3,6 +3,9 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.1.4:** a `pronounce:` rule whose words contain the word itself
+  (`VEX = vex`) no longer makes `si demo run` loop for ever before filming;
+  each rule repeats at most 3 times and stops when nothing changes.
 - **v3.1.3:** web demos: `wait for "…" · within 40s` waits longer than
   `timeout:`, also while filming (where a step otherwise gives up after 3 s);
   si's presenting demo waits that way for a deck reading its own notes.
