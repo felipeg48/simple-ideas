@@ -595,3 +595,19 @@ func TestFrontMatterBOMAndQuotedRunbook(t *testing.T) {
 		t.Errorf("meta = %+v", d.Meta)
 	}
 }
+
+// A web demo's transition: is its own (fade 0.5s, wipe, pop …): no deck
+// check, no "has no effect" warning; a deck keeps the deck values.
+func TestWebDemoTransition(t *testing.T) {
+	d, err := ParseSource("d.md", "---\ntype: demo\napp: http://127.0.0.1:1\ntransition: fade 0.5s\n---\n\n# D\n\n## F\n\nWhat it does: x.\n\n- go /\n", Meta{Type: "deck"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Problems) > 0 || len(d.Warnings) > 0 {
+		t.Errorf("web demo transition flagged: %v %v", d.Problems, d.Warnings)
+	}
+	d, _ = ParseSource("e.md", "---\ntransition: wipe\n---\n\n# D\n", Meta{Type: "deck"})
+	if len(d.Problems) == 0 {
+		t.Error("a deck's unknown transition must still be a problem")
+	}
+}

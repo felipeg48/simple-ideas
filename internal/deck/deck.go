@@ -490,6 +490,9 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 			d.problem(file, i+1, "unknown front matter key %q (known: %s)", key, strings.Join(MetaKeys, ", "))
 			continue
 		}
+		if key == "transition" { // a web demo has transitions of its own (internal/webdemo): checked below, once the type is known
+			continue
+		}
 		if msg := validateMeta(key, val); msg != "" {
 			d.problem(file, i+1, "%s", msg)
 		}
@@ -504,8 +507,17 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 			}
 		}
 	}
+	webDemo := d.IsDemo() && d.Meta.App != ""
+	if ln, ok := keyLine["transition"]; ok && !webDemo {
+		if msg := validateMeta("transition", d.Meta.Transition); msg != "" {
+			d.problem(file, ln, "%s", msg)
+		}
+	}
 	if d.IsDoc() {
 		for _, k := range LabIgnoredKeys {
+			if k == "transition" && webDemo {
+				continue
+			}
 			if ln, ok := keyLine[k]; ok {
 				d.Warnings = append(d.Warnings, Problem{File: rel(file), Line: ln, Msg: fmt.Sprintf("front matter %q has no effect in a %s document", k, d.Meta.Type)})
 			}

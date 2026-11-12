@@ -3,6 +3,11 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.0.1:** `si check` no longer reads a web demo's `transition:` as a
+  deck's: `transition: fade 0.5s` or `wipe` in a demo script was an error
+  ("unknown transition") with a warning that it had no effect. A deck keeps
+  the deck values; a demo is checked against its own (cut, fade, slide, wipe,
+  pop, zoom, circle).
 - **v3.0.0 (si 3):** decks that present themselves, demos that film
   themselves; the release that completes web demos (a "What's new in si 3"
   page on the site). Web demo videos are edited like a video. Every scene
