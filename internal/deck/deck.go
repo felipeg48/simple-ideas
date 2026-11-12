@@ -133,6 +133,7 @@ type Meta struct {
 	EditURL      string // guide: base URL of "Edit this page" (the page path is appended)
 	Header       string // guide page: "off" drops the guide's _header.md
 	FooterPage   string // guide page: "off" drops the guide's _footer.md
+	Unlisted     string // site/guide page: "true" builds the page and lets links to it resolve, but keeps it out of the navigator menu (no orphan warning)
 	MapLayout    string // mindmap: map (default), right, org, radial
 	MapLines     string // mindmap: curved (default), straight, orthogonal, tapered
 	MapNodes     string // mindmap: box (default), pill, underline
@@ -523,7 +524,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"background": &m.Background, "status": &m.Status, "version": &m.Version, "year": &m.Year, "copyright": &m.Copyright,
 		"footer": &m.Footer, "footer-position": &m.FooterPos, "watermark": &m.Watermark, "watermark-opacity": &m.WatermarkOpacity, "labs-label": &m.LabsLabel,
 		"runbook": &m.Runbook, "demos": &m.Demos, "type": &m.Type,
-		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "fonts": &m.Fonts, "fonts-subset": &m.FontsSubset, "repo": &m.Repo,
+		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "unlisted": &m.Unlisted, "fonts": &m.Fonts, "fonts-subset": &m.FontsSubset, "repo": &m.Repo,
 		"subtitle": &m.Subtitle, "edition": &m.Edition, "session": &m.Session, "slides": &m.SlidesRef, "duration": &m.Duration,
 		"navigator": &m.Navigator, "logo": &m.Logo, "cta": &m.CTA,
 		"linkedin": &m.LinkedIn, "tags": &m.Tags, "canonical": &m.Canonical, "cover": &m.Cover, "handout": &m.Handout, "handout-url": &m.HandoutURL, "speakers": &m.Speakers, "app": &m.App, "viewport": &m.Viewport, "timeout": &m.Timeout, "setup": &m.Setup, "voice": &m.Voice, "voices": &m.Voices, "voice-style": &m.VoiceStyle, "pronounce": &m.Pronounce, "start": &m.Start, "stop": &m.Stop, "shell": &m.Shell,
@@ -574,6 +575,8 @@ func validateMeta(key, val string) string {
 		return oneOf("mind map kind", val, MapKinds)
 	case "flow":
 		return oneOf("mind map flow", val, OnOff)
+	case "unlisted":
+		return oneOf("unlisted", val, []string{"true", "false"})
 	case "floors":
 		return oneOf("mind map floors", val, OnOff)
 	case "watermark-position":

@@ -120,6 +120,9 @@ an example for every rule: [RULES.md](docs/RULES.md).
   study each) or `--kind landing` (a hero with its own button, features,
   questions, a QR code, pricing). A page's own `cta:` is a hero button; a
   card's title can be a link.
+- `unlisted: true` on a page builds it and lets links to it resolve (the
+  navigator `cta:`, `_footer.md`, another page's body) while keeping it out of
+  the navigator menu — a "Talk to us" page with no redundant menu item.
 
 ## Mind maps
 
