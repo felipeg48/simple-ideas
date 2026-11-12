@@ -36,7 +36,9 @@ captions, sources, layouts line/vertical/snake/eras/cards, every theme;
 `--png/--pdf/--svg`; a ```timeline fence for slides). First make design
 mockups (layouts × themes) for the founder to approve, using their sample
 (the 30 "Hitos en Algoritmos y Complejidad Computacional", Spanish, Mexico).
-`type: infographic` comes after.
+`type: infographic` comes after. Both take `orientation: landscape |
+portrait`: landscape (16:9) **is a slide** (presentable, Notes:, build
+steps, droppable into a deck); portrait is a tall scrolling poster/page.
 
 ### Courses (v3.2.0, 2026-11-12)
 Phases 1 and 2 of `docs/superpowers/specs/2026-11-12-courses.md`, built to
