@@ -204,6 +204,7 @@ Not everything is a slide deck. Pick the type by what the reader does:
 | a résumé, a portfolio, a product or event page | a site of that kind | start with `si new <name> --type website --kind resume\|portfolio\|landing`, then replace the content; a landing hero is the page's title, `description:` and its own `cta:` |
 | show code changing, step by step, in a window | a code show | fences with `window=mac` and the same `id=`, one per step, `<!-- callout: LINE text -->` after a fence |
 | explore a topic and how its parts connect | a mind map | `type: mindmap`, a `# Title`, then a nested list of topics; or a ```` ```mindmap ```` fence on a slide or in a document; `view: 3d` (or `view=3d`) for pills on a floor with linked maps as floors above; `kind: bricks` (studded bricks) or `kind: toy` (cartoon island) for other 3D looks |
+| take in a story's numbers at a glance (a report, a class, one slide) | an infographic | `type: infographic`, `title:`, `subtitle:`, `orientation: landscape` (a 16:9 slide, `Notes:` after the last block, `steps: on` for a block per click) or `portrait` (a tall poster); each `## heading · kind` is a block: `stat` (the number is the heading), `compare` and `chart=bar\|donut\|line\|progress` (from a Markdown table of numbers), `steps`, `quote`, `icons`, `image`, `sources`; `wide`, `tall`, `accent` for the grid; or an ```` ```infographic ```` fence on a slide; `si build x.md --png --pdf` |
 
 - **Guides:** write `_nav.md` first (front matter for the guide-wide
   settings, then a nested list: `- [Title](page.md)` pages, plain items as
@@ -376,7 +377,7 @@ Not everything is a slide deck. Pick the type by what the reader does:
   orphan and is not built.
 - Problems with si itself: `si report` prints a prefilled GitHub issue link;
   `si --version --verbose` shows the build, links and credits.
-- `si --export example --type guide` (or `article`, `lab`, `book`, `course`, `all`)
+- `si --export example --type guide` (or `article`, `lab`, `book`, `course`, `infographic`, `all`)
   writes a working example to copy from.
 
 ## Slide content
@@ -435,3 +436,4 @@ Not everything is a slide deck. Pick the type by what the reader does:
 - [27. Web demos](references/27-web-demos.md)
 - [28. Courses](references/28-courses.md)
 - [29. Timelines](references/29-timelines.md)
+- [30. Infographics](references/30-infographics.md)

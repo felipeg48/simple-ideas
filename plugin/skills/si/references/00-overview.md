@@ -46,3 +46,4 @@ this file; `examples/showcase.md` uses every rule in a real talk.
 27. [Web demos](#27-web-demos)
 28. [Courses](#28-courses)
 29. [Timelines](#29-timelines)
+30. [Infographics](#30-infographics)

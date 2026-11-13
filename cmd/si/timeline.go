@@ -25,14 +25,14 @@ func exportTimeline(chrome, dest, out string, d *deck.Deck, scale float64, stdou
 		return err
 	}
 	w, h := 1600, 900
-	if a, b, ok := strings.Cut(d.Meta.Aspect, ":"); ok && d.Meta.Timeline.Orientation != "portrait" {
+	if a, b, ok := strings.Cut(d.Meta.Aspect, ":"); ok && d.Meta.Orientation != "portrait" {
 		x, _ := strconv.ParseFloat(a, 64)
 		y, _ := strconv.ParseFloat(b, 64)
 		if x > 0 && y > 0 {
 			h = int(float64(w) * y / x)
 		}
 	}
-	poster := d.Meta.Timeline.Orientation == "portrait"
+	poster := d.Meta.Orientation == "portrait"
 	if poster {
 		w, h = 1100, 1400
 	}

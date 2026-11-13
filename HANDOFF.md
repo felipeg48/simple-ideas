@@ -5,7 +5,8 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-12, end of day)
 
-**Released and live: v3.2.0, courses** (CI, release, demo filming and
+**Released and live: v3.3.0** (timelines, infographics; v3.2.1 Demos panel
+Commands only; v3.2.2 browser windows `w`). Earlier: **v3.2.0, courses** (CI, release, demo filming and
 docs-site green; si 3.2.0 installed with `make install </dev/null`; update
 the plugin with `claude plugin marketplace update simple-ideas && claude
 plugin update si@simple-ideas`). Every section below marked "unreleased,
@@ -30,7 +31,11 @@ Finish courses, in this order, then release (minor: v3.3.0):
 Docs with each (RULES §28, manual, agent-rules + skill, FEATURES,
 CHANGELOG, README, docs site Courses page, HANDOFF, CLAUDE.md roadmap).
 
-**Then: timelines** (`docs/superpowers/specs/2026-11-12-timelines-infographics.md`):
+**Timelines and infographics: DONE v3.3.0** (built without mockups at the
+founder's request). Left: timeline `eras`/`cards` layouts, `--svg`, `aspect:
+a4` for timelines, infographic text auto-shrink, Studio/terminal support.
+
+**(was) Then: timelines** (`docs/superpowers/specs/2026-11-12-timelines-infographics.md`):
 `type: timeline` (16:9, eras with colours, milestones with pictures and
 captions, sources, layouts line/vertical/snake/eras/cards, every theme;
 `--png/--pdf/--svg`; a ```timeline fence for slides). First make design

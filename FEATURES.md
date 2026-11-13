@@ -161,6 +161,16 @@ an example for every rule: [RULES.md](docs/RULES.md).
   light and dark; a phone always gets the vertical layout.
 - `https://` pictures fetched and inlined at build; `si check` counts and
   checks order and a `require:` rubric; `si build --png --pdf`.
+## Infographics
+
+- `type: infographic`: every `## heading · kind` is a block of a bento grid:
+  big stats, before/after comparisons with the change, numbered steps, quotes,
+  icon rows, pictures and a sources footer.
+- Charts drawn to scale as SVG from Markdown tables: bars, donuts, lines,
+  progress; every built-in theme, light and dark.
+- Landscape is a 16:9 slide (one block per click, a teleprompter script);
+  portrait a tall poster; an ```` ```infographic ```` fence on any slide.
+- `si build --png --pdf`: a high-resolution picture and a one-page PDF.
 
 ## Code
 

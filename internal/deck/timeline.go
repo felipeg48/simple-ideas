@@ -24,21 +24,20 @@ var (
 // TimelineMeta is the front matter of a `type: timeline` page that no other
 // type uses (title, subtitle, lang, layout, aspect and theme are shared keys).
 type TimelineMeta struct {
-	Alternate   string // on (default) | off: milestones on both sides of the line
-	Scale       string // even (default) | time: gaps by real distance
-	Orientation string // landscape (default: a 16:9 slide) | portrait (a scrolling poster)
-	Closing     string // the line at the end of the timeline
-	Require     string // si check: "20 dates, 15 images"
-	Steps       string // eras (default on a page): one build step per era; off
+	Alternate string // on (default) | off: milestones on both sides of the line
+	Scale     string // even (default) | time: gaps by real distance
+	Closing   string // the line at the end of the timeline
+	Require   string // si check: "20 dates, 15 images"
 }
 
-var timelineKeys = []string{"alternate", "scale", "orientation", "closing", "require", "steps"}
+// orientation and steps are shared with infographics (Meta.Orientation, Meta.Steps)
+var timelineKeys = []string{"alternate", "scale", "closing", "require"}
 
 func init() { MetaKeys = append(MetaKeys, timelineKeys...) }
 
 func (t *TimelineMeta) field(key string) *string {
-	return map[string]*string{"alternate": &t.Alternate, "scale": &t.Scale, "orientation": &t.Orientation,
-		"closing": &t.Closing, "require": &t.Require, "steps": &t.Steps}[key]
+	return map[string]*string{"alternate": &t.Alternate, "scale": &t.Scale,
+		"closing": &t.Closing, "require": &t.Require}[key]
 }
 
 // IsTimeline reports whether the file is a timeline page (`type: timeline`).
@@ -47,7 +46,7 @@ func (d *Deck) IsTimeline() bool { return d.Meta.Type == "timeline" }
 // isPoster: a portrait timeline is a document (a scrolling page), a landscape
 // one a deck of one slide.
 func (d *Deck) isPoster() bool {
-	return d.IsTimeline() && d.Meta.Timeline.Orientation == "portrait"
+	return d.IsTimeline() && d.Meta.Orientation == "portrait"
 }
 
 // timelineMeta checks the timeline keys once the type is known.
@@ -74,8 +73,7 @@ func (d *Deck) timelineMeta(file string, keyLine map[string]int) {
 	check("layout", d.Meta.MapLayout, "timeline layout", TimelineLayouts)
 	check("alternate", t.Alternate, "alternate", OnOff)
 	check("scale", t.Scale, "timeline scale", TimelineScales)
-	check("orientation", t.Orientation, "orientation", TimelineOrientations)
-	check("steps", t.Steps, "timeline steps", []string{"eras", "off"})
+	check("steps", d.Meta.Steps, "timeline steps", []string{"eras", "on", "off"})
 	if ln, ok := keyLine["require"]; ok {
 		if _, err := ParseRequire(t.Require); err != nil {
 			d.problem(file, ln, "%v", err)

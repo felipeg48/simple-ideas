@@ -55,6 +55,12 @@ func joinParts(fsys embed.FS, dir string) string {
 //go:embed web/mindmap.css
 var MindmapCSS string
 
+// InfographicCSS draws infographics (a `type: infographic` page or an
+// ```infographic fence); only pages with one carry it.
+//
+//go:embed web/infographic.css
+var InfographicCSS string
+
 //go:embed web/mindmap.js
 var MindmapJS string
 

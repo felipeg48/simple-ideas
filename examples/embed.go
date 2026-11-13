@@ -8,7 +8,7 @@ import "embed"
 // example article (article/), guide (guide/, embedded with its _ files) and
 // mind maps (mindmap/).
 //
-//go:embed *.md *.json si.conf assets css night-shift demos article code all:guide all:book all:site all:course mindmap timeline
+//go:embed *.md *.json si.conf assets css night-shift demos article code all:guide all:book all:site all:course mindmap timeline infographic
 var FS embed.FS
 
 // Main is the showcase deck that includes the others.

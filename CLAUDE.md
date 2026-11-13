@@ -273,9 +273,15 @@ pass. The steps that matter:
   instructor guide), phase 4 (`si publish --to skilljar`), the Studio
   "New…" course entry, quiz answers out of the page source: the founder's
   next task (HANDOFF "NEXT TASK").
-- **Timelines, then infographics** (spec
-  `docs/superpowers/specs/2026-11-12-timelines-infographics.md`, after
-  courses): `type: timeline` 16:9 pages and a ```timeline fence; mockups first.
+- **Timelines and infographics** (DONE v3.3.0, spec
+  `docs/superpowers/specs/2026-11-12-timelines-infographics.md`, RULES §29,
+  §30): `internal/deck/timeline.go`, `infographic.go`, `internal/render/
+  timeline.go`, `infographic.go`, `web/timeline.*`, `web/infographic.*`,
+  `cmd/si/timeline.go`, `infographic.go` (`pageShot` PNG/PDF); `orientation:`
+  and `steps:` are shared Meta keys (timeline steps: eras|on|off). Next:
+  timeline `eras`/`cards` layouts, `--svg`, auto-shrink of infographic text.
+- **Browser windows** (DONE v3.2.2): `si play` key w, `browser:` front matter,
+  `internal/serve/browser.go` (per-origin loopback proxy), `web/term/web.js`.
 - **Auto-play** (DONE v2.40.0, spec `docs/superpowers/specs/2026-11-10-autoplay.md`):
   `v` / ▶ Auto-play reads `Notes:` aloud and advances at each `[CLICK]`
   (`deck.Parts`, `web/deck/05-autoplay.js`); `si play` voices parts at

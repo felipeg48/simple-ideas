@@ -56,7 +56,7 @@ func starterFiles(kind string) map[string]string {
 var ErrStarterExists = errors.New("exists")
 
 // StarterKinds are the kinds WriteStarter knows.
-var StarterKinds = []string{"deck", "article", "lab", "demo", "page", "guide", "book", "site", "resume", "portfolio", "landing", "mindmap", "mindmap3d", "codeshow"}
+var StarterKinds = []string{"deck", "article", "lab", "demo", "page", "guide", "book", "site", "resume", "portfolio", "landing", "mindmap", "mindmap3d", "codeshow", "infographic"}
 
 // WriteStarter writes the starter for kind at abs (a .md file, or a folder for
 // guide, book, site and the website kinds), never overwriting. A page or folder made inside a

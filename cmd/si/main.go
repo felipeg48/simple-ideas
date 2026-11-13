@@ -53,7 +53,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "3.2.2"
+const version = "3.3.0"
 
 // Exit codes.
 const (
@@ -155,7 +155,7 @@ Usage:
   si check <dir|file.md> [--budget]
         validate decks: title, directives, assets, includes; exit 1 on a problem;
         --budget (or budget.page / budget.3d in si.conf) also fails pages over 1 MB (3D: 1.5 MB)
-  si new <name> [--type deck|article|guide|book|course|site|website|page|lab|demo|mindmap|mindmap3d|codeshow|timeline]
+  si new <name> [--type deck|article|guide|book|course|site|website|page|lab|demo|mindmap|mindmap3d|codeshow|timeline|infographic]
         [--kind resume|portfolio|landing]
         scaffold <name>/ with a deck that uses every rule; with --type, a small
         starter of that type (<name>.md, or a <name>/ folder for guide, book,
@@ -197,7 +197,7 @@ Usage:
         rules:     RULES.md
         conf:      a starter si.conf with the default keys and features
         example:   an example to copy from (default output: ./si-example); --type picks it:
-                   deck (default; also slides, mindmap: the showcase with its mind maps), article, guide (also tutorial), lab, book (also reference), course, demo, site, all
+                   deck (default; also slides, mindmap: the showcase with its mind maps), article, guide (also tutorial), lab, book (also reference), course, demo, site, infographic, all
         themes:    one sample deck per built-in theme (default: ./si-themes)
         docs-site: the si docs site source (rules pages generated from RULES.md, the manual,
                    live examples; default: ./si-docs-site); then si build it
@@ -972,7 +972,15 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 				}
 			}
 		}
-		if chrome != "" && o.pdf && !d.IsDoc() { // the slides PDF does not apply to a document (print it from the browser)
+		if chrome != "" && d.IsInfographic() && (o.png || o.pdf) { // the slide or the poster as a picture and a one-page PDF
+			if rel, err := exportInfographic(chrome, dest, out, d, o.png, o.pdf, o.scale, stdout); err != nil {
+				fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
+				failed = true
+			} else if rel != "" {
+				entry.PDF = rel
+			}
+		}
+		if chrome != "" && o.pdf && !d.IsDoc() && !d.IsInfographic() { // the slides PDF does not apply to a document (print it from the browser)
 			rel := filepath.Join("pdfs", d.Name+".pdf") // a pdfs/ folder beside the decks; linked from the index tiles
 			pdf := filepath.Join(out, rel)
 			if err := os.MkdirAll(filepath.Dir(pdf), 0o755); err != nil {
@@ -1736,7 +1744,7 @@ func export(o *options, stdout, stderr io.Writer) int {
 		}
 		kind, ok := exampleKinds[strings.ToLower(o.kind)]
 		if !ok {
-			return usageErr(stderr, fmt.Sprintf("unknown --type %q (deck, article, guide, lab, book, course, demo, site, mindmap, timeline, all)", o.kind))
+			return usageErr(stderr, fmt.Sprintf("unknown --type %q (deck, article, guide, lab, book, course, demo, site, mindmap, timeline, infographic, all)", o.kind))
 		}
 		if err := writeExampleKind(out, kind); err != nil {
 			fmt.Fprintf(stderr, "si: %v\n", err)
@@ -1975,7 +1983,7 @@ func scaffold(name string, stdout, stderr io.Writer) int {
 // exampleKinds maps --type (and its aliases) to an example set.
 var exampleKinds = map[string]string{"": "deck", "deck": "deck", "slides": "deck", "article": "article",
 	"guide": "guide", "guides": "guide", "tutorial": "guide", "tutorials": "guide", "lab": "lab",
-	"book": "book", "reference": "book", "demo": "demo", "site": "site", "website": "site", "all": "all", "mindmap": "deck", "mindmaps": "deck", "course": "course", "courses": "course", "timeline": "timeline", "timelines": "timeline"}
+	"book": "book", "reference": "book", "demo": "demo", "site": "site", "website": "site", "all": "all", "mindmap": "deck", "mindmaps": "deck", "course": "course", "courses": "course", "timeline": "timeline", "timelines": "timeline", "infographic": "infographic", "infographics": "infographic"}
 
 // writeExampleKind writes one example set into dir (which must not exist or
 // be empty): deck = the showcase decks (today's export), article = the article
@@ -1989,7 +1997,7 @@ func writeExampleKind(dir, kind string) error {
 		top, _, _ := strings.Cut(p, "/")
 		switch kind {
 		case "deck":
-			return p, top != "article" && top != "guide" && top != "book" && top != "site" && top != "course" && top != "timeline"
+			return p, top != "article" && top != "guide" && top != "book" && top != "site" && top != "course" && top != "timeline" && top != "infographic"
 		case "book":
 			r, ok := strings.CutPrefix(p, "book/")
 			return r, ok
@@ -2010,6 +2018,9 @@ func writeExampleKind(dir, kind string) error {
 			return r, ok
 		case "timeline":
 			r, ok := strings.CutPrefix(p, "timeline/")
+			return r, ok
+		case "infographic":
+			r, ok := strings.CutPrefix(p, "infographic/")
 			return r, ok
 		case "lab":
 			return p, p == "order-lab.md" || p == "assets/floor.svg"
@@ -2051,7 +2062,7 @@ func writeExamples(dir, mainName string) error {
 		if strings.HasSuffix(p, ".go") {
 			return nil
 		}
-		if top, _, _ := strings.Cut(p, "/"); top == "article" || top == "guide" || top == "book" || top == "course" || top == "timeline" {
+		if top, _, _ := strings.Cut(p, "/"); top == "article" || top == "guide" || top == "book" || top == "course" || top == "timeline" || top == "infographic" {
 			if e.IsDir() {
 				return fs.SkipDir // si new scaffolds a deck; the document examples are --export example --type
 			}
@@ -2251,7 +2262,7 @@ func newStarter(name, kind string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "si: added it to %s\n", rel(linked))
 	}
 	cmd := "si serve"
-	if kind == "deck" {
+	if kind == "deck" || kind == "infographic" {
 		cmd = "si play"
 	}
 	fmt.Fprintf(stdout, "  edit %s, then: %s %s\n", rel(open), cmd, rel(filepath.Dir(open)))

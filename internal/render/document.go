@@ -24,6 +24,9 @@ func Document(d *deck.Deck, opt Options) Result {
 	if d.IsMindmap() {
 		return Mindmap(d, opt)
 	}
+	if d.IsInfographic() {
+		return Infographic(d, opt)
+	}
 	dr := &deckRenderer{d: d, opt: opt, doc: true, lastState: map[string][]string{}, words: map[string]bool{}, files: map[string]string{}}
 	dr.md = dr.markdown()
 	dr.resolveTheme()
@@ -312,6 +315,9 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	}
 	if g != nil && g.IsCourse() {
 		mmCSS += assets.CourseCSS
+	}
+	if dr.infographic {
+		mmCSS += assets.InfographicCSS
 	}
 	b.WriteString(`<style id="si-css">` + "\n" + assets.LayerOrder + assets.DocCSS + dr.themeCSS + dr.accentCSS() + mmCSS + "</style>\n")
 	dr.codewinCSS(&b)

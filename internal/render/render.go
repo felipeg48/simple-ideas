@@ -132,6 +132,7 @@ type deckRenderer struct {
 	cur           *slideCtx         // the slide being rendered, for the stage fence's steps
 	mermaid       bool
 	mindmap       bool                 // a ```mindmap fence: the page loads mindmap.css and mindmap.js
+	infographic   bool                 // an infographic: the page loads infographic.css
 	codewin       bool                 // a code window: the page loads codewin.css and codewin.js
 	timeline      bool                 // a timeline: the page loads timeline.css and timeline.js
 	cw            map[ast.Node]*cwShow // the first fence of each code window and its steps

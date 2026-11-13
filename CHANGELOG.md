@@ -3,6 +3,19 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.3.0:** timelines and infographics, both landscape (16:9, a slide you
+  present) or portrait (a tall poster). `type: timeline`: `## Era · color=`,
+  `### date · title` milestones with a description and a captioned picture
+  (local or https, inlined), `## … · sources`, `closing:`; layouts `snake`
+  (fits 30 milestones on one 16:9 frame), `line`, `vertical`; one era per
+  click; dates as written (a.C./BC, c., ranges) and checked for order; `si
+  check` counts dates, pictures and eras and verifies `require: 20 dates, 15
+  images`. `type: infographic`: every `## heading · kind` is a block of a
+  bento grid (stat, compare, steps, `chart=bar|donut|line|progress` from a
+  Markdown table, quote, icons, list, text, image, sources; `wide`, `tall`,
+  `accent`, `span=`). Both: a fence for deck slides (```` ```timeline ````,
+  ```` ```infographic ````), every theme in light and dark, `si build --png
+  --pdf` (`--scale`), `si new --type timeline|infographic`, RULES §29 and §30.
 - **v3.2.2:** browser windows in `si play`: **w** opens web pages (a
   broker's console, a dashboard) in floating windows over the slides; drag,
   resize, minimise to a dock, maximise, close, several at once, kept across a

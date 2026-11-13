@@ -42,9 +42,9 @@ func (dr *deckRenderer) timelineFence(body string, attrs map[string]string, dir 
 	aspect := ""
 	if page {
 		m := dr.d.Meta
-		o.layout, o.orient, o.scale, o.title, o.subtitle, o.closing, o.lang = m.MapLayout, m.Timeline.Orientation, m.Timeline.Scale, m.Title, m.Subtitle, m.Timeline.Closing, m.Lang
+		o.layout, o.orient, o.scale, o.title, o.subtitle, o.closing, o.lang = m.MapLayout, m.Orientation, m.Timeline.Scale, m.Title, m.Subtitle, m.Timeline.Closing, m.Lang
 		o.alternate = m.Timeline.Alternate != "off"
-		o.steps = m.Timeline.Steps != "off"
+		o.steps = m.Steps != "off"
 		aspect = m.Aspect
 	} else {
 		for k, v := range attrs {
@@ -254,8 +254,6 @@ func tlBroken(ms []*deck.Milestone) map[int]bool {
 	}
 	return out
 }
-
-func pct(v float64) string { return strconv.FormatFloat(math.Round(v*100)/100, 'f', -1, 64) }
 
 func (dr *deckRenderer) timelineHTML(t *deck.Timeline, o tlOpts, dir string, sc *slideCtx) string {
 	var b strings.Builder
