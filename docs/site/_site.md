@@ -22,6 +22,7 @@ footer: simple-ideas
   - [Articles](features/articles.md)
   - [Guides](features/guides.md)
   - [Mind Maps](features/mindmaps.md)
+  - [Timelines](features/timelines.md)
   - [Books](features/books.md)
   - [Courses](features/courses.md)
   - [Code](features/code.md)

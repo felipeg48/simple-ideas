@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <title>Tabla de programación dinámica</title>
+  <rect width="120" height="120" fill="#f4efe6"/>
+  <g font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" fill="#2a2a2a">
+    <g fill="#fff" stroke="#5b6b7a" stroke-width="1.2">
+      <rect x="18" y="22" width="28" height="22"/><rect x="46" y="22" width="28" height="22"/><rect x="74" y="22" width="28" height="22"/>
+      <rect x="18" y="44" width="28" height="22"/><rect x="46" y="44" width="28" height="22"/><rect x="74" y="44" width="28" height="22"/>
+      <rect x="18" y="66" width="28" height="22"/><rect x="46" y="66" width="28" height="22"/>
+      <rect x="74" y="66" width="28" height="22" fill="#f2c14e"/>
+    </g>
+    <text x="32" y="37">1</text><text x="60" y="37">1</text><text x="88" y="37">1</text>
+    <text x="32" y="59">1</text><text x="60" y="59">2</text><text x="88" y="59">3</text>
+    <text x="32" y="81">1</text><text x="60" y="81">3</text><text x="88" y="81">6</text>
+    <g fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round">
+      <path d="M60 81 H72"/><path d="M88 59 V64"/>
+    </g>
+    <text x="60" y="106" font-size="9" font-weight="400" fill="#5b6b7a">f(i,j) = f(i−1,j) + f(i,j−1)</text>
+  </g>
+</svg>

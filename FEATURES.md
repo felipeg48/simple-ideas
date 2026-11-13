@@ -150,6 +150,18 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - **3D:** pills on a floor, linked maps as glass floors, fly-in, three kinds.
 - **Import / export:** OPML, FreeMind, XMind, Mermaid; SVG, PNG, PDF, MP4.
 
+## Timelines
+
+- `type: timeline`: eras (`## Era · color=`), milestones (`### date · title`,
+  a description, a picture medallion with caption and credit), a closing line
+  and sources; dates kept as written, read for order.
+- Layouts `snake` (30 milestones on one 16:9 page), `line`, `vertical`;
+  landscape is a slide (one era per click, `Notes:`), portrait a scrolling
+  poster; a ```` ```timeline ```` fence in any slide or page; every theme,
+  light and dark; a phone always gets the vertical layout.
+- `https://` pictures fetched and inlined at build; `si check` counts and
+  checks order and a `require:` rubric; `si build --png --pdf`.
+
 ## Code
 
 - Code windows (macOS, Windows, terminal, none) with titles, themes,

@@ -4,7 +4,7 @@
 
 <h1 align="center">simple-ideas</h1>
 
-<p align="center"><b>Markdown in. Talks, articles, guides, books, mind maps, code shows and whole websites out.</b><br>
+<p align="center"><b>Markdown in. Talks, articles, guides, books, mind maps, timelines, code shows and whole websites out.</b><br>
 Fluid on every screen, one self-contained HTML file each, with a real teleprompter.</p>
 
 <p align="center">
@@ -179,6 +179,17 @@ search and Play. In 3D too, with floors for the maps a topic links to.
 [Mind Maps →](https://simple-ideas.org/features/mindmaps.html)
 
 ![A 3D mind map](docs/screenshots/readme/mindmap.jpg)
+
+### Timelines
+
+Eras, dates, pictures and sources on one 16:9 page: `## Era` headings become
+colour bands, `### date · title` lines milestones with picture medallions. A
+landscape timeline is a slide (one era per click), a portrait one a poster;
+`si check` verifies a rubric (`require: 20 dates, 15 images`), `si build
+--png --pdf` exports it.
+[Timelines →](https://simple-ideas.org/features/timelines.html)
+
+![A 30-milestone timeline on one page](docs/screenshots/readme/timeline.jpg)
 
 ### Code
 

@@ -257,6 +257,18 @@ Not everything is a slide deck. Pick the type by what the reader does:
   the Markdown it writes is the same you would write by hand.
   Keep one idea per branch and at most about seven branches per map; move
   detail into a linked map instead of a deep tree.
+- **Timelines** (RULES.md §29): `type: timeline`, then `## Era` headings
+  (`· color=#hex` optional) and `### date · title` milestones, each with a
+  one- or two-line description and at most one `![caption](img "credit")`
+  (a local file or an `https://` picture, inlined at build). Keep dates as the
+  source writes them (`c. 300 a.C.`, `2022–2024`) and in chronological order;
+  never invent or drop a milestone. `## Fuentes · sources` holds the sources;
+  `closing:` the last line; `require: 20 dates, 15 images` lets `si check`
+  verify a rubric. `layout: snake` (landscape default, 30 milestones fit
+  16:9), `line`, `vertical` (portrait default); `orientation: portrait` makes
+  a scrolling poster. A landscape page is one slide with one build step per
+  era after the first: write one `[CLICK]` per era step in `Notes:`. Export
+  with `si build x.md --png --pdf`; credit every picture's licence.
 - **Code windows** (RULES.md §25): `window=mac|windows|terminal|none` on a
   code fence draws it as a window (`title="file.go"`, `theme=night|paper|dusk`,
   `backdrop=dusk|ocean|mint|graphite`, `numbers`, `hl=`); callouts go right
