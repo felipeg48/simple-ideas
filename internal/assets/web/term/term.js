@@ -24,6 +24,8 @@
     'box-shadow:0 -12px 40px rgba(0,0,0,.5);transform:translateY(100%);' +
     'transition:transform .22s ease;border-top:1px solid #1d2536}' +
     '.si-term.is-open{transform:translateY(0)}' +
+    '.si-term.is-max{height:100vh;transition:transform .22s ease,height .22s ease}' +
+    '.si-term-win{display:flex;gap:2px;flex:0 0 auto;margin-right:6px;padding-right:6px;border-right:1px solid #1d2536}' +
     '.si-term-bar{display:flex;align-items:stretch;gap:2px;background:#11151f;' +
     'padding:4px 6px;border-bottom:1px solid #1d2536;flex:0 0 auto}' +
     '.si-term-tabs{display:flex;gap:2px;overflow:auto;flex:1 1 auto}' +
@@ -150,6 +152,8 @@
   var hasDemos = window.SI_DEMOS && window.SI_DEMOS.length;
   root.innerHTML =
     '<div class="si-term-bar">' +
+    '<span class="si-term-win"><button class="si-term-btn" data-act="min" title="Minimise (` brings it back)">–</button>' +
+    '<button class="si-term-btn" data-act="max" title="Maximise: the whole window (double-click the bar too)">□</button></span>' +
     '<div class="si-term-tabs"></div>' +
     '<button class="si-term-btn" data-act="new" title="New shell tab">+</button>' +
     '<button class="si-term-btn" data-act="hide" title="Hide (`)">✕</button>' +
@@ -258,6 +262,18 @@
 
   root.querySelector('[data-act="new"]').addEventListener('click', newTab);
   root.querySelector('[data-act="hide"]').addEventListener('click', hide);
+  root.querySelector('[data-act="min"]').addEventListener('click', hide);
+  /* maximise: the drawer takes the whole window; remembered */
+  function refit() { if (active >= 0 && tabs[active] && !tabs[active].viewer) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); } }
+  function setMax(on) {
+    root.classList.toggle('is-max', on);
+    var b = root.querySelector('[data-act="max"]'); b.textContent = on ? '❐' : '□'; b.title = on ? 'Restore the drawer size' : 'Maximise: the whole window (double-click the bar too)';
+    try { localStorage.setItem('si-term-max', on ? '1' : ''); } catch (e) {}
+    setTimeout(refit, 260);
+  }
+  root.querySelector('[data-act="max"]').addEventListener('click', function () { setMax(!root.classList.contains('is-max')); });
+  root.querySelector('.si-term-bar').addEventListener('dblclick', function (ev) { if (ev.target.closest('button,.si-term-tab')) return; setMax(!root.classList.contains('is-max')); });
+  try { if (localStorage.getItem('si-term-max')) setMax(true); } catch (e) {}
   window.addEventListener('resize', function () { if (active >= 0 && tabs[active] && !tabs[active].viewer) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); } });
 
   /* one width for the side panels, dragged from their left edge, remembered */

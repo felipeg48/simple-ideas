@@ -186,3 +186,6 @@ the same `data-act` as before (`demos`, `runbook`, `files`); `.is-on` marks the
 open panel. Side panels get a `.si-term-grip` on their left edge (`addGrip`):
 one shared width, `localStorage` `si-panel-w`, 240 px to 80 % of the drawer;
 the shell refits on release.
+
+Minimise (`data-act="min"`) is `hide()`; maximise toggles `.si-term.is-max`
+(height 100vh), `localStorage` `si-term-max`, then refits the shell.

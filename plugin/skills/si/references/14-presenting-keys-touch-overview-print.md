@@ -187,6 +187,9 @@
   and **Viewer** (the page). Demos and Runbook open as a side panel (one at a
   time; click the icon again to close it) that resizes by dragging its left
   edge; the width is remembered. **+** (new shell) and **✕** stay at the top.
+  At the top left, **–** minimises the drawer (**`** brings it back, shells
+  still running) and **□** maximises it to the whole window (or double-click
+  the bar; **❐** restores; remembered).
 
 - **Viewer tabs** (the Viewer icon in the tools bar): each click opens
   a new tab beside the shells, a read-only tree of a folder and the file you
