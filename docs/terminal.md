@@ -77,10 +77,33 @@ one (`creack/pty`) plus the bundled xterm.
 - Ctrl-C needs no special endpoint: xterm sends `0x03` as input → the PTY delivers
   SIGINT to the foreground process naturally.
 - A tab's shell is killed on close; all shells are killed on `si play` shutdown.
+- **Shells outlive the page (v3.6.0).** One goroutine per tab (`termSession.pump`)
+  reads the PTY into a ring buffer (the last 256 KB, `ringMax`) and on to the
+  attached stream. `out` attaches (the newest stream wins: an older one for the
+  same tab ends, so no output is shown twice), first writes the ring (from a
+  line start once it has wrapped) and, on a reattach, sends `X-Si-Replay: N`
+  so `term.js` does not send xterm's answers to old terminal queries in those
+  N bytes back to the shell. `GET /_si/term/api/list` returns `[{id, title,
+  created}]`. A shell with no stream for `termHub.idle` (10 minutes) is closed
+  by a once-a-minute `reap`; `TestTerminalReattach`, `TestTerminalIdleReap`.
+- **The page side.** `term.js` writes `sessionStorage` `si-term-state` on
+  `pagehide`: open or not, the active tab, and each tab in order (a shell:
+  `{id, label, zoom}`; a Viewer: `t.snap()`, folder, file, edit mode with an
+  unsaved draft and the mtime it began from, Follow, zoom). `05-annotate-keys.js`
+  loads the runtime on page load when that state has tabs; `term.js` asks
+  `list`, attaches the live shells (dropping the ended ones), reopens the
+  Viewers and selects the active tab without taking the deck's focus when the
+  drawer was closed.
+- **Text size per tab:** `t.zoom` (0.5-3): a shell's xterm `fontSize` is 14 ×
+  zoom (refit, resize sent); a Viewer sets `--si-z` on its pane, which scales
+  the tree, the read-only view and the CodeMirror editor. The bar's − % + and
+  ⌘= / ⌘- / ⌘0 (a capture listener on the panes) act on the active tab;
+  `localStorage` `si-term-zoom` / `si-fs-zoom` hold the default for new tabs.
+- **Drawer height:** the top-edge grip sets `--si-term-h` in `vh` (20-100),
+  `localStorage` `si-term-h`; `.is-max` (100vh) overrides it and gives it back.
 
 ## Ideas not yet built
 
-- Persist/restore tab layout across reloads.
 - A visible "running" indicator per tab.
 - Remote (non-loopback) is intentionally out of scope and stays that way.
 
@@ -166,6 +189,18 @@ strips `Domain`/`Secure`/`SameSite` from cookies; the window frames the
 proxied URL. Links come from the `browser:` front matter as
 `window.SI_BROWSER` (play terminal only); recent addresses in `localStorage`
 `si-web-recent`. Proxies close with the terminals.
+
+Back and forward (v3.6.0): the deck cannot reach a cross-origin frame's
+history, so the proxy asks upstream for a plain body (no `Accept-Encoding`)
+and `injectNav` puts a small script after `<head>` of every HTML response
+(dropping its CSP so the inline script runs). The script posts `{si:'nav',
+kind, url, title}` to the parent on load, `pushState` / `replaceState`,
+`popstate` and `hashchange`, and obeys `{si:'nav-cmd', cmd:'back'|'forward'|
+'reload'}` from the parent only. `web.js` accepts nav messages only from each
+window's own frame (`ev.source`), maps the proxy origin back to the real one
+for the address box, and keeps a per-window list of addresses and a position
+(a new address after a back drops the ones ahead) to dim ← and →.
+`TestBrowserProxyInjectsNav`.
 
 ## Viewer tabs
 

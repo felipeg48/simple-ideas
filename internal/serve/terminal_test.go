@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -456,5 +457,131 @@ func TestTerminalCatTail(t *testing.T) {
 	c := get("&tail=1")
 	if !c.Tail || !c.Truncated || !strings.Contains(c.HTML, "the last line") || !strings.HasPrefix(c.HTML, "line ") {
 		t.Fatalf("tail: tail=%v starts %q", c.Tail, c.HTML[:min(20, len(c.HTML))])
+	}
+}
+
+// readUntil reads r until want shows up (true) or it ends / times out.
+func readUntil(r io.Reader, want string, d time.Duration) (string, bool) {
+	got := make(chan bool, 1)
+	var acc strings.Builder
+	var mu sync.Mutex
+	go func() {
+		buf := make([]byte, 4096)
+		for {
+			n, err := r.Read(buf)
+			mu.Lock()
+			acc.Write(buf[:n])
+			ok := strings.Contains(acc.String(), want)
+			mu.Unlock()
+			if ok {
+				got <- true
+				return
+			}
+			if err != nil {
+				got <- false
+				return
+			}
+		}
+	}()
+	var ok bool
+	select {
+	case ok = <-got:
+	case <-time.After(d):
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	return acc.String(), ok
+}
+
+// TestTerminalReattach: a shell outlives its page. A second out stream (the
+// reloaded page) gets the earlier output replayed and says so in
+// X-Si-Replay; the older stream ends (latest wins, no output twice); list
+// shows the shell.
+func TestTerminalReattach(t *testing.T) {
+	t.Setenv("SHELL", "/bin/sh") // quick to start
+	ts := newTermServer(t, true)
+	res, err := http.Post(ts.URL+"/_si/term/api/new", "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	id := string(b)
+
+	first, err := http.Get(ts.URL + "/_si/term/api/out?id=" + id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer first.Body.Close()
+	if first.Header.Get("X-Si-Replay") != "" {
+		t.Error("the first attach is not a replay")
+	}
+	time.Sleep(150 * time.Millisecond)
+	in, _ := http.Post(ts.URL+"/_si/term/api/in?id="+id, "", strings.NewReader("echo reload$((40+2))\r"))
+	in.Body.Close()
+	if _, ok := readUntil(first.Body, "reload42", 5*time.Second); !ok {
+		t.Fatal("first stream: no echo")
+	}
+
+	second, err := http.Get(ts.URL + "/_si/term/api/out?id=" + id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer second.Body.Close()
+	if second.Header.Get("X-Si-Replay") == "" {
+		t.Error("reattach: no X-Si-Replay header")
+	}
+	if _, ok := readUntil(second.Body, "reload42", 5*time.Second); !ok {
+		t.Fatal("reattach did not replay the earlier output")
+	}
+	// the first stream has ended: reading it returns EOF quickly
+	done := make(chan struct{})
+	go func() { io.Copy(io.Discard, first.Body); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Error("the older stream did not end when a newer one attached")
+	}
+
+	lr, err := http.Get(ts.URL + "/_si/term/api/list")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var list []struct {
+		ID      string `json:"id"`
+		Title   string `json:"title"`
+		Created int64  `json:"created"`
+	}
+	json.NewDecoder(lr.Body).Decode(&list)
+	lr.Body.Close()
+	if len(list) != 1 || list[0].ID != id || list[0].Title == "" || list[0].Created == 0 {
+		t.Errorf("list = %+v", list)
+	}
+}
+
+// TestTerminalIdleReap: a shell no page is attached to is closed after the
+// idle time; an attached one is kept.
+func TestTerminalIdleReap(t *testing.T) {
+	h := newTermHub(t.TempDir())
+	t.Cleanup(h.closeAll)
+	h.idle = time.Minute
+	newID := func() string {
+		w := httptest.NewRecorder()
+		h.newTab(w, httptest.NewRequest("POST", "/_si/term/api/new", nil))
+		return w.Body.String()
+	}
+	idle, kept := newID(), newID()
+	h.tabs[kept].attach(&termSub{ch: make(chan []byte, 64), replaced: make(chan struct{}), gone: make(chan struct{})})
+	h.reap(time.Now()) // not yet idle long enough
+	if len(h.tabs) != 2 {
+		t.Fatalf("reaped too early: %d tabs", len(h.tabs))
+	}
+	h.reap(time.Now().Add(2 * time.Minute))
+	h.mu.Lock()
+	_, a := h.tabs[idle]
+	_, b := h.tabs[kept]
+	h.mu.Unlock()
+	if a || !b {
+		t.Errorf("after the idle time: idle tab alive %v, attached tab alive %v", a, b)
 	}
 }

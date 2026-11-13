@@ -115,9 +115,7 @@
    * toggle, so a page that never opens the terminal pays nothing for it, and a
    * built deck (termEnabled false) never references it at all. */
   var termLoaded = false;
-  function toggleTerminal() {
-    if (!termEnabled) return;
-    if (window.siTerm) { window.siTerm.toggle(); return; }
+  function loadTerm(then) {
     if (termLoaded) return; // load in flight
     termLoaded = true;
     var css = document.createElement('link');
@@ -126,9 +124,14 @@
     function add(src, next) { var s = document.createElement('script'); s.src = src; s.onload = next; document.head.appendChild(s); }
     add('/_si/term/assets/xterm.js', function () {
       add('/_si/term/assets/addon-fit.js', function () {
-        add('/_si/term/assets/term.js', function () { if (window.siTerm) window.siTerm.toggle(); });
+        add('/_si/term/assets/term.js', function () { if (window.siTerm && then) then(); });
       });
     });
+  }
+  function toggleTerminal() {
+    if (!termEnabled) return;
+    if (window.siTerm) { window.siTerm.toggle(); return; }
+    loadTerm(function () { window.siTerm.toggle(); });
   }
 
   /* Floating browser windows (w, si play only): lazy-load web.js; reopen the
@@ -144,6 +147,8 @@
   }
   function toggleBrowser() { if (termEnabled && !role) loadWeb(function () { window.siWeb.picker(); }); }
   try { if (termEnabled && !role && JSON.parse(sessionStorage.getItem('si-web') || '[]').length) loadWeb(); } catch (e) {}
+  /* the drawer's shells and Viewers outlive a live reload: term.js brings them back (sessionStorage si-term-state) */
+  try { if (termEnabled && !role && (JSON.parse(sessionStorage.getItem('si-term-state') || '{}').tabs || []).length) loadTerm(); } catch (e) {}
 
   function runCmd(a) {
     if (role === 'audience' && a !== 'fullscreen' && a !== 'mode' && a !== 'help') return; /* follow only */

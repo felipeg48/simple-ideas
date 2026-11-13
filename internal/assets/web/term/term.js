@@ -18,13 +18,19 @@
 
   var style = document.createElement('style');
   style.textContent =
-    '.si-term{position:fixed;left:0;right:0;bottom:0;height:55vh;z-index:9000;' +
+    '.si-term{position:fixed;left:0;right:0;bottom:0;height:var(--si-term-h,55vh);z-index:9000;' +
     'display:flex;flex-direction:column;background:#0b0e14;color:#e6e6e6;' +
     'font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;' +
     'box-shadow:0 -12px 40px rgba(0,0,0,.5);transform:translateY(100%);' +
     'transition:transform .22s ease;border-top:1px solid #1d2536}' +
     '.si-term.is-open{transform:translateY(0)}' +
     '.si-term.is-max{height:100vh;transition:transform .22s ease,height .22s ease}' +
+    /* the top edge sets the drawer height */
+    '.si-term-vgrip{position:absolute;left:0;right:0;top:-3px;height:7px;cursor:ns-resize;z-index:5}' +
+    '.si-term-vgrip:hover,.si-term-vgrip.is-drag{background:#7dd3fc55}.si-term.is-sizing{transition:none}.si-term.is-sizing .xterm{pointer-events:none}' +
+    /* the active tab's text size: − 100% + (as in the browser windows) */
+    '.si-term-zoom{display:flex;align-items:center;gap:2px;flex:0 0 auto;margin:0 6px 0 4px;padding-right:6px;border-right:1px solid #1d2536}' +
+    '.si-term-zoom .pct{min-width:3.2em;text-align:center;color:#9aa7c0;font:11px ui-monospace,Menlo,monospace;cursor:pointer;align-self:center}' +
     '.si-term-win{display:flex;gap:2px;flex:0 0 auto;margin-right:6px;padding-right:6px;border-right:1px solid #1d2536}' +
     '.si-term-bar{display:flex;align-items:stretch;gap:2px;background:#11151f;' +
     'padding:4px 6px;border-bottom:1px solid #1d2536;flex:0 0 auto}' +
@@ -117,11 +123,11 @@
     '.si-rb-hint{font-size:11px;color:#5b6680;padding:6px 10px}' +
     /* files panel: a read-only tree of a folder and a viewer for one file */
     '.si-fs-pane{padding:0}.si-fs{display:flex;flex-direction:column;height:100%;min-height:0;background:#0d1017;' +
-    'font:12px ui-sans-serif,system-ui,sans-serif;color:#c8d0e0}' +
+    'font:calc(12px*var(--si-z,1)) ui-sans-serif,system-ui,sans-serif;color:#c8d0e0}' +
     '.si-fs-head{flex:0 0 auto;display:flex;gap:4px;padding:6px 8px;border-bottom:1px solid #1d2536}' +
-    '.si-fs-head input{flex:1 1 auto;min-width:0;background:#11151f;color:#e6e6e6;border:1px solid #1d2536;border-radius:6px;padding:5px 8px;font:12px ui-monospace,Menlo,monospace}' +
+    '.si-fs-head input{flex:1 1 auto;min-width:0;background:#11151f;color:#e6e6e6;border:1px solid #1d2536;border-radius:6px;padding:5px 8px;font:calc(12px*var(--si-z,1)) ui-monospace,Menlo,monospace}' +
     '.si-fs-head input:focus{outline:none;border-color:#7dd3fc}' +
-    '.si-fs-head button,.si-fs-vh button{flex:0 0 auto;background:#11151f;color:#e6e6e6;border:1px solid #1d2536;border-radius:6px;padding:4px 8px;font:12px ui-sans-serif,system-ui,sans-serif;cursor:pointer}' +
+    '.si-fs-head button,.si-fs-vh button{flex:0 0 auto;background:#11151f;color:#e6e6e6;border:1px solid #1d2536;border-radius:6px;padding:4px 8px;font:calc(12px*var(--si-z,1)) ui-sans-serif,system-ui,sans-serif;cursor:pointer}' +
     '.si-fs-head button:hover,.si-fs-vh button:hover{border-color:#7dd3fc}' +
     '.si-fs-split{flex:1 1 auto;display:flex;min-height:0}' +
     '.si-fs-side{flex:0 0 min(340px,32%);display:flex;flex-direction:column;min-height:0;border-right:1px solid #1d2536}' +
@@ -133,32 +139,33 @@
     '.si-fs-row input{flex:1 1 auto;min-width:0;background:#0b0e14;color:#e6e6e6;border:1px solid #7dd3fc;border-radius:3px;padding:0 4px;font:inherit;outline:none}' +
     '.si-fs-row input.bad{border-color:#ff8a8a}' +
     '.si-fs-menu{position:fixed;z-index:9100;min-width:170px;padding:4px;background:#11151f;border:1px solid #2a3550;border-radius:6px;' +
-    'box-shadow:0 8px 24px rgba(0,0,0,.55);font:12px ui-sans-serif,system-ui,sans-serif;color-scheme:dark}' +
+    'box-shadow:0 8px 24px rgba(0,0,0,.55);font:calc(12px*var(--si-z,1)) ui-sans-serif,system-ui,sans-serif;color-scheme:dark}' +
     '.si-fs-menu button{display:block;width:100%;text-align:left;background:transparent;color:#c8d0e0;border:0;border-radius:4px;padding:5px 10px;cursor:pointer;font:inherit}' +
     '.si-fs-menu button:hover,.si-fs-menu button:focus{background:#1b2436;color:#fff;outline:none}.si-fs-menu button.danger{color:#ff8a8a}' +
     '.si-fs-menu hr{border:0;border-top:1px solid #1d2536;margin:4px 2px}' +
-    '.si-fs-ask button.danger{background:#5a1d1d;border-color:#a33a3a;color:#ffd6d6}.si-fs-ask .p{font:12px ui-monospace,Menlo,monospace;user-select:all;color:#e6e6e6}' +
+    '.si-fs-ask button.danger{background:#5a1d1d;border-color:#a33a3a;color:#ffd6d6}.si-fs-ask .p{font:calc(12px*var(--si-z,1)) ui-monospace,Menlo,monospace;user-select:all;color:#e6e6e6}' +
     '.si-fs-vh button.is-on{background:#14532d;border-color:#3fb47a;color:#d9fbe5}' +
     '.si-fs-row{display:flex;align-items:center;gap:5px;padding:2px 8px;white-space:nowrap;cursor:pointer;color:#c8d0e0}' +
     '.si-fs-row:hover{background:#151b27}.si-fs-row.is-on{background:#1b2436;color:#fff}' +
     '.si-fs-row .ic{flex:0 0 1em;color:#7d8aa5;text-align:center}.si-fs-row.dot{opacity:.6}' +
-    '.si-fs-row .nm{overflow:hidden;text-overflow:ellipsis}.si-fs-row .sz{margin-left:auto;padding-left:8px;color:#5b6680;font-size:11px}' +
+    '.si-fs-row .nm{overflow:hidden;text-overflow:ellipsis}.si-fs-row .sz{margin-left:auto;padding-left:8px;color:#5b6680;font-size:calc(11px*var(--si-z,1))}' +
     '.si-fs-view{flex:1 1 auto;display:flex;flex-direction:column;min-width:0}' +
     '.si-fs-vh{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:5px 8px;border-bottom:1px solid #1d2536;color:#9aa7c0}' +
     '.si-fs-vh .nm{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e6e6e6;font-weight:600}' +
     '.si-fs-body{flex:1 1 auto;overflow:auto;margin:0}' +
-    '.si-fs-code{margin:0;padding:6px 0;font:12px/1.5 ui-monospace,Menlo,monospace;color:#c7d0e0;counter-reset:ln;white-space:pre;tab-size:4}' +
+    '.si-fs-code{margin:0;padding:6px 0;font:calc(12px*var(--si-z,1))/1.5 ui-monospace,Menlo,monospace;color:#c7d0e0;counter-reset:ln;white-space:pre;tab-size:4}' +
     '.si-fs-code .ln{display:block;padding:0 10px 0 0}.si-fs-code .ln::before{counter-increment:ln;content:counter(ln);display:inline-block;width:3.2em;margin-right:10px;text-align:right;color:#3d4760;user-select:none}' +
     '.si-fs-vh{flex-wrap:wrap}.si-fs-vh .nm{min-width:6em}.si-fs-vh .in{white-space:nowrap}' +
     '.si-fs-vh button.pri{background:#7dd3fc;color:#0b0e14;border-color:#7dd3fc}.si-fs-vh button[hidden]{display:none}' +
     '.si-fs-vh .ok{color:#3fb47a;font-weight:600}.si-fs-ed{height:100%}.si-fs-body.is-edit{overflow:hidden}' +
     '.si-fs-ask{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 8px;background:#2a2410;color:#ffd080;border-bottom:1px solid #4a3d14}' +
-    '.si-fs-ask span{flex:1 1 auto}.si-fs-ask button{background:#1b2436;color:#e6e6e6;border:1px solid #2a3550;border-radius:4px;padding:3px 10px;font:12px ui-sans-serif,system-ui,sans-serif;cursor:pointer}' +
+    '.si-fs-ask span{flex:1 1 auto}.si-fs-ask button{background:#1b2436;color:#e6e6e6;border:1px solid #2a3550;border-radius:4px;padding:3px 10px;font:calc(12px*var(--si-z,1)) ui-sans-serif,system-ui,sans-serif;cursor:pointer}' +
     '.si-fs-ask button.pri{background:#7dd3fc;color:#0b0e14;border-color:#7dd3fc}.si-fs-ask button:hover{border-color:#7dd3fc}' +
     '.si-fs-msg{padding:14px;color:#7d8aa5}.si-fs-img{max-width:100%;display:block;margin:10px auto;background:#fff}' +
     ':is(.si-fs-code) .si-tk-k{color:#7dd3fc}:is(.si-fs-code) .si-tk-s{color:#a5e075}:is(.si-fs-code) .si-tk-n{color:#f5a05a}' +
     ':is(.si-fs-code) .si-tk-c{color:#5b6680;font-style:italic}:is(.si-fs-code) .si-tk-m{color:#c792ea}:is(.si-fs-code) .si-tk-f{color:#f5a05a}' +
     ':is(.si-fs-code) .si-tk-v{color:#ffd080}:is(.si-fs-code) .si-tk-y{color:#7dd3fc}' +
+    '.si-fs-ed .cm-editor{font-size:calc(12px*var(--si-z,1))!important}' +
     /* highlighter tokens, scoped dark for the drawer (deck theme must not leak in) */
     ':is(.si-rb-cmd,.si-dm-code) .si-tk-k{color:#7dd3fc}:is(.si-rb-cmd,.si-dm-code) .si-tk-s{color:#a5e075}' +
     ':is(.si-rb-cmd,.si-dm-code) .si-tk-n{color:#f5a05a}:is(.si-rb-cmd,.si-dm-code) .si-tk-c{color:#5b6680;font-style:italic}' +
@@ -175,6 +182,9 @@
     '<span class="si-term-win"><button class="si-term-btn" data-act="min" title="Minimise (` brings it back)">–</button>' +
     '<button class="si-term-btn" data-act="max" title="Maximise: the whole window (double-click the bar too)">□</button></span>' +
     '<div class="si-term-tabs"></div>' +
+    '<span class="si-term-zoom"><button class="si-term-btn" data-act="zout" title="Smaller (this tab only; ⌘-)">−</button>' +
+    '<span class="pct" title="Text size of this tab; click for 100% (⌘0)">100%</span>' +
+    '<button class="si-term-btn" data-act="zin" title="Larger (this tab only; ⌘=)">+</button></span>' +
     '<button class="si-term-btn" data-act="new" title="New shell tab">+</button>' +
     '<button class="si-term-btn" data-act="hide" title="Hide (`)">✕</button>' +
     '</div><div class="si-term-body"><div class="si-term-main"></div>' +
@@ -188,36 +198,82 @@
   var tabsEl = root.querySelector('.si-term-tabs');
   var bodyEl = root.querySelector('.si-term-main');
 
-  var tabs = []; // { id, term, fit, pane, tabEl }
+  var tabs = []; // { id, term, fit, pane, tabEl, zoom } or a Viewer { viewer, pane, tabEl, zoom, snap }
   var active = -1;
   var seq = 0;
+  var restoring = false; // tabs being brought back after a reload: no focus
 
   function post(path) { return fetch(API + path, { method: 'POST' }).catch(function () {}); }
 
-  function select(i) {
+  /* quiet: no focus (a restore into a closed drawer must leave the deck's keys alone) */
+  function select(i, quiet) {
     active = i;
     tabs.forEach(function (t, k) {
       var on = k === i;
       t.pane.classList.toggle('is-active', on);
       t.tabEl.classList.toggle('is-active', on);
-      if (on && !t.viewer) { lastShell = t; try { t.fit.fit(); } catch (e) {} sendResize(t); t.term.focus(); }
-      else if (on && t.editor) t.editor.focus();
+      if (on && !t.viewer) { lastShell = t; try { t.fit.fit(); } catch (e) {} sendResize(t); if (!quiet) t.term.focus(); }
+      else if (on && t.editor && !quiet) t.editor.focus();
     });
+    if (tabs[i]) pctEl.textContent = Math.round(tabs[i].zoom * 100) + '%';
   }
+
+  /* text size per tab: a shell's xterm font, a Viewer's tree, view and editor;
+     the last size used is the default for the next tab of that kind */
+  var pctEl = root.querySelector('.si-term-zoom .pct');
+  function zkey(viewer) { return viewer ? 'si-fs-zoom' : 'si-term-zoom'; }
+  function defZoom(viewer) { try { return +localStorage.getItem(zkey(viewer)) || 1; } catch (e) { return 1; } }
+  function applyZoom(t) {
+    if (t.viewer) t.pane.style.setProperty('--si-z', t.zoom);
+    else { t.term.options.fontSize = Math.round(14 * t.zoom); if (tabs[active] === t) { try { t.fit.fit(); } catch (e) {} sendResize(t); } }
+    if (tabs[active] === t) pctEl.textContent = Math.round(t.zoom * 100) + '%';
+  }
+  function zoomBy(k) {
+    var t = tabs[active]; if (!t) return;
+    t.zoom = Math.max(0.5, Math.min(3, Math.round((k ? t.zoom * k : 1) * 100) / 100));
+    applyZoom(t);
+    try { localStorage.setItem(zkey(t.viewer), String(t.zoom)); } catch (e) {}
+  }
+  root.querySelector('[data-act="zin"]').addEventListener('click', function () { zoomBy(1.1); });
+  root.querySelector('[data-act="zout"]').addEventListener('click', function () { zoomBy(1 / 1.1); });
+  pctEl.addEventListener('click', function () { zoomBy(0); });
+  /* ⌘= ⌘- ⌘0 (Ctrl elsewhere) in a tab size that tab, not the page */
+  var mac = /Mac|iP/.test(navigator.platform);
+  bodyEl.addEventListener('keydown', function (ev) {
+    if (!(mac ? ev.metaKey : ev.ctrlKey) || ev.altKey) return;
+    var k = ev.key, f = k === '=' || k === '+' ? 1.1 : k === '-' || k === '_' ? 1 / 1.1 : k === '0' ? 0 : null;
+    if (f === null) return;
+    ev.preventDefault(); ev.stopPropagation(); zoomBy(f);
+  }, true);
 
   function sendResize(t) {
     if (t.viewer) return;
     if (t.term.cols && t.term.rows) post('resize?id=' + t.id + '&cols=' + t.term.cols + '&rows=' + t.term.rows);
   }
 
+  /* the shell's output; on a reattach the server first replays the recent
+     output (X-Si-Replay bytes): while xterm parses it, its answers to old
+     terminal queries in it are not sent to the shell */
   function stream(t) {
     fetch(API + 'out?id=' + t.id).then(function (res) {
       if (!res.body) return;
+      var replay = +res.headers.get('X-Si-Replay') || 0, seen = 0;
+      t.mute = replay > 0;
       var reader = res.body.getReader();
       (function pump() {
         reader.read().then(function (r) {
-          if (r.done) { t.term.write('\r\n\x1b[90m[process exited]\x1b[0m\r\n'); return; }
-          t.term.write(r.value);
+          if (r.done) {
+            if (t.gone) return;
+            fetch(API + 'list').then(function (x) { return x.json(); }).then(function (l) {
+              var alive = (l || []).some(function (x) { return x.id === t.id; });
+              if (!alive) t.ended = true;
+              t.term.write(alive ? '\r\n\x1b[90m[this shell is open in another page]\x1b[0m\r\n' : '\r\n\x1b[90m[process exited]\x1b[0m\r\n');
+            }).catch(function () {});
+            return;
+          }
+          seen += r.value.length;
+          if (t.mute && seen >= replay) t.term.write(r.value, function () { t.mute = false; });
+          else t.term.write(r.value);
           t.lastOut = Date.now();
           pump();
         }).catch(function () {});
@@ -225,36 +281,44 @@
     }).catch(function () {});
   }
 
-  function newTab() {
-    var local = ++seq;
+  /* saved: a shell from before a reload ({id, label, zoom}): attach to it */
+  function newTab(saved) {
+    if (saved && saved.type) saved = null; // a click event
+    var label = saved && saved.label || 'shell ' + (++seq), m = /(\d+)$/.exec(label);
+    if (m) seq = Math.max(seq, +m[1]);
     var tabEl = document.createElement('button');
     tabEl.className = 'si-term-tab';
-    tabEl.innerHTML = '<span class="label">shell ' + local + '</span><span class="x" title="Close">×</span>';
+    tabEl.innerHTML = '<span class="label"></span><span class="x" title="Close">×</span>';
+    tabEl.firstChild.textContent = label;
     tabsEl.appendChild(tabEl);
     var pane = document.createElement('div');
     pane.className = 'si-term-pane';
     bodyEl.appendChild(pane);
 
-    var term = new Term({ cursorBlink: true, fontSize: 14, scrollback: 5000,
+    var zoom = saved && saved.zoom || defZoom(false);
+    var term = new Term({ cursorBlink: true, fontSize: Math.round(14 * zoom), scrollback: 5000,
       fontFamily: '"MesloLGS NF","MesloLGS Nerd Font","Meslo LG S Nerd Font","FiraCode Nerd Font","Hack Nerd Font","JetBrainsMono Nerd Font","SauceCodePro Nerd Font",ui-monospace,Menlo,Consolas,monospace',
       theme: { background: '#0b0e14', foreground: '#e6e6e6', cursor: '#7dd3fc' } });
     var fit = new Fit();
     term.loadAddon(fit);
     term.open(pane);
 
-    var t = { id: null, term: term, fit: fit, pane: pane, tabEl: tabEl, born: Date.now() };
+    var t = { id: null, term: term, fit: fit, pane: pane, tabEl: tabEl, born: Date.now(), zoom: zoom };
     tabs.push(t);
     var idx = tabs.length - 1;
-    select(idx);
+    select(idx, restoring);
 
-    fetch(API + 'new', { method: 'POST' }).then(function (r) { return r.text(); }).then(function (id) {
+    function attach(id) {
       t.id = id;
       try { fit.fit(); } catch (e) {}
       sendResize(t);
       stream(t);
-      term.onData(function (d) { if (t.id) fetch(API + 'in?id=' + t.id, { method: 'POST', body: d }); });
+      term.onData(function (d) { if (t.id && !t.mute) fetch(API + 'in?id=' + t.id, { method: 'POST', body: d }); });
       term.onResize(function () { sendResize(t); });
-    }).catch(function () { term.write('\r\n\x1b[31msi: could not start a shell\x1b[0m\r\n'); });
+    }
+    if (saved) { t.everBP = true; attach(saved.id); } // a shell that was ready before the reload
+    else fetch(API + 'new', { method: 'POST' }).then(function (r) { return r.text(); }).then(attach)
+      .catch(function () { term.write('\r\n\x1b[31msi: could not start a shell\x1b[0m\r\n'); });
 
     tabEl.addEventListener('click', function (e) {
       if (e.target.classList.contains('x')) { closeTab(t); return; }
@@ -266,6 +330,7 @@
     if (t.leave && !t.leave(function () { t.leave = null; closeTab(t); })) return; // a Viewer with unsaved edits asks first
     if (t.editor) try { t.editor.destroy(); } catch (e) {}
     if (t.stop) t.stop();
+    t.gone = true;
     if (t.id) post('close?id=' + t.id);
     if (t.term) try { t.term.dispose(); } catch (e) {}
     t.pane.remove(); t.tabEl.remove();
@@ -299,6 +364,25 @@
   root.querySelector('.si-term-bar').addEventListener('dblclick', function (ev) { if (ev.target.closest('button,.si-term-tab')) return; setMax(!root.classList.contains('is-max')); });
   try { if (localStorage.getItem('si-term-max')) setMax(true); } catch (e) {}
   window.addEventListener('resize', function () { if (active >= 0 && tabs[active] && !tabs[active].viewer) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); } });
+  /* the drawer height: drag its top edge (20%-100% of the window); remembered.
+     Maximise still works and comes back to this height. */
+  var drawerH = 0; try { drawerH = +localStorage.getItem('si-term-h') || 0; } catch (e) {}
+  function setH() { if (drawerH) root.style.setProperty('--si-term-h', drawerH + 'vh'); }
+  setH();
+  var vgrip = document.createElement('div'); vgrip.className = 'si-term-vgrip'; vgrip.title = 'Drag to set the drawer height';
+  root.appendChild(vgrip);
+  vgrip.addEventListener('pointerdown', function (ev) {
+    if (ev.button !== 0) return;
+    ev.preventDefault(); vgrip.setPointerCapture(ev.pointerId); vgrip.classList.add('is-drag'); root.classList.add('is-sizing');
+    if (root.classList.contains('is-max')) setMax(false);
+    function mv(e) { drawerH = Math.round(Math.max(20, Math.min(100, (innerHeight - e.clientY) / innerHeight * 100)) * 10) / 10; setH(); }
+    function up() {
+      vgrip.removeEventListener('pointermove', mv); vgrip.removeEventListener('pointerup', up); vgrip.classList.remove('is-drag'); root.classList.remove('is-sizing');
+      try { localStorage.setItem('si-term-h', String(drawerH)); } catch (e) {}
+      refit();
+    }
+    vgrip.addEventListener('pointermove', mv); vgrip.addEventListener('pointerup', up);
+  });
 
   /* one width for the side panels, dragged from their left edge, remembered */
   var panelW = 0; try { panelW = +localStorage.getItem('si-panel-w') || 0; } catch (e) {}
@@ -621,15 +705,18 @@
     }));
   }
   function fsList(dir) { return fetch(API + 'ls?dir=' + encodeURIComponent(dir)).then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t); }); return r.json(); }); }
-  function newViewer() {
+  /* saved: a Viewer from before a reload ({n, dir, file, name, edit, draft, mtime, follow, zoom}) */
+  function newViewer(saved) {
     var start = ''; try { start = localStorage.getItem('si-files-dir') || ''; } catch (e) {}
-    var n = ++viewerSeq;
+    if (saved && saved.dir) start = saved.dir;
+    var n = saved && saved.n || ++viewerSeq; viewerSeq = Math.max(viewerSeq, n);
     var tabEl = document.createElement('button'); tabEl.className = 'si-term-tab';
     tabEl.innerHTML = '<span class="label">Viewer ' + n + '</span><span class="x" title="Close">×</span>';
     tabsEl.appendChild(tabEl);
     var pane = document.createElement('div'); pane.className = 'si-term-pane si-fs-pane';
     bodyEl.appendChild(pane);
-    var t = { viewer: true, pane: pane, tabEl: tabEl };
+    var t = { viewer: true, pane: pane, tabEl: tabEl, zoom: saved && saved.zoom || defZoom(true) };
+    pane.style.setProperty('--si-z', t.zoom);
     tabs.push(t);
     tabEl.addEventListener('click', function (e) { if (e.target.classList.contains('x')) { closeTab(t); return; } select(tabs.indexOf(t)); });
 
@@ -654,7 +741,7 @@
     var label = tabEl.querySelector('.label'), askEl = pane.querySelector('.si-fs-ask'), okEl = pane.querySelector('.si-fs-vh .ok');
     var btn = function (f) { return pane.querySelector('[data-f="' + f + '"]'); };
     var file = null, dirty = false, curName = ''; // file: the cat answer for cur (text, mtime)
-    var following = false, noticed = '', polling = false; // Follow, and the changed-on-disk notice while editing
+    var following = !!(saved && saved.follow), noticed = '', polling = false; // Follow, and the changed-on-disk notice while editing
     function setDirty(on) { dirty = on; label.textContent = 'Viewer · ' + curName + (on ? ' ●' : ''); }
     function editing() { return !!t.editor; }
     function buttons() {
@@ -685,7 +772,7 @@
       return false;
     };
     function stopEditing() { if (t.editor) { try { t.editor.destroy(); } catch (e) {} t.editor = null; } body.classList.remove('is-edit'); askEl.hidden = true; setDirty(false); }
-    function startEditing() {
+    function startEditing(then) {
       if (!file || typeof file.text !== 'string') return;
       loadEditor().then(function () {
         if (editing() || !file) return;
@@ -694,7 +781,8 @@
         t.editor = window.SiEditor.create(holder, { doc: file.text, file: cur,
           onChange: function () { var d = t.editor && t.editor.getText() !== file.text; if (d !== dirty) setDirty(d); },
           onSave: function () { save(false); } });
-        buttons(); t.editor.focus();
+        buttons();
+        if (typeof then === 'function') then(); else t.editor.focus();
       }, function () { ask('The editor did not load.', [['OK', function () {}]]); });
     }
     function save(force, then) {
@@ -902,15 +990,15 @@
       body.innerHTML = ''; body.appendChild(pre);
       body.scrollTop = scroll === 'end' ? body.scrollHeight : scroll === 'keep' ? top : 0;
     }
-    function openFile(p, name, edit) {
-      if (!t.leave(function () { openFile(p, name, edit); })) return;
+    function openFile(p, name, edit, then) {
+      if (!t.leave(function () { openFile(p, name, edit, then); })) return;
       stopEditing();
       cur = p; curName = name; file = null; buttons(); vName.textContent = name; vName.title = p; vInfo.textContent = ''; setDirty(false); tabEl.title = p;
       body.innerHTML = '<div class="si-fs-msg">Loading…</div>';
       fetchFile(p, following).then(function (j) {
         if (cur !== p) return;
         file = j; buttons(); showText(j, following ? 'end' : 0);
-        if (edit) startEditing();
+        if (edit) startEditing(then);
       }, function (err) { body.innerHTML = '<div class="si-fs-msg"></div>'; body.firstChild.textContent = String(err.message); });
     }
     /* Follow: once a second (while this tab shows), a cheap stat; when the file
@@ -960,8 +1048,19 @@
       fetch(API + 'cwd?id=' + sh.id).then(function (r) { return r.json(); }).then(function (j) { go(j.dir); });
     });
     pane.querySelector('[data-f="copy"]').addEventListener('click', function () { if (cur && navigator.clipboard) navigator.clipboard.writeText(cur); });
-    go(start);
-    select(tabs.length - 1);
+    /* what a reload needs to bring this tab back, unsaved edits included */
+    t.snap = function () {
+      return { k: 'v', n: n, dir: root0, file: cur || null, name: curName, edit: editing(), follow: following, zoom: t.zoom,
+        draft: editing() && dirty ? t.editor.getText() : null, mtime: file && file.mtime };
+    };
+    go(start).then(function () {
+      if (!saved || !saved.file) return;
+      openFile(saved.file, saved.name || saved.file.split('/').pop(), saved.edit, function () {
+        if (saved.draft == null || !t.editor) return;
+        t.editor.setText(saved.draft); file.mtime = saved.mtime; setDirty(true); // a save still checks the file against the version the edits began from
+      });
+    });
+    select(tabs.length - 1, restoring);
   }
   buildRunbook();
   buildDemos();
@@ -970,6 +1069,38 @@
   if (rbBtn) rbBtn.addEventListener('click', toggleRunbook);
   var dmBtn = root.querySelector('[data-act="demos"]');
   if (dmBtn) dmBtn.addEventListener('click', toggleDemos);
+
+  /* ---------- a live reload rebuilds the page: the shells live on in si play,
+     and this brings the drawer back as it was (sessionStorage, this browser tab) ---------- */
+  var SKEY = 'si-term-state';
+  function saveState() {
+    var st = { open: root.classList.contains('is-open'), active: active, tabs: tabs.map(function (t) {
+      if (t.viewer) return t.snap();
+      return t.id && !t.ended ? { k: 'sh', id: t.id, label: t.tabEl.querySelector('.label').textContent, zoom: t.zoom } : {};
+    }) };
+    try { sessionStorage.setItem(SKEY, JSON.stringify(st)); } catch (e) {}
+  }
+  window.addEventListener('pagehide', saveState);
+  window.addEventListener('beforeunload', saveState);
+  (function restore() {
+    var st = null; try { st = JSON.parse(sessionStorage.getItem(SKEY) || 'null'); } catch (e) {}
+    if (!st || !st.tabs || !st.tabs.length) return;
+    fetch(API + 'list').then(function (r) { return r.json(); }).catch(function () { return []; }).then(function (live) {
+      var alive = {}; (live || []).forEach(function (x) { alive[x.id] = true; });
+      var at = -1;
+      restoring = true;
+      st.tabs.forEach(function (s, i) {
+        if (s.k === 'sh' && alive[s.id]) newTab(s); // a shell whose process ended is dropped
+        else if (s.k === 'v') newViewer(s);
+        else return;
+        if (i === st.active) at = tabs.length - 1;
+      });
+      restoring = false;
+      if (!tabs.length) return;
+      if (st.open) show(true);
+      select(at >= 0 ? at : 0, !st.open);
+    });
+  })();
 
   window.siTerm = { toggle: toggle, show: show, hide: hide, runbook: toggleRunbook, demos: toggleDemos, viewer: function () { show(true); newViewer(); } };
 })();

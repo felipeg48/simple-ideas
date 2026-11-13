@@ -1237,7 +1237,9 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   **Terminal** for the drawer): web pages in floating windows over the slides, for a
   broker's console or a dashboard on a wide screen. **w** opens a picker with
   the deck's `browser:` links, the recent addresses and a box to type one.
-  Drag a window by its title bar, resize it from any edge or corner, **−** /
+  Drag a window by its title bar, resize it from any edge or corner, **←** /
+  **→** go back and forward in that window's page (dimmed when there is no
+  page that way; the address box follows the links you click inside), **−** /
   **+** zoom that window's page alone (click the percentage for 100%),
   double-click the bar (or **□**) to maximise, **–** to minimise it to a pill in
   the bottom-left dock, **✕** to close; several windows at once, the one you
@@ -1259,7 +1261,25 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   edge; the width is remembered. **+** (new shell) and **✕** stay at the top.
   At the top left, **–** minimises the drawer (**`** brings it back, shells
   still running) and **□** maximises it to the whole window (or double-click
-  the bar; **❐** restores; remembered).
+  the bar; **❐** restores; remembered). Drag the drawer's top edge to set its
+  height (a fifth of the window up to all of it; remembered; maximise comes
+  back to it).
+
+- **Text size per tab**: **−** **100%** **+** in the top bar size the active
+  tab only, a shell's text or a Viewer's tree, file and editor, never the
+  other tabs (click the percentage for 100%); **⌘=** / **⌘-** / **⌘0**
+  (Ctrl on Windows and Linux) do the same while you are in that tab, instead
+  of zooming the page. The size you used last is where the next tab of that
+  kind starts.
+
+- **Shells and Viewers survive a reload.** Saving the deck reloads the page;
+  the drawer comes back as it was: open or closed, the same tabs in the same
+  order, the active one, each shell with its recent screen (the last 256 KB
+  of its output) and still running (a `sleep 600` keeps sleeping), each Viewer
+  on its folder and file, in the editor with unsaved changes kept, Follow on
+  or off, each tab's text size. A shell whose program ended is dropped; a
+  shell no page has shown for 10 minutes is closed; all close when si play
+  stops.
 
 - **Viewer tabs** (the Viewer icon in the tools bar): each click opens
   a new tab beside the shells, a tree of a folder and the file you pick
@@ -3023,9 +3043,19 @@ Say: A test card goes through in a second.
 
 **Elements** are found the way a person names them: `"Pay"` matches visible
 text, a `<label>`, an `aria-label`, a placeholder, a title or an alt text
-(exact first, then any case, then a part). `#id` and `[data-testid=pay]` are
-CSS selectors; `role=button "Pay"` narrows by role. Visible, enabled
+(exact first, then any case, then a part). An element that starts with `#`,
+`.` or `[`, or with a tag followed by CSS (`button.pay`, `li:first-child`,
+`nav > a`), is a CSS selector, spaces included: it runs to ` · `, to the end
+of the step, or to the word that follows an element (`to` in a drag, the
+state in `expect`). `role=button "Pay"` narrows by role. Visible, enabled
 elements come first; text inside a button means the button.
+
+```markdown
+- click .hm-eng.big .hm-open
+- expect #cart .total visible
+- drag from .lane .card to #done .column
+- wait for .toast .msg · within 10s
+```
 
 ```bash
 SHOP_PASSWORD=shop-demo si demo test shop.md

@@ -11,6 +11,57 @@ import (
 	"time"
 )
 
+// TestCSSSelectorWithSpaces: a CSS selector keeps its spaces and ends at the
+// words a step writes after its element, or at ` · `.
+func TestCSSSelectorWithSpaces(t *testing.T) {
+	for in, want := range map[string]string{
+		`click .hm-eng.big .hm-open`:             ".hm-eng.big .hm-open",
+		`click .big>.hm-open`:                    ".big>.hm-open",
+		`hover nav > a.active`:                   "nav > a.active",
+		`click button.pay`:                       "button.pay",
+		`click [data-testid="pay now"] span`:     `[data-testid="pay now"] span`,
+		`click li:not(.done .x) a`:               "li:not(.done .x) a",
+		`expect .cart .total visible`:            ".cart .total",
+		`type "Ada" into form .name input`:       "",
+		`type "Ada" into #signup .name input`:    "#signup .name input",
+		`wait for .toast .msg · within 10s`:      ".toast .msg",
+		`zoom to .chart .bar · 1.2s`:             ".chart .bar",
+		`spotlight .card .price · circle`:        ".card .price",
+		`note "Here" at .cart .total · for 2s`:   ".cart .total",
+		`drag from .lane .card to #done .column`: ".lane .card",
+	} {
+		st, err := ParseStep(in)
+		if want == "" { // form is a word, not CSS: still an error, as before
+			if err == nil {
+				t.Errorf("%s: no error", in)
+			}
+			continue
+		}
+		if err != nil {
+			t.Errorf("%s: %v", in, err)
+			continue
+		}
+		got := st.Target.CSS
+		if st.Drag != nil {
+			got = st.Drag.From.CSS
+			if st.Drag.To.CSS != "#done .column" {
+				t.Errorf("%s: to %q", in, st.Drag.To.CSS)
+			}
+		}
+		if got != want {
+			t.Errorf("%s: css %q, want %q", in, got, want)
+		}
+		if in == `expect .cart .total visible` && st.State != "visible" {
+			t.Errorf("%s: state %q", in, st.State)
+		}
+	}
+	for _, in := range []string{`click "Pay now"`, `click role=button "Pay"`} {
+		if st, err := ParseStep(in); err != nil || st.Target.CSS != "" {
+			t.Errorf("%s: %+v %v", in, st, err)
+		}
+	}
+}
+
 func TestParseSi3Steps(t *testing.T) {
 	for _, c := range []struct {
 		in    string

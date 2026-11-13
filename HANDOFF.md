@@ -5,6 +5,13 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-13)
 
+**v3.6.0:** play terminal shells and Viewers survive a live reload (PTY
+kept with a 256 KB replay ring, `GET /_si/term/api/list`, `sessionStorage`
+`si-term-state`, idle shells closed after 10 min), text size per tab (− % +,
+⌘= ⌘- ⌘0), the drawer's height dragged from its top edge, ← → in browser
+windows (`injectNav` in `internal/serve/browser.go`), and `si demo` CSS
+selectors keep their spaces (`locator` in `internal/webdemo/script.go`).
+
 **v3.5.0:** the Viewer's tree creates, renames and deletes files and
 folders (toolbar + right-click menu; `create`/`rename`/`delete`/`stat` in
 `internal/serve/files.go`), `.conf`/INI values coloured in both views

@@ -5,7 +5,7 @@
  * before a live reload). Each window frames a web page through a loopback
  * proxy si play starts for that page's origin (internal/serve/browser.go), so
  * consoles that refuse framing still show. Windows move (drag the title bar),
- * resize (any edge or corner), zoom each window's page on its own (− / +), minimise to the dock, maximise and close; their
+ * resize (any edge or corner), go back and forward in the page (← →), zoom each window's page on its own (− / +), minimise to the dock, maximise and close; their
  * places survive a live reload (sessionStorage si-web). Styles live here, dark
  * and outside the deck theme, as the terminal's do. */
 (function () {
@@ -40,6 +40,7 @@
     '.si-web-url:focus{outline:none;border-color:#7dd3fc}' +
     '.si-web-b{flex:0 0 auto;width:24px;height:24px;display:grid;place-items:center;background:transparent;color:#c8d0e0;' +
     'border:1px solid transparent;border-radius:6px;font:14px/1 ui-sans-serif,system-ui,sans-serif;cursor:pointer;padding:0}' +
+    '.si-web-b:disabled,.si-web-b:disabled:hover{border-color:transparent;opacity:.3;cursor:default;background:transparent;color:#c8d0e0}' +
     '.si-web-b:hover{background:#1b2436;border-color:#2a3550;color:#fff}.si-web-b.x:hover{background:#7f1d1d;border-color:#b91c1c}' +
     '.si-web-frame{position:absolute;left:0;top:0;border:0;background:#fff;transform-origin:0 0}' +
     '.si-web.is-drag .si-web-frame,.si-web-busy .si-web-frame{pointer-events:none}' +
@@ -96,6 +97,7 @@
     el.innerHTML = '<div class="si-web-in"><div class="si-web-bar"><span class="si-web-name"></span><input class="si-web-url" spellcheck="false" aria-label="Address">' +
       '<button class="si-web-b" data-a="out" title="Smaller (this window only)">−</button><span class="si-web-zoom" title="Zoom of this window; click for 100%">100%</span>' +
       '<button class="si-web-b" data-a="in" title="Larger (this window only)">+</button>' +
+      '<button class="si-web-b" data-a="back" title="Back" disabled>←</button><button class="si-web-b" data-a="fwd" title="Forward" disabled>→</button>' +
       '<button class="si-web-b" data-a="reload" title="Reload">↻</button><button class="si-web-b" data-a="min" title="Minimise">–</button>' +
       '<button class="si-web-b" data-a="max" title="Maximise">□</button><button class="si-web-b x" data-a="close" title="Close">✕</button></div>' +
       '<div class="si-web-pane"><iframe class="si-web-frame" referrerpolicy="no-referrer"></iframe></div></div>' +
@@ -114,9 +116,35 @@
     el.querySelector('.si-web-name').textContent = w.name;
     var input = el.querySelector('.si-web-url'), frame = el.querySelector('iframe');
     input.value = url;
+    /* back / forward: the page's own history, told by the script the proxy puts
+       in each page ({si:'nav'} messages) and driven with {si:'nav-cmd'}; hist is
+       this window's addresses, at the one shown; a new address after a back
+       drops the ones ahead, as a browser does */
+    var hist = [], at = -1, pend = '', proxyO = '', targetO = '';
+    function real(u) { return proxyO && u.indexOf(proxyO) === 0 ? targetO + u.slice(proxyO.length) : u; }
+    function navButtons() {
+      el.querySelector('[data-a="back"]').disabled = at <= 0;
+      el.querySelector('[data-a="fwd"]').disabled = at >= hist.length - 1;
+    }
+    w.onNav = function (d) {
+      var u = real(String(d.url || '')), cmd = pend; pend = '';
+      if (u === hist[at]) { /* the same page again (load after the first report) */ }
+      else if (d.kind === 'replace' && at >= 0) hist[at] = u;
+      else if ((cmd === 'back' || d.kind === 'pop') && hist[at - 1] === u) at--;
+      else if ((cmd === 'forward' || d.kind === 'pop') && hist[at + 1] === u) at++;
+      else { hist = hist.slice(0, at + 1); hist.push(u); at++; }
+      if (document.activeElement !== input) input.value = u;
+      if (/^https?:/.test(u)) { w.url = u; save(); }
+      navButtons();
+    };
+    w.frame = frame;
+    function navCmd(c) { pend = c; try { frame.contentWindow.postMessage({ si: 'nav-cmd', cmd: c }, '*'); } catch (e) {} }
     function go(u) {
       w.url = norm(u); input.value = w.url; recent(w.url); save();
-      proxied(w.url).then(function (p) { frame.src = p; }, function (e) {
+      proxied(w.url).then(function (p) {
+        try { proxyO = new URL(p).origin; targetO = new URL(w.url).origin; } catch (e) {}
+        frame.src = p;
+      }, function (e) {
         frame.srcdoc = '<body style="font:14px system-ui;padding:2em;color:#333">Cannot open ' + w.url.replace(/</g, '&lt;') + ': ' + String(e.message).replace(/</g, '&lt;') + '</body>';
       });
     }
@@ -128,6 +156,7 @@
       b.addEventListener('click', function () {
         var a = b.getAttribute('data-a');
         if (a === 'in') zoomBy(1.1); else if (a === 'out') zoomBy(1 / 1.1);
+        else if (a === 'back') navCmd('back'); else if (a === 'fwd') navCmd('forward');
         else if (a === 'reload') { try { frame.contentWindow.location.reload(); } catch (e) { go(w.url); } }
         else if (a === 'min') minimise(w, true);
         else if (a === 'max') { el.classList.toggle('is-max'); save(); }
@@ -212,6 +241,12 @@
   // restore the windows a live reload closed
   var st = []; try { st = JSON.parse(sessionStorage.getItem(KEY) || '[]'); } catch (e) {}
   st.forEach(function (s) { var w = open(s.name, s.url, { x: s.x, y: s.y, w: s.w, h: s.h, zoom: s.zoom }); if (w) { if (s.max) w.el.classList.add('is-max'); if (s.min) minimise(w, true); } });
+
+  // the nav reports from each window's own frame only
+  window.addEventListener('message', function (ev) {
+    var d = ev.data; if (!d || d.si !== 'nav') return;
+    wins.forEach(function (w) { if (w.frame && ev.source === w.frame.contentWindow) w.onNav(d); });
+  });
 
   window.siWeb = { picker: picker, open: open, restoreOnly: function () {} };
 })();

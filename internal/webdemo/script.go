@@ -742,8 +742,19 @@ func value(s string) (Value, string, error) {
 
 var roleRE = regexp.MustCompile(`^role=([a-z]+)\s*`)
 
-// locator reads an element at the start of s: "text", #id, [attr=…] (one CSS
-// token: up to the next space), or role=name "text".
+// tagCSS is a selector that starts with a tag: button.primary, li:first-child,
+// a[href], nav > a.
+var tagCSS = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-]*(\s*[>+~]|[.#\[:])`)
+
+// cssStop are the words that end a CSS selector: what a step writes after
+// its element (drag … to …, expect … visible).
+var cssStop = map[string]bool{"to": true, "visible": true, "hidden": true, "disabled": true,
+	"enabled": true, "checked": true, "unchecked": true}
+
+// locator reads an element at the start of s: "text", role=name "text", or a
+// CSS selector: one that starts with #, [, . or a tag with CSS after it
+// (button.pay). A selector keeps its spaces (.cart .total, nav > a); it ends at
+// ` · `, at one of cssStop, or at the end.
 func locator(s string) (Locator, string, error) {
 	s = strings.TrimSpace(s)
 	if m := roleRE.FindStringSubmatch(s); m != nil {
@@ -753,20 +764,27 @@ func locator(s string) (Locator, string, error) {
 		}
 		return Locator{Role: m[1], Name: name}, rest, nil
 	}
-	if strings.HasPrefix(s, "#") || strings.HasPrefix(s, "[") || strings.HasPrefix(s, ".") {
-		end := len(s)
-		depth := 0
-		for i, c := range s {
-			if c == '[' {
+	if strings.HasPrefix(s, "#") || strings.HasPrefix(s, "[") || strings.HasPrefix(s, ".") || tagCSS.MatchString(s) {
+		end, depth := len(s), 0
+	scan:
+		for i := 0; i < len(s); i++ {
+			switch s[i] {
+			case '[', '(':
 				depth++
-			} else if c == ']' {
+			case ']', ')':
 				depth--
-			} else if c == ' ' && depth == 0 {
-				end = i
-				break
+			case ' ', '\t':
+				if depth > 0 {
+					continue
+				}
+				next := strings.TrimSpace(s[i:])
+				if w, _ := cutWord(next); strings.HasPrefix(next, "·") || cssStop[w] {
+					end = i
+					break scan
+				}
 			}
 		}
-		return Locator{CSS: s[:end]}, strings.TrimSpace(s[end:]), nil
+		return Locator{CSS: strings.TrimSpace(s[:end])}, strings.TrimSpace(s[end:]), nil
 	}
 	name, rest, err := quoted(s)
 	if err == nil && name == "" {

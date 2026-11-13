@@ -3,6 +3,19 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.6.0:** the play terminal's shells and Viewers survive a live
+  reload: saving the deck brings the drawer back as it was (open or closed,
+  the same tabs, the active one), each shell still running with its recent
+  screen replayed (the last 256 KB of output), each Viewer on its folder and
+  file, in the editor with unsaved changes kept. A shell whose program ended
+  is dropped; one no page has shown for 10 minutes is closed. **Text size per
+  tab:** − 100% + in the top bar (or ⌘= ⌘- ⌘0 in the tab) size the active
+  shell or Viewer alone; the last size is where the next tab starts. Drag the
+  drawer's top edge to set its height (remembered). Browser windows get **←**
+  and **→**: back and forward in the page, the address box following the
+  links you click. `si demo`: a CSS selector keeps its spaces (`click
+  .hm-eng.big .hm-open`), and a selector can start with a tag
+  (`button.pay`, `nav > a`).
 - **v3.5.0:** the play terminal's Viewer tree manages files: **New
   file**, **New folder**, **Rename** (F2) and **Delete** from a toolbar
   above the tree or a right-click menu, plus **Copy path** and **Reveal

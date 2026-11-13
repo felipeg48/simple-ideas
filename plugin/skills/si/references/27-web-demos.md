@@ -79,9 +79,19 @@ Say: A test card goes through in a second.
 
 **Elements** are found the way a person names them: `"Pay"` matches visible
 text, a `<label>`, an `aria-label`, a placeholder, a title or an alt text
-(exact first, then any case, then a part). `#id` and `[data-testid=pay]` are
-CSS selectors; `role=button "Pay"` narrows by role. Visible, enabled
+(exact first, then any case, then a part). An element that starts with `#`,
+`.` or `[`, or with a tag followed by CSS (`button.pay`, `li:first-child`,
+`nav > a`), is a CSS selector, spaces included: it runs to ` · `, to the end
+of the step, or to the word that follows an element (`to` in a drag, the
+state in `expect`). `role=button "Pay"` narrows by role. Visible, enabled
 elements come first; text inside a button means the button.
+
+```markdown
+- click .hm-eng.big .hm-open
+- expect #cart .total visible
+- drag from .lane .card to #done .column
+- wait for .toast .msg · within 10s
+```
 
 ```bash
 SHOP_PASSWORD=shop-demo si demo test shop.md

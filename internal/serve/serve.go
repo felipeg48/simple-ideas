@@ -114,6 +114,7 @@ func (s *Server) Handler() http.Handler {
 		// drives a shell; only the drawer's fetch POSTs do. out is the stream.
 		mux.HandleFunc("POST /_si/term/api/new", localOnly(s.term.newTab))
 		mux.HandleFunc("GET /_si/term/api/out", localOnly(s.term.out))
+		mux.HandleFunc("GET /_si/term/api/list", localOnly(s.term.list))
 		mux.HandleFunc("POST /_si/term/api/in", localOnly(s.term.in))
 		mux.HandleFunc("POST /_si/term/api/resize", localOnly(s.term.resize))
 		mux.HandleFunc("POST /_si/term/api/close", localOnly(s.term.close))

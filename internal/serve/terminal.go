@@ -11,21 +11,52 @@
 package serve
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"sort"
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/creack/pty"
 )
 
-// termSession is one terminal tab: a shell running under a PTY master.
+// ringMax is how much recent output a tab keeps to replay when a page
+// attaches again (a live reload rebuilds the page; the shell lives on).
+const ringMax = 256 << 10
+
+// termIdle is how long a shell with no page attached lives on (a closed
+// browser tab, a reload that never came back) before it is closed.
+const termIdle = 10 * time.Minute
+
+// termSession is one terminal tab: a shell running under a PTY master. One
+// goroutine (pump) reads the PTY into a ring buffer and forwards to the page
+// attached now, if any; a newer attach replaces the older stream.
 type termSession struct {
-	pty *os.File
-	cmd *exec.Cmd
+	pty     *os.File
+	cmd     *exec.Cmd
+	title   string
+	created time.Time
+	exited  chan struct{} // closed when the PTY reads end
+
+	mu       sync.Mutex
+	ring     []byte
+	cut      bool // the ring dropped older output (replay starts at a line)
+	sub      *termSub
+	attached bool      // a page has attached at least once
+	idle     time.Time // when the last page detached (or the tab was made)
+}
+
+// termSub is one attached out stream.
+type termSub struct {
+	ch       chan []byte
+	replaced chan struct{} // closed when a newer stream takes over
+	gone     chan struct{} // closed when this stream's handler returns
 }
 
 // termHub tracks the open terminal tabs. A real shell runs per tab, so the
@@ -38,11 +69,13 @@ type termHub struct {
 	tabs map[string]*termSession
 	// quiet runs a Viewer save so the live-reload watcher does not see it: a
 	// reload would close the drawer, its shells and the editor.
-	quiet func(write func())
+	quiet   func(write func())
+	idle    time.Duration // detached shells are closed after this
+	janitor sync.Once
 }
 
 func newTermHub(dir string) *termHub {
-	return &termHub{dir: dir, tabs: map[string]*termSession{}, quiet: func(f func()) { f() }}
+	return &termHub{dir: dir, tabs: map[string]*termSession{}, quiet: func(f func()) { f() }, idle: termIdle}
 }
 
 // newTab starts a shell in a fresh PTY and returns its tab id.
@@ -60,16 +93,98 @@ func (h *termHub) newTab(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := strconv.FormatInt(h.next.Add(1), 10)
+	now := time.Now()
+	s := &termSession{pty: f, cmd: cmd, title: filepath.Base(shell), created: now, idle: now, exited: make(chan struct{})}
 	h.mu.Lock()
-	h.tabs[id] = &termSession{pty: f, cmd: cmd}
+	h.tabs[id] = s
 	h.mu.Unlock()
-	go func() { cmd.Wait(); h.drop(id) }() // reap when the shell exits
+	go s.pump()
+	go func() { // reap when the shell exits, after its last output is read
+		cmd.Wait()
+		select {
+		case <-s.exited:
+		case <-time.After(time.Second): // a background child still holds the PTY
+		}
+		h.drop(id)
+	}()
+	h.janitor.Do(func() {
+		go func() {
+			for range time.Tick(time.Minute) {
+				h.reap(time.Now())
+			}
+		}()
+	})
 	w.Header().Set("Content-Type", "text/plain")
 	io.WriteString(w, id)
 }
 
+// pump reads the PTY until it closes: into the ring, and to the attached page.
+func (s *termSession) pump() {
+	defer close(s.exited)
+	buf := make([]byte, 32*1024)
+	for {
+		n, err := s.pty.Read(buf)
+		if n > 0 {
+			b := append([]byte(nil), buf[:n]...)
+			s.mu.Lock()
+			s.ring = append(s.ring, b...)
+			if len(s.ring) > 2*ringMax { // trim now and then, not on every read
+				s.ring = append([]byte(nil), s.ring[len(s.ring)-ringMax:]...)
+				s.cut = true
+			}
+			sub := s.sub
+			s.mu.Unlock()
+			if sub != nil {
+				select {
+				case sub.ch <- b:
+				case <-sub.gone:
+				}
+			}
+		}
+		if err != nil {
+			return // PTY closed (shell exited) or read error
+		}
+	}
+}
+
+// attach makes sub the tab's one stream and returns the output to replay:
+// the ring as it is now, so nothing is shown twice or lost in between.
+func (s *termSession) attach(sub *termSub) (replay []byte, again bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.sub != nil {
+		close(s.sub.replaced)
+	}
+	s.sub = sub
+	again, s.attached = s.attached, true
+	r := s.ring
+	if len(r) > ringMax {
+		r = r[len(r)-ringMax:]
+	}
+	if s.cut || len(r) < len(s.ring) {
+		if i := bytes.IndexByte(r, '\n'); i >= 0 { // start on a whole line
+			r = r[i+1:]
+		}
+	}
+	return append([]byte(nil), r...), again
+}
+
+// detach ends sub; the tab goes idle unless a newer stream took over.
+func (s *termSession) detach(sub *termSub) {
+	s.mu.Lock()
+	if s.sub == sub {
+		s.sub = nil
+		s.idle = time.Now()
+	}
+	s.mu.Unlock()
+	close(sub.gone)
+}
+
 // out streams the PTY output to the browser as a chunked byte stream; the
-// client reads it with fetch().body.getReader() and feeds xterm.write().
+// client reads it with fetch().body.getReader() and feeds xterm.write(). It
+// starts with the recent output (the screen a reloaded page lost); on a
+// reattach X-Si-Replay says how many bytes that is, so the page does not
+// answer old terminal queries in it. A newer out for the same tab ends this one.
 func (h *termHub) out(w http.ResponseWriter, r *http.Request) {
 	s := h.get(r)
 	if s == nil {
@@ -81,27 +196,81 @@ func (h *termHub) out(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
 		return
 	}
+	sub := &termSub{ch: make(chan []byte, 64), replaced: make(chan struct{}), gone: make(chan struct{})}
+	replay, again := s.attach(sub)
+	defer s.detach(sub)
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	if again {
+		w.Header().Set("X-Si-Replay", strconv.Itoa(len(replay)))
+	}
+	w.WriteHeader(http.StatusOK)
+	if len(replay) > 0 {
+		w.Write(replay)
+	}
 	fl.Flush() // send headers so the client's fetch() resolves before data
-	buf := make([]byte, 32*1024)
 	for {
-		n, err := s.pty.Read(buf)
-		if n > 0 {
-			if _, werr := w.Write(buf[:n]); werr != nil {
+		select {
+		case b := <-sub.ch:
+			if _, err := w.Write(b); err != nil {
 				return
 			}
 			fl.Flush()
-		}
-		if err != nil {
-			return // PTY closed (shell exited) or read error
-		}
-		select {
+		case <-s.exited:
+			for { // what the pump sent before it ended
+				select {
+				case b := <-sub.ch:
+					w.Write(b)
+				default:
+					fl.Flush()
+					return
+				}
+			}
+		case <-sub.replaced:
+			return
 		case <-r.Context().Done():
 			return
-		default:
 		}
+	}
+}
+
+// list: GET -> [{id, title, created}], the shells alive now, oldest first, so
+// a reloaded page can attach to them again.
+func (h *termHub) list(w http.ResponseWriter, r *http.Request) {
+	type tab struct {
+		ID      string `json:"id"`
+		Title   string `json:"title"`
+		Created int64  `json:"created"`
+	}
+	h.mu.Lock()
+	out := make([]tab, 0, len(h.tabs))
+	for id, s := range h.tabs {
+		out = append(out, tab{id, s.title, s.created.UnixMilli()})
+	}
+	h.mu.Unlock()
+	sort.Slice(out, func(i, j int) bool {
+		a, _ := strconv.Atoi(out[i].ID)
+		b, _ := strconv.Atoi(out[j].ID)
+		return a < b
+	})
+	writeJSON(w, out)
+}
+
+// reap closes the shells no page has been attached to for h.idle.
+func (h *termHub) reap(now time.Time) {
+	var ids []string
+	h.mu.Lock()
+	for id, s := range h.tabs {
+		s.mu.Lock()
+		if s.sub == nil && now.Sub(s.idle) >= h.idle {
+			ids = append(ids, id)
+		}
+		s.mu.Unlock()
+	}
+	h.mu.Unlock()
+	for _, id := range ids {
+		h.drop(id)
 	}
 }
 

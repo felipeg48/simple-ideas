@@ -167,7 +167,9 @@
   **Terminal** for the drawer): web pages in floating windows over the slides, for a
   broker's console or a dashboard on a wide screen. **w** opens a picker with
   the deck's `browser:` links, the recent addresses and a box to type one.
-  Drag a window by its title bar, resize it from any edge or corner, **−** /
+  Drag a window by its title bar, resize it from any edge or corner, **←** /
+  **→** go back and forward in that window's page (dimmed when there is no
+  page that way; the address box follows the links you click inside), **−** /
   **+** zoom that window's page alone (click the percentage for 100%),
   double-click the bar (or **□**) to maximise, **–** to minimise it to a pill in
   the bottom-left dock, **✕** to close; several windows at once, the one you
@@ -189,7 +191,25 @@
   edge; the width is remembered. **+** (new shell) and **✕** stay at the top.
   At the top left, **–** minimises the drawer (**`** brings it back, shells
   still running) and **□** maximises it to the whole window (or double-click
-  the bar; **❐** restores; remembered).
+  the bar; **❐** restores; remembered). Drag the drawer's top edge to set its
+  height (a fifth of the window up to all of it; remembered; maximise comes
+  back to it).
+
+- **Text size per tab**: **−** **100%** **+** in the top bar size the active
+  tab only, a shell's text or a Viewer's tree, file and editor, never the
+  other tabs (click the percentage for 100%); **⌘=** / **⌘-** / **⌘0**
+  (Ctrl on Windows and Linux) do the same while you are in that tab, instead
+  of zooming the page. The size you used last is where the next tab of that
+  kind starts.
+
+- **Shells and Viewers survive a reload.** Saving the deck reloads the page;
+  the drawer comes back as it was: open or closed, the same tabs in the same
+  order, the active one, each shell with its recent screen (the last 256 KB
+  of its output) and still running (a `sleep 600` keeps sleeping), each Viewer
+  on its folder and file, in the editor with unsaved changes kept, Follow on
+  or off, each tab's text size. A shell whose program ended is dropped; a
+  shell no page has shown for 10 minutes is closed; all close when si play
+  stops.
 
 - **Viewer tabs** (the Viewer icon in the tools bar): each click opens
   a new tab beside the shells, a tree of a folder and the file you pick
