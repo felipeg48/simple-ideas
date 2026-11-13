@@ -133,6 +133,7 @@ type deckRenderer struct {
 	mermaid       bool
 	mindmap       bool                 // a ```mindmap fence: the page loads mindmap.css and mindmap.js
 	codewin       bool                 // a code window: the page loads codewin.css and codewin.js
+	timeline      bool                 // a timeline: the page loads timeline.css and timeline.js
 	cw            map[ast.Node]*cwShow // the first fence of each code window and its steps
 	mindmap3d     bool                 // a map starts in 3D: three.js and mindmap3d.js are inlined too
 	mmN           int                  // ```mindmap fences so far (ids of their fallback lists, their build steps)

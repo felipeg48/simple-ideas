@@ -155,6 +155,31 @@ A nested list becomes a map you can fold, move and drill into:
 
 ---
 
+## Timelines
+
+```timeline layout=line
+## Cards
+### 1890 · Hollerith tabulator
+Punched cards sorted by machine for the census.
+## Stored programs
+### 1945 · Merge sort
+John von Neumann merges sorted runs.
+### 1961 · Quicksort
+Tony Hoare partitions around a pivot.
+## Libraries
+### 2002 · Timsort
+The sort Python still uses.
+```
+
+- Page: `type: timeline` · `## Era · color=` · `### date · title`, a description, `![caption](pic "credit")`
+- `layout:` snake (rows, 30 fit one 16:9 page), line, vertical · `orientation:` landscape (a slide), portrait (a poster)
+- `alternate:` on, off · `scale:` even, time · `closing:` a last line · `## Fuentes · sources`
+- A landscape page is one slide: each era a build step, `Notes:` for the teleprompter
+- `si check` counts milestones, pictures, eras; `require: 20 dates, 15 images` checks a rubric
+- `si build timeline.md --png --pdf`; `si new history --type timeline`; full guide: RULES.md §29
+
+---
+
 ## Code windows
 
 ```go id=send window=mac title="send.go" numbers step="Once"

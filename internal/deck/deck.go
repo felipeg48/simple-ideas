@@ -181,6 +181,8 @@ type Meta struct {
 	Prerequisites   string // course or lesson: what to know first (shown, not enforced)
 	Instructor      string // lesson: a note only the instructor build shows, in a box above the lesson
 
+	Timeline TimelineMeta // timeline: alternate, scale, orientation, closing, require, steps (timeline.go)
+
 	// Lifecycle is every setup:, start:, prepare:, step:, stop: and cleanup:
 	// line in the order written (they may repeat): a web demo reads its own,
 	// a deck runs them in si play and si serve (internal/webdemo.ParseStage)
@@ -275,10 +277,11 @@ type Deck struct {
 	Slides   []*Slide
 	Problems []Problem
 	Warnings []Problem // non-fatal (e.g. a slide directive in a lab)
+	Timeline *Timeline // a timeline page (type: timeline), parsed
 }
 
 // Types are the accepted values of the `type` front matter key.
-var Types = []string{"deck", "lab", "article", "guide", "book", "demo", "site", "page", "mindmap", "quiz", "course"}
+var Types = []string{"deck", "lab", "article", "guide", "book", "demo", "site", "page", "mindmap", "quiz", "course", "timeline"}
 
 // IsLab reports whether the file is a lab document (`type: lab`).
 func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
@@ -286,7 +289,7 @@ func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
 // IsDoc reports whether the file is a document (lab, article or guide page):
 // one readable page, not slides.
 func (d *Deck) IsDoc() bool {
-	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide" || d.Meta.Type == "demo" || d.Meta.Type == "page" || d.Meta.Type == "mindmap" || d.Meta.Type == "quiz"
+	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide" || d.Meta.Type == "demo" || d.Meta.Type == "page" || d.Meta.Type == "mindmap" || d.Meta.Type == "quiz" || d.isPoster()
 }
 
 // IsMindmap reports whether the file is a mind map page (`type: mindmap`).
@@ -462,7 +465,9 @@ func ParseSource(path, text string, def Meta) (*Deck, error) {
 		out = append(out, srcLine{abs, start + i + 1, t})
 	}
 	out = d.expandIncludes(abs, out, []string{abs})
-	if d.IsDoc() {
+	if d.IsTimeline() {
+		d.buildTimeline(out)
+	} else if d.IsDoc() {
 		d.buildLab(out)
 		if d.IsDemo() {
 			d.checkDemoMinutes(out)
@@ -533,9 +538,10 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 			d.checkBackground(file, i+1, filepath.Dir(file), val)
 		}
 	}
+	d.timelineMeta(file, keyLine)
 	if !d.IsMindmap() {
 		for _, k := range []string{"layout", "lines", "nodes", "map-theme", "view", "camera", "floors", "kind", "flow"} {
-			if ln, ok := keyLine[k]; ok {
+			if ln, ok := keyLine[k]; ok && !(d.IsTimeline() && k == "layout") {
 				d.Warnings = append(d.Warnings, Problem{File: rel(file), Line: ln, Msg: fmt.Sprintf("front matter %q is for mind maps (type: mindmap); a ```mindmap fence takes it as an option", k)})
 			}
 		}
@@ -578,6 +584,9 @@ func (d *Deck) setMeta(key, val string) bool {
 		"nav": &m.Nav, "level": &m.Level, "instructor-demos": &m.InstructorDemos, "certificate": &m.Certificate, "pass": &m.Pass, "minutes": &m.Minutes, "prerequisites": &m.Prerequisites, "instructor": &m.Instructor,
 		"view": &m.MapView, "camera": &m.MapCamera, "floors": &m.MapFloors, "kind": &m.MapKind, "flow": &m.MapFlow,
 	}[key]
+	if ptr == nil {
+		ptr = m.Timeline.field(key)
+	}
 	if ptr == nil {
 		return false
 	}
@@ -623,6 +632,9 @@ func validateMeta(key, val string) string {
 	case "footer-position":
 		return oneOf("footer-position", val, FooterPositions)
 	case "layout":
+		if contains(TimelineLayouts, val) {
+			return "" // a timeline's (timelineMeta checks it by type)
+		}
 		return oneOf("mind map layout", val, MapLayouts)
 	case "lines":
 		return oneOf("mind map lines", val, MapLines)

@@ -37,6 +37,7 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	}
 	b.WriteString("</style>\n")
 	dr.codewinCSS(&b)
+	dr.timelineCSS(&b)
 	if dr.wmImg != "" || d.Meta.WatermarkOpacity != "" {
 		var decls []string
 		if dr.wmImg != "" {
@@ -179,6 +180,7 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 		b.WriteString(dr.mindmapScripts())
 	}
 	dr.codewinJS(&b)
+	dr.timelineJS(&b)
 	dr.reload(&b)
 	b.WriteString("</body>\n</html>\n")
 	return b.Bytes()

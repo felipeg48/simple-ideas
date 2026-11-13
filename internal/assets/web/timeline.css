@@ -1,0 +1,129 @@
+/* simple-ideas timelines (type: timeline pages and the ```timeline fence).
+ * Mobile first: the base rules are the vertical layout (one line, cards on
+ * both sides; on a phone, one side). On a wide screen the snake and line
+ * layouts become a 16:9 frame (aspect: refines it) whose milestones sit at
+ * --_x/--_y (% of the track, set by the renderer); every size is in cqi of
+ * the frame, so it scales like a picture. Era colours: --si-tl-c, an era's
+ * color= or the palette derived from --si-tl-base.
+ */
+.si-tl{--si-tl-base:var(--si-accent);--si-tl-bg:var(--si-bg);--si-tl-rail:color-mix(in oklab,var(--si-fg) 14%,transparent);
+  --si-tl-c:oklch(from var(--si-tl-base) .62 clamp(.1,c,.16) calc(h + var(--_tl-i,0) * 52));
+  --_ink:color-mix(in oklab,var(--si-tl-c) 74%,var(--si-fg));
+  container-type:inline-size;position:relative;box-sizing:border-box;width:min(100%,62rem);margin-inline:auto;
+  color:var(--si-fg);background:var(--si-tl-bg);font-family:var(--si-font-body);text-align:start;line-height:1.25}
+.si-tl *{box-sizing:border-box}
+.si-tl-era,.si-tl-legend li{--si-tl-c:oklch(from var(--si-tl-base) .62 clamp(.1,c,.16) calc(h + var(--_tl-i,0) * 52));--_ink:color-mix(in oklab,var(--si-tl-c) 74%,var(--si-fg))}
+.si-tl-head,.si-tl-track,.si-tl-foot{font-size:clamp(.82rem,2.1cqi,1.08rem)}
+.si-tl h1,.si-tl h2,.si-tl h3,.si-tl p,.si-tl ul,.si-tl ol{margin:0;padding:0}
+
+/* header: the title, the subtitle, the eras as a legend */
+.si-tl-head{display:grid;gap:1em;padding:1.4em 1em 1.2em;text-align:center}
+.si-tl-title{font-family:var(--si-font-heading);font-weight:var(--si-heading-weight,700);font-size:2.1em;line-height:1.05;letter-spacing:-.01em;text-wrap:balance}
+.si-tl-sub{margin-top:.35em;color:var(--si-muted);font-size:1.05em;text-wrap:balance}
+.si-tl-legend{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;gap:.35em .9em;font-size:.82em}
+.si-tl-legend li{display:flex;align-items:baseline;gap:.4em;white-space:nowrap}
+.si-tl-legend li::before{content:"";align-self:center;flex:none;width:1.6em;height:.42em;border-radius:1em;background:var(--si-tl-c)}
+.si-tl-legend b{font-weight:650;color:var(--_ink)}
+.si-tl-legend span{color:var(--si-muted);font-size:.9em;font-variant-numeric:tabular-nums}
+
+/* the vertical layout (and every layout on a phone): one line down the middle */
+.si-tl-track{position:relative;padding:.5em .6em 1.5em}
+.si-tl-track::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:.22em;translate:-50% 0;border-radius:1em;background:var(--si-tl-rail)}
+.si-tl-svg{display:none}
+.si-tl-era{position:relative;padding-block:.6em}
+.si-tl-era::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:.36em;translate:-50% 0;border-radius:1em;background:var(--si-tl-c)}
+.si-tl-era-name{position:relative;display:block;width:max-content;max-width:90%;margin:.6em auto 1em;padding:.35em 1em;border-radius:2em;
+  background:color-mix(in oklab,var(--si-tl-c) 16%,var(--si-tl-bg));color:var(--_ink);border:.12em solid var(--si-tl-c);
+  font-family:var(--si-font-heading);font-size:.85em;font-weight:800;letter-spacing:.06em;text-transform:uppercase;text-align:center}
+.si-tl-ms{position:relative;display:grid;grid-template-columns:1fr 4.6em 1fr;align-items:center;margin-block:.9em}
+.si-tl-node{grid-column:2;grid-row:1;justify-self:center;position:relative;z-index:1}
+.si-tl-card{grid-row:1;grid-column:3;padding-inline:.2em}
+.si-tl-ms[data-side="above"] .si-tl-card{grid-column:1;text-align:end}
+.si-tl-dot{width:1.1em;height:1.1em;border-radius:50%;background:var(--si-tl-bg);border:.3em solid var(--si-tl-c)}
+.si-tl-pic{width:4.2em;aspect-ratio:1;border-radius:50%;overflow:hidden;background:var(--si-surface,var(--si-tl-bg));
+  border:.22em solid var(--si-tl-c);box-shadow:0 0 0 .2em var(--si-tl-bg),0 .3em .9em color-mix(in oklab,var(--si-fg) 22%,transparent)}
+.si-tl-pic img{display:block;width:100%;height:100%;object-fit:cover}
+.si-tl-date{font-family:var(--si-font-heading);font-weight:800;font-size:.86em;letter-spacing:.04em;color:var(--_ink);font-variant-numeric:tabular-nums;text-transform:uppercase}
+.si-tl-name{font-family:var(--si-font-heading);font-weight:700;font-size:1.08em;line-height:1.15;margin-top:.1em;text-wrap:balance}
+.si-tl-desc{margin-top:.25em;font-size:.9em;line-height:1.3;color:color-mix(in oklab,var(--si-fg) 82%,var(--si-tl-bg))}
+.si-tl-cap{margin-top:.3em;font-size:.72em;line-height:1.25;color:var(--si-muted);font-style:italic}
+.si-tl-cap small{font-size:.92em;font-style:normal;opacity:.85}
+.si-tl-cap small::before{content:"· "}
+.si-tl-ms[data-break]::before{content:"≈";position:absolute;left:50%;top:-1em;translate:-50% 0;color:var(--si-muted);font-weight:700}
+
+/* footer: the closing line, the sources */
+.si-tl-foot{display:grid;gap:1.2em;padding:1em 1em 1.6em}
+.si-tl-closing{font-family:var(--si-font-heading);font-size:1.25em;font-weight:600;font-style:italic;text-align:center;text-wrap:balance;
+  padding:.8em 1em;border-block:.12em solid var(--si-tl-rail)}
+.si-tl-sources h2{font-family:var(--si-font-heading);font-size:.8em;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--si-muted);margin-bottom:.4em}
+.si-tl-sources ul{list-style:none;display:grid;gap:.3em;font-size:.8em;line-height:1.35;color:color-mix(in oklab,var(--si-fg) 78%,var(--si-tl-bg))}
+.si-tl-sources li{padding-left:1em;text-indent:-1em;overflow-wrap:anywhere}
+.si-tl-sources a{color:inherit}
+
+/* a phone: the line on the left, every card on its right */
+@container (max-width: 34rem){
+  .si-tl-track::before{left:2.9em}
+  .si-tl-era::before{left:2.3em}
+  .si-tl-ms{grid-template-columns:4.6em 1fr}
+  .si-tl-node{grid-column:1}
+  .si-tl-card,.si-tl-ms[data-side="above"] .si-tl-card{grid-column:2;text-align:start}
+  .si-tl-era-name{margin-inline:.4em 0;max-width:100%}
+  .si-tl-head{text-align:start}
+  .si-tl-legend{justify-content:start}
+}
+
+/* a slide holding a timeline page: the frame fills it */
+.si-tl-slide .si-inner{padding:0;justify-content:center;align-items:center;font-size:1rem}
+.si-tl-slide .si-inner>:first-child{margin-top:0}
+.si-tl-slide .si-inner>.si-tl{margin:auto}
+.si-figure.si-tl-figure,.si-body:has(>.si-tl-figure){margin-inline:0;width:100%;align-self:stretch}
+
+/* snake and line on a wide screen: a frame of the page's aspect, the line an SVG */
+@media (min-width: 40em) and (min-aspect-ratio: 4/5){
+  .si-tl:is([data-layout="snake"],[data-layout="line"]){display:flex;flex-direction:column;aspect-ratio:var(--_tl-ar);overflow:hidden;
+    width:min(100%,calc(var(--si-figure-max,70vh) * var(--_tl-ar)));
+    background:radial-gradient(120% 80% at 0% 0%,color-mix(in oklab,var(--si-tl-base) 7%,transparent),transparent 60%),
+      radial-gradient(100% 70% at 100% 100%,color-mix(in oklab,var(--si-tl-base) 6%,transparent),transparent 60%),var(--si-tl-bg)}
+  .si-tl-slide .si-tl:is([data-layout="snake"],[data-layout="line"]){width:min(100cqi,calc(100cqb * var(--_tl-ar)))}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) > :is(.si-tl-head,.si-tl-track,.si-tl-foot){font-size:calc(1cqi * var(--_fit,1))}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) > :is(.si-tl-head,.si-tl-foot){font-size:1cqi}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) > .si-tl-head{flex:none;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:2.5em;padding:1.5em 3em 0;text-align:start}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-title{font-size:2.2em}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-sub{font-size:1.1em;margin-top:.25em}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5em 1.2em;font-size:.74em;justify-content:stretch}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-legend li{flex-wrap:wrap;gap:0 .45em;white-space:normal}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-legend li{display:grid;grid-template-columns:auto 1fr;align-items:start;gap:0 .5em;line-height:1.2}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-legend li::before{grid-row:span 2;align-self:stretch;width:.4em;height:auto;border-radius:1em}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) > .si-tl-track{flex:1;min-height:0;margin:1em 0 .3em;padding:0;--_gap:calc(var(--_r) + .35em);--_r:1.4em}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) > .si-tl-track::before{display:none}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-svg{display:block;position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+  .si-tl-rail{fill:none;stroke:var(--si-tl-rail);stroke-width:.35cqi;vector-effect:non-scaling-stroke;stroke-linecap:round}
+  .si-tl-band{fill:none;stroke:var(--si-tl-c);stroke-opacity:.16;stroke-width:2.6cqi;vector-effect:non-scaling-stroke;stroke-linecap:butt}
+  .si-tl-stroke{fill:none;stroke:var(--si-tl-c);stroke-width:.42cqi;vector-effect:non-scaling-stroke;stroke-linecap:round}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-era{position:absolute;inset:0;padding:0;pointer-events:none;transform:none}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-era::before,.si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-era-name{display:none}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-ms{display:contents}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-node{position:absolute;left:calc(var(--_x) * 1%);top:calc(var(--_y) * 1%);translate:-50% -50%;pointer-events:auto}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-pic{width:calc(var(--_r) * 2);border-width:.2em;box-shadow:0 0 0 .18em var(--si-tl-bg),0 .25em .7em color-mix(in oklab,var(--si-fg) 25%,transparent)}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-dot{width:1.1em;height:1.1em;border-width:.28em;box-shadow:0 0 0 .18em var(--si-tl-bg)}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-card{position:absolute;left:calc(var(--_l) * 1%);width:calc(var(--_w) * 1%);display:flex;flex-direction:column;overflow:hidden;
+    padding:0 .3em;text-align:center;pointer-events:auto}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) [data-side="above"] .si-tl-card{top:calc((var(--_y) - var(--_f)) * 1% + .2em);bottom:calc((100 - var(--_y) + var(--_n)) * 1% + var(--_gap))}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) [data-side="above"] .si-tl-card>:first-child{margin-top:auto}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) [data-side="below"] .si-tl-card{top:calc((var(--_y) + var(--_n)) * 1% + var(--_gap));bottom:calc((100 - var(--_y) - var(--_f)) * 1% + .2em)}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) [data-edge="start"] .si-tl-card{text-align:start}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) [data-edge="end"] .si-tl-card{text-align:end}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-ms[data-break]::before{left:calc(var(--_x) * 1% - 4.6em);top:calc(var(--_y) * 1%);translate:-50% -50%;font-size:1.4em}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-date{font-size:.78em}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-name{font-size:.98em}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-desc{font-size:.76em;line-height:1.24;margin-top:.15em}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-cap{font-size:.6em;margin-top:.15em;line-height:1.2}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) > .si-tl-foot{flex:none;grid-template-columns:minmax(0,.62fr) minmax(0,2fr);align-items:center;gap:2.5em;padding:.2em 3em 1em}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-closing{font-size:1.15em;text-align:start;padding:.5em 0 .5em 1em;border:0;border-left:.3em solid var(--si-tl-base)}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-sources{display:grid;grid-template-columns:auto 1fr;gap:1.2em;align-items:start}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-sources h2{writing-mode:horizontal-tb;font-size:.72em;margin:0;padding-top:.15em}
+  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-sources ul{grid-template-columns:repeat(3,minmax(0,1fr));gap:.25em 1.4em;font-size:.56em}
+  /* line: one row, two levels a side */
+  .si-tl[data-layout="line"] > .si-tl-track{--_r:1.35em}
+}
+@media print{.si-tl{break-inside:avoid}}
