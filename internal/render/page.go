@@ -149,6 +149,11 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	if opt.Terminal && dr.runbookJSON != "" {
 		fmt.Fprintf(&b, "<script>window.SI_RUNBOOK=%s;</script>\n", strings.ReplaceAll(dr.runbookJSON, "</", `<\/`))
 	}
+	// Floating browser windows (w): play-only + loopback-only, like the terminal.
+	if opt.Terminal {
+		j, _ := json.Marshal(browserLinks(dr.d.Meta.Browser))
+		fmt.Fprintf(&b, "<script>window.SI_BROWSER=%s;</script>\n", strings.ReplaceAll(string(j), "</", `<\/`))
+	}
 	if opt.Terminal && dr.demosJSON != "" {
 		fmt.Fprintf(&b, "<script>window.SI_DEMOS=%s;</script>\n", strings.ReplaceAll(dr.demosJSON, "</", `<\/`))
 	}

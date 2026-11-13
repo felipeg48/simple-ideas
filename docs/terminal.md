@@ -153,3 +153,16 @@ runbook is the drawer title. Studio can edit and generate runbooks (see
 - Hot-reload the runbook file in `si play --dev` (today a reload picks up edits).
 - Markdown runbook authoring (`## Category` + titled ` ```sql ` fences) as an
   alternative to JSON.
+
+## Browser windows (w)
+
+`internal/serve/browser.go` + `internal/assets/web/term/web.js` (served from
+the same `/_si/term/assets/`, lazy-loaded by `05-annotate-keys.js` on **w**, or
+on load when `sessionStorage` `si-web` holds windows from before a live
+reload). `POST /_si/browser/open {url}` (localOnly) starts, once per target
+origin, an `httputil.ReverseProxy` on `127.0.0.1:0` that drops
+`X-Frame-Options` and CSP `frame-ancestors`, keeps redirects on the proxy and
+strips `Domain`/`Secure`/`SameSite` from cookies; the window frames the
+proxied URL. Links come from the `browser:` front matter as
+`window.SI_BROWSER` (play terminal only); recent addresses in `localStorage`
+`si-web-recent`. Proxies close with the terminals.

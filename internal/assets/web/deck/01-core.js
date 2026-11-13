@@ -10,7 +10,7 @@
   var cfg = window.SI_CONFIG || {};
   var cmd = { overview: 'o', presenter: 'p', draw: 'a', timer: 't', mode: 'd', fullscreen: 'f', find: '/', help: '?', autoplay: 'v' };
   var termEnabled = !!cfg.terminal; /* si play on a loopback address only; never in a built deck */
-  if (termEnabled) cmd.terminal = '`';
+  if (termEnabled) { cmd.terminal = '`'; cmd.browser = 'w'; }
   /* si play --remote: this page joins the relay; ?role=tp turns it into the
      teleprompter, ?role=draw into a draw pad that follows the deck, ?role=clicker
      into a phone remote, ?role=audience (si play --audience) into a phone in

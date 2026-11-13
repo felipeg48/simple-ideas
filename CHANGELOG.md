@@ -3,6 +3,12 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.2.2:** browser windows in `si play`: **w** opens web pages (a
+  broker's console, a dashboard) in floating windows over the slides; drag,
+  resize, minimise to a dock, maximise, close, several at once, kept across a
+  live reload. `browser: Name=URL, …` in the front matter lists the links;
+  consoles that refuse framing show through a loopback proxy. Never in a
+  built deck.
 - **v3.2.1:** the ▶ Demos panel of the play terminal opens on **Commands
   only**: the headings that hold commands and their Copy / Run blocks, so
   `> Say:` lines and notes stay in the speaker's own window; **Full script**

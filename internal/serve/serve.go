@@ -46,6 +46,7 @@ type Server struct {
 	mu      sync.Mutex
 	clients map[chan struct{}]bool
 	term    *termHub
+	browser browserProxies // floating browser windows (w): per-origin loopback proxies
 	relay   *relay
 	polls   *polls   // si play --audience: the ballots (poll.go)
 	qa      *qa      // si play --audience: the questions (qa.go)
@@ -113,6 +114,7 @@ func (s *Server) Handler() http.Handler {
 		mux.HandleFunc("POST /_si/term/api/in", localOnly(s.term.in))
 		mux.HandleFunc("POST /_si/term/api/resize", localOnly(s.term.resize))
 		mux.HandleFunc("POST /_si/term/api/close", localOnly(s.term.close))
+		mux.HandleFunc("POST /_si/browser/open", localOnly(s.browserOpen))
 	}
 	static := http.FileServer(http.Dir(s.dir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -360,6 +362,7 @@ func (s *Server) CloseTerminals() {
 	if s.term != nil {
 		s.term.closeAll()
 	}
+	s.browser.closeAll()
 }
 
 // Watch polls the deck directory and the CSS paths and broadcasts a reload

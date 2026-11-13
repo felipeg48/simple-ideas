@@ -131,6 +131,20 @@
     });
   }
 
+  /* Floating browser windows (w, si play only): lazy-load web.js; reopen the
+   * windows a live reload closed (sessionStorage si-web) without the picker. */
+  var webLoaded = false;
+  function loadWeb(then) {
+    if (window.siWeb) { if (then) then(); return; }
+    if (webLoaded) return;
+    webLoaded = true;
+    var s = document.createElement('script'); s.src = '/_si/term/assets/web.js';
+    s.onload = function () { if (then) then(); };
+    document.head.appendChild(s);
+  }
+  function toggleBrowser() { if (termEnabled && !role) loadWeb(function () { window.siWeb.picker(); }); }
+  try { if (termEnabled && !role && JSON.parse(sessionStorage.getItem('si-web') || '[]').length) loadWeb(); } catch (e) {}
+
   function runCmd(a) {
     if (role === 'audience' && a !== 'fullscreen' && a !== 'mode' && a !== 'help') return; /* follow only */
     if (a === 'overview') { if (feat.overview) overview(); }
@@ -142,6 +156,7 @@
     else if (a === 'find') { if (feat.find) findShow(); }
     else if (a === 'help') toggleHelp();
     else if (a === 'terminal') toggleTerminal();
+    else if (a === 'browser') toggleBrowser();
     else if (a === 'remote') toggleRemoteQR();
     else if (a === 'autoplay') { if (feat.autoplay) apToggle(); }
   }

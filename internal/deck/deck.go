@@ -119,6 +119,7 @@ type Meta struct {
 	LabsLabel        string // heading on a lab slide (default "Now, let's do a Lab!")
 	Runbook          string // path to a JSON runbook (command cheat-sheet); shown only in the `si play` terminal drawer
 	Demos            string // demo scripts (markdown files or folders, comma-separated) for the `si play` terminal drawer
+	Browser          string // `Name=URL, …` links for the `si play` floating browser windows (w)
 
 	// documents (lab, article, guide)
 	Description  string // one-sentence summary: an article's lede, a guide page's summary, <meta name="description">
@@ -187,7 +188,7 @@ type Meta struct {
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup", "nav", "level", "instructor-demos", "certificate", "pass", "minutes", "prerequisites", "instructor"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "browser", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup", "nav", "level", "instructor-demos", "certificate", "pass", "minutes", "prerequisites", "instructor"}
 
 // MetaLine is one front matter line kept as written: its key, its value and
 // its line in the file.
@@ -559,7 +560,7 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 }
 
 // LabIgnoredKeys are the front matter keys a lab page does not use.
-var LabIgnoredKeys = []string{"aspect", "transition", "background", "labs-label", "footer-position", "runbook", "demos"}
+var LabIgnoredKeys = []string{"aspect", "transition", "background", "labs-label", "footer-position", "runbook", "demos", "browser"}
 
 func (d *Deck) setMeta(key, val string) bool {
 	m := &d.Meta
@@ -568,7 +569,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"accent": &m.Accent, "transition": &m.Transition, "aspect": &m.Aspect, "mermaid": &m.Mermaid, "lang": &m.Lang,
 		"background": &m.Background, "status": &m.Status, "version": &m.Version, "year": &m.Year, "copyright": &m.Copyright,
 		"footer": &m.Footer, "footer-position": &m.FooterPos, "watermark": &m.Watermark, "watermark-opacity": &m.WatermarkOpacity, "labs-label": &m.LabsLabel,
-		"runbook": &m.Runbook, "demos": &m.Demos, "type": &m.Type,
+		"runbook": &m.Runbook, "demos": &m.Demos, "browser": &m.Browser, "type": &m.Type,
 		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "unlisted": &m.Unlisted, "fonts": &m.Fonts, "fonts-subset": &m.FontsSubset, "repo": &m.Repo,
 		"subtitle": &m.Subtitle, "edition": &m.Edition, "session": &m.Session, "slides": &m.SlidesRef, "duration": &m.Duration,
 		"navigator": &m.Navigator, "logo": &m.Logo, "cta": &m.CTA,

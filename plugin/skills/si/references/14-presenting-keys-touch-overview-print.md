@@ -162,6 +162,24 @@
   or Run the command with every occurrence replaced; Esc cancels and types nothing.
   Placeholders are highlighted in the command.
 
+- **Browser windows** (key **w**, `si play` on a loopback address only, never
+  in a built deck): web pages in floating windows over the slides, for a
+  broker's console or a dashboard on a wide screen. **w** opens a picker with
+  the deck's `browser:` links, the recent addresses and a box to type one.
+  Drag a window by its title bar, resize it from the bottom-right corner,
+  double-click the bar (or **□**) to maximise, **–** to minimise it to a pill in
+  the bottom-left dock, **✕** to close; several windows at once, the one you
+  touch comes to the front, and their places survive a live reload. Each page
+  is shown through a loopback proxy si play starts for its origin, so consoles
+  that refuse to be framed (X-Frame-Options, CSP `frame-ancestors`) still
+  show. Keys typed in a window never drive the deck.
+
+  ```markdown
+  ---
+  browser: RabbitMQ=http://localhost:15672, Grafana=http://localhost:3000
+  ---
+  ```
+
 - **Demos** (front matter `demos: ../demos/`): demo scripts, plain markdown, in a
   second side panel of the play terminal (`▶ Demos`, one panel open at a time).
   A drop-down lists the demos by their `# ` title (else the file name). The panel

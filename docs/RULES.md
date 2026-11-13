@@ -99,6 +99,7 @@ lang: en
 | `type` | `deck`, `lab` | `deck` | `lab` renders the file as a readable guide page instead of slides; see [Lab documents](#18-lab-documents). Anything else is a `si check` problem |
 | `runbook` | path to a `.json` file | none | a command cheat-sheet shown in the **`si play` terminal drawer only** (never in a built deck); see §14 |
 | `demos` | markdown files or folders, comma-separated | none | demo scripts shown in the **`si play` terminal drawer only**, with Copy / Run on every shell block; see §14 |
+| `browser` | `Name=URL, …` | none | pages the presenter opens with **w** in floating browser windows over the slides (**`si play` only**); see §14 |
 | `type` values | `deck`, `lab`, `article`, `guide`, `book`, `mindmap` | `deck` | `lab` §18, `article` §19, `guide` §20 (guide pages get it from `_nav.md`), `book` §21 (in `_nav.md` only), `mindmap` §24 (with `layout`, `lines`, `nodes`, `map-theme`, `watermark-position`) |
 | `subtitle`, `edition` | text | none | books: the cover's subtitle and edition (§21) |
 | `session`, `slides`, `duration` | text | none | demo scripts: the facts under the title; `duration: 14 min` is checked against the script's steps (§22) |
@@ -1228,6 +1229,24 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   value for each distinct name (first occurrence and its default win), then Copy
   or Run the command with every occurrence replaced; Esc cancels and types nothing.
   Placeholders are highlighted in the command.
+
+- **Browser windows** (key **w**, `si play` on a loopback address only, never
+  in a built deck): web pages in floating windows over the slides, for a
+  broker's console or a dashboard on a wide screen. **w** opens a picker with
+  the deck's `browser:` links, the recent addresses and a box to type one.
+  Drag a window by its title bar, resize it from the bottom-right corner,
+  double-click the bar (or **□**) to maximise, **–** to minimise it to a pill in
+  the bottom-left dock, **✕** to close; several windows at once, the one you
+  touch comes to the front, and their places survive a live reload. Each page
+  is shown through a loopback proxy si play starts for its origin, so consoles
+  that refuse to be framed (X-Frame-Options, CSP `frame-ancestors`) still
+  show. Keys typed in a window never drive the deck.
+
+  ```markdown
+  ---
+  browser: RabbitMQ=http://localhost:15672, Grafana=http://localhost:3000
+  ---
+  ```
 
 - **Demos** (front matter `demos: ../demos/`): demo scripts, plain markdown, in a
   second side panel of the play terminal (`▶ Demos`, one panel open at a time).
