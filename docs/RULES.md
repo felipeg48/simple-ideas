@@ -3832,8 +3832,13 @@ a document it is `vertical` unless `layout=` says otherwise.
   chronological order, long or empty descriptions, and an unmet `require:`.
 - `si build timeline.md --png` writes `timeline.png`: the landscape frame with
   every era shown, or the whole portrait poster; `--scale 3` for more pixels
-  (default 2: a 16:9 timeline is 3200 × 1800). `--pdf` writes
-  `pdfs/timeline.pdf` (one landscape page, or the printed poster). Both need
+  (default 2: a 16:9 timeline is 3200 × 1800). For a landscape
+  timeline `--pdf` writes two files: `pdfs/timeline.pdf`, several 16:9 pages
+  in the same look with whole eras on each (about 12 milestones a page, so the
+  text reads well; the title on every page, the closing line and sources on
+  the last), and `pdfs/timeline-compact.pdf`, the whole timeline on one page
+  like the PNG. The pages are pictures of the timeline (the text is not
+  selectable). A portrait poster's `--pdf` is the printed page. All need
   Chrome.
 - `si new history --type timeline` writes an example timeline with its
   pictures; `si --export example --type timeline` the same.

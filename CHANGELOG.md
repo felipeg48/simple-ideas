@@ -3,6 +3,11 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.3.1:** a landscape timeline's `--pdf` is readable: `pdfs/<name>.pdf`
+  has several 16:9 pages in the same look (whole eras, about 12 milestones a
+  page, title on each, closing line and sources on the last) and
+  `pdfs/<name>-compact.pdf` is the whole timeline on one page, like the PNG.
+  Before, the PDF printed only part of the timeline.
 - **v3.3.0:** timelines and infographics, both landscape (16:9, a slide you
   present) or portrait (a tall poster). `type: timeline`: `## Era · color=`,
   `### date · title` milestones with a description and a captioned picture

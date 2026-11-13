@@ -20,9 +20,25 @@ import (
 
 // exportTimeline writes <name>.png beside the built page (dest).
 func exportTimeline(chrome, dest, out string, d *deck.Deck, scale float64, stdout io.Writer) error {
-	abs, err := filepath.Abs(dest)
+	png, w, h, err := timelineShot(chrome, dest, d, scale)
 	if err != nil {
 		return err
+	}
+	p := filepath.Join(out, d.Name+".png")
+	if err := os.WriteFile(p, png, 0o644); err != nil {
+		return err
+	}
+	fmt.Fprintf(stdout, "  %-28s (png, %d × %d)\n", d.Name+".png", int(float64(w)*scale), int(float64(h)*scale))
+	return nil
+}
+
+// timelineShot is a picture of the built timeline page (dest): the 16:9 frame
+// with every era shown, or the whole poster; it returns the PNG and its size
+// in CSS pixels.
+func timelineShot(chrome, dest string, d *deck.Deck, scale float64) ([]byte, int, int, error) {
+	abs, err := filepath.Abs(dest)
+	if err != nil {
+		return nil, 0, 0, err
 	}
 	w, h := 1600, 900
 	if a, b, ok := strings.Cut(d.Meta.Aspect, ":"); ok && d.Meta.Orientation != "portrait" {
@@ -38,19 +54,19 @@ func exportTimeline(chrome, dest, out string, d *deck.Deck, scale float64, stdou
 	}
 	c, err := cdp.Launch(chrome, w, h)
 	if err != nil {
-		return err
+		return nil, 0, 0, err
 	}
 	defer c.Close()
 	c.Scale = scale
 	if _, err := c.OpenPage("", w, h); err != nil {
-		return err
+		return nil, 0, 0, err
 	}
 	url := "file://" + filepath.ToSlash(abs)
 	if !poster {
 		url += "?si-view=thumb#1" // every build step shown, no sync
 	}
 	if err := c.Call("Page.navigate", map[string]any{"url": url}, nil); err != nil {
-		return err
+		return nil, 0, 0, err
 	}
 	for i := 0; i < 200; i++ {
 		v, _ := c.Eval("document.readyState")
@@ -61,32 +77,24 @@ func exportTimeline(chrome, dest, out string, d *deck.Deck, scale float64, stdou
 	}
 	// the picture is the timeline alone: no counter, progress bar or buttons
 	if _, err := c.Eval(`(function(){var s=document.createElement('style');s.textContent='.si-deck>:not(.si-slide),body:has(.si-deck)>:not(.si-deck){display:none!important}';document.head.appendChild(s);window.siTimelineFit&&window.siTimelineFit();return document.fonts?document.fonts.ready.then(function(){return 1}):1})()`); err != nil {
-		return err
+		return nil, 0, 0, err
 	}
 	time.Sleep(600 * time.Millisecond)
 	if poster {
 		v, err := c.Eval(`Math.ceil(document.documentElement.scrollHeight)`)
 		if err != nil {
-			return err
+			return nil, 0, 0, err
 		}
 		if n, _ := strconv.Atoi(string(v)); n > 0 {
 			h = n
 		}
 		if err := c.Call("Emulation.setDeviceMetricsOverride", map[string]any{"width": w, "height": h, "deviceScaleFactor": max(scale, 1), "mobile": false}, nil); err != nil {
-			return err
+			return nil, 0, 0, err
 		}
 		time.Sleep(400 * time.Millisecond)
 	}
 	png, err := c.Screenshot()
-	if err != nil {
-		return err
-	}
-	p := filepath.Join(out, d.Name+".png")
-	if err := os.WriteFile(p, png, 0o644); err != nil {
-		return err
-	}
-	fmt.Fprintf(stdout, "  %-28s (png, %d × %d)\n", d.Name+".png", int(float64(w)*scale), int(float64(h)*scale))
-	return nil
+	return png, w, h, err
 }
 
 // newTimeline is `si new <name> --type timeline`: the example timeline (the

@@ -53,7 +53,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "3.3.0"
+const version = "3.3.1"
 
 // Exit codes.
 const (
@@ -904,6 +904,14 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 					failed = true
 				}
 			}
+			if o.pdf && !d.IsDoc() { // landscape: paged PDF + the compact one-page PDF
+				if rel, err := exportTimelinePDF(chrome, dest, out, d, o.scale, stdout); err != nil {
+					fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
+					failed = true
+				} else {
+					entry.PDF = rel
+				}
+			}
 			if o.pdf && d.IsDoc() {
 				rel := filepath.Join("pdfs", d.Name+".pdf")
 				if err := os.MkdirAll(filepath.Join(out, "pdfs"), 0o755); err == nil && pagePDF(chrome, dest, filepath.Join(out, rel), "") == nil {
@@ -980,7 +988,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 				entry.PDF = rel
 			}
 		}
-		if chrome != "" && o.pdf && !d.IsDoc() && !d.IsInfographic() { // the slides PDF does not apply to a document (print it from the browser)
+		if chrome != "" && o.pdf && !d.IsDoc() && !d.IsInfographic() && !d.IsTimeline() { // the slides PDF does not apply to a document (print it from the browser)
 			rel := filepath.Join("pdfs", d.Name+".pdf") // a pdfs/ folder beside the decks; linked from the index tiles
 			pdf := filepath.Join(out, rel)
 			if err := os.MkdirAll(filepath.Dir(pdf), 0o755); err != nil {
