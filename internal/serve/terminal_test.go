@@ -1,6 +1,7 @@
 package serve
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -162,4 +163,60 @@ func TestTerminalRefusesOtherSites(t *testing.T) {
 	if code := try("POST", "/_si/term/api/new", "localhost:7070", "http://localhost:7070"); code != http.StatusOK {
 		t.Errorf("the drawer's own POST: %d", code)
 	}
+}
+
+func TestTerminalFilesPanel(t *testing.T) {
+	ts := newTermServer(t, true)
+	getJSON := func(path string, v any) int {
+		t.Helper()
+		res, err := http.Get(ts.URL + path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		if res.StatusCode == http.StatusOK {
+			json.NewDecoder(res.Body).Decode(v)
+		}
+		return res.StatusCode
+	}
+	var ls struct {
+		Dir     string
+		Entries []struct {
+			Name string
+			Dir  bool
+		}
+	}
+	if getJSON("/_si/term/api/ls", &ls) != 200 || len(ls.Entries) != 1 || ls.Entries[0].Name != "talk.md" {
+		t.Fatalf("ls of the deck folder: %+v", ls)
+	}
+	var cat struct {
+		HTML  string
+		Lines int
+	}
+	if getJSON("/_si/term/api/cat?path=talk.md", &cat) != 200 || !strings.Contains(cat.HTML, "Talk") {
+		t.Fatalf("cat: %+v", cat)
+	}
+	if code := getJSON("/_si/term/api/raw?path=talk.md", &cat); code != http.StatusForbidden {
+		t.Fatalf("raw serves pictures only, got %d", code)
+	}
+	// the active shell's folder follows its cd
+	res, _ := http.Post(ts.URL+"/_si/term/api/new", "", nil)
+	id, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	if out, err := http.Get(ts.URL + "/_si/term/api/out?id=" + string(id)); err == nil { // drain, so the shell never blocks
+		defer out.Body.Close()
+		go io.Copy(io.Discard, out.Body)
+	}
+	sub := filepath.Join(ls.Dir, "sub")
+	os.Mkdir(sub, 0o755)
+	http.Post(ts.URL+"/_si/term/api/in?id="+string(id), "", strings.NewReader("cd sub\n"))
+	var cwd struct{ Dir string }
+	for i := 0; i < 100; i++ {
+		time.Sleep(100 * time.Millisecond)
+		getJSON("/_si/term/api/cwd?id="+string(id), &cwd)
+		if r, _ := filepath.EvalSymlinks(cwd.Dir); strings.HasSuffix(r, "/sub") {
+			return
+		}
+	}
+	t.Fatalf("cwd did not follow cd: %q", cwd.Dir)
 }

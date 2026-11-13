@@ -106,6 +106,30 @@
     'padding:3px 10px;margin-right:6px;font-size:12px;cursor:pointer}' +
     '.si-rb-form button.pri{background:#7dd3fc;color:#0b0e14;border-color:#7dd3fc}' +
     '.si-rb-hint{font-size:11px;color:#5b6680;padding:6px 10px}' +
+    /* files panel: a read-only tree of a folder and a viewer for one file */
+    '.si-fs{flex:0 0 min(680px,55%);display:none;flex-direction:column;min-height:0;background:#0d1017;border-left:1px solid #1d2536;' +
+    'font:12px ui-sans-serif,system-ui,sans-serif;color:#c8d0e0}.si-fs.is-open{display:flex}' +
+    '.si-fs-head{flex:0 0 auto;display:flex;gap:4px;padding:6px 8px;border-bottom:1px solid #1d2536}' +
+    '.si-fs-head input{flex:1 1 auto;min-width:0;background:#11151f;color:#e6e6e6;border:1px solid #1d2536;border-radius:6px;padding:5px 8px;font:12px ui-monospace,Menlo,monospace}' +
+    '.si-fs-head input:focus{outline:none;border-color:#7dd3fc}' +
+    '.si-fs-head button,.si-fs-vh button{flex:0 0 auto;background:#11151f;color:#e6e6e6;border:1px solid #1d2536;border-radius:6px;padding:4px 8px;font:12px ui-sans-serif,system-ui,sans-serif;cursor:pointer}' +
+    '.si-fs-head button:hover,.si-fs-vh button:hover{border-color:#7dd3fc}' +
+    '.si-fs-split{flex:1 1 auto;display:flex;min-height:0}' +
+    '.si-fs-tree{flex:0 0 38%;overflow:auto;padding:4px 0;border-right:1px solid #1d2536}' +
+    '.si-fs-row{display:flex;align-items:center;gap:5px;padding:2px 8px;white-space:nowrap;cursor:pointer;color:#c8d0e0}' +
+    '.si-fs-row:hover{background:#151b27}.si-fs-row.is-on{background:#1b2436;color:#fff}' +
+    '.si-fs-row .ic{flex:0 0 1em;color:#7d8aa5;text-align:center}.si-fs-row.dot{opacity:.6}' +
+    '.si-fs-row .nm{overflow:hidden;text-overflow:ellipsis}.si-fs-row .sz{margin-left:auto;padding-left:8px;color:#5b6680;font-size:11px}' +
+    '.si-fs-view{flex:1 1 auto;display:flex;flex-direction:column;min-width:0}' +
+    '.si-fs-vh{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:5px 8px;border-bottom:1px solid #1d2536;color:#9aa7c0}' +
+    '.si-fs-vh .nm{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e6e6e6;font-weight:600}' +
+    '.si-fs-body{flex:1 1 auto;overflow:auto;margin:0}' +
+    '.si-fs-code{margin:0;padding:6px 0;font:12px/1.5 ui-monospace,Menlo,monospace;color:#c7d0e0;counter-reset:ln;white-space:pre;tab-size:4}' +
+    '.si-fs-code .ln{display:block;padding:0 10px 0 0}.si-fs-code .ln::before{counter-increment:ln;content:counter(ln);display:inline-block;width:3.2em;margin-right:10px;text-align:right;color:#3d4760;user-select:none}' +
+    '.si-fs-msg{padding:14px;color:#7d8aa5}.si-fs-img{max-width:100%;display:block;margin:10px auto;background:#fff}' +
+    ':is(.si-fs-code) .si-tk-k{color:#7dd3fc}:is(.si-fs-code) .si-tk-s{color:#a5e075}:is(.si-fs-code) .si-tk-n{color:#f5a05a}' +
+    ':is(.si-fs-code) .si-tk-c{color:#5b6680;font-style:italic}:is(.si-fs-code) .si-tk-m{color:#c792ea}:is(.si-fs-code) .si-tk-f{color:#f5a05a}' +
+    ':is(.si-fs-code) .si-tk-v{color:#ffd080}:is(.si-fs-code) .si-tk-y{color:#7dd3fc}' +
     /* highlighter tokens, scoped dark for the drawer (deck theme must not leak in) */
     ':is(.si-rb-cmd,.si-dm-code) .si-tk-k{color:#7dd3fc}:is(.si-rb-cmd,.si-dm-code) .si-tk-s{color:#a5e075}' +
     ':is(.si-rb-cmd,.si-dm-code) .si-tk-n{color:#f5a05a}:is(.si-rb-cmd,.si-dm-code) .si-tk-c{color:#5b6680;font-style:italic}' +
@@ -122,6 +146,7 @@
     '<div class="si-term-tabs"></div>' +
     (hasDemos ? '<button class="si-term-btn" data-act="demos" title="Demo scripts">▶ Demos</button>' : '') +
     (hasRunbook ? '<button class="si-term-btn" data-act="runbook" title="Runbook (cheat-sheet)">⌘ Runbook</button>' : '') +
+    '<button class="si-term-btn" data-act="files" title="Files (read-only)">▤ Files</button>' +
     '<button class="si-term-btn" data-act="new" title="New tab">+</button>' +
     '<button class="si-term-btn" data-act="hide" title="Hide (`)">✕</button>' +
     '</div><div class="si-term-body"><div class="si-term-main"></div></div>';
@@ -456,7 +481,7 @@
   }
   /* one side panel at a time: demos or runbook */
   function setPanel(which, open) {
-    [['demos', dmPanel, 'si-demos-open'], ['runbook', rbPanel, 'si-runbook-open']].forEach(function (p) {
+    [['demos', dmPanel, 'si-demos-open'], ['runbook', rbPanel, 'si-runbook-open'], ['files', fsPanel, 'si-files-open']].forEach(function (p) {
       if (!p[1]) return;
       var on = p[0] === which ? open : (open ? false : p[1].classList.contains('is-open'));
       p[1].classList.toggle('is-open', on);
@@ -466,9 +491,10 @@
     if (active >= 0 && tabs[active]) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); }
   }
   function toggleDemos() { if (dmPanel) setPanel('demos', !dmPanel.classList.contains('is-open')); }
+  function toggleFiles() { setPanel('files', !fsPanel.classList.contains('is-open')); if (fsPanel.classList.contains('is-open') && !fsLoaded) fsGo(fsRoot); }
   function toggleRunbook() {
     if (!rbPanel) return;
-    if (dmPanel) { setPanel('runbook', !rbPanel.classList.contains('is-open')); return; }
+    if (dmPanel || fsPanel) { setPanel('runbook', !rbPanel.classList.contains('is-open')); return; }
     var open = !rbPanel.classList.contains('is-open');
     rbPanel.classList.toggle('is-open', open);
     var btn = root.querySelector('[data-act="runbook"]');
@@ -476,12 +502,88 @@
     try { localStorage.setItem('si-runbook-open', JSON.stringify(open)); } catch (e) {}
     if (active >= 0 && tabs[active]) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); }
   }
+  /* ---------- files panel: a folder as a tree, one file read-only ---------- */
+  var fsPanel = null, fsLoaded = false, fsRoot = '';
+  try { fsRoot = localStorage.getItem('si-files-dir') || ''; } catch (e) {}
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function size(n) { return n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
+  function join(d, n) { return d.replace(/\/+$/, '') + '/' + n; }
+  var fsPath, fsTree, fsVName, fsVInfo, fsBody, fsCur = '';
+  function fsList(dir) { return fetch(API + 'ls?dir=' + encodeURIComponent(dir)).then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t); }); return r.json(); }); }
+  function fsRows(holder, dir, entries, depth) {
+    entries.forEach(function (e) {
+      var row = document.createElement('div'); row.className = 'si-fs-row' + (e.name.charAt(0) === '.' ? ' dot' : '');
+      row.style.paddingLeft = (8 + depth * 14) + 'px';
+      var p = join(dir, e.name); row.title = p;
+      row.innerHTML = '<span class="ic">' + (e.dir ? '▸' : '·') + '</span><span class="nm"></span>' + (e.dir ? '' : '<span class="sz">' + size(e.size) + '</span>');
+      row.querySelector('.nm').textContent = e.name + (e.dir ? '/' : '');
+      holder.appendChild(row);
+      if (e.dir) {
+        var kids = document.createElement('div'); kids.hidden = true; holder.appendChild(kids);
+        row.addEventListener('click', function () {
+          var open = kids.hidden; kids.hidden = !open; row.querySelector('.ic').textContent = open ? '▾' : '▸';
+          if (open && !kids.childNodes.length) fsList(p).then(function (j) { fsRows(kids, j.dir, j.entries, depth + 1); }, function (err) { kids.textContent = String(err.message); });
+        });
+        row.addEventListener('dblclick', function () { fsGo(p); });
+      } else {
+        row.addEventListener('click', function () {
+          Array.prototype.forEach.call(fsTree.querySelectorAll('.is-on'), function (x) { x.classList.remove('is-on'); });
+          row.classList.add('is-on'); fsOpen(p, e.name);
+        });
+      }
+    });
+  }
+  function fsGo(dir) {
+    fsLoaded = true;
+    fsList(dir).then(function (j) {
+      fsRoot = j.dir; fsPath.value = j.dir; fsTree.innerHTML = '';
+      try { localStorage.setItem('si-files-dir', j.dir); } catch (e) {}
+      fsRows(fsTree, j.dir, j.entries, 0);
+      if (j.more) { var m = document.createElement('div'); m.className = 'si-fs-msg'; m.textContent = 'Showing the first 2000 entries.'; fsTree.appendChild(m); }
+    }, function (err) { fsTree.innerHTML = '<div class="si-fs-msg"></div>'; fsTree.firstChild.textContent = 'Cannot open ' + dir + ': ' + err.message; });
+  }
+  function fsOpen(p, name) {
+    fsCur = p; fsVName.textContent = name; fsVName.title = p; fsVInfo.textContent = ''; fsBody.innerHTML = '<div class="si-fs-msg">Loading…</div>';
+    fetch(API + 'cat?path=' + encodeURIComponent(p)).then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t); }); return r.json(); }).then(function (j) {
+      if (fsCur !== p) return;
+      fsVInfo.textContent = size(j.size) + (j.lines ? ' · ' + j.lines + ' lines' : '') + (j.truncated ? ' · first 1 MB' : '');
+      if (j.image) { fsBody.innerHTML = '<img class="si-fs-img" alt="">'; fsBody.firstChild.src = API + 'raw?path=' + encodeURIComponent(p); return; }
+      if (j.binary) { fsBody.innerHTML = '<div class="si-fs-msg">A binary file: nothing to show as text.</div>'; return; }
+      var pre = document.createElement('pre'); pre.className = 'si-fs-code';
+      pre.innerHTML = j.html.split('\n').map(function (l) { return '<span class="ln">' + (l || ' ') + '</span>'; }).join('');
+      fsBody.innerHTML = ''; fsBody.appendChild(pre); fsBody.scrollTop = 0;
+    }, function (err) { fsBody.innerHTML = '<div class="si-fs-msg"></div>'; fsBody.firstChild.textContent = String(err.message); });
+  }
+  function buildFiles() {
+    fsPanel = document.createElement('div'); fsPanel.className = 'si-fs';
+    fsPanel.innerHTML = '<div class="si-fs-head"><button type="button" data-f="up" title="Parent folder">↑</button>' +
+      '<input spellcheck="false" aria-label="Folder" placeholder="Folder"><button type="button" data-f="shell" title="The folder the active shell is in">⌂ Shell</button>' +
+      '<button type="button" data-f="reload" title="Reload">↻</button></div>' +
+      '<div class="si-fs-split"><div class="si-fs-tree"></div><div class="si-fs-view"><div class="si-fs-vh"><span class="nm">No file open</span><span class="in"></span>' +
+      '<button type="button" data-f="copy" title="Copy the path">Copy path</button></div><div class="si-fs-body"><div class="si-fs-msg">Pick a file in the tree. Double-click a folder to make it the top.</div></div></div></div>';
+    fsPath = fsPanel.querySelector('input'); fsTree = fsPanel.querySelector('.si-fs-tree');
+    fsVName = fsPanel.querySelector('.si-fs-vh .nm'); fsVInfo = fsPanel.querySelector('.si-fs-vh .in'); fsBody = fsPanel.querySelector('.si-fs-body');
+    fsPath.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') fsGo(fsPath.value); });
+    fsPanel.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
+    fsPanel.querySelector('[data-f="up"]').addEventListener('click', function () { fsGo(fsRoot.replace(/\/[^\/]+\/?$/, '') || '/'); });
+    fsPanel.querySelector('[data-f="reload"]').addEventListener('click', function () { fsGo(fsRoot); if (fsCur) fsOpen(fsCur, fsVName.textContent); });
+    fsPanel.querySelector('[data-f="shell"]').addEventListener('click', function () {
+      var t = tabs[active]; if (!t) return;
+      fetch(API + 'cwd?id=' + t.id).then(function (r) { return r.json(); }).then(function (j) { fsGo(j.dir); });
+    });
+    fsPanel.querySelector('[data-f="copy"]').addEventListener('click', function () { if (fsCur && navigator.clipboard) navigator.clipboard.writeText(fsCur); });
+    root.querySelector('.si-term-body').appendChild(fsPanel);
+    var open = false; try { open = JSON.parse(localStorage.getItem('si-files-open') || 'false'); } catch (e) {}
+    if (open) { setPanel('files', true); fsGo(fsRoot); }
+  }
   buildRunbook();
   buildDemos();
+  buildFiles();
+  root.querySelector('[data-act="files"]').addEventListener('click', toggleFiles);
   var rbBtn = root.querySelector('[data-act="runbook"]');
   if (rbBtn) rbBtn.addEventListener('click', toggleRunbook);
   var dmBtn = root.querySelector('[data-act="demos"]');
   if (dmBtn) dmBtn.addEventListener('click', toggleDemos);
 
-  window.siTerm = { toggle: toggle, show: show, hide: hide, runbook: toggleRunbook, demos: toggleDemos };
+  window.siTerm = { toggle: toggle, show: show, hide: hide, runbook: toggleRunbook, demos: toggleDemos, files: toggleFiles };
 })();

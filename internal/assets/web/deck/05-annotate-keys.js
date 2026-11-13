@@ -192,6 +192,17 @@
   }
   var actions = { next: forward, prev: backward, overview: function () { runCmd('overview'); }, draw: function () { runCmd('draw'); }, presenter: function () { runCmd('presenter'); }, find: function () { runCmd('find'); }, mode: toggleMode, help: function () { toggleHelp(); }, fullscreen: fullscreen, autoplay: function () { runCmd('autoplay'); } };
   /* a disabled feature hides its toolbar button */
+  /* si play on loopback: Terminal and Window buttons beside Auto-play (a
+     built deck never has them; termEnabled is false there) */
+  if (termEnabled && !role) {
+    actions.terminal = function () { runCmd('terminal'); };
+    actions.browser = function () { runCmd('browser'); };
+    var _ba = document.querySelector('[data-si-action="autoplay"]');
+    if (_ba) [['browser', 'Window', 'Browser window over the slides (' + cmd.browser + ')'], ['terminal', 'Terminal', 'Terminal (' + cmd.terminal + ')']].forEach(function (x) {
+      var b = document.createElement('button'); b.type = 'button'; b.setAttribute('data-si-action', x[0]); b.title = x[2]; b.textContent = x[1];
+      _ba.parentNode.insertBefore(b, _ba.nextSibling);
+    });
+  }
   if (!feat.overview) { var _bo = document.querySelector('[data-si-action="overview"]'); if (_bo) _bo.style.display = 'none'; }
   if (!feat.presenter) { var _bp = document.querySelector('[data-si-action="presenter"]'); if (_bp) _bp.style.display = 'none'; }
   if (!feat.draw) { var _bd = document.querySelector('[data-si-action="draw"]'); if (_bd) _bd.style.display = 'none'; }

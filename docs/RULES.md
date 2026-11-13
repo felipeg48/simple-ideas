@@ -1232,11 +1232,13 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   or Run the command with every occurrence replaced; Esc cancels and types nothing.
   Placeholders are highlighted in the command.
 
-- **Browser windows** (key **w**, `si play` on a loopback address only, never
-  in a built deck): web pages in floating windows over the slides, for a
+- **Browser windows** (key **w**, or **Window** in the bar; `si play` on a
+  loopback address only, never in a built deck; the bar also gets
+  **Terminal** for the drawer): web pages in floating windows over the slides, for a
   broker's console or a dashboard on a wide screen. **w** opens a picker with
   the deck's `browser:` links, the recent addresses and a box to type one.
-  Drag a window by its title bar, resize it from the bottom-right corner,
+  Drag a window by its title bar, resize it from any edge or corner, **−** /
+  **+** zoom that window's page alone (click the percentage for 100%),
   double-click the bar (or **□**) to maximise, **–** to minimise it to a pill in
   the bottom-left dock, **✕** to close; several windows at once, the one you
   touch comes to the front, and their places survive a live reload. Each page
@@ -1249,6 +1251,14 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   browser: RabbitMQ=http://localhost:15672, Grafana=http://localhost:3000
   ---
   ```
+
+- **Files** (`▤ Files` in the play terminal's bar): a read-only tree of a
+  folder beside the shells, for showing what a file says. It opens on the
+  deck's folder; type a path (`~` works) and Enter, **↑** for the parent,
+  double-click a folder to make it the top, **⌂ Shell** for the folder the
+  active shell is in now. Click a file to read it, highlighted, with line
+  numbers (the first MB; pictures shown; binary files named, not shown);
+  **Copy path** copies it. The folder and the open panel are remembered.
 
 - **Demos** (front matter `demos: ../demos/`): demo scripts, plain markdown, in a
   second side panel of the play terminal (`▶ Demos`, one panel open at a time).

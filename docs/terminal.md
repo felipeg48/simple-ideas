@@ -166,3 +166,13 @@ strips `Domain`/`Secure`/`SameSite` from cookies; the window frames the
 proxied URL. Links come from the `browser:` front matter as
 `window.SI_BROWSER` (play terminal only); recent addresses in `localStorage`
 `si-web-recent`. Proxies close with the terminals.
+
+## Files panel
+
+`▤ Files` (`term.js` `buildFiles`, one side panel with Demos and Runbook):
+`GET /_si/term/api/ls?dir=` (folders first; 2000 entries), `cat?path=`
+(first MB, `render.Highlight` by extension, binary and image detection),
+`raw?path=` (pictures only, SVG under a no-script CSP), `cwd?id=` (the tab
+shell's folder: `/proc/PID/cwd` on Linux, `lsof -d cwd` elsewhere); all
+`localOnly` (`internal/serve/files.go`). Relative paths start at the deck's
+folder; `localStorage` `si-files-dir`, `si-files-open`. Read-only for now.

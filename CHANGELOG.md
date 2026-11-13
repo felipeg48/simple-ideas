@@ -3,6 +3,12 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.3.2:** a **Files** panel in the `si play` terminal: a read-only
+  tree of a folder (the deck's, a typed path, or the active shell's with
+  **⌂ Shell**) and a viewer that shows a file highlighted with line numbers,
+  or a picture. Browser windows (w) resize from every edge and corner, and
+  **− / +** zoom each window's page on its own. The `si play` bar gets
+  **Terminal** and **Window** buttons beside Auto-play.
 - **v3.3.1:** a landscape timeline's `--pdf` is readable: `pdfs/<name>.pdf`
   has several 16:9 pages in the same look (whole eras, about 12 milestones a
   page, title on each, closing line and sources on the last) and
