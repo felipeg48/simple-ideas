@@ -3,6 +3,9 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.3.3:** the file viewer is a tab: **▤ Viewer** in the play terminal
+  opens a new `Viewer` tab beside the shells each time, so several files can
+  be open at once; Run buttons and **⌂ Shell** use the last shell.
 - **v3.3.2:** a **Files** panel in the `si play` terminal: a read-only
   tree of a folder (the deck's, a typed path, or the active shell's with
   **⌂ Shell**) and a viewer that shows a file highlighted with line numbers,

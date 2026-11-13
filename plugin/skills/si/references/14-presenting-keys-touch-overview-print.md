@@ -182,13 +182,15 @@
   ---
   ```
 
-- **Files** (`▤ Files` in the play terminal's bar): a read-only tree of a
-  folder beside the shells, for showing what a file says. It opens on the
-  deck's folder; type a path (`~` works) and Enter, **↑** for the parent,
-  double-click a folder to make it the top, **⌂ Shell** for the folder the
-  active shell is in now. Click a file to read it, highlighted, with line
-  numbers (the first MB; pictures shown; binary files named, not shown);
-  **Copy path** copies it. The folder and the open panel are remembered.
+- **Viewer tabs** (`▤ Viewer` in the play terminal's bar): each click opens
+  a new tab beside the shells, a read-only tree of a folder and the file you
+  pick, so several files can be open at once (the tab shows `Viewer · name`).
+  A Viewer opens on the last folder used (first time: the deck's folder);
+  type a path (`~` works) and Enter, **↑** for the parent, double-click a
+  folder to make it the top, **⌂ Shell** for the folder the last shell you
+  used is in now. Files show highlighted with line numbers (the first MB;
+  pictures shown; binary files named, not shown); **Copy path** copies it.
+  Runbook and Demos Run buttons still type into the last shell.
 
 - **Demos** (front matter `demos: ../demos/`): demo scripts, plain markdown, in a
   second side panel of the play terminal (`▶ Demos`, one panel open at a time).

@@ -107,15 +107,15 @@
     '.si-rb-form button.pri{background:#7dd3fc;color:#0b0e14;border-color:#7dd3fc}' +
     '.si-rb-hint{font-size:11px;color:#5b6680;padding:6px 10px}' +
     /* files panel: a read-only tree of a folder and a viewer for one file */
-    '.si-fs{flex:0 0 min(680px,55%);display:none;flex-direction:column;min-height:0;background:#0d1017;border-left:1px solid #1d2536;' +
-    'font:12px ui-sans-serif,system-ui,sans-serif;color:#c8d0e0}.si-fs.is-open{display:flex}' +
+    '.si-fs-pane{padding:0}.si-fs{display:flex;flex-direction:column;height:100%;min-height:0;background:#0d1017;' +
+    'font:12px ui-sans-serif,system-ui,sans-serif;color:#c8d0e0}' +
     '.si-fs-head{flex:0 0 auto;display:flex;gap:4px;padding:6px 8px;border-bottom:1px solid #1d2536}' +
     '.si-fs-head input{flex:1 1 auto;min-width:0;background:#11151f;color:#e6e6e6;border:1px solid #1d2536;border-radius:6px;padding:5px 8px;font:12px ui-monospace,Menlo,monospace}' +
     '.si-fs-head input:focus{outline:none;border-color:#7dd3fc}' +
     '.si-fs-head button,.si-fs-vh button{flex:0 0 auto;background:#11151f;color:#e6e6e6;border:1px solid #1d2536;border-radius:6px;padding:4px 8px;font:12px ui-sans-serif,system-ui,sans-serif;cursor:pointer}' +
     '.si-fs-head button:hover,.si-fs-vh button:hover{border-color:#7dd3fc}' +
     '.si-fs-split{flex:1 1 auto;display:flex;min-height:0}' +
-    '.si-fs-tree{flex:0 0 38%;overflow:auto;padding:4px 0;border-right:1px solid #1d2536}' +
+    '.si-fs-tree{flex:0 0 min(340px,32%);overflow:auto;padding:4px 0;border-right:1px solid #1d2536}' +
     '.si-fs-row{display:flex;align-items:center;gap:5px;padding:2px 8px;white-space:nowrap;cursor:pointer;color:#c8d0e0}' +
     '.si-fs-row:hover{background:#151b27}.si-fs-row.is-on{background:#1b2436;color:#fff}' +
     '.si-fs-row .ic{flex:0 0 1em;color:#7d8aa5;text-align:center}.si-fs-row.dot{opacity:.6}' +
@@ -146,7 +146,7 @@
     '<div class="si-term-tabs"></div>' +
     (hasDemos ? '<button class="si-term-btn" data-act="demos" title="Demo scripts">▶ Demos</button>' : '') +
     (hasRunbook ? '<button class="si-term-btn" data-act="runbook" title="Runbook (cheat-sheet)">⌘ Runbook</button>' : '') +
-    '<button class="si-term-btn" data-act="files" title="Files (read-only)">▤ Files</button>' +
+    '<button class="si-term-btn" data-act="files" title="A new Viewer tab: a folder\'s files, read-only">▤ Viewer</button>' +
     '<button class="si-term-btn" data-act="new" title="New tab">+</button>' +
     '<button class="si-term-btn" data-act="hide" title="Hide (`)">✕</button>' +
     '</div><div class="si-term-body"><div class="si-term-main"></div></div>';
@@ -166,11 +166,12 @@
       var on = k === i;
       t.pane.classList.toggle('is-active', on);
       t.tabEl.classList.toggle('is-active', on);
-      if (on) { try { t.fit.fit(); } catch (e) {} sendResize(t); t.term.focus(); }
+      if (on && !t.viewer) { lastShell = t; try { t.fit.fit(); } catch (e) {} sendResize(t); t.term.focus(); }
     });
   }
 
   function sendResize(t) {
+    if (t.viewer) return;
     if (t.term.cols && t.term.rows) post('resize?id=' + t.id + '&cols=' + t.term.cols + '&rows=' + t.term.rows);
   }
 
@@ -228,7 +229,7 @@
 
   function closeTab(t) {
     if (t.id) post('close?id=' + t.id);
-    try { t.term.dispose(); } catch (e) {}
+    if (t.term) try { t.term.dispose(); } catch (e) {}
     t.pane.remove(); t.tabEl.remove();
     var i = tabs.indexOf(t);
     if (i >= 0) tabs.splice(i, 1);
@@ -236,8 +237,9 @@
     select(Math.min(active, tabs.length - 1));
   }
 
-  function show() {
+  function show(noShell) {
     root.classList.add('is-open');
+    if (noShell === true) return;
     if (tabs.length === 0) newTab();
     else select(active < 0 ? 0 : active);
   }
@@ -246,7 +248,7 @@
 
   root.querySelector('[data-act="new"]').addEventListener('click', newTab);
   root.querySelector('[data-act="hide"]').addEventListener('click', hide);
-  window.addEventListener('resize', function () { if (active >= 0 && tabs[active]) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); } });
+  window.addEventListener('resize', function () { if (active >= 0 && tabs[active] && !tabs[active].viewer) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); } });
 
   /* ---------- runbook drawer: a command cheat-sheet that types into the shell ---------- */
   var rbPanel = null;
@@ -265,6 +267,7 @@
     text = String(text).replace(/\n+$/, '');
     if (!run && navigator.clipboard) navigator.clipboard.writeText(text).catch(function () {});
     var t = tabs[active];
+    if (t && t.viewer) { t = lastShell && tabs.indexOf(lastShell) >= 0 ? lastShell : null; if (t) select(tabs.indexOf(t)); }
     if (!t) return;
     var start = Date.now();
     (function wait() {
@@ -343,7 +346,7 @@
     f.addEventListener('input', upd);
     f.addEventListener('keydown', function (ev) {
       ev.stopPropagation();
-      if (ev.key === 'Escape') { ev.preventDefault(); closeForm(); if (active >= 0 && tabs[active]) tabs[active].term.focus(); }
+      if (ev.key === 'Escape') { ev.preventDefault(); closeForm(); if (active >= 0 && tabs[active] && tabs[active].term) tabs[active].term.focus(); }
       // Enter submits from a field only; on a button it does that button's own click
       else if (ev.key === 'Enter' && ev.target.tagName === 'INPUT') { ev.preventDefault(); go(ev.shiftKey || ev.metaKey || ev.ctrlKey); }
     });
@@ -481,7 +484,7 @@
   }
   /* one side panel at a time: demos or runbook */
   function setPanel(which, open) {
-    [['demos', dmPanel, 'si-demos-open'], ['runbook', rbPanel, 'si-runbook-open'], ['files', fsPanel, 'si-files-open']].forEach(function (p) {
+    [['demos', dmPanel, 'si-demos-open'], ['runbook', rbPanel, 'si-runbook-open']].forEach(function (p) {
       if (!p[1]) return;
       var on = p[0] === which ? open : (open ? false : p[1].classList.contains('is-open'));
       p[1].classList.toggle('is-open', on);
@@ -491,10 +494,9 @@
     if (active >= 0 && tabs[active]) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); }
   }
   function toggleDemos() { if (dmPanel) setPanel('demos', !dmPanel.classList.contains('is-open')); }
-  function toggleFiles() { setPanel('files', !fsPanel.classList.contains('is-open')); if (fsPanel.classList.contains('is-open') && !fsLoaded) fsGo(fsRoot); }
   function toggleRunbook() {
     if (!rbPanel) return;
-    if (dmPanel || fsPanel) { setPanel('runbook', !rbPanel.classList.contains('is-open')); return; }
+    if (dmPanel) { setPanel('runbook', !rbPanel.classList.contains('is-open')); return; }
     var open = !rbPanel.classList.contains('is-open');
     rbPanel.classList.toggle('is-open', open);
     var btn = root.querySelector('[data-act="runbook"]');
@@ -502,88 +504,95 @@
     try { localStorage.setItem('si-runbook-open', JSON.stringify(open)); } catch (e) {}
     if (active >= 0 && tabs[active]) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); }
   }
-  /* ---------- files panel: a folder as a tree, one file read-only ---------- */
-  var fsPanel = null, fsLoaded = false, fsRoot = '';
-  try { fsRoot = localStorage.getItem('si-files-dir') || ''; } catch (e) {}
-  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  /* ---------- Viewer tabs: a folder as a tree, one file read-only, as many as you like ---------- */
+  var viewerSeq = 0, lastShell = null;
   function size(n) { return n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
   function join(d, n) { return d.replace(/\/+$/, '') + '/' + n; }
-  var fsPath, fsTree, fsVName, fsVInfo, fsBody, fsCur = '';
   function fsList(dir) { return fetch(API + 'ls?dir=' + encodeURIComponent(dir)).then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t); }); return r.json(); }); }
-  function fsRows(holder, dir, entries, depth) {
-    entries.forEach(function (e) {
-      var row = document.createElement('div'); row.className = 'si-fs-row' + (e.name.charAt(0) === '.' ? ' dot' : '');
-      row.style.paddingLeft = (8 + depth * 14) + 'px';
-      var p = join(dir, e.name); row.title = p;
-      row.innerHTML = '<span class="ic">' + (e.dir ? '▸' : '·') + '</span><span class="nm"></span>' + (e.dir ? '' : '<span class="sz">' + size(e.size) + '</span>');
-      row.querySelector('.nm').textContent = e.name + (e.dir ? '/' : '');
-      holder.appendChild(row);
-      if (e.dir) {
-        var kids = document.createElement('div'); kids.hidden = true; holder.appendChild(kids);
-        row.addEventListener('click', function () {
-          var open = kids.hidden; kids.hidden = !open; row.querySelector('.ic').textContent = open ? '▾' : '▸';
-          if (open && !kids.childNodes.length) fsList(p).then(function (j) { fsRows(kids, j.dir, j.entries, depth + 1); }, function (err) { kids.textContent = String(err.message); });
-        });
-        row.addEventListener('dblclick', function () { fsGo(p); });
-      } else {
-        row.addEventListener('click', function () {
-          Array.prototype.forEach.call(fsTree.querySelectorAll('.is-on'), function (x) { x.classList.remove('is-on'); });
-          row.classList.add('is-on'); fsOpen(p, e.name);
-        });
-      }
-    });
-  }
-  function fsGo(dir) {
-    fsLoaded = true;
-    fsList(dir).then(function (j) {
-      fsRoot = j.dir; fsPath.value = j.dir; fsTree.innerHTML = '';
-      try { localStorage.setItem('si-files-dir', j.dir); } catch (e) {}
-      fsRows(fsTree, j.dir, j.entries, 0);
-      if (j.more) { var m = document.createElement('div'); m.className = 'si-fs-msg'; m.textContent = 'Showing the first 2000 entries.'; fsTree.appendChild(m); }
-    }, function (err) { fsTree.innerHTML = '<div class="si-fs-msg"></div>'; fsTree.firstChild.textContent = 'Cannot open ' + dir + ': ' + err.message; });
-  }
-  function fsOpen(p, name) {
-    fsCur = p; fsVName.textContent = name; fsVName.title = p; fsVInfo.textContent = ''; fsBody.innerHTML = '<div class="si-fs-msg">Loading…</div>';
-    fetch(API + 'cat?path=' + encodeURIComponent(p)).then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t); }); return r.json(); }).then(function (j) {
-      if (fsCur !== p) return;
-      fsVInfo.textContent = size(j.size) + (j.lines ? ' · ' + j.lines + ' lines' : '') + (j.truncated ? ' · first 1 MB' : '');
-      if (j.image) { fsBody.innerHTML = '<img class="si-fs-img" alt="">'; fsBody.firstChild.src = API + 'raw?path=' + encodeURIComponent(p); return; }
-      if (j.binary) { fsBody.innerHTML = '<div class="si-fs-msg">A binary file: nothing to show as text.</div>'; return; }
-      var pre = document.createElement('pre'); pre.className = 'si-fs-code';
-      pre.innerHTML = j.html.split('\n').map(function (l) { return '<span class="ln">' + (l || ' ') + '</span>'; }).join('');
-      fsBody.innerHTML = ''; fsBody.appendChild(pre); fsBody.scrollTop = 0;
-    }, function (err) { fsBody.innerHTML = '<div class="si-fs-msg"></div>'; fsBody.firstChild.textContent = String(err.message); });
-  }
-  function buildFiles() {
-    fsPanel = document.createElement('div'); fsPanel.className = 'si-fs';
-    fsPanel.innerHTML = '<div class="si-fs-head"><button type="button" data-f="up" title="Parent folder">↑</button>' +
-      '<input spellcheck="false" aria-label="Folder" placeholder="Folder"><button type="button" data-f="shell" title="The folder the active shell is in">⌂ Shell</button>' +
+  function newViewer() {
+    var start = ''; try { start = localStorage.getItem('si-files-dir') || ''; } catch (e) {}
+    var n = ++viewerSeq;
+    var tabEl = document.createElement('button'); tabEl.className = 'si-term-tab';
+    tabEl.innerHTML = '<span class="label">Viewer ' + n + '</span><span class="x" title="Close">×</span>';
+    tabsEl.appendChild(tabEl);
+    var pane = document.createElement('div'); pane.className = 'si-term-pane si-fs-pane';
+    bodyEl.appendChild(pane);
+    var t = { viewer: true, pane: pane, tabEl: tabEl };
+    tabs.push(t);
+    tabEl.addEventListener('click', function (e) { if (e.target.classList.contains('x')) { closeTab(t); return; } select(tabs.indexOf(t)); });
+
+    var root0 = '', cur = '';
+    pane.innerHTML = '<div class="si-fs"><div class="si-fs-head"><button type="button" data-f="up" title="Parent folder">↑</button>' +
+      '<input spellcheck="false" aria-label="Folder" placeholder="Folder"><button type="button" data-f="shell" title="The folder the last shell you used is in">⌂ Shell</button>' +
       '<button type="button" data-f="reload" title="Reload">↻</button></div>' +
       '<div class="si-fs-split"><div class="si-fs-tree"></div><div class="si-fs-view"><div class="si-fs-vh"><span class="nm">No file open</span><span class="in"></span>' +
-      '<button type="button" data-f="copy" title="Copy the path">Copy path</button></div><div class="si-fs-body"><div class="si-fs-msg">Pick a file in the tree. Double-click a folder to make it the top.</div></div></div></div>';
-    fsPath = fsPanel.querySelector('input'); fsTree = fsPanel.querySelector('.si-fs-tree');
-    fsVName = fsPanel.querySelector('.si-fs-vh .nm'); fsVInfo = fsPanel.querySelector('.si-fs-vh .in'); fsBody = fsPanel.querySelector('.si-fs-body');
-    fsPath.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') fsGo(fsPath.value); });
-    fsPanel.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
-    fsPanel.querySelector('[data-f="up"]').addEventListener('click', function () { fsGo(fsRoot.replace(/\/[^\/]+\/?$/, '') || '/'); });
-    fsPanel.querySelector('[data-f="reload"]').addEventListener('click', function () { fsGo(fsRoot); if (fsCur) fsOpen(fsCur, fsVName.textContent); });
-    fsPanel.querySelector('[data-f="shell"]').addEventListener('click', function () {
-      var t = tabs[active]; if (!t) return;
-      fetch(API + 'cwd?id=' + t.id).then(function (r) { return r.json(); }).then(function (j) { fsGo(j.dir); });
+      '<button type="button" data-f="copy" title="Copy the path">Copy path</button></div><div class="si-fs-body"><div class="si-fs-msg">Pick a file in the tree. Double-click a folder to make it the top.</div></div></div></div></div>';
+    var pathEl = pane.querySelector('input'), tree = pane.querySelector('.si-fs-tree');
+    var vName = pane.querySelector('.si-fs-vh .nm'), vInfo = pane.querySelector('.si-fs-vh .in'), body = pane.querySelector('.si-fs-body');
+    var label = tabEl.querySelector('.label');
+    function rows(holder, dir, entries, depth) {
+      entries.forEach(function (e) {
+        var row = document.createElement('div'); row.className = 'si-fs-row' + (e.name.charAt(0) === '.' ? ' dot' : '');
+        row.style.paddingLeft = (8 + depth * 14) + 'px';
+        var p = join(dir, e.name); row.title = p;
+        row.innerHTML = '<span class="ic">' + (e.dir ? '▸' : '·') + '</span><span class="nm"></span>' + (e.dir ? '' : '<span class="sz">' + size(e.size) + '</span>');
+        row.querySelector('.nm').textContent = e.name + (e.dir ? '/' : '');
+        holder.appendChild(row);
+        if (e.dir) {
+          var kids = document.createElement('div'); kids.hidden = true; holder.appendChild(kids);
+          row.addEventListener('click', function () {
+            var open = kids.hidden; kids.hidden = !open; row.querySelector('.ic').textContent = open ? '▾' : '▸';
+            if (open && !kids.childNodes.length) fsList(p).then(function (j) { rows(kids, j.dir, j.entries, depth + 1); }, function (err) { kids.textContent = String(err.message); });
+          });
+          row.addEventListener('dblclick', function () { go(p); });
+        } else {
+          row.addEventListener('click', function () {
+            Array.prototype.forEach.call(tree.querySelectorAll('.is-on'), function (x) { x.classList.remove('is-on'); });
+            row.classList.add('is-on'); openFile(p, e.name);
+          });
+        }
+      });
+    }
+    function go(dir) {
+      fsList(dir).then(function (j) {
+        root0 = j.dir; pathEl.value = j.dir; tree.innerHTML = '';
+        try { localStorage.setItem('si-files-dir', j.dir); } catch (e) {}
+        rows(tree, j.dir, j.entries, 0);
+        if (j.more) { var m = document.createElement('div'); m.className = 'si-fs-msg'; m.textContent = 'Showing the first 2000 entries.'; tree.appendChild(m); }
+      }, function (err) { tree.innerHTML = '<div class="si-fs-msg"></div>'; tree.firstChild.textContent = 'Cannot open ' + dir + ': ' + err.message; });
+    }
+    function openFile(p, name) {
+      cur = p; vName.textContent = name; vName.title = p; vInfo.textContent = ''; label.textContent = 'Viewer · ' + name; tabEl.title = p;
+      body.innerHTML = '<div class="si-fs-msg">Loading…</div>';
+      fetch(API + 'cat?path=' + encodeURIComponent(p)).then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t); }); return r.json(); }).then(function (j) {
+        if (cur !== p) return;
+        vInfo.textContent = size(j.size) + (j.lines ? ' · ' + j.lines + ' lines' : '') + (j.truncated ? ' · first 1 MB' : '');
+        if (j.image) { body.innerHTML = '<img class="si-fs-img" alt="">'; body.firstChild.src = API + 'raw?path=' + encodeURIComponent(p); return; }
+        if (j.binary) { body.innerHTML = '<div class="si-fs-msg">A binary file: nothing to show as text.</div>'; return; }
+        var pre = document.createElement('pre'); pre.className = 'si-fs-code';
+        pre.innerHTML = j.html.split('\n').map(function (l) { return '<span class="ln">' + (l || ' ') + '</span>'; }).join('');
+        body.innerHTML = ''; body.appendChild(pre); body.scrollTop = 0;
+      }, function (err) { body.innerHTML = '<div class="si-fs-msg"></div>'; body.firstChild.textContent = String(err.message); });
+    }
+    pathEl.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') go(pathEl.value); });
+    pane.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
+    pane.querySelector('[data-f="up"]').addEventListener('click', function () { go(root0.replace(/\/[^\/]+\/?$/, '') || '/'); });
+    pane.querySelector('[data-f="reload"]').addEventListener('click', function () { go(root0); if (cur) openFile(cur, vName.textContent); });
+    pane.querySelector('[data-f="shell"]').addEventListener('click', function () {
+      var sh = lastShell && tabs.indexOf(lastShell) >= 0 ? lastShell : null; if (!sh || !sh.id) return;
+      fetch(API + 'cwd?id=' + sh.id).then(function (r) { return r.json(); }).then(function (j) { go(j.dir); });
     });
-    fsPanel.querySelector('[data-f="copy"]').addEventListener('click', function () { if (fsCur && navigator.clipboard) navigator.clipboard.writeText(fsCur); });
-    root.querySelector('.si-term-body').appendChild(fsPanel);
-    var open = false; try { open = JSON.parse(localStorage.getItem('si-files-open') || 'false'); } catch (e) {}
-    if (open) { setPanel('files', true); fsGo(fsRoot); }
+    pane.querySelector('[data-f="copy"]').addEventListener('click', function () { if (cur && navigator.clipboard) navigator.clipboard.writeText(cur); });
+    go(start);
+    select(tabs.length - 1);
   }
   buildRunbook();
   buildDemos();
-  buildFiles();
-  root.querySelector('[data-act="files"]').addEventListener('click', toggleFiles);
+  root.querySelector('[data-act="files"]').addEventListener('click', function () { show(true); newViewer(); });
   var rbBtn = root.querySelector('[data-act="runbook"]');
   if (rbBtn) rbBtn.addEventListener('click', toggleRunbook);
   var dmBtn = root.querySelector('[data-act="demos"]');
   if (dmBtn) dmBtn.addEventListener('click', toggleDemos);
 
-  window.siTerm = { toggle: toggle, show: show, hide: hide, runbook: toggleRunbook, demos: toggleDemos, files: toggleFiles };
+  window.siTerm = { toggle: toggle, show: show, hide: hide, runbook: toggleRunbook, demos: toggleDemos, viewer: function () { show(true); newViewer(); } };
 })();
