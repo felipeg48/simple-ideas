@@ -213,12 +213,31 @@
   INI/properties/`.conf` (`rabbitmq.conf`), Erlang (`.erl`,
   `advanced.config`), Dockerfile, nginx, PowerShell, protobuf, CMake and
   diff. It colours and checks JSON; it is not a language server (no
-  completion or go-to-definition).
+  completion or go-to-definition). `.conf`, INI, `.properties` and
+  `.cfg` files colour their values in both views: keys, `[sections]`,
+  numbers, sizes and durations (`512MB`, `30s`), booleans
+  (`true`/`off`/`yes`), quoted strings, paths and URLs, `#` and `;`
+  comments.
+  The tree has a toolbar (and a right-click menu on its rows): **New file**
+  and **New folder** (in the folder you picked, or the top; a new file opens
+  in the editor), **Rename** (F2, in place), **Delete** (Delete key; a bar in
+  the pane names what goes, a folder with the number of items in it; a link
+  is deleted, never what it points to), **Copy path** and **Reveal path**. A
+  name already taken is refused. **Follow** (read-only view, off by default)
+  shows the file as it changes on disk, once a second, scrolled to the end
+  when you were at the end, like `tail -f`; a file over 1 MB shows its last
+  MB. It pauses while the tab is hidden. While you edit, a change on disk
+  shows a notice (**Reload** or **Keep editing**), never a refresh under
+  you. `.log` files never live-reload the deck.
 
   ```text
   Viewer · rabbitmq.conf ●     Save  Revert  Done  Copy path
   1  # rabbit
   2  listeners.tcp.default = 5672
+  3  vm_memory_high_watermark.absolute = 512MB
+
+  Viewer · app.log      [Follow]  Edit  Copy path
+  87  2026-11-13T10:01:00 WARN appended 87
   ```
 
 - **Demos** (front matter `demos: ../demos/`): demo scripts, plain markdown, in a

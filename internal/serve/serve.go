@@ -121,6 +121,10 @@ func (s *Server) Handler() http.Handler {
 		mux.HandleFunc("GET /_si/term/api/cat", localOnly(s.term.cat))
 		mux.HandleFunc("GET /_si/term/api/raw", localOnly(s.term.raw))
 		mux.HandleFunc("POST /_si/term/api/save", localOnly(s.term.save))
+		mux.HandleFunc("GET /_si/term/api/stat", localOnly(s.term.stat))
+		mux.HandleFunc("POST /_si/term/api/create", localOnly(s.term.create))
+		mux.HandleFunc("POST /_si/term/api/rename", localOnly(s.term.rename))
+		mux.HandleFunc("POST /_si/term/api/delete", localOnly(s.term.delete))
 		mux.HandleFunc("GET /_si/term/api/cwd", localOnly(s.term.cwd))
 		mux.HandleFunc("POST /_si/browser/open", localOnly(s.browserOpen))
 	}
@@ -425,6 +429,9 @@ func (s *Server) signature() uint64 {
 				if e.IsDir() {
 					return filepath.SkipDir
 				}
+				return nil
+			}
+			if strings.HasSuffix(name, ".log") { // logs a demo writes are no deck input (the Viewer can Follow them)
 				return nil
 			}
 			if info, err := e.Info(); err == nil && !e.IsDir() {

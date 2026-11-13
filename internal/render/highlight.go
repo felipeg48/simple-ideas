@@ -80,6 +80,7 @@ var aliases = map[string]string{
 	"htm": "html", "xhtml": "html", "vue": "html",
 	"tf": "hcl", "terraform": "hcl", "tfvars": "hcl", "proto": "protobuf", "proto3": "protobuf", "gql": "graphql",
 	"fs": "fsharp", "f#": "fsharp", "fsx": "fsharp", "ex": "elixir", "exs": "elixir",
+	"conf": "ini", "cfg": "ini", "cnf": "ini", "properties": "ini", "gitconfig": "ini", "editorconfig": "ini", "npmrc": "ini",
 }
 
 var (
@@ -93,7 +94,23 @@ var (
 	hlCache sync.Map
 )
 
+// iniRE colours key = value files (rabbitmq.conf, sysctl, INI, .properties):
+// comments, [sections], keys, quoted strings, URLs and paths, booleans,
+// numbers with a unit (30s, 512MB). The = or : stays plain.
+var iniRE = regexp.MustCompile(strings.Join([]string{
+	`(?P<c>(?m:^[ \t]*[#;!].*)|[ \t][#;].*)`,
+	`(?P<m>(?m:^[ \t]*\[[^\]\n]*\]))`,
+	`(?m:^[ \t]*)(?P<v>[\w.\-/@$]+)[ \t]*[=:]`,
+	"(?P<s>\"(?:\\\\.|[^\"\\\\\\n])*\"|'(?:\\\\.|[^'\\\\\\n])*')",
+	`(?P<y>\b[a-z][\w+.-]*://[^\s"',;]+|\B(?:~|\.\.?)?/[\w.\-/~@%+]*)`,
+	`(?P<k>\b(?i:true|false|on|off|yes|no|none|null)\b)`,
+	`(?P<n>-?\b\d+(?:\.\d+)?[A-Za-z%]{0,3}\b)`,
+}, "|"))
+
 func langRE(lang string) *regexp.Regexp {
+	if lang == "ini" {
+		return iniRE
+	}
 	if re, ok := hlCache.Load(lang); ok {
 		return re.(*regexp.Regexp)
 	}

@@ -5,6 +5,12 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-13)
 
+**v3.5.0:** the Viewer's tree creates, renames and deletes files and
+folders (toolbar + right-click menu; `create`/`rename`/`delete`/`stat` in
+`internal/serve/files.go`), `.conf`/INI values coloured in both views
+(`render.Highlight` `ini`, the `conf` mode in `term-editor.ts`), and
+**Follow** (tail -f for logs; `cat?tail=1`; the watcher skips `*.log`).
+
 **v3.4.0:** the play terminal's Viewer tabs edit files (CodeMirror 6 bundle
 `internal/assets/web/term/editor.js` from `web/studio/src/term-editor.ts`,
 lazy-loaded on Edit; `POST /_si/term/api/save` with an mtime check; saves

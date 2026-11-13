@@ -31,7 +31,6 @@ import { rust } from "@codemirror/legacy-modes/mode/rust";
 import { ruby } from "@codemirror/legacy-modes/mode/ruby";
 import { standardSQL } from "@codemirror/legacy-modes/mode/sql";
 import { toml } from "@codemirror/legacy-modes/mode/toml";
-import { properties } from "@codemirror/legacy-modes/mode/properties";
 import { erlang } from "@codemirror/legacy-modes/mode/erlang";
 import { dockerFile } from "@codemirror/legacy-modes/mode/dockerfile";
 import { nginx } from "@codemirror/legacy-modes/mode/nginx";
@@ -46,7 +45,38 @@ import { perl } from "@codemirror/legacy-modes/mode/perl";
 import { r } from "@codemirror/legacy-modes/mode/r";
 import { cmake } from "@codemirror/legacy-modes/mode/cmake";
 
-const legacy = (p: StreamParser<unknown>) => StreamLanguage.define(p);
+const legacy = <T>(p: StreamParser<T>) => StreamLanguage.define(p);
+
+// key = value files: rabbitmq.conf (sysctl style), INI [sections], key: value,
+// .properties; # and ; comments. Keys, the = or :, quoted strings, URLs and
+// paths, booleans, numbers with a unit (30s, 512MB). Same kinds as the
+// read-only view (render.Highlight, language ini).
+export const conf: StreamParser<{ value: boolean }> = {
+  name: "conf",
+  startState: () => ({ value: false }),
+  token(stream, st) {
+    if (stream.sol()) st.value = false;
+    if (stream.eatSpace()) return null;
+    const first = /^\s*$/.test(stream.string.slice(0, stream.start));
+    const ch = stream.peek();
+    if ((first && (ch === "#" || ch === ";" || ch === "!")) || (!first && (ch === "#" || ch === ";") && /\s/.test(stream.string.charAt(stream.start - 1)))) {
+      stream.skipToEnd();
+      return "comment";
+    }
+    if (!st.value) {
+      if (first && stream.match(/^\[[^\]]*\]?/)) return "meta";
+      if (first && stream.match(/^[\w.\-/@$]+(?=\s*[=:])/)) return "propertyName";
+      if (stream.match(/^[=:]/)) { st.value = true; return "operator"; }
+      st.value = true;
+    }
+    if (stream.match(/^"(?:\\.|[^"\\])*"?/) || stream.match(/^'(?:\\.|[^'\\])*'?/)) return "string";
+    if (stream.match(/^[a-z][\w+.-]*:\/\/[^\s"',;]+/) || stream.match(/^(?:~|\.\.?)?\/[\w.\-/~@%+]*/)) return "url";
+    if (stream.match(/^(?:true|false|on|off|yes|no|none|null)(?![\w.-])/i)) return "keyword";
+    if (stream.match(/^-?\d+(?:\.\d+)?[A-Za-z%]{0,3}(?![\w.])/)) return "number";
+    if (!stream.match(/^[\w.\-@$]+/)) stream.next();
+    return null;
+  },
+};
 
 // by extension; names without one are in byName
 const byExt: Record<string, () => Extension> = {
@@ -71,7 +101,7 @@ const byExt: Record<string, () => Extension> = {
   cs: () => legacy(csharp), rs: () => legacy(rust), swift: () => legacy(swift),
   rb: () => legacy(ruby), rake: () => legacy(ruby), gemspec: () => legacy(ruby),
   sql: () => legacy(standardSQL), toml: () => legacy(toml),
-  ini: () => legacy(properties), cfg: () => legacy(properties), conf: () => legacy(properties), properties: () => legacy(properties),
+  ini: () => legacy(conf), cfg: () => legacy(conf), cnf: () => legacy(conf), conf: () => legacy(conf), properties: () => legacy(conf),
   erl: () => legacy(erlang), hrl: () => legacy(erlang), config: () => legacy(erlang), "app.src": () => legacy(erlang),
   dockerfile: () => legacy(dockerFile), lua: () => legacy(lua),
   ps1: () => legacy(powerShell), psm1: () => legacy(powerShell), psd1: () => legacy(powerShell),
@@ -84,7 +114,7 @@ const byName: Record<string, () => Extension> = {
   ".bashrc": () => legacy(shell), ".zshrc": () => legacy(shell), ".profile": () => legacy(shell), ".bash_profile": () => legacy(shell),
   gemfile: () => legacy(ruby), rakefile: () => legacy(ruby), vagrantfile: () => legacy(ruby),
   jenkinsfile: () => legacy(groovy), "cmakelists.txt": () => legacy(cmake),
-  ".gitconfig": () => legacy(properties), ".editorconfig": () => legacy(properties), ".npmrc": () => legacy(properties),
+  ".gitconfig": () => legacy(conf), ".editorconfig": () => legacy(conf), ".npmrc": () => legacy(conf),
   "nginx.conf": () => legacy(nginx), "go.mod": () => legacy(go), "go.sum": () => legacy(go),
 };
 

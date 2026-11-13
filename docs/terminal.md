@@ -202,6 +202,40 @@ play-only and loopback-only and never in a built deck. Leaving a dirty
 editor (close, another file, Done) asks in a bar inside the pane
 (`.si-fs-ask`), never `confirm()`.
 
+**File operations (v3.5.0).** All `localOnly`, paths through `resolve`
+(relative to the deck folder, `~` expanded); writes under the deck folder run
+inside `quiet` (`termHub.change`), so they never live-reload the page.
+`POST create {dir, name, folder}` (an empty file with `O_EXCL`, or a folder),
+`POST rename {path, name}` (same folder; a case-only rename on macOS is
+allowed), `POST delete {path}` (`Lstat`: a link is removed itself; a folder
+with `RemoveAll`, which removes links inside and never follows them; `/` is
+refused), `GET stat?path=[&count=1]` → `{mtime, size, dir, link, items}`.
+A name is one path element (`validName`: no `/`, `\`, `.`, `..`, NUL, no
+outer spaces) else 400; a taken name 409; a missing path 404. The tree
+(`.si-fs-side`: `.si-fs-tb` toolbar over `.si-fs-tree`) keeps `holders[dir]`
+(where a listed folder's rows are) and `opened` (folders shown open, kept
+across a refresh), so an operation refreshes just its folder. Names are typed
+in place (`nameInput`: Enter, Escape, blur cancels); the context menu
+(`showMenu`, `.si-fs-menu`) lives on `document.body` because the drawer's
+transform would offset a fixed menu inside it. Deleting asks in `.si-fs-ask`
+with the stat's item count; Cancel has the focus.
+
+**Colours for `.conf` (v3.5.0).** `render.Highlight` language `ini` (aliases
+`conf`, `cfg`, `cnf`, `properties`, `gitconfig`, `editorconfig`, `npmrc`):
+comments `c`, `[section]` `m`, key `v`, booleans `k`, numbers with a unit `n`,
+strings `s`, URLs and paths `y`. The editor's `conf` stream mode in
+`term-editor.ts` gives the same kinds (`propertyName`, `meta`, `keyword`,
+`number`, `string`, `url`).
+
+**Follow (v3.5.0).** The read-only view's **Follow** polls `stat` every
+second while the tab is visible and the drawer open; on a new mtime or size it
+reads `cat?edit=1&tail=1` (a file over 1 MB: its last MB from a line start,
+`tail: true`) and keeps the scroll at the end only if it was there. While
+editing, the same poll shows a changed-on-disk notice once per mtime
+(**Reload** / **Keep editing**); the editor is never refreshed under the
+user. The live-reload watcher skips `*.log` files, so a log a demo writes in
+the deck folder can be followed without reloading the deck.
+
 ## Tools bar and panel width
 
 `.si-term-acts` (right edge of `.si-term-body`, `order:9`): icon buttons with

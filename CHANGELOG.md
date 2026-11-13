@@ -3,6 +3,18 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.5.0:** the play terminal's Viewer tree manages files: **New
+  file**, **New folder**, **Rename** (F2) and **Delete** from a toolbar
+  above the tree or a right-click menu, plus **Copy path** and **Reveal
+  path**. A new file opens in the editor; a taken name is refused; Delete
+  asks in the pane and names what goes (a folder with its item count); a
+  link is deleted, never what it points to. `.conf`, INI, `.properties`
+  and `.cfg` values are coloured in the read-only view and the editor
+  (keys, sections, numbers, `30s`, `512MB`, booleans, strings, paths,
+  URLs). **Follow** keeps the read-only view in step with a file that
+  changes on disk, scrolled to the end like `tail -f` (the last MB of a big
+  file); while you edit, a change on disk is a notice, never a refresh.
+  `.log` files no longer live-reload the deck.
 - **v3.4.0:** the play terminal's Viewer tabs edit: **Edit** opens the
   file in an editor with syntax colours for about 40 languages and formats
   (JS/TS, JSON with errors marked, YAML, Markdown, shell, Python, Go, Java,

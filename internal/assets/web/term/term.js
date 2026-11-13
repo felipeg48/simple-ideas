@@ -124,7 +124,21 @@
     '.si-fs-head button,.si-fs-vh button{flex:0 0 auto;background:#11151f;color:#e6e6e6;border:1px solid #1d2536;border-radius:6px;padding:4px 8px;font:12px ui-sans-serif,system-ui,sans-serif;cursor:pointer}' +
     '.si-fs-head button:hover,.si-fs-vh button:hover{border-color:#7dd3fc}' +
     '.si-fs-split{flex:1 1 auto;display:flex;min-height:0}' +
-    '.si-fs-tree{flex:0 0 min(340px,32%);overflow:auto;padding:4px 0;border-right:1px solid #1d2536}' +
+    '.si-fs-side{flex:0 0 min(340px,32%);display:flex;flex-direction:column;min-height:0;border-right:1px solid #1d2536}' +
+    '.si-fs-tree{flex:1 1 auto;overflow:auto;padding:4px 0}.si-fs-tree:focus{outline:none}' +
+    '.si-fs-tb{flex:0 0 auto;display:flex;gap:2px;padding:3px 6px;border-bottom:1px solid #1d2536}' +
+    '.si-fs-tb button{width:26px;height:24px;display:grid;place-items:center;background:transparent;color:#7d8aa5;border:0;border-radius:4px;cursor:pointer;padding:0}' +
+    '.si-fs-tb button:hover{color:#e6e6e6;background:#1d2536}.si-fs-tb button:disabled{opacity:.3;cursor:default;background:transparent;color:#7d8aa5}' +
+    '.si-fs-tb button:focus-visible{outline:2px solid #7dd3fc}' +
+    '.si-fs-row input{flex:1 1 auto;min-width:0;background:#0b0e14;color:#e6e6e6;border:1px solid #7dd3fc;border-radius:3px;padding:0 4px;font:inherit;outline:none}' +
+    '.si-fs-row input.bad{border-color:#ff8a8a}' +
+    '.si-fs-menu{position:fixed;z-index:9100;min-width:170px;padding:4px;background:#11151f;border:1px solid #2a3550;border-radius:6px;' +
+    'box-shadow:0 8px 24px rgba(0,0,0,.55);font:12px ui-sans-serif,system-ui,sans-serif;color-scheme:dark}' +
+    '.si-fs-menu button{display:block;width:100%;text-align:left;background:transparent;color:#c8d0e0;border:0;border-radius:4px;padding:5px 10px;cursor:pointer;font:inherit}' +
+    '.si-fs-menu button:hover,.si-fs-menu button:focus{background:#1b2436;color:#fff;outline:none}.si-fs-menu button.danger{color:#ff8a8a}' +
+    '.si-fs-menu hr{border:0;border-top:1px solid #1d2536;margin:4px 2px}' +
+    '.si-fs-ask button.danger{background:#5a1d1d;border-color:#a33a3a;color:#ffd6d6}.si-fs-ask .p{font:12px ui-monospace,Menlo,monospace;user-select:all;color:#e6e6e6}' +
+    '.si-fs-vh button.is-on{background:#14532d;border-color:#3fb47a;color:#d9fbe5}' +
     '.si-fs-row{display:flex;align-items:center;gap:5px;padding:2px 8px;white-space:nowrap;cursor:pointer;color:#c8d0e0}' +
     '.si-fs-row:hover{background:#151b27}.si-fs-row.is-on{background:#1b2436;color:#fff}' +
     '.si-fs-row .ic{flex:0 0 1em;color:#7d8aa5;text-align:center}.si-fs-row.dot{opacity:.6}' +
@@ -251,6 +265,7 @@
   function closeTab(t) {
     if (t.leave && !t.leave(function () { t.leave = null; closeTab(t); })) return; // a Viewer with unsaved edits asks first
     if (t.editor) try { t.editor.destroy(); } catch (e) {}
+    if (t.stop) t.stop();
     if (t.id) post('close?id=' + t.id);
     if (t.term) try { t.term.dispose(); } catch (e) {}
     t.pane.remove(); t.tabEl.remove();
@@ -567,6 +582,35 @@
   var viewerSeq = 0, lastShell = null;
   function size(n) { return n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
   function join(d, n) { return d.replace(/\/+$/, '') + '/' + n; }
+  function tb(f, title, path) {
+    return '<button type="button" data-f="' + f + '" title="' + title + '" aria-label="' + title + '"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg></button>';
+  }
+  /* one context menu at a time, on the page (the drawer's transform would
+     shift a fixed menu inside it); items: [label, fn, class] or null for a rule */
+  var menuEl = null;
+  function closeMenu() { if (menuEl) { menuEl.remove(); menuEl = null; } }
+  function showMenu(x, y, items) {
+    closeMenu();
+    var m = menuEl = document.createElement('div'); m.className = 'si-fs-menu'; m.setAttribute('role', 'menu');
+    items.forEach(function (it) {
+      if (!it) { m.appendChild(document.createElement('hr')); return; }
+      var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitem'); b.textContent = it[0]; if (it[2]) b.className = it[2];
+      b.addEventListener('click', function () { closeMenu(); it[1](); });
+      m.appendChild(b);
+    });
+    document.body.appendChild(m);
+    m.style.left = Math.max(4, Math.min(x, innerWidth - m.offsetWidth - 4)) + 'px';
+    m.style.top = Math.max(4, Math.min(y, innerHeight - m.offsetHeight - 4)) + 'px';
+    m.addEventListener('keydown', function (ev) {
+      ev.stopPropagation();
+      var bs = Array.prototype.slice.call(m.querySelectorAll('button')), i = bs.indexOf(document.activeElement);
+      if (ev.key === 'Escape') { ev.preventDefault(); closeMenu(); }
+      else if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') { ev.preventDefault(); bs[(i + (ev.key === 'ArrowDown' ? 1 : bs.length - 1)) % bs.length].focus(); }
+    });
+    m.querySelector('button').focus();
+  }
+  document.addEventListener('pointerdown', function (ev) { if (menuEl && !menuEl.contains(ev.target)) closeMenu(); }, true);
+  window.addEventListener('blur', closeMenu);
   var editorLoad = null; // editor.js (CodeMirror), fetched the first time Edit is pressed
   function loadEditor() {
     if (window.SiEditor) return Promise.resolve();
@@ -593,8 +637,15 @@
     pane.innerHTML = '<div class="si-fs"><div class="si-fs-head"><button type="button" data-f="up" title="Parent folder">↑</button>' +
       '<input spellcheck="false" aria-label="Folder" placeholder="Folder"><button type="button" data-f="shell" title="The folder the last shell you used is in">⌂ Shell</button>' +
       '<button type="button" data-f="reload" title="Reload">↻</button></div>' +
-      '<div class="si-fs-split"><div class="si-fs-tree"></div><div class="si-fs-view"><div class="si-fs-vh"><span class="nm">No file open</span><span class="in"></span>' +
-      '<span class="ok"></span><button type="button" data-f="edit" title="Edit this file" hidden>Edit</button>' +
+      '<div class="si-fs-split"><div class="si-fs-side"><div class="si-fs-tb" role="toolbar" aria-label="Files">' +
+      tb('newfile', 'New file', '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11v6M9 14h6"/>') +
+      tb('newdir', 'New folder', '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6M9 13h6"/>') +
+      tb('rename', 'Rename (F2)', '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>') +
+      tb('delete', 'Delete', '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>') +
+      tb('copysel', 'Copy path', '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>') +
+      '</div><div class="si-fs-tree" tabindex="-1"></div></div><div class="si-fs-view"><div class="si-fs-vh"><span class="nm">No file open</span><span class="in"></span>' +
+      '<span class="ok"></span><button type="button" data-f="follow" title="Follow: show the file as it changes on disk, scrolled to the end (for logs)" hidden>Follow</button>' +
+      '<button type="button" data-f="edit" title="Edit this file" hidden>Edit</button>' +
       '<button type="button" data-f="save" class="pri" title="Save (⌘S)" hidden>Save</button><button type="button" data-f="revert" title="Back to the file as saved" hidden>Revert</button>' +
       '<button type="button" data-f="done" title="Back to the read-only view" hidden>Done</button>' +
       '<button type="button" data-f="copy" title="Copy the path">Copy path</button></div><div class="si-fs-ask" hidden></div><div class="si-fs-body"><div class="si-fs-msg">Pick a file in the tree. Double-click a folder to make it the top.</div></div></div></div></div>';
@@ -603,17 +654,20 @@
     var label = tabEl.querySelector('.label'), askEl = pane.querySelector('.si-fs-ask'), okEl = pane.querySelector('.si-fs-vh .ok');
     var btn = function (f) { return pane.querySelector('[data-f="' + f + '"]'); };
     var file = null, dirty = false, curName = ''; // file: the cat answer for cur (text, mtime)
+    var following = false, noticed = '', polling = false; // Follow, and the changed-on-disk notice while editing
     function setDirty(on) { dirty = on; label.textContent = 'Viewer · ' + curName + (on ? ' ●' : ''); }
     function editing() { return !!t.editor; }
     function buttons() {
       btn('edit').hidden = editing() || !file || typeof file.text !== 'string';
+      btn('follow').hidden = editing() || !file || !!file.image || !!file.binary;
+      btn('follow').classList.toggle('is-on', following);
       ['save', 'revert', 'done'].forEach(function (f) { btn(f).hidden = !editing(); });
     }
     /* a question inside the panel (no confirm()): [label, fn, primary] choices */
     function ask(msg, choices) {
       askEl.innerHTML = '<span></span>'; askEl.firstChild.textContent = msg;
       choices.forEach(function (c) {
-        var b = document.createElement('button'); b.type = 'button'; b.textContent = c[0]; if (c[2]) b.className = 'pri';
+        var b = document.createElement('button'); b.type = 'button'; b.textContent = c[0]; if (c[2]) b.className = c[2] === true ? 'pri' : c[2];
         b.addEventListener('click', function () { askEl.hidden = true; c[1](); });
         askEl.appendChild(b);
       });
@@ -673,7 +727,20 @@
         file = j; if (t.editor) t.editor.setText(j.text); setDirty(false); askEl.hidden = true;
       });
     }
+    /* the tree: holders[dir] is the element a listed folder's rows are in, opened
+       the folders shown open (kept across a refresh), sel the row picked last */
+    var holders = {}, opened = {}, expanders = {}, sel = null;
+    function tbState() {
+      ['rename', 'delete', 'copysel'].forEach(function (f) { btn(f).disabled = !sel; });
+    }
+    function pick(row, p, isDir) {
+      Array.prototype.forEach.call(tree.querySelectorAll('.is-on'), function (x) { x.classList.remove('is-on'); });
+      if (row) row.classList.add('is-on');
+      sel = row ? { path: p, dir: isDir, row: row } : null; tbState();
+    }
     function rows(holder, dir, entries, depth) {
+      holders[dir] = { el: holder, depth: depth };
+      holder.innerHTML = '';
       entries.forEach(function (e) {
         var row = document.createElement('div'); row.className = 'si-fs-row' + (e.name.charAt(0) === '.' ? ' dot' : '');
         row.style.paddingLeft = (8 + depth * 14) + 'px';
@@ -681,46 +748,202 @@
         row.innerHTML = '<span class="ic">' + (e.dir ? '▸' : '·') + '</span><span class="nm"></span>' + (e.dir ? '' : '<span class="sz">' + size(e.size) + '</span>');
         row.querySelector('.nm').textContent = e.name + (e.dir ? '/' : '');
         holder.appendChild(row);
+        row.addEventListener('contextmenu', function (ev) {
+          ev.preventDefault(); ev.stopPropagation(); pick(row, p, e.dir); treeMenu(ev.clientX, ev.clientY, true);
+        });
         if (e.dir) {
           var kids = document.createElement('div'); kids.hidden = true; holder.appendChild(kids);
-          row.addEventListener('click', function () {
-            var open = kids.hidden; kids.hidden = !open; row.querySelector('.ic').textContent = open ? '▾' : '▸';
-            if (open && !kids.childNodes.length) fsList(p).then(function (j) { rows(kids, j.dir, j.entries, depth + 1); }, function (err) { kids.textContent = String(err.message); });
-          });
+          var expand = expanders[p] = function (open) {
+            kids.hidden = !open; row.querySelector('.ic').textContent = open ? '▾' : '▸';
+            if (open) opened[p] = true; else delete opened[p];
+            if (!open || holders[p] && holders[p].el === kids && kids.childNodes.length) return Promise.resolve();
+            return fsList(p).then(function (j) { rows(kids, j.dir, j.entries, depth + 1); }, function (err) { kids.textContent = String(err.message); });
+          };
+          row.addEventListener('click', function () { if (row.querySelector('input')) return; pick(row, p, true); expand(kids.hidden); });
           row.addEventListener('dblclick', function () { go(p); });
+          if (opened[p]) expand(true);
         } else {
-          row.addEventListener('click', function () {
-            Array.prototype.forEach.call(tree.querySelectorAll('.is-on'), function (x) { x.classList.remove('is-on'); });
-            row.classList.add('is-on'); openFile(p, e.name);
-          });
+          row.addEventListener('click', function () { if (row.querySelector('input')) return; pick(row, p, false); openFile(p, e.name); });
         }
+        if (sel && sel.path === p) pick(row, p, e.dir);
       });
     }
+    function refresh(dir) {
+      var h = holders[dir];
+      if (!h || dir === root0) return go(root0);
+      return fsList(dir).then(function (j) { rows(h.el, j.dir, j.entries, h.depth); });
+    }
     function go(dir) {
-      fsList(dir).then(function (j) {
-        root0 = j.dir; pathEl.value = j.dir; tree.innerHTML = '';
+      return fsList(dir).then(function (j) {
+        if (j.dir !== root0) { opened = {}; sel = null; }
+        root0 = j.dir; pathEl.value = j.dir; holders = {}; expanders = {};
         try { localStorage.setItem('si-files-dir', j.dir); } catch (e) {}
-        rows(tree, j.dir, j.entries, 0);
+        rows(tree, j.dir, j.entries, 0); tbState();
         if (j.more) { var m = document.createElement('div'); m.className = 'si-fs-msg'; m.textContent = 'Showing the first 2000 entries.'; tree.appendChild(m); }
       }, function (err) { tree.innerHTML = '<div class="si-fs-msg"></div>'; tree.firstChild.textContent = 'Cannot open ' + dir + ': ' + err.message; });
     }
-    function fetchFile(p) { return fetch(API + 'cat?edit=1&path=' + encodeURIComponent(p)).then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t); }); return r.json(); }); }
-    function openFile(p, name) {
-      if (!t.leave(function () { openFile(p, name); })) return;
+    /* file operations: POST a JSON body; an error's text is the message */
+    function op(name, body) {
+      return fetch(API + name, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) {
+        if (!r.ok) return r.text().then(function (m) { throw new Error(m.trim()); });
+        return r.status === 204 ? {} : r.json();
+      });
+    }
+    function parentOf(p) { return p.replace(/\/[^\/]+\/?$/, '') || '/'; }
+    function targetDir() { return !sel ? root0 : sel.dir ? sel.path : parentOf(sel.path); }
+    /* a name typed in place: Enter commits (commit returns a promise; a refusal
+       keeps the field, marked), Escape or leaving the field cancels */
+    function nameInput(row, value, commit, cancel) {
+      var inp = document.createElement('input'); inp.spellcheck = false; inp.value = value; inp.setAttribute('aria-label', 'Name');
+      var nm = row.querySelector('.nm'); if (nm) nm.hidden = true;
+      row.insertBefore(inp, nm ? nm.nextSibling : null);
+      var done = false;
+      function end() { done = true; inp.remove(); if (nm) nm.hidden = false; }
+      inp.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Escape') { ev.preventDefault(); end(); cancel(); tree.focus(); }
+        else if (ev.key === 'Enter') {
+          ev.preventDefault();
+          var v = inp.value.trim();
+          if (!v || v === value) { end(); cancel(); return; }
+          done = true;
+          commit(v).then(function () { inp.remove(); if (nm) nm.hidden = false; }, function (err) {
+            done = false; inp.classList.add('bad'); inp.title = err.message;
+            ask(err.message, [['OK', function () { inp.focus(); }, true]]);
+          });
+        } else inp.classList.remove('bad');
+      });
+      inp.addEventListener('blur', function () { setTimeout(function () { if (!done && document.activeElement !== inp && askEl.hidden) { end(); cancel(); } }, 0); });
+      inp.focus();
+      var dot = value.lastIndexOf('.'); inp.setSelectionRange(0, dot > 0 ? dot : value.length);
+    }
+    function newItem(folder) {
+      var d = targetDir();
+      (d === root0 || !expanders[d] ? Promise.resolve() : expanders[d](true)).then(function () {
+        var h = holders[d] || holders[root0]; if (!h) return;
+        var row = document.createElement('div'); row.className = 'si-fs-row'; row.style.paddingLeft = (8 + h.depth * 14) + 'px';
+        row.innerHTML = '<span class="ic">' + (folder ? '▸' : '·') + '</span>';
+        h.el.insertBefore(row, h.el.firstChild);
+        nameInput(row, '', function (name) {
+          return op('create', { dir: d, name: name, folder: folder }).then(function (j) {
+            row.remove(); sel = { path: j.path, dir: folder };
+            return refresh(d).then(function () { if (!folder) openFile(j.path, name, true); });
+          });
+        }, function () { row.remove(); });
+      });
+    }
+    function renameSel() {
+      if (!sel || !sel.row) return;
+      var old = sel.path, isDir = sel.dir, base = old.split('/').pop();
+      nameInput(sel.row, base, function (name) {
+        return op('rename', { path: old, name: name }).then(function (j) {
+          if (opened[old]) { opened[j.path] = true; delete opened[old]; }
+          if (cur === old || cur.indexOf(old + '/') === 0) { // the open file moved with it
+            cur = j.path + cur.slice(old.length); if (cur === j.path) curName = name;
+            vName.textContent = curName; vName.title = cur; tabEl.title = cur; setDirty(dirty);
+          }
+          sel = { path: j.path, dir: isDir };
+          return refresh(parentOf(old));
+        });
+      }, function () {});
+    }
+    function deleteSel() {
+      if (!sel) return;
+      var p = sel.path, isDir = sel.dir;
+      fetch(API + 'stat?count=1&path=' + encodeURIComponent(p)).then(function (r) { return r.ok ? r.json() : {}; }).then(function (s) {
+        var what = s.link ? 'the link ' + p + ' (what it points to stays)' : s.dir || isDir ?
+          'the folder ' + p + (s.items ? ' and the ' + s.items + (s.items === 1 ? ' item' : ' items') + ' in it' : ' (empty)') : p;
+        ask('Delete ' + what + '? This cannot be undone.', [
+          ['Cancel', function () { tree.focus(); }],
+          ['Delete', function () {
+            op('delete', { path: p }).then(function () {
+              delete opened[p]; if (sel && sel.path === p) sel = null;
+              if (cur === p || cur.indexOf(p + '/') === 0) { // the open file went with it
+                stopEditing(); cur = ''; curName = ''; file = null; following = false; buttons();
+                vName.textContent = 'No file open'; vInfo.textContent = ''; label.textContent = 'Viewer ' + n;
+                body.innerHTML = '<div class="si-fs-msg"></div>'; body.firstChild.textContent = 'Deleted ' + p + '.';
+              }
+              return refresh(parentOf(p));
+            }).catch(function (err) { ask('Not deleted: ' + err.message, [['OK', function () {}]]); });
+          }, 'danger'],
+        ]);
+      });
+    }
+    function copySel() { var p = sel ? sel.path : cur; if (p && navigator.clipboard) navigator.clipboard.writeText(p).catch(function () {}); }
+    function revealSel() {
+      var p = sel ? sel.path : cur; if (!p) return;
+      ask('', [['Copy path', copySel], ['OK', function () {}, true]]);
+      var sp = askEl.firstChild; sp.innerHTML = '<span class="p"></span>'; sp.firstChild.textContent = p;
+    }
+    function treeMenu(x, y, onRow) {
+      var items = [['New file…', function () { newItem(false); }], ['New folder…', function () { newItem(true); }]];
+      if (onRow) items.push(null, ['Rename…', renameSel], ['Copy path', copySel], ['Reveal path', revealSel], null, ['Delete…', deleteSel, 'danger']);
+      showMenu(x, y, items);
+    }
+    tree.addEventListener('contextmenu', function (ev) { ev.preventDefault(); pick(null); treeMenu(ev.clientX, ev.clientY, false); });
+    tree.addEventListener('keydown', function (ev) {
+      if (ev.target.tagName === 'INPUT') return;
+      if (ev.key === 'F2') { ev.preventDefault(); renameSel(); }
+      else if ((ev.key === 'Delete' || (ev.key === 'Backspace' && ev.metaKey)) && sel) { ev.preventDefault(); deleteSel(); }
+    });
+    btn('newfile').addEventListener('click', function () { newItem(false); });
+    btn('newdir').addEventListener('click', function () { newItem(true); });
+    btn('rename').addEventListener('click', renameSel);
+    btn('delete').addEventListener('click', deleteSel);
+    btn('copysel').addEventListener('click', copySel);
+    function fetchFile(p, tail) { return fetch(API + 'cat?edit=1' + (tail ? '&tail=1' : '') + '&path=' + encodeURIComponent(p)).then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t); }); return r.json(); }); }
+    function atEnd() { return body.scrollHeight - body.scrollTop - body.clientHeight < 24; }
+    /* a text file into the read-only view; scroll: 'end', 'keep' or the top */
+    function showText(j, scroll) {
+      vInfo.textContent = size(j.size) + (j.lines ? ' · ' + j.lines + ' lines' : '') + (j.truncated ? (j.tail ? ' · last 1 MB' : ' · first 1 MB') : '');
+      if (j.image) { body.innerHTML = '<img class="si-fs-img" alt="">'; body.firstChild.src = API + 'raw?path=' + encodeURIComponent(j.path) + '&m=' + j.mtime; return; }
+      if (j.binary) { body.innerHTML = '<div class="si-fs-msg">A binary file: nothing to show as text.</div>'; return; }
+      var top = body.scrollTop, pre = document.createElement('pre'); pre.className = 'si-fs-code';
+      pre.innerHTML = j.html.split('\n').map(function (l) { return '<span class="ln">' + (l || ' ') + '</span>'; }).join('');
+      body.innerHTML = ''; body.appendChild(pre);
+      body.scrollTop = scroll === 'end' ? body.scrollHeight : scroll === 'keep' ? top : 0;
+    }
+    function openFile(p, name, edit) {
+      if (!t.leave(function () { openFile(p, name, edit); })) return;
       stopEditing();
       cur = p; curName = name; file = null; buttons(); vName.textContent = name; vName.title = p; vInfo.textContent = ''; setDirty(false); tabEl.title = p;
       body.innerHTML = '<div class="si-fs-msg">Loading…</div>';
-      fetchFile(p).then(function (j) {
+      fetchFile(p, following).then(function (j) {
         if (cur !== p) return;
-        file = j; buttons();
-        vInfo.textContent = size(j.size) + (j.lines ? ' · ' + j.lines + ' lines' : '') + (j.truncated ? ' · first 1 MB' : '');
-        if (j.image) { body.innerHTML = '<img class="si-fs-img" alt="">'; body.firstChild.src = API + 'raw?path=' + encodeURIComponent(p); return; }
-        if (j.binary) { body.innerHTML = '<div class="si-fs-msg">A binary file: nothing to show as text.</div>'; return; }
-        var pre = document.createElement('pre'); pre.className = 'si-fs-code';
-        pre.innerHTML = j.html.split('\n').map(function (l) { return '<span class="ln">' + (l || ' ') + '</span>'; }).join('');
-        body.innerHTML = ''; body.appendChild(pre); body.scrollTop = 0;
+        file = j; buttons(); showText(j, following ? 'end' : 0);
+        if (edit) startEditing();
       }, function (err) { body.innerHTML = '<div class="si-fs-msg"></div>'; body.firstChild.textContent = String(err.message); });
     }
+    /* Follow: once a second (while this tab shows), a cheap stat; when the file
+       changed, the read-only view is read again and stays at the end if it was
+       there. The editor is never refreshed under you: a notice instead. */
+    function poll() {
+      if (polling || !cur || !file || document.hidden || !root.classList.contains('is-open') || !pane.classList.contains('is-active')) return;
+      if (!editing() && !following) return;
+      polling = true;
+      var p = cur, done = function () { polling = false; };
+      fetch(API + 'stat?path=' + encodeURIComponent(p)).then(function (r) { return r.ok ? r.json() : null; }).then(function (s) {
+        if (!s || cur !== p || !file || (s.mtime === file.mtime && s.size === file.size)) return;
+        if (editing()) {
+          if (noticed !== s.mtime) {
+            noticed = s.mtime;
+            ask(curName + ' changed on disk.', [['Reload', function () { reload(); }], ['Keep editing', function () { t.editor && t.editor.focus(); }, true]]);
+          }
+          return;
+        }
+        return fetchFile(p, true).then(function (j) {
+          if (cur !== p || editing() || !following) return;
+          var end = atEnd(); file = j; buttons(); showText(j, end ? 'end' : 'keep');
+        });
+      }).then(done, done);
+    }
+    var timer = setInterval(poll, 1000);
+    t.stop = function () { clearInterval(timer); };
+    btn('follow').addEventListener('click', function () {
+      following = !following; buttons();
+      if (!following || !file) return;
+      if (file.truncated && !file.tail) fetchFile(cur, true).then(function (j) { if (following && !editing()) { file = j; buttons(); showText(j, 'end'); } });
+      else body.scrollTop = body.scrollHeight;
+    });
     pathEl.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') go(pathEl.value); });
     pane.addEventListener('keydown', function (ev) {
       ev.stopPropagation(); // keys typed here never drive the deck

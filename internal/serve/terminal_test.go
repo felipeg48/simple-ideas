@@ -338,3 +338,123 @@ func TestTerminalSaveDoesNotReload(t *testing.T) {
 		t.Fatal("no reload after a write from outside the Viewer")
 	}
 }
+
+// TestTerminalFilesOps covers the tree's create, rename, delete and stat:
+// names taken are 409, names with a / are 400, a link is deleted, not its target.
+func TestTerminalFilesOps(t *testing.T) {
+	ts := newTermServer(t, true)
+	op := func(name string, body map[string]any) (int, string) {
+		t.Helper()
+		b, _ := json.Marshal(body)
+		res, err := http.Post(ts.URL+"/_si/term/api/"+name, "application/json", strings.NewReader(string(b)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		out, _ := io.ReadAll(res.Body)
+		return res.StatusCode, string(out)
+	}
+	var ls struct{ Dir string }
+	res, _ := http.Get(ts.URL + "/_si/term/api/ls")
+	json.NewDecoder(res.Body).Decode(&ls)
+	res.Body.Close()
+	dir := ls.Dir
+	exists := func(p string) bool { _, err := os.Lstat(filepath.Join(dir, p)); return err == nil }
+
+	if code, out := op("create", map[string]any{"name": "notes.md"}); code != 200 || !strings.Contains(out, "notes.md") || !exists("notes.md") {
+		t.Fatalf("create file: %d %s", code, out)
+	}
+	if code, _ := op("create", map[string]any{"name": "notes.md"}); code != http.StatusConflict {
+		t.Fatalf("create over a file: %d, want 409", code)
+	}
+	if code, _ := op("create", map[string]any{"name": "conf", "folder": true}); code != 200 || !exists("conf") {
+		t.Fatalf("create folder: %d", code)
+	}
+	if code, _ := op("create", map[string]any{"name": "conf", "folder": true}); code != http.StatusConflict {
+		t.Fatalf("create folder twice: %d, want 409", code)
+	}
+	if code, _ := op("create", map[string]any{"dir": "conf", "name": "rabbitmq.conf"}); code != 200 || !exists("conf/rabbitmq.conf") {
+		t.Fatalf("create in a folder: %d", code)
+	}
+	for _, bad := range []string{"a/b", "../x", "..", "", "a\\b"} {
+		if code, _ := op("create", map[string]any{"name": bad}); code != http.StatusBadRequest {
+			t.Errorf("create %q: %d, want 400", bad, code)
+		}
+		if code, _ := op("rename", map[string]any{"path": "notes.md", "name": bad}); code != http.StatusBadRequest {
+			t.Errorf("rename to %q: %d, want 400", bad, code)
+		}
+	}
+	if code, _ := op("rename", map[string]any{"path": "notes.md", "name": "talk.md"}); code != http.StatusConflict || !exists("notes.md") {
+		t.Fatalf("rename onto a taken name: %d, want 409", code)
+	}
+	if code, out := op("rename", map[string]any{"path": "notes.md", "name": "plan.md"}); code != 200 || !exists("plan.md") || exists("notes.md") {
+		t.Fatalf("rename: %d %s", code, out)
+	}
+	if code, _ := op("rename", map[string]any{"path": "gone.md", "name": "x.md"}); code != http.StatusNotFound {
+		t.Fatalf("rename a missing file: %d, want 404", code)
+	}
+	var st struct {
+		Dir   bool
+		Items int
+		Mtime string
+	}
+	res, _ = http.Get(ts.URL + "/_si/term/api/stat?count=1&path=conf")
+	json.NewDecoder(res.Body).Decode(&st)
+	res.Body.Close()
+	if !st.Dir || st.Items != 1 || st.Mtime == "" {
+		t.Fatalf("stat of a folder: %+v", st)
+	}
+	// a link to a folder: deleting it leaves the folder and its file
+	if err := os.Symlink(filepath.Join(dir, "conf"), filepath.Join(dir, "link")); err != nil {
+		t.Fatal(err)
+	}
+	if code, _ := op("delete", map[string]any{"path": "link"}); code != http.StatusNoContent || exists("link") || !exists("conf/rabbitmq.conf") {
+		t.Fatalf("delete a link: %d", code)
+	}
+	if code, _ := op("delete", map[string]any{"path": "plan.md"}); code != http.StatusNoContent || exists("plan.md") {
+		t.Fatalf("delete a file: %d", code)
+	}
+	if code, _ := op("delete", map[string]any{"path": "conf"}); code != http.StatusNoContent || exists("conf") {
+		t.Fatalf("delete a folder with a file in it: %d", code)
+	}
+	if code, _ := op("delete", map[string]any{"path": "conf"}); code != http.StatusNotFound {
+		t.Fatalf("delete twice: %d, want 404", code)
+	}
+	if code, _ := op("delete", map[string]any{"path": "/"}); code != http.StatusBadRequest {
+		t.Fatalf("delete /: %d, want 400", code)
+	}
+}
+
+// TestTerminalCatTail: ?tail=1 shows a big file's last MB, from a line start.
+func TestTerminalCatTail(t *testing.T) {
+	ts := newTermServer(t, true)
+	var ls struct{ Dir string }
+	res, _ := http.Get(ts.URL + "/_si/term/api/ls")
+	json.NewDecoder(res.Body).Decode(&ls)
+	res.Body.Close()
+	var b strings.Builder
+	for i := 0; b.Len() < 1<<20+5000; i++ {
+		b.WriteString("line " + strings.Repeat("x", 40) + "\n")
+	}
+	b.WriteString("the last line\n")
+	os.WriteFile(filepath.Join(ls.Dir, "big.log"), []byte(b.String()), 0o644)
+	get := func(q string) (c struct {
+		HTML            string
+		Tail, Truncated bool
+	}) {
+		res, err := http.Get(ts.URL + "/_si/term/api/cat?path=big.log" + q)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		json.NewDecoder(res.Body).Decode(&c)
+		return
+	}
+	if c := get(""); c.Tail || !c.Truncated || strings.Contains(c.HTML, "the last line") {
+		t.Fatalf("without tail: the first MB, got tail=%v", c.Tail)
+	}
+	c := get("&tail=1")
+	if !c.Tail || !c.Truncated || !strings.Contains(c.HTML, "the last line") || !strings.HasPrefix(c.HTML, "line ") {
+		t.Fatalf("tail: tail=%v starts %q", c.Tail, c.HTML[:min(20, len(c.HTML))])
+	}
+}

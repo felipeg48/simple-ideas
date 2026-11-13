@@ -29,6 +29,16 @@ func TestHighlightLanguages(t *testing.T) {
 		{"fsharp", `let mutable x = 1`, `<span class="si-tk-k">mutable</span>`},
 		{"exs", `defmodule Shop do`, `<span class="si-tk-k">defmodule</span>`},
 		{"ex", `{:ok, order}`, `<span class="si-tk-v">:ok</span>`},
+		{"conf", `# rabbitmq.conf`, `<span class="si-tk-c"># rabbitmq.conf</span>`},
+		{"conf", `listeners.tcp.default = 5672`, `<span class="si-tk-v">listeners.tcp.default</span> = <span class="si-tk-n">5672</span>`},
+		{"conf", `heartbeat = 30s`, `<span class="si-tk-n">30s</span>`},
+		{"conf", `vm_memory_high_watermark.absolute = 512MB`, `<span class="si-tk-n">512MB</span>`},
+		{"conf", `loopback_users.guest = false`, `<span class="si-tk-k">false</span>`},
+		{"conf", `ssl_options.cacertfile = /etc/rabbitmq/ca.pem`, `<span class="si-tk-y">/etc/rabbitmq/ca.pem</span>`},
+		{"ini", `[server]`, `<span class="si-tk-m">[server]</span>`},
+		{"ini", `url: "https://x.example/a"`, `<span class="si-tk-s">&#34;https://x.example/a&#34;</span>`},
+		{"properties", `endpoint=https://x.example/a ; note`, `<span class="si-tk-y">https://x.example/a</span>`},
+		{"cfg", `log = on ; quiet`, `<span class="si-tk-c"> ; quiet</span>`},
 	}
 	csharp := "builder.Services.AddCockroachDB(config, pipeline =>\n{\n    pipeline.UseRetry();        // retry on 40001 with exponential backoff\n    // pipeline.UseCircuitBreaker();\n});"
 	for _, want := range []string{`<span class="si-tk-f">AddCockroachDB</span>(`, `<span class="si-tk-f">UseRetry</span>()`, `<span class="si-tk-t">Services</span>`,
