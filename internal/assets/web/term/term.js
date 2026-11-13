@@ -76,6 +76,10 @@
     '.si-dm-doc blockquote{margin:8px 0;padding:4px 10px;border-left:3px solid #f59e0b;background:#17140c;color:#f1e3c4}' +
     '.si-dm-doc table{border-collapse:collapse;margin:6px 0;font-size:12px}' +
     '.si-dm-doc td,.si-dm-doc th{border:1px solid #1d2536;padding:3px 6px;text-align:left;vertical-align:top}' +
+    '.si-dm-view{flex:0 0 auto;background:#11151f;color:#e6e6e6;border:1px solid #1d2536;border-radius:6px;' +
+    'padding:5px 9px;font:12px ui-sans-serif,system-ui,sans-serif;cursor:pointer}.si-dm-view:hover{border-color:#7dd3fc}' +
+    /* Commands view (the default): headings and runnable blocks only; the full script is one click away */
+    '.si-dm-doc.si-dm-cmds>:not(h1,h2,h3,h4,h5,h6,.si-dm-block),.si-dm-doc.si-dm-cmds>.si-dm-bare{display:none}' +
     '.si-dm-block{position:relative;margin:6px 0}' +
     '.si-dm-acts{position:absolute;top:4px;right:4px;display:flex;gap:4px}' +
     '.si-dm-code{margin:0;font:12px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word;' +
@@ -402,6 +406,20 @@
     window.SI_DEMOS.forEach(function (d, i) { var o = document.createElement('option'); o.value = i; o.textContent = d.title; pick.appendChild(o); });
     head.appendChild(pick);
     var doc = document.createElement('div'); doc.className = 'si-dm-doc';
+    // Commands (default) shows only headings and runnable blocks, so the Say
+    // lines and notes stay in the speaker's own window; Full shows the script.
+    var full = false; try { full = localStorage.getItem('si-demos-view') === 'full'; } catch (e) {}
+    var view = document.createElement('button'); view.type = 'button'; view.className = 'si-dm-view';
+    function setView() {
+      doc.classList.toggle('si-dm-cmds', !full);
+      view.textContent = full ? 'Commands only' : 'Full script';
+      view.title = full ? 'Show only the commands' : 'Show the whole script, with its notes';
+    }
+    view.addEventListener('click', function () {
+      full = !full; setView();
+      try { localStorage.setItem('si-demos-view', full ? 'full' : 'cmds'); } catch (e) {}
+    });
+    head.appendChild(view);
     function showDemo(i) {
       var d = window.SI_DEMOS[i] || window.SI_DEMOS[0];
       doc.innerHTML = d.html; doc.scrollTop = 0;
@@ -410,6 +428,19 @@
         pre.parentNode.insertBefore(wrap, pre); wrap.appendChild(pre);
         wrap.appendChild(actButtons('si-dm-acts', function () { return pre.textContent; }));
       });
+      // a heading whose section (up to the next heading of its level or higher)
+      // has no command is hidden in the Commands view
+      var kids = Array.prototype.slice.call(doc.children), lvl = function (el) { var m = /^H(\d)$/.exec(el.tagName); return m ? +m[1] : 0; };
+      kids.forEach(function (el, k) {
+        var n = lvl(el); if (!n) return;
+        var has = false;
+        for (var j = k + 1; j < kids.length; j++) {
+          var m = lvl(kids[j]); if (m && m <= n) break;
+          if (kids[j].classList.contains('si-dm-block')) { has = true; break; }
+        }
+        if (!has) el.classList.add('si-dm-bare');
+      });
+      setView();
       try { localStorage.setItem('si-demo-pick', d.file); } catch (e) {}
     }
     var saved = null; try { saved = localStorage.getItem('si-demo-pick'); } catch (e) {}

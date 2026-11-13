@@ -3,6 +3,10 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.2.1:** the ▶ Demos panel of the play terminal opens on **Commands
+  only**: the headings that hold commands and their Copy / Run blocks, so
+  `> Say:` lines and notes stay in the speaker's own window; **Full script**
+  shows everything, and the choice is remembered.
 - **v3.2.0:** courses. A folder with a `_course.md` is a course: modules of
   lessons whose kind comes from what they link to (a page is a reading, a
   deck slides that present themselves, a `.mp4` or a web demo a video,

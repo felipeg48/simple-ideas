@@ -1231,8 +1231,11 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
 
 - **Demos** (front matter `demos: ../demos/`): demo scripts, plain markdown, in a
   second side panel of the play terminal (`▶ Demos`, one panel open at a time).
-  A drop-down lists the demos by their `# ` title (else the file name); the panel
-  shows the whole script (headings, prose, tables, `>` quotes) and every
+  A drop-down lists the demos by their `# ` title (else the file name). The panel
+  opens on **Commands only**: the headings that hold commands and the runnable
+  blocks, so `> Say:` lines and notes stay in the speaker's own window; **Full
+  script** shows the whole script (headings, prose, tables, `>` quotes), and the
+  choice is remembered. Every
   ```` ```bash ```` / `sh` / `shell` / `zsh` / `console` / `sql` / `powershell`
   block gets **Copy** and **Run**, as in the runbook. Blocks in any other
   language (```` ```text ```` for expected output) stay plain. The value is a

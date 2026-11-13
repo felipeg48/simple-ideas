@@ -132,7 +132,10 @@ console sql powershell ps1 pwsh fish`) `si-dm-run`; it injects
 (`term.js`) a `▶ Demos` button opens the panel (exclusive with the runbook): a
 `<select>` of titles, the script as a dark document, and Copy / Run on every
 `si-dm-run` block (the text sent is the block's `textContent`). The pick and the
-open state persist (`localStorage` `si-demo-pick`, `si-demos-open`).
+open state persist (`localStorage` `si-demo-pick`, `si-demos-open`). A
+`Full script` / `Commands only` button switches the view (`si-demos-view`;
+default Commands only: `.si-dm-cmds` hides everything but headings with
+commands (`.si-dm-bare` marks the rest) and the runnable blocks).
 
 ### Placeholders (v0.9.0)
 
