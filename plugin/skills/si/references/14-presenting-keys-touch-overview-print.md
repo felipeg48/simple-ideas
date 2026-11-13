@@ -192,14 +192,34 @@
   the bar; **❐** restores; remembered).
 
 - **Viewer tabs** (the Viewer icon in the tools bar): each click opens
-  a new tab beside the shells, a read-only tree of a folder and the file you
-  pick, so several files can be open at once (the tab shows `Viewer · name`).
+  a new tab beside the shells, a tree of a folder and the file you pick
+  (read-only until **Edit**), so several files can be open at once (the tab shows `Viewer · name`).
   A Viewer opens on the last folder used (first time: the deck's folder);
   type a path (`~` works) and Enter, **↑** for the parent, double-click a
   folder to make it the top, **⌂ Shell** for the folder the last shell you
   used is in now. Files show highlighted with line numbers (the first MB;
   pictures shown; binary files named, not shown); **Copy path** copies it.
   Runbook and Demos Run buttons still type into the last shell.
+  **Edit** turns a text file (up to 1 MB) into an editor: syntax colours by
+  file name, line numbers, bracket matching, ⌘F search, undo, Tab indents,
+  **Save** or ⌘S (refused when the file changed on disk since you opened
+  it: **Reload** or **Overwrite**), **Revert**, **Done** for the read-only
+  view again. Unsaved changes put a dot in the tab (`Viewer · app.yaml ●`);
+  closing the tab or opening another file asks **Save**, **Discard** or
+  **Keep editing**. A save never reloads the deck page. Colours for JS, TS,
+  JSX, TSX, JSON (with errors marked), Markdown, CSS, HTML, XML, YAML, shell
+  (`.sh`, `.zsh`, `.env`, Makefile), Python, Go, Java, Kotlin, Scala,
+  Groovy, Rust, C, C++, C#, Swift, Ruby, Perl, R, Lua, SQL, TOML,
+  INI/properties/`.conf` (`rabbitmq.conf`), Erlang (`.erl`,
+  `advanced.config`), Dockerfile, nginx, PowerShell, protobuf, CMake and
+  diff. It colours and checks JSON; it is not a language server (no
+  completion or go-to-definition).
+
+  ```text
+  Viewer · rabbitmq.conf ●     Save  Revert  Done  Copy path
+  1  # rabbit
+  2  listeners.tcp.default = 5672
+  ```
 
 - **Demos** (front matter `demos: ../demos/`): demo scripts, plain markdown, in a
   second side panel of the play terminal (the Demos icon, one panel open at a time).

@@ -3,6 +3,15 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.4.0:** the play terminal's Viewer tabs edit: **Edit** opens the
+  file in an editor with syntax colours for about 40 languages and formats
+  (JS/TS, JSON with errors marked, YAML, Markdown, shell, Python, Go, Java,
+  Rust, C/C++, SQL, TOML, `.conf`, Erlang, Dockerfile, nginx and more), ⌘F
+  search, undo and **Save** (⌘S). A file changed on disk since you opened it
+  is not overwritten unless you choose **Overwrite** (or **Reload**);
+  unsaved changes show as a dot in the tab, and closing the tab asks first.
+  Saving never reloads the deck page. Colouring and JSON checks, not a
+  language server.
 - **v3.3.5:** the play terminal drawer has **–** (minimise; ` brings it
   back) and **□** (maximise to the whole window, or double-click its bar;
   remembered) at its top left.

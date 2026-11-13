@@ -36,10 +36,13 @@ type termHub struct {
 	next atomic.Int64
 	mu   sync.Mutex
 	tabs map[string]*termSession
+	// quiet runs a Viewer save so the live-reload watcher does not see it: a
+	// reload would close the drawer, its shells and the editor.
+	quiet func(write func())
 }
 
 func newTermHub(dir string) *termHub {
-	return &termHub{dir: dir, tabs: map[string]*termSession{}}
+	return &termHub{dir: dir, tabs: map[string]*termSession{}, quiet: func(f func()) { f() }}
 }
 
 // newTab starts a shell in a fresh PTY and returns its tab id.

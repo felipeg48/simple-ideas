@@ -1,6 +1,7 @@
 package serve
 
 import (
+	"bufio"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -219,4 +220,121 @@ func TestTerminalFilesPanel(t *testing.T) {
 		}
 	}
 	t.Fatalf("cwd did not follow cd: %q", cwd.Dir)
+}
+
+// TestTerminalFilesSave covers the Viewer's editor: cat ?edit=1 gives the text
+// and mtime, save writes it, a stale mtime is a 409 unless force, a folder is refused.
+func TestTerminalFilesSave(t *testing.T) {
+	ts := newTermServer(t, true)
+	type catRes struct {
+		Path, Text, Mtime string
+	}
+	cat := func() catRes {
+		t.Helper()
+		res, err := http.Get(ts.URL + "/_si/term/api/cat?edit=1&path=talk.md")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		var c catRes
+		json.NewDecoder(res.Body).Decode(&c)
+		return c
+	}
+	save := func(body map[string]any) (int, string) {
+		t.Helper()
+		b, _ := json.Marshal(body)
+		res, err := http.Post(ts.URL+"/_si/term/api/save", "application/json", strings.NewReader(string(b)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		out, _ := io.ReadAll(res.Body)
+		return res.StatusCode, string(out)
+	}
+	c := cat()
+	if c.Text != "# Talk\n" || c.Mtime == "" {
+		t.Fatalf("cat ?edit=1: %+v", c)
+	}
+	os.Chmod(c.Path, 0o600)
+	code, out := save(map[string]any{"path": "talk.md", "text": "# Talk\n\nmore\n", "mtime": c.Mtime})
+	if code != 200 {
+		t.Fatalf("save: %d %s", code, out)
+	}
+	if b, _ := os.ReadFile(c.Path); string(b) != "# Talk\n\nmore\n" {
+		t.Fatalf("saved text: %q", b)
+	}
+	if st, _ := os.Stat(c.Path); st.Mode().Perm() != 0o600 {
+		t.Fatalf("mode not kept: %v", st.Mode())
+	}
+	var saved struct{ Mtime string }
+	json.Unmarshal([]byte(out), &saved)
+	if saved.Mtime != cat().Mtime {
+		t.Fatalf("save returned mtime %q, file has %q", saved.Mtime, cat().Mtime)
+	}
+	// a stale mtime (someone else wrote it): conflict, then force
+	if code, out = save(map[string]any{"path": "talk.md", "text": "stale", "mtime": c.Mtime}); code != http.StatusConflict || !strings.Contains(out, "changed on disk") {
+		t.Fatalf("stale save: %d %s", code, out)
+	}
+	if code, _ = save(map[string]any{"path": "talk.md", "text": "forced", "mtime": c.Mtime, "force": true}); code != 200 {
+		t.Fatalf("forced save: %d", code)
+	}
+	if b, _ := os.ReadFile(c.Path); string(b) != "forced" {
+		t.Fatalf("forced text: %q", b)
+	}
+	os.Mkdir(filepath.Join(filepath.Dir(c.Path), "sub"), 0o755)
+	if code, _ = save(map[string]any{"path": "sub", "text": "x", "force": true}); code != http.StatusBadRequest {
+		t.Fatalf("saving over a folder: %d", code)
+	}
+	if ents, _ := os.ReadDir(filepath.Dir(c.Path)); len(ents) != 2 {
+		t.Fatalf("temp files left behind: %v", ents)
+	}
+}
+
+// TestTerminalSaveDoesNotReload: a Viewer save in the deck folder is no live
+// reload (that would close the drawer); a write from elsewhere still is.
+func TestTerminalSaveDoesNotReload(t *testing.T) {
+	dir := t.TempDir()
+	deck := filepath.Join(dir, "talk.md")
+	os.WriteFile(deck, []byte("# Talk\n"), 0o644)
+	s, err := New(dir, nil, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Terminal = true
+	s.Interval = 20 * time.Millisecond
+	ts := httptest.NewServer(s.Handler())
+	t.Cleanup(ts.Close)
+	stop := make(chan struct{})
+	defer close(stop)
+	go s.Watch(stop)
+	res, err := http.Get(ts.URL + "/_si/events")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	reloads := make(chan struct{}, 4)
+	go func() {
+		sc := bufio.NewScanner(res.Body)
+		for sc.Scan() {
+			if sc.Text() == "event: reload" {
+				reloads <- struct{}{}
+			}
+		}
+	}()
+	time.Sleep(100 * time.Millisecond)
+	b, _ := json.Marshal(map[string]any{"path": "talk.md", "text": "# Talk\n\nedited\n", "force": true})
+	if r, err := http.Post(ts.URL+"/_si/term/api/save", "application/json", strings.NewReader(string(b))); err != nil || r.StatusCode != 200 {
+		t.Fatalf("save: %v %v", err, r)
+	}
+	select {
+	case <-reloads:
+		t.Fatal("a Viewer save reloaded the page")
+	case <-time.After(300 * time.Millisecond):
+	}
+	os.WriteFile(deck, []byte("# Talk\n\nfrom a shell\n"), 0o644)
+	select {
+	case <-reloads:
+	case <-time.After(3 * time.Second):
+		t.Fatal("no reload after a write from outside the Viewer")
+	}
 }

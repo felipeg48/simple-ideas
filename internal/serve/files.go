@@ -8,6 +8,7 @@ package serve
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"mime"
 	"net/http"
 	"os"
@@ -25,7 +26,10 @@ import (
 const (
 	filesMaxEntries = 2000
 	filesMaxBytes   = 1 << 20 // the viewer shows the first MB of a file
+	filesMaxSave    = 5 << 20 // the editor saves files up to 5 MB
 )
+
+func mtimeOf(st os.FileInfo) string { return strconv.FormatInt(st.ModTime().UnixNano(), 10) }
 
 type fileEntry struct {
 	Name string `json:"name"`
@@ -41,7 +45,11 @@ func writeJSON(w http.ResponseWriter, v any) {
 
 // absDir is ?dir= (or ?path=) made absolute; empty means the deck's folder.
 func (h *termHub) absPath(r *http.Request, key string) string {
-	p := strings.TrimSpace(r.URL.Query().Get(key))
+	return h.resolve(r.URL.Query().Get(key))
+}
+
+func (h *termHub) resolve(p string) string {
+	p = strings.TrimSpace(p)
 	if p == "" {
 		return h.dir
 	}
@@ -104,7 +112,8 @@ func fileLang(name string) string {
 	return strings.TrimPrefix(filepath.Ext(base), ".")
 }
 
-// cat: GET ?path= -> {path, size, html, lines, binary, truncated, image}.
+// cat: GET ?path= -> {path, size, mtime, html, lines, binary, truncated, image};
+// with ?edit=1 also text, the whole file, when it fit and is text.
 func (h *termHub) cat(w http.ResponseWriter, r *http.Request) {
 	p := h.absPath(r, "path")
 	st, err := os.Stat(p)
@@ -112,7 +121,7 @@ func (h *termHub) cat(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "not a file", http.StatusNotFound)
 		return
 	}
-	res := map[string]any{"path": p, "size": st.Size()}
+	res := map[string]any{"path": p, "size": st.Size(), "mtime": mtimeOf(st)}
 	if ct := mime.TypeByExtension(strings.ToLower(filepath.Ext(p))); strings.HasPrefix(ct, "image/") {
 		res["image"] = true
 		writeJSON(w, res)
@@ -144,7 +153,78 @@ func (h *termHub) cat(w http.ResponseWriter, r *http.Request) {
 	res["truncated"] = st.Size() > int64(len(buf))
 	res["lines"] = strings.Count(text, "\n") + 1
 	res["html"] = render.Highlight(text, fileLang(p))
+	if r.URL.Query().Get("edit") == "1" && !res["truncated"].(bool) && utf8.Valid(buf) {
+		res["text"] = string(buf)
+	}
 	writeJSON(w, res)
+}
+
+// save: POST {path, text, mtime, force} writes a file from the Viewer's editor:
+// refused (409) when the file changed since it was read, unless force; written
+// to a temp file in the same folder and renamed over, keeping the mode.
+func (h *termHub) save(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Path  string `json:"path"`
+		Text  string `json:"text"`
+		Mtime string `json:"mtime"`
+		Force bool   `json:"force"`
+	}
+	b, err := io.ReadAll(io.LimitReader(r.Body, filesMaxSave*2))
+	if err != nil || json.Unmarshal(b, &req) != nil || strings.TrimSpace(req.Path) == "" {
+		http.Error(w, "bad save request", http.StatusBadRequest)
+		return
+	}
+	if len(req.Text) > filesMaxSave {
+		http.Error(w, "too large: the editor saves files up to 5 MB", http.StatusRequestEntityTooLarge)
+		return
+	}
+	p := h.resolve(req.Path)
+	mode := os.FileMode(0o644)
+	st, err := os.Stat(p)
+	switch {
+	case err == nil && !st.Mode().IsRegular():
+		http.Error(w, "not a regular file: "+p, http.StatusBadRequest)
+		return
+	case err == nil:
+		mode = st.Mode().Perm()
+		if !req.Force && mtimeOf(st) != req.Mtime {
+			http.Error(w, "the file changed on disk since it was opened", http.StatusConflict)
+			return
+		}
+	case !os.IsNotExist(err):
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+	// the real file behind a link is the one rewritten
+	if real, err := filepath.EvalSymlinks(p); err == nil {
+		p = real
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(p), "."+filepath.Base(p)+".si-*")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+	_, err = tmp.WriteString(req.Text)
+	if cerr := tmp.Close(); err == nil {
+		err = cerr
+	}
+	if err == nil {
+		err = os.Chmod(tmp.Name(), mode)
+	}
+	if err == nil {
+		h.quiet(func() { err = os.Rename(tmp.Name(), p) })
+	}
+	if err != nil {
+		os.Remove(tmp.Name())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	st, err = os.Stat(p)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, map[string]any{"path": p, "mtime": mtimeOf(st), "size": st.Size()})
 }
 
 // raw: GET ?path= serves a picture for the viewer (images only).

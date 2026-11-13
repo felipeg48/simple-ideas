@@ -3,7 +3,13 @@
 Read this, then `FEATURE.md`, then `CLAUDE.md`. This is a Go CLI (`si`) that turns
 Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
-## Current state (2026-11-12, end of day)
+## Current state (2026-11-13)
+
+**v3.4.0:** the play terminal's Viewer tabs edit files (CodeMirror 6 bundle
+`internal/assets/web/term/editor.js` from `web/studio/src/term-editor.ts`,
+lazy-loaded on Edit; `POST /_si/term/api/save` with an mtime check; saves
+never live-reload). See `docs/terminal.md` "Viewer tabs".
+
 
 **Released and live: v3.3.0** (timelines, infographics; v3.2.1 Demos panel
 Commands only; v3.2.2 browser windows `w`). Earlier: **v3.2.0, courses** (CI, release, demo filming and

@@ -22,6 +22,18 @@ await build({
   logLevel: "info",
 });
 
+// the play terminal's Viewer editor: one IIFE, lazy-loaded by term.js (window.SiEditor)
+await build({
+  entryPoints: ["src/term-editor.ts"],
+  bundle: true,
+  minify: true,
+  target: "es2020",
+  format: "iife",
+  outfile: new URL("../../internal/assets/web/term/editor.js", import.meta.url).pathname,
+  legalComments: "none",
+  logLevel: "info",
+});
+
 writeFileSync(out + "index.html", `<!doctype html>
 <html lang="en">
 <head>

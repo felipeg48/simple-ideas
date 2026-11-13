@@ -135,6 +135,12 @@
     '.si-fs-body{flex:1 1 auto;overflow:auto;margin:0}' +
     '.si-fs-code{margin:0;padding:6px 0;font:12px/1.5 ui-monospace,Menlo,monospace;color:#c7d0e0;counter-reset:ln;white-space:pre;tab-size:4}' +
     '.si-fs-code .ln{display:block;padding:0 10px 0 0}.si-fs-code .ln::before{counter-increment:ln;content:counter(ln);display:inline-block;width:3.2em;margin-right:10px;text-align:right;color:#3d4760;user-select:none}' +
+    '.si-fs-vh{flex-wrap:wrap}.si-fs-vh .nm{min-width:6em}.si-fs-vh .in{white-space:nowrap}' +
+    '.si-fs-vh button.pri{background:#7dd3fc;color:#0b0e14;border-color:#7dd3fc}.si-fs-vh button[hidden]{display:none}' +
+    '.si-fs-vh .ok{color:#3fb47a;font-weight:600}.si-fs-ed{height:100%}.si-fs-body.is-edit{overflow:hidden}' +
+    '.si-fs-ask{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 8px;background:#2a2410;color:#ffd080;border-bottom:1px solid #4a3d14}' +
+    '.si-fs-ask span{flex:1 1 auto}.si-fs-ask button{background:#1b2436;color:#e6e6e6;border:1px solid #2a3550;border-radius:4px;padding:3px 10px;font:12px ui-sans-serif,system-ui,sans-serif;cursor:pointer}' +
+    '.si-fs-ask button.pri{background:#7dd3fc;color:#0b0e14;border-color:#7dd3fc}.si-fs-ask button:hover{border-color:#7dd3fc}' +
     '.si-fs-msg{padding:14px;color:#7d8aa5}.si-fs-img{max-width:100%;display:block;margin:10px auto;background:#fff}' +
     ':is(.si-fs-code) .si-tk-k{color:#7dd3fc}:is(.si-fs-code) .si-tk-s{color:#a5e075}:is(.si-fs-code) .si-tk-n{color:#f5a05a}' +
     ':is(.si-fs-code) .si-tk-c{color:#5b6680;font-style:italic}:is(.si-fs-code) .si-tk-m{color:#c792ea}:is(.si-fs-code) .si-tk-f{color:#f5a05a}' +
@@ -162,7 +168,7 @@
     '<div class="si-term-acts" role="toolbar" aria-label="Terminal tools" aria-orientation="vertical">' +
     (hasDemos ? '<button class="si-term-act" data-act="demos" title="Demos: the demo scripts"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 4.5v15l12-7.5z"/></svg></button>' : '') +
     (hasRunbook ? '<button class="si-term-act" data-act="runbook" title="Runbook: the command cheat-sheet"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="M9 8h6"/></svg></button>' : '') +
-    '<button class="si-term-act" data-act="files" title="Viewer: a new tab with a folder\'s files, read-only"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></button>' +
+    '<button class="si-term-act" data-act="files" title="Viewer: a new tab with a folder\'s files, to read and edit"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></button>' +
     '</div></div>';
   document.body.appendChild(root);
   var tabsEl = root.querySelector('.si-term-tabs');
@@ -181,6 +187,7 @@
       t.pane.classList.toggle('is-active', on);
       t.tabEl.classList.toggle('is-active', on);
       if (on && !t.viewer) { lastShell = t; try { t.fit.fit(); } catch (e) {} sendResize(t); t.term.focus(); }
+      else if (on && t.editor) t.editor.focus();
     });
   }
 
@@ -242,6 +249,8 @@
   }
 
   function closeTab(t) {
+    if (t.leave && !t.leave(function () { t.leave = null; closeTab(t); })) return; // a Viewer with unsaved edits asks first
+    if (t.editor) try { t.editor.destroy(); } catch (e) {}
     if (t.id) post('close?id=' + t.id);
     if (t.term) try { t.term.dispose(); } catch (e) {}
     t.pane.remove(); t.tabEl.remove();
@@ -554,10 +563,19 @@
     try { localStorage.setItem('si-runbook-open', JSON.stringify(open)); } catch (e) {}
     if (active >= 0 && tabs[active]) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); }
   }
-  /* ---------- Viewer tabs: a folder as a tree, one file read-only, as many as you like ---------- */
+  /* ---------- Viewer tabs: a folder as a tree, one file read-only or in the editor, as many as you like ---------- */
   var viewerSeq = 0, lastShell = null;
   function size(n) { return n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
   function join(d, n) { return d.replace(/\/+$/, '') + '/' + n; }
+  var editorLoad = null; // editor.js (CodeMirror), fetched the first time Edit is pressed
+  function loadEditor() {
+    if (window.SiEditor) return Promise.resolve();
+    return editorLoad || (editorLoad = new Promise(function (ok, fail) {
+      var s = document.createElement('script'); s.src = '/_si/term/assets/editor.js';
+      s.onload = function () { window.SiEditor ? ok() : fail(); }; s.onerror = function () { editorLoad = null; fail(); };
+      document.head.appendChild(s);
+    }));
+  }
   function fsList(dir) { return fetch(API + 'ls?dir=' + encodeURIComponent(dir)).then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t); }); return r.json(); }); }
   function newViewer() {
     var start = ''; try { start = localStorage.getItem('si-files-dir') || ''; } catch (e) {}
@@ -576,10 +594,85 @@
       '<input spellcheck="false" aria-label="Folder" placeholder="Folder"><button type="button" data-f="shell" title="The folder the last shell you used is in">⌂ Shell</button>' +
       '<button type="button" data-f="reload" title="Reload">↻</button></div>' +
       '<div class="si-fs-split"><div class="si-fs-tree"></div><div class="si-fs-view"><div class="si-fs-vh"><span class="nm">No file open</span><span class="in"></span>' +
-      '<button type="button" data-f="copy" title="Copy the path">Copy path</button></div><div class="si-fs-body"><div class="si-fs-msg">Pick a file in the tree. Double-click a folder to make it the top.</div></div></div></div></div>';
+      '<span class="ok"></span><button type="button" data-f="edit" title="Edit this file" hidden>Edit</button>' +
+      '<button type="button" data-f="save" class="pri" title="Save (⌘S)" hidden>Save</button><button type="button" data-f="revert" title="Back to the file as saved" hidden>Revert</button>' +
+      '<button type="button" data-f="done" title="Back to the read-only view" hidden>Done</button>' +
+      '<button type="button" data-f="copy" title="Copy the path">Copy path</button></div><div class="si-fs-ask" hidden></div><div class="si-fs-body"><div class="si-fs-msg">Pick a file in the tree. Double-click a folder to make it the top.</div></div></div></div></div>';
     var pathEl = pane.querySelector('input'), tree = pane.querySelector('.si-fs-tree');
     var vName = pane.querySelector('.si-fs-vh .nm'), vInfo = pane.querySelector('.si-fs-vh .in'), body = pane.querySelector('.si-fs-body');
-    var label = tabEl.querySelector('.label');
+    var label = tabEl.querySelector('.label'), askEl = pane.querySelector('.si-fs-ask'), okEl = pane.querySelector('.si-fs-vh .ok');
+    var btn = function (f) { return pane.querySelector('[data-f="' + f + '"]'); };
+    var file = null, dirty = false, curName = ''; // file: the cat answer for cur (text, mtime)
+    function setDirty(on) { dirty = on; label.textContent = 'Viewer · ' + curName + (on ? ' ●' : ''); }
+    function editing() { return !!t.editor; }
+    function buttons() {
+      btn('edit').hidden = editing() || !file || typeof file.text !== 'string';
+      ['save', 'revert', 'done'].forEach(function (f) { btn(f).hidden = !editing(); });
+    }
+    /* a question inside the panel (no confirm()): [label, fn, primary] choices */
+    function ask(msg, choices) {
+      askEl.innerHTML = '<span></span>'; askEl.firstChild.textContent = msg;
+      choices.forEach(function (c) {
+        var b = document.createElement('button'); b.type = 'button'; b.textContent = c[0]; if (c[2]) b.className = 'pri';
+        b.addEventListener('click', function () { askEl.hidden = true; c[1](); });
+        askEl.appendChild(b);
+      });
+      askEl.hidden = false;
+      var first = askEl.querySelector('button.pri') || askEl.querySelector('button'); if (first) first.focus();
+    }
+    /* unsaved edits: Save / Discard / Keep editing; then() runs once they are saved or dropped */
+    t.leave = function (then) {
+      if (!editing() || !dirty) return true;
+      ask(curName + ' has unsaved changes.', [
+        ['Save', function () { save(false, then); }, true],
+        ['Discard', function () { setDirty(false); then(); }],
+        ['Keep editing', function () { t.editor.focus(); }],
+      ]);
+      return false;
+    };
+    function stopEditing() { if (t.editor) { try { t.editor.destroy(); } catch (e) {} t.editor = null; } body.classList.remove('is-edit'); askEl.hidden = true; setDirty(false); }
+    function startEditing() {
+      if (!file || typeof file.text !== 'string') return;
+      loadEditor().then(function () {
+        if (editing() || !file) return;
+        body.innerHTML = ''; body.classList.add('is-edit');
+        var holder = document.createElement('div'); holder.className = 'si-fs-ed'; body.appendChild(holder);
+        t.editor = window.SiEditor.create(holder, { doc: file.text, file: cur,
+          onChange: function () { var d = t.editor && t.editor.getText() !== file.text; if (d !== dirty) setDirty(d); },
+          onSave: function () { save(false); } });
+        buttons(); t.editor.focus();
+      }, function () { ask('The editor did not load.', [['OK', function () {}]]); });
+    }
+    function save(force, then) {
+      if (!t.editor) return;
+      var text = t.editor.getText(), p = cur;
+      fetch(API + 'save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: p, text: text, mtime: file.mtime, force: !!force }) }).then(function (r) {
+        if (r.status === 409) {
+          ask(curName + ' changed on disk since you opened it.', [
+            ['Reload', function () { reload(); }],
+            ['Overwrite', function () { save(true, then); }, true],
+            ['Keep editing', function () { t.editor && t.editor.focus(); }],
+          ]);
+          return;
+        }
+        if (!r.ok) return r.text().then(function (m) { ask('Not saved: ' + m.trim(), [['OK', function () { t.editor && t.editor.focus(); }]]); });
+        return r.json().then(function (j) {
+          if (cur !== p) return;
+          file.mtime = j.mtime; file.text = text; file.size = j.size; askEl.hidden = true;
+          setDirty(t.editor ? t.editor.getText() !== text : false);
+          vInfo.textContent = size(j.size) + ' · ' + (text.split('\n').length) + ' lines';
+          okEl.textContent = 'Saved'; clearTimeout(okEl._t); okEl._t = setTimeout(function () { okEl.textContent = ''; }, 1500);
+          if (then) then();
+        });
+      }, function (err) { ask('Not saved: ' + err.message, [['OK', function () {}]]); });
+    }
+    /* the file as it is on disk now, into the editor */
+    function reload() {
+      fetchFile(cur).then(function (j) {
+        if (typeof j.text !== 'string') { stopEditing(); openFile(cur, curName); return; }
+        file = j; if (t.editor) t.editor.setText(j.text); setDirty(false); askEl.hidden = true;
+      });
+    }
     function rows(holder, dir, entries, depth) {
       entries.forEach(function (e) {
         var row = document.createElement('div'); row.className = 'si-fs-row' + (e.name.charAt(0) === '.' ? ' dot' : '');
@@ -611,11 +704,15 @@
         if (j.more) { var m = document.createElement('div'); m.className = 'si-fs-msg'; m.textContent = 'Showing the first 2000 entries.'; tree.appendChild(m); }
       }, function (err) { tree.innerHTML = '<div class="si-fs-msg"></div>'; tree.firstChild.textContent = 'Cannot open ' + dir + ': ' + err.message; });
     }
+    function fetchFile(p) { return fetch(API + 'cat?edit=1&path=' + encodeURIComponent(p)).then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t); }); return r.json(); }); }
     function openFile(p, name) {
-      cur = p; vName.textContent = name; vName.title = p; vInfo.textContent = ''; label.textContent = 'Viewer · ' + name; tabEl.title = p;
+      if (!t.leave(function () { openFile(p, name); })) return;
+      stopEditing();
+      cur = p; curName = name; file = null; buttons(); vName.textContent = name; vName.title = p; vInfo.textContent = ''; setDirty(false); tabEl.title = p;
       body.innerHTML = '<div class="si-fs-msg">Loading…</div>';
-      fetch(API + 'cat?path=' + encodeURIComponent(p)).then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t); }); return r.json(); }).then(function (j) {
+      fetchFile(p).then(function (j) {
         if (cur !== p) return;
+        file = j; buttons();
         vInfo.textContent = size(j.size) + (j.lines ? ' · ' + j.lines + ' lines' : '') + (j.truncated ? ' · first 1 MB' : '');
         if (j.image) { body.innerHTML = '<img class="si-fs-img" alt="">'; body.firstChild.src = API + 'raw?path=' + encodeURIComponent(p); return; }
         if (j.binary) { body.innerHTML = '<div class="si-fs-msg">A binary file: nothing to show as text.</div>'; return; }
@@ -625,9 +722,16 @@
       }, function (err) { body.innerHTML = '<div class="si-fs-msg"></div>'; body.firstChild.textContent = String(err.message); });
     }
     pathEl.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') go(pathEl.value); });
-    pane.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
+    pane.addEventListener('keydown', function (ev) {
+      ev.stopPropagation(); // keys typed here never drive the deck
+      if ((ev.metaKey || ev.ctrlKey) && (ev.key === 's' || ev.key === 'S') && editing()) { ev.preventDefault(); save(false); }
+    });
+    btn('edit').addEventListener('click', startEditing);
+    btn('save').addEventListener('click', function () { save(false); });
+    btn('revert').addEventListener('click', function () { if (t.editor && file) { t.editor.setText(file.text); setDirty(false); askEl.hidden = true; t.editor.focus(); } });
+    btn('done').addEventListener('click', function () { if (t.leave(function () { openFile(cur, curName); })) openFile(cur, curName); });
     pane.querySelector('[data-f="up"]').addEventListener('click', function () { go(root0.replace(/\/[^\/]+\/?$/, '') || '/'); });
-    pane.querySelector('[data-f="reload"]').addEventListener('click', function () { go(root0); if (cur) openFile(cur, vName.textContent); });
+    pane.querySelector('[data-f="reload"]').addEventListener('click', function () { go(root0); if (cur && !editing()) openFile(cur, curName); });
     pane.querySelector('[data-f="shell"]').addEventListener('click', function () {
       var sh = lastShell && tabs.indexOf(lastShell) >= 0 ? lastShell : null; if (!sh || !sh.id) return;
       fetch(API + 'cwd?id=' + sh.id).then(function (r) { return r.json(); }).then(function (j) { go(j.dir); });

@@ -177,7 +177,30 @@ is where Run and ⌂ Shell go):
 `raw?path=` (pictures only, SVG under a no-script CSP), `cwd?id=` (the tab
 shell's folder: `/proc/PID/cwd` on Linux, `lsof -d cwd` elsewhere); all
 `localOnly` (`internal/serve/files.go`). Relative paths start at the deck's
-folder; `localStorage` `si-files-dir` (the last folder). Read-only for now.
+folder; `localStorage` `si-files-dir` (the last folder).
+
+**Editing (v3.4.0).** `cat?edit=1` also returns `text` (only when the whole
+file fit, is text and valid UTF-8) and always `mtime` (unix nanos as a
+string). `POST /_si/term/api/save` `{path, text, mtime, force}` (`localOnly`,
+so same-origin): 409 when the file's mtime differs unless `force`; writes a
+temp file in the same folder and renames it over (the mode kept; a link's
+target is the file rewritten); 5 MB at most; returns the new `mtime`. The
+rename runs inside `Server.quietly`, which moves the live-reload watcher's
+baseline, so a save never reloads the page (that would close the drawer, its
+shells and the editor); a write from a shell still reloads.
+
+The editor is `internal/assets/web/term/editor.js`, CodeMirror 6 bundled as
+an IIFE from `web/studio/src/term-editor.ts` by `make studio-ui`
+(`window.SiEditor.create(parent, {doc, file, onChange, onSave})` →
+`{getText, setText, focus, destroy}`), about 730 KB (250 KB gzipped),
+fetched only the first time **Edit** is pressed. Languages by file name
+(`languageFor`): the `@codemirror/lang-*` parsers for JS/TS/JSX/TSX, JSON (+
+`jsonParseLinter`), Markdown, CSS, HTML; `@codemirror/legacy-modes` for the
+rest. Colours are the drawer's `.si-tk-*` ones. Syntax colouring and JSON
+lint only, not a language server (LSP). Like xterm.js and the Studio, it is
+play-only and loopback-only and never in a built deck. Leaving a dirty
+editor (close, another file, Done) asks in a bar inside the pane
+(`.si-fs-ask`), never `confirm()`.
 
 ## Tools bar and panel width
 

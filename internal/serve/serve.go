@@ -25,12 +25,14 @@ import (
 
 // Server renders the decks under Root (a directory or one .md file).
 type Server struct {
-	pos         *positions       // where each deck open in a browser is (position.go)
-	Root        string           // directory or deck file
-	CSSPaths    []string         // user CSS files or directories (--css)
-	Theme       string           // --theme override; empty keeps each deck's theme: front matter
-	Conf        string           // --conf path; empty falls back to si.conf next to the deck
-	Terminal    bool             // enable the play terminal drawer; set only on a loopback address
+	pos         *positions // where each deck open in a browser is (position.go)
+	Root        string     // directory or deck file
+	CSSPaths    []string   // user CSS files or directories (--css)
+	Theme       string     // --theme override; empty keeps each deck's theme: front matter
+	Conf        string     // --conf path; empty falls back to si.conf next to the deck
+	Terminal    bool       // enable the play terminal drawer; set only on a loopback address
+	watchMu     sync.Mutex // Watch's baseline, also moved by quietly
+	watchSig    uint64
 	Dev         bool             // --dev: in-place hot reload instead of full-page reload
 	Remote      bool             // --remote: decks join the relay (see remote.go)
 	RemoteQR    *render.RemoteQR // --remote: the role links and QR codes the q key shows (loopback pages)
@@ -75,6 +77,7 @@ func New(root string, css []string, theme, conf string) (*Server, error) {
 		s.dir, s.file = filepath.Dir(abs), abs
 	}
 	s.term = newTermHub(s.dir)
+	s.term.quiet = s.quietly
 	s.relay = newRelay()
 	s.polls = newPolls()
 	s.qa = newQA()
@@ -117,6 +120,7 @@ func (s *Server) Handler() http.Handler {
 		mux.HandleFunc("GET /_si/term/api/ls", localOnly(s.term.ls))
 		mux.HandleFunc("GET /_si/term/api/cat", localOnly(s.term.cat))
 		mux.HandleFunc("GET /_si/term/api/raw", localOnly(s.term.raw))
+		mux.HandleFunc("POST /_si/term/api/save", localOnly(s.term.save))
 		mux.HandleFunc("GET /_si/term/api/cwd", localOnly(s.term.cwd))
 		mux.HandleFunc("POST /_si/browser/open", localOnly(s.browserOpen))
 	}
@@ -373,7 +377,9 @@ func (s *Server) CloseTerminals() {
 // when anything changes. It returns when stop is closed.
 // ponytail: mtime polling, no fsnotify dependency; fine for deck-sized trees.
 func (s *Server) Watch(stop <-chan struct{}) {
-	last := s.signature()
+	s.watchMu.Lock()
+	s.watchSig = s.signature()
+	s.watchMu.Unlock()
 	t := time.NewTicker(s.Interval)
 	defer t.Stop()
 	for {
@@ -381,13 +387,27 @@ func (s *Server) Watch(stop <-chan struct{}) {
 		case <-stop:
 			return
 		case <-t.C:
-			if sig := s.signature(); sig != last {
-				last = sig
+			s.watchMu.Lock()
+			sig := s.signature()
+			changed := sig != s.watchSig
+			s.watchSig = sig
+			s.watchMu.Unlock()
+			if changed {
 				log.Printf("si play: change detected, reloading")
 				s.Broadcast()
 			}
 		}
 	}
+}
+
+// quietly runs write (a Viewer save) and takes its change into the watcher's
+// baseline, so it causes no reload.
+// ponytail: any other change in the same instant is absorbed too; the next one reloads.
+func (s *Server) quietly(write func()) {
+	s.watchMu.Lock()
+	defer s.watchMu.Unlock()
+	write()
+	s.watchSig = s.signature()
 }
 
 func (s *Server) signature() uint64 {
