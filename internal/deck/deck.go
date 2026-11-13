@@ -148,6 +148,9 @@ type Meta struct {
 	MapFloors    string // mindmap in 3d: on (default, linked maps hover above their topic) or off
 	MapKind      string // mindmap in 3d: blocks (default), bricks, toy
 	MapFlow      string // mindmap: on draws flowing dots along the lines (2D default off, 3D on)
+	Orientation  string // infographic: landscape (a slide) or portrait (a tall page)
+	Sources      string // infographic: the sources line of the footer
+	Steps        string // infographic: on reveals one block per click (a page shows them all by default)
 	LinkedIn     string // si publish: the text of the LinkedIn post (default: description, then title)
 	Tags         string // si publish: comma-separated tags for dev.to and Hashnode
 	Canonical    string // si publish: the article's original URL (canonical_url; a LinkedIn link post)
@@ -187,7 +190,7 @@ type Meta struct {
 }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup", "nav", "level", "instructor-demos", "certificate", "pass", "minutes", "prerequisites", "instructor"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup", "nav", "level", "instructor-demos", "certificate", "pass", "minutes", "prerequisites", "instructor", "orientation", "sources", "steps"}
 
 // MetaLine is one front matter line kept as written: its key, its value and
 // its line in the file.
@@ -277,7 +280,7 @@ type Deck struct {
 }
 
 // Types are the accepted values of the `type` front matter key.
-var Types = []string{"deck", "lab", "article", "guide", "book", "demo", "site", "page", "mindmap", "quiz", "course"}
+var Types = []string{"deck", "lab", "article", "guide", "book", "demo", "site", "page", "mindmap", "quiz", "course", "infographic"}
 
 // IsLab reports whether the file is a lab document (`type: lab`).
 func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
@@ -285,7 +288,8 @@ func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
 // IsDoc reports whether the file is a document (lab, article or guide page):
 // one readable page, not slides.
 func (d *Deck) IsDoc() bool {
-	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide" || d.Meta.Type == "demo" || d.Meta.Type == "page" || d.Meta.Type == "mindmap" || d.Meta.Type == "quiz"
+	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide" || d.Meta.Type == "demo" || d.Meta.Type == "page" || d.Meta.Type == "mindmap" || d.Meta.Type == "quiz" ||
+		(d.Meta.Type == "infographic" && d.Meta.IGPortrait()) // a landscape infographic is a slide
 }
 
 // IsMindmap reports whether the file is a mind map page (`type: mindmap`).
@@ -461,7 +465,9 @@ func ParseSource(path, text string, def Meta) (*Deck, error) {
 		out = append(out, srcLine{abs, start + i + 1, t})
 	}
 	out = d.expandIncludes(abs, out, []string{abs})
-	if d.IsDoc() {
+	if d.IsInfographic() {
+		d.buildInfographic(out)
+	} else if d.IsDoc() {
 		d.buildLab(out)
 		if d.IsDemo() {
 			d.checkDemoMinutes(out)
@@ -522,7 +528,7 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 			d.problem(file, i+1, "unknown front matter key %q (known: %s)", key, strings.Join(MetaKeys, ", "))
 			continue
 		}
-		if key == "transition" { // a web demo has transitions of its own (internal/webdemo): checked below, once the type is known
+		if key == "transition" || key == "layout" || key == "aspect" { // checked below, once the type is known (web demos, infographics)
 			continue
 		}
 		if msg := validateMeta(key, val); msg != "" {
@@ -532,9 +538,16 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 			d.checkBackground(file, i+1, filepath.Dir(file), val)
 		}
 	}
+	for _, k := range []string{"layout", "aspect"} {
+		if ln, ok := keyLine[k]; ok {
+			if msg := validateMeta(d.igKey(k), map[string]string{"layout": d.Meta.MapLayout, "aspect": d.Meta.Aspect}[k]); msg != "" {
+				d.problem(file, ln, "%s", msg)
+			}
+		}
+	}
 	if !d.IsMindmap() {
 		for _, k := range []string{"layout", "lines", "nodes", "map-theme", "view", "camera", "floors", "kind", "flow"} {
-			if ln, ok := keyLine[k]; ok {
+			if ln, ok := keyLine[k]; ok && !(k == "layout" && d.IsInfographic()) {
 				d.Warnings = append(d.Warnings, Problem{File: rel(file), Line: ln, Msg: fmt.Sprintf("front matter %q is for mind maps (type: mindmap); a ```mindmap fence takes it as an option", k)})
 			}
 		}
@@ -547,7 +560,7 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 	}
 	if d.IsDoc() {
 		for _, k := range LabIgnoredKeys {
-			if k == "transition" && webDemo {
+			if (k == "transition" && webDemo) || (k == "aspect" && d.IsInfographic()) {
 				continue
 			}
 			if ln, ok := keyLine[k]; ok {
@@ -576,6 +589,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"layout": &m.MapLayout, "lines": &m.MapLines, "nodes": &m.MapNodes, "map-theme": &m.MapTheme, "watermark-position": &m.WatermarkPos, "favicon": &m.Favicon, "touch-icon": &m.TouchIcon, "og-image": &m.OGImage,
 		"nav": &m.Nav, "level": &m.Level, "instructor-demos": &m.InstructorDemos, "certificate": &m.Certificate, "pass": &m.Pass, "minutes": &m.Minutes, "prerequisites": &m.Prerequisites, "instructor": &m.Instructor,
 		"view": &m.MapView, "camera": &m.MapCamera, "floors": &m.MapFloors, "kind": &m.MapKind, "flow": &m.MapFlow,
+		"orientation": &m.Orientation, "sources": &m.Sources, "steps": &m.Steps,
 	}[key]
 	if ptr == nil {
 		return false
@@ -615,6 +629,14 @@ func validateMeta(key, val string) string {
 		}
 	case "mode":
 		return oneOf("mode", val, Modes)
+	case "orientation":
+		return oneOf("orientation", val, IGOrientations)
+	case "steps":
+		return oneOf("steps", val, OnOff)
+	case "ig-layout":
+		return oneOf("infographic layout", val, IGLayouts)
+	case "ig-aspect":
+		return oneOf("infographic aspect", val, IGAspects)
 	case "transition":
 		return oneOf("transition", val, Transitions)
 	case "aspect":

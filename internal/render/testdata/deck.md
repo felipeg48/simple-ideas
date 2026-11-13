@@ -125,6 +125,30 @@ Body with a ==phrase==.
 
 ---
 
+## An infographic
+
+```infographic
+## 2.4 s · stat · accent
+Median load before the fix.
+
+## Before and after
+| Before | After |
+|---|---|
+| 2.4 s | 0.6 s |
+
+## Traffic · chart=donut
+| Source | % |
+|---|---|
+| Search | 54 |
+| Direct | 46 |
+
+## How · steps · wide
+1. Measure
+2. Fix
+```
+
+---
+
 ## A code show
 
 ```go id=send window=mac title="send.go" numbers backdrop=ocean step="Once"

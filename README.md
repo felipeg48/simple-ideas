@@ -180,6 +180,17 @@ search and Play. In 3D too, with floors for the maps a topic links to.
 
 ![A 3D mind map](docs/screenshots/readme/mindmap.jpg)
 
+### Infographics
+
+One page of numbers that tell a story: every `##` heading is a block (a big
+stat, a before/after, steps, a quote, icons) and every Markdown table of
+numbers becomes a chart drawn to scale (bars, donut, line, progress). A
+landscape one is a 16:9 slide you present; a portrait one a poster.
+`si build --png --pdf` exports both.
+[Infographics →](https://simple-ideas.org/features/infographics.html)
+
+![An infographic: a web performance story on one slide](docs/screenshots/readme/infographic.jpg)
+
 ### Code
 
 Code in a window (macOS, Windows, terminal), on a backdrop, with numbered

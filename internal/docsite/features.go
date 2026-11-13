@@ -72,6 +72,23 @@ var Features = []feature{
 		},
 		Commands: "si new ideas --type mindmap\nsi --web .                       # the Studio's Map view: Tab, Enter, drag\nsi build ideas.md --svg --png --pdf --mp4\nsi mindmap import notes.opml     # also FreeMind, XMind, Mermaid",
 		Rules:    []string{"24"}},
+	{Slug: "infographics", Title: "Infographics",
+		Lede: "One page of numbers that tell a story: big stats, before and after, steps, quotes and charts drawn to scale, as a slide or a poster.",
+		What: "An infographic is a Markdown file with `type: infographic`: every `## heading · kind` is a block of a bento grid, and a Markdown table of numbers becomes a bar, donut, line or progress chart. A landscape one is a 16:9 slide you present with `si play`, one block per click; a portrait one is a tall poster. Both export to PNG and PDF.",
+		Live: func() string {
+			return "<!-- embed: ../live/infographic/checkout.md -->\n\n<!-- embed: ../live/infographic/algorithms.md full -->"
+		},
+		Open:   "../live/infographic/checkout.md",
+		Source: "infographic/checkout.md",
+		Options: [][2]string{
+			{"`## 2.4 s · stat`", "a big number; also compare, steps, quote, icons, list, text, image, sources"},
+			{"`· chart=`", "bar, donut, line, progress, drawn from the block's table"},
+			{"`· wide` `· tall` `· accent`", "two columns, two rows, the accent colour"},
+			{"`orientation:` `aspect:`", "landscape (a slide) or portrait (a poster) · 16:9, 4:3, 9:16, a4"},
+			{"`layout:`", "grid (bento), columns, flow"},
+		},
+		Commands: "si new poster --type infographic\nsi play poster.md --open\nsi build poster.md --png --pdf    # --scale 3 for print",
+		Rules:    []string{"30"}},
 	{Slug: "books", Title: "Books",
 		Lede: "A reference with chapters, figures and tables numbered for you, an index, a glossary and one printable volume.",
 		What: "A book is a folder whose `_nav.md` says `type: book`: chapters become numbered, figures and tables get numbers you can cross-reference, `((term))` builds the index, and the whole book prints as one volume.",

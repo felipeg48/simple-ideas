@@ -123,6 +123,18 @@ func (r *nodeRenderer) fence(
 		w.WriteString(r.dr.mindmapFence(body, attrs, dir))
 		return ast.WalkSkipChildren, nil
 	}
+	if lang == "infographic" {
+		dir := r.dr.curDir
+		if dir == "" {
+			dir = filepath.Dir(r.dr.d.Path)
+		}
+		attrs := map[string]string{}
+		if n.Info != nil {
+			attrs = fenceAttrs(string(n.Info.Segment.Value(src)))
+		}
+		w.WriteString(r.dr.infographicFence(body, attrs, dir))
+		return ast.WalkSkipChildren, nil
+	}
 	if lang == "quiz" && r.dr.doc {
 		attrs := map[string]string{}
 		if n.Info != nil {

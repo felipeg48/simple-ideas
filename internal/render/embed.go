@@ -247,4 +247,7 @@ func (dr *deckRenderer) adopt(body string) {
 	if strings.Contains(body, `<figure class="si-cw"`) {
 		dr.codewin = true
 	}
+	if strings.Contains(body, `<figure class="si-ig"`) {
+		dr.infographic = true
+	}
 }

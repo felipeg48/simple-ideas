@@ -155,6 +155,27 @@ A nested list becomes a map you can fold, move and drill into:
 
 ---
 
+## Infographics
+
+```infographic steps=off
+## 1 page · stat · accent
+`type: infographic`, or this fence on a slide
+
+## Block kinds · list
+- stat, compare, steps, quote, icons, image
+- chart=bar, donut, line, progress from a table
+
+## Bento grid · text
+`span=2` or `wide`, `tall`, `accent` after the kind
+```
+
+- Every `##` is a block: `## 2.4 s · stat`, `## Share · chart=donut · wide`; no kind: si guesses
+- `orientation: landscape` is a 16:9 slide (`steps: on`: one block per click); `portrait` a poster that scrolls
+- `layout:` grid, columns, flow · `aspect:` 16:9, 4:3, 9:16, a4 · `sources:` the footer
+- `si build poster.md --png --pdf` (`--scale 3` for print); full guide: RULES.md §30
+
+---
+
 ## Code windows
 
 ```go id=send window=mac title="send.go" numbers step="Once"

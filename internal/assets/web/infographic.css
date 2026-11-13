@@ -1,0 +1,182 @@
+/* simple-ideas infographics: a `type: infographic` page and the ```infographic
+ * fence. One frame, sized from its container (cqi), so a landscape
+ * infographic is a 16:9 slide at any size and a portrait one a poster; under
+ * ~48rem a landscape frame stacks its blocks and scrolls. Colours come from the
+ * theme tokens (the si-ig tokens of the contract override them). No px sizes: em, %, cqi, cqb. */
+.si-ig{container:si-ig/inline-size;margin:0 auto;inline-size:100%;
+  --_c1:var(--si-ig-1,var(--si-accent));--_c2:var(--si-ig-2,var(--si-accent-2));
+  --_s1:var(--_c1);--_s2:var(--_c2);--_s3:var(--si-ig-3,var(--si-ok));--_s4:var(--si-ig-4,var(--si-warn));
+  --_s5:color-mix(in srgb,var(--_c1) 50%,var(--si-crit));--_s6:color-mix(in srgb,var(--si-fg) 45%,var(--si-bg));
+  --_bg:var(--si-ig-bg,var(--si-bg));--_card:var(--si-ig-card,var(--si-surface));--_ink:var(--si-fg)}
+.si-ig-frame,.si-slide.si-ig-slide{background:radial-gradient(90% 70% at 100% 0%,color-mix(in srgb,var(--si-accent) 11%,transparent),transparent 62%),
+    radial-gradient(60% 60% at 0% 100%,color-mix(in srgb,var(--si-accent-2) 8%,transparent),transparent 70%),var(--si-ig-bg,var(--si-bg))}
+.si-ig-frame{display:flex;flex-direction:column;gap:1.2em;box-sizing:border-box;color:var(--_ink);
+  font-family:var(--si-font-body);line-height:1.35;text-align:start;overflow:hidden}
+.si-slide.si-ig-slide .si-ig-frame{background:none}
+
+/* landscape: a slide-shaped frame; on a slide of its own it fills the slide */
+.si-ig[data-orient="landscape"]{--_h:var(--si-figure-max,72cqb);inline-size:min(100%,calc(var(--_h) * var(--_ar,1.7778)))}
+.si-slide.si-ig-slide .si-inner{padding:0}
+.si-slide.si-ig-slide .si-body{display:block}
+.si-slide.si-ig-slide .si-ig{--_h:100cqb}
+.si-ig[data-orient="landscape"] .si-ig-frame{aspect-ratio:var(--_ratio,16/9);font-size:1.12cqi;padding:2.4em 3em 1.6em}
+.si-ig[data-orient="landscape"] .si-ig-grid{flex:1;min-block-size:0;grid-template-rows:repeat(var(--_rows),minmax(0,1fr))}
+/* portrait: a poster that grows with its text */
+.si-ig[data-orient="portrait"]{inline-size:min(100%,64rem)}
+.si-ig[data-orient="portrait"] .si-ig-frame{min-block-size:calc(100cqi / var(--_ar,9));font-size:clamp(13px,1.9cqi,22px);padding:2.6em 2.4em 1.6em}
+.si-ig[data-orient="portrait"] .si-ig-grid{flex:1;grid-auto-rows:auto}
+.si-ig[data-orient="portrait"] .si-ig-block{min-block-size:9em}
+
+/* header */
+.si-ig-head{display:grid;gap:.45em;padding-inline-start:.9em;border-inline-start:.38em solid var(--si-accent)}
+.si-ig-title{margin:0;font-family:var(--si-font-heading);font-weight:800;font-size:2.55em;line-height:1.02;letter-spacing:-.025em;color:var(--_ink);text-wrap:balance}
+.si-ig-sub{margin:0;font-size:1.12em;color:var(--si-muted);max-inline-size:78ch;text-wrap:pretty}
+
+/* the grid: rows and columns placed by si (--r --c --h --w) */
+.si-ig-grid{display:grid;gap:.85em;grid-template-columns:repeat(var(--_cols),minmax(0,1fr))}
+.si-ig-block{grid-area:var(--r)/var(--c)/span var(--h)/span var(--w);container:si-igb/inline-size;
+  --_c:var(--_c1);--_cm:color-mix(in srgb,var(--_c) 38%,var(--_card));
+  position:relative;display:flex;flex-direction:column;gap:.55em;min-inline-size:0;min-block-size:0;overflow:hidden;
+  padding:1.05em 1.2em;border-radius:var(--si-radius,.6em);background:var(--_card);
+  box-shadow:0 .05em 0 color-mix(in srgb,var(--si-fg) 6%,transparent),inset 0 0 0 .06em color-mix(in srgb,var(--si-line) 70%,transparent)}
+.si-ig-block:nth-child(even){--_c:var(--_c2)}
+.si-ig-block.si-ig-accent{--_c:var(--si-on-accent);--_card:var(--si-accent);--_ink:var(--si-on-accent);
+  --_cm:color-mix(in srgb,var(--si-on-accent) 45%,var(--si-accent));background:var(--si-accent);color:var(--si-on-accent);box-shadow:none}
+.si-ig-block>*{margin:0}
+.si-ig-label{font-family:var(--si-font-body);font-size:.74em;font-weight:750;letter-spacing:.09em;text-transform:uppercase;color:var(--si-muted);line-height:1.2}
+.si-ig-label::before{content:"";display:block;inline-size:1.9em;block-size:.32em;border-radius:1em;background:var(--_c);margin-block-end:.6em}
+.si-ig-accent .si-ig-label{color:color-mix(in srgb,var(--si-on-accent) 82%,transparent)}
+.si-ig-text{font-size:1em;color:var(--_ink)}
+.si-ig-text p{margin:0 0 .45em}
+.si-ig-text>:last-child{margin-block-end:0}
+.si-ig-text img{max-inline-size:100%;block-size:auto}
+.si-ig-text strong,.si-ig-text b{color:var(--_c)}
+.si-ig-accent .si-ig-text strong{color:inherit}
+
+/* stat: one big number */
+.si-ig-block[data-kind="stat"]{justify-content:center}
+.si-ig-num{font-family:var(--si-font-heading);font-weight:850;font-size:clamp(2.2em,21cqi,6.6em);line-height:.92;letter-spacing:-.04em;
+  color:var(--_c);font-variant-numeric:tabular-nums;white-space:nowrap}
+.si-ig-unit{font-size:.42em;font-weight:700;letter-spacing:0;margin-inline:.06em}
+.si-ig-block[data-kind="stat"] .si-ig-text{font-size:1.02em;max-inline-size:34ch}
+.si-ig-icon{display:inline-grid;place-items:center;flex:none;inline-size:2.4em;block-size:2.4em}
+.si-ig-icon img{inline-size:100%;block-size:100%;object-fit:contain}
+.si-ig-block[data-kind="stat"]>.si-ig-icon{position:absolute;inset-block-start:.9em;inset-inline-end:1em;inline-size:2.6em;block-size:2.6em;opacity:.9}
+.si-ig-dot{inline-size:.9em;block-size:.9em;border-radius:50%;background:var(--_c)}
+
+/* compare: sides next to each other, the last stressed */
+.si-ig-cmp{display:grid;grid-template-columns:repeat(var(--_n),minmax(0,1fr));gap:.4em 1.2em;flex:1;align-content:center}
+.si-ig-side{display:flex;flex-direction:column;gap:.35em;padding-inline-start:.75em;border-inline-start:.22em solid color-mix(in srgb,var(--si-muted) 45%,transparent)}
+.si-ig-side.si-ig-win{border-color:var(--_c)}
+.si-ig-side .si-ig-label::before{display:none}
+.si-ig-cv{margin:0;font-family:var(--si-font-heading);font-weight:800;font-size:min(5.2em,calc(80cqi / var(--_n) / (var(--_len) * .6)));line-height:1;letter-spacing:-.03em;color:var(--si-muted);white-space:nowrap}
+.si-ig-win .si-ig-cv{color:var(--_c)}
+.si-ig-accent .si-ig-cv{color:inherit}
+.si-ig-rl{display:block;font-family:var(--si-font-body);font-size:max(.3em,2.6cqi);font-weight:600;letter-spacing:0;color:var(--si-muted);margin-block-end:.2em;white-space:normal}
+.si-ig-win{position:relative}
+.si-ig-delta{position:absolute;inset-block-start:0;inset-inline-end:0;padding:.2em .7em;border-radius:2em;background:var(--_c);color:var(--_card);font-weight:800;font-size:1.05em;font-variant-numeric:tabular-nums}
+
+/* steps: numbered, across when the block is wide */
+.si-ig-steps{list-style:none;padding:0;display:flex;flex-direction:column;gap:.6em;flex:1;justify-content:center}
+.si-ig-steps li{display:flex;gap:.7em;align-items:flex-start}
+.si-ig-n{flex:none;display:grid;place-items:center;inline-size:1.9em;block-size:1.9em;border-radius:50%;background:var(--_c);color:var(--_card);font-weight:800;font-size:.95em}
+@container si-igb (min-width: 36em){
+  .si-ig-steps{flex-direction:row;gap:1em}
+  .si-ig-steps li{flex:1;flex-direction:column;gap:.55em;padding-block-start:.2em;
+    background:linear-gradient(var(--_cm),var(--_cm)) no-repeat 0 .95em/100% .14em}
+  .si-ig-steps li:last-child{background-size:1.9em .14em}
+}
+
+/* lists and icon rows */
+.si-ig-list{list-style:none;padding:0;display:flex;flex-direction:column;gap:.45em;flex:1;justify-content:center}
+.si-ig-list li{position:relative;padding-inline-start:1.1em}
+.si-ig-list li::before{content:"";position:absolute;inset-inline-start:0;inset-block-start:.42em;inline-size:.5em;block-size:.5em;border-radius:.12em;background:var(--_c)}
+.si-ig-icons{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(12em,1fr));gap:.7em 1em;flex:1;align-content:center}
+.si-ig-icons li{display:flex;gap:.7em;align-items:center}
+.si-ig-icons .si-ig-icon{border-radius:.6em;background:color-mix(in srgb,var(--_c) 14%,transparent);padding:.45em}
+
+/* quote */
+.si-ig-quote{margin:0;padding:0;border:0;background:none;box-shadow:none;flex:1;display:flex;flex-direction:column;justify-content:center;gap:.5em}
+.si-ig-quote p{margin:0;font-family:var(--si-font-heading);font-weight:650;font-size:1.2em;line-height:1.25;text-wrap:balance}
+.si-ig-quote p::before{content:"\201C";display:block;block-size:.5em;font:700 2.8em/1 Georgia,"Times New Roman",serif;color:var(--_c)}
+.si-ig-quote cite{font-style:normal;font-size:.85em;color:var(--si-muted)}
+.si-ig-accent .si-ig-quote cite{color:inherit;opacity:.85}
+
+/* picture */
+.si-ig-img{margin:0;flex:1;min-block-size:0;display:flex;flex-direction:column;gap:.4em}
+.si-ig-img img{flex:1;min-block-size:0;inline-size:100%;object-fit:cover;border-radius:calc(var(--si-radius,.6em) * .7)}
+.si-ig[data-orient="portrait"] .si-ig-img img{aspect-ratio:16/10;flex:none}
+.si-ig-img figcaption{font-size:.75em;color:var(--si-muted)}
+
+/* charts: SVG to scale, labels as text */
+.si-ig-chart{flex:1;min-block-size:0}
+.si-ig-track{fill:color-mix(in srgb,var(--si-fg) 9%,transparent);stroke:color-mix(in srgb,var(--si-fg) 9%,transparent)}
+.si-ig-bars{display:flex;flex-direction:column;justify-content:center;gap:.55em}
+.si-ig-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:.15em .6em}
+.si-ig-bl{font-size:.9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.si-ig-bv{font-variant-numeric:tabular-nums;font-weight:750;font-size:.95em}
+.si-ig-bar svg{grid-column:1/-1;grid-row:2;display:block;inline-size:100%;block-size:calc(.62em * var(--_k,1))}
+.si-ig-bar .si-ig-bv{grid-column:2;grid-row:1}
+.si-ig-progress .si-ig-bar svg{block-size:.62em}
+@container si-igb (min-width: 24em){ /* room enough: label, bar and value on one line */
+  .si-ig-bars{display:grid;grid-template-columns:fit-content(42%) minmax(0,1fr) auto;align-content:center;gap:.5em .7em}
+  .si-ig-bar{display:contents}
+  .si-ig-bar svg,.si-ig-bar .si-ig-bv{grid-column:auto;grid-row:auto;align-self:center}
+  .si-ig-bv{text-align:end}
+}
+.si-ig-donut{display:flex;align-items:center;gap:1.1em}
+.si-ig-donut svg{flex:none;block-size:min(100%,12em);inline-size:auto;max-inline-size:52%;aspect-ratio:1}
+.si-ig-donut circle{fill:none;transition:stroke-dasharray .6s ease}
+.si-ig-dv{fill:var(--_ink);font-family:var(--si-font-heading);font-weight:850;letter-spacing:-.04em}
+.si-ig-dl{fill:var(--si-muted);font-family:var(--si-font-body)}
+.si-ig-legend{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.3em;flex:1;min-inline-size:8em;font-size:.88em}
+.si-ig-legend li{display:flex;align-items:center;gap:.5em}
+.si-ig-legend li::before{content:"";flex:none;inline-size:.75em;block-size:.75em;border-radius:.2em;background:var(--_s)}
+.si-ig-legend b{margin-inline-start:auto;font-variant-numeric:tabular-nums}
+.si-ig-bars+.si-ig-legend,.si-ig-line+.si-ig-legend{flex:none;flex-direction:row;flex-wrap:wrap;gap:.3em 1em}
+.si-ig-line{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:minmax(4em,1fr) auto;gap:.35em .5em;padding-block-start:1.6em}
+.si-ig-y{display:flex;flex-direction:column;justify-content:space-between;font-size:.72em;color:var(--si-muted);text-align:end;margin-block:-.6em}
+.si-ig-plot{position:relative;min-block-size:0}
+.si-ig-plot svg{position:absolute;inset:0;inline-size:100%;block-size:100%;overflow:visible}
+.si-ig-end{position:absolute;inset-inline-end:0;inline-size:.7em;block-size:.7em;border-radius:50%;translate:50% -50%;box-shadow:0 0 0 .2em var(--_card)}
+.si-ig-x{grid-column:2}
+.si-ig-line polyline{fill:none;stroke-width:.24em;stroke-linejoin:round;stroke-linecap:round}
+.si-ig-area{fill:color-mix(in srgb,var(--_c) 16%,transparent)}
+.si-ig-axis{stroke:var(--si-line);stroke-width:.08em}
+.si-ig-x{display:flex;justify-content:space-between;gap:.4em;font-size:.72em;color:var(--si-muted)}
+.si-ig-last{position:absolute;inset-inline-end:0;translate:0 -130%;font-weight:850;font-size:1.45em;line-height:1;color:var(--_c);font-family:var(--si-font-heading)}
+.si-ig-accent .si-ig-x,.si-ig-accent .si-ig-y,.si-ig-accent .si-ig-dl{color:inherit;fill:currentColor;opacity:.85}
+
+/* footer: sources and byline */
+.si-ig-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:.4em 2em;flex-wrap:wrap;font-size:.7em;color:var(--si-muted);
+  border-block-start:.1em solid var(--si-line);padding-block-start:.7em}
+.si-ig-foot p{margin:0}
+.si-ig-src{flex:1;min-inline-size:60%}
+.si-ig-src b{color:var(--_ink);text-transform:uppercase;letter-spacing:.08em;margin-inline-end:.4em}
+.si-ig-foot a{color:inherit}
+.si-ig-by{white-space:nowrap}
+
+/* narrow (a phone) or a portrait slide (a tablet held upright): one column,
+ * the frame grows and the slide scrolls */
+.si-slide:has(.si-ig){container-name:si-igs}
+@container si-ig (max-width: 48rem), si-igs (orientation: portrait){
+  .si-ig[data-orient] .si-ig-frame{aspect-ratio:auto;font-size:clamp(13px,3.6cqi,19px);padding:1.5em 1.2em 1.1em}
+  .si-ig[data-orient] .si-ig-grid{grid-template-columns:minmax(0,1fr);grid-template-rows:none;grid-auto-rows:auto}
+  .si-ig[data-orient] .si-ig-block{grid-area:auto;min-block-size:0}
+  .si-ig-title{font-size:2em}
+  .si-ig-line{grid-template-rows:9em auto}
+  .si-ig-donut svg{block-size:auto;inline-size:min(40%,11em)}
+  .si-ig-img img{aspect-ratio:16/10;flex:none}
+}
+.si-slide.si-ig-slide .si-ig{block-size:auto}
+
+/* a page of its own (portrait) */
+html:has(.si-ig-page),.si-ig-page{block-size:auto;overflow:visible}
+.si-ig-page{background:var(--si-bg)}
+.si-ig-page>main{padding:clamp(.5rem,3vw,2.5rem) clamp(.5rem,3vw,2.5rem) clamp(1rem,4vw,3rem)}
+.si-ig-page .si-ig-frame{border-radius:calc(var(--si-radius,.6em) * 1.4);box-shadow:var(--si-shadow,none)}
+@media print{
+  .si-ig-page>main{padding:0}
+  .si-ig-page .si-ig-frame{border-radius:0;box-shadow:none}
+  .si-ig-block,.si-ig-frame{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}

@@ -35,6 +35,9 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	if dr.mindmap {
 		b.WriteString(assets.MindmapCSS)
 	}
+	if dr.infographic {
+		b.WriteString(assets.InfographicCSS)
+	}
 	b.WriteString("</style>\n")
 	dr.codewinCSS(&b)
 	if dr.wmImg != "" || d.Meta.WatermarkOpacity != "" {
