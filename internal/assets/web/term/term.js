@@ -43,6 +43,13 @@
     '.si-term .xterm{height:100%}' +
     /* runbook drawer */
     '.si-term-btn.is-on{color:#0b0e14;background:#7dd3fc}' +
+    '.si-term-acts{flex:0 0 42px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;background:#11151f;border-left:1px solid #1d2536;order:9}' +
+    '.si-term-act{position:relative;width:34px;height:34px;display:grid;place-items:center;background:transparent;color:#7d8aa5;border:0;border-radius:6px;cursor:pointer}' +
+    '.si-term-act:hover{color:#e6e6e6;background:#1d2536}.si-term-act:focus-visible{outline:2px solid #7dd3fc}' +
+    '.si-term-act.is-on{color:#e6e6e6}.si-term-act.is-on::before{content:"";position:absolute;right:-4px;top:6px;bottom:6px;width:2px;border-radius:2px;background:#7dd3fc}' +
+    /* side panels resize from their left edge */
+    '.si-rb,.si-dm{position:relative}.si-term-grip{position:absolute;left:-3px;top:0;bottom:0;width:6px;cursor:ew-resize;z-index:3}' +
+    '.si-term-grip:hover,.si-term-grip.is-drag{background:#7dd3fc55}.si-term.is-resizing .xterm{pointer-events:none}' +
     '.si-rb{flex:0 0 340px;display:none;flex-direction:column;min-height:0;' +
     'background:#0d1017;border-left:1px solid #1d2536}' +
     '.si-rb.is-open{display:flex}' +
@@ -144,12 +151,15 @@
   root.innerHTML =
     '<div class="si-term-bar">' +
     '<div class="si-term-tabs"></div>' +
-    (hasDemos ? '<button class="si-term-btn" data-act="demos" title="Demo scripts">▶ Demos</button>' : '') +
-    (hasRunbook ? '<button class="si-term-btn" data-act="runbook" title="Runbook (cheat-sheet)">⌘ Runbook</button>' : '') +
-    '<button class="si-term-btn" data-act="files" title="A new Viewer tab: a folder\'s files, read-only">▤ Viewer</button>' +
-    '<button class="si-term-btn" data-act="new" title="New tab">+</button>' +
+    '<button class="si-term-btn" data-act="new" title="New shell tab">+</button>' +
     '<button class="si-term-btn" data-act="hide" title="Hide (`)">✕</button>' +
-    '</div><div class="si-term-body"><div class="si-term-main"></div></div>';
+    '</div><div class="si-term-body"><div class="si-term-main"></div>' +
+    /* the activity bar on the right: one icon per tool, as in an editor */
+    '<div class="si-term-acts" role="toolbar" aria-label="Terminal tools" aria-orientation="vertical">' +
+    (hasDemos ? '<button class="si-term-act" data-act="demos" title="Demos: the demo scripts"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 4.5v15l12-7.5z"/></svg></button>' : '') +
+    (hasRunbook ? '<button class="si-term-act" data-act="runbook" title="Runbook: the command cheat-sheet"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="M9 8h6"/></svg></button>' : '') +
+    '<button class="si-term-act" data-act="files" title="Viewer: a new tab with a folder\'s files, read-only"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></button>' +
+    '</div></div>';
   document.body.appendChild(root);
   var tabsEl = root.querySelector('.si-term-tabs');
   var bodyEl = root.querySelector('.si-term-main');
@@ -249,6 +259,30 @@
   root.querySelector('[data-act="new"]').addEventListener('click', newTab);
   root.querySelector('[data-act="hide"]').addEventListener('click', hide);
   window.addEventListener('resize', function () { if (active >= 0 && tabs[active] && !tabs[active].viewer) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); } });
+
+  /* one width for the side panels, dragged from their left edge, remembered */
+  var panelW = 0; try { panelW = +localStorage.getItem('si-panel-w') || 0; } catch (e) {}
+  function sizePanel(p) { if (panelW) p.style.flex = '0 0 ' + panelW + 'px'; }
+  function addGrip(p) {
+    sizePanel(p);
+    var g = document.createElement('div'); g.className = 'si-term-grip'; g.title = 'Drag to resize';
+    p.appendChild(g);
+    g.addEventListener('pointerdown', function (ev) {
+      if (ev.button !== 0) return;
+      ev.preventDefault(); g.setPointerCapture(ev.pointerId); g.classList.add('is-drag'); root.classList.add('is-resizing');
+      var right = p.getBoundingClientRect().right, body = root.querySelector('.si-term-body').getBoundingClientRect();
+      function mv(e) {
+        panelW = Math.round(Math.max(240, Math.min(body.width * 0.8, right - e.clientX)));
+        [rbPanel, dmPanel].forEach(function (x) { if (x) sizePanel(x); });
+      }
+      function up() {
+        g.removeEventListener('pointermove', mv); g.removeEventListener('pointerup', up); g.classList.remove('is-drag'); root.classList.remove('is-resizing');
+        try { localStorage.setItem('si-panel-w', String(panelW)); } catch (e) {}
+        if (active >= 0 && tabs[active] && !tabs[active].viewer) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); }
+      }
+      g.addEventListener('pointermove', mv); g.addEventListener('pointerup', up);
+    });
+  }
 
   /* ---------- runbook drawer: a command cheat-sheet that types into the shell ---------- */
   var rbPanel = null;
@@ -422,7 +456,7 @@
       rbPanel.appendChild(ttl);
     }
     rbPanel.appendChild(head); rbPanel.appendChild(list); rbPanel.appendChild(hint);
-    root.querySelector('.si-term-body').appendChild(rbPanel);
+    addGrip(rbPanel); root.querySelector('.si-term-body').appendChild(rbPanel);
   }
   /* ---------- demos panel: pick a demo script, read it, Copy / Run its commands ---------- */
   var dmPanel = null;
@@ -479,7 +513,7 @@
     dmPanel.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
     dmPanel.appendChild(head); dmPanel.appendChild(doc);
     var open = false; try { open = JSON.parse(localStorage.getItem('si-demos-open') || 'false'); } catch (e) {}
-    root.querySelector('.si-term-body').appendChild(dmPanel);
+    addGrip(dmPanel); root.querySelector('.si-term-body').appendChild(dmPanel);
     if (open) setPanel('demos', true);
   }
   /* one side panel at a time: demos or runbook */

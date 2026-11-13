@@ -3,6 +3,10 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.3.4:** the play terminal's Demos, Runbook and Viewer are icons in a
+  tools bar on its right edge, as in an editor, so the top bar keeps only the
+  tabs, **+** and **✕**; the Demos and Runbook panels resize by dragging
+  their left edge (the width is remembered).
 - **v3.3.3:** the file viewer is a tab: **▤ Viewer** in the play terminal
   opens a new `Viewer` tab beside the shells each time, so several files can
   be open at once; Run buttons and **⌂ Shell** use the last shell.

@@ -1252,7 +1252,13 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   ---
   ```
 
-- **Viewer tabs** (`▤ Viewer` in the play terminal's bar): each click opens
+- **The tools bar**: the play terminal's tools sit in a narrow bar of icons
+  on its right edge, as in an editor: **Demos** (▷), **Runbook** (the book)
+  and **Viewer** (the page). Demos and Runbook open as a side panel (one at a
+  time; click the icon again to close it) that resizes by dragging its left
+  edge; the width is remembered. **+** (new shell) and **✕** stay at the top.
+
+- **Viewer tabs** (the Viewer icon in the tools bar): each click opens
   a new tab beside the shells, a read-only tree of a folder and the file you
   pick, so several files can be open at once (the tab shows `Viewer · name`).
   A Viewer opens on the last folder used (first time: the deck's folder);
@@ -1263,7 +1269,7 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   Runbook and Demos Run buttons still type into the last shell.
 
 - **Demos** (front matter `demos: ../demos/`): demo scripts, plain markdown, in a
-  second side panel of the play terminal (`▶ Demos`, one panel open at a time).
+  second side panel of the play terminal (the Demos icon, one panel open at a time).
   A drop-down lists the demos by their `# ` title (else the file name). The panel
   opens on **Commands only**: the headings that hold commands and the runnable
   blocks, so `> Say:` lines and notes stay in the speaker's own window; **Full

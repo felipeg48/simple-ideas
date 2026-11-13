@@ -129,7 +129,7 @@ allowed: it is the presenter's own file, shown on loopback), highlights every
 fence with the deck highlighter and marks shell-type fences (`bash sh shell zsh
 console sql powershell ps1 pwsh fish`) `si-dm-run`; it injects
 `window.SI_DEMOS = [{title, file, html}]` only with `opt.Terminal`. In the drawer
-(`term.js`) a `▶ Demos` button opens the panel (exclusive with the runbook): a
+(`term.js`) the Demos icon in the tools bar (`.si-term-acts`, right edge) opens the panel (exclusive with the runbook): a
 `<select>` of titles, the script as a dark document, and Copy / Run on every
 `si-dm-run` block (the text sent is the block's `textContent`). The pick and the
 open state persist (`localStorage` `si-demo-pick`, `si-demos-open`). A
@@ -169,7 +169,7 @@ proxied URL. Links come from the `browser:` front matter as
 
 ## Viewer tabs
 
-`▤ Viewer` (`term.js` `newViewer`): a tab `{viewer: true, pane, tabEl}` in the
+The Viewer icon (`term.js` `newViewer`): a tab `{viewer: true, pane, tabEl}` in the
 same strip as the shells (select/close/resize skip xterm for it; `lastShell`
 is where Run and ⌂ Shell go):
 `GET /_si/term/api/ls?dir=` (folders first; 2000 entries), `cat?path=`
@@ -178,3 +178,11 @@ is where Run and ⌂ Shell go):
 shell's folder: `/proc/PID/cwd` on Linux, `lsof -d cwd` elsewhere); all
 `localOnly` (`internal/serve/files.go`). Relative paths start at the deck's
 folder; `localStorage` `si-files-dir` (the last folder). Read-only for now.
+
+## Tools bar and panel width
+
+`.si-term-acts` (right edge of `.si-term-body`, `order:9`): icon buttons with
+the same `data-act` as before (`demos`, `runbook`, `files`); `.is-on` marks the
+open panel. Side panels get a `.si-term-grip` on their left edge (`addGrip`):
+one shared width, `localStorage` `si-panel-w`, 240 px to 80 % of the drawer;
+the shell refits on release.
