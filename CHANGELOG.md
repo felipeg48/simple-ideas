@@ -3,6 +3,20 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.19.0:** course results to your team. `webhook: https://…` in
+  `_course.md` sends `lesson.completed`, `quiz.submitted` (score, pass, per
+  question right or wrong, never the answers), `lab.step.checked`,
+  `demo.watched` and `course.completed` (schema version 1), as JSON, Slack,
+  Teams, Discord or xAPI 1.0.3 statements, after a short notice
+  (`webhook-consent: required` sends nothing before OK), queued while
+  offline. **Labs that check themselves:** `<!-- check: cmd · expect "text"
+  · exit 0 -->` on a lab step shows "Run this to check" in every build and a
+  **✓ Check** button in `si play` that runs it (30 s, the page's own checks
+  only) and sends a signed event. `/_si/relay` (loopback, or `--relay`)
+  signs browser events with `X-Si-Signature` (HMAC-SHA256, secret only in
+  the user's si.conf or `SI_WEBHOOK_SECRET`). `si demo test --webhook URL`
+  posts the run summary. Spec of the next step, a live class view:
+  `docs/superpowers/specs/2026-11-14-results-webhooks.md`.
 - **v3.18.0:** the workbench, finished, and a privacy fix for filming.
   **A clean prompt when si films the drawer:** `si demo test` / `run` (an
   `app:` deck) and `si build --mp4` with `[TERM …]` cues start the drawer's
