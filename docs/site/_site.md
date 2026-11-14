@@ -44,6 +44,7 @@ footer: simple-ideas
   - [Milestones in algorithms, a timeline](live/timeline/timeline.md)
   - [The 600 ms checkout, an infographic](live/infographic/checkout.md)
   - [Algorithms in numbers, a poster](live/infographic/algorithms.md)
+  - [How a message travels through a broker, animated](live/infographic/broker-flow.md)
 - [Themes](themes.md)
 - [AI agents](agents.md)
 - [Rules](rules/)
