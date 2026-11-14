@@ -62,6 +62,10 @@ type Options struct {
 	// Relay sends a course's result events through the si server's
 	// /_si/relay (signed there, the webhook URL kept off the page).
 	Relay bool
+	// Class sends every course result event, as JSON, to the si server's
+	// live class view (si serve --class, POST /_si/class/event), beside any
+	// webhook the course has.
+	Class bool
 	// Remote joins the page to the `si play --remote` relay (SI_CONFIG.remote):
 	// presenter state, commands and ink also travel over /_si/remote/*.
 	// Play only; a built deck keeps BroadcastChannel alone.

@@ -688,6 +688,33 @@ Points:
 
 ---
 
+## The class, live
+
+```text
+si serve web-course/ --class --addr 0.0.0.0:8000
+```
+
+- Learners by lesson: ✓ done, quiz scores, lab checks, videos watched
+- Who's stuck: the same check failed twice, no progress for 10 minutes
+- The quiz questions most got wrong, per lesson summaries, CSV
+
+Notes: (1 min)
+While you teach, the course can report to the screen in front of you. Serve
+it with class on, and every learner's page sends its progress to your
+laptop: a grid of learners by lesson, filling in as they work. The ones who
+failed the same lab check twice, or have not moved for ten minutes, rise to
+the top. Under the grid, the quiz questions most of the room got wrong, so
+you know what to explain again.
+
+Points:
+- `/_si/class` on the loopback, or the keyed link + QR si prints for a tablet
+- Names only when learners type one (`webhook-learner: ask`, the default with `--class`); No thanks keeps them out
+- Kept in `.si/class/<date>.jsonl`; a restart picks up today's class
+- Works beside a `webhook:`; no webhook needed
+- RULES.md §28 (The live class view)
+
+---
+
 ## Project structure
 
 ```text

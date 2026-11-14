@@ -1,8 +1,8 @@
 # Results webhooks: courses that report, labs that check themselves, CI that tells the team
 
 Status: decided with the founder on 2026-11-14. Parts 1, 2, 3 and 5 built
-(unreleased); part 4 (the live class view) is the next release, specified
-here only.
+(v3.19.0); part 4 (the live class view) built, unreleased
+(`internal/serve/class.go`, `class.html`).
 
 ## Why
 
@@ -183,15 +183,27 @@ completed the course A first web page." A learner without a name is
   goes to a course's configured address, so the relay is not an open proxy.
   A page served this way sends every event through the relay.
 
-## Part 4 (next release): the live class view
+## Part 4: the live class view (built)
 
-`si serve course/ --class` (spec only): the relay keeps the events it
-forwards in `.si/class/<date>.jsonl` and serves `/_si/class` to the
-loopback (or a keyed link, like `--review`): a grid of learners by lesson,
-quiz scores and attempts, failed lab checks highlighted, live over SSE;
-export CSV. No account system: learners are the random ids and typed names.
-Open questions for the founder: keyed link vs loopback only; keep how many
-days.
+`si serve course/ --class` (and `si play … --class`): course pages served
+this way send every event, as the JSON schema, to `POST /_si/class/event`
+(same-origin, the page's course found by `?page=` like the relay), beside
+the webhook (which keeps its own `webhook-events:` and format; no webhook is
+needed). The server checks and trims each event (version 1, a known event, a
+random learner id, bounded numbers and titles, question ids only), drops
+duplicate ids, caps 200 000 events a run and 5 000 per learner, keeps them in
+memory and appends them to `.si/class/<date>.jsonl` beside the served folder
+(a restart loads today's file). `/_si/class` (dashboard), `/data` (JSON),
+`/events` (SSE) and `/csv` open on the loopback (address and Host) or with
+the run's random key (`?k=`, printed with a QR code when the server is
+reachable). The dashboard: learners × lessons grid (✓, quiz score and
+attempts, a dot per check, video percent), who's stuck (a check failed twice
+in a row; no progress for N = 5/10/15/30 minutes on the lesson of the last
+event), per-lesson and per-question summaries, a module filter, a course
+picker, CSV (formula-safe), light/dark, the course's theme tokens.
+`--class` makes `webhook-learner: ask` the default. Decided: a keyed link
+and the loopback both; files are kept until the trainer deletes them (no
+expiry).
 
 ## Part 5: CI results
 

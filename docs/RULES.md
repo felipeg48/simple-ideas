@@ -4312,6 +4312,60 @@ yet with the exit code and the output. si runs only commands written in a
 `lab.step.checked` event (through the relay, signed). `si check` reports a
 check with no command or an option it does not know.
 
+### The live class view: `si serve --class`
+
+For a class in the room (or on a call), serve the course with `--class` and
+watch it from a laptop or a tablet:
+
+```text
+si serve web-course/ --class --addr 0.0.0.0:8000
+  class view (this machine): http://127.0.0.1:8000/_si/class
+  class view on another device (keyed link, keep it to yourself):
+  http://192.168.1.20:8000/_si/class?k=…   (and its QR code)
+```
+
+The course needs no `webhook:` for it: a page served this way sends every
+result event, as JSON, to the server itself (`POST /_si/class/event`), beside
+whatever goes to the course's webhook (which keeps its own
+`webhook-events:` and format). Learners are asked their name
+(`webhook-learner: ask` is the default with `--class`; write
+`webhook-learner: random` to keep them anonymous ids), and the notice and
+`webhook-consent:` work as above: a learner who says No thanks never shows up.
+
+```markdown
+---
+title: A first web page
+webhook-learner: ask
+webhook-notice: Your progress shows on the trainer's screen during the class.
+---
+```
+
+The dashboard (`/_si/class`) opens on this machine's loopback, or anywhere
+with the run's key (the printed link; a new key each run). It shows, live
+(server-sent events, no reload):
+
+- **Learners by lesson:** one row per learner (the typed name, else
+  "Learner 3f9a"), one column per lesson under its module: ✓ done, the quiz
+  score (green passed, red not yet; ×2 for attempts), a dot per lab check
+  (red failing) with passed/total, ▶ the percent of a video watched.
+- **Who's stuck:** a learner who failed the same check twice in a row, or
+  made no progress (a lesson done, a quiz or check passed, a video watched)
+  for N minutes on the lesson of their last event (N: 5, 10, 15 or 30, 10
+  by default).
+- **Lessons:** done, quiz average and passed, learners failing a check,
+  average watched, per lesson. **Quiz questions:** for each quiz, how many
+  got each question wrong (each learner's last attempt).
+- **Module** filter, **Export CSV** (one row per learner and lesson), light
+  and dark, the course's theme. More than one course in the folder: a Course
+  picker.
+
+Every event is appended to `.si/class/<date>.jsonl` beside the served folder
+as it arrives; a restarted server starts again from today's file. Kept: the
+event, the lesson, the score, the step and the random learner id, and the
+name the learner typed: no address, no browser, no answers, no lab output.
+Delete the files when the class is over. `si play course/ --class` does the
+same for the instructor's build (its events say `instructor`).
+
 ### Build, serve, check
 
 - **`si build course/ -o html/`** writes the website bundle: `index.html` (the
