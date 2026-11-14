@@ -298,7 +298,7 @@ pass. The steps that matter:
   views (`internal/tui/timeline.go`). Next: gradients/shadows in the SVG.
 - **Result webhooks** (DONE v3.19.0, spec `docs/superpowers/specs/2026-11-14-results-webhooks.md`):
   course events (json/slack/teams/discord/xapi), `<!-- check: -->` labs, `/_si/relay`,
-  `si demo test --webhook`. Next: the live class view (`si serve --class`).
+  `si demo test --webhook`. The live class view (`si serve --class`, `internal/serve/class.go`) DONE v3.22.0.
 - **Browser windows** (DONE v3.2.2): `si play` key w, `browser:` front matter,
   `internal/serve/browser.go` (per-origin loopback proxy), `web/term/web.js`;
   v3.11.0: links and redirects to other origins stay proxied (`through`,

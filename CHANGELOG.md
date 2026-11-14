@@ -3,6 +3,15 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.22.0:** the live class view. `si serve course/ --class` (or `si
+  play … --class`) collects the course's events at `/_si/class/event` (same
+  origin, validated, no answers stored) into `.si/class/<date>.jsonl` and a
+  live instructor dashboard: learners × lessons (done, quiz score and
+  attempts, lab checks, video watched), who's stuck (a check failed twice,
+  or no progress for 5–30 min), per-lesson and per-question summaries, a
+  module filter and a CSV export. Open on this machine, or from elsewhere
+  with the printed keyed link and QR code. Learners give a name or stay
+  anonymous.
 - **v3.21.0:** mind maps. `si mindmap export map.md --to xmind8` writes
   the XMind 8 format (and its import reads labels and sheet links back).
   3D maps on a phone or an upright tablet lay their branches down the screen
