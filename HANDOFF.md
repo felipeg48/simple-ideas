@@ -24,7 +24,9 @@ lazy-loaded on Edit; `POST /_si/term/api/save` with an mtime check; saves
 never live-reload). See `docs/terminal.md` "Viewer tabs".
 
 
-**Released and live: v3.3.0** (timelines, infographics; v3.2.1 Demos panel
+**Released and live: v3.7.0** (courses finished: SCORM, PDFs, SkillJar
+needs a real-account check, hashed quizzes). Before: v3.4–3.6 the play
+workbench (Viewer editor, file ops, reattach). Earlier **v3.3.0** (timelines, infographics; v3.2.1 Demos panel
 Commands only; v3.2.2 browser windows `w`). Earlier: **v3.2.0, courses** (CI, release, demo filming and
 docs-site green; si 3.2.0 installed with `make install </dev/null`; update
 the plugin with `claude plugin marketplace update simple-ideas && claude

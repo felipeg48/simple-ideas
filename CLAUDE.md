@@ -260,7 +260,8 @@ pass. The steps that matter:
     bullets, tables and code, pictures for canvases (hard: fluid layouts vs
     fixed boxes); (3) `si publish --to google-slides` (Drive upload with
     conversion, a Google OAuth login like LinkedIn's).
-- **Courses** (phases 1–2 DONE v3.2.0, spec
+- **Courses** (DONE: phases 1–2 v3.2.0, phases 3–4 v3.7.0 (`internal/render/scorm.go`,
+  `coursebook.go`, `internal/publish/skilljar.go`; SkillJar unverified on a real account), spec
   `docs/superpowers/specs/2026-11-12-courses.md`, mockup
   `2026-11-12-courses-design.html`): `_course.md` (modules, lessons, kinds
   by link target, `· kind=`, minutes, prerequisites), learner / `--instructor`

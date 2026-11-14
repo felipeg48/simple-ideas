@@ -3,6 +3,15 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.7.0:** courses, finished. `si build course/ --scorm` writes a SCORM
+  1.2 package (one SCO per lesson, `--scorm=single` for one; status, quiz
+  scores and progress reported to the LMS, still working with none);
+  `--pdf` writes a learner workbook and `--instructor --pdf` an instructor
+  guide; `si publish login skilljar` and `si publish course/ --to skilljar`
+  (dry run unless `--yes`; sections, HTML, video and SCORM lessons, updated
+  in place; files are fetched by SkillJar from `--base-url`). Studio's New
+  lists courses. Learner quiz pages carry hashed answers only; a quiz is a
+  self-check, not a secure exam.
 - **v3.6.0:** the play terminal's shells and Viewers survive a live
   reload: saving the deck brings the drawer back as it was (open or closed,
   the same tabs, the active one), each shell still running with its recent
