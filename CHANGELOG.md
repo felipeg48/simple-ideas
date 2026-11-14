@@ -3,6 +3,13 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.21.0:** mind maps. `si mindmap export map.md --to xmind8` writes
+  the XMind 8 format (and its import reads labels and sheet links back).
+  3D maps on a phone or an upright tablet lay their branches down the screen
+  seen from the front, with finger-sized tools, one-finger orbit, pinch and
+  a tap to open a topic. `si build map.md --png --pdf` of a `view: 3d` map
+  exports the 3D view (the first map with its linked maps); `--svg` stays
+  2D (the 3D view is raster only).
 - **v3.20.0:** five improvements. Top-to-bottom stage diagrams widen the
   gap between sibling boxes so their edge labels never overlap. Infographic
   line charts place numeric and date x values by their real value (round
