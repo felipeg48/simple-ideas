@@ -84,6 +84,7 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 	doc := dr.md.Parser().Parse(text.NewReader(src))
 	dr.codeFeatures(doc, src, sc)
 	dr.plugins(doc, src, s, sc)
+	var img *deck.ImageAttrs
 	for c := doc.FirstChild(); c != nil; {
 		next := c.NextSibling()
 		switch n := c.(type) {
@@ -101,7 +102,7 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 				}
 			}
 		case *ast.Paragraph:
-			if fig := imageFigure(n, src, nil); fig != nil {
+			if fig := imageFigure(n, src, img); fig != nil {
 				if im, ok := n.FirstChild().(*ast.Image); ok && string(im.Title) != "" {
 					dr.numberFigure(fig.(*rawNode), string(im.Title), sl)
 				}
@@ -110,7 +111,15 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 		case *ast.HTMLBlock:
 			if name, val, ok := deck.ParseDirective(blockText(n, src)); ok && name == "slides" {
 				doc.ReplaceChild(doc, n, &rawNode{html: dr.embedSlides(val, s, sc)})
+			} else if ok && name == "image" { // sizes, places (and gives a video its poster=) the next image
+				a, _ := deck.ParseImageAttrs(val) // the parser reports bad options
+				img = &a
+				c = next
+				continue
 			}
+		}
+		if _, isHTML := c.(*ast.HTMLBlock); !isHTML {
+			img = nil
 		}
 		c = next
 	}
@@ -332,7 +341,7 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 		bodyAttrs += fmt.Sprintf(` data-si-book="%s"`, bp)
 	}
 	if g != nil {
-		bodyAttrs += fmt.Sprintf(` data-si-guide="%s" data-si-page="%s"`, html.EscapeString(guideRel(g, g.Pages[0])+"|"+g.Meta.Title), html.EscapeString(guideRel(g, d.Path)))
+		bodyAttrs += fmt.Sprintf(` data-si-guide="%s" data-si-page="%s"`, html.EscapeString(guideRel(g, g.Home())+"|"+g.Meta.Title), html.EscapeString(guideRel(g, d.Path)))
 		if g.IsCourse() {
 			bodyAttrs += ` data-si-course`
 		}
@@ -413,7 +422,7 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 				b.WriteString("<div class=\"si-doc-site\"><div class=\"si-doc-site-in\">" + h + "</div></div>\n")
 			}
 		}
-		home := pageHref(d.Path, g.Pages[0])
+		home := pageHref(d.Path, g.Home())
 		if g.IsBook() {
 			home = pageHref(d.Path, filepath.Join(g.Dir, "index.md"))
 		}

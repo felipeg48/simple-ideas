@@ -205,7 +205,7 @@ func (dr *deckRenderer) embedFolder(dir, path string, sc *slideCtx) string {
 	}
 	home := "index.html"
 	if !g.IsBook() && !g.IsCourse() && !fileExists(filepath.Join(g.Dir, "index.md")) {
-		r, _ := filepath.Rel(g.Dir, g.Pages[0])
+		r, _ := filepath.Rel(g.Dir, g.Home())
 		home = filepath.ToSlash(strings.TrimSuffix(r, filepath.Ext(r)) + ".html")
 	}
 	facts := []string{fmt.Sprintf("%d pages", len(g.Pages))}

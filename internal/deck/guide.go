@@ -66,6 +66,10 @@ type NavItem struct {
 	Minutes       int    // its length (front matter minutes:, `· minutes=`, else estimated)
 	Video         string // a video lesson: the video file (absolute)
 	Script        string // a filmed demo lesson: its script (the video is <script>.mp4)
+	Deck          string // a deck lesson shown as its video (kind=video): the deck; the video is <deck>.mp4
+	PDF           bool   // `· pdf`: a Download the slides (PDF) button under the video (<deck>.pdf)
+	Handout       bool   // `· handout`: the handout too (<deck>.handout.pdf)
+	SlidesLink    bool   // `· slides`: a link to the interactive slides (<deck>.slides.html, not in the menu)
 	Prerequisites string // what to know first (shown, not enforced)
 }
 
@@ -116,7 +120,7 @@ func LoadGuide(dir string) (*Guide, error) {
 		}
 		m := navItemRE.FindStringSubmatch(strings.ReplaceAll(l, "\t", "  "))
 		if m == nil {
-			g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: "_nav.md: want a list item (`- [Title](page.md)` or `- Section`)"})
+			g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: "want a list item (`- [Title](page.md)` or `- Section`)"})
 			continue
 		}
 		text, o := m[2], map[string]string(nil)
@@ -136,21 +140,21 @@ func LoadGuide(dir string) (*Guide, error) {
 					it.Sub = f // a guide, book or site of its own, linked from this menu
 				case course && IsVideoPath(f) && strings.HasPrefix(f, abs+string(filepath.Separator)):
 					if _, err := os.Stat(f); err != nil {
-						g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: fmt.Sprintf("_course.md: missing video %s", it.Href)})
+						g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: fmt.Sprintf("missing video %s", it.Href)})
 					} else {
 						seen[f] = no
 						it.File = f
 						g.Pages = append(g.Pages, f)
 					}
 				case !isDeckFile(filepath.Base(f)):
-					g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: fmt.Sprintf("_nav.md: %s is not a .md or .adoc page", it.Href)})
+					g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: fmt.Sprintf("%s is not a .md or .adoc page", it.Href)})
 				case !strings.HasPrefix(f, abs+string(filepath.Separator)):
-					g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: fmt.Sprintf("_nav.md: %s is outside the guide folder", it.Href)})
+					g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: fmt.Sprintf("%s is outside the guide folder", it.Href)})
 				default:
 					if _, err := os.Stat(f); err != nil {
-						g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: fmt.Sprintf("_nav.md: missing page %s", it.Href)})
+						g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: fmt.Sprintf("missing page %s", it.Href)})
 					} else if first, dup := seen[f]; dup {
-						g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: fmt.Sprintf("_nav.md: %s is listed twice (first on line %d)", it.Href, first)})
+						g.Problems = append(g.Problems, Problem{File: rel, Line: no, Msg: fmt.Sprintf("%s is listed twice (first on line %d)", it.Href, first)})
 					} else {
 						seen[f] = no
 						it.File = f
@@ -320,4 +324,13 @@ func (g *Guide) Unlisted() []string {
 		return nil
 	})
 	return out
+}
+
+// Home is the guide's first listed page, or index.md in its folder when it
+// lists none yet (a course or guide whose pages are still to be written).
+func (g *Guide) Home() string {
+	if len(g.Pages) > 0 {
+		return g.Pages[0]
+	}
+	return filepath.Join(g.Dir, "index.md")
 }

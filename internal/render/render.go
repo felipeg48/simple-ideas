@@ -360,6 +360,7 @@ var (
 // postprocess resolves relative images (data URI, link or copy) and points
 // .md links at the generated .html pages.
 func (dr *deckRenderer) postprocess(h, dir string, sc *slideCtx) string {
+	h = videoImgRE.ReplaceAllString(h, `<video controls preload="metadata" playsinline src="$1"></video>`)
 	h = imgSrcRE.ReplaceAllStringFunc(h, func(s string) string {
 		m := imgSrcRE.FindStringSubmatch(s)
 		src := html.UnescapeString(m[2])
@@ -373,7 +374,69 @@ func (dr *deckRenderer) postprocess(h, dir string, sc *slideCtx) string {
 		}
 		return m[1] + html.EscapeString(uri) + `"`
 	})
+	h = mediaTagRE.ReplaceAllStringFunc(h, func(tag string) string {
+		return mediaSrcRE.ReplaceAllStringFunc(tag, func(attr string) string {
+			m := mediaSrcRE.FindStringSubmatch(attr)
+			src := html.UnescapeString(m[3])
+			if isExternal(src) || src == "" {
+				return attr
+			}
+			var uri string
+			var ok bool
+			if m[2] == "poster" {
+				uri, ok = dr.media(dir, src, sc)
+			} else {
+				uri, ok = dr.fileLink(dir, src, sc)
+			}
+			if !ok {
+				dr.problem(sc, "missing file: %s", src)
+				return attr
+			}
+			return m[1] + m[2] + `="` + html.EscapeString(uri) + `"`
+		})
+	})
+	h = hrefRE.ReplaceAllStringFunc(h, func(s string) string {
+		m := hrefRE.FindStringSubmatch(s)
+		href := html.UnescapeString(m[1])
+		if !linkedFile(href) {
+			return s
+		}
+		uri, ok := dr.fileLink(dir, href, sc)
+		if !ok {
+			if _, err := os.Stat(filepath.Join(dir, filepath.FromSlash(cleanSrc(href)))); err != nil {
+				dr.problem(sc, "missing file: %s", href)
+			}
+			return s // or a folder: a sub-guide, served as it is
+		}
+		if i := strings.IndexAny(href, "?#"); i >= 0 {
+			uri += href[i:]
+		}
+		return strings.Replace(s, `href="`+m[1]+`"`, `href="`+html.EscapeString(uri)+`"`, 1)
+	})
 	return mdLinkRE.ReplaceAllString(h, `${1}${2}.html${3}"`)
+}
+
+var (
+	// videoImgRE is an <img> whose src is a video: it becomes a player.
+	videoImgRE = regexp.MustCompile(`<img\b[^>]*?\ssrc="([^"]+\.(?i:mp4|webm|mov|m4v|ogv))"[^>]*>`)
+	// mediaTagRE is a <video>, <audio> or <source> start tag; mediaSrcRE its
+	// src and poster attributes.
+	mediaTagRE = regexp.MustCompile(`<(?:video|audio|source)\b[^>]*>`)
+	mediaSrcRE = regexp.MustCompile(`(\s)(src|poster)="([^"]*)"`)
+)
+
+// rendered are the extensions of pages si renders itself (or writes): a link
+// to one is a page link, checked with the guide, never copied.
+var rendered = map[string]bool{"": true, ".md": true, ".adoc": true, ".asciidoc": true, ".html": true, ".htm": true}
+
+// linkedFile reports whether href is a relative link to a local file the
+// build copies beside the page (a PDF, a zip, a video), not a page or anchor.
+func linkedFile(href string) bool {
+	p := cleanSrc(href)
+	if p == "" || isExternal(href) || strings.HasPrefix(p, "/") || strings.HasSuffix(p, "/") {
+		return false
+	}
+	return !rendered[strings.ToLower(filepath.Ext(p))]
 }
 
 func plain(s string) string {

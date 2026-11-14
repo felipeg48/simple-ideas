@@ -103,6 +103,14 @@ func TestVTT(t *testing.T) {
 	}
 }
 
+func TestVTTFromCues(t *testing.T) {
+	got := VTT([]Cue{{Text: "A producer never writes to a queue.", At: 0, Seconds: 2}, {Text: "Three kinds.", At: 2.5, Seconds: 1}})
+	want := "WEBVTT\n\n00:00:00.000 --> 00:00:02.000\nA producer never writes to a queue.\n\n00:00:02.500 --> 00:00:03.500\nThree kinds.\n\n"
+	if got != want {
+		t.Errorf("VTT:\n%q\nwant\n%q", got, want)
+	}
+}
+
 // The time map: a wait beyond its first seconds plays faster, never under
 // the narration; captions and chapters land on the video's clock.
 func TestFastForward(t *testing.T) {

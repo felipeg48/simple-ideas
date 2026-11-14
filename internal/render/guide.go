@@ -97,7 +97,7 @@ func guideCrumb(g *deck.Guide, page string) string {
 	for p := it.Parent; p != nil; p = p.Parent {
 		chain = append([]string{html.EscapeString(p.Title)}, chain...)
 	}
-	parts := []string{fmt.Sprintf(`<a href="%s">%s</a>`, html.EscapeString(pageHref(page, g.Pages[0])), html.EscapeString(g.Meta.Title))}
+	parts := []string{fmt.Sprintf(`<a href="%s">%s</a>`, html.EscapeString(pageHref(page, g.Home())), html.EscapeString(g.Meta.Title))}
 	for _, c := range chain {
 		parts = append(parts, "<span>"+c+"</span>")
 	}

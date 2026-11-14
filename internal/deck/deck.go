@@ -341,7 +341,13 @@ func (d *Deck) buildLab(lines []srcLine) {
 		if ft.inFence(l.text) {
 			continue
 		}
-		if name, _, ok := ParseDirective(l.text); ok && !docDirectives[name] { // tabs, slides and the plugins work in documents
+		name, val, ok := ParseDirective(l.text)
+		if ok && name == "image" {
+			if _, err := ParseImageAttrs(val); err != nil {
+				d.problem(l.file, l.no, "%v", err)
+			}
+		}
+		if ok && !docDirectives[name] { // tabs, slides and the plugins work in documents
 			msg := fmt.Sprintf("%q has no effect in a %s document", name, d.Meta.Type)
 			if _, known := Directives[name]; !known {
 				msg = fmt.Sprintf("unknown directive %q", name)
@@ -1241,4 +1247,4 @@ var durationRE = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*min`)
 
 // docDirectives are the directives a document uses (the rest are deck-only).
 var docDirectives = map[string]bool{"tabs": true, "callout": true, "slides": true, "alert": true, "badge": true, "logo": true, "qr": true, "poll": true, "cloud": true, "cards": true, "accordion": true,
-	"modal": true, "solution": true, "end": true, "carousel": true, "event": true, "embed": true}
+	"modal": true, "solution": true, "end": true, "carousel": true, "event": true, "embed": true, "image": true}

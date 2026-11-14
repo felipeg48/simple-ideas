@@ -190,6 +190,14 @@ Points[Felipe]:
 - If asked: a real fraud decline is never retried
 ```
 
+## Video and linked files
+
+`![Caption](clip.mp4)` (also `.webm`, `.mov`, `.m4v`, `.ogv`) is a player on a
+slide or a page, never an `<img>`; `<!-- image: poster=still.jpg -->` before it
+gives it a still. Videos, linked local files (`[The slides (PDF)](talk.pdf)`,
+`.zip`, `.csv`) and the `src` of raw `<video>`/`<source>`/`<audio>` are copied
+beside the built page, never inlined; a missing one fails `si check`.
+
 ## Documents: articles, guides, labs
 
 Not everything is a slide deck. Pick the type by what the reader does:
@@ -225,7 +233,10 @@ Not everything is a slide deck. Pick the type by what the reader does:
   comes from its target: a page is a reading, `type: deck` slides, a `.mp4` (or
   a `type: demo` with `app:`) a video, `type: lab` a lab, `type: demo` without
   `app:` an instructor demo, `type: quiz` a quiz; `· kind=…`, `· minutes=…`,
-  `· prerequisites=…` after a link override. Give each lesson a one-sentence
+  `· prerequisites=…` after a link override. A deck lesson for self-paced
+  learners can be its narrated video: `[Title](03/deck.md) · kind=video · pdf`
+  (`· handout`, `· slides` too); `si build` films `deck.mp4` with `.vtt`
+  captions and prints `deck.pdf` beside the deck when missing or stale. Give each lesson a one-sentence
   `description:` and, when the estimate is wrong, `minutes:`. Quizzes: `## `
   questions, `- [x]` right answers, `> Explanation: …`, `pass: 70%`; a
   ```` ```quiz ```` fence works in any lesson. A lab's answer goes between

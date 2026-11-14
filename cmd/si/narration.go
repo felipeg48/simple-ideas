@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/felipeg48/simple-ideas/internal/deck"
+	"github.com/felipeg48/simple-ideas/internal/webdemo"
 )
 
 // A recording made with the teleprompter's Record button (si play):
@@ -26,6 +27,7 @@ type narration struct {
 	spoken     map[[2]int]float64 // slide, step (0-based) -> seconds on screen
 	marks      []recMark
 	sha        string
+	cues       []webdemo.Cue // a voiced script: each part's words and time, for <name>.vtt
 }
 
 type recMark struct {

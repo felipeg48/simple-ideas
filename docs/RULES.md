@@ -353,6 +353,28 @@ rule as steps):
 | `ratio` | `16:9`, `4:3`, `1:1` | crops the image into an aspect-ratio box |
 | `fit` | `cover`, `contain` | how the image fills the ratio box |
 | `position` | `center`, `left-bottom` | which part stays visible when cropped |
+| `poster` | `assets/still.jpg` | a video's still before it plays |
+
+**Videos.** An image whose file is a video (`.mp4`, `.webm`, `.mov`, `.m4v`,
+`.ogv`) is a player, on a slide and in a document alike: the title (else the
+alt text) is the caption, `poster=` in the `image` directive its still.
+
+```markdown
+<!-- image: poster=assets/cluster.jpg -->
+![The cluster, narrated](assets/cluster.mp4)
+```
+
+It renders `<figure class="si-image" data-video><video controls
+preload="metadata" playsinline src="assets/cluster.mp4" …></video><figcaption>`.
+A video is never inlined as a data URI: `si build` copies it beside the page
+(in every media mode), and so does the `src` of a raw `<video>`, `<source>`
+or `<audio>` you write yourself.
+
+**Linked files.** A link to a local file si does not render (`[The slides
+(PDF)](assets/talk.pdf)`, a `.zip`, a `.csv`, an `.mp4`) is copied beside the
+built page the same way, keeping its path (a file outside the page's folder
+goes to `media/`). A linked file that is missing fails `si check`. Links to
+pages (`.md`, `.adoc`, `.html`), folders and outside URLs are left alone.
 
 Side by side: put images in columns (`two-col` + `<!-- column -->`) or use
 `split` (text left, image right). Full bleed: `<!-- layout: image -->`.
@@ -3846,6 +3868,31 @@ A lesson's kind comes from what it links to; `· kind=reading` (or `slides`,
 | `type: lab` | Lab | the lab; its task-list boxes can be ticked |
 | `type: demo` without `app:` | Demo | the runbook (instructor build only) |
 | `type: quiz` | Quiz | the questions, scored |
+| `type: deck` with `· kind=video` | Video | the deck's narrated `<deck>.mp4`, filmed by `si build` when missing or older than the deck |
+
+**Video lessons from a deck.** For self-paced learners a slides lesson can be
+the deck's narrated video, with the slides to keep:
+
+```markdown
+- Module 3: Exchanges and routing
+  - [Exchanges and routing](03/exchanges.md) · kind=video · pdf · slides
+```
+
+- `· kind=video` on a `type: deck` lesson shows `03/exchanges.mp4`. `si build`
+  films it beside the deck (as `si build exchanges.md --mp4 --voice` would:
+  narrated from its `Notes:` with `--voice`, else the deck's or si.conf's
+  `voice:`) when it is missing or older than the deck; `--no-film` skips it.
+  The same build writes `exchanges.vtt` captions from the narration's words and
+  timing, which the player shows (`<track kind="captions" default>`, the deck's
+  `lang:`, else `en`).
+- `· pdf` adds a **Download the slides (PDF)** button under the player
+  (`exchanges.pdf` beside the deck, printed by the same build); `· handout`
+  a **Download the handout (PDF)** one (`exchanges.handout.pdf`, the deck's
+  `handout:` layout).
+- `· slides` adds an **Open the interactive slides** link to
+  `exchanges.slides.html`: the deck, built, in no menu.
+- The done tick follows the video (watched to 90 %, or to the end).
+- `· pdf`, `· handout` and `· slides` on any other lesson fail `si check`.
 
 **Minutes.** A lesson's `minutes:` front matter (or `· minutes=` in
 `_course.md`) sets its length; otherwise si estimates it: reading time at 230

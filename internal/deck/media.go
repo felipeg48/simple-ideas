@@ -125,14 +125,15 @@ type ImageAttrs struct {
 	Ratio    string // aspect ratio box, e.g. 16:9
 	Fit      string // cover | contain (with ratio)
 	Position string // object-position
+	Poster   string // a video's still before it plays (an image file)
 }
 
 var (
-	imgOptRE   = regexp.MustCompile(`^(width|align|ratio|fit|position)=(\S+)$`)
+	imgOptRE   = regexp.MustCompile(`^(width|align|ratio|fit|position|poster)=(\S+)$`)
 	widthRE    = regexp.MustCompile(`^\d+(\.\d+)?(%|em|rem|cqi|cqw|ch|vw)$`)
 	ratioRE    = regexp.MustCompile(`^\d+(\.\d+)?[:/]\d+(\.\d+)?$`)
 	fixedPxRE  = regexp.MustCompile(`px$`)
-	ImageOpts  = []string{"width", "align", "ratio", "fit", "position"}
+	ImageOpts  = []string{"width", "align", "ratio", "fit", "position", "poster"}
 	imageAlign = []string{"left", "right", "center"}
 )
 
@@ -171,6 +172,8 @@ func ParseImageAttrs(v string) (ImageAttrs, error) {
 			a.Fit = val
 		case "position":
 			a.Position = strings.ReplaceAll(val, "-", " ")
+		case "poster":
+			a.Poster = val
 		}
 	}
 	return a, nil

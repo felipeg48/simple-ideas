@@ -25,6 +25,28 @@ rule as steps):
 | `ratio` | `16:9`, `4:3`, `1:1` | crops the image into an aspect-ratio box |
 | `fit` | `cover`, `contain` | how the image fills the ratio box |
 | `position` | `center`, `left-bottom` | which part stays visible when cropped |
+| `poster` | `assets/still.jpg` | a video's still before it plays |
+
+**Videos.** An image whose file is a video (`.mp4`, `.webm`, `.mov`, `.m4v`,
+`.ogv`) is a player, on a slide and in a document alike: the title (else the
+alt text) is the caption, `poster=` in the `image` directive its still.
+
+```markdown
+<!-- image: poster=assets/cluster.jpg -->
+![The cluster, narrated](assets/cluster.mp4)
+```
+
+It renders `<figure class="si-image" data-video><video controls
+preload="metadata" playsinline src="assets/cluster.mp4" …></video><figcaption>`.
+A video is never inlined as a data URI: `si build` copies it beside the page
+(in every media mode), and so does the `src` of a raw `<video>`, `<source>`
+or `<audio>` you write yourself.
+
+**Linked files.** A link to a local file si does not render (`[The slides
+(PDF)](assets/talk.pdf)`, a `.zip`, a `.csv`, an `.mp4`) is copied beside the
+built page the same way, keeping its path (a file outside the page's folder
+goes to `media/`). A linked file that is missing fails `si check`. Links to
+pages (`.md`, `.adoc`, `.html`), folders and outside URLs are left alone.
 
 Side by side: put images in columns (`two-col` + `<!-- column -->`) or use
 `split` (text left, image right). Full bleed: `<!-- layout: image -->`.

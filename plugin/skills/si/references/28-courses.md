@@ -57,6 +57,31 @@ A lesson's kind comes from what it links to; `· kind=reading` (or `slides`,
 | `type: lab` | Lab | the lab; its task-list boxes can be ticked |
 | `type: demo` without `app:` | Demo | the runbook (instructor build only) |
 | `type: quiz` | Quiz | the questions, scored |
+| `type: deck` with `· kind=video` | Video | the deck's narrated `<deck>.mp4`, filmed by `si build` when missing or older than the deck |
+
+**Video lessons from a deck.** For self-paced learners a slides lesson can be
+the deck's narrated video, with the slides to keep:
+
+```markdown
+- Module 3: Exchanges and routing
+  - [Exchanges and routing](03/exchanges.md) · kind=video · pdf · slides
+```
+
+- `· kind=video` on a `type: deck` lesson shows `03/exchanges.mp4`. `si build`
+  films it beside the deck (as `si build exchanges.md --mp4 --voice` would:
+  narrated from its `Notes:` with `--voice`, else the deck's or si.conf's
+  `voice:`) when it is missing or older than the deck; `--no-film` skips it.
+  The same build writes `exchanges.vtt` captions from the narration's words and
+  timing, which the player shows (`<track kind="captions" default>`, the deck's
+  `lang:`, else `en`).
+- `· pdf` adds a **Download the slides (PDF)** button under the player
+  (`exchanges.pdf` beside the deck, printed by the same build); `· handout`
+  a **Download the handout (PDF)** one (`exchanges.handout.pdf`, the deck's
+  `handout:` layout).
+- `· slides` adds an **Open the interactive slides** link to
+  `exchanges.slides.html`: the deck, built, in no menu.
+- The done tick follows the video (watched to 90 %, or to the end).
+- `· pdf`, `· handout` and `· slides` on any other lesson fail `si check`.
 
 **Minutes.** A lesson's `minutes:` front matter (or `· minutes=` in
 `_course.md`) sets its length; otherwise si estimates it: reading time at 230

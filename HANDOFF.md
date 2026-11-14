@@ -24,7 +24,15 @@ lazy-loaded on Edit; `POST /_si/term/api/save` with an mtime check; saves
 never live-reload). See `docs/terminal.md` "Viewer tabs".
 
 
-**Released and live: v3.11.0** (auto-play resumes mid-part: the voice
+**Released and live: v3.12.0** (fixes #8, #9: a course whose pages are
+not written yet reports `missing page` / `lists no pages` instead of a
+panic (`Guide.Home()`); `![c](x.mp4)` is a player on slides and pages,
+`poster=` in the image directive; linked local files and raw
+`<video>/<source>/<audio>` src are copied beside the page and checked
+(`fileLink`, `postprocess`); a `type: deck` lesson with `· kind=video ·
+pdf · handout · slides` shows `<deck>.mp4` with `.vtt` captions, download
+buttons and `<deck>.slides.html`, made by `deckLesson` in
+`cmd/si/course.go`). Before: **v3.11.0** (auto-play resumes mid-part: the voice
 file from its position, the browser's voice from its sentence; browser
 windows keep the proxy across sites: cross-origin links and redirects go
 through their origin's proxy, the address box shows the real address, ← →

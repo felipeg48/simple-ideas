@@ -72,6 +72,7 @@
 .si-course-next small{display:block}
 .si-course-video{margin:0 0 1.4rem;max-width:none!important}
 .si-course-video video{display:block;width:100%;max-height:75dvh;height:auto}
+.si-course-companions{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 1rem;margin:0 0 1.6rem}
 .si-course-slides{max-width:none!important}
 .si-course-cert{margin-top:1.6rem;text-align:center;padding:clamp(1.5rem,6vw,4rem) clamp(1rem,4vw,3rem)}
 .si-course-cert p{margin:.3rem auto}
@@ -167,6 +168,9 @@
 .si-course-live p{margin:.3rem 0}
 .si-course-live-t{font-weight:650}
 .si-course-video video{border-radius:var(--si-radius);background:#000}
+.si-course .si-course-download{display:inline-block;padding:.6rem .95rem;border-radius:var(--si-radius);background:var(--si-accent);color:var(--si-on-accent);font:650 .95rem/1.2 var(--si-font-body);text-decoration:none}
+.si-course-download:focus-visible{outline:2px solid var(--si-fg);outline-offset:2px}
+.si-course .si-course-slides-link{font-weight:600}
 .si-course-status{font-size:1.05rem}
 .si-course-todo{padding-left:1.2rem}
 .si-course-cert-form input{padding:.5rem .6rem;border:1px solid var(--si-line);border-radius:var(--si-radius);background:var(--si-bg);color:var(--si-fg);font:inherit}

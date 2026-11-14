@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestNewAndBuildCourse(t *testing.T) {
@@ -52,5 +53,45 @@ func TestNewAndBuildCourse(t *testing.T) {
 	}
 	if b, _ := os.ReadFile(filepath.Join(inst, "02-html/inspect.html")); !strings.Contains(string(b), "I just changed the news") {
 		t.Error("the instructor build carries the runbook")
+	}
+}
+
+// A deck lesson shown as its video: si build films nothing when the video,
+// captions and PDFs beside the deck are newer than it, and copies them
+// beside the lesson; --no-film builds the same.
+func TestBuildCourseDeckVideoLesson(t *testing.T) {
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "c")
+	files := map[string]string{
+		"_course.md": "---\ntitle: C\n---\n\n- Module 1: One\n  - [Exchanges](03/ex.md) · kind=video · pdf · slides\n",
+		"03/ex.md":   "---\ntype: deck\n---\n# Exchanges\n\nNotes: A producer never writes to a queue.\n",
+		"03/ex.mp4":  "x", "03/ex.vtt": "WEBVTT\n", "03/ex.pdf": "%PDF",
+	}
+	for name, body := range files {
+		p := filepath.Join(src, name)
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	old := time.Now().Add(-time.Hour)
+	os.Chtimes(filepath.Join(src, "03/ex.md"), old, old) // the deck is older than its video and PDF
+	for _, extra := range [][]string{nil, {"--no-film"}} {
+		out := filepath.Join(tmp, "html"+strings.Join(extra, ""))
+		var stdout, stderr bytes.Buffer
+		if code := run(append([]string{"build", src, "-o", out}, extra...), &stdout, &stderr); code != 0 {
+			t.Fatalf("build %v: %d\n%s", extra, code, stderr.String())
+		}
+		if strings.Contains(stdout.String(), "making") {
+			t.Errorf("nothing is stale, nothing is made:\n%s", stdout.String())
+		}
+		for _, f := range []string{"03/ex.html", "03/ex.mp4", "03/ex.vtt", "03/ex.pdf", "03/ex.slides.html"} {
+			if _, err := os.Stat(filepath.Join(out, f)); err != nil {
+				t.Errorf("%v: the build lacks %s", extra, f)
+			}
+		}
+		if b, _ := os.ReadFile(filepath.Join(out, "03/ex.html")); !strings.Contains(string(b), "Download the slides (PDF)") || !strings.Contains(string(b), `<track kind="captions"`) {
+			t.Error("the lesson shows the PDF button and the captions")
+		}
 	}
 }

@@ -3,6 +3,26 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.12.0:** fixes #8, #9. **Courses whose pages are not written yet:**
+  `si check` and `si build` on a `_course.md` (or a `_nav.md`) whose listed
+  pages do not exist report `missing page …` and `lists no pages` instead of
+  panicking; the messages no longer repeat the file name
+  (`_course.md:7: missing page missing.md`). **Videos in pages:**
+  `![Caption](clip.mp4)` (`.webm`, `.mov`, `.m4v`, `.ogv`) is a player on a
+  slide and in a document, the title or alt text its caption, `poster=` in the
+  `image` directive (which documents now honour too) its still; never inlined
+  as a data URI. **Linked files are copied:** a link to a local file si does
+  not render (a PDF, a zip, a CSV, a video) and the `src` of a raw `<video>`,
+  `<source>` or `<audio>` are copied beside the built page in every media
+  mode, for decks, documents, guides, courses and sites; a missing one fails
+  `si check`. **Video lessons from a deck:** `- [Title](03/deck.md) ·
+  kind=video · pdf` in `_course.md` shows the deck's narrated video, filmed by
+  `si build` beside the deck when missing or older than it (`--voice`, else
+  the deck's or si.conf's voice; `--no-film` skips it), with a **Download the
+  slides (PDF)** button under the player; `· handout` adds the handout PDF,
+  `· slides` a link to the interactive slides (built, in no menu). `si build
+  --mp4 --voice` now also writes `<deck>.vtt` captions from the narration's
+  words and timing, which the lesson's player shows.
 - **v3.11.0:** three open items. **Auto-play resumes mid-part:** Pause (a
   click, a key, the pen) and Resume on the same slide and build step go on
   where the voice stopped, the voice file from its second and the browser's

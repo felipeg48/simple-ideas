@@ -53,7 +53,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "3.11.0"
+const version = "3.12.0"
 
 // Exit codes.
 const (
@@ -1017,6 +1017,14 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 					failed = true
 				} else {
 					fmt.Fprintf(stdout, "  %-28s (narrated from %s)\n", d.Name+".mp4", filepath.Base(nar.dir))
+					if len(nar.cues) > 0 { // captions from the same script and timing
+						if err := os.WriteFile(filepath.Join(out, d.Name+".vtt"), []byte(webdemo.VTT(nar.cues)), 0o644); err != nil {
+							fmt.Fprintf(stderr, "si: %v\n", err)
+							failed = true
+						} else {
+							fmt.Fprintf(stdout, "  %-28s (captions)\n", d.Name+".vtt")
+						}
+					}
 				}
 			}
 		}
@@ -1895,8 +1903,8 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 		return "", false
 	}
 	ro := render.Options{UserCSS: css, Media: mode, Theme: o.theme, Config: cfg, SharedAssets: o.share || o.noInline || g.IsCourse(), Instructor: o.instructor}
-	if g.IsCourse() && !o.noFilm {
-		filmStale(g, stdout, stderr)
+	if g.IsCourse() {
+		filmStale(g, !o.noFilm, o.voice, cfg, stdout, stderr)
 		if fresh, err := deck.LoadGuide(g.Dir); err == nil {
 			g = fresh // the new videos' lengths
 		}
@@ -1942,6 +1950,8 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 		what := p.Deck.Meta.Type
 		if it := g.Item(p.File); g.IsCourse() && it != nil {
 			what = it.Kind
+		} else if g.IsCourse() && strings.HasSuffix(p.Rel, ".slides.html") {
+			what = "slides" // a video lesson's interactive slides (· slides)
 		} else if g.IsCourse() {
 			what = strings.TrimSuffix(p.Rel, ".html") // home, complete
 		}

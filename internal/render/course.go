@@ -455,6 +455,7 @@ func renderCourse(full *deck.Guide, opt Options) (pages []GuidePage, problems, w
 		res.HTML, res.body, res.Media = dr.docPage(body, nil, nil), body, append(res.Media, media...)
 		return GuidePage{File: file, Rel: guideRel(g, file), Deck: d, Result: res}
 	}
+	var unlisted []GuidePage // built, but in no menu and no search: a video lesson's interactive slides
 	for _, f := range g.Pages {
 		it := g.Item(f)
 		o := opt
@@ -463,9 +464,18 @@ func renderCourse(full *deck.Guide, opt Options) (pages []GuidePage, problems, w
 		case it.Video != "":
 			body, media := videoBody(f, it)
 			desc := ""
-			if it.Script != "" {
-				if d, err := deck.ParseWith(it.Script, g.Defaults()); err == nil {
+			if src := firstNonEmpty(it.Script, it.Deck); src != "" {
+				if d, err := deck.ParseWith(src, g.Defaults()); err == nil {
 					desc = d.Meta.Description
+				}
+			}
+			if it.Deck != "" {
+				extra, more, slides := deckCompanions(f, it, g, opt)
+				body += extra
+				media = append(media, more...)
+				if slides != nil {
+					problems = append(problems, slides.Result.Problems...)
+					unlisted = append(unlisted, *slides)
 				}
 			}
 			pages = append(pages, gen(f, it.Title, desc, "", body, media))
@@ -498,7 +508,7 @@ func renderCourse(full *deck.Guide, opt Options) (pages []GuidePage, problems, w
 				}
 				body := fmt.Sprintf(`<figure class="si-embed-slides si-course-slides" style="--_aspect:%s"><iframe srcdoc="%s" title="%s" allowfullscreen></iframe><figcaption>%s</figcaption></figure>`+"\n",
 					html.EscapeString(aspect), html.EscapeString(string(res.HTML)), html.EscapeString(plain(d.Title())), hint)
-				pages = append(pages, gen(f, d.Title(), d.Meta.Description, "", body, nil))
+				pages = append(pages, gen(f, d.Title(), d.Meta.Description, "", body, res.Media)) // files the slides play or link: beside the lesson
 				continue
 			}
 			res := Deck(d, o)
@@ -520,21 +530,86 @@ func renderCourse(full *deck.Guide, opt Options) (pages []GuidePage, problems, w
 		}
 	}
 	fillGuideSearch(g, pages, nil)
+	pages = append(pages, unlisted...)
 	problems = append(problems, checkGuideLinks(pages, nil)...)
 	return pages, problems, warnings
 }
 
+// besidePage is file's slash path from page's folder (the name alone when
+// it cannot tell).
+func besidePage(page, file string) string {
+	r, err := filepath.Rel(filepath.Dir(page), file)
+	if err != nil {
+		r = filepath.Base(file)
+	}
+	return filepath.ToSlash(r)
+}
+
 // videoBody is the player of a video lesson: the file beside the page
-// (copied there by si build, never inlined).
+// (copied there by si build, never inlined), with <video>.vtt as its
+// captions when there is one (si build --mp4 --voice writes it).
 func videoBody(page string, it *deck.NavItem) (string, []MediaFile) {
 	if !fileExists(it.Video) {
-		return "<div class=\"si-course-live\"><p class=\"si-course-live-t\">This video is not filmed yet</p><p>si build films it from its script.</p></div>\n", nil
+		from := "its script"
+		if it.Deck != "" {
+			from = "its slides and their Notes:"
+		}
+		return "<div class=\"si-course-live\"><p class=\"si-course-live-t\">This video is not filmed yet</p><p>si build films it from " + from + ".</p></div>\n", nil
 	}
-	r, err := filepath.Rel(filepath.Dir(page), it.Video)
-	if err != nil {
-		r = filepath.Base(it.Video)
+	r := besidePage(page, it.Video)
+	media := []MediaFile{{Src: it.Video, Rel: r}}
+	track := ""
+	if vtt := strings.TrimSuffix(it.Video, filepath.Ext(it.Video)) + ".vtt"; fileExists(vtt) {
+		lang := "en"
+		if src := firstNonEmpty(it.Deck, it.Script); src != "" {
+			if d, err := deck.Parse(src); err == nil && d.Meta.Lang != "" {
+				lang = d.Meta.Lang
+			}
+		}
+		vr := besidePage(page, vtt)
+		track = fmt.Sprintf(`<track kind="captions" src="%s" srclang="%s" label="Captions" default>`, html.EscapeString(vr), html.EscapeString(lang))
+		media = append(media, MediaFile{Src: vtt, Rel: vr})
 	}
-	r = filepath.ToSlash(r)
-	return fmt.Sprintf("<figure class=\"si-course-video\"><video controls preload=\"metadata\" playsinline src=\"%s\"></video></figure>\n", html.EscapeString(r)),
-		[]MediaFile{{Src: it.Video, Rel: r}}
+	return fmt.Sprintf("<figure class=\"si-course-video\"><video controls preload=\"metadata\" playsinline src=\"%s\">%s</video></figure>\n", html.EscapeString(r), track), media
+}
+
+// DeckCompanions are the files beside a deck lesson's video (<deck>.mp4)
+// that `· pdf` and `· handout` offer: the slides PDF and the handout PDF.
+func DeckCompanions(deckFile string) (pdf, handout string) {
+	base := strings.TrimSuffix(deckFile, filepath.Ext(deckFile))
+	return base + ".pdf", base + ".handout.pdf"
+}
+
+// deckCompanions is what a deck video lesson shows under its player: the
+// download buttons (· pdf, · handout) and the link to the interactive slides
+// (· slides), whose page it also returns (built, kept out of the menu).
+func deckCompanions(page string, it *deck.NavItem, g *deck.Guide, opt Options) (string, []MediaFile, *GuidePage) {
+	var links []string
+	var media []MediaFile
+	pdf, handout := DeckCompanions(it.Deck)
+	for _, c := range []struct {
+		on         bool
+		file, text string
+	}{{it.PDF, pdf, "Download the slides (PDF)"}, {it.Handout, handout, "Download the handout (PDF)"}} {
+		if !c.on || !fileExists(c.file) {
+			continue
+		}
+		r := besidePage(page, c.file)
+		media = append(media, MediaFile{Src: c.file, Rel: r})
+		links = append(links, fmt.Sprintf(`<a class="si-course-download" href="%s" download>%s</a>`, html.EscapeString(r), c.text))
+	}
+	var slides *GuidePage
+	if it.SlidesLink {
+		if d, err := deck.ParseWith(it.Deck, g.Defaults()); err == nil {
+			file := strings.TrimSuffix(it.Deck, filepath.Ext(it.Deck)) + ".slides.md"
+			o := Options{Media: MediaInline, Theme: opt.Theme, Config: opt.Config, UserCSS: opt.UserCSS, NoSpeakerText: !opt.Instructor}
+			res := Deck(d, o)
+			slides = &GuidePage{File: file, Rel: guideRel(g, file), Deck: d, Result: res}
+			links = append(links, fmt.Sprintf(`<a class="si-course-slides-link" href="%s">Open the interactive slides</a>`, html.EscapeString(besidePage(page, file[:len(file)-3]+".html"))))
+		}
+	}
+	if len(links) == 0 {
+		return "", media, slides
+	}
+	return "<p class=\"si-course-companions\">" + strings.Join(links, "") + "</p>\n", media, slides
 }

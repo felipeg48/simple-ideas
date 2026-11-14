@@ -272,7 +272,7 @@ func guideHome(g *deck.Guide) string {
 	if g.IsBook() || g.IsCourse() {
 		return "index.html" // the cover
 	}
-	r, _ := filepath.Rel(g.Dir, g.Pages[0])
+	r, _ := filepath.Rel(g.Dir, g.Home())
 	return filepath.ToSlash(strings.TrimSuffix(r, filepath.Ext(r)) + ".html")
 }
 

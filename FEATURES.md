@@ -41,7 +41,9 @@ an example for every rule: [RULES.md](docs/RULES.md).
   ```` ```mindmap ```` on a slide, tables, highlighted code with callouts and
   tabs.
 - **Media:** colour, gradient, image and muted video backgrounds with
-  overlays; sized, aligned, captioned and full-bleed images; web fonts inlined.
+  overlays; sized, aligned, captioned and full-bleed images; `![Caption](clip.mp4)`
+  plays as a video (with a `poster=`); videos and linked files (PDFs, zips)
+  copied beside the page and checked; web fonts inlined.
 - **Transitions:** fade, slide, zoom; the canvas and code windows morph
   between slides; `transition: morph` glides any heading, picture or words
   two slides share (or a block named `<!-- id: -->`) to its new place.
@@ -123,7 +125,8 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - **Books:** a cover, parts and chapters, numbered figures and tables,
   cross-references, an index, a one-file edition and PDF.
 - **Courses:** a `_course.md` of modules and lessons (readings, slides that
-  present themselves, videos, labs, instructor demos, quizzes), a course home
+  present themselves, videos, labs, instructor demos, quizzes; a deck as its
+  narrated, captioned video with a slides PDF to keep), a course home
   with Continue, progress rings and ticks kept in the browser, a completion
   page with a printable certificate; learner and instructor builds, a website
   bundle (`--zip`), a SCORM 1.2 package for any LMS (`--scorm`, one SCO per

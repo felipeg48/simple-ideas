@@ -88,7 +88,7 @@ html{font-size:clamp(100%,.85rem + .3vw,150%);-webkit-text-size-adjust:100%;scro
 .si-doc-body img,.si-doc-body svg,.si-doc-body video{max-width:100%;height:auto}
 .si-table-wrap,.si-doc-body pre{overflow-x:auto;max-width:100%}
 .si-doc-body .si-image{margin:1.6em auto;display:flex;flex-direction:column;align-items:center;gap:.5em}
-.si-doc-body .si-image>img{display:block;max-height:min(70vh,36rem);object-fit:contain}
+.si-doc-body .si-image>:is(img,video){display:block;max-height:min(70vh,36rem);object-fit:contain}
 .si-table-wrap table{width:max-content;min-width:100%}
 .si-table-wrap td{max-width:40ch}
 /* a key/value table (empty header) fits the page: its cells wrap instead */
@@ -353,7 +353,7 @@ pre.si-mermaid{margin:1.6em 0;text-align:center;font-family:var(--si-font-mono);
 .si-table-wrap tr:last-child td{border-bottom:0}
 
 /* figures */
-.si-doc-body .si-image>img{border-radius:var(--si-radius);box-shadow:var(--si-shadow)}
+.si-doc-body .si-image>:is(img,video){border-radius:var(--si-radius);box-shadow:var(--si-shadow)}
 .si-doc .si-caption{font-size:.85em;color:var(--si-muted);text-align:center}
 
 /* callouts: GitHub alerts */
@@ -604,7 +604,7 @@ pre.si-code :is(.si-diff-hunk,.si-diff-meta) .si-ln{display:none}
 .si-carousel:focus-visible{outline:2px solid var(--si-accent);outline-offset:2px}
 .si-carousel-track{display:flex;transition:transform .5s cubic-bezier(.2,.7,.2,1)}
 .si-carousel-track>*{flex:0 0 100%;margin:0!important}
-.si-carousel-track .si-image>img{width:100%;max-height:min(70vh,34rem);object-fit:cover;border-radius:0;box-shadow:none}
+.si-carousel-track .si-image>:is(img,video){width:100%;max-height:min(70vh,34rem);object-fit:cover;border-radius:0;box-shadow:none}
 .si-carousel-track .si-caption{padding:.5em 1em .9em}
 .si-carousel-ctl{position:absolute;top:.8rem;right:.8rem;display:flex;gap:.4rem}
 .si-carousel-ctl button{width:2.3rem;height:2.3rem;border-radius:50%;border:1px solid var(--si-line);background:color-mix(in srgb,var(--si-surface) 85%,transparent);color:var(--si-fg);cursor:pointer}

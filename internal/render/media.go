@@ -102,6 +102,31 @@ func (dr *deckRenderer) media(dir, src string, sc *slideCtx) (string, bool) {
 	return dataURI(abs)
 }
 
+// fileLink is a relative URL from the page to a file it links to or plays (a
+// video, a PDF, a zip): never inlined, in any media mode. si build copies it
+// beside the page (files outside the page's folder go to media/); si play
+// serves the folder as it is. ok is false when the file does not exist.
+func (dr *deckRenderer) fileLink(dir, src string, sc *slideCtx) (string, bool) {
+	abs := filepath.Join(dir, filepath.FromSlash(cleanSrc(src)))
+	st, err := os.Stat(abs)
+	if err != nil || st.IsDir() {
+		return "", false
+	}
+	rel, err := filepath.Rel(filepath.Dir(dr.d.Path), abs)
+	inside := err == nil && !strings.HasPrefix(rel, "..")
+	if !inside {
+		if dr.opt.Media == MediaLink {
+			return dr.media(dir, src, sc) // si play serves the page's folder only
+		}
+		rel = filepath.Join("media", filepath.Base(abs))
+	}
+	rel = filepath.ToSlash(rel)
+	if dr.opt.Media != MediaLink {
+		dr.files[abs] = rel
+	}
+	return (&url.URL{Path: rel}).String(), true
+}
+
 // background renders a slide background: colours and gradients through the
 // --si-slide-bg token, images and videos as a .si-bg layer with an overlay.
 // It returns the extra classes, the inline style and the layer HTML.
@@ -199,6 +224,11 @@ func toneOf(v string) string {
 	return "light"
 }
 
+// isVideo reports whether src names a video file (by its extension).
+func isVideo(src string) bool {
+	return strings.HasPrefix(extraTypes[strings.ToLower(filepath.Ext(cleanSrc(src)))], "video/")
+}
+
 // figure renders a paragraph that holds a single image as a figure: the
 // image title becomes the caption, the image directive sizes and places it.
 func figure(alt, dest, title string, a *deck.ImageAttrs) string {
@@ -228,7 +258,18 @@ func figure(alt, dest, title string, a *deck.ImageAttrs) string {
 			fmt.Fprintf(&b, ` style="%s"`, html.EscapeString(strings.Join(vars, ";")))
 		}
 	}
-	fmt.Fprintf(&b, `><img src="%s" alt="%s">`, html.EscapeString(dest), html.EscapeString(alt))
+	if isVideo(dest) { // ![caption](talk.mp4): a player; postprocess links the file (never inlined)
+		poster := ""
+		if a != nil && a.Poster != "" {
+			poster = ` poster="` + html.EscapeString(a.Poster) + `"`
+		}
+		fmt.Fprintf(&b, ` data-video><video controls preload="metadata" playsinline src="%s"%s aria-label="%s"></video>`, html.EscapeString(dest), poster, html.EscapeString(alt))
+		if title == "" {
+			title = alt
+		}
+	} else {
+		fmt.Fprintf(&b, `><img src="%s" alt="%s">`, html.EscapeString(dest), html.EscapeString(alt))
+	}
 	if title != "" {
 		fmt.Fprintf(&b, `<figcaption class="si-caption">%s</figcaption>`, html.EscapeString(title))
 	}

@@ -27,7 +27,7 @@ func siteHome(g *deck.Guide, page string) string {
 	if g.IsBook() || fileExists(filepath.Join(g.Dir, "index.md")) {
 		return pageHref(page, filepath.Join(g.Dir, "index.md"))
 	}
-	return pageHref(page, g.Pages[0])
+	return pageHref(page, g.Home())
 }
 
 // subHome is the href from page to the first page of the sub-guide in dir.

@@ -42,7 +42,10 @@ var videoExts = map[string]bool{".mp4": true, ".webm": true, ".m4v": true, ".mov
 // IsVideoPath reports whether p names a video file a course lesson can be.
 func IsVideoPath(p string) bool { return videoExts[strings.ToLower(filepath.Ext(p))] }
 
-var itemOptRE = regexp.MustCompile(`^(kind|minutes|prerequisites)=(.*)$`)
+var (
+	itemOptRE  = regexp.MustCompile(`^(kind|minutes|prerequisites)=(.*)$`)
+	itemFlagRE = regexp.MustCompile(`^(pdf|handout|slides)$`) // a deck video lesson's companions
+)
 
 // itemOpts cuts the `· key=value` options off a course item:
 // "[Lab](lab.md) · kind=lab · minutes=20" → "[Lab](lab.md)", {kind: lab, minutes: 20}.
@@ -53,6 +56,10 @@ func itemOpts(s string) (string, map[string]string) {
 	for _, p := range parts[1:] {
 		if m := itemOptRE.FindStringSubmatch(strings.TrimSpace(p)); m != nil {
 			opts[m[1]] = strings.TrimSpace(m[2])
+			continue
+		}
+		if m := itemFlagRE.FindStringSubmatch(strings.TrimSpace(p)); m != nil {
+			opts[m[1]] = "on"
 			continue
 		}
 		keep = append(keep, p)
@@ -72,26 +79,26 @@ func (g *Guide) courseLessons(opts map[*NavItem]map[string]string) {
 	file := rel(filepath.Join(g.Dir, CourseFile))
 	for _, mod := range g.Items {
 		if mod.Href != "" || mod.Sub != "" {
-			g.Problems = append(g.Problems, Problem{File: file, Line: mod.Line, Msg: "_course.md: a top-level item is a module (- Module 1: Title); put the lesson under one"})
+			g.Problems = append(g.Problems, Problem{File: file, Line: mod.Line, Msg: "a top-level item is a module (- Module 1: Title); put the lesson under one"})
 			continue
 		}
 		mod.Prerequisites = opts[mod]["prerequisites"]
 		if len(mod.Children) == 0 {
-			g.Problems = append(g.Problems, Problem{File: file, Line: mod.Line, Msg: fmt.Sprintf("_course.md: module %q has no lessons", mod.Title)})
+			g.Problems = append(g.Problems, Problem{File: file, Line: mod.Line, Msg: fmt.Sprintf("module %q has no lessons", mod.Title)})
 		}
 		for _, it := range mod.Children {
 			if it.File == "" {
 				if it.Href == "" {
-					g.Problems = append(g.Problems, Problem{File: file, Line: it.Line, Msg: "_course.md: a lesson is a link, [Title](page.md) or [Title](video.mp4)"})
+					g.Problems = append(g.Problems, Problem{File: file, Line: it.Line, Msg: "a lesson is a link, [Title](page.md) or [Title](video.mp4)"})
 				}
 				continue
 			}
 			if len(it.Children) > 0 {
-				g.Problems = append(g.Problems, Problem{File: file, Line: it.Line, Msg: "_course.md: a lesson has no lessons of its own (two levels: modules, then lessons)"})
+				g.Problems = append(g.Problems, Problem{File: file, Line: it.Line, Msg: "a lesson has no lessons of its own (two levels: modules, then lessons)"})
 			}
 			g.lesson(it, opts[it])
 			if strings.TrimSuffix(it.File, filepath.Ext(it.File)) == filepath.Join(g.Dir, "index") {
-				g.Problems = append(g.Problems, Problem{File: file, Line: it.Line, Msg: "_course.md: index.html is the course home; name this lesson otherwise"})
+				g.Problems = append(g.Problems, Problem{File: file, Line: it.Line, Msg: "index.html is the course home; name this lesson otherwise"})
 			}
 		}
 	}
@@ -123,21 +130,53 @@ func (g *Guide) lesson(it *NavItem, o map[string]string) {
 	}
 	if k := o["kind"]; k != "" {
 		if KindLabel[k] == "" {
-			g.Problems = append(g.Problems, Problem{File: file, Line: it.Line, Msg: fmt.Sprintf("_course.md: kind=%s is not one of %s", k, strings.Join(LessonKinds, ", "))})
+			g.Problems = append(g.Problems, Problem{File: file, Line: it.Line, Msg: fmt.Sprintf("kind=%s is not one of %s", k, strings.Join(LessonKinds, ", "))})
 		} else {
 			it.Kind = k
+		}
+	}
+	if it.Kind == "video" && it.Video == "" && it.Script == "" && isDeckLesson(it.File, g) { // a deck shown as its narrated video
+		it.Deck = it.File
+		it.Video = strings.TrimSuffix(it.File, filepath.Ext(it.File)) + ".mp4"
+		if fileExists(it.Video) {
+			it.Minutes = videoMinutes(it.Video)
+		} else {
+			g.Warnings = append(g.Warnings, Problem{File: file, Line: it.Line, Msg: fmt.Sprintf("%s is not filmed yet: si build films it (si build %s --mp4 --voice)", Rel(it.Video), Rel(it.File))})
+		}
+	}
+	for _, f := range []string{"pdf", "handout", "slides"} {
+		if o[f] == "" {
+			continue
+		}
+		if it.Deck == "" {
+			g.Problems = append(g.Problems, Problem{File: file, Line: it.Line, Msg: fmt.Sprintf("· %s: only a deck lesson shown as its video has it (a type: deck page with · kind=video)", f)})
+			continue
+		}
+		switch f {
+		case "pdf":
+			it.PDF = true
+		case "handout":
+			it.Handout = true
+		case "slides":
+			it.SlidesLink = true
 		}
 	}
 	if v := o["minutes"]; v != "" {
 		if m, err := strconv.ParseFloat(v, 64); err == nil && m > 0 {
 			it.Minutes = int(math.Ceil(m))
 		} else {
-			g.Problems = append(g.Problems, Problem{File: file, Line: it.Line, Msg: fmt.Sprintf("_course.md: minutes=%s is not a number of minutes", v)})
+			g.Problems = append(g.Problems, Problem{File: file, Line: it.Line, Msg: fmt.Sprintf("minutes=%s is not a number of minutes", v)})
 		}
 	}
 	if v := o["prerequisites"]; v != "" {
 		it.Prerequisites = v
 	}
+}
+
+// isDeckLesson reports whether the lesson page f is a slide deck.
+func isDeckLesson(f string, g *Guide) bool {
+	d, err := ParseWith(f, g.Defaults())
+	return err == nil && !d.IsDoc()
 }
 
 // lessonKind is the kind of a lesson page from its type.

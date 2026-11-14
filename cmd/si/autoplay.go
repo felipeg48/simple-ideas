@@ -129,6 +129,7 @@ func voicedNarration(d *deck.Deck, steps []int, lines map[[2]int]webdemo.Line, d
 					secs += gap
 				}
 				placed = append(placed, webdemo.Placed{WAV: l.WAV, At: t + secs})
+				n.cues = append(n.cues, webdemo.Cue{Text: parts[j].Text, At: t + secs, Seconds: l.Seconds})
 				secs += l.Seconds
 			}
 			if secs > 0 {

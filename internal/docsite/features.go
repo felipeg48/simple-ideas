@@ -123,6 +123,7 @@ var Features = []feature{
 		Source: "course/_course.md",
 		Options: [][2]string{
 			{"`_course.md`", "modules, then lessons: a page, a deck, a `.mp4`, a lab, a demo, a quiz"},
+			{"`· kind=video · pdf · handout · slides`", "a deck lesson as its narrated video with captions, a Download the slides (PDF) button, the handout, a link to the slides"},
 			{"`nav:`", "left, right, top, bottom · sticky · accordion, collapsed (guides, books and sites too)"},
 			{"`type: quiz` `pass: 70%`", "questions, `- [x]` right answers, `> Explanation:`"},
 			{"`<!-- solution -->`", "a lab's answer, folded for learners"},

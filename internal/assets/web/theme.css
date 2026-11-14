@@ -109,7 +109,7 @@ pre.si-mermaid{background:none;border:0;text-align:center;margin:.4em 0;font-fam
 .si-bg-light{--si-fg:#121316;--si-muted:rgb(18 19 22 / .74);--si-line:rgb(18 19 22 / .2);--si-surface:rgb(255 255 255 / .72);--si-surface-2:rgb(255 255 255 / .55);color:var(--si-fg)}
 .si-caption{font-size:.7em;color:var(--si-muted);text-align:center;max-width:60ch}
 .si-slide[data-layout="image"] .si-caption{color:rgb(255 255 255 / .85);background:rgb(0 0 0 / .45);padding:.25em .7em;border-radius:1em}
-.si-image>img{border-radius:var(--si-radius);box-shadow:var(--si-shadow)}
+.si-image>:is(img,video){border-radius:var(--si-radius);box-shadow:var(--si-shadow)}
 
 /* index page */
 .si-index{min-height:100%;overflow:auto;padding:clamp(1rem,5vw,4rem)}

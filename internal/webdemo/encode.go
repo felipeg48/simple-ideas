@@ -534,6 +534,22 @@ func srt(cs []caption) string {
 	return b.String()
 }
 
+// Cue is a line said from At for Seconds.
+type Cue struct {
+	Text        string
+	At, Seconds float64
+}
+
+// VTT is WebVTT captions for cues, each split into captions of at most two
+// lines like a take's (si build --mp4 --voice writes it beside the video).
+func VTT(cues []Cue) string {
+	var cs []caption
+	for _, c := range cues {
+		cs = append(cs, captions(c.Text, c.At, c.Seconds)...)
+	}
+	return vtt(cs)
+}
+
 // vtt is the captions as WebVTT (what a browser's <track> reads).
 func vtt(cs []caption) string {
 	var b strings.Builder
