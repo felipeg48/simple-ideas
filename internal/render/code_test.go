@@ -97,3 +97,29 @@ func TestEmbedSlidesAndDiff(t *testing.T) {
 		}
 	}
 }
+
+// A failed include inside a lab solution is its only problem: the solution
+// still finds its end (issue #10), and a solution without an end is reported
+// at its own line, not at the part's first line.
+func TestFailedIncludeInSolution(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "x.py"), []byte("def f():\n    # tag::a[]\n    return 1\n    # end::a[]\n"), 0o644)
+	p := filepath.Join(dir, "u.md")
+	os.WriteFile(p, []byte("---\ntype: lab\ntitle: T\n---\n\n# T\n\n## Step 1: A\n\n<!-- solution -->\n\n<!-- include: x.py tag=a title=x (part one) -->\n\n<!-- end -->\n"), 0o644)
+	d, err := deck.Parse(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := Deck(d, Options{})
+	if len(res.Problems) != 1 || res.Problems[0].Line != 12 ||
+		!strings.Contains(res.Problems[0].Msg, `unknown option "one"`) ||
+		!strings.HasSuffix(res.Problems[0].Msg, `title with spaces must be quoted: title="x (part one)"`) {
+		t.Fatalf("want only the include problem at line 12 with the quoting hint, got %v", res.Problems)
+	}
+	os.WriteFile(p, []byte("---\ntype: lab\n---\n\n# T\n\nText.\n\n<!-- solution -->\n\nAnswer.\n"), 0o644)
+	d, _ = deck.Parse(p)
+	res = Deck(d, Options{})
+	if len(res.Problems) != 1 || res.Problems[0].Line != 9 || !strings.Contains(res.Problems[0].Msg, "solution: no <!-- end -->") {
+		t.Fatalf("want the solution problem at line 9, got %v", res.Problems)
+	}
+}

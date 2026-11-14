@@ -108,6 +108,9 @@ becomes a code block, highlighted by the file's extension:
   `<!-- code: -->`: `<!-- include: ../code/NuGet.config title=NuGet.config lang=xml -->`.
 - `si check` reports a missing file, a range past the end, a tag that is not
   found or not closed, and an unknown option.
+- A title with spaces is quoted: `title="Retry (part one)"`. Unquoted, its
+  words read as options, and `si check` says so: `title with spaces must be
+  quoted: title="Retry (part one)"`.
 
 **Fence attributes.** After the language of a code fence:
 

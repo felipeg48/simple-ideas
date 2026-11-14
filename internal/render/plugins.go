@@ -1,6 +1,7 @@
 package render
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"html"
@@ -102,6 +103,17 @@ func isPlugin(name string) bool {
 		}
 	}
 	return false
+}
+
+// problemAt reports a problem at the line of block n: in a document a part's
+// body starts at its slide's line, so the offset is exact; a slide keeps its
+// own line (its body does not start there).
+func (dr *deckRenderer) problemAt(sc *slideCtx, n ast.Node, src []byte, format string, a ...any) {
+	p := dr.at(sc, format, a...)
+	if dr.doc && sc != nil && n.Lines().Len() > 0 {
+		p.Line += bytes.Count(src[:n.Lines().At(0).Start], []byte("\n"))
+	}
+	dr.problems = append(dr.problems, p)
 }
 
 // pluginParts splits "text · key=value · word" into the text and its options.
@@ -237,7 +249,7 @@ func (dr *deckRenderer) plugins(doc ast.Node, src []byte, s *deck.Slide, sc *sli
 				k = kn
 			}
 			if !closed {
-				dr.problem(sc, "modal: %s has no <!-- end -->", id)
+				dr.problemAt(sc, hb, src, "modal: %s has no <!-- end -->", id)
 			}
 			doc.ReplaceChild(doc, c, dlg)
 			next = k
@@ -262,12 +274,12 @@ func (dr *deckRenderer) plugins(doc ast.Node, src []byte, s *deck.Slide, sc *sli
 				k = kn
 			}
 			if !closed {
-				dr.problem(sc, "solution: no <!-- end --> after it")
+				dr.problemAt(sc, hb, src, "solution: no <!-- end --> after it")
 			}
 			doc.ReplaceChild(doc, c, sol)
 			next = k
 		case "end":
-			dr.problem(sc, "end: without a <!-- modal: … --> or <!-- solution --> before it")
+			dr.problemAt(sc, hb, src, "end: without a <!-- modal: … --> or <!-- solution --> before it")
 			doc.RemoveChild(doc, c)
 		case "carousel":
 			_, opts, _ := pluginParts("·" + strings.ReplaceAll(val, " ", "·"))

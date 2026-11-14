@@ -76,7 +76,9 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 		lines := strings.Split(s.Body, "\n")
 		for _, ps := range [][]deck.Problem{dr.problems[np:], dr.warnings[nw:]} {
 			for i := range ps {
-				ps[i].Line = s.Line + refLine(lines, ps[i].Msg)
+				if n := refLine(lines, ps[i].Msg); n > 0 || ps[i].Line == 0 { // else problemAt set the exact line
+					ps[i].Line = s.Line + n
+				}
 			}
 		}
 	}()

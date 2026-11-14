@@ -3,9 +3,11 @@ package deck
 import (
 	"fmt"
 	"github.com/felipeg48/simple-ideas/internal/codeshow"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -29,6 +31,21 @@ func splitIncludeValue(val string) (string, map[string]string) {
 		opts[m[1]] = v
 	}
 	return path, opts
+}
+
+var bareTitleRE = regexp.MustCompile(`\btitle=([^"\s][^=]*?)(?:\s+\w+=.*)?$`)
+
+// quoteHint adds a hint to an unknown-option error caused by an unquoted
+// title with spaces (title=x (part one) reads "(part" and "one)" as options).
+func quoteHint(val string, err error) error {
+	if !strings.Contains(err.Error(), "unknown option") {
+		return err
+	}
+	m := bareTitleRE.FindStringSubmatch(strings.TrimSpace(val))
+	if m == nil || !strings.ContainsAny(strings.TrimSpace(m[1]), " \t") {
+		return err
+	}
+	return fmt.Errorf("%v: title with spaces must be quoted: title=%q", err, strings.TrimSpace(m[1]))
 }
 
 // extLang maps a file extension to the fence language.
@@ -93,7 +110,7 @@ func codeInclude(file string, opts map[string]string) ([]string, error) {
 // codeBlock turns file content (named name, for its extension and default
 // title) into fence lines; src, when set, is the source link of the block.
 func codeBlock(raw []byte, file string, opts map[string]string, src string) ([]string, error) {
-	for k := range opts {
+	for _, k := range slices.Sorted(maps.Keys(opts)) { // sorted: the same problem every run
 		switch k {
 		case "lines", "tag", "lang", "title", "hl", "linenos", "indent":
 		default:

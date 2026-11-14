@@ -187,6 +187,11 @@ In a lab, `<!-- solution -->` up to `<!-- end -->` is the answer: folded behind
 <!-- end -->
 ````
 
+A solution can hold anything a lab can, includes too. `si check` reports a
+solution without its `<!-- end -->` at the `<!-- solution -->` line; an
+include inside it that fails is reported on its own (the solution still
+finds its end).
+
 ### Progress
 
 Progress is kept in the learner's browser (localStorage, per course; nothing

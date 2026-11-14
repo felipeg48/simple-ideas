@@ -243,7 +243,8 @@ Not everything is a slide deck. Pick the type by what the reader does:
 - **Code:** include real files instead of pasting them
   (`<!-- include: src/App.java tag=retry -->`; add `lang=xml` when the file's
   name does not say its language, e.g. `NuGet.config`; mark the region with
-  `// tag::retry[]` … `// end::retry[]`), prefer `tag=` over `lines=`, explain
+  `// tag::retry[]` … `// end::retry[]`; quote a title with spaces:
+  `title="Retry (part one)"`), prefer `tag=` over `lines=`, explain
   lines with `<1>` callouts (a `// <1>` marker on the line, a `<1> text` line
   after the block) instead of prose about line numbers, highlight what matters
   with `hl=`, and put the same code in several languages in `<!-- tabs -->`.

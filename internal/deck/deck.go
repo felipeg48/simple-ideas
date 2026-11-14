@@ -744,7 +744,8 @@ func (d *Deck) expandIncludes(file string, lines []srcLine, stack []string) []sr
 				d.Warnings = append(d.Warnings, Problem{File: rel(l.file), Line: l.no, Msg: warn})
 			}
 			if err != nil {
-				d.problem(l.file, l.no, "%s: %v", name, err)
+				d.problem(l.file, l.no, "%s: %v", name, quoteHint(val, err))
+				out = append(out, srcLine{l.file, l.no, ""}) // keeps the run: a lab part is lines in a row
 				continue
 			}
 			out = append(out, srcLine{l.file, l.no, ""})
@@ -760,13 +761,15 @@ func (d *Deck) expandIncludes(file string, lines []srcLine, stack []string) []sr
 		}
 		if val == "" {
 			d.problem(l.file, l.no, "include needs a file: <!-- include: other.md -->")
+			out = append(out, srcLine{l.file, l.no, ""})
 			continue
 		}
 		if path, opts := splitIncludeValue(val); !isDeckFile(filepath.Base(path)) {
 			// a code file: a fenced code block (lines=, tag=, lang=, title=, hl=, linenos, indent=keep)
 			block, err := codeInclude(filepath.Join(filepath.Dir(l.file), path), opts)
 			if err != nil {
-				d.problem(l.file, l.no, "include %s: %v", path, err)
+				d.problem(l.file, l.no, "include %s: %v", path, quoteHint(val, err))
+				out = append(out, srcLine{l.file, l.no, ""})
 				continue
 			}
 			out = append(out, srcLine{l.file, l.no, ""})
@@ -783,11 +786,13 @@ func (d *Deck) expandIncludes(file string, lines []srcLine, stack []string) []sr
 				chain = append(chain, filepath.Base(s))
 			}
 			d.problem(l.file, l.no, "include cycle: %s", strings.Join(chain, " -> "))
+			out = append(out, srcLine{l.file, l.no, ""})
 			continue
 		}
 		raw, err := os.ReadFile(target)
 		if err != nil {
 			d.problem(l.file, l.no, "include not found: %s", val)
+			out = append(out, srcLine{l.file, l.no, ""})
 			continue
 		}
 		rawStr := string(raw)
