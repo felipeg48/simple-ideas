@@ -44,6 +44,9 @@ type Creds struct {
 		User     string `json:"user,omitempty"`
 		Password string `json:"password,omitempty"` // an application password
 	} `json:"wordpress"`
+	SkillJar struct {
+		Key string `json:"key,omitempty"` // an API key (Skilljar dashboard: Organization › API Credentials)
+	} `json:"skilljar"`
 }
 
 // Path is the credentials file: $SI_PUBLISH_CONFIG, else ~/.si/publish.json.

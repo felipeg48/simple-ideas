@@ -78,6 +78,27 @@ func ScormManifest(full *deck.Guide, files []string, single bool) []byte {
 		}
 		res.WriteString("    </resource>\n")
 	}
+	return scormXML(id, g.Meta.Title, org.String(), res.String())
+}
+
+// ScormLessonManifest is imsmanifest.xml for one lesson packed on its own
+// (si publish --to skilljar): page is the SCO, files every file of the
+// package (page included).
+func ScormLessonManifest(id, title, page string, files []string) []byte {
+	e := html.EscapeString
+	id = strings.Trim(scormIDRE.ReplaceAllString(id, "-"), "-")
+	var res strings.Builder
+	fmt.Fprintf(&res, "    <resource identifier=\"res-lesson\" type=\"webcontent\" adlcp:scormtype=\"sco\" href=\"%s\">\n", e(page))
+	for _, f := range files {
+		fmt.Fprintf(&res, "      <file href=\"%s\"/>\n", e(f))
+	}
+	res.WriteString("    </resource>\n")
+	org := fmt.Sprintf("      <item identifier=\"item-lesson\" identifierref=\"res-lesson\">\n        <title>%s</title>\n      </item>\n", e(title))
+	return scormXML(id, title, org, res.String())
+}
+
+func scormXML(id, title, org, res string) []byte {
+	e := html.EscapeString
 	return []byte(fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <manifest identifier="si-%s" version="1.0"
   xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
@@ -94,8 +115,12 @@ func ScormManifest(full *deck.Guide, files []string, single bool) []byte {
   <resources>
 %s  </resources>
 </manifest>
-`, e(id), e(g.Meta.Title), org.String(), res.String()))
+`, e(id), e(title), org, res))
 }
+
+// Body is a rendered document's main column (its text, without the page
+// around it): what si publish sends as an HTML lesson.
+func (r Result) Body() string { return r.body }
 
 // ScormLauncherHTML is scorm.html: the course home in a full-window frame.
 // It opens the SCORM session once (LMSInitialize) and closes it when the

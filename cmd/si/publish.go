@@ -31,7 +31,7 @@ func runPublish(rest []string, o *options, stdout, stderr io.Writer) int {
 	switch rest[0] {
 	case "login":
 		if len(rest) != 2 {
-			return usageErr(stderr, "publish login needs linkedin, devto, hashnode, ghost or wordpress")
+			return usageErr(stderr, "publish login needs linkedin, devto, hashnode, ghost, wordpress or skilljar")
 		}
 		return publishLogin(rest[1], o, stdout, stderr)
 	case "logout":
@@ -41,6 +41,9 @@ func runPublish(rest []string, o *options, stdout, stderr io.Writer) int {
 		return usageErr(stderr, "publish needs one <file.md>")
 	}
 	path := rest[0]
+	if _, err := os.Stat(filepath.Join(path, deck.CourseFile)); err == nil { // a course: si publish course/ --to skilljar
+		return publishCourse(path, o, stdout, stderr)
+	}
 	d, err := deck.Parse(path)
 	if err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
@@ -115,7 +118,7 @@ func runPublish(rest []string, o *options, stdout, stderr io.Writer) int {
 		}
 	case "devto", "hashnode", "ghost", "wordpress":
 		if !d.IsDoc() {
-			return usageErr(stderr, o.to+" takes articles (type: article, guide, page…); a deck goes to LinkedIn")
+			return usageErr(stderr, o.to+" takes articles (type: article, guide, pageâ¦); a deck goes to LinkedIn")
 		}
 		a, warns := articleFor(d, o.baseURL, canonical)
 		a.Public = o.public
@@ -169,9 +172,9 @@ func runPublish(rest []string, o *options, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stdout, "published: %s\n", u)
 		}
 	case "":
-		return usageErr(stderr, "publish needs --to linkedin, devto, hashnode, ghost or wordpress")
+		return usageErr(stderr, "publish needs --to linkedin, devto, hashnode, ghost, wordpress or skilljar")
 	default:
-		return usageErr(stderr, fmt.Sprintf("unknown --to %q (use linkedin, devto, hashnode, ghost or wordpress)", o.to))
+		return usageErr(stderr, fmt.Sprintf("unknown --to %q (use linkedin, devto, hashnode, ghost, wordpress or skilljar)", o.to))
 	}
 	return exitOK
 }
@@ -375,7 +378,7 @@ func publishLogin(svc string, o *options, stdout, stderr io.Writer) int {
 		c.Hashnode.Token, c.Hashnode.Host, c.Hashnode.Publication = o.token, host, pub
 	case "ghost":
 		if o.token == "" || o.url == "" {
-			fmt.Fprintln(stderr, "si: Ghost login needs --url <your site> and --token <Admin API key> (Settings › Integrations › Add custom integration)")
+			fmt.Fprintln(stderr, "si: Ghost login needs --url <your site> and --token <Admin API key> (Settings âº Integrations âº Add custom integration)")
 			return exitUsage
 		}
 		if err := publish.CheckGhostKey(o.token); err != nil {
@@ -385,12 +388,18 @@ func publishLogin(svc string, o *options, stdout, stderr io.Writer) int {
 		c.Ghost.Site, c.Ghost.Key = strings.TrimRight(o.url, "/"), o.token
 	case "wordpress":
 		if o.token == "" || o.url == "" || o.user == "" {
-			fmt.Fprintln(stderr, "si: WordPress login needs --url <your site>, --user <your user name> and --token <application password> (Users › Profile › Application Passwords)")
+			fmt.Fprintln(stderr, "si: WordPress login needs --url <your site>, --user <your user name> and --token <application password> (Users âº Profile âº Application Passwords)")
 			return exitUsage
 		}
 		c.WordPress.Site, c.WordPress.User, c.WordPress.Password = strings.TrimRight(o.url, "/"), o.user, o.token
+	case "skilljar":
+		if o.token == "" {
+			fmt.Fprintln(stderr, "si: Skilljar login needs --token <API key> (Skilljar dashboard: Organization settings, API Credentials)")
+			return exitUsage
+		}
+		c.SkillJar.Key = o.token
 	default:
-		return usageErr(stderr, fmt.Sprintf("unknown service %q (use linkedin, devto, hashnode, ghost or wordpress)", svc))
+		return usageErr(stderr, fmt.Sprintf("unknown service %q (use linkedin, devto, hashnode, ghost, wordpress or skilljar)", svc))
 	}
 	if err := publish.Save(c); err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
@@ -452,7 +461,7 @@ func publishLogout(rest []string, stdout, stderr io.Writer) int {
 	}
 	svcs := rest
 	if len(svcs) == 0 {
-		svcs = []string{"linkedin", "devto", "hashnode", "ghost", "wordpress"}
+		svcs = []string{"linkedin", "devto", "hashnode", "ghost", "wordpress", "skilljar"}
 	}
 	for _, s := range svcs {
 		switch s {
@@ -466,6 +475,8 @@ func publishLogout(rest []string, stdout, stderr io.Writer) int {
 			c.Ghost = publish.Creds{}.Ghost
 		case "wordpress":
 			c.WordPress = publish.Creds{}.WordPress
+		case "skilljar":
+			c.SkillJar = publish.Creds{}.SkillJar
 		default:
 			return usageErr(stderr, fmt.Sprintf("unknown service %q", s))
 		}

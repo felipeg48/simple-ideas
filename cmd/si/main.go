@@ -109,8 +109,11 @@ Usage:
   si publish <file.md> --to linkedin|devto|hashnode|ghost|wordpress [--url URL] [--base-url URL] [--canonical URL] [--public] [--copy] [--yes]
         a deck to LinkedIn as a document post (its PDF), an article as a LinkedIn link
         post or to dev.to / Hashnode; a dry run that prints the requests unless --yes
-  si publish login linkedin|devto|hashnode|ghost|wordpress [--token T] [--client-id ID --client-secret S] [--url site] [--user name]
-  si publish logout [linkedin|devto|hashnode|ghost|wordpress]
+  si publish <course> --to skilljar [--base-url URL] [--yes]
+        a course (_course.md) to Skilljar: sections, HTML lessons, videos and SCORM lessons; the videos
+        and packages go to <course>/.si/publish/skilljar/, which Skilljar fetches from --base-url
+  si publish login linkedin|devto|hashnode|ghost|wordpress|skilljar [--token T] [--client-id ID --client-secret S] [--url site] [--user name]
+  si publish logout [linkedin|devto|hashnode|ghost|wordpress|skilljar]
         store or forget a login (in your config dir, mode 0600; see docs/publish.md)
   si qr <text|URL|-> [-o name[.png|.jpg|.svg|.pdf]] [--png --jpg --svg --pdf | --type png,svg] [--terminal]
         a QR code (default qr.png, 1024 px); --wifi SSID [--password P] [--security WPA|WEP]
