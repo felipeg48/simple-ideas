@@ -120,6 +120,71 @@ func exportMindmap(chrome, htmlPath, out, name string, svg, png, pdf bool, scale
 	return filepath.ToSlash(rel), nil
 }
 
+var shot3DRE = regexp.MustCompile(`<pre[^>]*id="si-shot3d"`)
+
+// exportMindmap3D writes <name>.png (the 3D view of the first map, with its
+// floors, at the default camera; Chrome's software WebGL) and
+// pdfs/<name>.pdf (one page: that picture) for a view: 3d page. 3D is raster
+// only: --svg keeps the 2D maps.
+func exportMindmap3D(chrome, htmlPath, out, name string, png, pdf bool, scale float64, stdout io.Writer) (pdfRel string, err error) {
+	const w, h = 1600, 1000
+	abs, err := filepath.Abs(htmlPath)
+	if err != nil {
+		return "", err
+	}
+	url := "file://" + filepath.ToSlash(abs) + "#si-shot3d"
+	run := func(args ...string) ([]byte, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+		defer cancel()
+		all := append(append([]string{}, chromeGL...), fmt.Sprintf("--window-size=%d,%d", w, h), "--virtual-time-budget=8000")
+		return exec.CommandContext(ctx, chrome, append(all, args...)...).CombinedOutput()
+	}
+	dom, err := run("--dump-dom", url)
+	if err != nil || !shot3DRE.Match(dom) { // software WebGL on a busy machine: one more try
+		dom, err = run("--dump-dom", url)
+	}
+	if err != nil {
+		return "", fmt.Errorf("chrome: %v", err)
+	}
+	if !shot3DRE.Match(dom) {
+		return "", fmt.Errorf("the page did not draw its 3D view (no WebGL in this Chrome?)")
+	}
+	tmp, err := os.MkdirTemp("", "si-map3d-")
+	if err != nil {
+		return "", err
+	}
+	defer os.RemoveAll(tmp)
+	shot := filepath.Join(tmp, name+".png")
+	if png {
+		shot, _ = filepath.Abs(filepath.Join(out, name+".png"))
+	}
+	if msg, err := run(fmt.Sprintf("--force-device-scale-factor=%g", scale), "--screenshot="+shot, url); err != nil {
+		return "", fmt.Errorf("png: %v %s", err, strings.TrimSpace(string(msg)))
+	}
+	if png {
+		fmt.Fprintf(stdout, "  %-28s (png, 3D view, %d × %d)\n", name+".png", int(w*scale), int(h*scale))
+	}
+	if !pdf {
+		return "", nil
+	}
+	page := filepath.Join(tmp, name+"-3d.html")
+	doc := fmt.Sprintf(`<!doctype html><meta charset="utf-8"><style>@page{size:%dpx %dpx;margin:0}html,body{margin:0}img{display:block;width:%dpx;height:%dpx}</style><img src="%s" alt="">`,
+		w, h, w, h, "file://"+filepath.ToSlash(shot))
+	if err := os.WriteFile(page, []byte(doc), 0o644); err != nil {
+		return "", err
+	}
+	rel := filepath.Join("pdfs", name+".pdf")
+	p, _ := filepath.Abs(filepath.Join(out, rel))
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		return "", err
+	}
+	if err := chromeRun(chrome, "--no-pdf-header-footer", "--print-to-pdf="+p, "file://"+filepath.ToSlash(page)); err != nil {
+		return "", fmt.Errorf("pdf: %v", err)
+	}
+	fmt.Fprintf(stdout, "  %-28s (pdf, 3D view, 1 page)\n", rel)
+	return filepath.ToSlash(rel), nil
+}
+
 func chromeRun(chrome string, args ...string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -131,10 +196,10 @@ func chromeRun(chrome string, args ...string) error {
 }
 
 // runMindmap is `si mindmap import <file> [-o out.md]` and
-// `si mindmap export <map.md> --to opml|freemind|xmind|mermaid [--map id] [-o file]`.
+// `si mindmap export <map.md> --to opml|freemind|xmind|xmind8|mermaid [--map id] [-o file]`.
 func runMindmap(args []string, o *options, stdout, stderr io.Writer) int {
 	if len(args) != 2 || (args[0] != "import" && args[0] != "export") {
-		return usageErr(stderr, "mindmap takes import <file.opml|.mm|.xmind|.mmd> or export <map.md> --to opml|freemind|xmind|mermaid")
+		return usageErr(stderr, "mindmap takes import <file.opml|.mm|.xmind|.mmd> or export <map.md> --to opml|freemind|xmind|xmind8|mermaid")
 	}
 	raw, err := os.ReadFile(args[1])
 	if err != nil {
@@ -163,9 +228,9 @@ func runMindmap(args []string, o *options, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "si: %s → %s (%d map%s, %d topics)\n", args[1], dest, maps, map[bool]string{true: "", false: "s"}[maps == 1], topics)
 		return exitOK
 	}
-	ext := map[string]string{"opml": ".opml", "freemind": ".mm", "xmind": ".xmind", "mermaid": ".mmd"}[o.to]
+	ext := map[string]string{"opml": ".opml", "freemind": ".mm", "xmind": ".xmind", "xmind8": ".xmind", "mermaid": ".mmd"}[o.to]
 	if ext == "" {
-		return usageErr(stderr, "mindmap export needs --to opml|freemind|xmind|mermaid")
+		return usageErr(stderr, "mindmap export needs --to opml|freemind|xmind|xmind8|mermaid")
 	}
 	data, err := mindmap.Export(mindmap.Parse(string(raw)), o.to, o.mapID)
 	if err != nil {

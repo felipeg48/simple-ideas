@@ -262,10 +262,19 @@ self-contained file. A browser without
 WebGL shows the map in 2D with a short note. Reduced motion skips the grow-in,
 the flow and the camera flights.
 
-On a phone held upright, the 3D view starts closer, on the central topic and
-its first ring of branches; pan, zoom or Fit for the rest. Its **List** tool
-shows the map as the nested list it was written as, and **Map** brings the 3D
-view back.
+On a phone (a view 480 px wide or less, or any upright one: a tablet held
+upright too) the 3D view has its own layout: every branch on one side of the
+central topic, the camera in front of it so the map runs down the screen and
+the labels read level, a wider lens in perspective, and linked maps lined up
+past the far end of the map, low, so they never cover it. Fit shows the whole
+map while a first-level label stays at least 12 px tall; past that, the map
+without its floors, then the central topic and its first ring (pan or pinch for
+the rest). The tools turn into finger-sized icons that wrap (⌕ Find, ▶ Play,
+◈ camera, ▦ kind, ☰ List, ⤢ Fit; 2D, + and − keep their text), and a topic's
+card opens at the top, full width. Touch: one finger orbits, two fingers pinch
+to zoom and pan, a tap on a topic opens its card (a pinch never does). The
+**List** tool shows the map as the nested list it was written as, and **Map**
+brings the 3D view back.
 
 ### Looks
 
@@ -336,9 +345,20 @@ si build map.md --pdf              # pdfs/map.pdf: one page per map, sized to it
 si build map.md --mp4              # map.mp4: the first map's Play, branch by branch (needs ffmpeg)
 ```
 
-Exports draw the 2D map (a `view: 3d` map too), with its theme, lines, moved
-topics and watermark; the PDF also has the linked maps, and a `map ›` topic
-there jumps to its page. They need headless Chrome, like `--pdf` for decks.
+Exports draw the 2D map, with its theme, lines, moved topics and watermark;
+the PDF also has the linked maps, and a `map ›` topic there jumps to its page.
+
+A `view: 3d` page exports its 3D view instead: `--png` writes `map.png`, the
+first map with its floors at the default camera, in the page's kind, camera
+and theme (1600 × 1000 at `--scale`, up to 4×), rendered by Chrome's software
+WebGL; `--pdf` writes `pdfs/map.pdf`, one page of that picture. The 3D view has
+no SVG: it is raster only, so `--svg` on a 3D page writes the 2D maps
+(`map-<id>.svg`) and says so.
+
+```bash
+si build payments.md --png --pdf --scale 2   # view: 3d → payments.png, pdfs/payments.pdf
+```
+ They need headless Chrome, like `--pdf` for decks.
 `--mp4` films Play: the overview, then each first-level branch with the rest
 dimmed (2.5 s each, a short zoom between), and the overview again; it also
 needs ffmpeg (`brew install ffmpeg`), an optional tool like Chrome. A
@@ -354,11 +374,18 @@ si mindmap import plan.opml          # → plan.md (also .mm FreeMind, .xmind XM
 si mindmap import plan.xmind -o maps/plan.md
 si mindmap export map.md --to xmind  # → map.xmind (opml, freemind, xmind, mermaid)
 si mindmap export map.md --to mermaid --map refunds -o -   # one map, to stdout
+si mindmap export map.md --to xmind8 -o map-x8.xmind       # the legacy XMind 8 file
 ```
 
 Import keeps the topics, their order and web links; every XMind sheet becomes
-a map. Export writes one map (the first, or `--map id`); XMind takes every
-map, one sheet each. Pictures, badges, sticky notes and code stay in si.
+a map (XMind and XMind 8 files alike). Export writes one map (the first, or
+`--map id`); XMind takes every map, one sheet each. `xmind8` writes the XMind 8
+file (a zip of `content.xml` in the xmind-2.0 namespace, `meta.xml` and
+`META-INF/manifest.xml`) for XMind 8 and the tools that read only it: badges
+become labels, web links and `→ #id` links to another map (the central topic
+of that sheet) become topic links, and a code topic becomes a note on its
+parent; importing it back gives the badges and map links again. Pictures,
+sticky-note looks and the other formats' missing pieces stay in si.
 Import never overwrites a file.
 
 ### In the terminal

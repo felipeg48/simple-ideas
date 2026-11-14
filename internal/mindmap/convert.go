@@ -196,13 +196,27 @@ func fromXMind(data []byte) ([]*Map, error) {
 			return nil, err
 		}
 		var out []*Map
+		roots := map[string]string{} // a sheet's central topic id → #its map
 		for _, sheet := range root.Kids {
 			for _, top := range sheet.Kids {
 				if top.XName.Local == "topic" {
 					t := xmind8(top)
+					roots[top.attr("id")] = "#" + slug(t.Text)
 					out = append(out, &Map{Title: t.Text, Topics: t.Kids})
 				}
 			}
+		}
+		var fix func([]*Topic)
+		fix = func(ts []*Topic) { // xmind:#topic-id links to another sheet become → #map
+			for _, t := range ts {
+				if strings.HasPrefix(t.Target, "xmind:#") {
+					t.Target = roots[strings.TrimPrefix(t.Target, "xmind:#")]
+				}
+				fix(t.Kids)
+			}
+		}
+		for _, m := range out {
+			fix(m.Topics)
 		}
 		return out, nil
 	}
@@ -215,6 +229,12 @@ func xmind8(n xnode) *Topic {
 		switch k.XName.Local {
 		case "title":
 			t.Text = oneLine(k.Text)
+		case "labels":
+			for _, l := range k.Kids {
+				if l.XName.Local == "label" && t.Badge == "" {
+					t.Badge = oneLine(l.Text)
+				}
+			}
 		case "children":
 			for _, ts := range k.Kids {
 				for _, c := range ts.Kids {
@@ -281,7 +301,7 @@ func fromMermaid(src string) ([]*Map, error) {
 }
 
 // Export writes one map (the first, or mapID) in another format; XMind
-// takes every map, one sheet each.
+// (xmind: Zen/JSON, xmind8: the legacy XML) takes every map, one sheet each.
 func Export(d *Doc, format, mapID string) ([]byte, error) {
 	maps := d.Maps()
 	if len(maps) == 0 {
@@ -417,10 +437,138 @@ func Export(d *Doc, format, mapID string) ([]byte, error) {
 		if err := z.Close(); err != nil {
 			return nil, err
 		}
+	case "xmind8":
+		if err := writeXMind8(&b, maps, title); err != nil {
+			return nil, err
+		}
 	default:
-		return nil, fmt.Errorf("unknown format %q (use opml, freemind, xmind or mermaid)", format)
+		return nil, fmt.Errorf("unknown format %q (use opml, freemind, xmind, xmind8 or mermaid)", format)
 	}
 	return b.Bytes(), nil
+}
+
+// XMind 8 (legacy): content.xml in the xmind-2.0 namespace, meta.xml and
+// META-INF/manifest.xml in a zip. Badges are labels, web links and links to
+// another map (→ #id, to that sheet's central topic) are xlink:href, and code
+// topics are notes on their parent.
+const (
+	xmind8NS   = "urn:xmind:xmap:xmlns:content:2.0"
+	xmind8Meta = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<meta xmlns="urn:xmind:xmap:xmlns:meta:2.0" version="2.0"><Creator><Name>simple-ideas</Name></Creator></meta>
+`
+	xmind8Manifest = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<manifest xmlns="urn:xmind:xmap:xmlns:manifest:1.0" password-hint=""><file-entry full-path="content.xml" media-type="text/xml"/><file-entry full-path="META-INF/" media-type=""/><file-entry full-path="META-INF/manifest.xml" media-type="text/xml"/><file-entry full-path="meta.xml" media-type="text/xml"/></manifest>
+`
+)
+
+type x8Content struct {
+	XMLName xml.Name   `xml:"urn:xmind:xmap:xmlns:content:2.0 xmap-content"`
+	Attrs   []xml.Attr `xml:",any,attr"`
+	Sheets  []x8Sheet  `xml:"sheet"`
+}
+
+type x8Sheet struct {
+	ID    string   `xml:"id,attr"`
+	Topic *x8Topic `xml:"topic"`
+	Title string   `xml:"title"`
+}
+
+type x8Topic struct {
+	ID       string      `xml:"id,attr"`
+	Struct   string      `xml:"structure-class,attr,omitempty"`
+	Href     string      `xml:"xlink:href,attr,omitempty"`
+	Title    string      `xml:"title"`
+	Notes    *x8Notes    `xml:"notes,omitempty"`
+	Labels   *x8Labels   `xml:"labels,omitempty"`
+	Children *x8Children `xml:"children,omitempty"`
+}
+
+type x8Labels struct {
+	Label []string `xml:"label"`
+}
+
+type x8Notes struct {
+	Plain string `xml:"plain"`
+}
+
+type x8Children struct {
+	Topics struct {
+		Type  string     `xml:"type,attr"`
+		Topic []*x8Topic `xml:"topic"`
+	} `xml:"topics"`
+}
+
+func writeXMind8(w io.Writer, maps []*Map, title func(*Map) string) error {
+	roots := map[string]string{} // map id or title slug → its central topic's id
+	for i, m := range maps {
+		id := fmt.Sprintf("si-map-%d", i+1)
+		roots[slug(title(m))] = id
+		if m.ID != "" {
+			roots[m.ID] = id
+		}
+	}
+	n := 0
+	var topic func(t *Topic) *x8Topic
+	topic = func(t *Topic) *x8Topic {
+		n++
+		x := &x8Topic{ID: fmt.Sprintf("si%05d", n), Title: t.Text}
+		if t.Badge != "" {
+			x.Labels = &x8Labels{Label: []string{t.Badge}}
+		}
+		if strings.HasPrefix(t.Target, "http") {
+			x.Href = t.Target
+		} else if id, ok := roots[strings.TrimPrefix(t.Target, "#")]; ok && strings.HasPrefix(t.Target, "#") {
+			x.Href = "xmind:#" + id
+		}
+		var notes []string
+		for _, k := range t.Kids {
+			if k.Code != nil {
+				notes = append(notes, strings.TrimRight(k.Code.Text, "\n"))
+				continue
+			}
+			if x.Children == nil {
+				x.Children = &x8Children{}
+				x.Children.Topics.Type = "attached"
+			}
+			x.Children.Topics.Topic = append(x.Children.Topics.Topic, topic(k))
+		}
+		if len(notes) > 0 {
+			x.Notes = &x8Notes{Plain: strings.Join(notes, "\n\n")}
+		}
+		return x
+	}
+	c := x8Content{Attrs: []xml.Attr{
+		{Name: xml.Name{Local: "xmlns:fo"}, Value: "http://www.w3.org/1999/XSL/Format"},
+		{Name: xml.Name{Local: "xmlns:svg"}, Value: "http://www.w3.org/2000/svg"},
+		{Name: xml.Name{Local: "xmlns:xhtml"}, Value: "http://www.w3.org/1999/xhtml"},
+		{Name: xml.Name{Local: "xmlns:xlink"}, Value: "http://www.w3.org/1999/xlink"},
+		{Name: xml.Name{Local: "version"}, Value: "2.0"},
+	}}
+	for i, m := range maps {
+		root := topic(&Topic{Text: title(m), Kids: m.Topics})
+		root.ID = fmt.Sprintf("si-map-%d", i+1)
+		root.Struct = "org.xmind.ui.map.unbalanced"
+		c.Sheets = append(c.Sheets, x8Sheet{ID: fmt.Sprintf("si-sheet-%d", i+1), Topic: root, Title: title(m)})
+	}
+	body, err := xml.Marshal(c)
+	if err != nil {
+		return err
+	}
+	z := zip.NewWriter(w)
+	for _, f := range []struct{ name, text string }{
+		{"content.xml", `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + "\n" + string(body) + "\n"},
+		{"meta.xml", xmind8Meta},
+		{"META-INF/manifest.xml", xmind8Manifest},
+	} {
+		fw, err := z.Create(f.name)
+		if err != nil {
+			return err
+		}
+		if _, err := io.WriteString(fw, f.text); err != nil {
+			return err
+		}
+	}
+	return z.Close()
 }
 
 // mermaidText keeps a topic plain for Mermaid: brackets would start a shape.

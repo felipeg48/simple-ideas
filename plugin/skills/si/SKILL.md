@@ -318,9 +318,10 @@ Not everything is a slide deck. Pick the type by what the reader does:
   auto/harbor/blueprint/ink/garden, `flow: on` for dots along the lines (a
   fence: `layout= lines= nodes= theme= flow=`). On a slide, ```` ```mindmap steps ````
   reveals one first-level branch per click: write one `[CLICK]` per branch in
-  `Notes:`. Exports: `si build map.md --svg --png --pdf`; other tools:
+  `Notes:`. Exports: `si build map.md --svg --png --pdf` (a `view: 3d` map:
+  PNG and PDF of the 3D view; 3D has no SVG, `--svg` writes the 2D map); other tools:
   `si mindmap import file.opml|.mm|.xmind|.mmd`, `si mindmap export map.md --to
-  opml|freemind|xmind|mermaid`. The Studio edits maps visually (Map view);
+  opml|freemind|xmind|xmind8|mermaid` (`xmind8`: the legacy XMind 8 file). The Studio edits maps visually (Map view);
   the Markdown it writes is the same you would write by hand.
   Keep one idea per branch and at most about seven branches per map; move
   detail into a linked map instead of a deep tree.

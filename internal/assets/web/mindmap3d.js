@@ -12,12 +12,13 @@
 (function () {
   'use strict';
   if (!window.THREE || !THREE.OrbitControls) return;
-  /* #si-play3d-K (si build --mp4) films still views: no motion either */
-  var reduce = (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) || /^#si-play3d-/.test(location.hash);
+  /* #si-play3d-K (si build --mp4) and #si-shot3d (--png, --pdf) film still views: no motion either */
+  var still = /^#si-(play3d-|shot3d)/.test(location.hash);
+  var reduce = (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) || still;
   var S = 200; /* texture pixels per world unit */
   var LV = [{ fs: 60, fw: 700, d: 1.4, h: 0.95, pad: 46 }, { fs: 46, fw: 600, d: 1.02, h: 0.62, pad: 34 }, { fs: 38, fw: 500, d: 0.82, h: 0.36, pad: 28 }];
   var HG = 1.25, GAP = 0.42, FH = 20;
-  var ISO = new THREE.Vector3(1, 1, 1).normalize(), PERSP = new THREE.Vector3(0.75, 0.95, 1.25).normalize();
+  var ISO = new THREE.Vector3(1, 1, 1).normalize(), PERSP = new THREE.Vector3(0.75, 0.95, 1.25).normalize(), PHONE = new THREE.Vector3(0.32, 1.15, 1).normalize();
   var meas = document.createElement('canvas').getContext('2d');
   var probe = document.createElement('canvas'); probe.width = probe.height = 1;
   var pctx = probe.getContext('2d');
@@ -69,7 +70,7 @@
     try { this.renderer = new THREE.WebGLRenderer({ antialias: true }); } catch (e) { this.ok = false; return; }
     this.ok = true;
     var r = this.renderer;
-    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, still ? 4 : 2)); /* an export keeps --scale up to 4× */
     r.outputEncoding = THREE.sRGBEncoding;
     r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
     this.box = document.createElement('div'); this.box.className = 'si-mm-3d'; this.box.hidden = true;
@@ -114,14 +115,23 @@
     var c = this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
     c.enableDamping = true; c.dampingFactor = 0.08; c.screenSpacePanning = true; c.maxPolarAngle = 1.32;
     c.minZoom = 0.25; c.maxZoom = 8;
+    /* touch: one finger orbits, two pinch to zoom and pan; a tap opens the card (pointer) */
+    c.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
   };
+  /* a phone: a narrow (≤ 480 px) or upright view lays the branches on one side
+     and frames closer; the tools turn to icons (.si-mm-phone in mindmap.css) */
   P.resize = function () {
     var w = this.box.clientWidth, h = this.box.clientHeight;
     if (!w || !h) return;
-    var a = w / h;
+    var a = w / h, phone = w <= 480 || h > w;
     this.renderer.setSize(w, h, false);
     this.ortho.left = -FH * a / 2; this.ortho.right = FH * a / 2; this.ortho.top = FH / 2; this.ortho.bottom = -FH / 2; this.ortho.updateProjectionMatrix();
-    this.persp.aspect = a; this.persp.updateProjectionMatrix();
+    this.persp.aspect = a; this.persp.fov = a < 1 ? 44 : 32; /* upright: a wider lens, or the sides fall off */ this.persp.updateProjectionMatrix();
+    this.el.classList.toggle('si-mm-phone', phone);
+    if (phone !== this.phone) {
+      this.phone = phone;
+      if (this.on && this.main) { this.closeCard(); if (this.tour) this.tourStop(true); this.rebuild(false); this.fit(0); }
+    }
   };
 
   /* the map's look, from its --si-mm-* tokens (the deck theme, dark mode, or a map theme) */
@@ -226,12 +236,13 @@
     var k = vis(n), z = top + (n.sz - kidsSpan(k)) / 2;
     k.forEach(function (c) { place(c, x + side * (n.w / 2 + HG + c.w / 2), z, side); z += c.sz + GAP; });
   }
-  function layout(root) {
+  /* one: every branch on the right (a phone: the map runs down the screen, half as wide) */
+  function layout(root, one) {
     root.x = 0; root.z = 0; root.side = 1;
     var k = vis(root); k.forEach(spanZ);
     var total = kidsSpan(k), acc = 0, R = [], Lf = [];
-    k.forEach(function (c) { (acc + c.sz / 2 < total / 2 ? R : Lf).push(c); acc += c.sz + GAP; });
-    if (!Lf.length && R.length > 1) Lf.push(R.pop());
+    k.forEach(function (c) { (one || acc + c.sz / 2 < total / 2 ? R : Lf).push(c); acc += c.sz + GAP; });
+    if (!one && !Lf.length && R.length > 1) Lf.push(R.pop());
     [[R, 1], [Lf, -1]].forEach(function (g) { var z = -kidsSpan(g[0]) / 2; g[0].forEach(function (c) { place(c, g[1] * (root.w / 2 + HG + c.w / 2), z, g[1]); z += c.sz + GAP; }); });
   }
 
@@ -358,7 +369,8 @@
     if (n.link) { c.font = '700 28px ' + T.font; var cw = c.measureText('map ›').width + 34; rr(c, R / 2 - cw / 2, R / 2 + 22, cw, 46, 23); c.fill(); c.fillStyle = k.top; c.fillText('map ›', R / 2, R / 2 + 46); }
     var tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
     /* the cap's texture runs along the world axes; turn it to read upright from the camera (hexagons are turned 30° more) */
-    tex.center.set(0.5, 0.5); tex.rotation = 3 * Math.PI / 4 + (n.shape === 'hex' ? -Math.PI / 6 : 0);
+    var d = this.dir(); /* turned by how far the camera stands from the isometric 45° */
+    tex.center.set(0.5, 0.5); tex.rotation = 3 * Math.PI / 4 + (n.shape === 'hex' ? -Math.PI / 6 : 0) + (this.phone ? Math.atan2(d.x, d.z) - Math.PI / 4 : 0);
     return tex;
   };
   P.toyMesh = function (n, T) {
@@ -426,7 +438,7 @@
       if (self.kind === 'bricks') snap(n, d); else if (self.kind === 'toy') toySize(n, d);
       vis(n).forEach(function (c, i) { prep(c, d + 1, d === 0 ? i % 5 : b, d === 0 ? i : top, idp + '.' + i, path.concat(n.t)); });
     })(root, 0, 0, -1, 'r', []);
-    layout(root);
+    layout(root, this.phone);
     all.slice().sort(function (a, b) { return a.dd - b.dd; }).forEach(function (n, i) { n.i = i; });
     all.forEach(function (n) {
       var branch = T.b[n.branch], k = {
@@ -484,29 +496,31 @@
 
   /* ---------- floors: linked maps hover above the topic that opens them ---------- */
   P.addFloors = function (main, T, anim) {
-    var self = this, level = 0, seen = {};
+    var self = this, level = 0, seen = {}, far = new THREE.Box3().setFromObject(main).min.z - 0.8;
     main.userData.all.forEach(function (n) {
       if (!n.link || n.link === main.userData.id || seen[n.link]) return;
       seen[n.link] = true;
       var sub = self.buildMap(n.link, T, anim), box = new THREE.Box3().setFromObject(sub), sz = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
       var k = 0.5, h = 4.2 + level * 2.9, side = n.side || 1; level++;
-      var pw = sz.x * k + 0.9, pd = sz.z * k + 0.9, fx = n.x + side * (pw / 2 - 0.45);
-      sub.scale.setScalar(k); sub.position.set(fx - c.x * k, h, n.z - c.z * k);
+      var pw = sz.x * k + 0.9, pd = sz.z * k + 0.9, fx = n.x + side * (pw / 2 - 0.45), fz = n.z;
+      /* a phone: floors line up past the far end of the map, low, so they never cover it */
+      if (self.phone) { h = 1.6; fx = Math.max(n.x, pw / 2); fz = far - pd / 2; far -= pd + 0.8; }
+      sub.scale.setScalar(k); sub.position.set(fx - c.x * k, h, fz - c.z * k);
       sub.traverse(function (o) { if (o.isMesh) o.castShadow = false; });
       var plat, edges = new THREE.Group();
-      if (self.kind === 'bricks') { plat = baseplate(pw, pd, T.glow ? mix(T.bg, '#ffffff', 0.12) : mix(T.bg, '#000000', 0.1), k); plat.position.set(fx, h, n.z); }
-      else if (self.kind === 'toy') { plat = island(pw / 2 + 0.5, pd / 2 + 0.5, T.glow ? TOY.night : TOY.day, k); plat.position.set(fx, h, n.z); }
+      if (self.kind === 'bricks') { plat = baseplate(pw, pd, T.glow ? mix(T.bg, '#ffffff', 0.12) : mix(T.bg, '#000000', 0.1), k); plat.position.set(fx, h, fz); }
+      else if (self.kind === 'toy') { plat = island(pw / 2 + 0.5, pd / 2 + 0.5, T.glow ? TOY.night : TOY.day, k); plat.position.set(fx, h, fz); }
       else {
         plat = new THREE.Mesh(new THREE.BoxGeometry(pw, 0.06, pd), new THREE.MeshPhysicalMaterial({ color: col(T.b[0]), transparent: true, opacity: 0.2, roughness: 0.15, clearcoat: 1 }));
-        plat.position.set(fx, h - 0.05, n.z); plat.receiveShadow = true;
+        plat.position.set(fx, h - 0.05, fz); plat.receiveShadow = true;
         edges = new THREE.LineSegments(new THREE.EdgesGeometry(plat.geometry), new THREE.LineBasicMaterial({ color: col(T.b[n.branch]), transparent: true, opacity: 0.7 }));
         edges.position.copy(plat.position);
       }
       var beam = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(n.x, n.h + 0.08, n.z), new THREE.Vector3(n.x, h - 0.08, n.z)]),
         new THREE.LineDashedMaterial({ color: col(T.b[n.branch]), dashSize: 0.14, gapSize: 0.1 }));
-      beam.computeLineDistances();
+      beam.computeLineDistances(); beam.visible = !self.phone; /* far off on a phone: the floor's name says which topic opens it */
       var label = self.textPlane(self.maps[n.link].title + ' ›', T.b[n.branch], '700 54px ' + T.font, 3.2);
-      label.position.set(fx - pw / 2 + 0.05, h + 0.02, n.z - pd / 2 - 0.02);
+      label.position.set(fx - pw / 2 + 0.05, h + 0.02, fz - pd / 2 - 0.02);
       [sub, plat, edges, beam, label].forEach(function (o) { self.world.add(o); });
       if (anim) [plat, edges, label].forEach(function (o) { o.visible = false; self.anims.push({ show: o, delay: 600 }); });
     });
@@ -573,14 +587,21 @@
 
   /* ---------- camera ---------- */
   P.tween = function (ms, fn, done) { this.tweens.push({ t0: performance.now(), ms: reduce ? 1 : ms, fn: fn, done: done }); };
-  P.dir = function () { return this.cam === 'iso' ? ISO : PERSP; };
-  P.fly = function (box, ms, done) {
-    var self = this, cam = this.camera, dir = this.dir(), target = box.getCenter(new THREE.Vector3()), corners = [];
+  /* a phone looks from in front (+z, a little from the right): the one-sided map runs down the screen and the labels read level */
+  P.dir = function () { return this.phone ? PHONE : this.cam === 'iso' ? ISO : PERSP; };
+  /* how many world units the view must show, top to bottom, to hold box (its bounds seen from the camera, and the aspect) */
+  P.need = function (box) {
+    var dir = this.dir(), target = box.getCenter(new THREE.Vector3()), corners = [];
     for (var i = 0; i < 8; i++) corners.push(new THREE.Vector3(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z));
-    var probeCam = cam.clone(); probeCam.position.copy(target).addScaledVector(dir, 60); probeCam.lookAt(target); probeCam.updateMatrixWorld();
+    var probeCam = this.camera.clone(); probeCam.position.copy(target).addScaledVector(dir, 60); probeCam.lookAt(target); probeCam.updateMatrixWorld();
     var inv = probeCam.matrixWorldInverse, x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
     corners.forEach(function (p) { var q = p.clone().applyMatrix4(inv); x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); y0 = Math.min(y0, q.y); y1 = Math.max(y1, q.y); });
-    var a = (this.box.clientWidth || 1) / (this.box.clientHeight || 1), need = Math.max(y1 - y0, (x1 - x0) / a) * 1.08;
+    var a = (this.box.clientWidth || 1) / (this.box.clientHeight || 1);
+    return Math.max(y1 - y0, (x1 - x0) / a) * 1.08;
+  };
+  P.fly = function (box, ms, done) {
+    var self = this, cam = this.camera, dir = this.dir(), target = box.getCenter(new THREE.Vector3());
+    var need = this.need(box);
     var fromT = this.controls.target.clone(), fromP = cam.position.clone(), fromZ = cam.zoom, toP, toZ = 1;
     if (cam === this.ortho) { toP = target.clone().addScaledVector(dir, 80); toZ = FH / need; }
     else toP = target.clone().addScaledVector(dir, (need / 2) / Math.tan(THREE.MathUtils.degToRad(this.persp.fov / 2)) + 2);
@@ -591,13 +612,17 @@
     }, done);
   };
   function boxOf(objs) { var b = new THREE.Box3(); objs.forEach(function (o) { b.expandByObject(o); }); return b; }
-  /* a portrait screen (a phone) frames the central topic and its first ring, closer; pan or Fit again for the rest */
+  /* a phone frames the whole map while a first-level label stays readable
+     (READ px tall); past that, the map without its floors, then the central
+     topic and its first ring, closer; pan or pinch for the rest */
+  var READ = 12;
   P.fit = function (ms) {
-    var portrait = (this.box.clientWidth || 1) < (this.box.clientHeight || 1) * 0.8, box;
-    if (portrait && this.main) {
+    var box = boxOf([this.world]);
+    if (this.phone && this.main) {
+      var self = this, h = this.box.clientHeight || 1, px = function (b) { return h / self.need(b) * LV[1].fs / S; };
       var ring = this.main.userData.all.filter(function (n) { return n.dd <= 1 && n.holder; }).map(function (n) { return n.holder; });
-      box = ring.length ? boxOf(ring).expandByScalar(0.3) : boxOf([this.main]);
-    } else box = boxOf([this.world]);
+      [boxOf([this.main]), ring.length ? boxOf(ring).expandByScalar(0.3) : null].forEach(function (b) { if (b && px(box) < READ) box = b; });
+    }
     this.fly(box, ms === undefined ? 700 : ms);
   };
   P.zoom = function (f) {
@@ -641,10 +666,13 @@
         cv.style.cursor = m ? 'pointer' : 'grab';
       }
     });
-    cv.addEventListener('pointerdown', function (e) { e.stopPropagation(); down = { x: e.clientX, y: e.clientY }; });
+    /* a tap is one finger that barely moved: a pinch or a two-finger pan never opens a card */
+    var fingers = 0, multi = false;
+    cv.addEventListener('pointerdown', function (e) { e.stopPropagation(); fingers++; multi = multi || fingers > 1; down = { x: e.clientX, y: e.clientY }; });
+    cv.addEventListener('pointercancel', function () { fingers = Math.max(0, fingers - 1); down = null; });
     cv.addEventListener('pointerup', function (e) {
-      var d = down; down = null;
-      if (!d || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 5) return;
+      var d = down, was = multi; down = null; fingers = Math.max(0, fingers - 1); if (!fingers) multi = false;
+      if (!d || was || Math.hypot(e.clientX - d.x, e.clientY - d.y) > (e.pointerType === 'touch' ? 10 : 5)) return;
       var m = self.hit(e);
       if (!m) { self.closeCard(); return; }
       var now = performance.now(), dbl = last.m === m && now - last.t < 380, u = m.userData;

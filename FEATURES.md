@@ -163,8 +163,10 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - A nested list becomes a map: layouts `map`, `right`, `org`, `radial`; line,
   topic and map styles; badges, pictures, sticky notes, code, links to slides,
   drill-down into other maps, folding, search, Play.
-- **3D:** pills on a floor, linked maps as glass floors, fly-in, three kinds.
-- **Import / export:** OPML, FreeMind, XMind, Mermaid; SVG, PNG, PDF, MP4.
+- **3D:** pills on a floor, linked maps as glass floors, fly-in, three kinds;
+  a phone layout (branches on one side, level labels, icon tools, touch).
+- **Import / export:** OPML, FreeMind, XMind, XMind 8, Mermaid; SVG, PNG, PDF,
+  MP4 (a 3D map: PNG, PDF and MP4 of the 3D view; SVG stays 2D).
 
 ## Timelines
 

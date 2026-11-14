@@ -533,6 +533,7 @@ var Hooks = []Hook{
 	{`.si-igf, .si-igf-node, .si-igf-arrow, .si-igf-edge, .si-igf-head, .si-igf-n, .si-igf-elbl, .si-igf-pkt`, "a flow block: its drawing, a box, an arrow (its line, head, order number and label; .is-hot while a packet rides it), a packet"},
 	{`.si-mm-moving, .si-mm-pulse, .si-mm-dim, .si-mm-wm, .si-mm-wm-corner`, "a topic being moved, a search hit, a branch dimmed by Play, the watermark (across or in the corner)"},
 	{`.si-mm-listview`, "a 3D map read as its list on a phone (the List tool)"},
+	{`.si-mm-phone`, "a 3D map on a phone (≤ 480 px wide or upright): branches on one side, icon tools, the card at the top"},
 	{`.si-tl[data-layout][data-orient], .si-tl[data-frame], .si-tl-slide, .si-tl-figure`, "a timeline (snake, line, vertical, eras or cards; landscape or portrait; data-frame: drawn as a 16:9 frame on a wide screen), the slide of a timeline page, the figure of a ```timeline fence"},
 	{`.si-tl-head, .si-tl-title, .si-tl-sub, .si-tl-legend`, "a timeline's header: title, subtitle, the eras as a legend"},
 	{`.si-tl-track, .si-tl-svg, .si-tl-rail, .si-tl-band, .si-tl-stroke`, "the track of milestones and its line: the faint rail, each era's colour band and stroke"},

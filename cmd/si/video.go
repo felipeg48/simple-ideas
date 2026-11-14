@@ -367,6 +367,10 @@ func fileKB(p string) int64 {
 
 var play3DRE = regexp.MustCompile(`<pre[^>]*id="si-play3d"[^>]*>(\d+)</pre>`)
 
+// chromeGL is headless Chrome with software WebGL (SwiftShader through ANGLE),
+// for the exports of a 3D map only.
+var chromeGL = []string{"--headless=new", "--use-mock-keychain", "--password-store=basic", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--hide-scrollbars"}
+
 // exportMindmap3DMP4 writes <name>.mp4 for a map that starts in 3D: its Play
 // (the overview, then each branch with the rest dimmed), each view rendered by
 // Chrome's software WebGL, held 2.5 s and dissolving into the next.
@@ -375,7 +379,7 @@ func exportMindmap3DMP4(chrome, htmlPath, out, name string, stdout io.Writer) er
 		return fmt.Errorf("%s", ffmpegHint)
 	}
 	abs, _ := filepath.Abs(htmlPath)
-	gl := []string{"--headless=new", "--use-mock-keychain", "--password-store=basic", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--hide-scrollbars", "--window-size=1600,1000"}
+	gl := append(append([]string{}, chromeGL...), "--window-size=1600,1000")
 	url := func(k int) string { return fmt.Sprintf("file://%s#si-play3d-%d", filepath.ToSlash(abs), k) }
 	run := func(args ...string) ([]byte, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)

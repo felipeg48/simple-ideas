@@ -44,6 +44,20 @@
 .si-mm-card div{display:flex;flex-wrap:wrap;gap:.4em;margin-block-start:.2em}
 .si-mm-card button{font:inherit;font-weight:600;font-size:.9em;border-radius:.55em;padding:.45em .7em;cursor:pointer}
 .si-mm-card .si-mm-x{position:absolute;inset-block-start:.4em;inset-inline-end:.4em;padding:.1em .45em;font-size:1.2em;line-height:1}
+/* a phone in 3D (.si-mm-phone: ≤ 480 px wide or upright): icon tools that wrap, finger-sized; the card at the top, full width */
+.si-mindmap.si-mm-is3d.si-mm-phone .si-mm-tools{max-inline-size:calc(100% - 1.5em);gap:.3em}
+.si-mindmap.si-mm-is3d.si-mm-phone .si-mm-tools button{min-inline-size:2.75rem;block-size:2.75rem;padding:0 .5em;border-radius:.6rem}
+.si-mindmap.si-mm-is3d.si-mm-phone .si-mm-tools :is([data-a="find"],[data-a="play"],[data-a="cam"],[data-a="kind"],[data-a="list"],[data-a="fit"]){font-size:0;padding:0}
+.si-mindmap.si-mm-is3d.si-mm-phone .si-mm-tools :is([data-a="find"],[data-a="play"],[data-a="cam"],[data-a="kind"],[data-a="list"],[data-a="fit"])::before{font-size:1.15rem;line-height:1}
+.si-mindmap.si-mm-is3d.si-mm-phone [data-a="find"]::before{content:"⌕";font-size:1.6rem}
+.si-mindmap.si-mm-is3d.si-mm-phone [data-a="play"]::before{content:"▶"}
+.si-mindmap.si-mm-is3d.si-mm-phone [data-a="play"][aria-pressed="true"]::before{content:"■"}
+.si-mindmap.si-mm-is3d.si-mm-phone [data-a="cam"]::before{content:"◈"}
+.si-mindmap.si-mm-is3d.si-mm-phone [data-a="kind"]::before{content:"▦"}
+.si-mindmap.si-mm-is3d.si-mm-phone [data-a="list"]::before{content:"☰"}
+.si-mindmap.si-mm-is3d.si-mm-phone [data-a="fit"]::before{content:"⤢"}
+.si-mindmap.si-mm-is3d.si-mm-phone .si-mm-tools [data-a="list"]{display:inline-block}
+.si-mindmap.si-mm-is3d.si-mm-phone .si-mm-card{inset-block:3.2em auto;inline-size:calc(100% - 1.5em);font-size:1rem}
 .si-mm-msg{position:absolute;inset-block-start:3.4em;inset-inline-start:50%;transform:translateX(-50%);z-index:3;inline-size:max-content;max-inline-size:calc(100% - 1.5em);border-radius:.6em;padding:.5em .9em;font-size:.85em}
 
 @layer si.theme{
