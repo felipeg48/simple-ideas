@@ -229,6 +229,11 @@ Not everything is a slide deck. Pick the type by what the reader does:
   `<!-- solution -->` and `<!-- end -->`. A note only the instructor sees is
   `instructor: …` in a lesson's front matter, never in its text. Learner build
   `si build course/`, instructor build `--instructor`; `si check course/`.
+  For an LMS `--scorm` (one SCO per lesson) or `--scorm=single`; printed
+  handouts `--pdf` (workbook) and `--instructor --pdf` (instructor guide);
+  `si publish course/ --to skilljar --base-url URL` (a dry run without
+  `--yes`). A quiz is a self-check, not a secure exam: never promise learners
+  it is graded securely.
 - **Steps:** in a lab or a guide, `## Step 1: Start the stack` shows a
   numbered badge. Put the time and prerequisites in a key/value table at the
   top (`| | |` header, then `| **Time** | 10 minutes |`).

@@ -519,6 +519,7 @@ nav: left · accordion · sticky
 
 - Readings, slides, videos, labs, instructor demos and quizzes, in modules
 - `si build course/ -o html/`: a website bundle with a home page; `--zip`, `--instructor`
+- `--scorm` for any LMS, `--pdf` for a workbook, `si publish --to skilljar`
 - Progress stays in the learner's browser: ticks, rings, Continue, a certificate
 
 Notes: (1 min)
@@ -527,12 +528,18 @@ holds the modules, and each link under a module is a lesson: a page is a
 reading, a deck becomes slides that present themselves, a video file plays
 in the page, a lab can be ticked off, and a quiz is scored. The learner's
 build leaves the instructor demos out, and the instructor's build keeps them
-with the teleprompter and the lab solutions. [CLICK]
+with the teleprompter and the lab solutions. The same course packs as SCORM
+for any learning platform, prints as a workbook for learners and a guide for
+the instructor, and publishes straight to SkillJar. [CLICK]
 
 Points:
 - Lesson kinds come from the link target; `· kind=` overrides
 - `nav:` also places the menu of guides, books and sites: left, right, top, bottom
 - `si new web-course --type course` writes an example with every kind
+- `--scorm` one SCO per lesson, `--scorm=single` one for the course
+- `--pdf` workbook; `--instructor --pdf` the guide with answers and runbooks
+- Skilljar fetches videos and packages from `--base-url`; dry run unless `--yes`
+- A quiz is a self-check: answers only as hashes, not a secure exam
 - RULES.md §28
 
 ---
@@ -550,6 +557,8 @@ si doctor                  # the optional programs (Chrome, ffmpeg, git…): fou
 si new <name>              # scaffold a deck (the showcase, every rule)
 si new <name> --type article   # a small starter: deck, article, guide, book, course, site, page, lab, demo, mindmap, mindmap3d, codeshow
 si build course/ -o html/ --zip   # a course as a website bundle (+ zip); --instructor for the instructor's edition
+si build course/ -o html/ --scorm --pdf   # + <course>-scorm12.zip for an LMS and the learner workbook PDF
+si publish course/ --to skilljar --base-url URL   # a dry run; --yes sends it (si publish login skilljar first)
 si new <name> --type website --kind resume   # a website made for one job: resume, portfolio, landing
 si publish talk.md --to linkedin   # a dry run of the post; --yes sends it (also devto, hashnode, ghost, wordpress)
 si code show.md --mp4      # a code show as video (si build map.md --mp4: a mind map's Play; needs ffmpeg)

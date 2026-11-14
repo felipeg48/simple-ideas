@@ -1,7 +1,7 @@
 # si publish
 
 `si publish` sends a deck or an article to LinkedIn, dev.to, Hashnode, Ghost or
-WordPress. It is
+WordPress, and a course to Skilljar. It is
 always a **dry run** (it prints the exact requests, secrets masked) unless you
 add `--yes`. Logins live in your config dir (`~/Library/Application
 Support/si/publish.json` on macOS, `~/.config/si/publish.json` on Linux), file
@@ -16,8 +16,9 @@ si publish article.md --to devto --base-url https://me.dev/retry      # dry run;
 si publish article.md --to hashnode --canonical https://me.dev/retry --yes
 si publish article.md --to ghost --yes             # a draft on your Ghost site; --public publishes
 si publish article.md --to wordpress --yes         # a draft on your WordPress site
-si publish login linkedin|devto|hashnode|ghost|wordpress …   # see below
-si publish logout [linkedin|devto|hashnode|ghost|wordpress]
+si publish web-course --to skilljar --base-url https://files.example.com/web-course/   # a course; see below
+si publish login linkedin|devto|hashnode|ghost|wordpress|skilljar …   # see below
+si publish logout [linkedin|devto|hashnode|ghost|wordpress|skilljar]
 ```
 
 ## What is sent
@@ -119,6 +120,57 @@ publish).
 is the article as HTML, `status` `draft` unless `--public` (`publish`). Tags
 are not sent: the API wants tag ids; si notes it. Login: `si publish login
 wordpress --url https://site --user you --token "abcd efgh ijkl …"`.
+
+## Skilljar (REST API, checked 2026-11-14)
+
+A course folder (`_course.md`) goes to Skilljar:
+
+```bash
+si publish login skilljar --token <API key>      # Skilljar dashboard: Organization settings, API Credentials
+si publish web-course --to skilljar --base-url https://files.example.com/web-course/   # dry run
+si publish web-course --to skilljar --base-url https://files.example.com/web-course/ --yes
+```
+
+Built from Skilljar's public OpenAPI description
+(<https://api.skilljar.com/docs/>, spec at
+<https://api.skilljar.com/docs/schema.yml>) and its getting-started article
+(<https://support.gainsight.com/Skilljar/Develop_and_Customize/API/Getting_started_with_the_Skilljar_API>):
+
+- Base URL `https://api.skilljar.com/v1`; HTTP Basic with the API key as the
+  user name and an empty password; JSON in and out.
+- `POST /courses` (`title`, `short_description`,
+  `enforce_sequential_navigation: false`, `manual_course_time` from
+  `duration:`, 15 characters at most), then `PATCH /courses/{id}` on the next
+  publish. Skilljar has no course level field, so `level:` is not sent.
+- Lessons are one ordered list per course: `POST /lessons` with `course_id`,
+  `title`, `order`, `type`, `time_seconds`; `PATCH /lessons/{id}` on the next
+  publish; `DELETE /lessons/{id}` for a lesson no longer in the course.
+- A module is a `SECTION` lesson; a reading is an `HTML` lesson
+  (`content_html`: the page's text, pictures inlined); a video is an `ASSET`
+  lesson (`POST /assets` with `content_url`, then `content_asset_id`); a
+  slides, lab or quiz lesson, and a reading with a quiz in it, is a
+  `WEB_PACKAGE` lesson (`POST /web-packages` with `content_url` and
+  `web_package: {title, redirect_on_completion, sync_completion}`, then
+  `content_web_package_id`): a SCORM 1.2 zip of that one page.
+- **The API takes no file uploads**: Skilljar fetches each video and package
+  from `content_url`. si writes them into `<course>/.si/publish/skilljar/`
+  (in a dry run too); put that folder online and pass its address as
+  `--base-url`. `--yes` refuses to run without it when the course has a video
+  or a package.
+- Ids are kept in `<course>/.si/publish/skilljar.json` (the course, each
+  lesson, each asset or package with its file's SHA-256), so a re-publish
+  updates in place and fetches only the files that changed. Instructor demos
+  are never published.
+- Not sent: publishing to a domain (`/domains/{name}/published-courses`); do
+  that once in the Skilljar dashboard.
+
+**Needs a check against a real account.** The client follows the published
+spec and is tested against fakes only. The spec does not list the values of
+a web package's or asset's processing `state`, so si does not wait for
+processing; it does not say whether a `SECTION` must come first or whether
+`order` must be contiguous (si sends 1, 2, 3 … with each section before its
+lessons). Old assets and packages are left in Skilljar after a changed file
+is fetched again (the API refuses to delete one still in use).
 
 ## Tests
 

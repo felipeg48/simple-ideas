@@ -117,9 +117,13 @@ an example for every rule: [RULES.md](docs/RULES.md).
   present themselves, videos, labs, instructor demos, quizzes), a course home
   with Continue, progress rings and ticks kept in the browser, a completion
   page with a printable certificate; learner and instructor builds, a website
-  bundle (`--zip`).
+  bundle (`--zip`), a SCORM 1.2 package for any LMS (`--scorm`, one SCO per
+  lesson or `--scorm=single`; status, score and progress reported), a learner
+  workbook and an instructor guide as PDF (`--pdf`), and `si publish --to
+  skilljar` (sections, HTML, video and SCORM lessons, updated in place).
 - **Quizzes:** `type: quiz` pages and ```` ```quiz ```` fences: single and
-  multiple choice, explanations, a score and a pass mark.
+  multiple choice, explanations, a score and a pass mark; learner pages keep
+  the right answers only as hashes (a self-check, not a secure exam).
 - **Navigator layouts:** `nav:` puts the menu of a course, guide, book or site
   left, right, top or bottom, sticky or not, as an accordion, collapsed or
   numbered; on a phone it folds into a Menu button.

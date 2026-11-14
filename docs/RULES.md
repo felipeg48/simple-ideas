@@ -3765,8 +3765,15 @@ A fence takes the mark as an option: ```` ```quiz pass=80% ````. A question
 is right when exactly its right answers are picked; the score is the share
 of right questions. Without a pass mark, answering every question completes
 the quiz. `si check` reports a question with fewer than two answers or none
-marked right. The answers are in the page, so a quiz checks understanding;
-it is not an exam.
+marked right.
+
+**A quiz is a self-check, not a secure exam.** A learner page keeps no right
+answers in its source: each question carries only a SHA-256 hash of a
+per-quiz salt and the ids of its right answers, and the page hashes the
+learner's picks the same way to check them. Explanations are shown after
+answering. A question has few answers, so anyone can try them all, or read
+the explanations in the source; use an LMS's own exam for grades that matter.
+The instructor build (`--instructor`, `si play`) keeps the plain answers.
 
 ### Lab solutions
 
@@ -3813,7 +3820,69 @@ certificate.
   module, an unknown `kind=`, bad `minutes=`, an unfilmed web demo (a
   warning), quiz problems and broken links between lessons.
 - **`si new web-course --type course`** writes a small course with every kind
-  of lesson; `si --export example --type course` the same example.
+  of lesson; `si --export example --type course` the same example. The
+  Studio's **New…** and start gallery offer it as **Course**.
+
+### SCORM packages: `--scorm`
+
+`si build course/ -o html/ --scorm` also writes **`<course>-scorm12.zip`**
+beside the output: the learner build plus an `imsmanifest.xml` (SCORM 1.2,
+which SkillJar, Moodle, Canvas, Docebo and Cornerstone all import).
+
+| Flag | SCOs | What the LMS shows |
+|---|---|---|
+| `--scorm` | one per lesson (instructor demos left out) | its own menu of modules and lessons; the course menu in the pages is hidden |
+| `--scorm=single` | one for the whole course (`scorm.html`) | the course as on the web, menu and all |
+
+The pages find the LMS's SCORM API in a parent or opener window and report
+to it: `LMSInitialize`, `cmi.core.lesson_status` (`incomplete`, then
+`completed`; a quiz `passed` or `failed`), `cmi.core.score.raw` from the
+quizzes (0 to 100; one SCO for the course reports their mean),
+`cmi.suspend_data` with the progress (the done lessons, quiz scores, the last
+lesson; so a learner continues on another device), `LMSCommit` and
+`LMSFinish`. A quiz lesson with `pass:` gets that mark as its
+`adlcp:masteryscore`. The package has no network dependencies and still
+works with no LMS (progress in the browser, as on the web). `--scorm` packs
+the learner build; it refuses `--instructor`.
+
+```text
+si build web-course -o html --scorm          # html/ and web-course-scorm12.zip
+si build web-course -o html --scorm=single   # one SCO: scorm.html
+```
+
+### Printed handouts: `--pdf`
+
+`si build course/ -o html/ --pdf` (needs Chrome) also writes the **learner
+workbook**, `html/<course>-workbook.pdf` (and `workbook.html`): a cover with
+the module plan and timings, then every lesson in order: the readings, the
+lab steps without their solutions, the quiz questions without answers or
+explanations, a deck's slide titles, and a lined **Notes** box after each
+lesson. With `--instructor` it writes the **instructor guide**,
+`<course>-instructor-guide.pdf`: the same order with each lesson's minutes
+and instructor note, every demo's runbook (commands and expected output),
+the decks' spoken script, the quiz answers ticked with their explanations,
+and the lab solutions.
+
+### Publish to SkillJar: `si publish --to skilljar`
+
+```text
+si publish login skilljar --token <API key>
+si publish web-course --to skilljar --base-url https://files.example.com/web-course/
+si publish web-course --to skilljar --base-url https://files.example.com/web-course/ --yes
+```
+
+The learner build becomes a Skilljar course: each module a section, each
+reading an HTML lesson, each video an asset lesson, and each slides, lab or
+quiz lesson (and a reading with a quiz in it) a SCORM 1.2 web-package lesson
+of its own. Instructor demos are never published. Skilljar's API takes no
+uploads: it fetches videos and packages from a URL, so si writes them into
+`web-course/.si/publish/skilljar/` and you put that folder online at
+`--base-url` before `--yes`. Without `--yes` it is a dry run that prints
+every request (the key masked). The ids land in
+`web-course/.si/publish/skilljar.json`, so the next publish updates the same
+course in place: lessons patched and reordered, only changed files fetched
+again, removed lessons deleted. Publish the course to your domain in the
+Skilljar dashboard. See `docs/publish.md`.
 
 ## 29. Timelines
 

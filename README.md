@@ -166,7 +166,9 @@ an index, and a one-file edition and PDF.
 
 Modules of readings, slides, videos, labs, instructor demos and quizzes, with
 progress kept in the learner's browser, Continue, and a certificate; one
-`si build` makes the website bundle, `--instructor` the teacher's edition.
+`si build` makes the website bundle, `--instructor` the teacher's edition,
+`--scorm` a package for any learning platform, `--pdf` a workbook, and
+`si publish --to skilljar` sends it to SkillJar.
 [Courses →](https://simple-ideas.org/features/courses.html)
 
 ![A course lesson with its module menu](docs/screenshots/readme/course.jpg)
