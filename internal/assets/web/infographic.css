@@ -27,6 +27,15 @@
 .si-ig[data-orient="portrait"] .si-ig-grid{flex:1;grid-auto-rows:auto}
 .si-ig[data-orient="portrait"] .si-ig-block{min-block-size:9em}
 
+/* an exact tall frame (aspect: phone, story, portrait, 1080x1350): the shape
+ * is kept at every size and the blocks share its height (rows weighted by si);
+ * a page fits it to the window's height */
+.si-ig:is([data-fixed="tall"],[data-fixed="portrait"]){inline-size:min(100%,calc(92dvh * var(--_ar,.5)))}
+.si-ig:is([data-fixed="tall"],[data-fixed="portrait"]) .si-ig-frame{aspect-ratio:var(--_ratio);min-block-size:0;font-size:2.4cqi;padding:2.2em 2em 1.4em}
+.si-ig[data-fixed="tall"] .si-ig-frame{font-size:3.6cqi;padding:2.4em 1.7em 1.4em}
+.si-ig:is([data-fixed="tall"],[data-fixed="portrait"]) .si-ig-grid{flex:1;min-block-size:0}
+.si-ig:is([data-fixed="tall"],[data-fixed="portrait"]) .si-ig-block{min-block-size:0}
+
 /* header */
 .si-ig-head{display:grid;gap:.45em;padding-inline-start:.9em;border-inline-start:.38em solid var(--si-accent)}
 .si-ig-title{margin:0;font-family:var(--si-font-heading);font-weight:800;font-size:2.55em;line-height:1.02;letter-spacing:-.025em;color:var(--_ink);text-wrap:balance}
@@ -160,9 +169,9 @@
  * the frame grows and the slide scrolls */
 .si-slide:has(.si-ig){container-name:si-igs}
 @container si-ig (max-width: 48rem), si-igs (orientation: portrait){
-  .si-ig[data-orient] .si-ig-frame{aspect-ratio:auto;font-size:clamp(13px,3.6cqi,19px);padding:1.5em 1.2em 1.1em}
-  .si-ig[data-orient] .si-ig-grid{grid-template-columns:minmax(0,1fr);grid-template-rows:none;grid-auto-rows:auto}
-  .si-ig[data-orient] .si-ig-block{grid-area:auto;min-block-size:0}
+  .si-ig[data-orient]:not([data-fixed="tall"],[data-fixed="portrait"]) .si-ig-frame{aspect-ratio:auto;font-size:clamp(13px,3.6cqi,19px);padding:1.5em 1.2em 1.1em}
+  .si-ig[data-orient]:not([data-fixed="tall"],[data-fixed="portrait"]) .si-ig-grid{grid-template-columns:minmax(0,1fr);grid-template-rows:none;grid-auto-rows:auto}
+  .si-ig[data-orient]:not([data-fixed="tall"],[data-fixed="portrait"]) .si-ig-block{grid-area:auto;min-block-size:0}
   .si-ig-title{font-size:2em}
   .si-ig-line{grid-template-rows:9em auto}
   .si-ig-donut svg{block-size:auto;inline-size:min(40%,11em)}
@@ -180,3 +189,34 @@ html:has(.si-ig-page),.si-ig-page{block-size:auto;overflow:visible}
   .si-ig-page .si-ig-frame{border-radius:0;box-shadow:none}
   .si-ig-block,.si-ig-frame{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+
+/* motion (animate: build | loop): infographic.js moves the parts from one
+ * clock; without it (or with reduced motion) everything is in place */
+.si-ig[data-animate]{position:relative}
+.si-ig[data-animate] .si-ig-bar rect{transform-box:fill-box;transform-origin:0 50%}
+.si-ig-play{position:absolute;inset-block-start:.7em;inset-inline-end:.7em;z-index:2;padding:.45em .85em;border:0;border-radius:2em;cursor:pointer;
+  font:650 .8rem/1 var(--si-font-body);background:color-mix(in srgb,var(--si-fg) 80%,transparent);color:var(--si-bg);opacity:0;transition:opacity .2s ease}
+.si-ig:hover>.si-ig-play,.si-ig-play:focus-visible,.si-ig-framed .si-ig-play{opacity:.92}
+.si-ig-film .si-ig-play{display:none}
+.si-ig-flat .si-ig-frame,.si-ig-flat .si-slide.si-ig-slide{background:var(--si-ig-bg,var(--si-bg))}
+.si-ig-film .si-ig-page>main{padding:0}
+.si-ig-film .si-ig-page .si-ig{inline-size:100%}
+.si-ig-film .si-ig-page .si-ig-frame{border-radius:0;box-shadow:none}
+
+/* flow: boxes and arrows laid out by si, drawn in the block's colours */
+.si-igf{flex:1;min-block-size:0;display:flex;align-items:center;justify-content:center}
+.si-igf svg{display:block;inline-size:100%;block-size:100%;max-block-size:100%;overflow:visible}
+.si-ig[data-orient="portrait"]:not([data-fixed]) .si-igf svg{block-size:auto}
+.si-igf-node{transform-box:fill-box;transform-origin:center}
+.si-igf-node rect{fill:color-mix(in srgb,var(--_c) 12%,var(--_card));stroke:var(--_c);stroke-width:2.5}
+.si-igf text{font-family:var(--si-font-body);font-weight:700;dominant-baseline:central;fill:var(--_ink)}
+.si-igf-node text,.si-igf-n text{text-anchor:middle}
+.si-igf-n circle{fill:var(--_c)}
+.si-igf-n text{fill:var(--_card);font-weight:800}
+.si-igf-edge{fill:none;stroke:color-mix(in srgb,var(--_ink) 38%,transparent);stroke-width:2.5;stroke-linecap:round}
+.si-igf-head{fill:color-mix(in srgb,var(--_ink) 38%,transparent)}
+.si-igf-arrow.is-hot .si-igf-edge{stroke:var(--_c);stroke-width:3.5}
+.si-igf-arrow.is-hot .si-igf-head{fill:var(--_c)}
+.si-igf text.si-igf-elbl{fill:var(--si-muted);font-weight:650;paint-order:stroke;stroke:var(--_card);stroke-width:5;stroke-linejoin:round}
+.si-igf-pkt{fill:var(--_c);stroke:var(--_card);stroke-width:3;opacity:0}
+@media print{.si-ig-play{display:none}}

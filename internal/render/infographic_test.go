@@ -1,6 +1,7 @@
 package render
 
 import (
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -110,5 +111,96 @@ func TestInfographicFit(t *testing.T) {
 		if warned != c.warn {
 			t.Errorf("warned %v, want %v: %v", warned, c.warn, res.Warnings)
 		}
+	}
+}
+
+func TestIGFlowLayout(t *testing.T) {
+	f, _ := deck.ParseIGFlow("Client -> LB -> API -> Cache\nAPI -> DB\nLB -> API2 -> DB\nDB -[ack]-> API", 1)
+	for _, dir := range []string{"LR", "TB"} {
+		g := igFlowGraph(f, dir)
+		for i := range g.nodes { // no two boxes overlap
+			for j := i + 1; j < len(g.nodes); j++ {
+				if g.tlx[i] < g.tlx[j]+sBoxW && g.tlx[j] < g.tlx[i]+sBoxW && g.tly[i] < g.tly[j]+sBoxH && g.tly[j] < g.tly[i]+sBoxH {
+					t.Errorf("%s: boxes %s and %s overlap", dir, g.nodes[i].id, g.nodes[j].id)
+				}
+			}
+			if g.tlx[i] < 0 || g.tly[i] < 0 || g.tlx[i]+sBoxW > g.vbW || g.tly[i]+sBoxH > g.vbH {
+				t.Errorf("%s: box %s outside the viewBox", dir, g.nodes[i].id)
+			}
+		}
+		on := func(n int, x, y float64) bool { // a point on box n's border
+			l, tp := float64(g.tlx[n]), float64(g.tly[n])
+			in := x >= l-1 && x <= l+sBoxW+1 && y >= tp-1 && y <= tp+sBoxH+1
+			edge := math.Abs(x-l) < 1.5 || math.Abs(x-l-sBoxW) < 1.5 || math.Abs(y-tp) < 1.5 || math.Abs(y-tp-sBoxH) < 1.5
+			return in && edge
+		}
+		for k, e := range f.Edges { // every arrow ends on its target's border
+			s := igEdgeGeom(g, e.From, e.To, 0)
+			if !on(e.To, s.hx, s.hy) {
+				t.Errorf("%s: arrow %d ends at %.0f,%.0f, not on %s", dir, k, s.hx, s.hy, f.Nodes[e.To])
+			}
+		}
+		if g.depth[g.idx["DB"]] <= g.depth[g.idx["API"]] {
+			t.Errorf("%s: the ack (a cycle) moved the database before the API", dir)
+		}
+	}
+	if back := igBackEdges(f); !back[len(f.Edges)-1] || len(back) != 1 {
+		t.Errorf("back edges %v", back)
+	}
+	ev := igFlowEvents(f)
+	if ev[0] != (igFlowEvent{0, -1}) || ev[1] != (igFlowEvent{-1, 0}) || ev[2] != (igFlowEvent{1, -1}) || len(ev) != len(f.Nodes)+len(f.Edges) {
+		t.Errorf("events %v", ev)
+	}
+}
+
+func TestIGSchedule(t *testing.T) {
+	ig, _ := deck.ParseInfographic("## 54% · stat\nx\n\n## Path · flow\nA -> B -> C\n\n## How · steps\n1. a\n2. b\n\n## Late · text · at=9s\nwords\n\n## After · quote\n> q\n")
+	cues, end, total := igSchedule(ig.Blocks, false, 0)
+	want := []string{"count", "draw", "light", "rise", "fade"}
+	for i, c := range cues {
+		if c.Enter != want[i] {
+			t.Errorf("block %d enters %s, want %s", i, c.Enter, want[i])
+		}
+		if i > 0 && i != 3 && c.At <= cues[i-1].At {
+			t.Errorf("block %d starts at %v, not after %v", i, c.At, cues[i-1].At)
+		}
+	}
+	if cues[0].At != igStart || cues[3].At != 9 || cues[4].At <= 9 {
+		t.Errorf("times %+v", cues)
+	}
+	if total <= end || end < cues[4].At+cues[4].Dur {
+		t.Errorf("end %v total %v", end, total)
+	}
+	if _, _, tot := igSchedule(ig.Blocks, true, 12); tot != 12 {
+		t.Errorf("duration: given %v", tot)
+	}
+}
+
+func TestAnimatedInfographicRender(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "ig.md")
+	os.WriteFile(p, []byte("---\ntype: infographic\naspect: phone\nanimate: loop\nduration: 4s\n---\n\n## 1,200 · stat\nmessages\n\n## Path · flow\nA -[x]-> B -> C\n"), 0o644)
+	d, err := deck.Parse(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := Document(d, Options{Media: MediaInline})
+	h := string(res.HTML)
+	for _, w := range []string{`data-fixed="tall"`, `data-animate="loop" data-duration="4"`, `data-enter="count"`, `<span class="si-ig-cnt">1,200</span>`, `class="si-igf-arrow"`, `class="si-igf-pkt"`, "--_ratio:9/19.5", "grid-template-rows:", "siIG"} {
+		if !strings.Contains(h, w) {
+			t.Errorf("page lacks %s", w)
+		}
+	}
+	if len(res.Warnings) == 0 || !strings.Contains(strings.Join(func() []string {
+		var s []string
+		for _, w := range res.Warnings {
+			s = append(s, w.Msg)
+		}
+		return s
+	}(), "|"), "longer than duration") {
+		t.Errorf("want a warning for blocks past duration: %v", res.Warnings)
+	}
+	if IGGIFEstimate(720, 1560, 180, 15) < igGIFBudget || IGGIFEstimate(720, 1560, 8, 15) > igGIFBudget {
+		t.Error("GIF estimate: 180 s should be over 8 MB, 8 s under")
 	}
 }

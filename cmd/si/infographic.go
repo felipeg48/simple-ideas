@@ -23,13 +23,23 @@ func exportInfographic(chrome, htmlPath, out string, d *deck.Deck, png, pdf bool
 		return "", err
 	}
 	w, h, hash := 1600, 900, "#1.999" // the slide, its last build step
+	fixed := false
+	if rw, rh, ok := deck.IGSize(d.Meta.Aspect); ok { // an exact frame: filmed at its shape, the animation finished
+		fixed = true
+		w, h = igFilmCSS(rw, rh)
+		hash = "?si-ig-film" + map[bool]string{true: "", false: hash}[d.IsDoc()]
+	}
 	switch {
+	case fixed:
 	case d.Meta.IGPortrait():
 		w, h, hash = 1080, 1528, ""
 	case d.Meta.Aspect == "4:3":
 		h = 1200
 	}
-	shot := pageShot{W: w, H: h, Scale: scale, Fit: d.Meta.IGPortrait()}
+	shot := pageShot{W: w, H: h, Scale: scale, Fit: d.Meta.IGPortrait() && !fixed}
+	if fixed {
+		shot.JS = `window.siIG && siIG.final()`
+	}
 	if png {
 		shot.PNG = filepath.Join(out, d.Name+".png")
 	}
@@ -59,6 +69,7 @@ type pageShot struct {
 	Scale    float64
 	Fit      bool
 	PNG, PDF string
+	JS       string // run once the page is loaded (an animation to its end)
 }
 
 // the deck's own controls never belong in a picture of it
@@ -85,6 +96,11 @@ func (p *pageShot) take(chrome, url string) error {
 	}
 	if _, err := c.Eval(hideChrome); err != nil {
 		return err
+	}
+	if p.JS != "" {
+		if _, err := c.Eval(p.JS); err != nil {
+			return err
+		}
 	}
 	time.Sleep(900 * time.Millisecond) // build steps fade in
 	if p.Fit {

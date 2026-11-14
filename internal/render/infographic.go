@@ -26,9 +26,24 @@ import (
 type igOpts struct {
 	title, subtitle, layout, orient, aspect, sources, byline string
 	steps                                                    bool
+	animate                                                  string  // build | loop | "" (off)
+	duration                                                 float64 // duration: (0 = as long as the blocks need)
+	page                                                     bool    // a type: infographic file, not a fence
 }
 
 var igRatios = map[string][2]float64{"16:9": {16, 9}, "4:3": {4, 3}, "9:16": {9, 16}, "a4": {210, 297}}
+
+// igRatio is the width:height of an aspect ({0, 0} when it has none).
+func igRatio(aspect string) [2]float64 {
+	if w, h, ok := deck.IGSize(aspect); ok {
+		return [2]float64{w, h}
+	}
+	return igRatios[aspect]
+}
+
+// igFixed reports whether an aspect is an exact frame (phone, square,
+// 1080x1350): the frame keeps its shape and its blocks share it.
+func igFixed(aspect string) bool { _, _, ok := deck.IGSize(aspect); return ok }
 
 // infographicFence renders an ```infographic fence; `page` on the fence line
 // marks the body of a `type: infographic` file (deck.buildInfographic), which
@@ -41,26 +56,40 @@ func (dr *deckRenderer) infographicFence(body string, attrs map[string]string, d
 	_, page := attrs["page"]
 	if page {
 		o = igOpts{title: m.Title, subtitle: m.Subtitle, layout: m.MapLayout, orient: m.Orientation, aspect: m.Aspect, sources: m.Sources,
-			byline: strings.Trim(m.Author+" · "+m.Date, " ·")}
+			byline: strings.Trim(m.Author+" · "+m.Date, " ·"), animate: m.Animate, page: true}
+		o.duration, _ = deck.IGSeconds(m.Duration)
 		if m.IGPortrait() {
 			o.orient = "portrait"
 		}
 	} else {
+		o.animate = attrs["animate"]
 		for k, v := range attrs {
-			allowed := map[string][]string{"layout": deck.IGLayouts, "orientation": deck.IGOrientations, "aspect": deck.IGAspects, "steps": deck.OnOff}[k]
+			allowed := map[string][]string{"layout": deck.IGLayouts, "orientation": deck.IGOrientations, "aspect": deck.IGAspects, "steps": deck.OnOff, "animate": deck.IGAnimates}[k]
 			switch {
 			case k == "title" || k == "subtitle" || k == "sources":
+			case k == "duration":
+				var ok bool
+				if o.duration, ok = deck.IGSeconds(v); !ok || o.duration <= 0 {
+					dr.problem(sc, "infographic: duration=%s: write seconds (duration=8s)", v)
+				}
+			case k == "aspect" && igFixed(v):
 			case allowed == nil:
-				dr.problem(sc, "infographic: unknown fence option %q (use title=, subtitle=, layout=, orientation=, aspect=, steps=, sources=)", k)
+				dr.problem(sc, "infographic: unknown fence option %q (use title=, subtitle=, layout=, orientation=, aspect=, steps=, sources=, animate=, duration=)", k)
 			default:
 				if msg := oneOfMsg("infographic "+k, v, allowed); msg != "" {
 					dr.problem(sc, "%s", msg)
 				}
 			}
 		}
+		if w, h, ok := deck.IGSize(o.aspect); o.orient == "" && ok {
+			o.orient = map[bool]string{true: "portrait", false: "landscape"}[w < h]
+		}
 		if o.orient == "" && (o.aspect == "9:16" || o.aspect == "a4" || dr.doc) {
 			o.orient = "portrait" // a document is a column, not a slide
 		}
+	}
+	if o.animate == "off" {
+		o.animate = ""
 	}
 	if o.orient == "" {
 		o.orient = "landscape"
@@ -103,13 +132,38 @@ func (dr *deckRenderer) infographicFence(body string, attrs map[string]string, d
 // igHTML draws the frame: header, grid of blocks, footer.
 func (dr *deckRenderer) igHTML(ig *deck.Infographic, o igOpts, sc *slideCtx) string {
 	var b strings.Builder
-	style := ""
-	if r, ok := igRatios[o.aspect]; ok {
+	style, r := "", igRatio(o.aspect)
+	if r[0] > 0 {
 		style = fmt.Sprintf(` style="--_ratio:%g/%g;--_ar:%.4f"`, r[0], r[1], r[0]/r[1])
 	}
-	fmt.Fprintf(&b, `<figure class="si-ig" data-orient="%s" data-layout="%s"%s>`+"\n"+`<div class="si-ig-frame">`+"\n", o.orient, html.EscapeString(o.layout), style)
+	fixed := igFixed(o.aspect)
+	tall := fixed && r[0]/r[1] < 0.7 // a phone or a story: one column, flows top to bottom
+	attrs := ""
+	if fixed { // tall (a phone, a story: one column), portrait (two) or landscape (a slide)
+		attrs += ` data-fixed="` + map[bool]string{true: "tall", false: o.orient}[tall] + `"`
+	}
+	var cues []igCue
+	if o.animate != "" {
+		var end, total float64
+		cues, end, total = igSchedule(ig.Blocks, o.animate == "loop", o.duration)
+		if o.duration > 0 && end > o.duration+0.05 {
+			dr.warnings = append(dr.warnings, dr.at(sc, "infographic: the blocks need %.1fs to come in, longer than duration: %gs (they are cut short; raise duration or move at= earlier)", end, o.duration))
+		}
+		if o.page {
+			px := igGIFSize(o.aspect)
+			if est := IGGIFEstimate(px[0], px[1], total, 15); est > igGIFBudget {
+				dr.warnings = append(dr.warnings, dr.at(sc, "infographic: an animated GIF of it would be about %.1f MB at %d px wide, 15 fps (over 8 MB: shorten duration:, or build it with a lower --fps or --scale)", float64(est)/1e6, px[0]))
+			}
+		}
+		attrs += fmt.Sprintf(` data-animate="%s" data-duration="%s"`, o.animate, igSec(total))
+	}
+	fmt.Fprintf(&b, `<figure class="si-ig" data-orient="%s" data-layout="%s"%s%s>`+"\n"+`<div class="si-ig-frame">`+"\n", o.orient, html.EscapeString(o.layout), attrs, style)
 	if o.title != "" || o.subtitle != "" {
-		b.WriteString(`<header class="si-ig-head">`)
+		if o.animate != "" {
+			b.WriteString(`<header class="si-ig-head" data-enter="fade" data-at="0" data-dur="0.6">`)
+		} else {
+			b.WriteString(`<header class="si-ig-head">`)
+		}
 		if o.title != "" {
 			b.WriteString(`<h2 class="si-ig-title">` + dr.inline(o.title) + `</h2>`)
 		}
@@ -122,16 +176,35 @@ func (dr *deckRenderer) igHTML(ig *deck.Infographic, o igOpts, sc *slideCtx) str
 	if o.orient == "landscape" {
 		cols = igCols(ig.Blocks, o.layout)
 	}
-	pos, rows, _ := igPlace(ig.Blocks, cols, o.layout)
+	place := ig.Blocks
+	if tall { // a phone or a story: two columns where stats pair up, every other block across
+		place = make([]*deck.IGBlock, len(ig.Blocks))
+		for i, bl := range ig.Blocks {
+			c := *bl
+			c.Span = 2
+			if bl.Kind == "stat" && bl.Span == 1 {
+				c.Span = 1
+			}
+			place[i] = &c
+		}
+	}
+	pos, rows, _ := igPlace(place, cols, o.layout)
 	if o.orient == "landscape" {
-		r := igRatios[o.aspect]
 		for i, bl := range ig.Blocks {
 			if f := igFit(bl, pos[i], cols, rows, r[0]/r[1], o.title != "", o.subtitle != ""); f < igFitFloor {
 				dr.warnings = append(dr.warnings, dr.at(sc, "infographic: block %q holds more text than its cell, even at %d%% text size (it would need about %d%%): shorten it, make it wide or tall, or move a block out", bl.Title, int(igFitFloor*100), int(f*100)))
 			}
 		}
 	}
-	fmt.Fprintf(&b, `<div class="si-ig-grid" style="--_cols:%d;--_rows:%d">`+"\n", cols, rows)
+	grid := ""
+	if fixed && o.orient == "portrait" { // a fixed tall frame: rows shared by what they hold
+		grid = ";grid-template-rows:" + igRowWeights(ig.Blocks, pos, rows, tall)
+	}
+	dir := "LR"
+	if tall {
+		dir = "TB"
+	}
+	fmt.Fprintf(&b, `<div class="si-ig-grid" style="--_cols:%d;--_rows:%d%s">`+"\n", cols, rows, grid)
 	for i, bl := range ig.Blocks {
 		cls := "si-ig-block"
 		if bl.Accent {
@@ -146,10 +219,17 @@ func (dr *deckRenderer) igHTML(ig *deck.Infographic, o igOpts, sc *slideCtx) str
 		if bl.Chart != "" {
 			chart = ` data-chart="` + bl.Chart + `"`
 		}
+		if cues != nil {
+			step += fmt.Sprintf(` data-enter="%s" data-at="%s" data-dur="%s"`, cues[i].Enter, igSec(cues[i].At), igSec(cues[i].Dur))
+		}
 		p := pos[i]
 		fmt.Fprintf(&b, `<section class="%s" data-kind="%s"%s%s style="--r:%d;--c:%d;--h:%d;--w:%d">`,
 			cls, bl.Kind, chart, step, p[0], p[1], p[2], p[3])
-		b.WriteString(dr.igBlock(bl))
+		if bl.Kind == "flow" {
+			b.WriteString(dr.igFlow(bl, dir))
+		} else {
+			b.WriteString(dr.igBlock(bl))
+		}
 		b.WriteString("</section>\n")
 	}
 	if o.steps {
@@ -428,7 +508,7 @@ func (dr *deckRenderer) igNumber(s string) string {
 	if p := strings.TrimSpace(m[1]); p != "" {
 		out += `<span class="si-ig-unit">` + html.EscapeString(p) + `</span>`
 	}
-	out += html.EscapeString(m[2])
+	out += `<span class="si-ig-cnt">` + html.EscapeString(m[2]) + `</span>`
 	if u := strings.TrimSpace(m[3]); u != "" {
 		out += `<span class="si-ig-unit">` + dr.inline(u) + `</span>`
 	}
@@ -711,6 +791,7 @@ func Infographic(d *deck.Deck, opt Options) Result {
 	b.WriteString(body.String())
 	b.WriteString("</main>\n")
 	dr.problemsBanner(&b, res.Problems)
+	dr.timelineJS(&b) // the fit pass and the motion
 	dr.reload(&b)
 	b.WriteString("</body>\n</html>\n")
 	res.HTML, res.body = b.Bytes(), body.String()

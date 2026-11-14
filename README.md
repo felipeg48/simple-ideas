@@ -200,9 +200,15 @@ stat, a before/after, steps, a quote, icons) and every Markdown table of
 numbers becomes a chart drawn to scale (bars, donut, line, progress). A
 landscape one is a 16:9 slide you present; a portrait one a poster.
 Text shrinks to fit each block; `si build --png --pdf --svg` exports both.
+With `animate: build` it builds itself (numbers count up, charts grow, a
+`flow` block of `A -> B` paths draws boxes and arrows and sends packets
+along them) in an exact frame (`aspect: phone`, `square`, `1080x1350`), and
+`si build --gif --mp4` films it.
 [Infographics →](https://simple-ideas.org/features/infographics.html)
 
 ![An infographic: a web performance story on one slide](docs/screenshots/readme/infographic.jpg)
+
+![An animated infographic: how a message travels through a broker, building itself](docs/screenshots/readme/infographic-animated.gif)
 
 ### Code
 

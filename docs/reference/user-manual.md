@@ -195,9 +195,27 @@ The sort Python still uses.
 
 - Every `##` is a block: `## 2.4 s · stat`, `## Share · chart=donut · wide`; no kind: si guesses
 - `orientation: landscape` is a 16:9 slide (`steps: on`: one block per click); `portrait` a poster that scrolls
-- `layout:` grid, columns, flow · `aspect:` 16:9, 4:3, 9:16, a4 · `sources:` the footer
+- `layout:` grid, columns, flow · `aspect:` 16:9, 4:3, 9:16, a4 (or an exact frame: phone, square, 1080x1350) · `sources:` the footer
 - A block's text shrinks to fit it (down to 60%; `si check` warns past that)
 - `si build poster.md --png --pdf --svg` (`--scale 3` for print; `--svg` a vector picture); full guide: RULES.md §30
+
+---
+
+## Animated infographics
+
+```infographic animate=build steps=off
+## The path · flow
+Producer -[publish]-> Queue -[deliver]-> Consumer
+
+## 50,000 · stat · accent
+messages a second, counted up as it comes in
+```
+
+- `animate: build` (once) or `loop`; `duration: 12s`; per block `· enter=fade|rise|grow|count · at=3s`
+- By kind: numbers count up, bars grow, donuts sweep, lines draw, steps light one by one, flows draw and send packets
+- `## Path · flow`: `A -> B -> C`, `A -[label]-> B`, one path per line; laid out for you, arrows numbered
+- `aspect:` phone, story, portrait, square, landscape or `1080x1350`: an exact frame, fluid inside
+- `si build x.md --gif --mp4 --png` (`--fps`, `--scale`, `--size phone,square`); slides play on arrival; the Studio preview has ▶ Play / ↺ Replay
 
 ---
 

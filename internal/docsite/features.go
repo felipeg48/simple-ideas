@@ -87,10 +87,10 @@ var Features = []feature{
 		Commands: "si new history --type timeline\nsi play history/timeline.md --open\nsi check history/timeline.md      # counts, order, rubric\nsi build history/timeline.md --png --pdf --svg",
 		Rules:    []string{"29"}},
 	{Slug: "infographics", Title: "Infographics",
-		Lede: "One page of numbers that tell a story: big stats, before and after, steps, quotes and charts drawn to scale, as a slide or a poster.",
-		What: "An infographic is a Markdown file with `type: infographic`: every `## heading · kind` is a block of a bento grid, and a Markdown table of numbers becomes a bar, donut, line or progress chart. A landscape one is a 16:9 slide you present with `si play`, one block per click; a portrait one is a tall poster. A block's text shrinks to fit it. Both export to PNG, PDF and SVG.",
+		Lede: "One page of numbers that tell a story: big stats, before and after, steps, flows, quotes and charts drawn to scale, as a slide, a poster or an animation that builds itself.",
+		What: "An infographic is a Markdown file with `type: infographic`: every `## heading · kind` is a block of a bento grid, and a Markdown table of numbers becomes a bar, donut, line or progress chart. A landscape one is a 16:9 slide you present with `si play`, one block per click; a portrait one is a tall poster. A block's text shrinks to fit it. Both export to PNG, PDF and SVG. With `animate: build` it builds itself: numbers count up, charts grow, a `flow` block of `A -> B` paths draws its boxes and arrows and sends packets along them; `aspect: phone` (or story, portrait, square, 1080x1350) makes an exact frame, and `si build --gif --mp4` films it.",
 		Live: func() string {
-			return "<!-- embed: ../live/infographic/checkout.md -->\n\n<!-- embed: ../live/infographic/algorithms.md full -->"
+			return "![An animated infographic: how a message travels through a broker, building itself](img/infographics/broker-flow.gif)\n\n<!-- embed: ../live/infographic/broker-flow.md -->\n\n<!-- embed: ../live/infographic/checkout.md -->\n\n<!-- embed: ../live/infographic/algorithms.md full -->"
 		},
 		Open:   "../live/infographic/checkout.md",
 		Source: "infographic/checkout.md",
@@ -98,10 +98,12 @@ var Features = []feature{
 			{"`## 2.4 s · stat`", "a big number; also compare, steps, quote, icons, list, text, image, sources"},
 			{"`· chart=`", "bar, donut, line, progress, drawn from the block's table"},
 			{"`· wide` `· tall` `· accent`", "two columns, two rows, the accent colour"},
-			{"`orientation:` `aspect:`", "landscape (a slide) or portrait (a poster) · 16:9, 4:3, 9:16, a4"},
+			{"`orientation:` `aspect:`", "landscape (a slide) or portrait (a poster) · 16:9, 4:3, 9:16, a4; exact frames: phone, story, portrait, square, landscape, 1080x1350"},
+			{"`animate:` `duration:`", "build (once) or loop · 12s; per block `· enter=fade|rise|grow|count · at=3s`"},
+			{"`## The path · flow`", "boxes and numbered arrows from `A -[label]-> B` paths, drawn and travelled by packets"},
 			{"`layout:`", "grid (bento), columns, flow"},
 		},
-		Commands: "si new poster --type infographic\nsi play poster.md --open\nsi build poster.md --png --pdf --svg    # --scale 3 for print",
+		Commands: "si new poster --type infographic\nsi play poster.md --open\nsi build poster.md --png --pdf --svg    # --scale 3 for print\nsi build flow.md --gif --mp4 --size phone,square",
 		Rules:    []string{"30"}},
 	{Slug: "books", Title: "Books",
 		Lede: "A reference with chapters, figures and tables numbered for you, an index, a glossary and one printable volume.",

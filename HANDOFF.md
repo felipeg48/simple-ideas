@@ -5,6 +5,16 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-14)
 
+**v3.15.0:** animated infographics: `animate: build|loop`, `duration:`,
+`· enter= · at=` (`internal/render/igmotion.go`: igSchedule, flow blocks on
+the stage engine; `web/infographic.js`: one clock, `window.siIG.seek`),
+`flow` blocks (`deck.ParseIGFlow`), exact frames (`deck.IGSize`: phone, story,
+portrait, square, landscape, WxH), `si build --gif --mp4 --size --fps`
+(`cmd/si/igmotion.go`: `?si-ig-film` seeking, `encodeAnimGIF` with frame
+differencing, also used by `si code --gif`), deck `--mp4` films an animated
+fence (`igSlideSeconds`). Left out: icons by name in flow boxes, `dir=` on a
+flow.
+
 **v3.6.0:** play terminal shells and Viewers survive a live reload (PTY
 kept with a 256 KB replay ring, `GET /_si/term/api/list`, `sessionStorage`
 `si-term-state`, idle shells closed after 10 min), text size per tab (− % +,

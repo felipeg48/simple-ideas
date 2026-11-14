@@ -20,11 +20,64 @@ import (
 // Infographic front matter and block values.
 var (
 	IGOrientations = []string{"landscape", "portrait"}
-	IGAspects      = []string{"16:9", "4:3", "9:16", "a4"}
+	IGAspects      = []string{"16:9", "4:3", "9:16", "a4", "phone", "story", "portrait", "square", "landscape"}
 	IGLayouts      = []string{"grid", "columns", "flow"}
-	IGKinds        = []string{"stat", "compare", "steps", "chart", "quote", "icons", "list", "text", "image", "sources"}
+	IGKinds        = []string{"stat", "compare", "steps", "chart", "quote", "icons", "list", "text", "image", "flow", "sources"}
 	IGCharts       = []string{"bar", "donut", "line", "progress"}
+	IGAnimates     = []string{"build", "loop", "off"}
+	IGEnters       = []string{"fade", "rise", "grow", "count"}
 )
+
+// IGPresets are the named exact frames (width:height): an infographic made
+// to be shared or exported at that shape. The ratio aspects (16:9, 9:16, a4)
+// keep their older meaning: a slide, or a poster that grows with its text.
+var IGPresets = map[string][2]float64{"phone": {9, 19.5}, "story": {9, 16}, "portrait": {4, 5}, "square": {1, 1}, "landscape": {16, 9}}
+
+var igSizeRE = regexp.MustCompile(`^(\d{2,5})x(\d{2,5})$`)
+
+// IGSize is the width and height of an exact-frame aspect: a preset
+// (phone, story, portrait, square, landscape) or an exact size (1080x1350).
+func IGSize(aspect string) (w, h float64, ok bool) {
+	if r, ok := IGPresets[aspect]; ok {
+		return r[0], r[1], true
+	}
+	if m := igSizeRE.FindStringSubmatch(aspect); m != nil {
+		w, _ = strconv.ParseFloat(m[1], 64)
+		h, _ = strconv.ParseFloat(m[2], 64)
+		return w, h, w > 0 && h > 0
+	}
+	return 0, 0, false
+}
+
+var igSecRE = regexp.MustCompile(`^(\d+(?:\.\d+)?)\s*(s|ms|sec)?$`)
+
+// IGSeconds reads a time: "12s", "1.5 s", "800ms", "3" (seconds).
+func IGSeconds(s string) (float64, bool) {
+	m := igSecRE.FindStringSubmatch(strings.TrimSpace(s))
+	if m == nil {
+		return 0, false
+	}
+	v, _ := strconv.ParseFloat(m[1], 64)
+	if m[2] == "ms" {
+		v /= 1000
+	}
+	return v, true
+}
+
+// infographicMeta checks the motion keys once the type is known.
+func (d *Deck) infographicMeta(file string, keyLine map[string]int) {
+	if !d.IsInfographic() {
+		if ln, ok := keyLine["animate"]; ok {
+			d.Warnings = append(d.Warnings, Problem{File: rel(file), Line: ln, Msg: "front matter \"animate\" is for infographics (type: infographic); an ```infographic fence takes animate="})
+		}
+		return
+	}
+	if ln, ok := keyLine["duration"]; ok {
+		if v, ok := IGSeconds(d.Meta.Duration); !ok || v <= 0 || v > 600 {
+			d.problem(file, ln, "infographic duration %q: write the length of the animation in seconds (12s)", d.Meta.Duration)
+		}
+	}
+}
 
 // IsInfographic reports whether the file is an infographic (`type: infographic`).
 func (d *Deck) IsInfographic() bool { return d.Meta.Type == "infographic" }
@@ -34,6 +87,9 @@ func (d *Deck) IsInfographic() bool { return d.Meta.Type == "infographic" }
 func (m Meta) IGPortrait() bool {
 	if m.Orientation != "" {
 		return m.Orientation == "portrait"
+	}
+	if w, h, ok := IGSize(m.Aspect); ok {
+		return w < h
 	}
 	return m.Aspect == "9:16" || m.Aspect == "a4"
 }
@@ -49,15 +105,34 @@ type Infographic struct {
 
 // IGBlock is one `##` block.
 type IGBlock struct {
-	Title   string // the heading without its options (a stat's number)
-	Kind    string // one of IGKinds
-	Chart   string // Kind chart: one of IGCharts
-	Span    int    // grid columns it covers (wide: 2)
-	Rows    int    // grid rows it covers (tall: 2)
-	Accent  bool   // drawn on the accent colour
-	Guessed bool   // Kind was guessed from the text
-	Body    string // the Markdown under the heading
-	Line    int    // 1-based line of the heading in the source
+	Title   string  // the heading without its options (a stat's number)
+	Kind    string  // one of IGKinds
+	Chart   string  // Kind chart: one of IGCharts
+	Span    int     // grid columns it covers (wide: 2)
+	Rows    int     // grid rows it covers (tall: 2)
+	Accent  bool    // drawn on the accent colour
+	Guessed bool    // Kind was guessed from the text
+	Body    string  // the Markdown under the heading
+	Line    int     // 1-based line of the heading in the source
+	Enter   string  // enter=: how it comes in when the infographic animates ("" = by kind)
+	At      float64 // at=: seconds into the animation it starts (-1 = after the one before)
+	Flow    *IGFlow // Kind flow: its boxes and arrows
+
+	bodyLine int  // 1-based line of the first line of Body
+	spanSet  bool // span=, wide written (a flow is wide by default)
+}
+
+// IGFlow is a flow block: boxes and the arrows between them, in the order
+// written (`Client -> API -[SQL]-> Database`, one path per line).
+type IGFlow struct {
+	Nodes []string
+	Edges []IGEdge
+}
+
+// IGEdge is one arrow of a flow: node indices and its label.
+type IGEdge struct {
+	From, To int
+	Label    string
 }
 
 // IGProblem is a mistake in an infographic, at a 1-based line of its source.
@@ -80,6 +155,13 @@ func ParseInfographic(src string) (*Infographic, []IGProblem) {
 		if b == nil {
 			return
 		}
+		b.bodyLine = b.Line + 1
+		for _, l := range body {
+			if strings.TrimSpace(l) != "" {
+				break
+			}
+			b.bodyLine++
+		}
 		b.Body = strings.TrimSpace(strings.Join(body, "\n"))
 		probs = append(probs, ig.add(b)...)
 		body = nil
@@ -93,7 +175,7 @@ func ParseInfographic(src string) (*Infographic, []IGProblem) {
 				}
 				if m[1] == "##" {
 					flush()
-					b = &IGBlock{Line: i + 1, Span: 1, Rows: 1}
+					b = &IGBlock{Line: i + 1, Span: 1, Rows: 1, At: -1}
 					probs = append(probs, b.options(m[2])...)
 					continue
 				}
@@ -140,7 +222,7 @@ func (b *IGBlock) options(head string) []IGProblem {
 func igOption(w string) bool {
 	k, _, _ := strings.Cut(w, "=")
 	switch k {
-	case "chart", "span", "wide", "tall", "accent", "kind":
+	case "chart", "span", "wide", "tall", "accent", "kind", "enter", "at":
 		return true
 	}
 	return contains(IGKinds, k)
@@ -168,9 +250,20 @@ func (b *IGBlock) option(w string) string {
 		if err != nil || n < 1 || n > 4 {
 			return fmt.Sprintf("infographic: span=%s: want 1 to 4 columns", v)
 		}
-		b.Span = n
+		b.Span, b.spanSet = n, true
 	case k == "wide":
-		b.Span = 2
+		b.Span, b.spanSet = 2, true
+	case k == "enter":
+		b.Enter = v
+		if !contains(IGEnters, v) {
+			return fmt.Sprintf("infographic: unknown enter=%q (use %s)", v, strings.Join(IGEnters, ", "))
+		}
+	case k == "at":
+		t, ok := IGSeconds(v)
+		if !ok {
+			return fmt.Sprintf("infographic: at=%s: write when the block comes in, in seconds (at=3s)", v)
+		}
+		b.At = t
 	case k == "tall":
 		b.Rows = 2
 	case k == "accent":
@@ -181,7 +274,7 @@ func (b *IGBlock) option(w string) string {
 			b.Chart = "bar"
 		}
 	default:
-		return fmt.Sprintf("infographic: unknown block option %q (use a kind: %s; chart=, span=, wide, tall, accent)", w, strings.Join(IGKinds, ", "))
+		return fmt.Sprintf("infographic: unknown block option %q (use a kind: %s; chart=, span=, wide, tall, accent, enter=, at=)", w, strings.Join(IGKinds, ", "))
 	}
 	return ""
 }
@@ -218,6 +311,13 @@ func (ig *Infographic) add(b *IGBlock) []IGProblem {
 	case "compare":
 		if _, _, ok := IGTable(b.Body); !ok {
 			at(false, "compare needs a Markdown table: one column per side (| Before | After |)")
+		}
+	case "flow":
+		f, fp := ParseIGFlow(b.Body, b.bodyLine)
+		b.Flow = f
+		probs = append(probs, fp...)
+		if !b.spanSet {
+			b.Span = 2 // a flow reads across: wide unless told
 		}
 	case "stat":
 		if b.Title == "" {
@@ -274,6 +374,8 @@ func GuessIGKind(title, body string) (kind, chart string) {
 		}
 	}
 	switch {
+	case strings.Contains(first, "->") && !igBulletRE.MatchString(first):
+		return "flow", ""
 	case igOrderRE.MatchString(first):
 		return "steps", ""
 	case igBulletRE.MatchString(first):
@@ -389,4 +491,69 @@ func (d *Deck) igKey(k string) string {
 		return "ig-" + k
 	}
 	return k
+}
+
+var igArrowRE = regexp.MustCompile(`-\[([^\]]*)\]->|->`)
+
+// ParseIGFlow reads a flow block: one path per line, boxes joined by arrows
+// (`A -> B -> C`), an arrow's label in brackets (`A -[HTTP]-> B`); a line
+// with a name alone is a box without arrows. Boxes are named once and meet by
+// name across lines. first is the 1-based line of the body's first line.
+func ParseIGFlow(body string, first int) (*IGFlow, []IGProblem) {
+	f := &IGFlow{}
+	var probs []IGProblem
+	idx := map[string]int{}
+	node := func(name string) int {
+		if i, ok := idx[name]; ok {
+			return i
+		}
+		idx[name] = len(f.Nodes)
+		f.Nodes = append(f.Nodes, name)
+		return len(f.Nodes) - 1
+	}
+	for i, raw := range strings.Split(body, "\n") {
+		line := strings.TrimSpace(strings.ReplaceAll(raw, "→", "->"))
+		if line == "" || strings.HasPrefix(line, "<!--") {
+			continue
+		}
+		bad := func(f string, a ...any) {
+			probs = append(probs, IGProblem{Line: first + i, Msg: "infographic flow: " + fmt.Sprintf(f, a...)})
+		}
+		ms := igArrowRE.FindAllStringSubmatchIndex(line, -1)
+		if open := strings.Index(line, "-["); open >= 0 && !strings.Contains(line[open:], "]->") {
+			bad("an arrow label is not closed in %q (write A -[label]-> B)", line)
+			continue
+		}
+		if len(ms) == 0 {
+			node(line)
+			continue
+		}
+		var names, labels []string
+		at := 0
+		for _, m := range ms {
+			names = append(names, strings.TrimSpace(line[at:m[0]]))
+			if m[2] >= 0 {
+				labels = append(labels, strings.TrimSpace(line[m[2]:m[3]]))
+			} else {
+				labels = append(labels, "")
+			}
+			at = m[1]
+		}
+		names = append(names, strings.TrimSpace(line[at:]))
+		ok := true
+		for _, n := range names {
+			ok = ok && n != ""
+		}
+		if !ok {
+			bad("an arrow needs a box on each side in %q (A -> B)", line)
+			continue
+		}
+		for k := range labels {
+			f.Edges = append(f.Edges, IGEdge{From: node(names[k]), To: node(names[k+1]), Label: labels[k]})
+		}
+	}
+	if len(f.Edges) == 0 && len(probs) == 0 {
+		probs = append(probs, IGProblem{Line: first, Msg: "infographic flow: no arrows (write a path: Client -> API -> Database)"})
+	}
+	return f, probs
 }

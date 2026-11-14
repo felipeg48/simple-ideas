@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -136,7 +137,14 @@ func exportDeckMotion(chrome, htmlPath, out string, d *deckInfo, dwell float64, 
 		return 0, err
 	}
 	var video []videoFrame
-	const move = 1.3 // page seconds filmed after each →: the longest transition and morph, with room
+	const move = 1.3             // page seconds filmed after each →: the longest transition and morph, with room
+	if a := d.animOf(0); a > 0 { // an animated infographic on the first slide: from its start
+		shots, err := film(c, a+0.3, tmp, "a000", func() error { _, err := c.Eval(`window.siIG && siIG.replay()`); return err })
+		if err != nil {
+			return 0, err
+		}
+		video = append(video, on30(shots, a+0.3)...)
+	}
 	for i, n := range d.steps {
 		for k := 0; k <= n; k++ {
 			views++
@@ -156,6 +164,9 @@ func exportDeckMotion(chrome, htmlPath, out string, d *deckInfo, dwell float64, 
 			if k == n && d.morph != nil { // arriving at a morph slide: film the whole glide
 				span = max(span, d.morph(i+1)+0.4)
 			}
+			if k == n { // arriving at an animated infographic: film it building
+				span = max(span, d.animOf(i+1)+0.3)
+			}
 			shots, err := film(c, span, tmp, fmt.Sprintf("m%03d-%02d", i, k), func() error { return c.Key("ArrowRight", 39) })
 			if err != nil {
 				return views, err
@@ -171,6 +182,32 @@ type deckInfo struct {
 	steps   []int
 	minutes func(i int) float64
 	morph   func(i int) float64 // seconds slide i's morph takes to arrive, 0 if it does not morph
+	anim    []float64           // seconds slide i's animated infographic plays (igSlideSeconds)
+}
+
+func (d *deckInfo) animOf(i int) float64 {
+	if i < len(d.anim) {
+		return d.anim[i]
+	}
+	return 0
+}
+
+var igDurRE = regexp.MustCompile(`data-animate="[a-z]+" data-duration="([0-9.]+)"`)
+
+// igSlideSeconds is, per slide of a built deck, how long its animated
+// infographic plays (0 without one).
+func igSlideSeconds(page string) []float64 {
+	parts := slideSplitRE.Split(page, -1)
+	var out []float64
+	for _, p := range parts[1:] {
+		v := 0.0
+		for _, m := range igDurRE.FindAllStringSubmatch(p, -1) {
+			f, _ := strconv.ParseFloat(m[1], 64)
+			v = max(v, f)
+		}
+		out = append(out, v)
+	}
+	return out
 }
 
 // morphSeconds is a morph length (`transition: morph 0.8s`, 600ms) in

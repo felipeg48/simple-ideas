@@ -4248,7 +4248,7 @@ type: infographic
 title: The 600 ms checkout
 subtitle: How one store cut its page load by three quarters
 orientation: landscape   # landscape (a slide) | portrait (a tall poster)
-aspect: 16:9             # 16:9 | 4:3 | 9:16 | a4
+aspect: 16:9             # 16:9 | 4:3 | 9:16 | a4; exact frames: phone | story | portrait | square | landscape | 1080x1350
 layout: grid             # grid (bento) | columns | flow (top to bottom)
 theme: studio
 sources: Real-user monitoring, weeks 1 to 6
@@ -4300,16 +4300,18 @@ Notes: Our checkout took two point four seconds; six weeks later, zero point six
 | `icons` | a list; each item may start with `![](icon.svg)` | an icon row |
 | `list`, `text` | a list, any Markdown | as written |
 | `image` | `![caption](picture.jpg)` | the picture filling the block |
+| `flow` | paths: `A -> B -> C`, `A -[label]-> B` | boxes and numbered arrows (see Flow blocks) |
 | `sources` | a list | the footer, small (with `sources:` and `author · date`) |
 
 Without a kind, si guesses: a heading that starts with a number is a `stat`,
 a table of numbers `chart=bar` (any other table `compare`), a numbered list
 `steps`, a list with pictures `icons`, a `>` quote `quote`, a lone picture
-`image`, a heading named Sources (Fuentes, References) `sources`, anything
+`image`, a first line with `->` `flow`, a heading named Sources (Fuentes, References) `sources`, anything
 else `text`.
 
 Options for the grid: `span=2` (or `wide`) covers two columns, `tall` two
-rows, `accent` fills the block with the accent colour. A `·` part whose first
+rows, `accent` fills the block with the accent colour; for motion,
+`enter=` and `at=` (see Motion). A `·` part whose first
 word is not an option stays in the heading (`## Paris · London`).
 
 ### Layout and orientation
@@ -4342,7 +4344,10 @@ one that cannot be fetched stays a link, with a warning.
 An ```` ```infographic ```` fence holds the same blocks (a `# Title` line and
 a paragraph under it are the header) and fills the slide, one build step per
 block (`steps=off` shows them all). Options on the fence line: `title=`, `subtitle=`, `layout=`,
-`orientation=`, `aspect=`, `steps=off`, `sources=`. In a document the fence
+`orientation=`, `aspect=`, `steps=off`, `sources=`, `animate=build|loop`,
+`duration=`. Animated on a slide, it plays when the slide becomes the current
+one (each block as its click shows it, with steps) and `si build deck.md
+--mp4` films it building. In a document the fence
 is a portrait poster.
 
 ````markdown
@@ -4360,8 +4365,97 @@ more checkouts
 ```
 ````
 
+### Motion
+
+`animate: build` makes the infographic build itself once: the header fades
+in, then each block comes in, one after another; `animate: loop` plays it
+over and over (fading out at the end); `animate: off`, the default, shows it
+still. `duration: 12s` sets the length (default: as long as the blocks need,
+plus a moment to read). Per block, `· enter=fade|rise|grow|count` changes how
+it comes in and `· at=3s` when.
+
+````markdown
+---
+type: infographic
+title: How a message travels through a broker
+aspect: phone
+animate: build
+---
+
+## The path · flow
+Producer -[publish]-> Exchange -[route]-> Queue -[deliver]-> Consumer
+Consumer -[ack]-> Queue
+
+## 50,000 · stat · accent
+messages a second through one queue
+
+## 2 ms · stat · enter=rise · at=4s
+from publish to deliver
+````
+
+Without `enter=`, each kind has its own way in: numbers count up (`stat`,
+`compare`), bars and progress grow, a donut sweeps, a line chart draws, steps
+light one by one, a flow draws itself, a quote or a picture fades, the rest
+rise. A page plays on load (the ▶ Play / ↺ Replay button in its corner, always
+shown in the Studio preview, plays it again); a slide plays when it becomes
+the current one, and again on every visit; with build steps, a block plays when
+its click shows it. Under `prefers-reduced-motion`, in thumbnails and in print,
+the infographic is shown finished. `si check` warns when the blocks need longer
+than `duration:`.
+
+### Flow blocks
+
+`## Heading · flow` (or a block whose first line has an arrow) draws boxes and
+arrows from paths, one per line:
+
+| Write | Means |
+|---|---|
+| `Client -> Load balancer -> API` | a path: three boxes, two arrows |
+| `API -[SQL]-> Database` | an arrow with a label |
+| `Consumer -[ack]-> Queue` | an arrow back: the layout keeps the flow going one way, the two arrows side by side |
+| `Cache` (alone on a line) | a box without arrows |
+
+Boxes meet by name across lines, so several lines make branches and merges.
+si lays them out (columns by the longest path, siblings stacked): left to
+right, or top to bottom in a tall frame (`phone`, `story`). The arrows are
+numbered in the order written; animated, the boxes appear and the arrows draw
+in that order, then a packet travels along each arrow in turn. A flow block is
+`wide` unless it says `span=`. `si check` reports an arrow without a box on
+one side and a label without its `]->`, at its line.
+
+### Sizes
+
+`aspect:` takes the ratios above and, for an exact frame made to share or
+export, a preset or a size:
+
+| `aspect:` | Frame | Layout |
+|---|---|---|
+| `phone` | 9:19.5 (a phone's screen) | stats in pairs, every other block across; flows top to bottom |
+| `story` | 9:16 | as `phone` |
+| `portrait` | 4:5 | two columns |
+| `square` | 1:1 | a slide's grid |
+| `landscape` | 16:9 | a slide's grid |
+| `1080x1350` | that exact ratio (and size for `--mp4`) | by its shape |
+
+An exact frame keeps its shape at every size: its blocks share its height
+(each row gets the room its blocks want) and its text is sized from its width,
+so it fills a phone, scales up on a monitor (fit to the window's height) and
+never scrolls. A tall one (`phone`, `story`, `portrait`, a tall size) is a
+page; a wide or square one a slide.
+
 ### Build, check, new
 
+- **`si build x.md --gif --mp4`** films an animated infographic: `x.gif`
+  (720 px wide, 15 fps, one adaptive palette, only the changed pixels of each
+  frame stored; loops forever for `animate: loop`, plays once and keeps its
+  last frame for `build`) and `x.mp4` (full size: 1080 wide for a tall or
+  square frame, 1920 for a landscape one, or the exact size; H.264, needs
+  ffmpeg). Every frame is the infographic at that exact moment (the page's
+  clock is set, not raced), so two builds give the same frames. `--fps 24`
+  for the GIF, `--scale 1.5` for a width of its own (1.5 × the CSS width:
+  540 tall, 900 square, 1280 landscape), `--size phone,square,landscape` for
+  several sizes in one run: `x-phone.gif`, `x-square.mp4`, `x-square.png`, and
+  so on. `si check` warns when the GIF would pass about 8 MB.
 - **`si build talk.md --png --pdf`** writes `talk.png` (the slide at 1600 ×
   900, or the whole poster at 1080 wide; `--scale 2`, the default, doubles
   the pixels; `--scale 3` for print) and `pdfs/talk.pdf` (one page, vector
@@ -4372,7 +4466,7 @@ more checkouts
   smaller text size, step by step, down to 60% of its own; `si check` warns
   when a block would need less than that (shorten it, make it `wide` or
   `tall`, or move a block out).
-- **`si check`** reports an unknown kind or option, a chart cell that is not a
+- **`si check`** reports an unknown kind or option (`enter=`, `at=`, `animate:`, `duration:`), a flow line it cannot read, a chart cell that is not a
   number (or a negative one in a donut), a compare or chart without a table,
   an empty block, a stat without its number, a block with more text than its
   cell holds at 60% text size, and `[CLICK]` cues that do not match the

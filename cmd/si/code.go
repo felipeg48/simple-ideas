@@ -1,22 +1,17 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"html"
 	"image"
-	"image/color"
-	"image/draw"
-	"image/gif"
 	"image/png"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -219,48 +214,7 @@ func readPNG(p string) (image.Image, error) {
 	return png.Decode(f)
 }
 
-// encodeGIF quantises the frames to one shared palette (the 256 most used
-// colours, 4 bits a channel) without dithering: dithered gradients made a
-// four-step show 5.8 MB, plain ones 0.9 MB.
-// ponytail: a popularity palette, not median cut; good for windows on a
-// gradient, upgrade if photos ever land in code windows.
+// encodeGIF encodes a show's frames as a GIF that loops (encodeAnimGIF).
 func encodeGIF(frames []image.Image, delays []int) ([]byte, error) {
-	if len(frames) == 0 {
-		return nil, fmt.Errorf("no frames")
-	}
-	b := frames[0].Bounds()
-	count := map[[3]uint8]int{}
-	for _, f := range frames {
-		fb := f.Bounds()
-		for y := fb.Min.Y; y < fb.Max.Y; y += 2 {
-			for x := fb.Min.X; x < fb.Max.X; x += 2 {
-				r, g, bl, _ := f.At(x, y).RGBA()
-				count[[3]uint8{uint8(r>>12) << 4, uint8(g>>12) << 4, uint8(bl>>12) << 4}]++
-			}
-		}
-	}
-	keys := make([][3]uint8, 0, len(count))
-	for k := range count {
-		keys = append(keys, k)
-	}
-	sort.Slice(keys, func(i, j int) bool { return count[keys[i]] > count[keys[j]] })
-	if len(keys) > 256 {
-		keys = keys[:256]
-	}
-	pal := make(color.Palette, len(keys))
-	for i, k := range keys {
-		pal[i] = color.RGBA{k[0] | k[0]>>4, k[1] | k[1]>>4, k[2] | k[2]>>4, 255}
-	}
-	g := &gif.GIF{LoopCount: 0}
-	for i, f := range frames {
-		p := image.NewPaletted(b, pal)
-		draw.Draw(p, b, f, f.Bounds().Min, draw.Src)
-		g.Image = append(g.Image, p)
-		g.Delay = append(g.Delay, delays[i])
-	}
-	var buf bytes.Buffer
-	if err := gif.EncodeAll(&buf, g); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	return encodeAnimGIF(frames, delays, true)
 }

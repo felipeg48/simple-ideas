@@ -53,7 +53,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "3.14.0"
+const version = "3.15.0"
 
 // Exit codes.
 const (
@@ -109,6 +109,10 @@ Usage:
   si [build] <timeline.md|infographic.md> [--png [--scale 2]] [--pdf] [--svg]
         timelines and infographics: <name>.png, pdfs/<name>.pdf (a timeline: paged and
         -compact) and <name>.svg, the frame as a vector picture with real text
+  si [build] <infographic.md> [--gif] [--mp4] [--fps 15] [--scale S] [--size phone,square,...]
+        an animated infographic (animate: build|loop): <name>.gif (720 px wide, loops for
+        loop, plays once for build) and <name>.mp4 (full size; needs ffmpeg); --size films
+        each size: <name>-<size>.gif / .mp4 / .png
   si code <file.md> [--id show] [--png [--scale 2]] [--svg] [--gif] [--mp4] [-o dir]
         code windows and shows: one <file>-<id>-<n>.png / .svg per step (window,
         backdrop and callouts) and <file>-<id>.gif / .mp4, the whole show animated
@@ -406,7 +410,9 @@ type options struct {
 	review                                       bool       // si serve / si play --review: a keyed listener for reviewers' comments
 	reviewAddr                                   string     // --review-addr
 	to, mapID                                    string     // si mindmap export --to, --map
-	gif                                          bool       // si code --gif
+	gif                                          bool       // si code --gif; si build infographic.md --gif
+	fps                                          int        // si build infographic.md --gif --fps (15)
+	sizeSet, scaleSet                            bool       // --size, --scale given (an infographic's sizes; its GIF/MP4 width)
 	showID                                       string     // si code --id
 	url, token, clientID, clientSecret, user     string     // si publish
 	canonical, baseURL                           string     // si publish
@@ -473,6 +479,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.to, "to", "", "")
 	fl.StringVar(&o.mapID, "map", "", "")
 	fl.BoolVar(&o.gif, "gif", false, "")
+	fl.IntVar(&o.fps, "fps", 0, "")
 	fl.StringVar(&o.showID, "id", "", "")
 	fl.StringVar(&o.url, "url", "", "")
 	fl.StringVar(&o.token, "token", "", "")
@@ -544,7 +551,11 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 		o.args = append(o.args, argv[0])
 		argv = argv[1:]
 	}
-	fl.Visit(func(f *flag.Flag) { o.qrECSet = o.qrECSet || f.Name == "ec" })
+	fl.Visit(func(f *flag.Flag) {
+		o.qrECSet = o.qrECSet || f.Name == "ec"
+		o.sizeSet = o.sizeSet || f.Name == "size"
+		o.scaleSet = o.scaleSet || f.Name == "scale"
+	})
 	if o.siteOld != "" {
 		fmt.Fprintln(stderr, "si: warning: --site <text> is now --site-title <text>")
 		if o.title == "" {
@@ -837,7 +848,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	if o.narration != "" {
 		o.mp4 = true // a narration is for the video
 	}
-	if o.pdf || o.svg || o.png || o.mp4 || o.handout != "" {
+	if o.pdf || o.svg || o.png || o.mp4 || o.gif || o.handout != "" {
 		if chrome = findChrome(); chrome == "" {
 			fmt.Fprintf(stderr, "si: %s\n    (writing the HTML now)\n", tools.Need("chrome", "--pdf, --svg, --png, --mp4 and --handout"))
 		}
@@ -992,7 +1003,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 				}
 			}
 		}
-		if chrome != "" && o.mp4 && !d.IsDoc() { // the deck as a video: every slide and build step
+		if chrome != "" && o.mp4 && !d.IsDoc() && !d.IsInfographic() { // the deck as a video: every slide and build step
 			var nar *narration
 			if o.narration != "" {
 				if dir := findRecording(o.narration, d.Path); dir == "" {
@@ -1015,7 +1026,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			err := fmt.Errorf("dissolve")
 			if !o.dissolve {
 				page, _ := os.ReadFile(dest)
-				info := &deckInfo{name: d.Name, steps: slideSteps(string(page)), minutes: func(i int) float64 {
+				info := &deckInfo{name: d.Name, steps: slideSteps(string(page)), anim: igSlideSeconds(string(page)), minutes: func(i int) float64 {
 					if i < len(d.Slides) {
 						return d.Slides[i].Minutes
 					}
@@ -1057,8 +1068,8 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 				}
 			}
 		}
-		if chrome != "" && d.IsInfographic() && (o.png || o.pdf) { // the slide or the poster as a picture and a one-page PDF
-			if rel, err := exportInfographic(chrome, dest, out, d, o.png, o.pdf, o.scale, stdout); err != nil {
+		if chrome != "" && d.IsInfographic() && (o.png || o.pdf || o.gif || o.mp4) { // the slide or the poster as a picture and a one-page PDF; animated: GIF, MP4
+			if rel, err := exportInfographicAll(chrome, d, ro, dest, out, o, stdout, stderr); err != nil {
 				fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
 				failed = true
 			} else if rel != "" {

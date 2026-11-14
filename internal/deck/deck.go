@@ -152,6 +152,7 @@ type Meta struct {
 	Orientation  string // infographic: landscape (a slide) or portrait (a tall page)
 	Sources      string // infographic: the sources line of the footer
 	Steps        string // infographic: on reveals one block per click (a page shows them all by default)
+	Animate      string // infographic: build (blocks build themselves once) | loop | off (the default)
 	LinkedIn     string // si publish: the text of the LinkedIn post (default: description, then title)
 	Tags         string // si publish: comma-separated tags for dev.to and Hashnode
 	Canonical    string // si publish: the article's original URL (canonical_url; a LinkedIn link post)
@@ -200,7 +201,7 @@ var DemoKeys = []string{"region", "header-offset", "intro", "outro", "music", "u
 func init() { MetaKeys = append(MetaKeys, DemoKeys...) }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "browser", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup", "nav", "level", "instructor-demos", "certificate", "pass", "minutes", "prerequisites", "instructor", "orientation", "sources", "steps"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "browser", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup", "nav", "level", "instructor-demos", "certificate", "pass", "minutes", "prerequisites", "instructor", "orientation", "sources", "steps", "animate"}
 
 // MetaLine is one front matter line kept as written: its key, its value and
 // its line in the file.
@@ -558,6 +559,7 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 		}
 	}
 	d.timelineMeta(file, keyLine)
+	d.infographicMeta(file, keyLine)
 	for _, k := range []string{"layout", "aspect"} {
 		if ln, ok := keyLine[k]; ok {
 			if msg := validateMeta(d.igKey(k), map[string]string{"layout": d.Meta.MapLayout, "aspect": d.Meta.Aspect}[k]); msg != "" {
@@ -609,7 +611,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"layout": &m.MapLayout, "lines": &m.MapLines, "nodes": &m.MapNodes, "map-theme": &m.MapTheme, "watermark-position": &m.WatermarkPos, "favicon": &m.Favicon, "touch-icon": &m.TouchIcon, "og-image": &m.OGImage,
 		"nav": &m.Nav, "level": &m.Level, "instructor-demos": &m.InstructorDemos, "certificate": &m.Certificate, "pass": &m.Pass, "minutes": &m.Minutes, "prerequisites": &m.Prerequisites, "instructor": &m.Instructor,
 		"view": &m.MapView, "camera": &m.MapCamera, "floors": &m.MapFloors, "kind": &m.MapKind, "flow": &m.MapFlow,
-		"orientation": &m.Orientation, "sources": &m.Sources, "steps": &m.Steps,
+		"orientation": &m.Orientation, "sources": &m.Sources, "steps": &m.Steps, "animate": &m.Animate,
 	}[key]
 	if ptr == nil {
 		ptr = m.Timeline.field(key)
@@ -666,7 +668,15 @@ func validateMeta(key, val string) string {
 	case "ig-layout":
 		return oneOf("infographic layout", val, IGLayouts)
 	case "ig-aspect":
-		return oneOf("infographic aspect", val, IGAspects)
+		if _, _, ok := IGSize(val); ok {
+			return ""
+		}
+		if msg := oneOf("infographic aspect", val, IGAspects); msg != "" {
+			return msg + " or an exact size (1080x1350)"
+		}
+		return ""
+	case "animate":
+		return oneOf("animate", val, IGAnimates)
 	case "transition":
 		return oneOf("transition", val, Transitions)
 	case "aspect":

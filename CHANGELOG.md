@@ -3,6 +3,29 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.15.0:** animated infographics. **Motion in the Markdown:**
+  `animate: build` builds an infographic once, `animate: loop` over and over,
+  `duration: 12s` sets its length; numbers count up, bars and progress grow,
+  donuts sweep, line charts draw, steps light one by one, quotes fade; per
+  block `· enter=fade|rise|grow|count` and `· at=3s`. Reduced motion,
+  thumbnails and print show it finished. **Flow blocks:** `## The path ·
+  flow` with `Client -> Load balancer -> API`, labels as `A -[HTTP]-> B`, one
+  path per line, an arrow back allowed: boxes and arrows laid out by the
+  stage fence's engine, left to right or top to bottom by the frame, arrows
+  numbered, drawn in order, then packets travel along them. **Exact frames:**
+  `aspect: phone` (9:19.5), `story`, `portrait` (4:5), `square`, `landscape`
+  or `1080x1350`, fluid inside (container units, rows shared by what they
+  hold). **GIF and MP4:** `si build x.md --gif --mp4 --png` films the page
+  frame by frame from its own clock (exact, the same on every run): a 720 px
+  GIF at 15 fps with one adaptive palette and only the changed pixels of each
+  frame (loops for `loop`, plays once for `build`), a full-size MP4;
+  `--fps`, `--scale`, `--size phone,square,...` for several sizes in one run;
+  `si check` warns when the GIF would pass about 8 MB. **In slides:** an
+  animated ```` ```infographic ```` fence plays when its slide becomes the
+  current one (again on every visit), a block per click with steps, and
+  `si build deck.md --mp4` films it building. **The Studio preview** (and any
+  page, on hover) has ▶ Play / ↺ Replay. `si code --gif` uses the same
+  smaller encoder. Example: `examples/infographic/broker-flow.md`.
 - **v3.14.0:** the play workbench, six improvements. **The Viewer's tree
   survives a reload:** the folders you opened come back open and the tree
   scrolled where it was. **⌘= ⌘- ⌘0 anywhere in the drawer** (Ctrl+ off

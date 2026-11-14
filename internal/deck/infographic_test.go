@@ -110,3 +110,79 @@ func TestInfographicFile(t *testing.T) {
 		t.Fatalf("a deck takes no a4: %v", d.Problems)
 	}
 }
+
+func TestInfographicMotionOptions(t *testing.T) {
+	src := "## 54% · stat · enter=rise · at=2.5s\nof visits\n\n## Path · flow\n\nClient -[HTTP]-> API -> Cache\nAPI -> Database\n\n## Bad · stat · enter=spin · at=soon\n"
+	ig, probs := ParseInfographic(src)
+	if b := ig.Blocks[0]; b.Enter != "rise" || b.At != 2.5 {
+		t.Errorf("stat motion: %+v", b)
+	}
+	f := ig.Blocks[1]
+	if f.Kind != "flow" || f.Span != 2 || f.At != -1 || f.Flow == nil {
+		t.Fatalf("flow block: %+v", f)
+	}
+	if strings.Join(f.Flow.Nodes, ",") != "Client,API,Cache,Database" || len(f.Flow.Edges) != 3 || f.Flow.Edges[0].Label != "HTTP" || f.Flow.Edges[2] != (IGEdge{1, 3, ""}) {
+		t.Errorf("flow: %+v", f.Flow)
+	}
+	if len(probs) != 2 || probs[0].Line != 9 || !strings.Contains(probs[0].Msg, "enter") || !strings.Contains(probs[1].Msg, "at=") {
+		t.Errorf("problems: %+v", probs)
+	}
+	if k, _ := GuessIGKind("Path", "A -> B"); k != "flow" {
+		t.Errorf("guess flow: %s", k)
+	}
+}
+
+func TestParseIGFlowErrors(t *testing.T) {
+	for _, c := range []struct {
+		body string
+		line int
+		msg  string
+	}{
+		{"A -> B\nA -> ", 11, "box on each side"},
+		{"\nA -[HTTP-> B", 11, "not closed"},
+		{"Just a box", 10, "no arrows"},
+		{"-> B", 10, "box on each side"},
+	} {
+		_, probs := ParseIGFlow(c.body, 10)
+		if len(probs) == 0 || probs[0].Line != c.line || !strings.Contains(probs[0].Msg, c.msg) {
+			t.Errorf("%q: %+v", c.body, probs)
+		}
+	}
+	if f, probs := ParseIGFlow("A → B -[ack]-> A", 1); len(probs) != 0 || len(f.Nodes) != 2 || f.Edges[1] != (IGEdge{1, 0, "ack"}) {
+		t.Errorf("arrows: %+v %v", f, probs)
+	}
+}
+
+func TestIGSizesAndMeta(t *testing.T) {
+	for a, want := range map[string][2]float64{"phone": {9, 19.5}, "story": {9, 16}, "portrait": {4, 5}, "square": {1, 1}, "landscape": {16, 9}, "1080x1350": {1080, 1350}} {
+		if w, h, ok := IGSize(a); !ok || w != want[0] || h != want[1] {
+			t.Errorf("%s: %v %v %v", a, w, h, ok)
+		}
+	}
+	if _, _, ok := IGSize("16:9"); ok {
+		t.Error("16:9 is a ratio, not an exact frame")
+	}
+	if !(Meta{Aspect: "phone"}).IGPortrait() || (Meta{Aspect: "square"}).IGPortrait() || !(Meta{Aspect: "1080x1350"}).IGPortrait() {
+		t.Error("orientation from an exact size")
+	}
+	for s, want := range map[string]float64{"12s": 12, "1.5 s": 1.5, "800ms": 0.8, "3": 3} {
+		if v, ok := IGSeconds(s); !ok || v != want {
+			t.Errorf("IGSeconds(%q) = %v %v", s, v, ok)
+		}
+	}
+	dir := t.TempDir()
+	p := filepath.Join(dir, "a.md")
+	os.WriteFile(p, []byte("---\ntype: infographic\naspect: 1080x1350\nanimate: twirl\nduration: soon\n---\n\n## 1 · stat\n"), 0o644)
+	d, err := Parse(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var msgs []string
+	for _, pr := range d.Problems {
+		msgs = append(msgs, pr.Msg)
+	}
+	all := strings.Join(msgs, "|")
+	if !strings.Contains(all, `unknown animate "twirl"`) || !strings.Contains(all, "duration") || strings.Contains(all, "aspect") {
+		t.Errorf("problems: %s", all)
+	}
+}

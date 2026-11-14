@@ -127,7 +127,7 @@ Body with a ==phrase==.
 
 ## An infographic
 
-```infographic
+```infographic animate=build
 ## 2.4 s · stat · accent
 Median load before the fix.
 

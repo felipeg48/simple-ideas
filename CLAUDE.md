@@ -279,6 +279,12 @@ pass. The steps that matter:
   build then routes, rewrites links and bundles (`cmd/si/structure.go`),
   `si new --structure`, `si check` warnings, `examples/structure/`. Next:
   `si play` serving the built layout, per-folder index pages.
+- **Animated infographics** (DONE v3.15.0): `animate: build|loop`,
+  `duration:`, `· enter= · at=`, `flow` blocks (`A -[label]-> B`, on the
+  stage engine), exact frames (`aspect: phone|story|portrait|square|landscape|WxH`),
+  `si build --gif --mp4 --size --fps` (`cmd/si/igmotion.go`, seeks
+  `window.siIG` in `?si-ig-film`); the Studio preview's ▶ Play / ↺ Replay is
+  in the page. Next: icons by name in flow boxes.
 - **Timelines and infographics** (DONE v3.3.0, spec
   `docs/superpowers/specs/2026-11-12-timelines-infographics.md`, RULES §29,
   §30): `internal/deck/timeline.go`, `infographic.go`, `internal/render/

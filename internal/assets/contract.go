@@ -529,6 +529,8 @@ var Hooks = []Hook{
 	{`.si-ig-steps, .si-ig-n, .si-ig-list, .si-ig-icons, .si-ig-quote, .si-ig-img`, "steps and their numbers, a list, an icon row, a quote, a picture"},
 	{`.si-ig-chart, .si-ig-bars, .si-ig-bar, .si-ig-bl, .si-ig-bv, .si-ig-progress, .si-ig-track, .si-ig-legend`, "charts: bars (label, value), progress, the track behind a bar, the legend"},
 	{`.si-ig-donut, .si-ig-dv, .si-ig-dl, .si-ig-line, .si-ig-plot, .si-ig-area, .si-ig-axis, .si-ig-x, .si-ig-y, .si-ig-end, .si-ig-last`, "a donut (centre value and label), a line chart (plot, area, axis, labels, end point and last value)"},
+	{`.si-ig[data-fixed][data-animate], .si-ig-play, .si-ig-film, .si-ig-flat, .si-ig-framed, .si-ig-cnt`, "an exact frame (tall, portrait or landscape) and an animated infographic (build or loop), its Play / Replay button, the page while si films it (flat: without the background glows, for a GIF's 256 colours), a page shown in a frame (the Studio preview), a number that counts up"},
+	{`.si-igf, .si-igf-node, .si-igf-arrow, .si-igf-edge, .si-igf-head, .si-igf-n, .si-igf-elbl, .si-igf-pkt`, "a flow block: its drawing, a box, an arrow (its line, head, order number and label; .is-hot while a packet rides it), a packet"},
 	{`.si-mm-moving, .si-mm-pulse, .si-mm-dim, .si-mm-wm, .si-mm-wm-corner`, "a topic being moved, a search hit, a branch dimmed by Play, the watermark (across or in the corner)"},
 	{`.si-mm-listview`, "a 3D map read as its list on a phone (the List tool)"},
 	{`.si-tl[data-layout][data-orient], .si-tl[data-frame], .si-tl-slide, .si-tl-figure`, "a timeline (snake, line, vertical, eras or cards; landscape or portrait; data-frame: drawn as a 16:9 frame on a wide screen), the slide of a timeline page, the figure of a ```timeline fence"},

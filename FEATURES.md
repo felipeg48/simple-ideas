@@ -194,6 +194,18 @@ an example for every rule: [RULES.md](docs/RULES.md).
   about a block that would need less.
 - `si build --png --pdf --svg`: a high-resolution picture, a one-page PDF and
   a vector SVG with real text.
+- Motion: `animate: build` (once) or `loop`, `duration:`; numbers count up,
+  charts grow, steps light one by one; per block `· enter=fade|rise|grow|count`
+  and `· at=3s`; slides play on arrival, a block per click with steps.
+- `flow` blocks: `Client -> API -[SQL]-> Database`, one path per line, laid
+  out for you (left to right, or top to bottom in a tall frame), arrows
+  numbered, drawn in order, packets travelling along them.
+- Exact frames: `aspect: phone`, `story`, `portrait`, `square`, `landscape`
+  or `1080x1350`, fluid inside.
+- `si build --gif --mp4`: frames from the page's own clock, a small GIF (one
+  adaptive palette, only changed pixels; loops for `loop`, plays once for
+  `build`) and a full-size MP4; `--fps`, `--scale`, `--size phone,square`;
+  `si check` warns past about 8 MB.
 - Both show in the Studio (New… lists them) and as text in the terminal
   (`si play --terminal`, `si --terminal`).
 
