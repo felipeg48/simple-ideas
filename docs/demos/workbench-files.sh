@@ -19,7 +19,7 @@ title: Ship a message broker
 theme: slate
 runbook: runbook.json
 demos: demos/
-browser: Queues=http://127.0.0.1:7402/, Consumers=http://127.0.0.1:7402/consumers.html
+browser: Queues=http://127.0.0.1:7402/queues.html, Consumers=http://127.0.0.1:7402/consumers.html
 ---
 
 # Ship a message broker
@@ -138,9 +138,9 @@ td.n { font-variant-numeric: tabular-nums; }
 .ok { color: #4ade80; } .warn { color: #fbbf24; }
 EOF
 
-cat > broker-dash/index.html <<'EOF'
+cat > broker-dash/queues.html <<'EOF'
 <!doctype html><meta charset="utf-8"><title>Queues · orders broker</title><link rel="stylesheet" href="style.css">
-<nav><a class="on" href="index.html">Queues</a><a href="consumers.html">Consumers</a></nav>
+<nav><a class="on" href="queues.html">Queues</a><a href="consumers.html">Consumers</a></nav>
 <main><h1>Queues on orders-broker</h1>
 <table><tr><th>Queue</th><th>Ready</th><th>Unacked</th><th>Rate in</th><th>State</th></tr>
 <tr><td>orders.created</td><td class="n">12</td><td class="n">4</td><td class="n">180/s</td><td class="ok">running</td></tr>
@@ -152,7 +152,7 @@ EOF
 
 cat > broker-dash/consumers.html <<'EOF'
 <!doctype html><meta charset="utf-8"><title>Consumers · orders broker</title><link rel="stylesheet" href="style.css">
-<nav><a href="index.html">Queues</a><a class="on" href="consumers.html">Consumers</a></nav>
+<nav><a href="queues.html">Queues</a><a class="on" href="consumers.html">Consumers</a></nav>
 <main><h1>Consumers on orders-broker</h1>
 <table><tr><th>Consumer</th><th>Queue</th><th>Prefetch</th><th>Acked</th></tr>
 <tr><td>billing-1</td><td>orders.created</td><td class="n">50</td><td class="n">18,204</td></tr>

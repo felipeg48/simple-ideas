@@ -8,7 +8,7 @@ voice: kokoro:af_heart
 pronounce: si = ess eye; rabbitmq.conf = rabbit M Q dot conf; app.log = app dot log
 transition: fade
 prepare: sh workbench-files.sh
-start: python3 -m http.server 7402 --bind 127.0.0.1 --directory broker-dash as dashboard · wait for port 7402
+start: si serve broker-dash --addr 127.0.0.1:7402 as dashboard · wait for port 7402
 start: SHELL=/bin/bash HOME="$PWD/broker-home" si play broker-talk --addr 127.0.0.1:7401 as talk · wait for port 7401 · within 60s
 start: sh broker-dash/logger.sh as logger · wait 1s
 cleanup: rm -rf broker-talk broker-dash broker-home
