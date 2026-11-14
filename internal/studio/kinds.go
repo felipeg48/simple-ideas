@@ -63,8 +63,10 @@ func pageKind(d *deck.Deck, g *deck.Guide) string {
 	return d.Meta.Type
 }
 
-// isNavFile reports whether name is a _nav.md or _site.md.
-func isNavFile(name string) bool { return name == deck.NavFile || name == deck.SiteFile }
+// isNavFile reports whether name is a _nav.md, _site.md or _course.md.
+func isNavFile(name string) bool {
+	return name == deck.NavFile || name == deck.SiteFile || name == deck.CourseFile
+}
 
 // plainTitle drops ==highlight== marks from a title the editor lists
 // (tree, storyboard, inspector, ⌘K): they style a slide, not a label.

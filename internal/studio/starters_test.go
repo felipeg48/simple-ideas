@@ -12,7 +12,7 @@ func TestStartersPassTheCheck(t *testing.T) {
 	f := newFx(t)
 	for kind, path := range map[string]string{
 		"deck": "talk.md", "article": "post.md", "lab": "lab.md", "demo": "demo.md", "page": "page.md",
-		"guide": "guide", "book": "book", "site": "site", "resume": "cv", "portfolio": "folio", "landing": "launch", "mindmap3d": "map3d.md", "codeshow": "show.md",
+		"guide": "guide", "book": "book", "site": "site", "resume": "cv", "portfolio": "folio", "landing": "launch", "course": "web101", "mindmap3d": "map3d.md", "codeshow": "show.md",
 	} {
 		code, m := f.do("POST", "starter", map[string]string{"kind": kind, "path": path})
 		if code != 201 {

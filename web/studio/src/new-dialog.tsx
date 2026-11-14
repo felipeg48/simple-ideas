@@ -10,6 +10,7 @@ export const starterKinds: { kind: string; icon?: Kind; label: string; what: str
   { kind: "article", label: "Article", what: "One long read with a lede and contents" },
   { kind: "guide", label: "Guide", what: "A folder of pages in order, with a sidebar", folder: true },
   { kind: "book", label: "Book", what: "Chapters, numbered sections, an index", folder: true },
+  { kind: "course", icon: "guide", label: "Course", what: "Modules of readings, slides, videos, labs and quizzes", folder: true },
   { kind: "site", label: "Site", what: "A folder of pages with a menu", folder: true },
   { kind: "resume", icon: "site", label: "Résumé", what: "A website: one page that prints, projects, about", folder: true },
   { kind: "portfolio", icon: "site", label: "Portfolio", what: "A website: project cards, a case study each", folder: true },

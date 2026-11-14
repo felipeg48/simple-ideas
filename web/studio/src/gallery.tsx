@@ -9,6 +9,7 @@ export const galleryKinds: { kind: string; icon: IconName; label: string; what: 
   { kind: "deck", icon: "deck", label: "A talk", what: "Slides with a teleprompter script", name: "My talk" },
   { kind: "lab", icon: "lab", label: "A course lab", what: "Hands-on steps with commands", name: "First lab" },
   { kind: "guide", icon: "guide", label: "A tutorial", what: "Pages in order, with a sidebar", folder: true, name: "Tutorial" },
+  { kind: "course", icon: "guide", label: "A course", what: "Modules: readings, slides, video, labs, quizzes", folder: true, name: "Course" },
   { kind: "article", icon: "article", label: "An article", what: "One long read with contents", name: "My article" },
   { kind: "site", icon: "site", label: "A site", what: "Pages with a menu and a home", folder: true, name: "Site" },
   { kind: "resume", icon: "site", label: "A résumé site", what: "One page that prints, projects, about", folder: true, name: "Resume" },

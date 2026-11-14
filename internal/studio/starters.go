@@ -8,11 +8,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/felipeg48/simple-ideas/examples"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/render"
 )
@@ -28,7 +30,7 @@ var startersFS embed.FS
 // StarterFolder reports whether a kind is a folder of files.
 func StarterFolder(kind string) bool {
 	switch kind {
-	case "guide", "book", "site", "resume", "portfolio", "landing":
+	case "guide", "book", "site", "course", "resume", "portfolio", "landing":
 		return true
 	}
 	return false
@@ -37,6 +39,15 @@ func StarterFolder(kind string) bool {
 // starterFiles lists a kind's files: starter path → path relative to the target.
 func starterFiles(kind string) map[string]string {
 	out := map[string]string{}
+	if kind == "course" { // the course si new --type course writes (examples/course): every kind of lesson
+		fs.WalkDir(examples.FS, "course", func(p string, e fs.DirEntry, err error) error {
+			if err == nil && !e.IsDir() {
+				out[p] = strings.TrimPrefix(p, "course/")
+			}
+			return nil
+		})
+		return out
+	}
 	if !StarterFolder(kind) {
 		if _, err := fs.Stat(startersFS, "starters/"+kind+".md"); err == nil {
 			out["starters/"+kind+".md"] = ""
@@ -52,11 +63,14 @@ func starterFiles(kind string) map[string]string {
 	return out
 }
 
+// courseTitleRE is the title line of the course starter's _course.md.
+var courseTitleRE = regexp.MustCompile(`(?m)^title: .*$`)
+
 // ErrStarterExists is returned when a starter would overwrite a file.
 var ErrStarterExists = errors.New("exists")
 
 // StarterKinds are the kinds WriteStarter knows.
-var StarterKinds = []string{"deck", "article", "lab", "demo", "page", "guide", "book", "site", "resume", "portfolio", "landing", "mindmap", "mindmap3d", "codeshow", "infographic"}
+var StarterKinds = []string{"deck", "article", "lab", "demo", "page", "guide", "book", "site", "course", "resume", "portfolio", "landing", "mindmap", "mindmap3d", "codeshow", "infographic"}
 
 // WriteStarter writes the starter for kind at abs (a .md file, or a folder for
 // guide, book, site and the website kinds), never overwriting. A page or folder made inside a
@@ -88,6 +102,12 @@ func WriteStarter(kind, abs, title, root string) (created []string, open, linked
 	}
 	for src, t := range targets {
 		raw, _ := startersFS.ReadFile(src)
+		if kind == "course" {
+			raw, _ = examples.FS.ReadFile(src)
+			if filepath.Base(src) == deck.CourseFile {
+				raw = courseTitleRE.ReplaceAll(raw, []byte("title: {{title}}"))
+			}
+		}
 		if err := os.MkdirAll(filepath.Dir(t), 0o755); err != nil {
 			return created, "", "", err
 		}
@@ -111,6 +131,8 @@ func WriteStarter(kind, abs, title, root string) (created []string, open, linked
 		open = filepath.Join(abs, "index.md")
 		if kind == "book" {
 			open = filepath.Join(abs, "preface.md")
+		} else if kind == "course" {
+			open = filepath.Join(abs, deck.CourseFile)
 		}
 	}
 	probe := abs // FindGuide looks from the folder of the file it is given
@@ -197,6 +219,19 @@ func (a *api) gallery(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fail(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+	if kind == "course" { // a course shows its home page
+		if g, err := deck.LoadGuide(target); err == nil {
+			pages, _, _ := render.RenderGuide(g, render.Options{Media: render.MediaInline})
+			for _, p := range pages {
+				if p.Rel == "index.html" {
+					galleryCache.Store(kind, p.Result.HTML)
+					w.Header().Set("Content-Type", "text/html; charset=utf-8")
+					w.Write(p.Result.HTML)
+					return
+				}
+			}
+		}
 	}
 	def := deck.Meta{Type: "deck"}
 	if StarterFolder(kind) {
