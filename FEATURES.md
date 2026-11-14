@@ -68,7 +68,14 @@ an example for every rule: [RULES.md](docs/RULES.md).
   any key, click or the pen takes over. Voiced by `si play` (cached, Kokoro
   by default), by `si build --autoplay[=inline]` into `<deck>.voice/`, or the
   browser's voice; `voices:` per speaker; `#autoplay` and `si play --autoplay`
-  open it ready; `si build --mp4 --voice` films it narrated.
+  open it ready; `si build --mp4 --voice` films it narrated. Pause and Resume
+  carry on mid-part (the voice from where it stopped, the browser's voice
+  from its sentence).
+- **Browser windows** (`w`, `si play` on loopback): web pages in floating
+  windows over the slides, each origin through its own loopback proxy so
+  consoles that refuse framing still show; links and redirects to other
+  sites stay proxied, the address box shows the real address, back and
+  forward cross sites.
 - **Terminal drawer** (`` ` ``, `si play` on loopback): real shells beside the
   slides, a runbook of commands, demo scripts with Copy and Run; Viewer tabs
   that read and edit files, a split view, ⌘P quick open, ⌘⇧F search in
@@ -257,7 +264,9 @@ an example for every rule: [RULES.md](docs/RULES.md).
   (`window=mac`, `theme=dusk`, `backdrop=ocean`, `size=100x30`), `run
   "command"` types it (`· wait` for its exit status, `· exit 1` or `· fails`
   when it must fail), `expect output "text"`,
-  `press ctrl+c`, `note "…" at line "text"`, `browser` goes back to the app.
+  `press ctrl+c`, `note "…" at line "text"`, `browser` goes back to the app;
+  `terminal split right|down` puts a second shell beside the first, both
+  filmed (`run "…" in 2`, `expect output "…" in 1`, `focus 2`).
   Workloads for a feature or a few blocks: `start "…" as load`, `stop load`,
   `expect output of load`, `expect load exited 0`. Every program stopped by
   process group, also on Ctrl-C; logs beside the report; the terminal's last

@@ -24,7 +24,12 @@ lazy-loaded on Edit; `POST /_si/term/api/save` with an mtime check; saves
 never live-reload). See `docs/terminal.md` "Viewer tabs".
 
 
-**Released and live: v3.10.0** (timelines `eras` and `cards` layouts,
+**Released and live: v3.11.0** (auto-play resumes mid-part: the voice
+file from its position, the browser's voice from its sentence; browser
+windows keep the proxy across sites: cross-origin links and redirects go
+through their origin's proxy, the address box shows the real address, ← →
+cross sites; web demo `terminal split right|down`, `focus N`, `run … in 2`,
+`expect output … in 1`, both panes filmed). Before: **v3.10.0** (timelines `eras` and `cards` layouts,
 `--svg` for timelines and infographics as real vector SVG, infographic text
 that shrinks to fit its block with a `si check` warning past 60%, both types
 in the Studio's New… and gallery and as text in the terminal). Before:

@@ -320,7 +320,9 @@ Not everything is a slide deck. Pick the type by what the reader does:
   "command"` (`· wait` when it must finish first; `· exit 1` or `· fails` when
   it must fail, an error on purpose) and check it with `expect output "text"`; write `- browser` before any browser step that follows a
   terminal. A workload for one feature is `start "…" as NAME`, then `stop NAME`
-  and `expect NAME exited 0`. Every program is stopped for you; do not add
+  and `expect NAME exited 0`. A server and its client side by side:
+  `terminal split right` (or `down`), then `run "…" in 2` / `expect output
+  "…" in 1` or `focus 2`. Every program is stopped for you; do not add
   `kill` steps. Run `si check` (it follows the scenes), then `si demo test`;
   a failed `expect output` shows the terminal's last 40 lines.
 - **Web demos, before and after** (RULES.md §27, Before and after; Scripts

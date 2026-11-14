@@ -108,3 +108,69 @@ func TestBrowserProxyInjectsNav(t *testing.T) {
 		t.Errorf("a script was changed: %q", body)
 	}
 }
+
+// TestBrowserProxyAcrossSites: a redirect to another origin goes through that
+// origin's own proxy (started then), one to the same origin stays on its
+// proxy, a relative one is left alone; each page's script knows its real
+// origin and hands cross-origin link clicks to the window.
+func TestBrowserProxyAcrossSites(t *testing.T) {
+	two := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		io.WriteString(w, "<html><head></head><body>two "+r.URL.Path+"</body></html>")
+	}))
+	defer two.Close()
+	one := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/away":
+			http.Redirect(w, r, two.URL+"/landed?x=1", http.StatusFound)
+		case "/rel":
+			w.Header().Set("Location", "/here")
+			w.WriteHeader(http.StatusFound)
+		default:
+			w.Header().Set("Content-Type", "text/html")
+			io.WriteString(w, `<html><head></head><body><a href="`+two.URL+`/b">two</a></body></html>`)
+		}
+	}))
+	defer one.Close()
+	var b browserProxies
+	defer b.closeAll()
+	u1, _ := url.Parse(one.URL)
+	o1, err := b.open(u1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	noFollow := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	res, err := noFollow.Get(o1 + "/away")
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	u2, _ := url.Parse(two.URL)
+	o2, _ := b.open(u2)
+	if o2 == o1 {
+		t.Fatal("one proxy for two origins")
+	}
+	if loc := res.Header.Get("Location"); loc != o2+"/landed?x=1" {
+		t.Fatalf("cross-site redirect %q, want %q", loc, o2+"/landed?x=1")
+	}
+	res, _ = noFollow.Get(o1 + "/rel")
+	res.Body.Close()
+	if loc := res.Header.Get("Location"); loc != "/here" {
+		t.Errorf("relative redirect changed: %q", loc)
+	}
+	res, err = http.Get(o2 + "/landed")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	if !strings.Contains(string(body), `var T="`+two.URL+`"`) || !strings.Contains(string(body), "real:real()") || !strings.Contains(string(body), "two /landed") {
+		t.Fatalf("page on the second proxy lacks its real origin: %.300s", body)
+	}
+	if !strings.Contains(navScript("x"), "nav-open") {
+		t.Error("the nav script does not hand cross-origin links to the window")
+	}
+	if strings.Contains(navScript("http://a/</script>"), "</script>\"") {
+		t.Error("a target can end the script")
+	}
+}

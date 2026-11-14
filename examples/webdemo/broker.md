@@ -48,7 +48,7 @@ Say: When it is done, it says so, and the console agrees.
 
 ## Stop a broker on camera
 
-What it does: a second broker starts in a terminal, says it is ready, and stops cleanly on Control C.
+What it does: a second broker starts in a terminal, says it is ready, prints the message a second shell below it sends, and stops cleanly on Control C.
 
 Say: A second broker starts in a terminal of its own, on port 7311.
 - terminal "Broker" · window=mac theme=dusk backdrop=dusk title="broker on 7311" size=90x22
@@ -56,7 +56,14 @@ Say: A second broker starts in a terminal of its own, on port 7311.
 - expect output "broker ready on 127.0.0.1:7311" · within 60s
 - note "Ready for messages" at line "broker ready"
 
+Say: Below it, a second shell sends it one message, and the broker above prints it as it arrives.
+- terminal split down
+- run "go run ./broker send --port 7311 hello below" · wait
+- expect output "sent 1 message"
+- expect output "received #1: hello below" in 1
+
 Say: Control C stops it, and it says goodbye.
+- focus 1
 - press ctrl+c
 - expect output "broker stopped"
 - expect no output "panic"

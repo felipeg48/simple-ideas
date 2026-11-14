@@ -1039,7 +1039,7 @@ func (r *runner) step(st *Step) (string, error) {
 	case "expect-output", "waitfor-output", "start", "stop":
 		defer r.waiting()()
 		return "", r.termStep(st)
-	case "terminal", "browser", "run", "expect-no-output", "expect-proc":
+	case "terminal", "browser", "run", "expect-no-output", "expect-proc", "split", "focus-pane":
 		return "", r.termStep(st)
 	case "press", "note":
 		if r.cur != nil && (st.Kind == "press" || st.AtLine) {

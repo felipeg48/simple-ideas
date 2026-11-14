@@ -182,7 +182,7 @@ var errStopping = fmt.Errorf("the run is stopping")
 
 // openTerm starts a terminal's shell (and, the first time, the page server
 // and si's prompt files); the lock keeps a shutdown from missing it.
-func (r *runner) openTerm(st *Step) (*term, error) {
+func (r *runner) openTerm(name, key string, opts map[string]string) (*term, error) {
 	r.pm.Lock()
 	defer r.pm.Unlock()
 	if r.stopping {
@@ -201,12 +201,12 @@ func (r *runner) openTerm(st *Step) (*term, error) {
 			return nil, err
 		}
 	}
-	t, err := openShell(st.Name, r.s.Shell, r.s.Dir(), r.rc, r.mask)
+	t, err := openShell(name, r.s.Shell, r.s.Dir(), r.rc, r.mask)
 	if err != nil {
 		return nil, err
 	}
-	t.opts = st.Opts
-	r.terms[st.Name] = t
+	t.opts = opts
+	r.terms[key] = t
 	r.allTerms = append(r.allTerms, t)
 	r.srv.add(t)
 	return t, nil
@@ -218,7 +218,7 @@ func (r *runner) terminal(st *Step) error {
 	t := r.terms[st.Name]
 	if t == nil {
 		var err error
-		if t, err = r.openTerm(st); err != nil {
+		if t, err = r.openTerm(st.Name, st.Name, st.Opts); err != nil {
 			return err
 		}
 		prev := r.c.Session
@@ -243,7 +243,7 @@ func (r *runner) terminal(st *Step) error {
 	if err := r.show(t.session); err != nil {
 		return err
 	}
-	r.cur = t
+	r.cur = t.pane(0)
 	if r.tk != nil {
 		if !r.tk.on {
 			if err := r.roll(); err != nil {
@@ -256,6 +256,79 @@ func (r *runner) terminal(st *Step) error {
 			if json.Unmarshal(v, &xy) == nil && xy[0] > 0 {
 				r.glide(xy[0], xy[1])
 				r.ripple(xy[0], xy[1])
+			}
+		}
+	}
+	return nil
+}
+
+// pane is pane n (1, 2) of the terminal t is a pane of; 0 is the pane in
+// focus. nil when the terminal has no such pane.
+func (t *term) pane(n int) *term {
+	root := t
+	if t.root != nil {
+		root = t.root
+	}
+	switch n {
+	case 1:
+		return root
+	case 2:
+		return root.split
+	}
+	if root.focus != nil {
+		return root.focus
+	}
+	return root
+}
+
+// split opens a second shell in the terminal in front, beside it (right) or
+// under it (down) on the same page, and puts it in focus.
+func (r *runner) split(st *Step) error {
+	t := r.cur.pane(1)
+	if t.split != nil {
+		return &failure{expected: "terminal " + strconv.Quote(t.name) + " splits", found: "it is split already"}
+	}
+	t2, err := r.openTerm(t.name+" (2)", t.name+"\x00split", t.opts)
+	if err != nil {
+		return err
+	}
+	t2.session, t2.root, t.split = t.session, t, t2
+	cfg, _ := json.Marshal(paneCfg(t2, r.srv.base))
+	dir, _ := json.Marshal(st.Value.Text)
+	if _, err := r.c.Eval(`window.__siTermSplit(` + string(dir) + `,` + string(cfg) + `)`); err != nil {
+		return err
+	}
+	end := time.Now().Add(10 * time.Second)
+	for {
+		if v, err := r.c.Eval(`!!window.__siTermSplitReady`); err == nil && string(v) == "true" {
+			break
+		}
+		if time.Now().After(end) {
+			return &failure{expected: "terminal " + strconv.Quote(t.name) + " splits", found: "its second pane did not start"}
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	if err := t2.prompt(15 * time.Second); err != nil {
+		return err
+	}
+	return r.focusPane(2)
+}
+
+// focusPane puts pane n of the terminal in front in focus: run, press and
+// expect output go to it; in a take the cursor moves over to it.
+func (r *runner) focusPane(n int) error {
+	p := r.cur.pane(n)
+	if p == nil {
+		return &failure{expected: fmt.Sprintf("pane %d", n), found: "terminal " + strconv.Quote(r.cur.pane(1).name) + " has one pane (terminal split right)"}
+	}
+	root := p.pane(1)
+	root.focus, r.cur = p, p
+	r.c.Eval(fmt.Sprintf(`window.__siTermFocus&&__siTermFocus(%d)`, n))
+	if r.tk != nil && r.tk.on {
+		if v, err := r.c.Eval(fmt.Sprintf(`window.__siTermSpot&&__siTermSpot(%d)`, n)); err == nil {
+			var xy [2]float64
+			if json.Unmarshal(v, &xy) == nil && xy[0] > 0 {
+				r.glide(xy[0], xy[1])
 			}
 		}
 	}
@@ -345,9 +418,22 @@ func (r *runner) termStep(st *Step) error {
 	p := r.procs[st.Name]
 	r.pm.Unlock()
 	t := r.cur
+	if st.Pane != 0 && t != nil { // run … in 2: that pane, the focus stays
+		if t = t.pane(st.Pane); t == nil {
+			return &failure{expected: fmt.Sprintf("pane %d", st.Pane), found: "terminal " + strconv.Quote(r.cur.pane(1).name) + " has one pane (terminal split right)"}
+		}
+	}
 	switch st.Kind {
 	case "terminal":
 		return r.terminal(st)
+	case "split", "focus-pane":
+		if t == nil {
+			return &failure{expected: "a terminal in front", found: "the browser is"}
+		}
+		if st.Kind == "focus-pane" {
+			return r.focusPane(st.Code)
+		}
+		return r.split(st)
 	case "browser":
 		return r.browser()
 	case "run":

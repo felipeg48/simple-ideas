@@ -130,8 +130,13 @@ the next slide. A slide with no notes stays its `(N min)` share, or 3 seconds
 (`autoplay.dwell` in si.conf). The spoken line shows as a caption (CC hides
 it); the bar pauses, resumes and stops. Any key that moves the deck, a click
 on the slide, the pen or a teleprompter's Next takes control back: auto-play
-pauses where you are, and Resume carries on from there. The teleprompter
-shows *auto-play* beside the slide number and follows along.
+pauses where you are, and Resume carries on from there: on the same slide
+and build step it goes on mid-part, the voice file from the second it
+stopped at and the browser's own voice from the sentence it was saying (it
+speaks a part one sentence at a time), instead of starting the part over;
+after a move to another slide or step, that part starts from its
+beginning. The teleprompter shows *auto-play* beside the slide number and
+follows along.
 
 ```markdown
 ---

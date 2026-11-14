@@ -5,6 +5,10 @@ package serve
 // consoles forbid framing (X-Frame-Options, CSP frame-ancestors), so each
 // target origin gets its own loopback reverse proxy that drops those headers;
 // the window frames the proxy. Play-only and loopback-only, like the terminal.
+// A page that sends the window to another site keeps it proxied: a redirect's
+// Location to another http(s) origin goes through that origin's own proxy
+// (started then), and the script put in each page hands cross-origin link
+// clicks to the window, which opens them through /_si/browser/open.
 
 import (
 	"bytes"
@@ -63,11 +67,11 @@ func (b *browserProxies) open(target *url.URL) (string, error) {
 			}
 			h.Set("Content-Security-Policy", strings.Join(keep, ";"))
 		}
-		if err := injectNav(res); err != nil {
+		if err := injectNav(res, key); err != nil {
 			return err
 		}
-		if loc := h.Get("Location"); strings.HasPrefix(loc, key) {
-			h.Set("Location", origin+strings.TrimPrefix(loc, key))
+		if loc := h.Get("Location"); loc != "" {
+			h.Set("Location", b.through(loc, key, origin))
 		}
 		if cs := h.Values("Set-Cookie"); len(cs) > 0 {
 			h.Del("Set-Cookie")
@@ -87,25 +91,56 @@ func (b *browserProxies) open(target *url.URL) (string, error) {
 	return origin, nil
 }
 
+// through maps an absolute redirect Location onto the proxy of its origin: the
+// same proxy for this target (key -> origin), another proxy (started now) for
+// another http(s) origin. A relative Location, or one that does not parse,
+// stays as it is.
+func (b *browserProxies) through(loc, key, origin string) string {
+	u, err := url.Parse(loc)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return loc
+	}
+	o := origin
+	if u.Scheme+"://"+u.Host != key {
+		if o, err = b.open(u); err != nil {
+			return loc
+		}
+	}
+	u.Scheme, u.Host = "", ""
+	return o + u.String()
+}
+
 // navScript goes into every proxied HTML page: it tells the window around it
 // where the page is (on load, links, history.pushState/replaceState, back and
-// forward) and runs the window's ← → ↻ (history.back/forward, reload), since
-// the deck, on another origin, cannot reach the frame's history itself.
-const navScript = `<script>(function(){var P=window.parent;if(P===window)return;` +
-	`function send(k){try{P.postMessage({si:'nav',kind:k,url:location.href,title:document.title},'*')}catch(e){}}` +
-	`['pushState','replaceState'].forEach(function(n){var f=history[n];history[n]=function(){var r=f.apply(this,arguments);send(n==='pushState'?'push':'replace');return r}});` +
-	`addEventListener('popstate',function(){send('pop')});addEventListener('hashchange',function(){send('pop')});` +
-	`addEventListener('load',function(){send('load')});` +
-	`addEventListener('message',function(e){var d=e.data;if(e.source!==P||!d||d.si!=='nav-cmd')return;` +
-	`if(d.cmd==='back')history.back();else if(d.cmd==='forward')history.forward();else if(d.cmd==='reload')location.reload()});` +
-	`send('load')})();</script>`
+// forward), with its real address (the target origin T in place of the
+// proxy's), runs the window's ← → ↻ (history.back/forward, reload), since
+// the deck, on another origin, cannot reach the frame's history itself, and
+// hands a click on a link to another origin to the window ({si:'nav-open'}),
+// which opens it through that origin's proxy.
+func navScript(target string) string {
+	t, _ := json.Marshal(target) // escapes <, so it cannot end the script
+	return `<script>(function(){var P=window.parent;if(P===window)return;var T=` + string(t) + `;` +
+		`function real(){var o=location.origin;return location.href.indexOf(o)===0?T+location.href.slice(o.length):location.href}` +
+		`function send(k){try{P.postMessage({si:'nav',kind:k,url:location.href,real:real(),title:document.title},'*')}catch(e){}}` +
+		`addEventListener('click',function(e){if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;` +
+		`var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;var u;try{u=new URL(a.getAttribute('href'),location.href)}catch(x){return}` +
+		`if(!/^https?:$/.test(u.protocol)||u.origin===location.origin)return;` +
+		`e.preventDefault();try{P.postMessage({si:'nav-open',url:u.href},'*')}catch(x){}});` +
+		`['pushState','replaceState'].forEach(function(n){var f=history[n];history[n]=function(){var r=f.apply(this,arguments);send(n==='pushState'?'push':'replace');return r}});` +
+		`addEventListener('popstate',function(){send('pop')});addEventListener('hashchange',function(){send('pop')});` +
+		`addEventListener('load',function(){send('load')});` +
+		`addEventListener('message',function(e){var d=e.data;if(e.source!==P||!d||d.si!=='nav-cmd')return;` +
+		`if(d.cmd==='back')history.back();else if(d.cmd==='forward')history.forward();else if(d.cmd==='reload')location.reload()});` +
+		`send('load')})();</script>`
+}
 
 var headRE, htmlRE = regexp.MustCompile(`(?i)<head(\s[^>]*)?>`), regexp.MustCompile(`(?i)<html(\s[^>]*)?>`)
 
 // injectNav puts navScript into an HTML response (after <head>, or <html>, or
 // first) and drops its CSP so the inline script runs. Other types, and a body
 // still encoded (an upstream that ignored the plain-text request), pass as they are.
-func injectNav(res *http.Response) error {
+// target is the real origin the page comes from.
+func injectNav(res *http.Response, target string) error {
 	ct := strings.ToLower(res.Header.Get("Content-Type"))
 	if !strings.HasPrefix(ct, "text/html") || res.Header.Get("Content-Encoding") != "" || res.Body == nil {
 		return nil
@@ -121,8 +156,9 @@ func injectNav(res *http.Response) error {
 	} else if loc := htmlRE.FindIndex(top); loc != nil {
 		at = loc[1]
 	}
-	out := make([]byte, 0, len(body)+len(navScript))
-	out = append(append(append(out, body[:at]...), navScript...), body[at:]...)
+	nav := navScript(target)
+	out := make([]byte, 0, len(body)+len(nav))
+	out = append(append(append(out, body[:at]...), nav...), body[at:]...)
 	res.Body = io.NopCloser(bytes.NewReader(out))
 	res.ContentLength = int64(len(out))
 	res.Header.Set("Content-Length", strconv.Itoa(len(out)))

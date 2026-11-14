@@ -243,13 +243,13 @@ pass. The steps that matter:
   `login|logout` (keys only in the user si.conf `<config dir>/si/si.conf`,
   0600; a project si.conf key is ignored with a warning; `config.APIKey`);
   `voice:` / `voice.style:` in si.conf. Next: a Windows run of install.
-  **With a terminal** (spec `2026-11-10-web-demos-terminal.md`, DONE v2.36.0
-  except `split`): `start:`/`stop:`/`shell:`, `terminal`/`run`/`expect
+  **With a terminal** (spec `2026-11-10-web-demos-terminal.md`, DONE v2.36.0;
+  `terminal split right|down`, `focus N`, `run … in 2` DONE v3.11.0): `start:`/`stop:`/`shell:`, `terminal`/`run`/`expect
   output`/`browser`, `start … as NAME`/`stop NAME`; `internal/webdemo/
   scriptterm.go`, `procs.go`, `output.go`, `term.go` (PTY shell + keyed page,
   xterm.js from `assets.TermFS`; the creack/pty exception now also covers web
   demos: never in a built deck), `runterm.go`; `app: none` for a
-  terminal-only demo. Next: `split`, ConPTY.
+  terminal-only demo. ConPTY (Windows) stays out: `cmd` on pipes.
 - **On hold until a user asks for it** (the founder, 2026-11-10; do not build
   before a real request):
   - **PowerPoint / Google Slides export.** Google Slides has no file format of
@@ -286,13 +286,16 @@ pass. The steps that matter:
   60%, `igFit` check estimate), Studio New/gallery starters and TUI text
   views (`internal/tui/timeline.go`). Next: gradients/shadows in the SVG.
 - **Browser windows** (DONE v3.2.2): `si play` key w, `browser:` front matter,
-  `internal/serve/browser.go` (per-origin loopback proxy), `web/term/web.js`.
+  `internal/serve/browser.go` (per-origin loopback proxy), `web/term/web.js`;
+  v3.11.0: links and redirects to other origins stay proxied (`through`,
+  `nav-open`), the address box shows the real address.
 - **Auto-play** (DONE v2.40.0, spec `docs/superpowers/specs/2026-11-10-autoplay.md`):
   `v` / ▶ Auto-play reads `Notes:` aloud and advances at each `[CLICK]`
   (`deck.Parts`, `web/deck/05-autoplay.js`); `si play` voices parts at
   `/_si/voice/` (`internal/serve/voice.go`, `webdemo.ForDeck`); `si build
   --autoplay[=inline]` writes `<deck>.voice/`; `--mp4 --voice` narrates video;
-  `voices:` per speaker. Next: resume mid-sentence.
+  `voices:` per speaker; v3.11.0: Resume carries on mid-part (audio
+  position, browser voice by sentence; `web/studio/e2e/autoplay.e2e.mjs`).
 - **Next five** (specs, 2026-11-09; the founder wants all, one at a time):
   `docs/superpowers/specs/2026-11-09-next-five.md` indexes audience mode
   (follow, polls, Q&A), handouts (`--handout`), record your talk

@@ -1,12 +1,14 @@
 package webdemo
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -52,6 +54,13 @@ func TestTerminalSteps(t *testing.T) {
 		{`note "Ready" at line "Server startup"`, Step{Kind: "note", Value: Value{Text: "Ready"}, Target: Locator{Name: "Server startup"}, AtLine: true}},
 		{`note "Ready" at line "a · b" · for 2s`, Step{Kind: "note", Value: Value{Text: "Ready"}, Target: Locator{Name: "a · b"}, AtLine: true, For: 2 * time.Second}},
 		{`expect "Pay" visible`, Step{Kind: "expect-state", Target: Locator{Name: "Pay"}, State: "visible"}},
+		{`terminal split right`, Step{Kind: "split", Value: Value{Text: "right"}}},
+		{`terminal split down`, Step{Kind: "split", Value: Value{Text: "down"}}},
+		{`focus 2`, Step{Kind: "focus-pane", Code: 2}},
+		{`run "tail -f app.log" in 2`, Step{Kind: "run", Value: Value{Text: "tail -f app.log"}, Pane: 2}},
+		{`run "make" in 1 · wait`, Step{Kind: "run", Value: Value{Text: "make"}, Pane: 1, Block: true}},
+		{`expect output "GET /" in 2 · within 5s`, Step{Kind: "expect-output", Value: Value{Text: "GET /"}, Pane: 2, Within: 5 * time.Second}},
+		{`wait for output "ready" in 2`, Step{Kind: "waitfor-output", Value: Value{Text: "ready"}, Pane: 2}},
 	}
 	for _, c := range cases {
 		st, err := ParseStep(c.in)
@@ -73,7 +82,8 @@ func TestTerminalSteps(t *testing.T) {
 	}
 	for _, bad := range []string{`terminal Broker`, `terminal "B" · window=linux`, `terminal "B" · size=10`, `terminal "B" · colour=red`, `browser now`,
 		`run ls`, `run "ls" · fast`, `run "ls" · exit x`, `start "x"`, `start "x" as`, `start "x" as a · wait for nothing`, `stop "load"`, `stop load · soon`,
-		`expect output sent`, `expect no output "x" · within 2s`, `expect load exited`, `expect output of "load" "x"`, `note "x" at line`} {
+		`expect output sent`, `expect no output "x" · within 2s`, `expect load exited`, `expect output of "load" "x"`, `note "x" at line`,
+		`terminal split left`, `terminal split`, `terminal split right · slide`, `run "ls" in 3`, `run "ls" in`, `expect output "x" in two`} {
 		if _, err := ParseStep(bad); err == nil {
 			t.Errorf("%s: no error", bad)
 		}
@@ -163,6 +173,20 @@ func TestCheckScenes(t *testing.T) {
 	}
 	if s := Parse("/x/s.md", "---\ntype: demo\napp: none\n---\n## A\n- go /\n## B\n- terminal \"T\"\n- browser\n"); len(s.Problems) != 3 {
 		t.Errorf("app: none: %v", s.Problems)
+	}
+	// split: a terminal in front first, once; pane 2 only after a split
+	split := "---\ntype: demo\napp: none\n---\n## S\n- terminal \"T\"\n" +
+		"- run \"ls\" in 2\n" + // 7: one pane yet
+		"- focus 2\n" + // 8: one pane yet
+		"- terminal split right\n- run \"ls\" in 1\n- focus 2\n- expect output \"x\" in 2\n" +
+		"- terminal split down\n" // 13: twice
+	s = Parse("/x/s.md", split)
+	got = nil
+	for _, p := range s.Problems {
+		got = append(got, p.Line)
+	}
+	if fmt.Sprint(got) != "[7 8 13]" {
+		t.Errorf("split problems at %v:\n%v", got, s.Problems)
 	}
 }
 
@@ -429,6 +453,40 @@ func TestTerminalPage(t *testing.T) {
 	if got := eval(`__siTermLine("not on screen")`); got != "false" {
 		t.Errorf("no line: %s", got)
 	}
+	// split right: a second shell on the page, each told the size it shows
+	tm2, err := openShell("Client (2)", "sh", t.TempDir(), rc, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tm2.close()
+	srv.add(tm2)
+	cfg, _ := json.Marshal(paneCfg(tm2, srv.base))
+	eval(`__siTermSplit("right",` + string(cfg) + `)`)
+	for i := 0; i < 100 && eval(`!!window.__siTermSplitReady`) != "true"; i++ {
+		time.Sleep(50 * time.Millisecond)
+	}
+	tm2.prompt(10 * time.Second)
+	time.Sleep(300 * time.Millisecond)
+	sizes := strings.Fields(strings.Trim(eval(`__siTermSize()`), `"`))
+	for i, x := range []*term{tm, tm2} {
+		x.out.mark()
+		at := len(x.out.text(0))
+		x.send("stty size\r")
+		var got string
+		for j := 0; j < 100; j++ {
+			if m := regexp.MustCompile(`\n(\d+) (\d+)`).FindStringSubmatch(x.out.text(at)); m != nil {
+				got = m[2] + "x" + m[1]
+				break
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+		if len(sizes) != 2 || got != sizes[i] {
+			t.Errorf("pane %d: the page shows %v, the shell has %s", i+1, sizes, got)
+		}
+	}
+	if got := eval(`document.querySelectorAll('.si-cw-body.is-split[data-split=right] > .si-term-pane').length + ' ' + document.querySelectorAll('.si-term-pane.is-focus').length`); got != `"2 1"` {
+		t.Errorf("split page: %s", got)
+	}
 	// a keyed URL: without the key, nothing
 	if res, err := http.Get(strings.Replace(srv.url(tm), srv.base, srv.base[:strings.LastIndex(srv.base, "/")]+"/nokey", 1)); err == nil {
 		if res.StatusCode != 404 {
@@ -483,6 +541,25 @@ func TestTerminalFailure(t *testing.T) {
 	}
 	if b, _ := os.ReadFile(filepath.Join(out, "slow.log")); string(b) != "up\n" {
 		t.Errorf("slow.log: %q", b)
+	}
+	// a split terminal: two shells, run in each, expect output in each
+	two := filepath.Join(dir, "two.md")
+	os.WriteFile(two, []byte("---\ntype: demo\napp: none\nshell: sh\n---\n## T\n- terminal \"T\"\n- run \"echo left-side\" · wait\n"+
+		"- terminal split right\n- run \"echo right-side\" · wait\n- expect output \"right-side\"\n- expect output \"left-side\" in 1\n"+
+		"- run \"echo again-left\" in 1 · wait\n- expect output \"again-left\" in 1\n- focus 1\n- expect output \"again-left\"\n"+
+		"- expect no output \"right-side\"\n"), 0o644)
+	s, _ = ParseFile(two)
+	if len(s.Problems) > 0 {
+		t.Fatal(s.Problems)
+	}
+	if rep, err := Run(s, Options{Chrome: chrome, Log: &log}); err != nil || !rep.OK() {
+		msg := ""
+		if rep != nil {
+			for _, st := range rep.Features[0].Steps {
+				msg += fmt.Sprintf("%s %s %s %s\n", st.Status, st.Expected, st.Found, st.Output)
+			}
+		}
+		t.Errorf("split: %v\n%s\n%s", err, msg, log.String())
 	}
 	// app: none, a terminal-only demo
 	only := filepath.Join(dir, "only.md")

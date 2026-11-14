@@ -365,6 +365,9 @@ Say: A load generator sends thirty messages.
 | `expect no output "text"` | the text never appears from there to the end of the `Say:` block |
 | `wait for output "text"` | like `expect output`, as a pause before what comes next |
 | `browser` | brings the app back in front |
+| `terminal split right` · `terminal split down` | splits the terminal in front in two: a second shell beside it (right) or under it (down) in the same window, both filmed; the new pane takes the focus. Once per terminal (two panes) |
+| `focus 1` · `focus 2` | the pane that `run`, `press` and `expect output` go to from then on (the other one dims a little on camera) |
+| `run "command" in 2` · `expect output "text" in 2` | that pane for this step only, the focus stays (`wait for output "…" in 1` too); `in 2` before `·`: `run "make" in 1 · wait` |
 | `note "…" at line "text"` | in a terminal, a callout under the line that shows the text, ringed |
 | `start "command" as NAME` | runs a program in the background for the rest of the feature (not filmed); `· wait for "text"`, `· wait for port N` or `· wait 3s` before going on |
 | `stop NAME` | stops it now; `· wait` waits for it to end on its own instead (a workload of a fixed length) |
@@ -407,8 +410,20 @@ while it keeps running.
 - `si check` follows the scenes: a browser step while a terminal is in front
   (write `- browser` first), a terminal step with no terminal, and a program
   name no `start` gave are problems, with their line.
-- On Windows a terminal is `cmd` on pipes (no colours); `run … · wait` and the
-  rest work the same.
+- On Windows a terminal is `cmd` on pipes (no colours; ConPTY is not used
+  yet); `run … · wait`, `terminal split` and the rest work the same.
+
+A server in one pane and its client in the other:
+
+```markdown
+- terminal "API" · window=mac
+- run "./bin/api --port 8080"
+- expect output "listening"
+- terminal split right
+- run "curl -s localhost:8080/orders/42" · wait
+- expect output "paid"
+- expect output "GET /orders/42" in 1
+```
 
 Examples: `examples/webdemo/` (a small shop, `shop.md`, and `broken.md`,
 whose coupon does not work; `broker.md`, a tiny broker in Go started with

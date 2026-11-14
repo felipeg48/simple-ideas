@@ -176,7 +176,13 @@
   touch comes to the front, and their places survive a live reload. Each page
   is shown through a loopback proxy si play starts for its origin, so consoles
   that refuse to be framed (X-Frame-Options, CSP `frame-ancestors`) still
-  show. Keys typed in a window never drive the deck.
+  show. A window keeps that across sites: a link to another origin (the
+  console's "Docs", a login page) and a redirect to one open through that
+  origin's own proxy, the address box always shows the real address, and
+  **←** / **→** go back and forward across the sites. (A page that changes
+  `location` from its own script to another origin leaves the proxy; type
+  the address in the box instead.) Keys typed in a window never drive the
+  deck.
 
   ```markdown
   ---

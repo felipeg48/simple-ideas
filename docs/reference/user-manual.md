@@ -300,7 +300,9 @@ part is voiced with the deck's voice (Kokoro `af_heart` when installed,
 `si build talk.md --autoplay` writes the voice beside the page
 (`talk.voice/`), `--autoplay=inline` inside it; a plain build speaks with the
 browser's voice. Captions show the line being said; `#autoplay` in the
-address opens it ready.
+address opens it ready. Pause and Resume on the same slide carry on
+mid-part (the voice from where it stopped, the browser's voice from its
+sentence); another slide starts its part from the beginning.
 
 The **terminal drawer** (`` ` ``) slides up a tabbed, real shell for running
 commands mid-demo (`docker ps`, `psql`, …). It exists only under
@@ -309,7 +311,11 @@ commands mid-demo (`docker ps`, `psql`, …). It exists only under
 splits the drawer into two panes (drag the divider), **⌘P** opens a file by
 a few letters of its path, **⌘⇧F** searches the files' text and opens a
 result at its line, and clicking line numbers spotlights lines for the
-audience (Esc clears). See `docs/terminal.md`.
+audience (Esc clears). **w** opens web pages (a broker's console) in floating
+windows over the slides, each origin through a loopback proxy so consoles
+that refuse framing still show; links and redirects to other sites stay
+proxied, the address box shows the real address, and ← → cross sites. See
+`docs/terminal.md`.
 
 A talk that shows something live can set it up itself: front matter
 `setup:` (must finish), `start:` (keeps running, `· wait for "ready"`),
@@ -493,6 +499,7 @@ Say: First we send one message.
 - `terminal`, `run`, `expect output`, `browser`: the shell filmed as a framed window
 - a failure on purpose: `run "si check bad.md" · exit 1` (or `· fails`), then `expect output "problem"`
 - `note "…" at line "ready"`, `press ctrl+c`, `expect load exited 0`
+- `terminal split right` (or `down`): a second shell in the same window, both filmed; `run "…" in 2`, `expect output "…" in 1`, `focus 2`
 
 Notes: (1 min)
 Many apps are a terminal and a web page together. The script starts the

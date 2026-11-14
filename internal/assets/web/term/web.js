@@ -5,7 +5,8 @@
  * before a live reload). Each window frames a web page through a loopback
  * proxy si play starts for that page's origin (internal/serve/browser.go), so
  * consoles that refuse framing still show. Windows move (drag the title bar),
- * resize (any edge or corner), go back and forward in the page (← →), zoom each window's page on its own (− / +), minimise to the dock, maximise and close; their
+ * resize (any edge or corner), follow links and redirects to other sites (each
+ * origin through its own proxy, the address bar showing the real address), go back and forward in the page (← →), zoom each window's page on its own (− / +), minimise to the dock, maximise and close; their
  * places survive a live reload (sessionStorage si-web). Styles live here, dark
  * and outside the deck theme, as the terminal's do. */
 (function () {
@@ -127,7 +128,7 @@
       el.querySelector('[data-a="fwd"]').disabled = at >= hist.length - 1;
     }
     w.onNav = function (d) {
-      var u = real(String(d.url || '')), cmd = pend; pend = '';
+      var u = d.real ? String(d.real) : real(String(d.url || '')), cmd = pend; pend = '';
       if (u === hist[at]) { /* the same page again (load after the first report) */ }
       else if (d.kind === 'replace' && at >= 0) hist[at] = u;
       else if ((cmd === 'back' || d.kind === 'pop') && hist[at - 1] === u) at--;
@@ -138,6 +139,7 @@
       navButtons();
     };
     w.frame = frame;
+    w.go = function (u) { go(u); };
     function navCmd(c) { pend = c; try { frame.contentWindow.postMessage({ si: 'nav-cmd', cmd: c }, '*'); } catch (e) {} }
     function go(u) {
       w.url = norm(u); input.value = w.url; recent(w.url); save();
@@ -244,8 +246,13 @@
 
   // the nav reports from each window's own frame only
   window.addEventListener('message', function (ev) {
-    var d = ev.data; if (!d || d.si !== 'nav') return;
-    wins.forEach(function (w) { if (w.frame && ev.source === w.frame.contentWindow) w.onNav(d); });
+    var d = ev.data; if (!d || (d.si !== 'nav' && d.si !== 'nav-open')) return;
+    wins.forEach(function (w) {
+      if (!w.frame || ev.source !== w.frame.contentWindow) return;
+      /* a link to another site: the window opens it through that site's proxy */
+      if (d.si === 'nav-open') { if (/^https?:\/\//i.test(String(d.url))) w.go(String(d.url)); }
+      else w.onNav(d);
+    });
   });
 
   window.siWeb = { picker: picker, open: open, restoreOnly: function () {} };

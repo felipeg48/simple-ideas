@@ -184,6 +184,13 @@ func termStep(st *Step, word, rest string) (*Step, error) {
 		st.Kind = "browser"
 		return st, transClauses(st, parts[1:])
 	case "terminal":
+		if w, dir := cutWord(head); w == "split" { // terminal split right|down: a second shell beside the first
+			if (dir != "right" && dir != "down") || len(parts) > 1 {
+				return bad("%q: write terminal split right or terminal split down")
+			}
+			st.Kind, st.Value.Text = "split", dir
+			return st, nil
+		}
 		name, tail, err := quoted(head)
 		if err != nil || name == "" || tail != "" {
 			return bad(`%q: write terminal "Name" (· window=terminal title="…" theme=night backdrop=graphite size=100x30)`)
@@ -218,8 +225,11 @@ func termStep(st *Step, word, rest string) (*Step, error) {
 		return st, nil
 	case "run":
 		cmd, tail, err := quoted(head)
+		if err == nil {
+			tail, err = paneClause(st, tail)
+		}
 		if err != nil || cmd == "" || tail != "" {
-			return bad(`%q: write run "command" (· wait to wait until it exits)`)
+			return bad(`%q: write run "command" (in 2 for a split terminal's pane, · wait to wait until it exits)`)
 		}
 		st.Kind, st.Value.Text = "run", cmd
 		for _, c := range parts[1:] {
@@ -268,6 +278,20 @@ func termStep(st *Step, word, rest string) (*Step, error) {
 	return nil, fmt.Errorf("unknown step %q", st.Text)
 }
 
+// paneClause reads a trailing `in 1` or `in 2` (a split terminal's pane)
+// into st.Pane; what is left comes back.
+func paneClause(st *Step, tail string) (string, error) {
+	w, n := cutWord(tail)
+	if w != "in" {
+		return tail, nil
+	}
+	if n != "1" && n != "2" {
+		return tail, fmt.Errorf("in 1 or in 2")
+	}
+	st.Pane = atoi(n)
+	return "", nil
+}
+
 func termOption(k, v string) error {
 	one := func(list []string) error {
 		for _, x := range list {
@@ -309,6 +333,9 @@ func outputStep(st *Step, kind, rest string) (*Step, error) {
 		st.Name, r = n, r3
 	}
 	t, tail, err := quoted(r)
+	if err == nil && st.Name == "" {
+		tail, err = paneClause(st, tail)
+	}
 	if err != nil || t == "" || tail != "" {
 		return nil, fmt.Errorf(`%q: the text goes in quotes: %s "text"`, st.Text, map[string]string{"expect-output": "expect output", "expect-no-output": "expect no output", "waitfor-output": "wait for output"}[kind])
 	}
@@ -366,7 +393,8 @@ func (s *Script) checkScenes(f *Feature) {
 			}
 		}
 	}
-	term := "" // the current terminal ("" = the browser)
+	term := ""                 // the current terminal ("" = the browser)
+	split := map[string]bool{} // terminals split in two
 	if first := firstStep(f); s.App == "none" && first != nil && first.Kind != "terminal" {
 		s.problem(first.Line, `with app: none (a terminal-only demo) a feature begins with terminal "Name"`)
 	}
@@ -377,6 +405,17 @@ func (s *Script) checkScenes(f *Feature) {
 				s.problem(st.Line, "%q: app: none has no browser (a terminal-only demo)", st.Text)
 			case st.Kind == "terminal":
 				term = st.Name
+			case st.Kind == "split" || st.Kind == "focus-pane" || st.Pane != 0:
+				switch {
+				case term == "":
+					s.problem(st.Line, `%q needs a terminal: write - terminal "Name" before it`, st.Text)
+				case st.Kind == "split" && split[term]:
+					s.problem(st.Line, "%q: terminal %q is split already (two panes at most)", st.Text, term)
+				case st.Kind == "split":
+					split[term] = true
+				case !split[term] && (st.Code == 2 || st.Pane == 2):
+					s.problem(st.Line, "%q: terminal %q has one pane: write - terminal split right before it", st.Text, term)
+				}
 			case st.Kind == "browser" || st.Kind == "window":
 				term = ""
 			case inBrowser[st.Kind] && term != "" && st.Opts["off"] == "":

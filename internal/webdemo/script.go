@@ -128,7 +128,8 @@ type Step struct {
 	Block  bool              // run … · wait, stop NAME · wait
 	Within time.Duration     // · within 30s
 	Ready  Ready             // start …: what to wait for before going on
-	Code   int               // expect NAME exited N; run … · exit N (-1: · fails, any non-zero); window N
+	Code   int               // expect NAME exited N; run … · exit N (-1: · fails, any non-zero); window N; focus N (a pane)
+	Pane   int               // run … in 2, expect output … in 2: a pane of a split terminal (0 = the one in focus)
 
 	Trans *Transition   // go, browser, terminal, window: … · slide 0.6s (nil = the script's)
 	Dur   time.Duration // zoom to, pan to, zoom out: … · 0.8s (0 = 0.8s)
@@ -561,6 +562,10 @@ func ParseStep(line string) (*Step, error) {
 	case "zoom", "pan":
 		return cameraStep(st, word, rest)
 	case "spotlight", "focus":
+		if word == "focus" && (rest == "1" || rest == "2") { // focus 2: a pane of a split terminal
+			st.Kind, st.Code = "focus-pane", atoi(rest)
+			return st, nil
+		}
 		return spotStep(st, rest)
 	case "lower-third":
 		return thirdStep(st, rest)

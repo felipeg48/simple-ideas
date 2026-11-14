@@ -3,6 +3,22 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.11.0:** three open items. **Auto-play resumes mid-part:** Pause (a
+  click, a key, the pen) and Resume on the same slide and build step go on
+  where the voice stopped, the voice file from its second and the browser's
+  own voice from its sentence (it now speaks a part one sentence at a time),
+  instead of starting the part over; another slide or step starts its part
+  from the beginning. **Browser windows keep the proxy across sites:** a
+  link to another origin and a redirect to one open through that origin's
+  own loopback proxy, so consoles that send you to their docs or login page
+  stay framed; the address box shows the real address on every site, and ←
+  → go back and forward across them. **Web demos: split terminals:**
+  `terminal split right` (or `down`) opens a second shell beside the first
+  in the same window, both filmed; `focus 2` picks the pane `run`, `press`
+  and `expect output` go to, `run "…" in 2` and `expect output "…" in 1`
+  pick one for a step; `si check` follows the panes. The broker example
+  sends a message from a pane under the broker. ConPTY (Windows) stays out:
+  terminals there are `cmd` on pipes.
 - **v3.10.0:** timelines and infographics, the four open items. Two new
   timeline layouts: **`layout: eras`**, one column per era (a coloured header
   with the era's name and dates, its milestones stacked under it, pictures as

@@ -631,8 +631,13 @@ the next slide. A slide with no notes stays its `(N min)` share, or 3 seconds
 (`autoplay.dwell` in si.conf). The spoken line shows as a caption (CC hides
 it); the bar pauses, resumes and stops. Any key that moves the deck, a click
 on the slide, the pen or a teleprompter's Next takes control back: auto-play
-pauses where you are, and Resume carries on from there. The teleprompter
-shows *auto-play* beside the slide number and follows along.
+pauses where you are, and Resume carries on from there: on the same slide
+and build step it goes on mid-part, the voice file from the second it
+stopped at and the browser's own voice from the sentence it was saying (it
+speaks a part one sentence at a time), instead of starting the part over;
+after a move to another slide or step, that part starts from its
+beginning. The teleprompter shows *auto-play* beside the slide number and
+follows along.
 
 ```markdown
 ---
@@ -1246,7 +1251,13 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   touch comes to the front, and their places survive a live reload. Each page
   is shown through a loopback proxy si play starts for its origin, so consoles
   that refuse to be framed (X-Frame-Options, CSP `frame-ancestors`) still
-  show. Keys typed in a window never drive the deck.
+  show. A window keeps that across sites: a link to another origin (the
+  console's "Docs", a login page) and a redirect to one open through that
+  origin's own proxy, the address box always shows the real address, and
+  **←** / **→** go back and forward across the sites. (A page that changes
+  `location` from its own script to another origin leaves the proxy; type
+  the address in the box instead.) Keys typed in a window never drive the
+  deck.
 
   ```markdown
   ---
@@ -3361,6 +3372,9 @@ Say: A load generator sends thirty messages.
 | `expect no output "text"` | the text never appears from there to the end of the `Say:` block |
 | `wait for output "text"` | like `expect output`, as a pause before what comes next |
 | `browser` | brings the app back in front |
+| `terminal split right` · `terminal split down` | splits the terminal in front in two: a second shell beside it (right) or under it (down) in the same window, both filmed; the new pane takes the focus. Once per terminal (two panes) |
+| `focus 1` · `focus 2` | the pane that `run`, `press` and `expect output` go to from then on (the other one dims a little on camera) |
+| `run "command" in 2` · `expect output "text" in 2` | that pane for this step only, the focus stays (`wait for output "…" in 1` too); `in 2` before `·`: `run "make" in 1 · wait` |
 | `note "…" at line "text"` | in a terminal, a callout under the line that shows the text, ringed |
 | `start "command" as NAME` | runs a program in the background for the rest of the feature (not filmed); `· wait for "text"`, `· wait for port N` or `· wait 3s` before going on |
 | `stop NAME` | stops it now; `· wait` waits for it to end on its own instead (a workload of a fixed length) |
@@ -3403,8 +3417,20 @@ while it keeps running.
 - `si check` follows the scenes: a browser step while a terminal is in front
   (write `- browser` first), a terminal step with no terminal, and a program
   name no `start` gave are problems, with their line.
-- On Windows a terminal is `cmd` on pipes (no colours); `run … · wait` and the
-  rest work the same.
+- On Windows a terminal is `cmd` on pipes (no colours; ConPTY is not used
+  yet); `run … · wait`, `terminal split` and the rest work the same.
+
+A server in one pane and its client in the other:
+
+```markdown
+- terminal "API" · window=mac
+- run "./bin/api --port 8080"
+- expect output "listening"
+- terminal split right
+- run "curl -s localhost:8080/orders/42" · wait
+- expect output "paid"
+- expect output "GET /orders/42" in 1
+```
 
 Examples: `examples/webdemo/` (a small shop, `shop.md`, and `broken.md`,
 whose coupon does not work; `broker.md`, a tiny broker in Go started with

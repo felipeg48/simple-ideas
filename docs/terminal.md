@@ -202,6 +202,32 @@ for the address box, and keeps a per-window list of addresses and a position
 (a new address after a back drops the ones ahead) to dim ← and →.
 `TestBrowserProxyInjectsNav`.
 
+Across sites (v3.11.0): the injected script carries the page's real origin
+(`T`) and reports `real` (the real address) with each nav message, so the
+address box is right on any proxy. A click on a link to another http(s)
+origin is cancelled in the page and posted as `{si:'nav-open', url}`; the
+window opens it through `/_si/browser/open` (that origin's proxy, started
+once) as a new frame address, so the frame's history (← →) spans the sites.
+A redirect's absolute `Location` is rewritten by `through`: the same proxy
+for its own origin, another origin's proxy (started then) for any other
+http(s) origin; a relative `Location` stays. A page script that assigns
+`location` to another origin leaves the proxy (not caught).
+`TestBrowserProxyAcrossSites`; `web/studio/e2e/browser.e2e.mjs` (two local
+origins, headless).
+
+## Web demo terminals: split
+
+`si demo test|run` terminals (`internal/webdemo/term.go`, `termpage.js`)
+reuse the pty and xterm.js, one keyed page per terminal. `terminal split
+right|down` opens a second shell (`term.split` on the first pane, `root` on
+the second) and calls `__siTermSplit(dir, {out, size})` on the same page:
+the body becomes two `.si-term-pane`s (flex row or column), the first pane
+refits and tells its shell the new size, the second streams its own output;
+both are on the page the screencast films. `focus N` sets the pane `run`,
+`press` and `expect output` go to (`__siTermFocus`, the other dims); `run …
+in 2` picks a pane for one step. Two panes at most. On Windows the shells
+are `cmd` on pipes, as for one terminal; ConPTY is not used.
+
 ## Viewer tabs
 
 The Viewer icon (`term.js` `newViewer`): a tab `{viewer: true, pane, tabEl}` in the

@@ -42,6 +42,9 @@ type term struct {
 	base    int    // marks seen when the first command was typed (idle prompts: the first, redraws on resize)
 	id      string // on the terminal server
 	session string // the page's DevTools session
+	split   *term  // terminal split …: the second pane's shell (on the first pane)
+	root    *term  // the first pane (on the second)
+	focus   *term  // the pane in focus (on the first pane; nil = itself)
 	once    sync.Once
 }
 
@@ -228,12 +231,17 @@ func (s *termServer) page(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, termHTML(t, s.base))
 }
 
+// paneCfg is what the page needs to show a shell: its output and size URLs.
+func paneCfg(t *term, base string) map[string]any {
+	return map[string]any{"out": base + "/o/" + t.id, "size": base + "/s/" + t.id}
+}
+
 // termHTML is the page of t (base: the server's keyed URL).
 func termHTML(t *term, base string) string {
 	o := t.opts
 	win := firstOf(o["window"], "terminal")
 	title := firstOf(o["title"], t.name)
-	cfg := map[string]any{"out": base + "/o/" + t.id, "size": base + "/s/" + t.id}
+	cfg := paneCfg(t, base)
 	if m := sizeRE.FindStringSubmatch(o["size"]); m != nil {
 		cfg["cols"], cfg["rows"] = atoi(m[1]), atoi(m[2])
 	}
@@ -248,8 +256,14 @@ html,body{margin:0;height:100%;background:#14161a;overflow:hidden}
 .si-cw .si-cw-win{inline-size:100%;block-size:100%}
 .si-cw[data-backdrop="none"] .si-cw-win{border-radius:0}
 .si-cw .si-cw-body{flex:1;min-block-size:0;padding:.7em .4em .5em 1em;overflow:hidden;line-height:normal;background:var(--si-cw-bg)}
+.si-cw-body.is-split{display:flex;gap:0;padding:0}
+.si-cw-body.is-split[data-split=down]{flex-direction:column}
+.si-cw-body.is-split>.si-term-pane{flex:1 1 0;min-inline-size:0;min-block-size:0;padding:.7em .4em .5em 1em;opacity:.62;transition:opacity .3s}
+.si-cw-body.is-split>.si-term-pane.is-focus{opacity:1}
+.si-cw-body.is-split[data-split=right]>.si-term-pane+.si-term-pane{border-inline-start:1px solid color-mix(in srgb,var(--si-cw-fg) 22%,transparent)}
+.si-cw-body.is-split[data-split=down]>.si-term-pane+.si-term-pane{border-block-start:1px solid color-mix(in srgb,var(--si-cw-fg) 22%,transparent)}
 .si-cw .si-cw-prompt{display:none}
-#si-term{block-size:100%}
+#si-term,.si-term-pane{block-size:100%}
 .xterm .xterm-viewport{overflow-y:hidden}
 </style></head><body>
 <figure class="si-cw si-cw-on" data-window="` + html.EscapeString(win) + `" data-cw-theme="` + html.EscapeString(firstOf(o["theme"], "night")) + `" data-backdrop="` + html.EscapeString(firstOf(o["backdrop"], "graphite")) + `" aria-label="` + html.EscapeString(title) + `">
