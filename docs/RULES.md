@@ -4791,7 +4791,8 @@ structure:
 `slides/pdf/` **and** `html/pdfs/`, the labs into `labs/`, the website into
 `html/` with its pictures in `html/images/`, the videos into `videos/`, and
 last the zips into `dist/`: `rabbitmq-html.zip` (the whole `html/` folder)
-and `rabbitmq-deck.zip` (every deck with what it links to). `index.html`
+and `rabbitmq-deck.zip` (every deck with what it links to, the index and
+labs included). `index.html`
 stays at the root, its tiles pointing into the folders. The example project
 is `examples/structure/`.
 
@@ -4810,7 +4811,7 @@ folder's own name. Paths of `html/:zip` are relative to it.
 | `deck`, `lab`, `guide`, `course`, `site`, `article`, `timeline`, `infographic`, `mindmap`, `book`, `demo` | the pages of that type (`type:` in front matter; a folder with `_nav.md`, `_course.md` or `_site.md` for guide, course, site, book). One guide, course, site or book fills its folder; several get a subfolder each |
 | `image`, `animation`, `video` | the pictures (`.png`, `.jpg`, `.webp`), animations (`.svg`, `.gif`, and every SVG canvas also as a file) and videos and sound the pages use. With such a folder, pictures are linked from it, not inlined (as `--no-inline-media`); canvases stay inline in the slides, they must for their states |
 | `kind:format` | a derived file: `deck:pdf`, `deck:mp4`, `deck:handout`, `course:scorm`, `course:pdf` (the workbook), `book:pdf`, `timeline:png` / `pdf` / `svg`, `infographic:png` / `pdf` / `svg`, `mindmap:png` / `pdf` / `svg` / `mp4`. Naming one is the same as its flag (`--pdf`, `--mp4`, `--handout`, `--scorm`, `--png`, `--svg`): the map builds it |
-| `kind:zip` | a bundle: every output of that kind (pages and their derived files) with the pictures and videos they link to, paths as in the project: `<project>-<kind>.zip` |
+| `kind:zip` | a bundle: every output of that kind (pages and their derived files) with the pictures and videos they link to, and the built pages they link to (the index, a lab) with their pictures, one level deep, paths as in the project, so the bundle's links work: `<project>-<kind>.zip` |
 | `folder/:zip` | a bundle: a folder of the map, zipped whole after it is built: `<project>-<folder>.zip` |
 
 A kind listed in two folders is written to both (copies). A derived file the
@@ -4845,9 +4846,13 @@ rabbitmq` does the same when `rabbitmq/si.conf` already has a
 **`si check`** checks every folder of sources and warns about the map: an
 unknown kind or format, an indentation that does not line up, a folder name
 without its `/` (each with its line in `si.conf`), a bundle naming a folder
-the map does not define, a bundle that would be empty, a source of a kind
-with no folder (it builds into the project root), and a source sitting in a
-folder meant for another kind (a lab in `slides/`).
+the map does not define, a folder bundle that would be empty, a source of a
+kind with no folder (it builds into the project root), and a source sitting
+in a folder meant for another kind (a lab in `slides/`). A kind bundle for a
+kind the project has no source of yet (`course:scorm` before the
+`_course.md`) is a note, not a warning: `note: … nothing to bundle yet`, so
+the map can be written ahead of the content and a new `--structure` project
+checks clean.
 
 **`si play` and `si serve`** serve the sources as always, live, from where
 they sit: the map is about what `si build` writes.

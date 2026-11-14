@@ -255,8 +255,10 @@ Not everything is a slide deck. Pick the type by what the reader does:
   `si build <project>` writes each kind there and rewrites the links; keep
   sources in the `markdown` folder and link between sources as usual (by
   `.md` file and relative picture paths), never to built paths. Run `si
-  check <project>`: it warns about empty bundles, kinds with no folder and
-  sources in the wrong folder. No block: the flat layout.
+  check <project>`: it warns about empty folder bundles, kinds with no folder
+  and sources in the wrong folder (a kind bundle with no source yet, such as
+  `course:scorm` before the course, is only a note). `deck:zip` carries the
+  pages the decks link to (index, labs). No block: the flat layout.
 - **Steps:** in a lab or a guide, `## Step 1: Start the stack` shows a
   numbered badge. Put the time and prerequisites in a key/value table at the
   top (`| | |` header, then `| **Time** | 10 minutes |`).

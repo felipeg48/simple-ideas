@@ -545,7 +545,7 @@ func bundle(root, project string, st *config.Structure, items []*item, stdout, s
 	write := func(files []string, folder, what string) {
 		name := project + "-" + what + ".zip"
 		if len(files) == 0 {
-			fmt.Fprintf(stderr, "  warning: structure: %s/%s would be empty: nothing of that kind was built\n", folder, name)
+			fmt.Fprintf(stderr, "  note: structure: %s/%s: nothing to bundle yet, nothing of that kind was built\n", folder, name)
 			return
 		}
 		dest := filepath.Join(root, filepath.FromSlash(folder), name)
@@ -575,9 +575,17 @@ func bundle(root, project string, st *config.Structure, items []*item, stdout, s
 				}
 				add(it.dests[0])
 				if strings.HasSuffix(it.dests[0], ".html") {
-					for _, ref := range localRefs(root, it.dests[0]) { // its pictures and videos, not the other pages
-						if !strings.HasSuffix(ref, ".html") {
-							add(ref)
+					// its pictures and videos, and the built pages it links to
+					// (the index, a lab) with theirs: one level, so the bundle's
+					// links work without pulling in the whole project
+					for _, ref := range localRefs(root, it.dests[0]) {
+						add(ref)
+						if strings.HasSuffix(ref, ".html") {
+							for _, r2 := range localRefs(root, ref) {
+								if !strings.HasSuffix(r2, ".html") {
+									add(r2)
+								}
+							}
 						}
 					}
 				}
@@ -617,9 +625,11 @@ func bundle(root, project string, st *config.Structure, items []*item, stdout, s
 	return ok
 }
 
-// structureWarnings are si check's notes on a project's map and its sources.
-func structureWarnings(src string, st *config.Structure) []string {
-	var out []string
+// structureWarnings are si check's warnings on a project's map and its
+// sources, and its notes: a kind bundle (deck:zip, course:scorm) for a kind
+// the project has no source of yet is a note, nothing to bundle yet, since a
+// map is often written before the content.
+func structureWarnings(src string, st *config.Structure) (out, notes []string) {
 	decks, guides, paths := sources(src, st)
 	kinds := map[string]bool{}
 	for _, k := range decks {
@@ -687,18 +697,22 @@ func structureWarnings(src string, st *config.Structure) []string {
 			case r.Folder != "" && st.Folder(r.Folder) != nil && !gets(r.Folder):
 				out = append(out, fmt.Sprintf("si.conf line %d: structure: %s would be empty: no source builds into %s/", r.Line, r, r.Folder))
 			case r.Folder == "" && (r.Format == "zip" || r.Format == "scorm") && !kinds[r.Kind]:
-				out = append(out, fmt.Sprintf("si.conf line %d: structure: %s would be empty: the project has no %s", r.Line, r, r.Kind))
+				notes = append(notes, fmt.Sprintf("si.conf line %d: structure: %s: nothing to bundle yet, the project has no %s", r.Line, r, r.Kind))
 			}
 		}
 	}
-	return out
+	return out, notes
 }
 
 // checkStructured is si check of a project with a map: its notes, then every
 // folder that holds sources.
 func checkStructured(src string, st *config.Structure, budget config.Budget, stdout, stderr io.Writer) int {
-	for _, w := range structureWarnings(src, st) {
+	warns, notes := structureWarnings(src, st)
+	for _, w := range warns {
 		fmt.Fprintf(stderr, "warning: %s\n", w)
+	}
+	for _, n := range notes {
+		fmt.Fprintf(stderr, "note: %s\n", n)
 	}
 	code := exitOK
 	for _, d := range append([]string{src}, sourceDirs(src, st)...) {

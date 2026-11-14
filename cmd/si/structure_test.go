@@ -139,11 +139,11 @@ func TestExamplesStructure(t *testing.T) {
 		}
 	}
 	zips := map[string]string{
-		"dist/rabbitmq-deck.zip": "html/images/exchange.png html/images/publish.poster.jpg slides/intro.html videos/publish.mp4",
+		"dist/rabbitmq-deck.zip": "html/images/exchange.png html/images/publish.poster.jpg index.html labs/lab-queues.html slides/intro.html videos/publish.mp4", // with the pages the deck links to
 		"dist/rabbitmq-html.zip": "animations/queue.svg brokers.html images/broker.png images/exchange.png images/publish.poster.jpg index.html",
 	}
 	if chrome {
-		zips["dist/rabbitmq-deck.zip"] = "html/images/exchange.png html/images/publish.poster.jpg slides/intro.html slides/pdf/intro.pdf videos/publish.mp4"
+		zips["dist/rabbitmq-deck.zip"] = "html/images/exchange.png html/images/publish.poster.jpg index.html labs/lab-queues.html slides/intro.html slides/pdf/intro.pdf videos/publish.mp4"
 		zips["dist/rabbitmq-html.zip"] = "animations/queue.svg brokers.html images/broker.png images/exchange.png images/publish.poster.jpg index.html pdfs/intro.pdf"
 	}
 	for z, w := range zips {
@@ -159,6 +159,13 @@ func TestExamplesStructure(t *testing.T) {
 		sort.Strings(names)
 		if strings.Join(names, " ") != w {
 			t.Errorf("%s holds %v, want %s", z, names, w)
+		}
+		if z == "dist/rabbitmq-deck.zip" { // every page the deck links to comes along
+			for _, ref := range localRefs(dir, "slides/intro.html") {
+				if !strings.Contains(" "+w+" ", " "+ref+" ") {
+					t.Errorf("%s lacks %s, linked from slides/intro.html", z, ref)
+				}
+			}
 		}
 	}
 }
@@ -222,7 +229,8 @@ func TestStructureRoute(t *testing.T) {
 			t.Errorf("%s -> %q, want %q", k, got[k], w)
 		}
 	}
-	warns := strings.Join(structureWarnings(src, st), "\n")
+	ws, _ := structureWarnings(src, st)
+	warns := strings.Join(ws, "\n")
 	for _, w := range []string{"md/timeline.md: a timeline, and the structure has no timeline folder"} {
 		if !strings.Contains(warns, w) {
 			t.Errorf("warnings lack %q:\n%s", w, warns)
@@ -241,7 +249,7 @@ func TestStructureCheckWarnings(t *testing.T) {
 	run([]string{"check", src}, &stdout, &stderr)
 	for _, w := range []string{
 		"slides/lab.md: a lab source in slides/, the folder for deck; sources go in md/",
-		"course:scorm would be empty: the project has no course",
+		"note: si.conf line 5: structure: course:scorm: nothing to bundle yet, the project has no course",
 	} {
 		if !strings.Contains(stderr.String(), w) {
 			t.Errorf("check lacks %q:\n%s", w, stderr.String())
@@ -269,8 +277,11 @@ func TestNewStructure(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, "md", "si.conf")); err == nil {
 		t.Error("one si.conf, at the project root")
 	}
-	if code := run([]string{"check", dir}, &stdout, &stderr); code != 0 {
-		t.Errorf("a new structured project checks: %s", stderr.String())
+	if code := run([]string{"check", dir}, &stdout, &stderr); code != 0 || strings.Contains(stderr.String(), "warning") {
+		t.Errorf("a new structured project checks without warnings: %s", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "note: si.conf line") || !strings.Contains(stderr.String(), "course:scorm: nothing to bundle yet") {
+		t.Errorf("an empty kind bundle is a note: %s", stderr.String())
 	}
 	// plain si new into a folder whose si.conf has a map makes its folders too
 	other := filepath.Join(t.TempDir(), "kafka")
