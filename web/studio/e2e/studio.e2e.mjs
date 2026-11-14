@@ -551,8 +551,8 @@ tests["window view: style, callout, undo"] = async function () {
     await until(() => f.$(".si-cw.si-cw-on .si-cw-l"), 8000, "the window is drawn");
     await page.selectOption("#cw-window", "windows");
     await until(() => readFileSync(CODE, "utf8").split("window=windows").length === 3, 6000, "both steps saved with window=windows");
-    const g = await (await page.waitForSelector(".cwx iframe")).contentFrame();
-    await until(() => g.$('.si-cw[data-window="windows"] .si-cw-ctl'), 6000, "the preview follows");
+    // the preview iframe is replaced when the page reloads: look it up afresh each try
+    await until(async () => (await (await page.$(".cwx iframe"))?.contentFrame())?.$('.si-cw[data-window="windows"] .si-cw-ctl'), 12000, "the preview follows");
     await page.fill("#cw-new-text", "the entry point");
     await page.click(".cwx button:has-text('Add callout')");
     await until(() => readFileSync(CODE, "utf8").includes("<!-- callout: 1 the entry point -->"), 6000, "the callout saved");
