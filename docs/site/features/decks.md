@@ -233,6 +233,19 @@ si play "https://example.com/talk.md · sha256 9f2a…"
 
 Example: `examples/live/talk.md`.
 
+## The presenter's workbench
+
+<!-- si-video: workbench -->
+
+Under `si play` the deck is also a workbench, on your own machine only:
+<kbd>`</kbd> opens a drawer of real shells under the slides (tabs, a text
+size per tab, a height you drag, minimise and maximise); a tools bar on its
+right holds the `runbook:` and `demos:` commands, one click to run, and
+Viewer tabs that read, follow and edit files; <kbd>w</kbd> opens web pages
+(`browser:` links) in windows over the slides, each moved, resized and
+zoomed on its own, with back and forward. Save the deck and all of it comes
+back after the reload, the shells still running. Full list: [14. Presenting](../rules/14-presenting-keys-touch-overview-print.md).
+
 ## Share it
 
 ```bash
