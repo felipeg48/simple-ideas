@@ -80,7 +80,7 @@ func TestSkillJarPublish(t *testing.T) {
 
 	steps = nil
 	course.Lessons = []SJLesson{course.Lessons[0], course.Lessons[2], course.Lessons[3]} // the reading is gone
-	course.Lessons[2].Hash = "q2"                                                       // the quiz changed
+	course.Lessons[2].Hash = "q2"                                                        // the quiz changed
 	if _, err := sj.Publish(context.Background(), course, again, nil); err != nil {
 		t.Fatal(err)
 	}

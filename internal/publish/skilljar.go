@@ -22,7 +22,9 @@ import (
 type SkillJar struct{ API, Key string }
 
 // NewSkillJar is a client for the real Skilljar API.
-func NewSkillJar(key string) *SkillJar { return &SkillJar{API: "https://api.skilljar.com/v1", Key: key} }
+func NewSkillJar(key string) *SkillJar {
+	return &SkillJar{API: "https://api.skilljar.com/v1", Key: key}
+}
 
 // SJCourse is a course as Skilljar gets it.
 type SJCourse struct {
