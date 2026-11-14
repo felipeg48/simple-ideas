@@ -386,6 +386,8 @@ var Hooks = []Hook{
 	{`.si-course-dock`, "course: the bottom bar (phones, and nav: bottom): where you are, Outline, Back, Next"},
 	{`.si-course-where`, "course: the lesson and place in the bottom bar"},
 	{`.si-course-go`, "course: the Next (or Finish) button of the bottom bar"},
+	{`.si-course-back`, "course: the Back button of the bottom bar"},
+	{`.si-course-outline`, "course: the Outline button of the bottom bar (opens the navigator)"},
 	{`.si-course-live`, "course: the placeholder of an instructor demo, or of a video not filmed yet"},
 	{`.si-course-live-t`, "course: the placeholder's first line"},
 	{`.si-course-video`, "course: a video lesson's player"},

@@ -312,6 +312,34 @@
   }
 
   /* ---------- quizzes: check the answers, show why, score against the pass mark (deck.Score is the same rule) ---------- */
+  // sha256 of an ASCII string, hex: a learner page checks the picks against
+  // render.QuizKey without the right answers in the page (crypto.subtle is
+  // async and missing on plain http, so a small synchronous one).
+  function sha256(s) {
+    var K = [], H = [], p = 2, n = 0, i, j, w = [], l = s.length * 8;
+    var frac = function (x) { return ((x - Math.floor(x)) * 4294967296) | 0; };
+    var r = function (v, k) { return (v >>> k) | (v << (32 - k)); };
+    for (; n < 64; p++) {
+      for (j = 2; j * j <= p; j++) if (p % j === 0) break;
+      if (j * j > p) { if (n < 8) H[n] = frac(Math.sqrt(p)); K[n++] = frac(Math.cbrt(p)); }
+    }
+    s += '\x80';
+    while (s.length % 64 !== 56) s += '\x00';
+    for (i = 0; i < s.length; i++) w[i >> 2] |= s.charCodeAt(i) << ((3 - (i & 3)) * 8);
+    w.push((l / 4294967296) | 0, l | 0);
+    for (j = 0; j < w.length; j += 16) {
+      var W = [], a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+      for (i = 0; i < 64; i++) {
+        if (i < 16) W[i] = w[j + i] | 0;
+        else W[i] = (W[i - 16] + (r(W[i - 15], 7) ^ r(W[i - 15], 18) ^ (W[i - 15] >>> 3)) + W[i - 7] + (r(W[i - 2], 17) ^ r(W[i - 2], 19) ^ (W[i - 2] >>> 10))) | 0;
+        var t1 = (h + (r(e, 6) ^ r(e, 11) ^ r(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + W[i]) | 0;
+        var t2 = ((r(a, 2) ^ r(a, 13) ^ r(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+        h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+      }
+      H = [a, b, c, d, e, f, g, h].map(function (v, k) { return (v + H[k]) | 0; });
+    }
+    return H.map(function (v) { return ('0000000' + (v >>> 0).toString(16)).slice(-8); }).join('');
+  }
   Array.prototype.forEach.call(document.querySelectorAll('form.si-quiz'), function (f) {
     var pass = +f.getAttribute('data-pass') || 0;
     var checkBtn = f.querySelector('.si-quiz-check'), again = f.querySelector('.si-quiz-again'), score = f.querySelector('.si-quiz-score');
@@ -320,13 +348,23 @@
       e.preventDefault();
       var missing = Array.prototype.filter.call(qs, function (q) { return !q.querySelector('input:checked'); }).length;
       if (missing) { score.textContent = missing === 1 ? 'Answer the last question first.' : 'Answer every question first (' + missing + ' to go).'; return; }
-      var right = 0;
-      Array.prototype.forEach.call(qs, function (q) {
-        var good = true;
-        Array.prototype.forEach.call(q.querySelectorAll('input'), function (i) {
-          var ok = i.hasAttribute('data-ok'), l = i.closest('label');
-          if (ok !== i.checked) good = false;
-          l.classList.toggle('is-ok', ok); l.classList.toggle('is-wrong', i.checked && !ok);
+      var right = 0, salt = f.getAttribute('data-salt');
+      Array.prototype.forEach.call(qs, function (q, n) {
+        var good = true, ins = q.querySelectorAll('input');
+        if (salt !== null) { // a learner page: only a hash of the right answers (render.QuizKey)
+          var ids = [];
+          Array.prototype.forEach.call(ins, function (i) { if (i.checked) ids.push(i.value); });
+          good = sha256(salt + '|' + (n + 1) + '|' + ids.join(',')) === q.getAttribute('data-key');
+        }
+        Array.prototype.forEach.call(ins, function (i) {
+          var l = i.closest('label');
+          if (salt !== null) {
+            l.classList.toggle('is-ok', i.checked && good); l.classList.toggle('is-wrong', i.checked && !good);
+          } else {
+            var ok = i.hasAttribute('data-ok');
+            if (ok !== i.checked) good = false;
+            l.classList.toggle('is-ok', ok); l.classList.toggle('is-wrong', i.checked && !ok);
+          }
           i.disabled = true;
         });
         q.classList.toggle('is-right', good); q.classList.toggle('is-wrong', !good);
@@ -341,6 +379,7 @@
         f.setAttribute('data-passed', '');
         try { document.dispatchEvent(new CustomEvent('si-quiz-pass', { detail: { score: pct } })); } catch (x) {}
       }
+      try { f.dispatchEvent(new CustomEvent('si-quiz-score', { bubbles: true, detail: { score: pct, passed: passed } })); } catch (x) {} // course.js: the score for SCORM
     });
     again.addEventListener('click', function () {
       Array.prototype.forEach.call(f.querySelectorAll('input'), function (i) { i.disabled = false; i.checked = false; var l = i.closest('label'); l.classList.remove('is-ok', 'is-wrong'); });

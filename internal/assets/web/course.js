@@ -3,7 +3,9 @@
  * course: ticks in the menu, a ring per module, the overall bar, Continue on
  * the home page, the completion page and its certificate. A lesson is done
  * when read to the end, its video watched to 90 %, its lab's boxes ticked,
- * its quiz passed. No dependencies; works from file://. */
+ * its quiz passed. In a SCORM 1.2 package (si build --scorm) it also reports
+ * to the LMS's API found in a parent or opener window: status, quiz score,
+ * the progress as suspend data. No dependencies; works from file://. */
 (function () {
   'use strict';
   var root = document.querySelector('.si-course');
@@ -13,20 +15,88 @@
   var key = 'si-course:' + (body.getAttribute('data-si-guide') || '');
   var page = body.getAttribute('data-si-page') || '';
   var view = root.getAttribute('data-view');
-  var st = { done: {}, last: '', ticks: {}, name: '' };
+  var st = { done: {}, last: '', ticks: {}, name: '', scores: {} };
   try {
     var saved = JSON.parse(localStorage.getItem(key) || 'null');
     if (saved && typeof saved === 'object') {
       st.done = saved.done || {}; st.last = saved.last || ''; st.ticks = saved.ticks || {}; st.name = saved.name || '';
+      st.scores = saved.scores || {};
     }
   } catch (e) {}
-  function save() { try { localStorage.setItem(key, JSON.stringify(st)); } catch (e) {} }
+  function save() { try { localStorage.setItem(key, JSON.stringify(st)); } catch (e) {} report(); }
   var nav = root.querySelector('.si-course-nav');
   var mods = nav ? nav.querySelectorAll('.si-course-mod') : [];
   var tabrow = root.querySelector('.si-course-tabrow');
   var cur = nav && nav.querySelector('.si-course-mods a[aria-current="page"]');
   var kind = cur ? cur.getAttribute('data-kind') : '';
   if (view === 'lesson' && page) { st.last = page; save(); }
+
+  /* ---------- SCORM 1.2: an LMS's API in a parent or opener window ---------- */
+  // One SCO per lesson: this page is the SCO (it opens and closes the
+  // session). One SCO for the course (--scorm=single): scorm.html holds the
+  // session and this page only reports through it. No API: the web.
+  var lms = null, single = false;
+  (function () {
+    function look(w) {
+      for (var n = 0; w && n < 12; n++) {
+        try { if (w.siScormSingle) single = true; if (w.API) return w.API; } catch (e) { return null; }
+        if (w.parent === w) break;
+        w = w.parent;
+      }
+      return null;
+    }
+    var api = look(window.parent !== window ? window.parent : null) || (window.opener && look(window.opener));
+    if (!api) return;
+    try {
+      if (!single && String(api.LMSInitialize('')) !== 'true' && String(api.LMSGetLastError()) !== '101') return;
+      var sd = JSON.parse(api.LMSGetValue('cmi.suspend_data') || 'null');
+      if (sd && typeof sd === 'object') { // the LMS's copy joins this browser's: another device, a cleared cache
+        (sd.d || []).forEach(function (p) { st.done[p] = 1; });
+        for (var p in sd.s || {}) st.scores[p] = Math.max(st.scores[p] || 0, sd.s[p]);
+        if (sd.l && view !== 'lesson') st.last = sd.l;
+      }
+      var s = String(api.LMSGetValue('cmi.core.lesson_status'));
+      if (s === '' || s === 'not attempted') api.LMSSetValue('cmi.core.lesson_status', 'incomplete');
+      lms = api;
+      root.setAttribute('data-scorm', single ? 'course' : 'lesson');
+    } catch (e) { lms = null; }
+  })();
+  function report() {
+    if (!lms) return;
+    try {
+      var data = JSON.stringify({ d: Object.keys(st.done), s: st.scores, l: st.last });
+      if (data.length <= 4096) lms.LMSSetValue('cmi.suspend_data', data); // ponytail: SCORM 1.2's limit; a bigger course keeps the rest in this browser only
+      var status, score;
+      if (single) {
+        var all = Array.prototype.every.call(lessons(), function (a) { return !a.hasAttribute('data-count') || st.done[a.getAttribute('data-page')]; });
+        var sc = Object.keys(st.scores).map(function (k) { return st.scores[k]; });
+        status = all ? 'completed' : 'incomplete';
+        if (sc.length) score = Math.round(sc.reduce(function (a, b) { return a + b; }, 0) / sc.length);
+      } else {
+        score = st.scores[page];
+        status = st.done[page] ? (score !== undefined ? 'passed' : 'completed') : (score !== undefined ? 'failed' : 'incomplete');
+      }
+      if (score !== undefined) {
+        lms.LMSSetValue('cmi.core.score.min', '0'); lms.LMSSetValue('cmi.core.score.max', '100');
+        lms.LMSSetValue('cmi.core.score.raw', String(score));
+      }
+      lms.LMSSetValue('cmi.core.lesson_status', status);
+      lms.LMSSetValue('cmi.core.exit', status === 'incomplete' || status === 'failed' ? 'suspend' : '');
+      lms.LMSCommit('');
+    } catch (e) {}
+  }
+  if (lms && !single) {
+    var closed = false;
+    var bye = function () { if (closed) return; closed = true; report(); try { lms.LMSFinish(''); } catch (e) {} };
+    window.addEventListener('pagehide', bye);
+    window.addEventListener('beforeunload', bye);
+  }
+  document.addEventListener('si-quiz-score', function (e) {
+    if (!page || !e.detail) return;
+    st.scores[page] = Math.max(st.scores[page] || 0, e.detail.score);
+    save();
+  });
+  if (lms && view === 'lesson' && page) save();
 
   /* ---------- the navigator ---------- */
   function setOpen(m, open) {

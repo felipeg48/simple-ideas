@@ -3,6 +3,7 @@ package render
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -102,11 +103,26 @@ func TestCourseBuild(t *testing.T) {
 }
 
 func TestQuizRender(t *testing.T) {
-	quiz := renderTestCourse(t, false)["m1/quiz.html"]
-	for _, want := range []string{`<form class="si-quiz" data-pass="50"`, `<fieldset class="si-quiz-q" data-multi>`, `type="checkbox"`, `value="0" data-ok>`, `Choose every right answer.`} {
+	form := func(page string) string { // the quiz form only, not the page scripts
+		i := strings.Index(page, `<form class="si-quiz"`)
+		j := strings.Index(page[i:], `</form>`)
+		return page[i : i+j]
+	}
+	quiz := form(renderTestCourse(t, false)["m1/quiz.html"])
+	for _, want := range []string{`<form class="si-quiz" data-pass="50" data-salt="`, `<fieldset class="si-quiz-q" data-multi data-key="`, `type="checkbox"`, `Choose every right answer.`} {
 		if !strings.Contains(quiz, want) {
 			t.Errorf("quiz lacks %q", want)
 		}
+	}
+	if strings.Contains(quiz, "data-ok") {
+		t.Error("a learner page keeps the right answers only as a hash")
+	}
+	salt := regexp.MustCompile(`data-salt="([0-9a-f]{16})"`).FindStringSubmatch(quiz)
+	if salt == nil || !strings.Contains(quiz, `data-key="`+QuizKey(salt[1], 1, []int{0, 1})+`"`) {
+		t.Error("the key is QuizKey(salt, 1, the right answers)")
+	}
+	if inst := form(renderTestCourse(t, true)["m1/quiz.html"]); !strings.Contains(inst, `value="0" data-ok>`) || strings.Contains(inst, "data-key") {
+		t.Error("an instructor page keeps the plain answers")
 	}
 	d, err := deck.ParseSource(filepath.Join(t.TempDir(), "a.md"), "---\ntype: article\n---\n# A\n\n```quiz\n## Lonely\n- [x] only\n```\n", deck.Meta{})
 	if err != nil {
@@ -115,6 +131,44 @@ func TestQuizRender(t *testing.T) {
 	res := Deck(d, Options{})
 	if len(res.Problems) != 1 || !strings.Contains(res.Problems[0].Msg, "at least two answers") {
 		t.Errorf("a quiz problem: %v", res.Problems)
+	}
+}
+
+// TestCourseBook: the learner workbook keeps the answers, explanations and
+// solutions out and leaves room for notes; the instructor guide has the
+// runbook, the script, the answers and the solutions.
+func TestCourseBook(t *testing.T) {
+	g, err := deck.LoadGuide(filepath.Join("testdata", "course"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	wb, probs := CourseBook(g, Options{})
+	if len(probs) != 0 || wb.Rel != "workbook.html" {
+		t.Fatalf("workbook: %s %v", wb.Rel, probs)
+	}
+	body := wb.Result.body
+	for _, bad := range []string{"data-ok>", `class="si-quiz-why"`, `class="si-solution"`, "Hello.", "Here it is", "si-quiz-check"} {
+		if strings.Contains(body, bad) {
+			t.Errorf("the workbook carries %q", bad)
+		}
+	}
+	for _, want := range []string{"si-cb-notes", "Module 1 · Everything", "Two?", "Your instructor shows this live"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("the workbook lacks %q", want)
+		}
+	}
+	ig, _ := CourseBook(g, Options{Instructor: true})
+	body = ig.Result.body
+	if ig.Rel != "instructor-guide.html" {
+		t.Errorf("instructor guide: %s", ig.Rel)
+	}
+	for _, want := range []string{"data-ok checked", `<details class="si-solution" open>`, "Hello.", "Here it is", "Ask who has seen this before."} {
+		if !strings.Contains(body, want) {
+			t.Errorf("the instructor guide lacks %q", want)
+		}
+	}
+	if strings.Contains(body, `class="si-cb-notes"`) || strings.Contains(body, "[CLICK]") {
+		t.Error("the instructor guide has no notes boxes and no [CLICK] cues")
 	}
 }
 

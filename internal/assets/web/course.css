@@ -89,6 +89,10 @@
   .si-course .si-course-tabrow{display:none}
   .si-course[data-menu-open][data-nav="top"] .si-course-mod.is-open .si-course-lessons{display:block}
 }
+/* a SCORM package with one SCO per lesson: the LMS moves between lessons */
+.si-course[data-scorm="lesson"] :is(.si-course-nav,.si-course-menu,.si-course-overall,.si-course-next,.si-course-outline,.si-course-back,.si-course-go){display:none!important}
+.si-course[data-scorm="lesson"] .si-course-body{grid-template-columns:minmax(0,1fr)}
+.si-course[data-scorm="lesson"] .si-course-brand{pointer-events:none}
 @media (prefers-reduced-motion:reduce){.si-course-chev{transition:none}}
 @media print{
   .si-course-top,.si-course-nav,.si-course-dock,.si-course-next,.si-course-cert-form,.si-doc-foot{display:none!important}

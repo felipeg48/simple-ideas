@@ -228,6 +228,8 @@ Flags (GNU style, before or after the path):
       --instructor      build a course (_course.md) for the instructor: the demos' runbooks, the decks' teleprompter,
                         instructor notes, lab solutions open (the default build is the learner's)
       --zip             build a course: also write <course>.zip beside the output folder
+      --scorm[=single]  build a course: also write <course>-scorm12.zip (SCORM 1.2) beside the output folder, one SCO
+                        per lesson, or one for the whole course with =single
       --no-film         build a course: do not film its web demo lessons (si demo run) when their video is missing or old
       --open            play: open the browser
       --dev             play: hot reload — morph changed slides in place (keeps the current slide, step and overview)
@@ -235,7 +237,8 @@ Flags (GNU style, before or after the path):
       --share-assets    build: write three.js once into _si/ beside the pages and link it, instead of inlining it into every page with a 3D mind map
       --review          play, serve: a keyed link (port + 2) where reviewers on your network leave comments on slides and sections
       --review-addr <host:port> the --review address (default 0.0.0.0, the port + 2)
-      --pdf             build: also render each deck to pdfs/<name>.pdf and link it from the index tiles (needs headless Chrome)
+      --pdf             build: also render each deck to pdfs/<name>.pdf and link it from the index tiles (needs headless Chrome);
+                        a course: <course>-workbook.pdf (with --instructor, <course>-instructor-guide.pdf)
       --export <what>   css-rules, rules, conf, example, themes, agent-rules or skill
   -h, --help            this help
       --version         print the version (--version --verbose: build, links, credits)
@@ -262,6 +265,26 @@ func (h *handoutFlag) Set(v string) error {
 		*h = handoutFlag(handoutMode(v))
 	default:
 		return fmt.Errorf("--handout=%q: use slides, lines, points or notes", v)
+	}
+	return nil
+}
+
+// scormFlag is --scorm (one SCO per lesson) or --scorm=single (one SCO for
+// the whole course).
+type scormFlag string
+
+func (f *scormFlag) IsBoolFlag() bool { return true }
+func (f *scormFlag) String() string   { return string(*f) }
+func (f *scormFlag) Set(v string) error {
+	switch v {
+	case "true", "lesson":
+		*f = "lesson"
+	case "false":
+		*f = ""
+	case "single":
+		*f = "single"
+	default:
+		return fmt.Errorf("--scorm=%q: use --scorm (one SCO per lesson) or --scorm=single", v)
 	}
 	return nil
 }
@@ -353,37 +376,38 @@ type options struct {
 	terminal, notes                              bool // si play --terminal [--notes]; si --terminal
 	dump                                         int  // si play --terminal --dump N
 	size                                         string
-	speaker                                      string  // si play --terminal --notes --speaker Ana
-	serveMode                                    bool    // si serve: play without the terminal (everything, for readers)
-	offline                                      bool    // code: / diff: from the cache only
-	noInstructor                                 bool    // si build: leave type: demo scripts out (a participant build)
-	instructor, zip, noFilm                      bool    // si build course/: --instructor, --zip, --no-film
-	svg, png                                     bool    // si build: mind map pages also as SVG / PNG
-	scale                                        float64 // si build --png: device pixels per CSS pixel
-	dwell                                        float64 // si build deck.md --mp4: seconds on every slide view
-	budget                                       bool    // si check --budget: fail pages over the size budget
-	review                                       bool    // si serve / si play --review: a keyed listener for reviewers' comments
-	reviewAddr                                   string  // --review-addr
-	to, mapID                                    string  // si mindmap export --to, --map
-	gif                                          bool    // si code --gif
-	showID                                       string  // si code --id
-	url, token, clientID, clientSecret, user     string  // si publish
-	canonical, baseURL                           string  // si publish
-	yes, copy, public, mp4                       bool    // si publish --yes/--copy/--public; --mp4
-	dissolve                                     bool    // --mp4 --dissolve: stills that dissolve, not the filmed motion
-	narration                                    string  // --mp4 --narration <dir|latest>: the teleprompter's recording paces and voices the video
-	port                                         int     // si publish login linkedin: the loopback redirect port
-	qrEC, qrLogo, qrStyle, qrFG, qrBG, qrName    string  // si qr
-	qrWifi, qrPassword, qrSecurity, qrVCard      string  // si qr --wifi / --vcard
-	qrLogoSize                                   float64 // si qr --logo-size, percent of the width
-	qrQuiet                                      int     // si qr --quiet, modules
-	qrJPG, qrECSet                               bool    // si qr --jpg; --ec given
-	audience                                     bool    // si play --audience: the room follows the talk on their phones
-	tunnel                                       bool    // si play --tunnel: the audience side on a temporary public address
-	format                                       string  // si theme export --format css|dtcg
-	use                                          bool    // si theme import --use: write theme: into si.conf
-	accent                                       string  // si theme from --accent: keep this colour
-	trust                                        bool    // si play/build/serve github:…/a URL: run code from elsewhere without asking (CI)
+	speaker                                      string    // si play --terminal --notes --speaker Ana
+	serveMode                                    bool      // si serve: play without the terminal (everything, for readers)
+	offline                                      bool      // code: / diff: from the cache only
+	noInstructor                                 bool      // si build: leave type: demo scripts out (a participant build)
+	instructor, zip, noFilm                      bool      // si build course/: --instructor, --zip, --no-film
+	scorm                                        scormFlag // si build course/ --scorm[=single]
+	svg, png                                     bool      // si build: mind map pages also as SVG / PNG
+	scale                                        float64   // si build --png: device pixels per CSS pixel
+	dwell                                        float64   // si build deck.md --mp4: seconds on every slide view
+	budget                                       bool      // si check --budget: fail pages over the size budget
+	review                                       bool      // si serve / si play --review: a keyed listener for reviewers' comments
+	reviewAddr                                   string    // --review-addr
+	to, mapID                                    string    // si mindmap export --to, --map
+	gif                                          bool      // si code --gif
+	showID                                       string    // si code --id
+	url, token, clientID, clientSecret, user     string    // si publish
+	canonical, baseURL                           string    // si publish
+	yes, copy, public, mp4                       bool      // si publish --yes/--copy/--public; --mp4
+	dissolve                                     bool      // --mp4 --dissolve: stills that dissolve, not the filmed motion
+	narration                                    string    // --mp4 --narration <dir|latest>: the teleprompter's recording paces and voices the video
+	port                                         int       // si publish login linkedin: the loopback redirect port
+	qrEC, qrLogo, qrStyle, qrFG, qrBG, qrName    string    // si qr
+	qrWifi, qrPassword, qrSecurity, qrVCard      string    // si qr --wifi / --vcard
+	qrLogoSize                                   float64   // si qr --logo-size, percent of the width
+	qrQuiet                                      int       // si qr --quiet, modules
+	qrJPG, qrECSet                               bool      // si qr --jpg; --ec given
+	audience                                     bool      // si play --audience: the room follows the talk on their phones
+	tunnel                                       bool      // si play --tunnel: the audience side on a temporary public address
+	format                                       string    // si theme export --format css|dtcg
+	use                                          bool      // si theme import --use: write theme: into si.conf
+	accent                                       string    // si theme from --accent: keep this colour
+	trust                                        bool      // si play/build/serve github:…/a URL: run code from elsewhere without asking (CI)
 	css                                          multi
 	args                                         []string
 }
@@ -410,6 +434,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.offline, "offline", false, "")
 	fl.BoolVar(&o.noInstructor, "no-instructor", false, "")
 	fl.BoolVar(&o.instructor, "instructor", false, "")
+	fl.Var(&o.scorm, "scorm", "")
 	fl.BoolVar(&o.zip, "zip", false, "")
 	fl.BoolVar(&o.noFilm, "no-film", false, "")
 	fl.BoolVar(&o.open, "open", false, "")
@@ -1850,6 +1875,10 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 	if o.noInline {
 		mode = render.MediaCopy
 	}
+	if g.IsCourse() && o.scorm != "" && o.instructor {
+		fmt.Fprintln(stderr, "si: --scorm packs the learner build for an LMS; drop --instructor")
+		return "", false
+	}
 	ro := render.Options{UserCSS: css, Media: mode, Theme: o.theme, Config: cfg, SharedAssets: o.share || o.noInline || g.IsCourse(), Instructor: o.instructor}
 	if g.IsCourse() && !o.noFilm {
 		filmStale(g, stdout, stderr)
@@ -1943,12 +1972,26 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 			kind = "course (instructor)"
 		}
 		home = "index.html"
+		if o.pdf {
+			if err := coursePDF(g, out, ro, stdout); err != nil {
+				fmt.Fprintf(stderr, "si: --pdf: %v\n", err)
+				ok = false
+			}
+		}
 		if o.zip {
 			if zp, err := zipDir(out, filepath.Join(filepath.Dir(filepath.Clean(out)), filepath.Base(g.Dir)+".zip")); err != nil {
 				fmt.Fprintf(stderr, "si: --zip: %v\n", err)
 				ok = false
 			} else {
 				fmt.Fprintf(stdout, "  %-40s (zip, %d KB)\n", filepath.ToSlash(zp), fileKB(zp))
+			}
+		}
+		if o.scorm != "" {
+			if zp, err := scormPackage(g, out, o.scorm == "single"); err != nil {
+				fmt.Fprintf(stderr, "si: --scorm: %v\n", err)
+				ok = false
+			} else {
+				fmt.Fprintf(stdout, "  %-40s (SCORM 1.2, %d KB)\n", filepath.ToSlash(zp), fileKB(zp))
 			}
 		}
 	}

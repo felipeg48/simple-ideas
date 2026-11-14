@@ -1,8 +1,11 @@
 package render
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"html"
+	"strconv"
 	"strings"
 
 	"github.com/felipeg48/simple-ideas/internal/deck"
@@ -36,10 +39,26 @@ func quizPage(body, pass string) string {
 	return body + "\n\n`````quiz\n`````\n" // no questions: the fence says so
 }
 
+// QuizKey is what a learner page keeps of a question's right answers: the
+// SHA-256 (hex) of "salt|question|ids", question 1-based, ids the indexes
+// of the right answers, ascending, comma-separated. doc.js hashes the
+// learner's picks the same way. A self-check, not a secure exam: a question
+// has few answers, so anyone can try them all.
+func QuizKey(salt string, question int, ids []int) string {
+	parts := make([]string, len(ids))
+	for i, id := range ids {
+		parts[i] = strconv.Itoa(id)
+	}
+	sum := sha256.Sum256([]byte(salt + "|" + strconv.Itoa(question) + "|" + strings.Join(parts, ",")))
+	return hex.EncodeToString(sum[:])
+}
+
 // quizHTML renders a quiz (a ```quiz fence, or a quiz page): one form, a
 // fieldset per question, radio buttons (one right answer) or check boxes
 // (more), the explanation hidden until the learner checks; doc.js scores it
-// (deck.Score is the same rule) against the pass mark.
+// (deck.Score is the same rule) against the pass mark. The right answers are
+// in the page only as QuizKey hashes, except in an instructor build
+// (data-ok on each right answer).
 func (dr *deckRenderer) quizHTML(src, pass string) string {
 	intro, qs, probs := deck.ParseQuiz(src)
 	for _, p := range probs {
@@ -54,8 +73,24 @@ func (dr *deckRenderer) quizHTML(src, pass string) string {
 		mark = n
 	}
 	dr.quizN++
+	salt := ""
+	if !dr.opt.Instructor {
+		seed := strconv.Itoa(dr.quizN) // the same for a quiz written in Markdown or AsciiDoc: its questions, not its source
+		for _, q := range qs {
+			seed += "\n" + q.Title
+			for _, o := range q.Options {
+				seed += "\n" + o.Text
+			}
+		}
+		sum := sha256.Sum256([]byte(seed))
+		salt = hex.EncodeToString(sum[:8])
+	}
 	var b strings.Builder
-	fmt.Fprintf(&b, `<form class="si-quiz" data-pass="%d" novalidate>`, mark)
+	if salt != "" {
+		fmt.Fprintf(&b, `<form class="si-quiz" data-pass="%d" data-salt="%s" novalidate>`, mark, salt)
+	} else {
+		fmt.Fprintf(&b, `<form class="si-quiz" data-pass="%d" novalidate>`, mark)
+	}
 	if intro != "" {
 		b.WriteString(`<div class="si-quiz-intro">` + dr.toHTML(intro, nil) + `</div>`)
 	}
@@ -64,7 +99,17 @@ func (dr *deckRenderer) quizHTML(src, pass string) string {
 		if q.Multi() {
 			typ, multi = "checkbox", " data-multi"
 		}
-		fmt.Fprintf(&b, `<fieldset class="si-quiz-q"%s><legend><span class="si-quiz-n">%d</span>%s</legend>`, multi, i+1, dr.inline(q.Title))
+		key := ""
+		if salt != "" {
+			var ids []int
+			for j, o := range q.Options {
+				if o.OK {
+					ids = append(ids, j)
+				}
+			}
+			key = ` data-key="` + QuizKey(salt, i+1, ids) + `"`
+		}
+		fmt.Fprintf(&b, `<fieldset class="si-quiz-q"%s%s><legend><span class="si-quiz-n">%d</span>%s</legend>`, multi, key, i+1, dr.inline(q.Title))
 		if t := strings.TrimSpace(strings.Join(q.Text, "\n")); t != "" {
 			b.WriteString(`<div class="si-quiz-text">` + dr.toHTML(t, nil) + `</div>`)
 		}
@@ -73,7 +118,7 @@ func (dr *deckRenderer) quizHTML(src, pass string) string {
 		}
 		for j, o := range q.Options {
 			ok := ""
-			if o.OK {
+			if o.OK && salt == "" {
 				ok = " data-ok"
 			}
 			fmt.Fprintf(&b, `<label class="si-quiz-opt"><input type="%s" name="si-q%d-%d" value="%d"%s><span>%s</span></label>`, typ, dr.quizN, i+1, j, ok, dr.inline(o.Text))

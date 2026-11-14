@@ -6,8 +6,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/felipeg48/simple-ideas/internal/deck"
+	"github.com/felipeg48/simple-ideas/internal/render"
+	"github.com/felipeg48/simple-ideas/internal/tools"
 )
 
 // filmStale films the course's web demo lessons (type: demo with app:) whose
@@ -67,4 +70,62 @@ func zipDir(dir, dest string) (string, error) {
 		err = cerr
 	}
 	return dest, err
+}
+
+// coursePDF writes the printed course into out (workbook.html, or
+// instructor-guide.html with --instructor) and prints it to
+// <course>-workbook.pdf / <course>-instructor-guide.pdf there.
+func coursePDF(g *deck.Guide, out string, ro render.Options, stdout io.Writer) error {
+	chrome := findChrome()
+	if chrome == "" {
+		return fmt.Errorf("%s", tools.Need("chrome", "--pdf"))
+	}
+	p, probs := render.CourseBook(g, ro)
+	if len(probs) > 0 {
+		return fmt.Errorf("%s", probs[0])
+	}
+	page := filepath.Join(out, p.Rel)
+	if render.UsesShared(p.Result.HTML) {
+		if err := render.WriteShared(out); err != nil {
+			return err
+		}
+	}
+	if err := os.WriteFile(page, p.Result.HTML, 0o644); err != nil {
+		return err
+	}
+	pdf := filepath.Join(out, filepath.Base(g.Dir)+"-"+strings.TrimSuffix(p.Rel, ".html")+".pdf")
+	if err := pagePDF(chrome, page, pdf, ""); err != nil {
+		return err
+	}
+	fmt.Fprintf(stdout, "  %-40s (pdf, %d KB)\n", filepath.ToSlash(filepath.Join(filepath.Base(out), filepath.Base(pdf))), fileKB(pdf))
+	return nil
+}
+
+// scormPackage turns the learner build in out into a SCORM 1.2 package:
+// imsmanifest.xml (and scorm.html for one SCO) in out, all of it zipped to
+// <course>-scorm12.zip beside out. It returns the zip's path.
+func scormPackage(g *deck.Guide, out string, single bool) (string, error) {
+	if single {
+		if err := os.WriteFile(filepath.Join(out, render.ScormLauncher), render.ScormLauncherHTML(g.Meta.Title), 0o644); err != nil {
+			return "", err
+		}
+	}
+	var files []string
+	err := filepath.WalkDir(out, func(p string, e os.DirEntry, err error) error {
+		if err != nil || e.IsDir() {
+			return err
+		}
+		r, err := filepath.Rel(out, p)
+		if r = filepath.ToSlash(r); err == nil && r != "imsmanifest.xml" {
+			files = append(files, r)
+		}
+		return err
+	})
+	if err != nil {
+		return "", err
+	}
+	if err := os.WriteFile(filepath.Join(out, "imsmanifest.xml"), render.ScormManifest(g, files, single), 0o644); err != nil {
+		return "", err
+	}
+	return zipDir(out, filepath.Join(filepath.Dir(filepath.Clean(out)), filepath.Base(g.Dir)+"-scorm12.zip"))
 }
