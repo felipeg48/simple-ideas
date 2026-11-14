@@ -16,9 +16,10 @@ func TestWithAdd(t *testing.T) {
 		{[]string{"captions, subtitles"}, With{Captions: true, Subtitles: true}, ""},
 		{[]string{"captions", "subtitles"}, With{Captions: true, Subtitles: true}, ""},
 		{[]string{"Clips,report", "readme"}, With{Clips: true, Report: true, Readme: true}, ""},
-		{[]string{"all"}, With{true, true, true, true, true, true, true, true, true}, ""},
+		{[]string{"all"}, With{true, true, true, true, true, true, true, true, true, true, true}, ""},
 		{[]string{"silent,audio,transcript,chapters"}, With{Silent: true, Audio: true, Transcript: true, Chapters: true}, ""},
-		{[]string{"captions,subtitels"}, With{}, `with "subtitels": use captions, silent, audio, subtitles, transcript, chapters, clips, report, readme, all`},
+		{[]string{"vertical, highlight"}, With{Vertical: true, Highlight: true}, ""},
+		{[]string{"captions,subtitels"}, With{}, `with "subtitels": use captions, silent, audio, subtitles, transcript, chapters, clips, report, readme, vertical, highlight, all`},
 	} {
 		var w With
 		var err error
@@ -58,7 +59,8 @@ func TestWithFiles(t *testing.T) {
 		{"clips captions report", With{Clips: true, Captions: true, Report: true}, voiced,
 			"shop.mp4 shop.captions.mp4 sign-in.mp4 sign-in.captions.mp4 pay.mp4 report.html report.json shots"},
 		{"readme", With{Readme: true}, voiced, "shop.mp4 README.md README.html"},
-		{"all", all, voiced, "shop.mp4 shop.captions.mp4 shop.silent.mp4 shop.m4a shop.srt shop.vtt shop.txt chapters.txt " +
+		{"short cuts", With{Vertical: true, Highlight: true}, voiced, "shop.mp4 shop.vertical.mp4 shop.highlight.mp4"},
+		{"all", all, voiced, "shop.mp4 shop.captions.mp4 shop.silent.mp4 shop.m4a shop.srt shop.vtt shop.txt chapters.txt shop.vertical.mp4 shop.highlight.mp4 " +
 			"sign-in.mp4 sign-in.captions.mp4 sign-in.silent.mp4 sign-in.m4a sign-in.srt sign-in.vtt pay.mp4 pay.silent.mp4 " +
 			"report.html report.json shots README.md README.html"},
 	} {

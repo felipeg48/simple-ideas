@@ -41,6 +41,9 @@ type Script struct {
 	Trans     *Transition   // transition: the cut between scenes (nil = the default, fade 0.4s)
 	Scale     int           // scale: device pixels per CSS pixel when filming (0 = the default; 1 films at the viewport's size)
 	Pronounce []Pronounce   // pronounce: word = how to say it
+	Session   string        // session: keep: one browser profile (cookies, storage) for every feature of a run ("" = a fresh one each)
+	Header    int           // header-offset: CSS pixels a fixed header covers at the top (-1 = auto, the default; 0 = none)
+	Brand     Brand         // intro:, outro:, music:, logo:, url:, theme: (brand.go)
 	Features  []*Feature
 	Before    *Feature  // ## Before: steps before the first feature, never filmed, not a feature
 	After     *Feature  // ## After: steps after the last feature, always run
@@ -54,6 +57,7 @@ type Feature struct {
 	What   string // `What it does:`
 	Region string // `Region:` a CSS selector this feature's clip crops to ("" = the script's region, else whole page)
 	Zoom   bool   // Region: … · zoom: the clip zooms into the region instead of starting cropped
+	Third  string // Lower-third: a name caption (Name · Role) at the start of the feature's clip
 	Line   int
 	Blocks []*Block
 }
@@ -69,19 +73,24 @@ type Block struct {
 // name, placeholder, title), or a CSS selector (#id, [data-testid=…]),
 // optionally narrowed by Role (role=button "Pay").
 type Locator struct {
-	Name string `json:"name,omitempty"`
-	CSS  string `json:"css,omitempty"`
-	Role string `json:"role,omitempty"`
+	Name  string `json:"name,omitempty"`
+	CSS   string `json:"css,omitempty"`
+	Role  string `json:"role,omitempty"`
+	Frame string `json:"-"` // … in frame <css>: the iframe the element is inside
 }
 
 func (l Locator) String() string {
+	in := ""
+	if l.Frame != "" {
+		in = " in frame " + l.Frame
+	}
 	switch {
 	case l.CSS != "":
-		return l.CSS
+		return l.CSS + in
 	case l.Role != "":
-		return "role=" + l.Role + " " + strconv.Quote(l.Name)
+		return "role=" + l.Role + " " + strconv.Quote(l.Name) + in
 	}
-	return strconv.Quote(l.Name)
+	return strconv.Quote(l.Name) + in
 }
 
 // Value is a text a step uses: written in the script, or from an
@@ -157,7 +166,7 @@ var Viewports = map[string][2]int{"phone": {400, 800}, "tablet": {820, 1180}, "d
 
 // StepWords are the step names, for messages and docs.
 var StepWords = []string{"go", "click", "type", "press", "select", "check", "uncheck", "hover", "scroll to", "wait", "wait for", "note", "expect", "screenshot",
-	"terminal", "run", "browser", "start", "stop", "window", "drag", "zoom to", "pan to", "zoom out", "spotlight", "focus"}
+	"terminal", "run", "browser", "start", "stop", "window", "drag", "zoom to", "pan to", "zoom out", "spotlight", "focus", "lower-third"}
 
 // IsWebDemo reports whether a Markdown or AsciiDoc source is a web demo:
 // `type: demo` with an `app:` in its front matter.
@@ -276,6 +285,21 @@ func (s *Script) settings(fm map[string]string, line func(string) int) {
 			s.problem(line("voice"), "%v", err)
 		}
 	}
+	switch v := strings.ToLower(fm["session"]); v {
+	case "", "fresh", "keep":
+		s.Session = v
+	default:
+		s.problem(line("session"), "session %q: keep (one browser profile for the whole run) or fresh (the default: a new one per feature)", fm["session"])
+	}
+	s.Header = -1
+	if v := fm["header-offset"]; v != "" {
+		if h, err := ParseHeaderOffset(v); err != nil {
+			s.problem(line("header-offset"), "%v", err)
+		} else {
+			s.Header = h
+		}
+	}
+	s.brand(fm, line)
 	s.Timeout = 5 * time.Second
 	if v := fm["timeout"]; v != "" {
 		if d, ok := duration(v); ok && d > 0 {
@@ -338,7 +362,7 @@ func duration(v string) (time.Duration, bool) {
 
 var (
 	listRE  = regexp.MustCompile(`^\s*(?:[-*+]|\d+[.)])\s+(.*)$`)
-	labelRE = regexp.MustCompile(`^(What it does|Region|Say|Notes|Points)\s*(?:\([^)]*\))?\s*:\s*(.*)$`)
+	labelRE = regexp.MustCompile(`^(What it does|Region|Lower[- ]third|Say|Notes|Points)\s*(?:\([^)]*\))?\s*:\s*(.*)$`)
 )
 
 // Parse reads a Markdown script (path names it, for messages and relative
@@ -406,6 +430,12 @@ func Parse(path, src string) *Script {
 				}
 				f.Region, f.Zoom = regionValue(m[2])
 				text = ""
+			case "Lower-third", "Lower third":
+				if f == nil {
+					s.problem(no, "Lower-third: belongs to a feature (a ## heading above it)")
+					continue
+				}
+				f.Third, text = strings.TrimSpace(m[2]), ""
 			case "Say":
 				if f == nil {
 					s.problem(no, "Say: belongs to a feature (a ## heading above it)")
@@ -532,6 +562,8 @@ func ParseStep(line string) (*Step, error) {
 		return cameraStep(st, word, rest)
 	case "spotlight", "focus":
 		return spotStep(st, rest)
+	case "lower-third":
+		return thirdStep(st, rest)
 	case "click", "hover", "check", "uncheck":
 		st.Kind = word
 		if st.Target, rest, err = locator(rest); err != nil || rest != "" {
@@ -681,9 +713,18 @@ func expect(st *Step, rest string) (*Step, error) {
 		if st.Target, r, err = locator(rest); err != nil {
 			return nil, fmt.Errorf(`%q: expect text "…", expect url /path, expect "Element" visible|hidden|disabled|enabled|checked|unchecked, or expect no errors`, st.Text)
 		}
-		switch r {
+		state, tail := cutWord(r)
+		if st.Target.Frame == "" && tail != "" { // expect "Buy" visible in frame .shop
+			if st.Target.Frame, tail, err = inFrame(tail); err != nil || tail != "" {
+				return nil, fmt.Errorf(`%q: write expect "Element" visible in frame .shop`, st.Text)
+			}
+		}
+		if tail != "" {
+			state = r
+		}
+		switch state {
 		case "visible", "hidden", "disabled", "enabled", "checked", "unchecked":
-			st.State = r
+			st.State = state
 		default:
 			return nil, fmt.Errorf("%q: the state is visible, hidden, disabled, enabled, checked or unchecked", st.Text)
 		}
@@ -756,6 +797,35 @@ var cssStop = map[string]bool{"to": true, "visible": true, "hidden": true, "disa
 // (button.pay). A selector keeps its spaces (.cart .total, nav > a); it ends at
 // ` · `, at one of cssStop, or at the end.
 func locator(s string) (Locator, string, error) {
+	l, rest, err := element(s)
+	if err != nil {
+		return l, rest, err
+	}
+	l.Frame, rest, err = inFrame(rest)
+	return l, rest, err
+}
+
+// inFrame reads `in frame <css>` or `in frame "name"` at the start of s:
+// the frame as a CSS selector ("" when s does not start with it) and the rest.
+func inFrame(s string) (string, string, error) {
+	in, r := cutWord(s)
+	fr, r2 := cutWord(r)
+	if in != "in" || fr != "frame" {
+		return "", s, nil
+	}
+	f, tail, err := element(r2)
+	if err != nil || f.Role != "" {
+		return "", s, fmt.Errorf(`in frame needs the frame: a CSS selector (.preview, iframe#shop) or its "name"`)
+	}
+	if f.CSS != "" {
+		return f.CSS, tail, nil
+	}
+	q := strconv.Quote(f.Name) // a "name": the frame's name, title or id
+	return "iframe[name=" + q + "],iframe[title=" + q + "],iframe[id=" + q + "],frame[name=" + q + "]", tail, nil
+}
+
+// element reads one element (see locator), without its frame.
+func element(s string) (Locator, string, error) {
 	s = strings.TrimSpace(s)
 	if m := roleRE.FindStringSubmatch(s); m != nil {
 		name, rest, err := quoted(s[len(m[0]):])
@@ -778,7 +848,7 @@ func locator(s string) (Locator, string, error) {
 					continue
 				}
 				next := strings.TrimSpace(s[i:])
-				if w, _ := cutWord(next); strings.HasPrefix(next, "·") || cssStop[w] {
+				if w, _ := cutWord(next); strings.HasPrefix(next, "·") || cssStop[w] || strings.HasPrefix(next, "in frame ") {
 					end = i
 					break scan
 				}
@@ -863,7 +933,10 @@ func namedKey(p string) (keyDef, bool) {
 type jsonScript struct {
 	Type, Title, App, Viewport, Timeout, Voice string
 	Shell, With, Region, Transition, Scale     string
-	Style                                      string   `json:"voice-style"`
+	Style                                      string `json:"voice-style"`
+	Session, Intro, Outro, Music, Logo, URL    string
+	Theme                                      string
+	Header                                     string   `json:"header-offset"`
 	Pronounce                                  []string `json:"pronounce"`
 	Start                                      []string `json:"start"`
 	Prepare                                    strs     `json:"prepare"`
@@ -873,6 +946,7 @@ type jsonScript struct {
 		Name   string `json:"name"`
 		What   string `json:"what"`
 		Region string `json:"region"`
+		Third  string `json:"lower-third"`
 		Blocks []struct {
 			Say   string   `json:"say"`
 			Steps []string `json:"steps"`
@@ -912,7 +986,8 @@ func ParseJSON(path string, raw []byte) (*Script, error) {
 		}
 		return 0
 	}
-	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "voice": j.Voice, "voice-style": j.Style, "shell": j.Shell, "with": j.With, "region": j.Region, "transition": j.Transition, "scale": j.Scale}
+	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "voice": j.Voice, "voice-style": j.Style, "shell": j.Shell, "with": j.With, "region": j.Region, "transition": j.Transition, "scale": j.Scale,
+		"session": j.Session, "header-offset": j.Header, "intro": j.Intro, "outro": j.Outro, "music": j.Music, "logo": j.Logo, "url": j.URL, "theme": j.Theme}
 	s.settings(fm, func(key string) int {
 		if k := strings.Index(src, `"`+key+`"`); k >= 0 {
 			return strings.Count(src[:k], "\n") + 1
@@ -935,7 +1010,7 @@ func ParseJSON(path string, raw []byte) (*Script, error) {
 	}
 	pos = 0
 	for _, jf := range j.Features {
-		f := &Feature{Name: jf.Name, What: jf.What, Line: lineOf(jf.Name)}
+		f := &Feature{Name: jf.Name, What: jf.What, Third: jf.Third, Line: lineOf(jf.Name)}
 		f.Region, f.Zoom = regionValue(jf.Region)
 		if !s.section(f) {
 			s.Features = append(s.Features, f)

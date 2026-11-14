@@ -139,7 +139,10 @@ Usage:
         the same steps filmed with a drawn cursor, notes and blurred secrets, narrated from
         the Say: lines (kokoro, system, elevenlabs, openai): one file, <script>.mp4 with a
         chapter per feature; --with captions, silent, audio, subtitles, transcript, chapters,
-        clips, report, readme or all for more (si demo --help)
+        clips, report, readme, vertical (9:16), highlight (about 60 s) or all (si demo --help)
+  si demo draft <https://site> [--out file.md] [--pages 6]
+        read a site headless (same origin, robots.txt obeyed, no clicks) and write a first
+        promo script from its own words, ready for si demo test
   si voice say "text" [--voice engine:name] [-o out.wav] | list [engine]
         say a line aloud with the narration voice (like macOS say; -o saves a WAV), list voices
   si voice install|uninstall kokoro [--dir D]

@@ -172,7 +172,7 @@ func TestChapters(t *testing.T) {
 	if y := youtube(cs); y != "0:00 Sign in\n0:09 Pay; then #1 = done\n1:10 Find\n" {
 		t.Errorf("chapters.txt: %q", y)
 	}
-	if y := youtube([]chapter{{"Late", 3725, 3800}}); y != "1:02:05 Late\n" {
+	if y := youtube([]chapter{{Title: "Late", Start: 3725, End: 3800}}); y != "1:02:05 Late\n" {
 		t.Errorf("an hour in: %q", y)
 	}
 	m := ffmetadata("Shop", cs)

@@ -264,10 +264,28 @@ func m4aArgs(wav, out string) []string {
 	return append(ff("-i", wav, "-vn", "-c:a", "aac", "-b:a", "160k"), out)
 }
 
-// part is one feature in all.mp4: its title card and its clip.
+// part is one feature in all.mp4: its title card and its clip; or, with
+// Hold, a card alone for Hold seconds (the brand's intro: and outro:).
 type part struct {
 	Name, Card, Clip string
 	Seconds          float64 // the clip's length
+	Hold             float64 // > 0: a card alone, for this long
+}
+
+// cardLen is how long the part's card shows.
+func (p part) cardLen() float64 {
+	if p.Hold > 0 {
+		return p.Hold
+	}
+	return cardSeconds
+}
+
+// clipLen is the clip's length in whole frames (0: a card alone).
+func (p part) clipLen() float64 {
+	if p.Hold > 0 {
+		return 0
+	}
+	return float64(max(1, int(p.Seconds*fps+.5))) / fps
 }
 
 // allArgs join the parts, each clip after its card (silent), into one video
@@ -285,16 +303,22 @@ func allArgs(parts []part, tw, th int, tr Transition, meta, out string) []string
 	a := ff()
 	var g strings.Builder
 	var cat strings.Builder
-	in := 0
+	in, n := 0, 0
 	for i, p := range parts {
-		a = append(a, "-loop", "1", "-framerate", fmt.Sprint(fps), "-t", fmt.Sprint(cardSeconds), "-i", p.Card,
-			"-f", "lavfi", "-t", fmt.Sprint(cardSeconds), "-i", "anullsrc=r=48000:cl=stereo", "-i", p.Clip)
+		a = append(a, "-loop", "1", "-framerate", fmt.Sprint(fps), "-t", fmt.Sprint(p.cardLen()), "-i", p.Card,
+			"-f", "lavfi", "-t", fmt.Sprint(p.cardLen()), "-i", "anullsrc=r=48000:cl=stereo")
 		fmt.Fprintf(&g, "[%d:v]%s,fps=%d[cv%d];[%d:a]aformat=sample_rates=48000:channel_layouts=stereo[ca%d];", in, fit, fps, i, in+1, i)
-		fmt.Fprintf(&g, "[%d:v]%s,fps=%d[fv%d];[%d:a]aresample=48000,aformat=sample_rates=48000:channel_layouts=stereo[fa%d];", in+2, fit, fps, i, in+2, i)
-		fmt.Fprintf(&cat, "[cv%d][ca%d][fv%d][fa%d]", i, i, i, i)
-		in += 3
+		fmt.Fprintf(&cat, "[cv%d][ca%d]", i, i)
+		in, n = in+2, n+1
+		if p.Hold > 0 {
+			continue
+		}
+		a = append(a, "-i", p.Clip)
+		fmt.Fprintf(&g, "[%d:v]%s,fps=%d[fv%d];[%d:a]aresample=48000,aformat=sample_rates=48000:channel_layouts=stereo[fa%d];", in, fit, fps, i, in, i)
+		fmt.Fprintf(&cat, "[fv%d][fa%d]", i, i)
+		in, n = in+1, n+1
 	}
-	fmt.Fprintf(&g, "%sconcat=n=%d:v=1:a=1[v][a]", cat.String(), 2*len(parts))
+	fmt.Fprintf(&g, "%sconcat=n=%d:v=1:a=1[v][a]", cat.String(), n)
 	a = append(a, "-i", meta, "-filter_complex", g.String(), "-map", "[v]", "-map", "[a]", "-map_metadata", fmt.Sprint(in), "-map_chapters", fmt.Sprint(in))
 	a = append(a, h264[:6]...) // codec, preset, crf
 	return append(append(a, aac...), "-r", fmt.Sprint(fps), "-movflags", "+faststart", out)
@@ -320,20 +344,32 @@ func xfadeArgs(parts []part, tw, th int, tr Transition, meta, out string) []stri
 	in := 0
 	var segs []string // the video segments in order
 	var lens []float64
+	n := 0
 	for i, p := range parts {
-		clipLen := float64(max(1, int(p.Seconds*fps+.5))) / fps
-		a = append(a, "-loop", "1", "-framerate", fmt.Sprint(fps), "-t", fmt.Sprintf("%.3f", cardSeconds+tr.Dur), "-i", p.Card,
-			"-f", "lavfi", "-t", fmt.Sprint(cardSeconds), "-i", "anullsrc=r=48000:cl=stereo", "-i", p.Clip)
+		hold := p.cardLen() + tr.Dur
+		if i == len(parts)-1 && p.Hold > 0 {
+			hold = p.Hold // the outro: nothing comes after it
+		}
+		a = append(a, "-loop", "1", "-framerate", fmt.Sprint(fps), "-t", fmt.Sprintf("%.3f", hold), "-i", p.Card,
+			"-f", "lavfi", "-t", fmt.Sprint(p.cardLen()), "-i", "anullsrc=r=48000:cl=stereo")
 		fmt.Fprintf(&g, "[%d:v]%s,fps=%d,settb=1/%d[cv%d];[%d:a]aformat=sample_rates=48000:channel_layouts=stereo[ca%d];", in, fit, fps, fps, i, in+1, i)
+		fmt.Fprintf(&cat, "[ca%d]", i)
+		segs = append(segs, fmt.Sprintf("cv%d", i))
+		lens = append(lens, p.cardLen())
+		in, n = in+2, n+1
+		if p.Hold > 0 {
+			continue
+		}
+		a = append(a, "-i", p.Clip)
 		pad := ""
 		if i < len(parts)-1 {
 			pad = fmt.Sprintf(",tpad=stop_mode=clone:stop_duration=%.3f", tr.Dur)
 		}
-		fmt.Fprintf(&g, "[%d:v]%s,fps=%d%s,settb=1/%d[fv%d];[%d:a]aresample=48000,aformat=sample_rates=48000:channel_layouts=stereo[fa%d];", in+2, fit, fps, pad, fps, i, in+2, i)
-		fmt.Fprintf(&cat, "[ca%d][fa%d]", i, i)
-		segs = append(segs, fmt.Sprintf("cv%d", i), fmt.Sprintf("fv%d", i))
-		lens = append(lens, cardSeconds, clipLen)
-		in += 3
+		fmt.Fprintf(&g, "[%d:v]%s,fps=%d%s,settb=1/%d[fv%d];[%d:a]aresample=48000,aformat=sample_rates=48000:channel_layouts=stereo[fa%d];", in, fit, fps, pad, fps, i, in, i)
+		fmt.Fprintf(&cat, "[fa%d]", i)
+		segs = append(segs, fmt.Sprintf("fv%d", i))
+		lens = append(lens, p.clipLen())
+		in, n = in+1, n+1
 	}
 	last, t := segs[0], 0.0
 	for k := 1; k < len(segs); k++ {
@@ -341,7 +377,7 @@ func xfadeArgs(parts []part, tw, th int, tr Transition, meta, out string) []stri
 		fmt.Fprintf(&g, "[%s][%s]xfade=transition=%s:duration=%.3f:offset=%.3f[x%d];", last, segs[k], name, tr.Dur, t, k)
 		last = fmt.Sprintf("x%d", k)
 	}
-	fmt.Fprintf(&g, "[%s]null[v];%sconcat=n=%d:v=0:a=1[a]", last, cat.String(), 2*len(parts))
+	fmt.Fprintf(&g, "[%s]null[v];%sconcat=n=%d:v=0:a=1[a]", last, cat.String(), n)
 	a = append(a, "-i", meta, "-filter_complex", g.String(), "-map", "[v]", "-map", "[a]", "-map_metadata", fmt.Sprint(in), "-map_chapters", fmt.Sprint(in))
 	a = append(a, h264[:6]...)
 	return append(append(a, aac...), "-r", fmt.Sprint(fps), "-movflags", "+faststart", out)
@@ -351,15 +387,31 @@ func xfadeArgs(parts []part, tw, th int, tr Transition, meta, out string) []stri
 type chapter struct {
 	Title      string
 	Start, End float64
+	Clip       float64 // where its clip starts (after its title card)
 }
 
-// chapters places the parts: each chapter starts at its card.
+// chapters places the parts: each chapter starts at its card. An intro card
+// belongs to the first chapter (chapters start at 0:00), an outro card to the
+// last.
 func chapters(parts []part) []chapter {
 	var cs []chapter
-	t := 0.0
+	t, lead := 0.0, -1.0
 	for _, p := range parts {
-		d := cardSeconds + float64(max(1, int(p.Seconds*fps+.5)))/fps
-		cs = append(cs, chapter{p.Name, t, t + d})
+		if p.Hold > 0 {
+			if len(cs) > 0 {
+				cs[len(cs)-1].End += p.Hold
+			} else if lead < 0 {
+				lead = t
+			}
+			t += p.Hold
+			continue
+		}
+		start := t
+		if lead >= 0 {
+			start, lead = lead, -1
+		}
+		d := cardSeconds + p.clipLen()
+		cs = append(cs, chapter{p.Name, start, t + d, t + cardSeconds})
 		t += d
 	}
 	return cs
@@ -371,7 +423,7 @@ func joinCaptions(cs []chapter, caps [][]caption) []caption {
 	var all []caption
 	for i, c := range cs {
 		for _, k := range caps[i] {
-			all = append(all, caption{k.Text, c.Start + cardSeconds + k.From, c.Start + cardSeconds + k.To})
+			all = append(all, caption{k.Text, c.Clip + k.From, c.Clip + k.To})
 		}
 	}
 	return all

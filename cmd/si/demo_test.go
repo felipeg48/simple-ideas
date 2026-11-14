@@ -88,4 +88,21 @@ func TestDemoCommand(t *testing.T) {
 	if code := run([]string{"check", js}, &out, &errb); code != exitOK {
 		t.Errorf("si check ok.json: %d %s", code, errb.String())
 	}
+	// the promo kit's keys pass si check; a bad value is a problem with its line
+	os.WriteFile(filepath.Join(dir, "bed.mp3"), []byte("x"), 0o644)
+	promo := filepath.Join(dir, "promo.md")
+	os.WriteFile(promo, []byte("---\ntype: demo\napp: http://localhost:1\nsession: keep\nheader-offset: auto\nregion: main\nintro: Harbor · Ship on time\noutro: on\nmusic: bed.mp3 · 20%\nurl: https://harbor.example\n---\n\n## A\n\nLower-third: Ana · Ops\n\n- go /\n- click \"Buy\" in frame .shop\n"), 0o644)
+	errb.Reset()
+	if code := run([]string{"check", promo}, &out, &errb); code != exitOK {
+		t.Errorf("si check promo.md: %d %s", code, errb.String())
+	}
+	os.WriteFile(promo, []byte("---\ntype: demo\napp: http://localhost:1\nsession: often\n---\n\n## A\n\n- go /\n"), 0o644)
+	errb.Reset()
+	if code := run([]string{"check", promo}, &out, &errb); code != exitProblems || !strings.Contains(errb.String(), "promo.md:4: session") {
+		t.Errorf("si check bad session: %d %s", code, errb.String())
+	}
+	errb.Reset()
+	if code := run([]string{"demo", "draft"}, &out, &errb); code != exitUsage || !strings.Contains(errb.String(), "one site address") {
+		t.Errorf("si demo draft with no site: %d %s", code, errb.String())
+	}
 }
