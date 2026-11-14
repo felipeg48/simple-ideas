@@ -3,6 +3,16 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.8.0:** a promo kit for web demos. `session: keep` keeps one browser
+  (cookies, local storage) across a run's features; `header-offset:
+  auto|<px>|none` keeps spotlights and scrolling clear of sticky headers and
+  stops the closing spotlight from nudging the page; `si demo draft <url>`
+  crawls a site (same origin, robots.txt, no form submits) and writes a first
+  promo script from its own words; `intro:` / `outro:` cards with `logo:`,
+  `music:` ducked under the voice, `Lower-third:` captions; `--with vertical`
+  (1080×1920) and `--with highlight` (about 60 s) cuts; steps `… in frame
+  <css>` reach into same-origin and cross-origin iframes. `si check` accepts
+  `region:` in Markdown demo scripts.
 - **v3.7.0:** courses, finished. `si build course/ --scorm` writes a SCORM
   1.2 package (one SCO per lesson, `--scorm=single` for one; status, quiz
   scores and progress reported to the LMS, still working with none);
