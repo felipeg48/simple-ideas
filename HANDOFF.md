@@ -34,7 +34,7 @@ lazy-loaded on Edit; `POST /_si/term/api/save` with an mtime check; saves
 never live-reload). See `docs/terminal.md` "Viewer tabs".
 
 
-**Released and live: v3.16.0** (issues #10–#12) · (the play workbench, six improvements:
+**Released and live: v3.17.0** (#13: embed-terminal/browser, siPlay API, Notes cues, Demo lessons) · (issues #10–#12) · (the play workbench, six improvements:
 the Viewer tree's open folders and scroll in `t.snap()` (`open`, `treeTop`,
 `t.onShow`); ⌘= ⌘- ⌘0 caught on the whole drawer; `grep?stream=1` NDJSON with
 Stop (`grepWalk` in `internal/serve/search.go`); split view up to four panes

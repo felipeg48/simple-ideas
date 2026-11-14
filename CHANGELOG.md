@@ -3,6 +3,17 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.17.0:** the deck on stage (#13). Web demo steps drive `si play`'s
+  own tools by name: `embed-terminal "Lab 1"` (then `run`, `type`, `press`,
+  `expect output` go to that drawer tab; `· split right|down`;
+  `min|max|restore|close`), `embed-browser "RabbitMQ"` (a `browser:` link or
+  a URL, `· at X,Y · size WxH · zoom N%`, `close|min`), `click "…" in
+  embed-browser "Name"`, and `slide N` / `next` / `prev`; an `app:` that is a
+  deck starts `si play` itself. A public `window.siPlay` API (version 1) is
+  the contract behind them. `Notes:` cues `[TERM Name: cmd]` and `[BROWSER
+  Name]` act during auto-play and `si build --mp4 --voice`, show as
+  teleprompter badges and are never read aloud. A filmed demo with
+  `· kind=demo` is a learner Demo lesson.
 - **v3.16.0:** three issues. **Video posters (#12):** a filmed deck writes
   `<deck>.poster.jpg` (its first slide, 1920×1080) and video lessons open on
   it instead of a black player; `· poster=path`, `poster:` in the deck or
