@@ -39,7 +39,9 @@
   Nodes appear in first-seen order; `dot`/`flow A..B [dur]` take the shortest
   route A→B. Labels do not wrap: a long one (`Q[Matching queue]`) is set
   smaller so it stays inside its box in every built-in theme, a short one
-  keeps the full size. Add `step <node...>` lines to walk the flow on build steps — each
+  keeps the full size. A long edge label (`-->|order.*.created|`) widens the
+  gap between its two columns so it clears the boxes and the arrowhead; one
+  longer than twice a box is set smaller. Add `step <node...>` lines to walk the flow on build steps — each
   `step` line is one click. An optional op leads the line:
   `highlight` (default, accent outline), `ok` (green), `alert` (red, pulsing),
   `show` (the node starts hidden and fades in), `hide` (fades out):

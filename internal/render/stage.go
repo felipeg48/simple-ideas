@@ -49,6 +49,7 @@ type stageGraph struct {
 
 	// filled by layout()
 	depth            []int
+	gap              []int // gap after each depth: sColGap, wider to fit an edge label
 	cx, cy, tlx, tly []int
 	vbW, vbH         int
 }
@@ -61,6 +62,11 @@ const (
 	sRowGap = 30 // gap between siblings in the same depth
 	sPad    = 28
 	sDotR   = 8
+
+	sLblSize = 15        // edge label font size
+	sLblH    = 20        // edge label height, with its halo
+	sLblPad  = 22        // clear space each side of an edge label: the arrowhead (13) and air
+	sMaxGap  = 2 * sBoxW // a gap never grows past this: a longer label shrinks instead
 )
 
 func parseStage(body string) (*stageGraph, error) {
@@ -229,6 +235,28 @@ func (g *stageGraph) layout() {
 			cols = d + 1
 		}
 	}
+	// the gap after each depth fits the widest (LR) or the tallest (TB) label
+	// of the edges between it and the next depth, up to sMaxGap
+	g.gap = make([]int, cols)
+	for i := range g.gap {
+		g.gap[i] = sColGap
+	}
+	for _, e := range g.edges {
+		a, b := depth[g.idx[e.from]], depth[g.idx[e.to]]
+		if e.label == "" || absInt(a-b) != 1 {
+			continue
+		}
+		need := sLblH + 2*sLblPad
+		if g.dir != "TB" {
+			need = int(math.Ceil(edgeLabelW(e.label))) + 2*sLblPad
+		}
+		k := min(a, b)
+		g.gap[k] = max(g.gap[k], min(need, sMaxGap))
+	}
+	at := make([]int, cols) // offset of each depth along the flow
+	for d := 1; d < cols; d++ {
+		at[d] = at[d-1] + g.gap[d-1]
+	}
 	rowOf := make([]int, n)
 	count := make([]int, cols)
 	for i := range g.nodes {
@@ -250,9 +278,9 @@ func (g *stageGraph) layout() {
 		off := (totalRows - colRows) / 2
 		if g.dir == "TB" {
 			g.tlx[i] = sPad + off + r*(sBoxW+sRowGap)
-			g.tly[i] = sPad + d*(sBoxH+sColGap)
+			g.tly[i] = sPad + d*sBoxH + at[d]
 		} else {
-			g.tlx[i] = sPad + d*(sBoxW+sColGap)
+			g.tlx[i] = sPad + d*sBoxW + at[d]
 			g.tly[i] = sPad + off + r*(sBoxH+sRowGap)
 		}
 		g.cx[i] = g.tlx[i] + sBoxW/2
@@ -260,9 +288,9 @@ func (g *stageGraph) layout() {
 	}
 	if g.dir == "TB" {
 		g.vbW = sPad*2 + maxRows*sBoxW + (maxRows-1)*sRowGap
-		g.vbH = sPad*2 + cols*sBoxH + (cols-1)*sColGap
+		g.vbH = sPad*2 + cols*sBoxH + at[cols-1]
 	} else {
-		g.vbW = sPad*2 + cols*sBoxW + (cols-1)*sColGap
+		g.vbW = sPad*2 + cols*sBoxW + at[cols-1]
 		g.vbH = sPad*2 + maxRows*sBoxH + (maxRows-1)*sRowGap
 	}
 }
@@ -441,6 +469,18 @@ const stageKeyframes = `@keyframes si-stage-move{from{offset-distance:0%}to{offs
 // overflow; measure in the runtime if that ever matters.
 func labelFit(label string) string {
 	const inner = sBoxW - 24 // 12 px clear on each side
+	w := textW(label, 22)
+	if w <= inner {
+		return ""
+	}
+	return fmt.Sprintf(` style="--_lk:%.2f"`, inner/w)
+}
+
+// edgeLabelW is the estimated width of an edge label, its halo included.
+func edgeLabelW(label string) float64 { return textW(label, sLblSize) + 4 }
+
+// textW estimates the width of a bold label at font size size.
+func textW(label string, size float64) float64 {
 	prop, n := 0.0, 0
 	for _, r := range label {
 		n++
@@ -455,11 +495,7 @@ func labelFit(label string) string {
 			prop += 0.62
 		}
 	}
-	w := math.Max(prop, 0.61*float64(n)) * 22
-	if w <= inner {
-		return ""
-	}
-	return fmt.Sprintf(` style="--_lk:%.2f"`, inner/w)
+	return math.Max(prop, 0.61*float64(n)) * size
 }
 
 func rnd(f float64) int { return int(math.Round(f)) }
@@ -533,9 +569,20 @@ func (g *stageGraph) arrow(a, b int) string {
 		s.d, rnd(s.hx), rnd(s.hy), s.ha)
 }
 
+// edgeLabel draws a label at the middle of its edge. The layout widened the
+// gap to fit it; a label wider than the widest gap (or, top to bottom, than
+// the diagram) is shrunk to fit.
 func (g *stageGraph) edgeLabel(a, b int, label string) string {
 	s := g.edgeGeom(a, b)
-	return fmt.Sprintf(`<text class="elbl" x="%d" y="%d">%s</text>`, rnd(s.lx), rnd(s.ly), html.EscapeString(label))
+	room := float64(g.vbW - 2*8)
+	if da, db := g.depth[a], g.depth[b]; g.dir != "TB" && absInt(da-db) == 1 {
+		room = float64(g.gap[min(da, db)] - 2*sLblPad)
+	}
+	style := ""
+	if w := edgeLabelW(label); w > room {
+		style = fmt.Sprintf(` style="font-size:%.1fpx"`, sLblSize*room/w)
+	}
+	return fmt.Sprintf(`<text class="elbl" x="%d" y="%d"%s>%s</text>`, rnd(s.lx), rnd(s.ly), style, html.EscapeString(label))
 }
 
 // pathD is the polyline through node centres along a route.

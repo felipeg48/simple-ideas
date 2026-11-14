@@ -1,6 +1,7 @@
 package render
 
 import (
+	"math"
 	"strconv"
 	"strings"
 	"testing"
@@ -162,5 +163,52 @@ func TestGenStageLongLabelShrinks(t *testing.T) {
 	// only the long label gets a font-size factor; the short one stays at 22px
 	if strings.Count(svg, `style="--_lk:`) != 1 || !strings.Contains(svg, `var(--_lk,1)`) {
 		t.Errorf("a long label must get a font-size factor:\n%s", svg)
+	}
+}
+
+// An edge label wider than the default gap widens the gap between its two
+// columns, so its box clears the node boxes and the arrowhead (issue #11).
+func TestStageEdgeLabelFitsGap(t *testing.T) {
+	hit := func(x0, y0, x1, y1, X0, Y0, X1, Y1 float64) bool { return x0 < X1 && X0 < x1 && y0 < Y1 && Y0 < y1 }
+	for _, body := range []string{
+		"dir: LR\nshop -->|order.*.created| billing\nshop -->|order.#| analytics",
+		"dir: TB\nshop -->|order.*.created| billing\nshop -->|order.#| analytics",
+		"a -->|a much longer routing key label| b --> c",
+	} {
+		g, err := parseStage(body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		g.layout()
+		for _, e := range g.edges {
+			if e.label == "" {
+				continue
+			}
+			s := g.edgeGeom(g.idx[e.from], g.idx[e.to])
+			w := edgeLabelW(e.label)
+			lx0, ly0, lx1, ly1 := s.lx-w/2, s.ly-sLblH/2, s.lx+w/2, s.ly+sLblH/2
+			for i := range g.nodes {
+				if hit(lx0, ly0, lx1, ly1, float64(g.tlx[i]), float64(g.tly[i]), float64(g.tlx[i]+sBoxW), float64(g.tly[i]+sBoxH)) {
+					t.Errorf("%q: label %q overlaps box %s", body, e.label, g.nodes[i].id)
+				}
+			}
+			if g.dir == "TB" { // a TB label sits across its own edge, between two rows
+				continue
+			}
+			r := s.ha * math.Pi / 180 // the arrowhead: 13 back from its tip, 7 each side
+			bx, by := s.hx-13*math.Cos(r), s.hy-13*math.Sin(r)
+			if hit(lx0, ly0, lx1, ly1, math.Min(s.hx, bx)-7, math.Min(s.hy, by)-7, math.Max(s.hx, bx)+7, math.Max(s.hy, by)+7) {
+				t.Errorf("%q: label %q overlaps the arrowhead", body, e.label)
+			}
+		}
+	}
+	g, _ := parseStage("a -->|ok| b") // a short label keeps the default gap
+	g.layout()
+	if g.gap[0] != sColGap {
+		t.Errorf("short label: gap %d, want %d", g.gap[0], sColGap)
+	}
+	svg, _, _ := genStage("a -->|"+strings.Repeat("routing.key.", 8)+"| b", 1)
+	if !strings.Contains(svg, `style="font-size:`) {
+		t.Errorf("a label wider than the widest gap must shrink:\n%s", svg)
 	}
 }
