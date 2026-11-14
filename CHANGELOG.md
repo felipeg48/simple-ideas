@@ -3,6 +3,14 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.20.0:** five improvements. Top-to-bottom stage diagrams widen the
+  gap between sibling boxes so their edge labels never overlap. Infographic
+  line charts place numeric and date x values by their real value (round
+  ticks). A `kind:zip` bundle also carries the built pages its outputs link
+  to (index, labs) with their assets. A new `--structure` project checks
+  clean: a bundle of a kind with no sources yet is a note, not a warning. A
+  portrait infographic printed over several pages keeps its background on
+  every page and never cuts a block.
 - **v3.19.0:** course results to your team. `webhook: https://…` in
   `_course.md` sends `lesson.completed`, `quiz.submitted` (score, pass, per
   question right or wrong, never the answers), `lab.step.checked`,
