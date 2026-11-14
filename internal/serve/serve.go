@@ -33,6 +33,8 @@ type Server struct {
 	Terminal    bool       // enable the play terminal drawer; set only on a loopback address
 	CleanPrompt bool       // the drawer's shells start with si's neutral prompt, no user rc (filming; si.conf terminal.prompt: clean)
 	Relay       bool       // POST /_si/relay: forward and sign course result events (a loopback address, or --relay)
+	Class       bool       // --class: courses send their events to /_si/class/event; the dashboard at /_si/class (class.go)
+	ClassKey    string     // --class: the key of the dashboard link for other devices (the loopback needs none)
 	watchMu     sync.Mutex // Watch's baseline, also moved by quietly
 	watchSig    uint64
 	Dev         bool             // --dev: in-place hot reload instead of full-page reload
@@ -52,11 +54,13 @@ type Server struct {
 	term    *termHub
 	browser browserProxies // floating browser windows (w): per-origin loopback proxies
 	relay   *relay
-	polls   *polls   // si play --audience: the ballots (poll.go)
-	qa      *qa      // si play --audience: the questions (qa.go)
-	clouds  *clouds  // si play --audience: the word clouds (cloud.go)
-	rec     recorder // Record your talk (record.go)
-	rev     *reviews // review comments (review.go)
+	polls   *polls     // si play --audience: the ballots (poll.go)
+	qa      *qa        // si play --audience: the questions (qa.go)
+	clouds  *clouds    // si play --audience: the word clouds (cloud.go)
+	rec     recorder   // Record your talk (record.go)
+	rev     *reviews   // review comments (review.go)
+	class   *classRoom // --class: the learners' events (class.go)
+	classMu sync.Mutex
 	revOnce sync.Once
 	voiceMu sync.Mutex // one voicing at a time (voice.go)
 	warned  sync.Map   // auto-play warnings already logged
@@ -140,6 +144,9 @@ func (s *Server) Handler() http.Handler {
 	if s.Relay {
 		mux.HandleFunc("POST /_si/relay", s.hookRelay) // course result events, signed and forwarded (check.go)
 	}
+	if s.Class {
+		s.classRoutes(mux) // the live class view (class.go)
+	}
 	static := http.FileServer(http.Dir(s.dir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		p := path.Clean("/" + r.URL.Path)
@@ -206,7 +213,7 @@ func (s *Server) deckPage(w http.ResponseWriter, md string, term, audience bool)
 	if v, ok := cfg.Features["terminal"]; ok && !v {
 		termOn = false
 	}
-	opt := render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Checks: termOn, Relay: s.Relay && !audience, Remote: s.Remote, RemoteQR: s.RemoteQR, Pages: s.pages(cfg), NoSpeakerText: audience, VoiceServer: !audience, Autoplay: s.Autoplay && !audience, Instructor: s.Instructor && !audience}
+	opt := render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Checks: termOn, Relay: s.Relay && !audience, Class: s.Class && !audience, Remote: s.Remote, RemoteQR: s.RemoteQR, Pages: s.pages(cfg), NoSpeakerText: audience, VoiceServer: !audience, Autoplay: s.Autoplay && !audience, Instructor: s.Instructor && !audience}
 	if g := deck.FindGuide(md, s.dir); g != nil && g.Item(md) != nil { // a guide or book renders as a whole (numbering, search across pages)
 		s.writeBookPage(w, g, opt, filepath.Join(filepath.Dir(md), strings.TrimSuffix(filepath.Base(md), filepath.Ext(md))+".html"))
 		return
@@ -240,7 +247,7 @@ func (s *Server) bookPage(w http.ResponseWriter, p string) bool {
 		return false
 	}
 	cfg := config.Load(s.Conf, filepath.Join(s.dir, "si.conf"))
-	opt := render.Options{LiveReload: true, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Instructor: s.Instructor, Relay: s.Relay}
+	opt := render.Options{LiveReload: true, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Instructor: s.Instructor, Relay: s.Relay, Class: s.Class}
 	s.writeBookPage(w, g, opt, file)
 	return true
 }

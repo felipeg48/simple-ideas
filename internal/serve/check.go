@@ -125,13 +125,8 @@ func (s *Server) hookRelay(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
-	p := path.Clean("/" + r.URL.Query().Get("page"))
-	file := filepath.Join(s.dir, filepath.FromSlash(p))
-	if md := s.source(strings.TrimSuffix(p, ".html")); md != "" {
-		file = md
-	}
-	g := deck.FindGuide(file, s.dir)
-	if g == nil || !g.IsCourse() {
+	g := s.coursePage(r.URL.Query().Get("page"))
+	if g == nil {
 		http.Error(w, "not a course page", http.StatusNotFound)
 		return
 	}
@@ -154,6 +149,7 @@ func (s *Server) hookRelay(w http.ResponseWriter, r *http.Request) {
 		format = "json"
 	}
 	if err := webhook.Post(to, format, body, webhook.Secret(cfg.WebhookSecret), g.Meta.WebhookAuth); err != nil {
+
 		log.Printf("si: relay: %v", err)
 		http.Error(w, "the webhook did not take it", http.StatusBadGateway)
 		return

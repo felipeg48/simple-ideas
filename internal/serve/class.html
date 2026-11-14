@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Class · {{TITLE}}</title>
+<style>
+@layer si.theme, si.user;
+/*SI-THEME*/
+:root{--cv-gap:clamp(.7rem,2vw,1.4rem)}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+#cv-sum table,.cv-grid{width:100%}
+body{margin:0;background:var(--si-bg);color:var(--si-fg);font:clamp(.88rem,.75rem + .3vw,1.5rem)/1.45 var(--si-font-body,system-ui,sans-serif);
+  padding:var(--cv-gap) max(1rem,4vw) calc(var(--cv-gap) * 2)}
+header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:var(--cv-gap);margin-bottom:var(--cv-gap)}
+h1{font-family:var(--si-font-heading,inherit);font-size:clamp(1.3rem,1rem + 1.6vw,2.2rem);line-height:1.1;margin:0}
+h1 small{display:block;font-size:.45em;letter-spacing:.14em;text-transform:uppercase;color:var(--si-muted);margin-bottom:.35em}
+h2{font-family:var(--si-font-heading,inherit);font-size:1.1em;margin:0 0 .6em}
+.cv-tools{display:flex;flex-wrap:wrap;gap:.5em;align-items:center}
+.cv-tools label{display:flex;flex-direction:column;font-size:.75em;color:var(--si-muted);gap:.2em}
+select,.cv-btn{font:inherit;font-size:.9em;color:var(--si-fg);background:var(--si-surface);border:1px solid var(--si-line);border-radius:var(--si-radius,.5em);padding:.35em .6em}
+.cv-btn{cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.35em;align-self:end}
+.cv-btn:hover{border-color:var(--si-accent)}
+.cv-live{font-size:.8em;color:var(--si-muted);align-self:end;padding-bottom:.4em}
+.cv-live::before{content:"";display:inline-block;width:.6em;height:.6em;border-radius:50%;background:var(--si-muted);margin-right:.4em;vertical-align:.05em}
+.cv-live[data-on]::before{background:var(--si-ok)}
+.cv-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr));gap:var(--cv-gap);margin-bottom:var(--cv-gap)}
+.cv-tile{background:var(--si-surface);border:1px solid var(--si-line);border-radius:var(--si-radius,.6em);padding:.7em 1em;box-shadow:var(--si-shadow)}
+.cv-tile b{display:block;font-size:clamp(1.4rem,1rem + 1.5vw,2.2rem);line-height:1.1;font-variant-numeric:tabular-nums}
+.cv-tile span{font-size:.8em;color:var(--si-muted)}
+.cv-tile[data-alert] b{color:var(--si-crit)}
+section{background:var(--si-surface);border:1px solid var(--si-line);border-radius:var(--si-radius,.6em);padding:var(--cv-gap);margin-bottom:var(--cv-gap);box-shadow:var(--si-shadow)}
+.cv-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,24rem),1fr));gap:var(--cv-gap)}
+.cv-cols section{margin:0}
+.cv-empty{color:var(--si-muted);margin:0}
+.cv-stuck{list-style:none;margin:0;padding:0;display:grid;gap:.4em}
+.cv-stuck li{display:flex;flex-wrap:wrap;gap:.2em .6em;align-items:baseline;padding:.45em .7em;border-radius:var(--si-radius,.5em);
+  background:color-mix(in srgb,var(--si-crit) 10%,var(--si-surface));border-left:.25em solid var(--si-crit)}
+.cv-stuck b{font-weight:650}
+.cv-stuck small{color:var(--si-muted)}
+.cv-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:separate;border-spacing:0;font-size:.9em;font-variant-numeric:tabular-nums}
+th,td{padding:.4em .55em;border-bottom:1px solid var(--si-line);text-align:center;white-space:nowrap}
+thead th{font-weight:600;font-size:.82em;color:var(--si-muted);vertical-align:bottom}
+thead tr:first-child th{color:var(--si-fg);border-bottom:2px solid var(--si-accent);text-align:left}
+.cv-lesson{max-width:9em;overflow:hidden;text-overflow:ellipsis}
+.cv-kind{display:block;font-size:.85em;font-weight:400;text-transform:lowercase}
+.cv-grid th:first-child,.cv-grid td:first-child{position:sticky;left:0;background:var(--si-surface);text-align:left;z-index:1;max-width:12em;overflow:hidden;text-overflow:ellipsis}
+.cv-grid tr[data-stuck] td:first-child{color:var(--si-crit);font-weight:650}
+.cv-grid td small{color:var(--si-muted);font-size:.8em}
+.cv-who small{display:block;font-weight:400}
+.cv-done{color:var(--si-ok);font-weight:700}
+.cv-bad{color:var(--si-crit);font-weight:650}
+.cv-mid{color:var(--si-warn)}
+.cv-dim{color:var(--si-muted)}
+.cv-dots{display:inline-flex;gap:.2em;vertical-align:middle}
+.cv-dot{width:.62em;height:.62em;border-radius:50%;background:var(--si-ok)}
+.cv-dot[data-fail]{background:var(--si-crit)}
+.cv-sum td,.cv-sum th{text-align:right}
+.cv-sum td:first-child,.cv-sum th:first-child{text-align:left;white-space:normal}
+.cv-q{display:grid;grid-template-columns:auto 1fr auto;gap:.3em .6em;align-items:center;margin:0 0 1em}
+.cv-q h3{grid-column:1/-1;font-size:.95em;margin:.2em 0}
+.cv-bar{height:.7em;border-radius:1em;background:var(--si-surface-2);overflow:hidden}
+.cv-bar i{display:block;height:100%;background:var(--si-crit)}
+.cv-q span{font-size:.85em;color:var(--si-muted);font-variant-numeric:tabular-nums}
+footer{font-size:.8em;color:var(--si-muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1><small>Class view</small><span id="cv-title">{{TITLE}}</span></h1>
+  <div class="cv-tools">
+    <label id="cv-course-l" hidden>Course<select id="cv-course"></select></label>
+    <label>Module<select id="cv-module"><option value="">All modules</option></select></label>
+    <label>Stuck after<select id="cv-stuck"><option value="5">5 min</option><option value="10" selected>10 min</option><option value="15">15 min</option><option value="30">30 min</option></select></label>
+    <a class="cv-btn" id="cv-csv" href="#">Export CSV</a>
+    <button class="cv-btn" id="cv-mode" type="button" aria-label="Light or dark">◐</button>
+    <span class="cv-live" id="cv-live">connecting</span>
+  </div>
+</header>
+<div class="cv-tiles" id="cv-tiles"></div>
+<section aria-labelledby="cv-stuck-h"><h2 id="cv-stuck-h">Who’s stuck</h2><div id="cv-stuck-list"></div></section>
+<section aria-labelledby="cv-grid-h"><h2 id="cv-grid-h">Learners by lesson</h2><div class="cv-scroll" id="cv-grid"></div></section>
+<div class="cv-cols">
+  <section aria-labelledby="cv-sum-h"><h2 id="cv-sum-h">Lessons</h2><div class="cv-scroll" id="cv-sum"></div></section>
+  <section aria-labelledby="cv-quiz-h"><h2 id="cv-quiz-h">Quiz questions most got wrong</h2><div id="cv-quiz"></div></section>
+</div>
+<footer>Learners are random ids and the names they typed. Every event is kept in .si/class/ beside the course.</footer>
+<script>
+(function () {
+  'use strict';
+  var P = new URLSearchParams(location.search), key = P.get('k') || '';
+  var $ = function (id) { return document.getElementById(id); };
+  var course = P.get('course') || '', view = null, timer = 0;
+  function h(tag, attrs, kids) { // a DOM element; text always as text
+    var e = document.createElement(tag);
+    for (var a in attrs || {}) if (attrs[a] != null && attrs[a] !== false) e.setAttribute(a, attrs[a] === true ? '' : attrs[a]);
+    [].concat(kids == null ? [] : kids).forEach(function (k) { if (k != null) e.appendChild(typeof k === 'object' ? k : document.createTextNode(String(k))); });
+    return e;
+  }
+  function url(p) {
+    var q = new URLSearchParams();
+    if (key) q.set('k', key);
+    if (course) q.set('course', course);
+    q.set('stuck', $('cv-stuck').value);
+    return p + '?' + q.toString();
+  }
+  function ago(t) {
+    var s = Math.max(0, (new Date(view.now) - new Date(t)) / 1000);
+    return s < 60 ? 'just now' : s < 3600 ? Math.floor(s / 60) + ' min ago' : Math.floor(s / 3600) + ' h ago';
+  }
+  function lessons() {
+    var m = $('cv-module').value;
+    return view.course.lessons.filter(function (l) { return !m || l.module === m; });
+  }
+  function cell(c, l) {
+    if (!c) return h('td', { 'class': 'cv-dim', title: 'not started' }, '·');
+    var parts = [], tip = [];
+    if (c.quiz) {
+      var q = c.quiz;
+      parts.push(h('span', { 'class': q.pass ? 'cv-done' : 'cv-bad' }, q.score + ' %'));
+      if (q.attempts > 1) parts.push(h('small', null, ' ×' + q.attempts));
+      tip.push('quiz: last ' + q.score + ' %, best ' + q.best + ' %, ' + q.attempts + ' attempt(s), ' + (q.pass ? 'passed' : 'not passed'));
+    } else if (c.done) {
+      parts.push(h('span', { 'class': 'cv-done' }, '✓'));
+    }
+    if (c.checks) {
+      var ok = c.checks.filter(function (k) { return k.pass; }).length;
+      parts.push(h('span', { 'class': 'cv-dots' }, c.checks.map(function (k) { return h('i', { 'class': 'cv-dot', 'data-fail': !k.pass }); })));
+      parts.push(h('small', { 'class': ok < c.checks.length ? 'cv-bad' : '' }, ' ' + ok + '/' + c.checks.length));
+      c.checks.forEach(function (k) { tip.push('check ' + k.step + (k.title ? ' (' + k.title + ')' : '') + ': ' + (k.pass ? 'passed' : 'failed' + (k.fails > 1 ? ' ' + k.fails + '× in a row' : '')) + ', ' + k.tries + ' tries'); });
+    }
+    if (c.demo) {
+      parts.push(h('small', { 'class': c.demo >= 90 ? '' : 'cv-mid' }, ' ▶' + c.demo + ' %'));
+      tip.push('watched ' + c.demo + ' %');
+    }
+    if (c.done && (c.quiz || c.checks)) tip.unshift('done');
+    if (!parts.length) parts.push(h('span', { 'class': 'cv-dim' }, '…'));
+    tip.push('last ' + ago(c.last));
+    return h('td', { title: l.title + ': ' + tip.join('; ') }, parts);
+  }
+  function render() {
+    var v = view, ls = lessons(), stuckIds = {};
+    v.stuck.forEach(function (s) { stuckIds[s.learner] = true; });
+    $('cv-title').textContent = v.course.title; document.title = 'Class · ' + v.course.title;
+    // the course and module pickers
+    var cs = $('cv-course');
+    $('cv-course-l').hidden = v.courses.length < 2;
+    if (cs.options.length !== v.courses.length) {
+      cs.textContent = '';
+      v.courses.forEach(function (c) { cs.appendChild(h('option', { value: c.id }, c.title)); });
+    }
+    cs.value = v.course.id;
+    var ms = $('cv-module'), mods = [];
+    v.course.lessons.forEach(function (l) { if (mods.indexOf(l.module) < 0) mods.push(l.module); });
+    if (ms.options.length !== mods.length + 1) {
+      var keep = ms.value;
+      ms.textContent = ''; ms.appendChild(h('option', { value: '' }, 'All modules'));
+      mods.forEach(function (m) { ms.appendChild(h('option', { value: m }, m)); });
+      ms.value = mods.indexOf(keep) >= 0 ? keep : '';
+    }
+    $('cv-csv').href = url('/_si/class/csv');
+    // tiles
+    var n = v.learners.length, done = 0;
+    v.learners.forEach(function (l) { done += l.completed ? 1 : 0; });
+    var tiles = $('cv-tiles'); tiles.textContent = '';
+    [[n, 'learners'], [done, 'completed the course'], [v.stuck.length, 'stuck now', v.stuck.length > 0], [v.events, 'events']].forEach(function (t) {
+      tiles.appendChild(h('div', { 'class': 'cv-tile', 'data-alert': !!t[2] }, [h('b', null, t[0]), h('span', null, t[1])]));
+    });
+    // who's stuck
+    var st = $('cv-stuck-list'); st.textContent = '';
+    var mod = $('cv-module').value, inMod = {};
+    ls.forEach(function (l) { inMod[l.id] = true; });
+    var stuck = v.stuck.filter(function (s) { return !mod || inMod[s.lesson]; });
+    st.appendChild(stuck.length ? h('ul', { 'class': 'cv-stuck' }, stuck.map(function (s) {
+      return h('li', null, [h('b', null, s.label), h('span', null, s.title), h('small', null, s.reason + ' · since ' + ago(s.since))]);
+    })) : h('p', { 'class': 'cv-empty' }, n ? 'Nobody is stuck right now.' : 'Waiting for the first learner. Their progress shows here as they work.'));
+    // the grid
+    var g = $('cv-grid'); g.textContent = '';
+    if (!n) { g.appendChild(h('p', { 'class': 'cv-empty' }, 'No learners yet.')); }
+    else {
+      var groups = [];
+      ls.forEach(function (l) { var last = groups[groups.length - 1]; if (last && last.m === l.module) last.n++; else groups.push({ m: l.module, n: 1 }); });
+      var head = h('thead', null, [
+        h('tr', null, [h('th', null, '')].concat(groups.map(function (gr) { return h('th', { colspan: gr.n }, gr.m); }))),
+        h('tr', null, [h('th', null, 'Learner')].concat(ls.map(function (l) { return h('th', { 'class': 'cv-lesson', title: l.title }, [l.title, h('span', { 'class': 'cv-kind' }, l.kind)]); })))
+      ]);
+      var body = h('tbody', null, v.learners.map(function (lr) {
+        var who = h('td', { 'class': 'cv-who', title: lr.id }, [lr.label, h('small', { 'class': 'cv-dim' }, lr.done + '/' + v.course.lessons.length + ' done · ' + ago(lr.last) + (lr.instructor ? ' · instructor build' : ''))]);
+        return h('tr', { 'data-stuck': !!stuckIds[lr.id] }, [who].concat(ls.map(function (l) { return cell(lr.cells[l.id], l); })));
+      }));
+      g.appendChild(h('table', { 'class': 'cv-grid' }, [head, body]));
+    }
+    // lessons
+    var sum = $('cv-sum'); sum.textContent = '';
+    sum.appendChild(h('table', { 'class': 'cv-sum' }, [
+      h('thead', null, h('tr', null, ['Lesson', 'Done', 'Quiz avg', 'Passed', 'Failing a check', 'Watched'].map(function (t) { return h('th', null, t); }))),
+      h('tbody', null, v.lessons.filter(function (l) { return inMod[l.id]; }).map(function (l) {
+        return h('tr', null, [h('td', null, l.title), h('td', null, l.done + '/' + n),
+          h('td', null, l.quizTakers ? l.quizAvg + ' %' : '–'), h('td', null, l.quizTakers ? l.quizPassed + '/' + l.quizTakers : '–'),
+          h('td', { 'class': l.failing ? 'cv-bad' : '' }, l.failing || '–'), h('td', null, l.demoAvg ? l.demoAvg + ' %' : '–')]);
+      }))
+    ]));
+    // quiz questions
+    var qz = $('cv-quiz'); qz.textContent = '';
+    var quizzes = v.quizzes.filter(function (q) { return inMod[q.lesson]; });
+    if (!quizzes.length) qz.appendChild(h('p', { 'class': 'cv-empty' }, 'No quiz answers yet.'));
+    quizzes.forEach(function (q) {
+      var rows = [h('h3', null, q.title + ' · ' + q.takers + ' took it')];
+      q.questions.forEach(function (x) {
+        var pct = x.answered ? Math.round(100 * x.wrong / x.answered) : 0;
+        rows.push(h('span', null, 'Question ' + x.id.slice(1)), h('div', { 'class': 'cv-bar', role: 'img', 'aria-label': x.wrong + ' of ' + x.answered + ' wrong' }, h('i', { style: 'width:' + pct + '%' })), h('span', null, x.wrong + '/' + x.answered + ' wrong'));
+      });
+      qz.appendChild(h('div', { 'class': 'cv-q' }, rows));
+    });
+  }
+  function load() {
+    fetch(url('/_si/class/data'), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (v) {
+      if (!v) return;
+      view = v; course = v.course.id; render();
+      document.body.setAttribute('data-ready', v.events);
+    }).catch(function () {});
+  }
+  function soon() { clearTimeout(timer); timer = setTimeout(load, 250); }
+  $('cv-course').addEventListener('change', function () { course = this.value; load(); });
+  $('cv-module').addEventListener('change', function () { if (view) render(); });
+  $('cv-stuck').addEventListener('change', load);
+  $('cv-mode').addEventListener('click', function () {
+    var r = document.documentElement, dark = r.getAttribute('data-si-mode') ? r.getAttribute('data-si-mode') === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    r.setAttribute('data-si-mode', dark ? 'light' : 'dark');
+  });
+  var es = new EventSource((key ? '/_si/class/events?k=' + encodeURIComponent(key) : '/_si/class/events'));
+  es.addEventListener('open', function () { $('cv-live').setAttribute('data-on', ''); $('cv-live').textContent = 'live'; });
+  es.addEventListener('error', function () { $('cv-live').removeAttribute('data-on'); $('cv-live').textContent = 'reconnecting'; });
+  es.addEventListener('changed', soon);
+  setInterval(load, 30000); // who is stuck changes with time alone
+  load();
+})();
+</script>
+</body>
+</html>

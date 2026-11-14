@@ -143,8 +143,13 @@
   function emit(type, data) {
     if ((C.events || []).indexOf(type) < 0 || get(okKey) === 'no') return;
     if (type === 'course.completed') { if (get(doneKey)) return; put(doneKey, '1'); }
-    var it = { to: C.relay || C.url, f: C.format || 'json', a: C.auth || '', course: C.course.id, page: location.pathname, b: format(make(type, data), C.format) };
-    if (!allowed() || !deliver(it)) later(it);
+    var ev = make(type, data), its = [];
+    // the webhook (direct or through the relay), with its own event list when the class view asks for all
+    if ((C.relay || C.url) && (!C.hookEvents || C.hookEvents.indexOf(type) >= 0))
+      its.push({ to: C.relay || C.url, f: C.format || 'json', a: C.auth || '', course: C.course.id, page: location.pathname, b: format(ev, C.format) });
+    // si serve --class: the live class view, always the JSON event
+    if (C['class']) its.push({ to: C['class'], f: 'json', a: '', course: C.course.id, page: location.pathname, b: JSON.stringify(ev) });
+    its.forEach(function (it) { if (!allowed() || !deliver(it)) later(it); });
   }
   window.siWebhook.emit = emit;
   window.addEventListener('online', flush);

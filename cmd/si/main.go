@@ -248,6 +248,9 @@ Flags (GNU style, before or after the path):
                         (each phone trusts it once, from the "first time" code) or a Tailscale certificate
       --relay           play, serve: a course's result events go through this server's /_si/relay, signed
                         with webhook-secret and forwarded to its webhook:, on any address (always on loopback)
+      --class           serve, play: the live class view of a course: learners' pages send their events here too (kept in
+                        .si/class/<date>.jsonl); /_si/class shows learners by lessons, who is stuck, quiz questions, CSV
+                        (loopback, or the keyed link si prints)
       --offline         code: / diff: use the cache only (CI, a plane); fails on what was never fetched
       --no-instructor   build: leave the instructor demo scripts (type: demo) out of a participant build
       --instructor      build a course (_course.md) for the instructor: the demos' runbooks, the decks' teleprompter,
@@ -432,6 +435,7 @@ type options struct {
 	audience                                     bool       // si play --audience: the room follows the talk on their phones
 	tunnel                                       bool       // si play --tunnel: the audience side on a temporary public address
 	relay                                        bool       // si play / si serve --relay: /_si/relay on any address (always on loopback)
+	class                                        bool       // si serve / si play --class: the live class view (/_si/class)
 	format                                       string     // si theme export --format css|dtcg
 	use                                          bool       // si theme import --use: write theme: into si.conf
 	accent                                       string     // si theme from --accent: keep this colour
@@ -538,6 +542,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.audience, "audience", false, "")
 	fl.BoolVar(&o.tunnel, "tunnel", false, "")
 	fl.BoolVar(&o.relay, "relay", false, "")
+	fl.BoolVar(&o.class, "class", false, "")
 	fl.StringVar(&o.format, "format", "", "")
 	fl.BoolVar(&o.use, "use", false, "")
 	fl.StringVar(&o.accent, "accent", "", "")
@@ -1427,6 +1432,18 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 			printQR(stdout, lan)
 		}
 	}
+	if o.class {
+		if err := startClass(srv, ln.Addr(), stdout); err != nil {
+			ln.Close()
+			fmt.Fprintf(stderr, "si: --class: %v\n", err)
+			return exitProblems
+		}
+		defer func() {
+			for _, p := range srv.ClassFiles() {
+				fmt.Fprintf(stdout, "si: the class's events: %s\n", p)
+			}
+		}()
+	}
 	// the Mac app's menu-bar icon lists running sessions from these files
 	sess := serve.Session{PID: os.Getpid(), Kind: strings.Fields(cmdName)[1], Src: absPath(src), URL: url, Started: time.Now()}
 	if decks := srv.RemoteDecks(); len(decks) == 1 {
@@ -1492,6 +1509,37 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		return exitProblems
 	}
 	return exitOK
+}
+
+// startClass turns the live class view on: course pages send their events
+// to this server, and the dashboard opens on the loopback, or anywhere with
+// the run's key (printed with its QR code when the server is reachable).
+func startClass(srv *serve.Server, addr net.Addr, stdout io.Writer) error {
+	var raw [16]byte
+	if _, err := rand.Read(raw[:]); err != nil {
+		return err
+	}
+	srv.Class, srv.ClassKey = true, hex.EncodeToString(raw[:])
+	ta, ok := addr.(*net.TCPAddr)
+	if !ok {
+		return nil
+	}
+	port := strconv.Itoa(ta.Port)
+	fmt.Fprintf(stdout, "  class view (this machine): http://%s/_si/class\n", net.JoinHostPort("127.0.0.1", port))
+	if ta.IP.IsLoopback() {
+		fmt.Fprintf(stdout, "  learners on your network and the class view on a tablet need --addr 0.0.0.0:%s\n", port)
+		return nil
+	}
+	host := ta.IP.String()
+	if ta.IP.IsUnspecified() {
+		if host = lanIP(); host == "" {
+			host = "127.0.0.1"
+		}
+	}
+	u := fmt.Sprintf("http://%s/_si/class?k=%s", net.JoinHostPort(host, port), srv.ClassKey)
+	fmt.Fprintf(stdout, "  class view on another device (keyed link, keep it to yourself):\n  %s\n", u)
+	printQR(stdout, u)
+	return nil
 }
 
 // startRemote opens the --remote listener (default: every interface, the play

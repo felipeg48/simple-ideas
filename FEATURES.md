@@ -142,6 +142,12 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - **Labs that check themselves:** `<!-- check: command · expect "text" -->`
   under a lab step: "Run this to check" in every build, a ✓ Check button in
   `si play` that runs it and shows the result.
+- **The live class view:** `si serve course/ --class` and the trainer's
+  dashboard at `/_si/class` (loopback, or a keyed link with its QR code):
+  learners by lessons (done, quiz scores, lab checks, videos watched), who's
+  stuck (the same check failed twice, no progress for N minutes), per-lesson
+  and per-question summaries, a module filter, CSV, live over SSE; events kept
+  in `.si/class/<date>.jsonl`, names only when learners type one.
 - **CI results:** `si demo test --webhook URL --webhook-format slack` posts
   the run's summary (passed, failed, the failed steps, the report).
 - **Quizzes:** `type: quiz` pages and ```` ```quiz ```` fences: single and

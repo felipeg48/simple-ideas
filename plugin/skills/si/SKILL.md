@@ -271,7 +271,11 @@ Not everything is a slide deck. Pick the type by what the reader does:
   visible in the page. A lab step can check itself: `<!-- check: command ·
   expect "text" · exit 0 -->` (a ✓ Check button in `si play`, a "Run this to
   check" box in every build). CI: `si demo test … --webhook URL
-  --webhook-format slack` posts the run's summary.
+  --webhook-format slack` posts the run's summary. A live class: `si serve
+  course/ --class --addr 0.0.0.0:8000` (no `webhook:` needed) shows the
+  trainer learners by lessons, who's stuck, quiz questions most got wrong
+  and a CSV at `/_si/class` (loopback, or the keyed link si prints); events
+  are kept in `.si/class/<date>.jsonl`.
 - **Project structure** (RULES.md §31): when a project has many kinds of
   output (decks, labs, a site, videos, zips), a `structure:` block in the
   project's si.conf maps each to a folder: one folder per line, nested by

@@ -34,7 +34,10 @@ func (dr *deckRenderer) webhookConfig(g *deck.Guide) string {
 	if url == "" && dr.opt.Config != nil {
 		url = dr.opt.Config.CourseWebhook
 	}
-	if url == "" || (url == "relay" && !dr.opt.Relay) {
+	if url == "relay" && !dr.opt.Relay {
+		url = ""
+	}
+	if url == "" && !dr.opt.Class {
 		return ""
 	}
 	or := func(v, def string) string {
@@ -51,10 +54,23 @@ func (dr *deckRenderer) webhookConfig(g *deck.Guide) string {
 	if dr.opt.Instructor {
 		audience = "instructor"
 	}
-	c := map[string]any{"format": or(m.WebhookFormat, "json"), "events": events, "learner": or(m.WebhookLearner, "random"),
+	learner := or(m.WebhookLearner, "random")
+	if dr.opt.Class {
+		events = webhook.Events // the class view wants every event, whatever goes to the webhook
+		learner = or(m.WebhookLearner, "ask")
+	}
+	c := map[string]any{"format": or(m.WebhookFormat, "json"), "events": events, "learner": learner,
 		"consent": or(m.WebhookConsent, "notice"), "notice": m.WebhookNotice, "si": SIVersion, "audience": audience,
 		"course": map[string]string{"id": filepath.Base(g.Dir), "title": g.Meta.Title}}
-	if dr.opt.Relay {
+	if dr.opt.Class {
+		c["class"] = "/_si/class/event" // si serve --class: the server's live class view gets every event as JSON
+		if hook := deck.WebhookEventList(m.WebhookEvents); len(hook) > 0 {
+			c["hookEvents"] = hook // the webhook keeps its own list
+		}
+	}
+	if url == "" {
+		// the class view only
+	} else if dr.opt.Relay {
 		c["relay"] = "/_si/relay"
 	} else {
 		c["url"] = url
