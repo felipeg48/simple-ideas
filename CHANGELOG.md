@@ -3,6 +3,16 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.16.0:** three issues. **Video posters (#12):** a filmed deck writes
+  `<deck>.poster.jpg` (its first slide, 1920×1080) and video lessons open on
+  it instead of a black player; `· poster=path`, `poster:` in the deck or
+  `· poster=off`; plain videos get their first frame through ffmpeg when
+  `si build` runs; `si check` reports a missing poster. **Stage diagrams
+  (#11):** the gap after each column widens to fit its longest edge label, so
+  labels like `order.*.created` no longer cover arrows or boxes (a label past
+  twice a box's width is set smaller). **Lab solutions (#10):** a failed
+  include inside a `<!-- solution -->` block no longer adds false "no end"
+  problems, and an unquoted `title=` with spaces gets a hint to quote it.
 - **v3.15.0:** animated infographics. **Motion in the Markdown:**
   `animate: build` builds an infographic once, `animate: loop` over and over,
   `duration: 12s` sets its length; numbers count up, bars and progress grow,
