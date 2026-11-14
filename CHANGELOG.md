@@ -3,6 +3,27 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.14.0:** the play workbench, six improvements. **The Viewer's tree
+  survives a reload:** the folders you opened come back open and the tree
+  scrolled where it was. **⌘= ⌘- ⌘0 anywhere in the drawer** (Ctrl+ off
+  macOS) size the active tab and are cancelled before the browser zooms the
+  page (Chrome, Edge and Firefox let a page keep them; − / + stay for any
+  browser that does not). **Search streams:** results show as they are found,
+  file by file, with **Stop** (or Esc) to end a long search and keep what
+  came; still the first 1000 matches. **Up to four panes:** Shift-click ◫ (or
+  a tab's **Show in a new pane** / **Add a pane**) adds a pane: three are one
+  big pane and two beside or under it, four a 2×2 grid, two dividers to drag,
+  **Close this pane**, **Rotate the panes**; all kept across a reload.
+  **Browser windows catch script navigations:** a page that sends itself to
+  another site with `location.assign`, `location.replace`, `location.href =`,
+  `window.open` or a form stays in the window, through that site's proxy (via
+  the Navigation API; without it only `window.open` and GET forms are
+  caught; a POST form opens its address without the fields). **Follow on a
+  file over 1 MB** numbers its last MB from the real line (`lines
+  48210–71034`), counted once and then only the new bytes as the log grows.
+  Also: keys typed fast into a shell can no longer arrive out of order. The
+  Viewer and workbench browser checks are committed e2e tests
+  (`viewer.e2e.mjs`, `workbench.e2e.mjs`) run in CI.
 - **v3.13.0:** **Project structure.** A `structure:` block in a project's
   `si.conf` maps each kind of output to a folder: one folder per line,
   nested by indentation, names ending in `/`, then what goes there (`md/

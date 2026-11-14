@@ -50,10 +50,9 @@
     '.si-term-pane.is-active{display:block}' +
     '.si-term .xterm{height:100%}' +
     /* split view: two tabs side by side (or stacked), a divider between them */
-    '.si-term-div{position:absolute;z-index:4;display:none;top:0;bottom:0;width:7px;margin-left:-3px;cursor:ew-resize;background:#1d2536;background-clip:content-box;padding:0 3px;box-sizing:border-box}' +
-    '.si-term-main.is-split>.si-term-div{display:block}' +
-    '.si-term-main.is-down>.si-term-div{top:auto;left:0;right:0;width:auto;height:7px;margin:-3px 0 0;padding:3px 0;cursor:ns-resize}' +
-    '.si-term-div:hover,.si-term-div.is-drag{background-color:#7dd3fc;padding:0 2px}.si-term-main.is-down>.si-term-div:hover,.si-term-main.is-down>.si-term-div.is-drag{padding:2px 0}' +
+    '.si-term-div{position:absolute;z-index:4;display:none;box-sizing:border-box;background:#1d2536;background-clip:content-box}.si-term-div.is-on{display:block}' +
+    '.si-term-div.v{width:7px;margin-left:-3px;padding:0 3px;cursor:ew-resize}.si-term-div.h{height:7px;margin-top:-3px;padding:3px 0;cursor:ns-resize}' +
+    '.si-term-div:hover,.si-term-div.is-drag{background-color:#7dd3fc}.si-term-div.v:hover,.si-term-div.v.is-drag{padding:0 2px}.si-term-div.h:hover,.si-term-div.h.is-drag{padding:2px 0}' +
     '.si-term-main.is-split .si-term-pane.is-focus{box-shadow:inset 0 2px 0 #7dd3fc}' +
     '.si-term-pane.is-drop{outline:2px dashed #7dd3fc;outline-offset:-6px}' +
     '.si-term-tab.is-shown{background:#0f131c;color:#c8d0e0;box-shadow:inset 0 -2px 0 #3d4760}' +
@@ -181,7 +180,7 @@
     '.si-fs-vh .nm{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e6e6e6;font-weight:600}' +
     '.si-fs-body{flex:1 1 auto;overflow:auto;margin:0}' +
     '.si-fs-code{margin:0;padding:6px 0;font:calc(12px*var(--si-z,1))/1.5 ui-monospace,Menlo,monospace;color:#c7d0e0;counter-reset:ln;white-space:pre;tab-size:4}' +
-    '.si-fs-code .ln{display:block;padding:0 10px 0 0}.si-fs-code .ln::before{counter-increment:ln;content:counter(ln);display:inline-block;width:3.2em;margin-right:10px;text-align:right;color:#3d4760;user-select:none}' +
+    '.si-fs-code .ln{display:block;padding:0 10px 0 0}.si-fs-code .ln::before{counter-increment:ln;content:counter(ln);display:inline-block;width:var(--si-lnw,3.2em);min-width:3.2em;margin-right:10px;text-align:right;color:#3d4760;user-select:none}' +
     '.si-fs-vh{flex-wrap:wrap}.si-fs-vh .nm{min-width:6em}.si-fs-vh .in{white-space:nowrap}' +
     '.si-fs-vh button.pri{background:#7dd3fc;color:#0b0e14;border-color:#7dd3fc}.si-fs-vh button[hidden]{display:none}' +
     '.si-fs-vh .ok{color:#3fb47a;font-weight:600}.si-fs-ed{height:100%}.si-fs-body.is-edit{overflow:hidden}' +
@@ -241,42 +240,61 @@
 
   function post(path) { return fetch(API + path, { method: 'POST' }).catch(function () {}); }
 
-  /* split view: null, or {dir: 'right'|'down', ratio, a, b (tabs), focus: 'a'|'b'};
-     the focused pane shows the active tab, a click on a tab shows it there */
-  var split = null;
-  var divEl = document.createElement('div'); divEl.className = 'si-term-div'; divEl.title = 'Drag to resize the panes';
-  bodyEl.appendChild(divEl);
-  function shownTabs() { return split ? [split.a, split.b].filter(Boolean) : tabs[active] ? [tabs[active]] : []; }
+  /* split view: null, or {dir: 'right'|'down', rx, ry (the dividers, 0-1),
+     panes: [tab, ...] (2 to 4), focus: the focused pane's index}. Two panes sit
+     side by side (dir right) or stacked (down); three: one big pane and two
+     beside it; four: a 2×2 grid. The focused pane shows the active tab, a
+     click on a tab shows it there */
+  var split = null, MAXP = 4;
+  var divV = document.createElement('div'); divV.className = 'si-term-div v'; divV.title = 'Drag to resize the panes';
+  var divH = document.createElement('div'); divH.className = 'si-term-div h'; divH.title = 'Drag to resize the panes';
+  bodyEl.appendChild(divV); bodyEl.appendChild(divH);
+  function shownTabs() { return split ? split.panes.filter(Boolean) : tabs[active] ? [tabs[active]] : []; }
+  function paneOf(t) { return split ? split.panes.indexOf(t) : -1; }
   function refit() {
     shownTabs().forEach(function (t) { if (!t.viewer) { try { t.fit.fit(); } catch (e) {} sendResize(t); } });
   }
-  /* stacked when asked, or when the drawer is too narrow for two columns (a phone) */
-  function isDown() { return !!split && (split.dir === 'down' || bodyEl.clientWidth < 560); }
+  /* each pane's box as insets in % [top, right, bottom, left], and the
+     dividers: v {x, y0, y1}, h {y, x0, x1}. A drawer too narrow for columns
+     (a phone) stacks the panes */
+  function geometry() {
+    var n = split.panes.length, x = split.rx * 100, y = split.ry * 100, narrow = bodyEl.clientWidth < 560, full = { y0: 0, y1: 100 }, wide = { x0: 0, x1: 100 };
+    var v = function (o) { return { x: x, y0: o.y0, y1: o.y1 }; }, h = function (o) { return { y: y, x0: o.x0, x1: o.x1 }; };
+    if (n === 2 && (split.dir === 'down' || narrow)) return { r: [[0, 0, 100 - y, 0], [y, 0, 0, 0]], h: h(wide) };
+    if (n === 2) return { r: [[0, 100 - x, 0, 0], [0, 0, 0, x]], v: v(full) };
+    if (narrow) return { r: split.panes.map(function (_, k) { return [k * 100 / n, 0, 100 - (k + 1) * 100 / n, 0]; }) };
+    if (n === 3 && split.dir === 'down') return { r: [[0, 0, 100 - y, 0], [y, 100 - x, 0, 0], [y, 0, 0, x]], h: h(wide), v: v({ y0: y, y1: 100 }) };
+    if (n === 3) return { r: [[0, 100 - x, 0, 0], [0, 0, 100 - y, x], [y, 0, 0, x]], v: v(full), h: h({ x0: x, x1: 100 }) };
+    return { r: [[0, 100 - x, 100 - y, 0], [0, 0, 100 - y, x], [y, 100 - x, 0, 0], [y, 0, 0, x]], v: v(full), h: h(wide) };
+  }
   function layout() {
-    var r = split ? split.ratio * 100 : 0, down = isDown();
-    bodyEl.classList.toggle('is-split', !!split); bodyEl.classList.toggle('is-down', !!down);
+    var g = split ? geometry() : { r: [] };
+    bodyEl.classList.toggle('is-split', !!split); bodyEl.classList.toggle('is-down', !!split && !g.v);
     tabs.forEach(function (t, k) {
-      var side = split ? (t === split.a ? 'a' : t === split.b ? 'b' : '') : (k === active ? 'one' : '');
-      t.pane.classList.toggle('is-active', !!side);
+      var at = paneOf(t), shown = split ? at >= 0 : k === active;
+      t.pane.classList.toggle('is-active', shown);
       t.pane.classList.toggle('is-focus', !!split && k === active);
       t.tabEl.classList.toggle('is-active', k === active);
       t.tabEl.classList.toggle('in-split', !!split && k === active);
-      t.tabEl.classList.toggle('is-shown', !!split && !!side && k !== active);
-      t.pane.style.inset = side === 'a' ? (down ? '0 0 ' + (100 - r) + '% 0' : '0 ' + (100 - r) + '% 0 0') :
-        side === 'b' ? (down ? r + '% 0 0 0' : '0 0 0 ' + r + '%') : '';
+      t.tabEl.classList.toggle('is-shown', !!split && shown && k !== active);
+      t.pane.style.inset = at >= 0 ? g.r[at].map(function (p) { return p + '%'; }).join(' ') : '';
     });
-    divEl.style.left = split && !down ? r + '%' : ''; divEl.style.top = down ? r + '%' : '';
+    divV.classList.toggle('is-on', !!g.v); divH.classList.toggle('is-on', !!g.h);
+    if (g.v) { divV.style.left = g.v.x + '%'; divV.style.top = g.v.y0 + '%'; divV.style.height = g.v.y1 - g.v.y0 + '%'; }
+    if (g.h) { divH.style.top = g.h.y + '%'; divH.style.left = g.h.x0 + '%'; divH.style.width = g.h.x1 - g.h.x0 + '%'; }
     var b = root.querySelector('[data-act="split"]');
     b.classList.toggle('is-on', !!split);
-    b.title = split ? 'Close the split' : 'Split right: this tab beside the next one (right-click a tab for more)';
+    b.title = split ? 'Close the split (Shift-click: one more pane, up to 4)' : 'Split right: this tab beside the next one (right-click a tab for more)';
+    shownTabs().forEach(function (t) { if (t.onShow) t.onShow(); });
     refit();
   }
   /* quiet: no focus (a restore into a closed drawer must leave the deck's keys alone) */
   function select(i, quiet) {
     var t = tabs[i]; if (!t) return;
     if (split) {
-      var side = t === split.a ? 'a' : t === split.b ? 'b' : split.focus;
-      split[side] = t; split.focus = side;
+      var at = paneOf(t);
+      if (at < 0) { at = split.focus; split.panes[at] = t; }
+      split.focus = at;
     }
     active = i;
     layout();
@@ -285,11 +303,17 @@
     pctEl.textContent = Math.round(t.zoom * 100) + '%';
   }
   /* split the drawer: the active tab on one side, other (or the next tab, or a
-     new shell) on the other */
+     new shell) on the other; already split, other (the same choice) goes into
+     a new pane, up to four */
   function splitOpen(dir, other) {
     var a = tabs[active]; if (!a) return;
-    if (!other || other === a) other = tabs.length > 1 ? tabs[(active + 1) % tabs.length] : null;
-    split = { dir: dir || 'right', ratio: split ? split.ratio : 0.5, a: a, b: other, focus: 'b' };
+    if (split && split.panes.length >= MAXP) return;
+    if (!other || paneOf(other) >= 0 || other === a) {
+      other = null;
+      for (var k = 1; k < tabs.length && !other; k++) { var c = tabs[(active + k) % tabs.length]; if (paneOf(c) < 0 && c !== a) other = c; }
+    }
+    if (split) { if (dir && split.panes.length === 2) split.dir = dir; split.panes.push(other); split.focus = split.panes.length - 1; }
+    else split = { dir: dir || 'right', rx: 0.5, ry: 0.5, panes: [a, other], focus: 1 };
     if (other) select(tabs.indexOf(other)); else newTab();
   }
   function splitClose() {
@@ -297,28 +321,39 @@
     var keep = tabs[active]; split = null;
     select(Math.max(0, tabs.indexOf(keep)));
   }
-  /* put a tab in one pane (a dragged tab, "Move to the other pane") */
-  function placeIn(t, side) {
-    if (!split) return;
-    var other = side === 'a' ? 'b' : 'a';
-    if (split[other] === t) split[other] = split[side]; // the two swap
-    split[side] = t; split.focus = side;
+  /* take a tab out of the split (its pane closes; one pane left ends the split) */
+  function unpane(t) {
+    var at = paneOf(t); if (at < 0) return null;
+    split.panes.splice(at, 1);
+    var keep = split.panes[Math.min(at, split.panes.length - 1)];
+    if (split.panes.length < 2) split = null; else split.focus = split.panes.indexOf(keep);
+    return keep;
+  }
+  /* put a tab in one pane (a dragged tab, "Show in pane N"); a tab shown in
+     another pane swaps with it */
+  function placeIn(t, at) {
+    if (!split || !split.panes[at] && split.panes[at] !== null) return;
+    var was = paneOf(t);
+    if (was >= 0) split.panes[was] = split.panes[at];
+    split.panes[at] = t; split.focus = at;
     select(tabs.indexOf(t));
   }
-  divEl.addEventListener('pointerdown', function (ev) {
-    if (ev.button !== 0 || !split) return;
-    ev.preventDefault(); divEl.setPointerCapture(ev.pointerId); divEl.classList.add('is-drag'); root.classList.add('is-resizing');
-    var box = bodyEl.getBoundingClientRect(), raf = 0;
-    function mv(e) {
-      var f = isDown() ? (e.clientY - box.top) / box.height : (e.clientX - box.left) / box.width;
-      split.ratio = Math.round(Math.max(0.15, Math.min(0.85, f)) * 1000) / 1000;
-      if (!raf) raf = requestAnimationFrame(function () { raf = 0; layout(); });
-    }
-    function up() {
-      divEl.removeEventListener('pointermove', mv); divEl.removeEventListener('pointerup', up);
-      divEl.classList.remove('is-drag'); root.classList.remove('is-resizing'); layout();
-    }
-    divEl.addEventListener('pointermove', mv); divEl.addEventListener('pointerup', up);
+  [divV, divH].forEach(function (d) {
+    d.addEventListener('pointerdown', function (ev) {
+      if (ev.button !== 0 || !split) return;
+      ev.preventDefault(); d.setPointerCapture(ev.pointerId); d.classList.add('is-drag'); root.classList.add('is-resizing');
+      var box = bodyEl.getBoundingClientRect(), raf = 0, vert = d === divV;
+      function mv(e) {
+        var f = vert ? (e.clientX - box.left) / box.width : (e.clientY - box.top) / box.height;
+        split[vert ? 'rx' : 'ry'] = Math.round(Math.max(0.15, Math.min(0.85, f)) * 1000) / 1000;
+        if (!raf) raf = requestAnimationFrame(function () { raf = 0; layout(); });
+      }
+      function up() {
+        d.removeEventListener('pointermove', mv); d.removeEventListener('pointerup', up);
+        d.classList.remove('is-drag'); root.classList.remove('is-resizing'); layout();
+      }
+      d.addEventListener('pointermove', mv); d.addEventListener('pointerup', up);
+    });
   });
   /* a tab's own handlers: click shows it (× closes), right-click a menu, drag it onto a pane */
   var dragTab = null;
@@ -329,18 +364,21 @@
       select(tabs.indexOf(t));
     });
     t.tabEl.addEventListener('dragstart', function (e) { dragTab = t; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', 'si-tab'); } catch (x) {} });
-    t.tabEl.addEventListener('dragend', function () { dragTab = null; dropMark(null); });
+    t.tabEl.addEventListener('dragend', function () { dragTab = null; dropMark(-1); });
     t.tabEl.addEventListener('contextmenu', function (e) {
       e.preventDefault();
-      var items = [];
-      if (!split || (t !== split.a && t !== split.b)) {
+      var items = [], at = paneOf(t), n = split ? split.panes.length : 0;
+      if (!split) {
         items.push(['Split right', function () { if (t === tabs[active]) splitOpen('right'); else splitOpen('right', t); }]);
         items.push(['Split down', function () { if (t === tabs[active]) splitOpen('down'); else splitOpen('down', t); }]);
-      }
-      if (split) {
-        items.push(['Show in the other pane', function () { placeIn(t, split.focus === 'a' ? 'b' : 'a'); }]);
-        items.push(['Swap the panes', function () { var a = split.a; split.a = split.b; split.b = a; split.focus = split.focus === 'a' ? 'b' : 'a'; layout(); }]);
-        items.push([split.dir === 'down' ? 'Side by side' : 'Stacked', function () { split.dir = split.dir === 'down' ? 'right' : 'down'; layout(); }]);
+      } else {
+        if (n < MAXP) items.push([at < 0 ? 'Show in a new pane' : 'Add a pane', function () { splitOpen(null, at < 0 ? t : null); }]);
+        split.panes.forEach(function (_, k) { if (k !== at) items.push([n === 2 ? 'Show in the other pane' : 'Show in pane ' + (k + 1), function () { placeIn(t, k); }]); });
+        items.push([n === 2 ? 'Swap the panes' : 'Rotate the panes', function () {
+          var f = split.panes[split.focus]; split.panes.unshift(split.panes.pop()); split.focus = split.panes.indexOf(f); layout();
+        }]);
+        if (n < 4) items.push([split.dir === 'down' ? 'Side by side' : 'Stacked', function () { split.dir = split.dir === 'down' ? 'right' : 'down'; layout(); }]);
+        if (at >= 0 && n > 2) items.push(['Close this pane', function () { var keep = unpane(t); select(tabs.indexOf(keep)); }]);
         items.push(['Close the split', splitClose]);
       }
       items.push(null, ['Close tab', function () { closeTab(t); }, 'danger']);
@@ -348,23 +386,24 @@
     });
     /* a click inside a pane of the split makes it the focused one */
     t.pane.addEventListener('pointerdown', function () {
-      if (split && tabs[active] !== t && (t === split.a || t === split.b)) select(tabs.indexOf(t), true);
+      if (split && tabs[active] !== t && paneOf(t) >= 0) select(tabs.indexOf(t), true);
     }, true);
   }
-  function sideAt(e) {
-    var box = bodyEl.getBoundingClientRect();
-    var f = isDown() ? (e.clientY - box.top) / box.height : (e.clientX - box.left) / box.width;
-    return f < split.ratio ? 'a' : 'b';
+  function paneAt(e) {
+    var box = bodyEl.getBoundingClientRect(), g = geometry();
+    var fx = (e.clientX - box.left) / box.width * 100, fy = (e.clientY - box.top) / box.height * 100;
+    for (var k = 0; k < g.r.length; k++) { var r = g.r[k]; if (fy >= r[0] && fy <= 100 - r[2] && fx >= r[3] && fx <= 100 - r[1]) return k; }
+    return split.focus;
   }
-  function dropMark(side) { tabs.forEach(function (t) { t.pane.classList.toggle('is-drop', !!(side && split && split[side] === t)); }); }
+  function dropMark(at) { tabs.forEach(function (t) { t.pane.classList.toggle('is-drop', at >= 0 && !!split && split.panes[at] === t); }); }
   bodyEl.addEventListener('dragover', function (e) {
     if (!dragTab || !split) return;
-    e.preventDefault(); e.dataTransfer.dropEffect = 'move'; dropMark(sideAt(e));
+    e.preventDefault(); e.dataTransfer.dropEffect = 'move'; dropMark(paneAt(e));
   });
-  bodyEl.addEventListener('dragleave', function (e) { if (!bodyEl.contains(e.relatedTarget)) dropMark(null); });
+  bodyEl.addEventListener('dragleave', function (e) { if (!bodyEl.contains(e.relatedTarget)) dropMark(-1); });
   bodyEl.addEventListener('drop', function (e) {
     if (!dragTab || !split) return;
-    e.preventDefault(); dropMark(null); placeIn(dragTab, sideAt(e)); dragTab = null;
+    e.preventDefault(); dropMark(-1); placeIn(dragTab, paneAt(e)); dragTab = null;
   });
 
   /* text size per tab: a shell's xterm font, a Viewer's tree, view and editor;
@@ -386,15 +425,28 @@
   root.querySelector('[data-act="zin"]').addEventListener('click', function () { zoomBy(1.1); });
   root.querySelector('[data-act="zout"]').addEventListener('click', function () { zoomBy(1 / 1.1); });
   pctEl.addEventListener('click', function () { zoomBy(0); });
-  /* ⌘= ⌘- ⌘0 (Ctrl elsewhere) in a tab size that tab, not the page */
+  /* ⌘= ⌘- ⌘0 (Ctrl elsewhere) anywhere in the drawer size the active tab, not
+     the page: the key is cancelled before the browser zooms (Chrome, Edge and
+     Firefox let a page keep these keys; the e2e test checks the page's side) */
   var mac = /Mac|iP/.test(navigator.platform);
-  bodyEl.addEventListener('keydown', function (ev) {
+  root.addEventListener('keydown', function (ev) {
     if (!(mac ? ev.metaKey : ev.ctrlKey) || ev.altKey) return;
     var k = ev.key, f = k === '=' || k === '+' ? 1.1 : k === '-' || k === '_' ? 1 / 1.1 : k === '0' ? 0 : null;
     if (f === null) return;
     ev.preventDefault(); ev.stopPropagation(); zoomBy(f);
   }, true);
 
+  /* keystrokes to a shell, in order: one POST at a time, what is typed
+     meanwhile goes in the next one (separate fetches can arrive out of order) */
+  function sendIn(t, d) {
+    t.inbuf = (t.inbuf || '') + d;
+    if (t.inflight) return;
+    (function flush() {
+      var b = t.inbuf; t.inbuf = '';
+      t.inflight = !!b; if (!b) return;
+      fetch(API + 'in?id=' + t.id, { method: 'POST', body: b }).catch(function () {}).then(flush);
+    })();
+  }
   function sendResize(t) {
     if (t.viewer) return;
     if (t.term.cols && t.term.rows) post('resize?id=' + t.id + '&cols=' + t.term.cols + '&rows=' + t.term.rows);
@@ -462,7 +514,7 @@
       try { fit.fit(); } catch (e) {}
       sendResize(t);
       stream(t);
-      term.onData(function (d) { if (t.id && !t.mute) fetch(API + 'in?id=' + t.id, { method: 'POST', body: d }); });
+      term.onData(function (d) { if (t.id && !t.mute) sendIn(t, d); });
       term.onResize(function () { sendResize(t); });
     }
     if (saved) { t.everBP = true; attach(saved.id); } // a shell that was ready before the reload
@@ -480,7 +532,7 @@
     if (t.term) try { t.term.dispose(); } catch (e) {}
     t.pane.remove(); t.tabEl.remove();
     var i = tabs.indexOf(t), keep = null;
-    if (split && (t === split.a || t === split.b)) { keep = t === split.a ? split.b : split.a; split = null; }
+    if (paneOf(t) >= 0) keep = unpane(t);
     if (i >= 0) tabs.splice(i, 1);
     if (tabs.length === 0) { active = -1; hide(); return; }
     select(keep && tabs.indexOf(keep) >= 0 ? tabs.indexOf(keep) : Math.min(active, tabs.length - 1));
@@ -496,7 +548,7 @@
   function toggle() { if (root.classList.contains('is-open')) hide(); else show(); }
 
   root.querySelector('[data-act="new"]').addEventListener('click', newTab);
-  root.querySelector('[data-act="split"]').addEventListener('click', function () { if (split) splitClose(); else splitOpen('right'); });
+  root.querySelector('[data-act="split"]').addEventListener('click', function (ev) { if (split && !ev.shiftKey) splitClose(); else splitOpen(split ? null : 'right'); });
   root.querySelector('[data-act="hide"]').addEventListener('click', hide);
   root.querySelector('[data-act="min"]').addEventListener('click', hide);
   /* maximise: the drawer takes the whole window; remembered */
@@ -582,7 +634,7 @@
       if (!ready && now - start < 20000) { setTimeout(wait, 60); return; }
       if (!t.id) return; // the shell never started
       var body = (bp ? '\x1b[200~' + text + '\x1b[201~' : text) + (run ? '\r' : '');
-      fetch(API + 'in?id=' + t.id, { method: 'POST', body: body }).catch(function () {});
+      sendIn(t, body);
       if (done) done();
     })();
     t.term.focus();
@@ -955,6 +1007,10 @@
     /* the tree: holders[dir] is the element a listed folder's rows are in, opened
        the folders shown open (kept across a refresh), sel the row picked last */
     var holders = {}, opened = {}, expanders = {}, sel = null;
+    /* a reload brings the folders back open and the tree where it was scrolled */
+    var treeTop = saved && saved.treeTop || 0, treeReady = false; // ready: the folders kept open are listed
+    if (saved && saved.open) saved.open.forEach(function (p) { opened[p] = true; });
+    t.onShow = function () { if (treeTop && treeReady && tree.clientHeight) { tree.scrollTop = treeTop; treeTop = 0; } };
     function tbState() {
       ['rename', 'delete', 'copysel'].forEach(function (f) { btn(f).disabled = !sel; });
     }
@@ -963,9 +1019,11 @@
       if (row) row.classList.add('is-on');
       sel = row ? { path: p, dir: isDir, row: row } : null; tbState();
     }
+    /* the rows of one folder; resolves once the folders kept open below it are listed */
     function rows(holder, dir, entries, depth) {
       holders[dir] = { el: holder, depth: depth };
       holder.innerHTML = '';
+      var pend = [];
       entries.forEach(function (e) {
         var row = document.createElement('div'); row.className = 'si-fs-row' + (e.name.charAt(0) === '.' ? ' dot' : '');
         row.style.paddingLeft = (8 + depth * 14) + 'px';
@@ -982,16 +1040,17 @@
             kids.hidden = !open; row.querySelector('.ic').textContent = open ? '▾' : '▸';
             if (open) opened[p] = true; else delete opened[p];
             if (!open || holders[p] && holders[p].el === kids && kids.childNodes.length) return Promise.resolve();
-            return fsList(p).then(function (j) { rows(kids, j.dir, j.entries, depth + 1); }, function (err) { kids.textContent = String(err.message); });
+            return fsList(p).then(function (j) { return rows(kids, j.dir, j.entries, depth + 1); }, function (err) { kids.textContent = String(err.message); });
           };
           row.addEventListener('click', function () { if (row.querySelector('input')) return; pick(row, p, true); expand(kids.hidden); });
           row.addEventListener('dblclick', function () { go(p); });
-          if (opened[p]) expand(true);
+          if (opened[p]) pend.push(expand(true));
         } else {
           row.addEventListener('click', function () { if (row.querySelector('input')) return; pick(row, p, false); openFile(p, e.name); });
         }
         if (sel && sel.path === p) pick(row, p, e.dir);
       });
+      return Promise.all(pend);
     }
     function refresh(dir) {
       var h = holders[dir];
@@ -1000,11 +1059,12 @@
     }
     function go(dir) {
       return fsList(dir).then(function (j) {
-        if (j.dir !== root0) { opened = {}; sel = null; }
+        if (root0 && j.dir !== root0) { opened = {}; sel = null; }
         root0 = j.dir; pathEl.value = j.dir; holders = {}; expanders = {};
         try { localStorage.setItem('si-files-dir', j.dir); } catch (e) {}
-        rows(tree, j.dir, j.entries, 0); tbState();
+        var done = rows(tree, j.dir, j.entries, 0); tbState();
         if (j.more) { var m = document.createElement('div'); m.className = 'si-fs-msg'; m.textContent = 'Showing the first 2000 entries.'; tree.appendChild(m); }
+        return done;
       }, function (err) { tree.innerHTML = '<div class="si-fs-msg"></div>'; tree.firstChild.textContent = 'Cannot open ' + dir + ': ' + err.message; });
     }
     /* file operations: POST a JSON body; an error's text is the message */
@@ -1119,10 +1179,11 @@
     function atEnd() { return body.scrollHeight - body.scrollTop - body.clientHeight < 24; }
     /* a text file into the read-only view; scroll: 'end', 'keep' or the top */
     function showText(j, scroll) {
-      vInfo.textContent = size(j.size) + (j.lines ? ' · ' + j.lines + ' lines' : '') + (j.truncated ? (j.tail ? ' · last 1 MB' : ' · first 1 MB') : '');
+      vInfo.textContent = size(j.size) + (j.first > 1 ? ' · lines ' + j.first + '–' + (j.first + j.lines - 1) : j.lines ? ' · ' + j.lines + ' lines' : '') + (j.truncated ? (j.tail ? ' · last 1 MB' : ' · first 1 MB') : '');
       if (j.image) { body.innerHTML = '<img class="si-fs-img" alt="">'; body.firstChild.src = API + 'raw?path=' + encodeURIComponent(j.path) + '&m=' + j.mtime; return; }
       if (j.binary) { body.innerHTML = '<div class="si-fs-msg">A binary file: nothing to show as text.</div>'; return; }
       var top = body.scrollTop, pre = document.createElement('pre'); pre.className = 'si-fs-code';
+      if (j.first > 1) { pre.style.counterReset = 'ln ' + (j.first - 1); pre.style.setProperty('--si-lnw', String(j.first + j.lines).length + 1.2 + 'ch'); } // the tail of a big file: its real line numbers
       pre.innerHTML = j.html.split('\n').map(function (l) { return '<span class="ln">' + (l || ' ') + '</span>'; }).join('');
       body.innerHTML = ''; body.appendChild(pre);
       /* a press on a line number spotlights that line, Shift extends, the same line again clears */
@@ -1226,9 +1287,11 @@
     /* what a reload needs to bring this tab back, unsaved edits included */
     t.snap = function () {
       return { k: 'v', n: n, dir: root0, file: cur || null, name: curName, edit: editing(), follow: following, zoom: t.zoom,
+        open: Object.keys(opened), treeTop: tree.clientHeight ? tree.scrollTop : treeTop,
         draft: editing() && dirty ? t.editor.getText() : null, mtime: file && file.mtime };
     };
     go(start).then(function () {
+      treeReady = true; t.onShow();
       if (!saved || !saved.file) return;
       openFile(saved.file, saved.name || saved.file.split('/').pop(), saved.edit, function () {
         if (saved.draft == null || !t.editor) return;
@@ -1308,52 +1371,75 @@
     srPanel = document.createElement('div'); srPanel.className = 'si-rb si-sr';
     srPanel.innerHTML = '<div class="si-rb-head"><input class="si-rb-find" type="search" placeholder="Search in files…" spellcheck="false" aria-label="Search in files">' +
       '<button type="button" class="si-sr-t" data-o="case" title="Match case" aria-pressed="false">Aa</button>' +
-      '<button type="button" class="si-sr-t" data-o="re" title="Regular expression" aria-pressed="false">.*</button></div>' +
+      '<button type="button" class="si-sr-t" data-o="re" title="Regular expression" aria-pressed="false">.*</button>' +
+      '<button type="button" class="si-sr-t si-sr-stop" title="Stop the search" hidden>Stop</button></div>' +
       '<div class="si-sr-sum"></div><div class="si-rb-list"></div>';
     var input = srInput = srPanel.querySelector('input'), sum = srPanel.querySelector('.si-sr-sum'), list = srPanel.querySelector('.si-rb-list');
     var opt = { case: false, re: false }, timer = 0, n = 0;
-    Array.prototype.forEach.call(srPanel.querySelectorAll('.si-sr-t'), function (b) {
+    Array.prototype.forEach.call(srPanel.querySelectorAll('.si-sr-t[data-o]'), function (b) {
       b.addEventListener('click', function () {
         opt[b.dataset.o] = !opt[b.dataset.o]; b.classList.toggle('is-on', opt[b.dataset.o]); b.setAttribute('aria-pressed', String(opt[b.dataset.o]));
         run(); input.focus();
       });
     });
+    /* the results stream in (newline-delimited JSON, flushed file by file) and
+       are drawn as they come; Stop, or a new search, cancels the walk */
+    var ctl = null, stopB = srPanel.querySelector('.si-sr-stop');
+    function stop() { if (ctl) { ctl.abort(); ctl = null; } stopB.hidden = true; }
+    stopB.addEventListener('click', function () { var was = !!ctl; stop(); n++; if (was) sum.textContent += ' · stopped'; input.focus(); });
     function run() {
-      clearTimeout(timer);
+      clearTimeout(timer); stop();
       var q = input.value, my = ++n;
       if (!q) { list.innerHTML = ''; sum.textContent = ''; return; }
       var dir = searchDir(), from = activeViewer() || alive(lastViewer);
-      sum.textContent = 'Searching…';
-      fetch(API + 'grep?dir=' + encodeURIComponent(dir) + '&q=' + encodeURIComponent(q) + (opt.case ? '&case=1' : '') + (opt.re ? '&re=1' : '')).then(function (r) {
+      var c = ctl = new AbortController(), base = '', files = 0, hits = 0, last = null, buf = '', finished = false;
+      sum.textContent = 'Searching…'; list.innerHTML = ''; stopB.hidden = false;
+      function tally(more, done) {
+        sum.textContent = (done ? '' : 'Searching… ') + hits + (hits === 1 ? ' match' : ' matches') + ' in ' + files + (files === 1 ? ' file' : ' files') + (more ? ' (the first 1000)' : '') + (base ? ' · ' + base : '');
+        sum.title = base;
+      }
+      function line(l) {
+        if (!last || last.path !== l.path) {
+          files++;
+          var h = document.createElement('div'); h.className = 'si-sr-file'; h.title = l.path;
+          h.innerHTML = esc(l.rel) + '<span class="n">0</span>';
+          list.appendChild(h); last = { path: l.path, n: h.lastChild, count: 0 };
+        }
+        last.n.textContent = ++last.count;
+        var row = document.createElement('div'), tx = '', k = 0; row.className = 'si-sr-line'; row.title = l.rel + ':' + l.line;
+        (l.hits || []).forEach(function (hh) { tx += esc(l.text.slice(k, hh[0])) + '<mark>' + esc(l.text.slice(hh[0], hh[1])) + '</mark>'; k = hh[1]; hits++; });
+        tx += esc(l.text.slice(k));
+        row.innerHTML = '<span class="no">' + l.line + '</span><span class="tx">' + tx + '</span>';
+        row.addEventListener('click', function () { var v = activeViewer() || alive(lastViewer) || alive(from); openAt(v, l.path, l.line, base); });
+        list.appendChild(row);
+      }
+      function take(o) {
+        if (o.done) { hits = o.hits; finished = true; tally(o.more, true); return; }
+        if (o.path) line(o); else if (o.dir) base = o.dir;
+      }
+      fetch(API + 'grep?stream=1&dir=' + encodeURIComponent(dir) + '&q=' + encodeURIComponent(q) + (opt.case ? '&case=1' : '') + (opt.re ? '&re=1' : ''), { signal: c.signal }).then(function (r) {
         if (!r.ok) return r.text().then(function (m) { throw new Error(m.trim()); });
-        return r.json();
-      }).then(function (j) {
-        if (my !== n) return;
-        var groups = [], by = {};
-        j.lines.forEach(function (l) { if (!by[l.path]) groups.push(by[l.path] = { path: l.path, rel: l.rel, lines: [] }); by[l.path].lines.push(l); });
-        sum.textContent = j.hits + (j.hits === 1 ? ' match' : ' matches') + ' in ' + groups.length + (groups.length === 1 ? ' file' : ' files') + (j.more ? ' (the first 1000)' : '') + ' · ' + j.dir;
-        sum.title = j.dir;
-        list.innerHTML = '';
-        groups.forEach(function (g) {
-          var h = document.createElement('div'); h.className = 'si-sr-file'; h.title = g.path;
-          h.innerHTML = esc(g.rel) + '<span class="n">' + g.lines.length + '</span>';
-          list.appendChild(h);
-          g.lines.forEach(function (l) {
-            var row = document.createElement('div'), tx = '', k = 0; row.className = 'si-sr-line'; row.title = g.rel + ':' + l.line;
-            (l.hits || []).forEach(function (hh) { tx += esc(l.text.slice(k, hh[0])) + '<mark>' + esc(l.text.slice(hh[0], hh[1])) + '</mark>'; k = hh[1]; });
-            tx += esc(l.text.slice(k));
-            row.innerHTML = '<span class="no">' + l.line + '</span><span class="tx">' + tx + '</span>';
-            row.addEventListener('click', function () { var v = activeViewer() || alive(lastViewer) || alive(from); openAt(v, l.path, l.line, j.dir); });
-            list.appendChild(row);
+        var reader = r.body.getReader(), dec = new TextDecoder();
+        return (function pump() {
+          return reader.read().then(function (x) {
+            if (my !== n) { reader.cancel().catch(function () {}); return; }
+            buf += x.done ? dec.decode() : dec.decode(x.value, { stream: true });
+            var k; while ((k = buf.indexOf('\n')) >= 0) { var ln = buf.slice(0, k); buf = buf.slice(k + 1); if (ln) take(JSON.parse(ln)); }
+            if (x.done) { if (ctl === c) { ctl = null; stopB.hidden = true; } return; }
+            if (!finished) tally(false, false);
+            return pump();
           });
-        });
-      }, function (err) { if (my === n) { sum.textContent = err.message; list.innerHTML = ''; } });
+        })();
+      }).catch(function (err) {
+        if (my !== n || err.name === 'AbortError') return;
+        stop(); sum.textContent = err.message; list.innerHTML = '';
+      });
     }
     input.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(run, 250); });
     srPanel.addEventListener('keydown', function (ev) {
       ev.stopPropagation();
       if (ev.key === 'Enter' && ev.target === input) { ev.preventDefault(); run(); }
-      else if (ev.key === 'Escape') { ev.preventDefault(); setPanel('search', false); focusTab(); }
+      else if (ev.key === 'Escape') { ev.preventDefault(); if (ctl) { stopB.click(); return; } setPanel('search', false); focusTab(); }
     });
     addGrip(srPanel); root.querySelector('.si-term-body').appendChild(srPanel);
     var open = false; try { open = JSON.parse(localStorage.getItem('si-search-open') || 'false'); } catch (e) {}
@@ -1390,7 +1476,7 @@
   var SKEY = 'si-term-state';
   function saveState() {
     var st = { open: root.classList.contains('is-open'), active: active,
-      split: split && split.a && split.b ? { dir: split.dir, ratio: split.ratio, a: tabs.indexOf(split.a), b: tabs.indexOf(split.b), focus: split.focus } : null,
+      split: split && split.panes.every(Boolean) ? { dir: split.dir, rx: split.rx, ry: split.ry, panes: split.panes.map(function (t) { return tabs.indexOf(t); }), focus: split.focus } : null,
       tabs: tabs.map(function (t) {
       if (t.viewer) return t.snap();
       return t.id && !t.ended ? { k: 'sh', id: t.id, label: t.tabEl.querySelector('.label').textContent, zoom: t.zoom } : {};
@@ -1416,12 +1502,15 @@
       restoring = false;
       if (!tabs.length) return;
       var sp = st.split;
-      if (sp && map[sp.a] && map[sp.b]) split = { dir: sp.dir === 'down' ? 'down' : 'right', ratio: Math.max(0.15, Math.min(0.85, +sp.ratio || 0.5)), a: map[sp.a], b: map[sp.b], focus: sp.focus === 'a' ? 'a' : 'b' };
+      if (sp && !sp.panes && sp.a != null) sp = { dir: sp.dir, rx: sp.ratio, ry: sp.ratio, panes: [sp.a, sp.b], focus: sp.focus === 'a' ? 0 : 1 }; // saved before v3.14.0
+      var ps = sp && sp.panes ? sp.panes.map(function (i) { return map[i]; }).filter(Boolean).slice(0, MAXP) : [];
+      var rr = function (v) { return Math.max(0.15, Math.min(0.85, +v || 0.5)); };
+      if (ps.length >= 2) split = { dir: sp.dir === 'down' ? 'down' : 'right', rx: rr(sp.rx), ry: rr(sp.ry), panes: ps, focus: Math.min(ps.length - 1, Math.max(0, +sp.focus || 0)) };
       if (st.open) show(true);
       select(at >= 0 ? at : 0, !st.open);
     });
   })();
 
   window.siTerm = { toggle: toggle, show: show, hide: hide, runbook: toggleRunbook, demos: toggleDemos, viewer: function () { show(true); newViewer(); },
-    quickOpen: quickOpen, search: function () { openSearch(); }, split: function (dir) { if (dir) splitOpen(dir); else splitClose(); } };
+    quickOpen: quickOpen, search: function () { openSearch(); }, split: function (dir) { if (dir) splitOpen(dir === 'add' ? null : dir); else splitClose(); } };
 })();

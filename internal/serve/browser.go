@@ -115,17 +115,28 @@ func (b *browserProxies) through(loc, key, origin string) string {
 // forward), with its real address (the target origin T in place of the
 // proxy's), runs the window's ← → ↻ (history.back/forward, reload), since
 // the deck, on another origin, cannot reach the frame's history itself, and
-// hands a click on a link to another origin to the window ({si:'nav-open'}),
-// which opens it through that origin's proxy.
+// hands a navigation to another origin to the window ({si:'nav-open'}), which
+// opens it through that origin's proxy: a link click; window.open; a GET form;
+// and, where the browser has the Navigation API (its navigate event: Chrome,
+// Edge, recent Safari and Firefox), location.assign/replace, location.href =
+// and any form, each cancelled and reopened. location's own methods cannot be
+// replaced (the browser forbids it), so without that API a script that sets
+// location, or a POST form, still leaves the proxy; a POST to another site is
+// reopened as a GET of its address, its body dropped.
 func navScript(target string) string {
 	t, _ := json.Marshal(target) // escapes <, so it cannot end the script
 	return `<script>(function(){var P=window.parent;if(P===window)return;var T=` + string(t) + `;` +
 		`function real(){var o=location.origin;return location.href.indexOf(o)===0?T+location.href.slice(o.length):location.href}` +
 		`function send(k){try{P.postMessage({si:'nav',kind:k,url:location.href,real:real(),title:document.title},'*')}catch(e){}}` +
+		`function away(h){var u;try{u=new URL(String(h),location.href)}catch(x){return false}` +
+		`if(!/^https?:$/.test(u.protocol)||u.origin===location.origin)return false;try{P.postMessage({si:'nav-open',url:u.href},'*')}catch(x){}return true}` +
 		`addEventListener('click',function(e){if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;` +
-		`var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;var u;try{u=new URL(a.getAttribute('href'),location.href)}catch(x){return}` +
-		`if(!/^https?:$/.test(u.protocol)||u.origin===location.origin)return;` +
-		`e.preventDefault();try{P.postMessage({si:'nav-open',url:u.href},'*')}catch(x){}});` +
+		`var a=e.target.closest&&e.target.closest('a[href]');if(a&&away(a.href))e.preventDefault()});` +
+		`var wo=window.open;window.open=function(u){if(u!=null&&u!==''&&away(u))return null;return wo.apply(window,arguments)};` +
+		`addEventListener('submit',function(e){var f=e.target,m=(f.getAttribute('method')||'get').toLowerCase();if(e.defaultPrevented||m!=='get')return;` +
+		`var u;try{u=new URL(f.action,location.href)}catch(x){return}u.search=new URLSearchParams(new FormData(f)).toString();if(away(u.href))e.preventDefault()});` +
+		`if(window.navigation)navigation.addEventListener('navigate',function(e){if(!e.cancelable||e.navigationType==='traverse'||e.navigationType==='reload')return;` +
+		`var u;try{u=new URL(e.destination.url)}catch(x){return}if(u.origin!==location.origin&&away(u.href))e.preventDefault()});` +
 		`['pushState','replaceState'].forEach(function(n){var f=history[n];history[n]=function(){var r=f.apply(this,arguments);send(n==='pushState'?'push':'replace');return r}});` +
 		`addEventListener('popstate',function(){send('pop')});addEventListener('hashchange',function(){send('pop')});` +
 		`addEventListener('load',function(){send('load')});` +

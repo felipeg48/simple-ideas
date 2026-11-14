@@ -3,11 +3,13 @@ package serve
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -426,22 +428,31 @@ func TestTerminalFilesOps(t *testing.T) {
 	}
 }
 
-// TestTerminalCatTail: ?tail=1 shows a big file's last MB, from a line start.
+// TestTerminalCatTail: ?tail=1 shows a big file's last MB, from a line start,
+// with the line number it starts at (counted on as the file grows, recounted
+// when it is rewritten).
 func TestTerminalCatTail(t *testing.T) {
 	ts := newTermServer(t, true)
 	var ls struct{ Dir string }
 	res, _ := http.Get(ts.URL + "/_si/term/api/ls")
 	json.NewDecoder(res.Body).Decode(&ls)
 	res.Body.Close()
-	var b strings.Builder
-	for i := 0; b.Len() < 1<<20+5000; i++ {
-		b.WriteString("line " + strings.Repeat("x", 40) + "\n")
+	big := filepath.Join(ls.Dir, "big.log")
+	write := func(from, size int, last string) int {
+		var b strings.Builder
+		i := from
+		for ; b.Len() < size; i++ {
+			fmt.Fprintf(&b, "line %d %s\n", i, strings.Repeat("x", 40))
+		}
+		b.WriteString(last + "\n")
+		os.WriteFile(big, []byte(b.String()), 0o644)
+		return i
 	}
-	b.WriteString("the last line\n")
-	os.WriteFile(filepath.Join(ls.Dir, "big.log"), []byte(b.String()), 0o644)
+	write(1, 1<<20+5000, "the last line")
 	get := func(q string) (c struct {
 		HTML            string
 		Tail, Truncated bool
+		First           int
 	}) {
 		res, err := http.Get(ts.URL + "/_si/term/api/cat?path=big.log" + q)
 		if err != nil {
@@ -451,13 +462,34 @@ func TestTerminalCatTail(t *testing.T) {
 		json.NewDecoder(res.Body).Decode(&c)
 		return
 	}
-	if c := get(""); c.Tail || !c.Truncated || strings.Contains(c.HTML, "the last line") {
-		t.Fatalf("without tail: the first MB, got tail=%v", c.Tail)
+	if c := get(""); c.Tail || !c.Truncated || strings.Contains(c.HTML, "the last line") || c.First != 0 {
+		t.Fatalf("without tail: the first MB, got tail=%v first=%d", c.Tail, c.First)
 	}
-	c := get("&tail=1")
-	if !c.Tail || !c.Truncated || !strings.Contains(c.HTML, "the last line") || !strings.HasPrefix(c.HTML, "line ") {
-		t.Fatalf("tail: tail=%v starts %q", c.Tail, c.HTML[:min(20, len(c.HTML))])
+	// the first shown line's own number, read from its text
+	check := func(what string, shift int) { // shift: a line's text number minus its line number
+		t.Helper()
+		c := get("&tail=1")
+		if !c.Tail || !c.Truncated || !strings.Contains(c.HTML, "the last line") || !strings.HasPrefix(c.HTML, "line ") {
+			t.Fatalf("%s: tail=%v starts %q", what, c.Tail, c.HTML[:min(20, len(c.HTML))])
+		}
+		var n int
+		fmt.Sscanf(regexp.MustCompile(`<[^>]*>`).ReplaceAllString(c.HTML, ""), "line %d", &n)
+		if c.First != n-shift {
+			t.Fatalf("%s: first=%d, the window starts at line %d", what, c.First, n-shift)
+		}
 	}
+	check("tail", 0)
+	// grown: appended lines
+	f, _ := os.OpenFile(big, os.O_APPEND|os.O_WRONLY, 0)
+	for i := 0; i < 3000; i++ {
+		fmt.Fprintf(f, "line %d %s\n", 900000+i, strings.Repeat("y", 40))
+	}
+	f.WriteString("the last line\n")
+	f.Close()
+	check("grown", 0)
+	// rewritten shorter, other numbers: counted again
+	write(5, 1<<20+100, "the last line")
+	check("rewritten", 4)
 }
 
 // readUntil reads r until want shows up (true) or it ends / times out.

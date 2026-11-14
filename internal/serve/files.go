@@ -18,6 +18,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/felipeg48/simple-ideas/internal/render"
@@ -135,8 +136,10 @@ func (h *termHub) cat(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 	tail := r.URL.Query().Get("tail") == "1" && st.Size() > filesMaxBytes
+	var from int64 // where the window starts in the file
 	if tail {
-		f.Seek(st.Size()-filesMaxBytes, io.SeekStart)
+		from = st.Size() - filesMaxBytes
+		f.Seek(from, io.SeekStart)
 	}
 	buf := make([]byte, filesMaxBytes)
 	n, _ := f.Read(buf)
@@ -151,8 +154,10 @@ func (h *termHub) cat(w http.ResponseWriter, r *http.Request) {
 	if tail {
 		if i := bytes.IndexByte(buf, '\n'); i >= 0 {
 			buf = buf[i+1:]
+			from += int64(i + 1)
 		}
 		res["tail"] = true
+		res["first"] = h.lineAt(p, st, from)
 	}
 	head := buf[:min(len(buf), 8192)]
 	if bytes.IndexByte(head, 0) >= 0 || !utf8.Valid(bytes.ToValidUTF8(head, nil)) {
@@ -168,6 +173,52 @@ func (h *termHub) cat(w http.ResponseWriter, r *http.Request) {
 		res["text"] = string(buf)
 	}
 	writeJSON(w, res)
+}
+
+// lineAt is the line number at byte off of the file p (one more than the
+// newlines before it), for Follow's line numbers on a file over 1 MB. The
+// count is kept per file: a file that only grew (a log) is counted on from
+// where the last count stopped, so each poll reads just the new bytes.
+func (h *termHub) lineAt(p string, st os.FileInfo, off int64) int {
+	h.mu.Lock()
+	c, ok := h.lines[p]
+	h.mu.Unlock()
+	// ponytail: a file rewritten in place to the same or a larger size keeps
+	// its old prefix count; a change of mtime with a shrink recounts
+	if !ok || st.Size() < c.size || off < c.off || !st.ModTime().Equal(c.mtime) && st.Size() == c.size {
+		c = lineCount{}
+	}
+	f, err := os.Open(p)
+	if err != nil {
+		return 1
+	}
+	defer f.Close()
+	f.Seek(c.off, io.SeekStart)
+	buf := make([]byte, 256<<10)
+	for left := off - c.off; left > 0; {
+		n, err := f.Read(buf[:min(int64(len(buf)), left)])
+		c.n += bytes.Count(buf[:n], []byte{'\n'})
+		left -= int64(n)
+		c.off += int64(n)
+		if err != nil || n == 0 {
+			break
+		}
+	}
+	c.size, c.mtime = st.Size(), st.ModTime()
+	h.mu.Lock()
+	if h.lines == nil {
+		h.lines = map[string]lineCount{}
+	}
+	h.lines[p] = c
+	h.mu.Unlock()
+	return c.n + 1
+}
+
+// lineCount: the newlines in a file's first off bytes, as of size and mtime.
+type lineCount struct {
+	off, size int64
+	n         int
+	mtime     time.Time
 }
 
 // save: POST {path, text, mtime, force} writes a file from the Viewer's editor:

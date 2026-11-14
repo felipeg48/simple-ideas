@@ -24,7 +24,17 @@ lazy-loaded on Edit; `POST /_si/term/api/save` with an mtime check; saves
 never live-reload). See `docs/terminal.md` "Viewer tabs".
 
 
-**Released and live: v3.13.0** (project structure map: a `structure:`
+**Released and live: v3.14.0** (the play workbench, six improvements:
+the Viewer tree's open folders and scroll in `t.snap()` (`open`, `treeTop`,
+`t.onShow`); ⌘= ⌘- ⌘0 caught on the whole drawer; `grep?stream=1` NDJSON with
+Stop (`grepWalk` in `internal/serve/search.go`); split view up to four panes
+(`split.panes`, `rx`/`ry`, `geometry()` in `term.js`); `navScript` catches
+`window.open`, GET forms and, through the Navigation API, `location.assign`/
+`replace`/`href =`; `cat?tail=1` returns `first` (`lineAt`, counts cached in
+`termHub.lines`); shell input serialised (`sendIn`); committed e2e
+`web/studio/e2e/viewer.e2e.mjs` and `workbench.e2e.mjs`; see
+`docs/terminal.md`).
+Before: **v3.13.0** (project structure map: a `structure:`
 block in si.conf, `internal/config/structure.go` parses it; `si build`
 of a project with one (`cmd/si/structure.go`) builds the usual flat layout
 into a staging folder, routes every file to its kind's folders (`route`),

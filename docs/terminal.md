@@ -89,7 +89,11 @@ one (`creack/pty`) plus the bundled xterm.
 - **The page side.** `term.js` writes `sessionStorage` `si-term-state` on
   `pagehide`: open or not, the active tab, and each tab in order (a shell:
   `{id, label, zoom}`; a Viewer: `t.snap()`, folder, file, edit mode with an
-  unsaved draft and the mtime it began from, Follow, zoom). `05-annotate-keys.js`
+  unsaved draft and the mtime it began from, Follow, zoom, `open` (the tree's
+  open folders) and `treeTop` (its scroll); since v3.14.0 `rows()` resolves
+  once the open folders below it are listed, and `t.onShow` (called by
+  `layout()` and when the tree is ready) sets the scroll once the pane is
+  visible). `05-annotate-keys.js`
   loads the runtime on page load when that state has tabs; `term.js` asks
   `list`, attaches the live shells (dropping the ended ones), reopens the
   Viewers and selects the active tab without taking the deck's focus when the
@@ -97,7 +101,12 @@ one (`creack/pty`) plus the bundled xterm.
 - **Text size per tab:** `t.zoom` (0.5-3): a shell's xterm `fontSize` is 14 ×
   zoom (refit, resize sent); a Viewer sets `--si-z` on its pane, which scales
   the tree, the read-only view and the CodeMirror editor. The bar's − % + and
-  ⌘= / ⌘- / ⌘0 (a capture listener on the panes) act on the active tab;
+  ⌘= / ⌘- / ⌘0 (a capture listener on the whole drawer, `preventDefault` +
+  `stopPropagation`) act on the active tab; Chrome sends the zoom keys to the
+  page first and does not zoom when it cancels them, which
+  `web/studio/e2e/workbench.e2e.mjs` checks from the page's side
+  (`defaultPrevented`, `devicePixelRatio` and `visualViewport.scale` unchanged;
+  headless Chrome has no browser zoom of its own to observe);
   `localStorage` `si-term-zoom` / `si-fs-zoom` hold the default for new tabs.
 - **Drawer height:** the top-edge grip sets `--si-term-h` in `vh` (20-100),
   `localStorage` `si-term-h`; `.is-max` (100vh) overrides it and gives it back.
@@ -210,8 +219,15 @@ window opens it through `/_si/browser/open` (that origin's proxy, started
 once) as a new frame address, so the frame's history (← →) spans the sites.
 A redirect's absolute `Location` is rewritten by `through`: the same proxy
 for its own origin, another origin's proxy (started then) for any other
-http(s) origin; a relative `Location` stays. A page script that assigns
-`location` to another origin leaves the proxy (not caught).
+http(s) origin; a relative `Location` stays. Script navigations (v3.14.0):
+`navScript` also wraps `window.open` (a cross-origin address is posted as
+`nav-open`, `null` returned), cancels a GET form to another origin (its
+fields as the query), and, where `window.navigation` exists, cancels any
+other cross-origin `navigate` event (`location.assign`/`replace`,
+`location.href =`, POST forms; not `traverse` or `reload`) and posts it.
+`location`'s methods are unforgeable, so without the Navigation API those
+still leave the proxy; a POST is reopened as a GET of its address, body
+dropped.
 `TestBrowserProxyAcrossSites`; `web/studio/e2e/browser.e2e.mjs` (two local
 origins, headless).
 
@@ -291,7 +307,12 @@ strings `s`, URLs and paths `y`. The editor's `conf` stream mode in
 **Follow (v3.5.0).** The read-only view's **Follow** polls `stat` every
 second while the tab is visible and the drawer open; on a new mtime or size it
 reads `cat?edit=1&tail=1` (a file over 1 MB: its last MB from a line start,
-`tail: true`) and keeps the scroll at the end only if it was there. While
+`tail: true`, and `first`, the line number the window starts at) and keeps
+the scroll at the end only if it was there; the view sets `counter-reset: ln
+first-1` on its `<pre>`. `lineAt` (files.go) counts the newlines before the
+window in 256 KB reads and keeps `{off, n, size, mtime}` per file in
+`termHub.lines`: a file that only grew is counted on from the last offset,
+a shrunk file (or the same size with a new mtime) is counted again. While
 editing, the same poll shows a changed-on-disk notice once per mtime
 (**Reload** / **Keep editing**); the editor is never refreshed under the
 user. The live-reload watcher skips `*.log` files, so a log a demo writes in
@@ -299,17 +320,24 @@ the deck folder can be followed without reloading the deck.
 
 ## Split view, quick open, search, spotlight (v3.9.0)
 
-**Split.** `split` in `term.js` is `null` or `{dir: 'right'|'down', ratio,
-a, b, focus}` (`a`, `b` are tab objects). No DOM moves: every pane stays an
-absolutely placed child of `.si-term-main`; `layout()` gives the two shown
-panes an `inset` from `ratio` (stacked when `dir` is `down` or the drawer is
-under 560 px wide), places `.si-term-div` (the divider) and refits every
-shown shell (`refit()`). `select(i)` shows a tab in the focused side (or
-focuses the side already showing it); a `pointerdown` inside a pane focuses
-it. Tabs are `draggable`; a drop on `.si-term-main` picks the side under the
-pointer (`placeIn`, swapping when the tab was on the other side). Closing a
-shown tab closes the split. The reload state (`si-term-state`) carries
-`split: {dir, ratio, a, b, focus}` with tab indexes, mapped back on restore.
+**Split.** `split` in `term.js` is `null` or `{dir: 'right'|'down', rx, ry,
+panes: [tab, …], focus}` (2 to 4 panes, v3.14.0; `focus` an index). No DOM
+moves: every pane stays an absolutely placed child of `.si-term-main`;
+`geometry()` gives each shown pane an `inset` from `rx` (the vertical divider)
+and `ry` (the horizontal one): two panes side by side or stacked, three as one
+big pane and two beside (or under) it, four a 2×2 grid; a drawer under 560 px
+wide stacks them. `layout()` applies it, places `.si-term-div.v` and
+`.si-term-div.h` and refits every shown shell (`refit()`). `select(i)` shows
+a tab in the focused pane (or focuses the pane already showing it); a
+`pointerdown` inside a pane focuses it. `splitOpen` opens a split or, already
+split, adds a pane (Shift-click ◫, the tab menu, `siTerm.split('add')`).
+Tabs are `draggable`; a drop on `.si-term-main` picks the pane under the
+pointer (`paneAt`, `placeIn`, swapping when the tab was in another pane).
+Closing a shown tab closes its pane (`unpane`; one left ends the split). The
+reload state (`si-term-state`) carries `split: {dir, rx, ry, panes, focus}`
+with tab indexes, mapped back on restore (the v3.9.0 `{ratio, a, b}` form is
+still read). Keystrokes go to a shell one POST at a time (`sendIn`), so fast
+typing cannot arrive out of order.
 
 **Quick open.** `GET /_si/term/api/find?dir=&q=` (`internal/serve/search.go`,
 `localOnly`): walks `dir` (20 000 entries at most; skips `.git`,
@@ -326,7 +354,12 @@ regular files up to 1 MB, binary ones (a NUL in the first 8 KB) skipped; Go
 `regexp` (`q` quoted unless `re=1`, `(?i)` unless `case=1`; a bad pattern is
 400); returns `lines: [{path, rel, line, text, hits}]` with `hits` as UTF-16
 offsets (JavaScript string indexes) into `text`, a long line cut to 240
-characters around its first hit; stops at 1000 hits (`more`). The panel
+characters around its first hit; stops at 1000 hits (`more`). With
+`&stream=1` (what the panel uses, v3.14.0) the answer is newline-delimited
+JSON flushed file by file: `{dir}`, one line object each, then `{done, hits,
+more}`; the panel draws each line as it comes. **Stop** (or Esc while it
+runs, or a new search) aborts the fetch, which cancels the request context
+and so the walk. The panel
 (`.si-rb.si-sr`) is a side panel like Runbook and Demos (`setPanel`,
 `localStorage` `si-search-open`). A result opens in the active Viewer, else
 the last one used, else a new Viewer (`openAt`); the Viewer's `t.open(path,

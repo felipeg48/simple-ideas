@@ -80,7 +80,7 @@ an example for every rule: [RULES.md](docs/RULES.md).
   forward cross sites.
 - **Terminal drawer** (`` ` ``, `si play` on loopback): real shells beside the
   slides, a runbook of commands, demo scripts with Copy and Run; Viewer tabs
-  that read and edit files, a split view, ⌘P quick open, ⌘⇧F search in
+  that read and edit files, a split view of up to four panes, ⌘P quick open, ⌘⇧F search in
   files, and line spotlight for the audience.
 - **A talk that sets itself up:** front matter `setup:`, `start: … · wait for
   "ready"`, `stop:`, `cleanup:` (repeatable, in order, local commands or

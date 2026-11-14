@@ -72,6 +72,7 @@ type termHub struct {
 	quiet   func(write func())
 	idle    time.Duration // detached shells are closed after this
 	janitor sync.Once
+	lines   map[string]lineCount // Follow's line counts, per file (files.go lineAt)
 }
 
 func newTermHub(dir string) *termHub {

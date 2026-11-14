@@ -167,6 +167,11 @@ func TestBrowserProxyAcrossSites(t *testing.T) {
 	if !strings.Contains(string(body), `var T="`+two.URL+`"`) || !strings.Contains(string(body), "real:real()") || !strings.Contains(string(body), "two /landed") {
 		t.Fatalf("page on the second proxy lacks its real origin: %.300s", body)
 	}
+	for _, want := range []string{"window.open=", "'submit'", "navigation.addEventListener('navigate'"} {
+		if !strings.Contains(navScript("x"), want) {
+			t.Errorf("navScript lacks %s", want)
+		}
+	}
 	if !strings.Contains(navScript("x"), "nav-open") {
 		t.Error("the nav script does not hand cross-origin links to the window")
 	}

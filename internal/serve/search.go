@@ -7,6 +7,7 @@ package serve
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -154,7 +155,10 @@ func u16(s string) int { return len(utf16.Encode([]rune(s))) }
 // grep: GET ?dir=&q=&case=1&re=1 -> {dir, lines: [{path, rel, line, text,
 // hits}], hits, more}: lines of text files (≤ 1 MB, not binary) under dir
 // that contain q; plain text and case-insensitive unless case/re say
-// otherwise; at most 1000 hits.
+// otherwise; at most 1000 hits. With &stream=1 the answer is newline-delimited
+// JSON, flushed file by file so the panel fills as matches arrive: {"dir"}
+// first, then one grepLine per line, then {"done":true,"hits","more"}. A
+// client that stops (Stop, a new search) cancels the walk.
 func (h *termHub) grep(w http.ResponseWriter, r *http.Request) {
 	dir := h.absPath(r, "dir")
 	qv := r.URL.Query()
@@ -175,8 +179,32 @@ func (h *termHub) grep(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad pattern: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	lines, total, more := []grepLine{}, 0, false
-	walkFiles(r, dir, strings.HasPrefix(q, "."), func(rel, abs string, d os.DirEntry) bool {
+	if qv.Get("stream") == "1" {
+		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.Header().Set("Cache-Control", "no-store")
+		enc := json.NewEncoder(w)
+		fl, _ := w.(http.Flusher)
+		enc.Encode(map[string]any{"dir": dir})
+		total, more := grepWalk(r, dir, re, strings.HasPrefix(q, "."), func(file []grepLine) {
+			for _, l := range file {
+				enc.Encode(l)
+			}
+			if fl != nil {
+				fl.Flush()
+			}
+		})
+		enc.Encode(map[string]any{"done": true, "hits": total, "more": more})
+		return
+	}
+	lines := []grepLine{}
+	total, more := grepWalk(r, dir, re, strings.HasPrefix(q, "."), func(file []grepLine) { lines = append(lines, file...) })
+	writeJSON(w, map[string]any{"dir": dir, "lines": lines, "hits": total, "more": more})
+}
+
+// grepWalk searches the files under dir, calling emit with each file's
+// matching lines; it returns the hits and whether it stopped at the cap.
+func grepWalk(r *http.Request, dir string, re *regexp.Regexp, dots bool, emit func([]grepLine)) (total int, more bool) {
+	walkFiles(r, dir, dots, func(rel, abs string, d os.DirEntry) bool {
 		info, err := d.Info()
 		if err != nil || !info.Mode().IsRegular() || info.Size() > filesMaxBytes {
 			return true
@@ -185,6 +213,12 @@ func (h *termHub) grep(w http.ResponseWriter, r *http.Request) {
 		if err != nil || bytes.IndexByte(b[:min(len(b), 8192)], 0) >= 0 {
 			return true
 		}
+		var file []grepLine
+		defer func() {
+			if len(file) > 0 {
+				emit(file)
+			}
+		}()
 		sc := bufio.NewScanner(bytes.NewReader(b))
 		sc.Buffer(make([]byte, 0, 64<<10), filesMaxBytes+1)
 		for n := 1; sc.Scan(); n++ {
@@ -218,7 +252,7 @@ func (h *termHub) grep(w http.ResponseWriter, r *http.Request) {
 			if len(gl.Hits) == 0 {
 				continue
 			}
-			lines = append(lines, gl)
+			file = append(file, gl)
 			if total += len(locs); total >= grepMaxHits {
 				more = true
 				return false
@@ -226,5 +260,5 @@ func (h *termHub) grep(w http.ResponseWriter, r *http.Request) {
 		}
 		return true
 	})
-	writeJSON(w, map[string]any{"dir": dir, "lines": lines, "hits": total, "more": more})
+	return total, more
 }

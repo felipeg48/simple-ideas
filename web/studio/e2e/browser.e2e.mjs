@@ -1,6 +1,8 @@
 // Browser windows across sites: a framed page's link to another origin and a
 // redirect to another origin both stay proxied (each origin its own proxy),
-// the address bar shows the real address, back and forward cross the sites.
+// the address bar shows the real address, back and forward cross the sites;
+// a script that sends the page to another site (location.assign, replace,
+// location.href =, window.open, a form) stays proxied too.
 // Two local origins, si play, headless. Needs ../../bin/si (make build).
 // Run: npm run e2e:browser
 import { chromium } from "playwright";
@@ -24,7 +26,12 @@ const twoURL = "http://localhost:" + two.address().port;
 const one = await listen((q, r) => {
   if (q.url === "/hop") { r.writeHead(302, { Location: twoURL + "/hopped" }); r.end(); return; }
   r.writeHead(200, { "Content-Type": "text/html" });
-  r.end(page("One", `<a id="cross" href="${twoURL}/linked">to two</a> <a id="hop" href="/hop">hop</a>`));
+  r.end(page("One", `<a id="cross" href="${twoURL}/linked">to two</a> <a id="hop" href="/hop">hop</a>
+    <button id="assign" onclick="location.assign('${twoURL}/assigned')">assign</button>
+    <button id="replace" onclick="location.replace('${twoURL}/replaced')">replace</button>
+    <button id="href" onclick="location.href='${twoURL}/href'">href</button>
+    <button id="open" onclick="window.open('${twoURL}/opened')">open</button>
+    <form action="${twoURL}/form" method="get"><input name="q" value="orders"><button id="form">form</button></form>`));
 });
 const oneURL = "http://127.0.0.1:" + one.address().port;
 
@@ -70,6 +77,17 @@ try {
   check(!!f && !f.url().startsWith(twoURL), "a redirect to another site stays proxied: " + (f && f.url()));
   await sleep(300);
   check((await addr()) === twoURL + "/hopped", "address bar after the redirect: " + (await addr()));
+  // script navigations to the other site
+  for (const [id, path] of [["assign", "/assigned"], ["href", "/href"], ["open", "/opened"], ["form", "/form?q=orders"], ["replace", "/replaced"]]) {
+    await p.click('[data-a="back"]');
+    f = await waitText("One");
+    if (!f) { check(false, "back to the first site before " + id); continue; }
+    await f.click("#" + id);
+    f = await waitText("Two " + path);
+    check(!!f && !f.url().startsWith(twoURL), id + " to another site stays proxied: " + (f && f.url()));
+    await sleep(200);
+    check((await addr()) === twoURL + path, id + ": address bar " + (await addr()));
+  }
   await p.screenshot({ path: join(dir, "browser.png") });
   check(errors.length === 0, "no page errors " + errors.join("; "));
 } finally {

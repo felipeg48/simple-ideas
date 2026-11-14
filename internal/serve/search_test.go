@@ -176,3 +176,37 @@ func TestGrepCapAndSize(t *testing.T) {
 		t.Errorf("a file over 1 MB was searched")
 	}
 }
+
+func TestGrepStream(t *testing.T) {
+	dir := t.TempDir()
+	writeFiles(t, dir, map[string]string{"a.txt": "hello\nno\nhello again\n", "b.txt": "hello\n", "many.txt": strings.Repeat("hello\n", 1500)})
+	h := newTermHub(dir)
+	rec := httptest.NewRecorder()
+	h.grep(rec, httptest.NewRequest("GET", "/_si/term/api/grep?"+url.Values{"dir": {dir}, "q": {"hello"}, "stream": {"1"}}.Encode(), nil))
+	if ct := rec.Header().Get("Content-Type"); ct != "application/x-ndjson" {
+		t.Fatalf("content type %q", ct)
+	}
+	rows := strings.Split(strings.TrimSpace(rec.Body.String()), "\n")
+	var head struct{ Dir string }
+	var tail struct {
+		Done bool
+		Hits int
+		More bool
+	}
+	json.Unmarshal([]byte(rows[0]), &head)
+	json.Unmarshal([]byte(rows[len(rows)-1]), &tail)
+	if head.Dir != dir || !tail.Done || tail.Hits != grepMaxHits || !tail.More {
+		t.Fatalf("head %+v tail %+v", head, tail)
+	}
+	if n := len(rows) - 2; n != grepMaxHits {
+		t.Errorf("%d lines streamed, want %d (capped)", n, grepMaxHits)
+	}
+	var first struct {
+		Rel  string
+		Line int
+	}
+	json.Unmarshal([]byte(rows[1]), &first)
+	if first.Rel != "a.txt" || first.Line != 1 {
+		t.Errorf("first line %+v", first)
+	}
+}

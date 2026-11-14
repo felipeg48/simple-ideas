@@ -1277,10 +1277,14 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   show. A window keeps that across sites: a link to another origin (the
   console's "Docs", a login page) and a redirect to one open through that
   origin's own proxy, the address box always shows the real address, and
-  **←** / **→** go back and forward across the sites. (A page that changes
-  `location` from its own script to another origin leaves the proxy; type
-  the address in the box instead.) Keys typed in a window never drive the
-  deck.
+  **←** / **→** go back and forward across the sites. A page's own script
+  that sends it to another site stays in the window too: `location.assign`,
+  `location.replace`, `location.href = …`, `window.open` and forms (in
+  Chrome, Edge and other browsers with the Navigation API; elsewhere only
+  `window.open` and GET forms are caught, since a page cannot replace
+  `location`'s methods). A form that POSTs to another site opens that address
+  without its fields; type the address in the box when a page still leaves.
+  Keys typed in a window never drive the deck.
 
   ```markdown
   ---
@@ -1302,16 +1306,18 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
 - **Text size per tab**: **−** **100%** **+** in the top bar size the active
   tab only, a shell's text or a Viewer's tree, file and editor, never the
   other tabs (click the percentage for 100%); **⌘=** / **⌘-** / **⌘0**
-  (Ctrl on Windows and Linux) do the same while you are in that tab, instead
-  of zooming the page. The size you used last is where the next tab of that
-  kind starts.
+  (Ctrl on Windows and Linux) do the same while you are anywhere in the
+  drawer, instead of zooming the page (Chrome, Edge and Firefox let the page
+  keep these keys; a browser that zooms anyway still has **−** / **+**). The
+  size you used last is where the next tab of that kind starts.
 
 - **Shells and Viewers survive a reload.** Saving the deck reloads the page;
   the drawer comes back as it was: open or closed, the same tabs in the same
   order, the active one, each shell with its recent screen (the last 256 KB
   of its output) and still running (a `sleep 600` keeps sleeping), each Viewer
-  on its folder and file, in the editor with unsaved changes kept, Follow on
-  or off, each tab's text size. A shell whose program ended is dropped; a
+  on its folder and file, its tree with the same folders open and scrolled
+  where it was, in the editor with unsaved changes kept, Follow on or off,
+  each tab's text size. A shell whose program ended is dropped; a
   shell no page has shown for 10 minutes is closed; all close when si play
   stops.
 
@@ -1350,19 +1356,24 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   name already taken is refused. **Follow** (read-only view, off by default)
   shows the file as it changes on disk, once a second, scrolled to the end
   when you were at the end, like `tail -f`; a file over 1 MB shows its last
-  MB. It pauses while the tab is hidden. While you edit, a change on disk
+  MB, numbered from its real line (the header says `lines 48210–71034`). It
+  pauses while the tab is hidden. While you edit, a change on disk
   shows a notice (**Reload** or **Keep editing**), never a refresh under
   you. `.log` files never live-reload the deck.
 - **Split view, quick open, search, spotlight** (the workbench, v3.9.0).
   **◫** in the top bar (or right-click a tab: **Split right**, **Split
   down**) shows two tabs at once: the active one and the next (a new shell
-  when there is only one). Each pane shows one tab; clicking a tab shows it
-  in the focused pane (the one with the blue edge; click inside a pane to
-  focus it), dragging a tab onto a pane puts it there, the right-click menu
-  has **Show in the other pane**, **Swap the panes**, **Stacked** / **Side by
-  side** and **Close the split**; **◫** again closes it. Drag the divider to
-  size the panes (shells refit as you drag). A narrow drawer (a phone)
-  stacks them. The split, its sizes and which tab is where survive a reload.
+  when there is only one). **Shift-click ◫** (or right-click a tab: **Show
+  in a new pane**, **Add a pane**) adds a pane, up to four: three are one
+  big pane and two beside it (or under it, **Stacked**), four a 2×2 grid.
+  Each pane shows one tab; clicking a tab shows it in the focused pane (the
+  one with the blue edge; click inside a pane to focus it), dragging a tab
+  onto a pane puts it there, the right-click menu has **Show in the other
+  pane** (with more panes, **Show in pane 3**), **Swap the panes** (**Rotate
+  the panes**), **Stacked** / **Side by side**, **Close this pane** and
+  **Close the split**; **◫** again closes it. Drag the dividers to size the
+  panes (shells refit as you drag). A narrow drawer (a phone) stacks them.
+  The split, its sizes and which tab is where survive a reload.
   **⌘P** (Ctrl+P; in a shell on Linux and Windows Ctrl+P stays the shell's)
   or the **Go to file** icon: type letters of a file's path (`chkgo` finds
   `src/orders/checkout.go`) in the active Viewer's folder (from a shell: the
@@ -1370,7 +1381,9 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   new one), **⌘Enter** in a new Viewer. **⌘⇧F** or the **Search** icon:
   search the text of the files in the same folder (**Aa** match case, **.\***
   a regular expression); results grouped by file with the matches marked;
-  click one to open the file in a Viewer at that line, marked. Both skip
+  click one to open the file in a Viewer at that line, marked. Results come
+  in as they are found; **Stop** (or Esc) ends a long search and keeps what
+  came. Both skip
   `.git`, `node_modules`, `vendor`, `dist`, `build` and dot-folders (start
   the query with `.` to look in dot-folders); search reads text files up to 1 MB and
   shows the first 1000 matches. **Spotlight**: in the read-only view, click a
