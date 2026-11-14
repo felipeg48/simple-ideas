@@ -121,6 +121,11 @@ func TestExamples(t *testing.T) {
 	if strings.Contains(log.String(), "shop-demo") {
 		t.Error("the password was printed")
 	}
+	// promo.md: one profile for the run (the cookie banner accepted once in
+	// ## Before), a sticky header, steps inside a framed shop
+	if promo := run("promo.md"); !promo.OK() || promo.Passed != 3 || promo.Before == nil {
+		t.Errorf("promo.md: %d passed, %d failed\n%s", promo.Passed, promo.Failed, log.String())
+	}
 	// broker.md: a broker started by start:, terminals, a workload; go run
 	// builds the example's broker
 	if _, err := exec.LookPath("go"); err == nil && runtime.GOOS != "windows" {

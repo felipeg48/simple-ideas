@@ -127,6 +127,12 @@ type runner struct {
 	section  bool          // ## Before or ## After is running: not filmed, its programs live on
 	quiet    []quietCheck
 	down     sync.Once
+
+	kept  string            // session: keep: the one browser context of the run
+	fr    *frameCtx         // the frame the element found last is in (nil: the page)
+	oopif map[string]string // out-of-process frames (cross-origin iframes): frame id -> session
+	intro *part             // the brand's cards (promo.go)
+	outro *part
 }
 
 // Run runs the script's features as tests and returns the report. An error
@@ -224,6 +230,14 @@ func Run(s *Script, o Options) (*Report, error) {
 	var ver struct{ Product string }
 	c.CallIn("", "Browser.getVersion", nil, &ver)
 	c.OnEvent(r.event)
+	if s.Session == "keep" { // one profile for every feature: cookies and storage carry over; gone with the run
+		var ctx struct{ BrowserContextID string }
+		if err := c.CallIn("", "Target.createBrowserContext", map[string]any{"disposeOnDetach": true}, &ctx); err != nil {
+			return nil, err
+		}
+		r.kept = ctx.BrowserContextID
+		defer c.CallIn("", "Target.disposeBrowserContext", map[string]any{"browserContextId": r.kept}, nil)
+	}
 	rep := &Report{Script: filepath.Base(s.Path), Title: s.Title, App: r.mask(firstOf(base, s.App)), Viewport: fmt.Sprintf("%dx%d", s.W, s.H),
 		Chrome: ver.Product, SI: o.SI, Date: time.Now().Format(time.RFC3339)}
 	if rep.Title == "" {
@@ -474,6 +488,15 @@ func (r *runner) event(e cdp.Event) {
 		return
 	}
 	switch e.Method {
+	case "Target.attachedToTarget": // an out-of-process iframe: its frame id is its target id
+		var p struct {
+			SessionID  string
+			TargetInfo struct{ TargetID, Type string }
+		}
+		json.Unmarshal(e.Params, &p)
+		if p.TargetInfo.Type == "iframe" {
+			r.oopif[p.TargetInfo.TargetID] = p.SessionID
+		}
 	case "Page.frameAttached": // an iframe: a preview that reloads, or is replaced mid-load, must not count
 		var p struct{ FrameID string }
 		json.Unmarshal(e.Params, &p)
@@ -594,15 +617,21 @@ func (r *runner) feature(f *Feature, section bool) (fr FeatureResult, cl *clip) 
 		}
 	}
 	var ctx struct{ BrowserContextID string }
-	if err := r.c.CallIn("", "Target.createBrowserContext", map[string]any{"disposeOnDetach": true}, &ctx); err != nil {
-		return fail(StepResult{Text: "open a browser context", Status: "failed", Found: err.Error()})
+	if r.kept != "" {
+		ctx.BrowserContextID = r.kept
+		defer r.closePages() // the profile stays; the feature's pages go
+	} else {
+		if err := r.c.CallIn("", "Target.createBrowserContext", map[string]any{"disposeOnDetach": true}, &ctx); err != nil {
+			return fail(StepResult{Text: "open a browser context", Status: "failed", Found: err.Error()})
+		}
+		defer r.c.CallIn("", "Target.disposeBrowserContext", map[string]any{"browserContextId": ctx.BrowserContextID}, nil)
 	}
-	defer r.c.CallIn("", "Target.disposeBrowserContext", map[string]any{"browserContextId": ctx.BrowserContextID}, nil)
 	defer r.endFeature() // its terminals and start steps' programs, before its context goes
 	r.ctx = ctx.BrowserContextID
 	r.mu.Lock()
-	r.errs, r.reqs, r.urls, r.loading, r.inner = nil, nil, map[string]string{}, 0, map[string]bool{}
+	r.errs, r.reqs, r.urls, r.loading, r.inner, r.oopif = nil, nil, map[string]string{}, 0, map[string]bool{}, map[string]string{}
 	r.mu.Unlock()
+	r.fr = nil
 	tid, err := r.c.OpenPage(ctx.BrowserContextID, r.s.W, r.s.H)
 	if err != nil {
 		return fail(StepResult{Text: "open a page", Status: "failed", Found: err.Error()})
@@ -617,6 +646,9 @@ func (r *runner) feature(f *Feature, section bool) (fr FeatureResult, cl *clip) 
 			return fail(StepResult{Text: m, Status: "failed", Found: err.Error()})
 		}
 	}
+	// cross-origin iframes run in processes of their own: attach to them as
+	// they come, for … in frame steps
+	r.c.Call("Target.setAutoAttach", map[string]any{"autoAttach": true, "waitForDebuggerOnStart": false, "flatten": true}, nil)
 	if r.o.Video && !section {
 		if err := r.startTake(); err != nil {
 			return fail(StepResult{Text: "film the page", Status: "failed", Found: err.Error()})
@@ -753,7 +785,7 @@ func firstBrowserStep(f *Feature) *Step {
 	for _, b := range f.Blocks {
 		for _, st := range b.Steps {
 			switch st.Kind {
-			case "start", "stop", "wait", "expect-proc":
+			case "start", "stop", "wait", "expect-proc", "lower-third":
 				continue
 			}
 			return st
@@ -890,10 +922,19 @@ type found struct {
 	Covered    string
 	Candidates []string
 	Error      string
+	Box        [4]float64 // left, top, width, height
 }
 
 func (r *runner) locate(l Locator, want string, scroll bool) (found, error) {
-	arg, _ := json.Marshal(map[string]any{"loc": l, "want": want, "scroll": scroll})
+	if l.Frame != "" {
+		return r.locateIn(l, want, scroll)
+	}
+	r.fr = nil
+	var header any = "auto"
+	if r.s.Header >= 0 {
+		header = r.s.Header
+	}
+	arg, _ := json.Marshal(map[string]any{"loc": l, "want": want, "scroll": scroll, "header": header})
 	v, err := r.c.Eval(locateJS + "(" + string(arg) + ")")
 	var f found
 	if err != nil {
@@ -901,6 +942,15 @@ func (r *runner) locate(l Locator, want string, scroll bool) (found, error) {
 	}
 	err = json.Unmarshal(v, &f)
 	return f, err
+}
+
+// evalT runs JavaScript where the element found last lives: the page, or
+// the frame of an … in frame step.
+func (r *runner) evalT(js string) (json.RawMessage, error) {
+	if r.fr != nil {
+		return r.evalIn(r.fr.session, r.fr.ctx, js)
+	}
+	return r.c.Eval(js)
 }
 
 // until retries try every 100 ms up to the timeout; try returns done, or the
@@ -1026,6 +1076,9 @@ func (r *runner) step(st *Step) (string, error) {
 		}
 		r.spotlight(st)
 		return "", nil
+	case "lower-third":
+		r.lowerThird(st)
+		return "", nil
 	case "click":
 		f, err := r.element(st.Target, "click", true)
 		if err != nil {
@@ -1081,7 +1134,7 @@ func (r *runner) step(st *Step) (string, error) {
 			r.js(`__siDemo.blur()`)
 		}
 		// replace what the field holds, as a person selecting it all would
-		if _, err := r.c.Eval(`(function(e){if(document.activeElement!==e)e.focus();if(e.select)e.select();else{var s=getSelection(),g=document.createRange();g.selectNodeContents(e);s.removeAllRanges();s.addRange(g)}})(window.__siT)`); err != nil {
+		if _, err := r.evalT(`(function(e){if(document.activeElement!==e)e.focus();if(e.select)e.select();else{var s=getSelection(),g=document.createRange();g.selectNodeContents(e);s.removeAllRanges();s.addRange(g)}})(window.__siT)`); err != nil {
 			return "", err
 		}
 		if text == "" { // type "" clears the field
@@ -1115,7 +1168,7 @@ func (r *runner) step(st *Step) (string, error) {
 		// a list filled after it appears (options fetched by the page) gets the
 		// step's timeout to show the option, as an element does
 		for end := time.Now().Add(r.timeout); ; time.Sleep(100 * time.Millisecond) {
-			v, err = r.c.Eval(`(function(e,t){var o=[].find.call(e.options,function(o){return o.text.trim()===t||o.value===t||o.label===t});
+			v, err = r.evalT(`(function(e,t){var o=[].find.call(e.options,function(o){return o.text.trim()===t||o.value===t||o.label===t});
 if(!o)return [].map.call(e.options,function(o){return o.text.trim()});e.value=o.value;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));return true})(window.__siT,` + string(arg) + `)`)
 			if err != nil {
 				return "", err
@@ -1142,7 +1195,7 @@ if(!o)return [].map.call(e.options,function(o){return o.text.trim()});e.value=o.
 			}
 		}
 		return "", r.until(func() (bool, error) {
-			v, err := r.c.Eval(`(function(e){return !!(e.checked||e.getAttribute('aria-checked')==='true')})(window.__siT)`)
+			v, err := r.evalT(`(function(e){return !!(e.checked||e.getAttribute('aria-checked')==='true')})(window.__siT)`)
 			if err == nil && (string(v) == "true") == want {
 				return true, nil
 			}

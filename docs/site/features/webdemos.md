@@ -141,6 +141,8 @@ sets your usual):
 | `clips` | the same per feature: `pay-for-an-order.mp4`, and its `.captions.mp4`, `.silent.mp4`, `.m4a`, `.srt`, `.vtt` when asked for |
 | `report` | `report.html` · `report.json`: the run, linked to the videos |
 | `readme` | `README.md` · `README.html`: the files, the video in the page with its captions track, the script, how it was made |
+| `vertical` | `shop.vertical.mp4`: 1080×1920 for phones, the film over a blurred copy of itself, the captions large under it |
+| `highlight` | `shop.highlight.mp4`: about a minute, the first sentence of each feature |
 | `all` | everything above |
 
 ```bash
@@ -342,6 +344,80 @@ The first time, si shows where the code comes from, its size and its first
 lines, and asks; the answer is remembered for that pin in `~/.si/trusted`,
 and a pin whose contents changed does not run. `--trust` says yes for one run
 in CI; without a terminal and without `--trust`, si refuses and says why.
+
+## A promo of a site
+
+A web demo makes a good promo of a public site too. Start from the site
+itself:
+
+```bash
+si demo draft https://harbor.example --out harbor.md
+si demo test harbor.md
+```
+
+`si demo draft` reads the site in headless Chrome: it stays on the site,
+obeys its `robots.txt`, reads six pages at most (`--pages`), and only loads
+them, never clicking or submitting anything. It writes a script with a
+feature for the home page's hero and for each of its sections, one for each
+other page, and a closing call to action. The `Say:` lines are the site's own
+words, a heading and its key sentence, each marked `<!-- draft: polish this
+line -->` for you to rewrite; the steps use selectors that match one element
+each, so `si demo test` passes as soon as it is written.
+
+```markdown
+---
+type: demo
+title: Harbor
+app: https://harbor.example
+session: keep
+intro: Harbor · Every order out the door on time
+outro: Start free · A hundred orders a month, on us
+logo: brand/logo.svg
+url: https://harbor.example
+music: brand/bed.mp3 · 20%
+theme: forest
+---
+
+## Before
+
+- go /
+- click "Accept all"
+
+## One queue for every shop
+
+Lower-third: Ana Ruiz · Head of Operations, Harbor
+
+Say: Harbor puts the orders from every shop you sell in into one queue.
+- go /
+- spotlight #queue-title · label "One queue"
+
+## Order from the shop
+
+Say: Here is a shop that sends its orders to Harbor.
+- scroll to #shop
+- type "3" into "Quantity" in frame .preview
+- click "Buy" in frame .preview
+```
+
+![A promo frame: a spotlight on a section heading below the site's sticky header, a lower third with the speaker's name](img/webdemos/promo.jpg)
+
+- **One browser for the whole film.** `session: keep` keeps cookies and
+  storage from one feature to the next, so the cookie banner accepted in
+  `## Before` (never filmed) does not open every chapter. The profile is si's
+  own and goes when the run ends.
+- **Sticky headers stay clear.** Whatever a step scrolls to lands below the
+  site's fixed or sticky header, found on its own (`header-offset: 72px` or
+  `none` to choose); something already in view is not moved, so a closing
+  spotlight never nudges the page.
+- **Framed pages.** `in frame .preview` (or `in frame "Shop"`) after an
+  element reaches into an iframe, on the same site or another.
+- **The brand around it.** `intro:` and `outro:` cards with your `logo:` and
+  `url:`, in a built-in `theme:`; `music:` under the whole film, stepping back
+  while the voice speaks; `Lower-third: Name · Role` names a speaker.
+- **Short cuts.** `--with vertical` gives a 9:16 cut for phones, `--with
+  highlight` a minute of each feature's first sentence, from the same take.
+
+![The vertical cut: the film across the middle over a blurred copy, the caption large under it](img/webdemos/vertical.jpg)
 
 ## si's own demos
 

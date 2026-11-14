@@ -67,6 +67,15 @@ const demoUsage = `Usage:
                   video scaled back down to the viewport: crisp text, sharp zoom to / pan to.
                   --scale 1 films at the viewport's size (faster, less disk); else scale: in
                   front matter
+        --with vertical   <script>.vertical.mp4: 1080x1920, the film over a blurred copy of
+                  itself, the captions large under it; --with highlight: <script>.highlight.mp4,
+                  about 60 s, the first sentence of each feature. intro:, outro:, music:, logo:,
+                  url:, theme: and Lower-third: lines brand the film (RULES.md §27, Promo kit)
+  si demo draft <https://site> [--out file.md] [--pages 6] [--viewport V]
+        read a site headless (same origin, robots.txt obeyed, at most --pages pages, nothing
+        clicked or submitted) and write a first promo script: a feature for the home hero and
+        each of its sections, one per page, a closing call to action; Say: lines are the site's
+        own words, marked for you to polish; selectors si demo test finds. Prints it, or --out
   Both run start:, prepare: and step: in the order written, then ## Before; setup: before each
   feature; ## After, stop:, every program stopped, cleanup: (always: after a failure and on
   Ctrl-C too). ## Before and ## After are never filmed. terminal "Name" steps open a real shell,
@@ -76,6 +85,9 @@ const demoUsage = `Usage:
 // runDemo is `si demo test|run <script|folder|source>`. Its flags are its
 // own: --feature takes a name here, unlike si report's --feature.
 func runDemo(argv []string, stdout, stderr io.Writer) int {
+	if len(argv) > 0 && argv[0] == "draft" {
+		return runDemoDraft(argv[1:], stdout, stderr)
+	}
 	fl := flag.NewFlagSet("si demo", flag.ContinueOnError)
 	fl.SetOutput(io.Discard)
 	var feature, junit, out, viewport, voice, region, crop, trans, scale string
@@ -288,6 +300,64 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 		}
 	}
 	return code
+}
+
+// runDemoDraft is `si demo draft <url> [--out file.md] [--pages N]
+// [--viewport V]`: a first promo script read from a site.
+func runDemoDraft(argv []string, stdout, stderr io.Writer) int {
+	fl := flag.NewFlagSet("si demo draft", flag.ContinueOnError)
+	fl.SetOutput(io.Discard)
+	var out, viewport string
+	pages := 6
+	fl.StringVar(&out, "out", "", "")
+	fl.StringVar(&out, "o", "", "")
+	fl.IntVar(&pages, "pages", pages, "")
+	fl.StringVar(&viewport, "viewport", "", "")
+	var args []string
+	for {
+		if err := fl.Parse(argv); err != nil {
+			fmt.Fprintf(stderr, "si demo draft: %v\n\n%s", err, demoUsage)
+			return exitUsage
+		}
+		if argv = fl.Args(); len(argv) == 0 {
+			break
+		}
+		args, argv = append(args, argv[0]), argv[1:]
+	}
+	if len(args) != 1 || pages < 1 {
+		fmt.Fprintf(stderr, "si demo draft: one site address (https://example.com), --pages 1 or more\n\n%s", demoUsage)
+		return exitUsage
+	}
+	s := &webdemo.Script{W: 1440, H: 900}
+	if err := s.SetViewport(viewport); err != nil {
+		fmt.Fprintf(stderr, "si demo draft: --%v\n", err)
+		return exitUsage
+	}
+	chrome := findChrome()
+	if chrome == "" {
+		fmt.Fprintf(stderr, "si: %s\n", tools.Need("chrome", "si demo draft"))
+		return exitProblems
+	}
+	log := io.Writer(stderr)
+	if out != "" {
+		log = stdout
+	}
+	fmt.Fprintf(log, "si demo draft: reading %s (at most %d page(s), robots.txt obeyed)\n", args[0], pages)
+	md, err := webdemo.Draft(args[0], webdemo.DraftOptions{Chrome: chrome, Pages: pages, W: s.W, H: s.H, Log: log})
+	if err != nil {
+		fmt.Fprintf(stderr, "si: %v\n", err)
+		return exitProblems
+	}
+	if out == "" {
+		fmt.Fprint(stdout, md)
+		return exitOK
+	}
+	if err := os.WriteFile(out, []byte(md), 0o644); err != nil {
+		fmt.Fprintf(stderr, "si: %v\n", err)
+		return exitProblems
+	}
+	fmt.Fprintf(stdout, "si demo draft: wrote %s; polish its Say: lines (marked draft), then si demo test %s\n", out, out)
+	return exitOK
 }
 
 // demoOne runs one script with its output in out; a nil report means it

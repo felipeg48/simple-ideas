@@ -148,8 +148,45 @@
   window.__siT = el;
   var out = { found: true, visible: h.vis, enabled: h.en, desc: desc(el), count: hits.length,
     checked: !!(el.checked || el.getAttribute('aria-checked') === 'true'), field: isField(el), tag: tag(el) };
+  // the height a fixed or sticky header covers at the top of the viewport:
+  // a number, 'none', or 'auto' (found: a fixed/sticky bar across the top)
+  var header = function () {
+    if (a.header === 'none' || a.header === 0) return 0;
+    if (typeof a.header === 'number') return a.header;
+    var W = innerWidth, H = innerHeight, best = 0, xs = [0.06, 0.3, 0.5, 0.7, 0.94];
+    for (var i = 0; i < xs.length; i++) {
+      var at = document.elementsFromPoint(W * xs[i], 2);
+      for (var j = 0; j < at.length; j++) {
+        for (var e = at[j]; e && e !== document.body && e !== document.documentElement; e = e.parentElement) {
+          var p = getComputedStyle(e).position;
+          if (p !== 'fixed' && p !== 'sticky') continue;
+          var b = e.getBoundingClientRect();
+          if (b.top <= 2 && b.bottom > 0 && b.height < H * 0.4 && b.width >= W * 0.5 && !e.contains(el)) best = Math.max(best, b.bottom);
+          break;
+        }
+      }
+    }
+    return Math.min(best, H * 0.4);
+  };
+  // in view: inside the viewport below the header, and its middle is its own
+  // (not clipped by a scroller, not under something)
+  var inView = function (top) {
+    var r = el.getBoundingClientRect();
+    if (r.top < top - 1 || r.bottom > innerHeight + 1 || r.left < -1 || r.right > innerWidth + 1) return false;
+    var at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return !!at && (at === el || el.contains(at));
+  };
   if (a.scroll && h.vis) {
-    el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+    var hdr = header();
+    // scroll only when it is not in view already: a spotlight on what shows
+    // never nudges the page
+    if (!inView(hdr)) {
+      el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+      hdr = Math.max(hdr, header()); // a sticky bar that stuck on the way
+      var r0 = el.getBoundingClientRect(), room = innerHeight - hdr, m = 12;
+      var want = r0.height > room - 2 * m ? hdr + m : hdr + (room - r0.height) / 2;
+      if (Math.abs(r0.top - want) > 1) window.scrollBy({ top: r0.top - want, left: 0, behavior: 'instant' });
+    }
     var r = el.getBoundingClientRect();
     out.x = r.left + r.width / 2; out.y = r.top + r.height / 2;
     var top = document.elementFromPoint(out.x, out.y);
@@ -157,5 +194,7 @@
       out.covered = desc(top);
     }
   }
+  var rb = el.getBoundingClientRect();
+  out.box = [rb.left, rb.top, rb.width, rb.height];
   return out;
 })

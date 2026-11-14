@@ -400,7 +400,7 @@ SHOP_PASSWORD=shop-demo si demo run shop.md
 - `pronounce: si = ess eye`: the voice says it, the captions keep the word
 - One file: `shop.mp4`, every feature after a title card, chapters inside
 - More on request: `--with captions,subtitles` (or `with:` in front matter, `demo.with:` in si.conf)
-- `captions` `silent` `audio` `subtitles` `transcript` `chapters` `clips` `report` `readme` `all`
+- `captions` `silent` `audio` `subtitles` `transcript` `chapters` `clips` `report` `readme` `vertical` `highlight` `all`
 - Long waits play faster, with a ⏩ badge; the voice never speeds up
 - Scenes fade into each other; `zoom to`, `spotlight`, `window` and `drag` steps
 
@@ -431,6 +431,43 @@ Points:
 - Cloud voices send only the Say: text; lines are cached, re-runs re-voice only changes
 - A failing step ends that clip and lands in the report
 - Needs Chrome and ffmpeg: `si doctor`
+
+---
+
+## Web demos, as a promo
+
+```bash
+si demo draft https://harbor.example --out harbor.md
+si demo run harbor.md --with vertical,highlight
+```
+
+- `si demo draft`: a first script from the site's own words, robots.txt obeyed
+- `session: keep`: the cookie banner accepted once, in `## Before`
+- Sticky headers stay clear: `header-offset: auto | 72px | none`
+- `click "Buy" in frame .preview`: steps inside framed pages
+- `intro:`, `outro:`, `logo:`, `url:`, `music: bed.mp3 · 20%`, `theme:`
+- `Lower-third: Ana Ruiz · Head of Operations`
+- `--with vertical` (9:16) and `--with highlight` (about a minute)
+
+Notes: (1 min)
+A promo starts from the site itself. Draft reads the pages, keeps to the site
+and to its robots file, and writes a script from the site's own words, ready
+to test. One browser profile for the whole film means the cookie banner is
+accepted once, before the first chapter. Spotlights and zooms land below a
+sticky header, and steps reach into framed pages. The brand goes around the
+film: an intro card with the logo, an outro with the address, music that
+steps back while the voice speaks, a name caption for the speaker. And the
+same take gives a vertical cut for phones and a highlight of about a minute.
+[CLICK]
+
+Points:
+- Draft never clicks or submits; `--pages 6` by default; polish every `<!-- draft -->` line before filming
+- `session: keep` profile is si's own, removed at the end; default stays a fresh one per feature
+- An element in view is no longer scrolled: the closing spotlight does not nudge the page
+- Frames: same-origin and cross-origin; `in frame "name"` matches name, title or id
+- Music is ducked by the voice (sidechain); `<script>.m4a` stays narration only
+- Highlight: each feature's first sentence; vertical: blurred fill, captions large
+- Example: `examples/webdemo/promo.md` (a sticky header, a cookie banner, a framed shop)
 
 ---
 

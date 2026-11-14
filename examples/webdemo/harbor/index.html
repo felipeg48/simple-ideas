@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harbor | Every order out the door on time</title>
+<link rel="stylesheet" href="site.css">
+<header class="top">
+  <a class="brand" href="/"><img src="logo.svg" alt="Harbor"></a>
+  <nav><a href="#queue">Queue</a><a href="#carriers">Carriers</a><a href="#pricing">Pricing</a><a href="#shop">Shop</a></nav>
+  <a class="btn small" href="#pricing">Start free</a>
+</header>
+<main>
+  <section class="hero">
+    <h1>Every order out the door on time</h1>
+    <p>Harbor plans picking, packing and carriers for small warehouses, so nothing waits on a desk.</p>
+    <a class="btn" href="#pricing">Start free</a>
+  </section>
+  <section id="queue">
+    <h2 id="queue-title">One queue for every shop</h2>
+    <p>Orders from every shop you sell in land in one queue, sorted by the time they must leave the building.</p>
+    <ol class="queue">
+      <li><b>#1042</b> Lamp, two shades <span>leaves 11:30</span></li>
+      <li><b>#1043</b> Desk chair <span>leaves 12:00</span></li>
+      <li><b>#1044</b> Three mugs <span>leaves 14:15</span></li>
+    </ol>
+  </section>
+  <section id="carriers">
+    <h2>The right carrier, picked for you</h2>
+    <p>Harbor compares the carriers you use on price and on the promise you made the customer, and prints the label.</p>
+  </section>
+  <section id="pricing">
+    <h2>One plan, priced by what you ship</h2>
+    <p>Start free with a hundred orders a month. Above that, every order costs the same, whatever the season.</p>
+    <div class="plan"><b>Free</b><span>100 orders a month</span><b>Grow</b><span>4 cents an order</span></div>
+  </section>
+  <section id="shop">
+    <h2>Try the shop</h2>
+    <p>This is a shop that sends its orders to Harbor, framed right in the page.</p>
+    <iframe class="preview" title="Shop" src="shop.html"></iframe>
+  </section>
+</main>
+<div id="cookie-consent" class="cookies">This site keeps one cookie to remember your choice. <button>Accept all</button></div>
+<script>
+  var bar = document.getElementById('cookie-consent');
+  if (document.cookie.indexOf('consent=yes') >= 0) bar.remove();
+  else bar.querySelector('button').onclick = function () { document.cookie = 'consent=yes; path=/'; bar.remove(); };
+</script>

@@ -18,10 +18,12 @@ type With struct {
 	Clips      bool // the same kinds per feature: <feature>.mp4, …
 	Report     bool // report.html + report.json
 	Readme     bool // README.md + README.html
+	Vertical   bool // <script>.vertical.mp4: 9:16, the picture over a blurred fill, captions large
+	Highlight  bool // <script>.highlight.mp4: about 60 s, the first sentence of each feature
 }
 
 // WithNames are the names --with takes.
-var WithNames = []string{"captions", "silent", "audio", "subtitles", "transcript", "chapters", "clips", "report", "readme", "all"}
+var WithNames = []string{"captions", "silent", "audio", "subtitles", "transcript", "chapters", "clips", "report", "readme", "vertical", "highlight", "all"}
 
 // Add turns on the names of a comma list ("" adds nothing); an unknown name
 // is an error that lists the known ones.
@@ -48,8 +50,12 @@ func (w *With) Add(list string) error {
 			w.Report = true
 		case "readme":
 			w.Readme = true
+		case "vertical":
+			w.Vertical = true
+		case "highlight":
+			w.Highlight = true
 		case "all":
-			*w = With{true, true, true, true, true, true, true, true, true}
+			*w = With{true, true, true, true, true, true, true, true, true, true, true}
 		default:
 			return fmt.Errorf("with %q: use %s", n, strings.Join(WithNames, ", "))
 		}
@@ -86,6 +92,8 @@ func (w With) Files(script string, fs []Planned) []string {
 		add(w.Subtitles && voiced, script+".srt", script+".vtt")
 		add(w.Transcript && voiced, script+".txt")
 		add(w.Chapters, "chapters.txt")
+		add(w.Vertical, script+".vertical.mp4")
+		add(w.Highlight, script+".highlight.mp4")
 	}
 	if w.Clips {
 		for _, f := range fs {

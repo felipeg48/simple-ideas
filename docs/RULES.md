@@ -3007,7 +3007,8 @@ Say: A test card goes through in a second.
 ```
 
 - Each `##` heading is a **feature**: one test case, run in a fresh browser
-  (no cookies or storage from the one before), after `setup:` and with the
+  (no cookies or storage from the one before; `session: keep` keeps one
+  profile for the whole run, see Promo kit), after `setup:` and with the
   app's first page open; a feature whose first page step is a `go` opens on a
   plain page instead, so the video goes straight to that page. A folder `app:`
   never lists its files: a folder without `index.html` is a plain page (show
@@ -3040,21 +3041,27 @@ Say: A test card goes through in a second.
 | `spotlight "Pay"` (alias `focus`) | dims the rest of the page around the element; `· circle`, `· blur`, `· label "…"`, `· for 3s`, `spotlight off` |
 | `window "si-presenter"` · `window 2` · `window main` | perform and film a popup or tab the app opened, then come back |
 | `drag from "A" to "B"` · `drag by 300,80` | a real drag, the drawn cursor gliding with the button held |
+| `lower-third "Ana Ruiz" · "Head of Support"` | a name caption at the bottom left of the video from this step on, 4 s (`· for 6s`); nothing in a test (see Promo kit) |
+| `click "Buy" in frame .preview` | any element step reaches into an iframe: `in frame` and the iframe's CSS selector, or its `"name"` (name, title or id); same-origin and cross-origin frames |
 
 **Elements** are found the way a person names them: `"Pay"` matches visible
 text, a `<label>`, an `aria-label`, a placeholder, a title or an alt text
 (exact first, then any case, then a part). An element that starts with `#`,
 `.` or `[`, or with a tag followed by CSS (`button.pay`, `li:first-child`,
 `nav > a`), is a CSS selector, spaces included: it runs to ` · `, to the end
-of the step, or to the word that follows an element (`to` in a drag, the
-state in `expect`). `role=button "Pay"` narrows by role. Visible, enabled
-elements come first; text inside a button means the button.
+of the step, to `in frame`, or to the word that follows an element (`to` in a
+drag, the state in `expect`). `role=button "Pay"` narrows by role. Visible,
+enabled elements come first; text inside a button means the button. An
+element is scrolled into view only when it is not in view already, and then
+below the site's fixed or sticky header (`header-offset:`, see Promo kit).
 
 ```markdown
 - click .hm-eng.big .hm-open
 - expect #cart .total visible
 - drag from .lane .card to #done .column
 - wait for .toast .msg · within 10s
+- type "3" into "Quantity" in frame .preview
+- expect "Bought 3" visible in frame "Shop"
 ```
 
 ```bash
@@ -3124,6 +3131,8 @@ asked for with `--with`, a comma list that may repeat (`--with captions
 | `clips` | the same per feature: `<feature>.mp4` always, plus `<feature>.captions.mp4`, `.silent.mp4`, `.m4a`, `.srt`, `.vtt` for the kinds asked for |
 | `report` | `report.html` + `report.json` (and `shots/`): the run, linked to the videos it made |
 | `readme` | `README.md` + `README.html`: the files made, the video in the page, the script, how it was made |
+| `vertical` | `<script>.vertical.mp4`: 1080×1920 for phones and reels, the film across the middle over a blurred copy of itself, the captions large under it (see Promo kit) |
+| `highlight` | `<script>.highlight.mp4`: about 60 s, the first sentence of each feature with a breath around it, between the brand's cards (see Promo kit) |
 | `all` | all of the above |
 
 ```markdown
@@ -3629,6 +3638,96 @@ follows `pointermove` sees a stroke, not a jump.
 
 **Title cards** show `What it does:` as written: `si reads the notes…` stays
 lower case.
+
+### Promo kit
+
+A promo of a public site is a web demo too, with a few things more: the
+browser kept between features, sticky headers left clear, steps inside framed
+pages, a first script read from the site, the brand around the film, and short
+cuts made from the same take. Every one of them is off unless asked for.
+
+```markdown
+---
+type: demo
+title: Harbor
+app: https://harbor.example
+session: keep               # one browser profile for the whole run
+header-offset: auto         # auto (the default), none, or the header's height: 72px
+intro: Harbor · Every order out the door on time
+outro: Start free · A hundred orders a month, on us
+logo: brand/logo.svg        # on the intro and outro cards
+url: https://harbor.example # the address the cards show
+music: brand/bed.mp3 · 20%  # under the whole film, ducked while the voice speaks
+theme: forest               # a built-in theme for every card
+---
+
+## Before
+
+- go /
+- click "Accept all"
+
+## One queue for every shop
+
+Lower-third: Ana Ruiz · Head of Operations, Harbor
+
+Say: Harbor puts the orders from every shop into one queue.
+- go /
+- spotlight #queue-title · label "One queue"
+- type "3" into "Quantity" in frame .preview
+- click "Buy" in frame .preview
+```
+
+- **`session: keep`**: every feature (and `## Before`) runs in one browser
+  profile, so a cookie banner accepted once, a sign-in or a language picked
+  stays for the run: accept the banner in `## Before` (never filmed) and no
+  chapter opens on it. The profile is si's own, never your Chrome's, and is
+  removed when the run ends; each feature still opens in a new tab. `fresh`
+  (the default) is a new profile per feature.
+- **`header-offset:`** an element a step scrolls to (a click, `scroll to`,
+  `spotlight`, `zoom to`, a note) lands below the site's fixed or sticky
+  header, not under it: `auto` finds the bar fixed across the top of the page,
+  `72px` gives its height, `none` turns it off. An element taller than the
+  space below the header is put with its top just under it. An element in view
+  already is not scrolled at all, so a spotlight on what shows never nudges the
+  page.
+- **`… in frame <css>`** (or `in frame "name"`) after any element: the step
+  looks inside that iframe, same-origin or cross-origin; clicks, typing and
+  the spotlight land where the element is in the page.
+- **`intro:` / `outro:`** `Title · line under it` (or `on`: the script's
+  title) are cards before the first chapter and after the last (3.5 s and
+  4.5 s), with `logo:` above the title and `url:` under it, large on the
+  outro. They belong to the first and last chapters, so chapters still start
+  at 0:00. `theme:` (a built-in theme: `forest`, `slate`, …) dresses them, the
+  feature title cards and the lower thirds.
+- **`music: file · 20%`** is looped under the whole film (and the vertical
+  and highlight cuts) at that level (25% when not given), fading in and out,
+  and pressed down while the voice speaks (a sidechain compressor keyed by the
+  narration). `<script>.m4a` stays the narration alone.
+- **`Lower-third: Name · Role`** under a feature heading puts a name caption
+  at the bottom left for its first 4 s; the `lower-third` step puts one at that
+  moment.
+- **`--with vertical`** writes `<script>.vertical.mp4` (1080×1920), **`--with
+  highlight`** `<script>.highlight.mp4` (each feature's first spoken sentence,
+  about 60 s in all, between the intro and outro cards).
+
+**A first script from the site:** `si demo draft` reads a site in headless
+Chrome and writes a promo script to start from.
+
+```bash
+si demo draft https://harbor.example --out harbor.md --pages 6
+si demo test harbor.md
+```
+
+It stays on the site's own origin, obeys `robots.txt` (`Disallow`, `Allow`,
+`Crawl-delay`, a group for `si` first), reads at most `--pages` pages (6), and
+only loads them: nothing is clicked, typed or submitted. The script has
+`session: keep`, a `## Before` that accepts a cookie banner when there is one,
+a feature for the home page's hero and for each of its sections, one for each
+other page, and a closing call to action (the hero's button, also the
+`outro:`). Its `Say:` lines are the page's own words (a heading and its key
+sentence), each under a `<!-- draft: polish this line -->` mark; its steps
+use selectors that match one element each, so `si demo test` passes on the
+site as it was read. Without `--out` it prints the script.
 
 ## 28. Courses
 

@@ -254,7 +254,10 @@ it with a cursor, callouts and a narrated voice: one video with a chapter per
 feature, and on request captions, subtitles, a transcript and a clip per
 feature (`--with`). It can start your server in the background and type
 commands into a real terminal on camera, check their output, then switch to
-the browser. [Web demos →](https://simple-ideas.org/features/webdemos.html)
+the browser. For a promo of a site, `si demo draft <url>` writes a first
+script from the site's own words, and the film can carry your intro and outro
+cards, music under the voice, name captions, and a vertical and a one-minute
+cut from the same take. [Web demos →](https://simple-ideas.org/features/webdemos.html)
 
 ![A frame of a web demo video](docs/site/features/img/webdemos/film.jpg)
 

@@ -220,6 +220,17 @@ an example for every rule: [RULES.md](docs/RULES.md).
   `focus`: dark or `· blur`, `· circle`, `· label "…"`, `· for 3s`);
   `window "si-presenter"` films a popup or tab (`window main` returns);
   `drag from "A" to "B"` / `by DX,DY` is a real drag with the drawn cursor.
+- **Promo kit:** `si demo draft <url>` reads a site headless (same origin,
+  robots.txt obeyed, a page limit, nothing clicked or submitted) and writes a
+  first promo script from its own words (marked to polish), with selectors
+  `si demo test` finds; `session: keep` (one browser profile for the run: a
+  cookie banner accepted once in `## Before`); `header-offset: auto|72px|none`
+  (scrolls land below a sticky header, nothing in view is nudged); `click
+  "Buy" in frame .preview` (same- and cross-origin iframes); `intro:` /
+  `outro:` cards with `logo:`, `url:` and a built-in `theme:`; `music: bed.mp3
+  · 20%` ducked under the voice; `Lower-third: Name · Role` and the
+  `lower-third` step; `--with vertical` (1080×1920, blurred fill, large
+  captions) and `--with highlight` (about 60 s: each feature's first sentence).
 - **Voices:** `kokoro:af_heart` (local, the default when installed),
   `system` (say, espeak-ng, Windows), `elevenlabs`, `openai` (`voice-style:`);
   `pronounce: si = ess eye`; lines cached, only changed lines re-voiced.

@@ -45,6 +45,8 @@ type take struct {
 	cuts   []cutAt   // the scene changes (transitions are drawn at encode)
 	moves  []move    // the camera moves (drawn at encode)
 	spot   *liveNote // the spotlight on now (nil: none)
+	thirds []third   // lower-third steps
+	first  *span     // the first sentence the voice says (--with highlight)
 }
 
 // waiting marks a step that waits (a command, a program, some output); call
@@ -66,8 +68,15 @@ type liveNote struct {
 }
 
 // tokens are si's studio theme (light) as custom properties.
-func tokens() string {
-	t := assets.Themes["studio"]
+func tokens() string { return tokensOf("") }
+
+// tokensOf are a built-in theme's light tokens ("" or an unknown name:
+// studio's).
+func tokensOf(name string) string {
+	t, ok := assets.Themes[assets.CanonicalTheme(name)]
+	if !ok {
+		t = assets.Themes["studio"]
+	}
 	var keys []string
 	vals := map[string]string{}
 	for _, m := range []map[string]string{t.Base, t.Light} {
@@ -310,6 +319,9 @@ func (r *runner) beginBlock(b *Block) {
 		tk.spoken = append(tk.spoken, span{at, at + l.Seconds})
 		tk.caps = append(tk.caps, captions(b.Say, at, l.Seconds)...)
 		tk.length = l.Seconds + 0.4
+		if tk.first == nil {
+			tk.first = &span{at, at + l.Seconds*firstSentence(b.Say)}
+		}
 	}
 }
 
@@ -378,8 +390,11 @@ func (r *runner) picture(page string, transparent bool) ([]byte, error) {
 	return r.c.Screenshot()
 }
 
-func pageHTML(body, style string) string {
-	return `<!doctype html><meta charset="utf-8"><style>:root{` + tokens() + `}html,body{margin:0;height:100%;background:transparent}` + style + `</style>` + body
+func pageHTML(body, style string) string { return themedPage("", body, style) }
+
+// themedPage is pageHTML in a built-in theme (the brand's theme:).
+func themedPage(theme, body, style string) string {
+	return `<!doctype html><meta charset="utf-8"><style>:root{` + tokensOf(theme) + `}html,body{margin:0;height:100%;background:transparent}` + style + `</style>` + body
 }
 
 // cardInline renders one line of a title card: a `code` span becomes a
@@ -432,8 +447,8 @@ func cardInline(s string) string {
 // What it does: keeps its casing as written ("si reads…" stays lowercase).
 // The title and "what it does" accept `code` spans (see cardInline), rendered
 // in the accent colour and the mono font.
-func cardHTML(title, name, what string) string {
-	return pageHTML(`<main><p class="k">`+cardInline(title)+`</p><h1>`+cardInline(name)+`</h1>`+
+func cardHTML(theme, title, name, what string) string {
+	return themedPage(theme, `<main><p class="k">`+cardInline(title)+`</p><h1>`+cardInline(name)+`</h1>`+
 		map[bool]string{true: `<p class="w">` + cardInline(what) + `</p>`, false: ""}[what != ""]+`</main>`,
 		`body{background:var(--si-bg);color:var(--si-fg);font-family:var(--si-font-body);display:grid;place-items:center;container-type:inline-size}
 main{width:min(80vw,60rem);padding:0 1rem}
@@ -474,6 +489,8 @@ type clip struct {
 	Captioned bool      // <stem>.captions.mp4 was made
 	Caps      []caption // on the video's clock
 	Fast      []fast    // the waits played faster
+	Hi        *span     // the first sentence, on the clip's clock (--with highlight; nil: no voice)
+	VCaps     []pic     // the vertical cut's captions, on the clip's clock (--with vertical)
 }
 
 // frameSize is the size of a filmed frame (w, h when it cannot be read).
@@ -523,6 +540,9 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 	cl := &clip{Name: stem, feature: f, Seconds: d, Voiced: len(tk.voice) > 0}
 	fs := fastForward(tk.waits, tk.spoken, r.o.FastForward.Seconds(), d)
 	cl.Fast = fs
+	if tk.first != nil {
+		cl.Hi = &span{outT(fs, tk.first.From), outT(fs, min(tk.first.To, d))}
+	}
 	for _, c := range tk.caps { // a caption never outlives the clip
 		if c.From < d {
 			cl.Caps = append(cl.Caps, caption{c.Text, outT(fs, c.From), outT(fs, min(c.To, d))})
@@ -562,7 +582,38 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 			caps = append(caps, pic{file, c.From, c.To})
 		}
 	}
-	card, err := r.picture(cardHTML(r.title(), f.Name, f.What), false)
+	if cl.Voiced && w.Vertical { // the vertical cut's captions, drawn at its size
+		for i, c := range cl.Caps {
+			png, err := r.pictureAt(verticalCaptionHTML(c.Text, r.s.W, r.s.H), vertW, vertH)
+			if err != nil {
+				return nil, err
+			}
+			file := filepath.Join(r.o.Out, fmt.Sprintf(".vcap-%s-%03d.png", stem, i))
+			if err := os.WriteFile(file, png, 0o644); err != nil {
+				return nil, err
+			}
+			cl.VCaps = append(cl.VCaps, pic{file, c.From, c.To})
+		}
+	}
+	if err := r.brandParts(); err != nil {
+		return nil, err
+	}
+	thirds := tk.thirds
+	if f.Third != "" { // Lower-third: under the feature's first seconds
+		name, sub := splitThird(f.Third)
+		thirds = append([]third{{name, sub, 0.6, 0.6 + thirdSeconds}}, thirds...)
+	}
+	for i, t := range thirds {
+		if t.From >= d {
+			continue
+		}
+		file, err := picture(thirdHTML(r.s.Brand.Theme, t.Name, t.Sub), fmt.Sprintf("third%02d.png", i))
+		if err != nil {
+			return nil, err
+		}
+		badges = append(badges, pic{file, outT(fs, t.From), outT(fs, min(t.To, d))})
+	}
+	card, err := r.picture(cardHTML(r.s.Brand.Theme, r.title(), f.Name, f.What), false)
 	if err != nil {
 		return nil, err
 	}
@@ -653,6 +704,14 @@ func (r *runner) joinAll(clips []*clip) error {
 	defer func() {
 		for _, c := range clips {
 			os.Remove(c.Card)
+			for _, p := range c.VCaps {
+				os.Remove(p.PNG)
+			}
+		}
+		for _, p := range []*part{r.intro, r.outro} {
+			if p != nil {
+				os.Remove(p.Card)
+			}
 		}
 	}()
 	w := r.o.With
@@ -667,13 +726,13 @@ func (r *runner) joinAll(clips []*clip) error {
 		feats = append(feats, c.feature)
 		voiced, captioned = voiced || c.Voiced, captioned || c.Captioned
 	}
-	cs := chapters(parts)
+	cs := chapters(r.branded(parts))
 	meta := filepath.Join(r.o.Out, ".chapters.ffmeta")
 	if err := os.WriteFile(meta, []byte(ffmetadata(r.title(), cs)), 0o644); err != nil {
 		return err
 	}
 	defer os.Remove(meta)
-	if err := r.ffmpeg(allArgs(parts, r.s.W, r.s.H, r.transition(nil), meta, at(".mp4"))); err != nil {
+	if err := r.ffmpeg(allArgs(r.branded(parts), r.s.W, r.s.H, r.transition(nil), meta, at(".mp4"))); err != nil {
 		return err
 	}
 	if w.Silent { // the picture alone: <script>.mp4 without its sound (chapters copied along)
@@ -687,7 +746,7 @@ func (r *runner) joinAll(clips []*clip) error {
 				parts[i].Clip = filepath.Join(r.o.Out, c.Name+".captions.mp4")
 			}
 		}
-		if err := r.ffmpeg(allArgs(parts, r.s.W, r.s.H, r.transition(nil), meta, at(".captions.mp4"))); err != nil {
+		if err := r.ffmpeg(allArgs(r.branded(parts), r.s.W, r.s.H, r.transition(nil), meta, at(".captions.mp4"))); err != nil {
 			return err
 		}
 	}
@@ -711,7 +770,9 @@ func (r *runner) joinAll(clips []*clip) error {
 		}
 	}
 	if w.Chapters {
-		return os.WriteFile(filepath.Join(r.o.Out, "chapters.txt"), []byte(youtube(cs)), 0o644)
+		if err := os.WriteFile(filepath.Join(r.o.Out, "chapters.txt"), []byte(youtube(cs)), 0o644); err != nil {
+			return err
+		}
 	}
-	return nil
+	return r.shorts(clips, cs)
 }

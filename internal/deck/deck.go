@@ -184,13 +184,20 @@ type Meta struct {
 	Prerequisites   string // course or lesson: what to know first (shown, not enforced)
 	Instructor      string // lesson: a note only the instructor build shows, in a box above the lesson
 
-	Timeline TimelineMeta // timeline: alternate, scale, orientation, closing, require, steps (timeline.go)
+	Timeline TimelineMeta      // timeline: alternate, scale, orientation, closing, require, steps (timeline.go)
+	Demo     map[string]string // a web demo's own keys (DemoKeys), read and checked by internal/webdemo
 
 	// Lifecycle is every setup:, start:, prepare:, step:, stop: and cleanup:
 	// line in the order written (they may repeat): a web demo reads its own,
 	// a deck runs them in si play and si serve (internal/webdemo.ParseStage)
 	Lifecycle []MetaLine
 }
+
+// DemoKeys are front matter keys only web demos (type: demo) read; si check
+// leaves their values to internal/webdemo.
+var DemoKeys = []string{"region", "header-offset", "intro", "outro", "music", "url"}
+
+func init() { MetaKeys = append(MetaKeys, DemoKeys...) }
 
 // MetaKeys are the accepted front matter keys.
 var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "browser", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup", "nav", "level", "instructor-demos", "certificate", "pass", "minutes", "prerequisites", "instructor", "orientation", "sources", "steps"}
@@ -600,6 +607,13 @@ func (d *Deck) setMeta(key, val string) bool {
 	}[key]
 	if ptr == nil {
 		ptr = m.Timeline.field(key)
+	}
+	if ptr == nil && contains(DemoKeys, key) {
+		if m.Demo == nil {
+			m.Demo = map[string]string{}
+		}
+		m.Demo[key] = val
+		return true
 	}
 	if ptr == nil {
 		return false
