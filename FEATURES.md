@@ -70,7 +70,9 @@ an example for every rule: [RULES.md](docs/RULES.md).
   browser's voice; `voices:` per speaker; `#autoplay` and `si play --autoplay`
   open it ready; `si build --mp4 --voice` films it narrated.
 - **Terminal drawer** (`` ` ``, `si play` on loopback): real shells beside the
-  slides, a runbook of commands, demo scripts with Copy and Run.
+  slides, a runbook of commands, demo scripts with Copy and Run; Viewer tabs
+  that read and edit files, a split view, ⌘P quick open, ⌘⇧F search in
+  files, and line spotlight for the audience.
 - **A talk that sets itself up:** front matter `setup:`, `start: … · wait for
   "ready"`, `stop:`, `cleanup:` (repeatable, in order, local commands or
   pinned sources): `si play` and `si serve` run them before the first page (a

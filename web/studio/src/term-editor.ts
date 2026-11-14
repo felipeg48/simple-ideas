@@ -3,9 +3,9 @@
 // internal/assets/web/term/editor.js; term.js loads it the first time Edit is
 // pressed and calls window.SiEditor.create. Syntax colouring and JSON lint
 // only, not a language server.
-import { EditorState, Extension } from "@codemirror/state";
+import { EditorState, Extension, StateEffect, StateField, RangeSetBuilder } from "@codemirror/state";
 import {
-  EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
+  EditorView, Decoration, DecorationSet, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
   drawSelection, highlightSpecialChars, rectangularSelection,
 } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
@@ -170,6 +170,41 @@ const colours = HighlightStyle.define([
   { tag: [t.operator, t.punctuation, t.bracket, t.separator], color: "#9aa6bf" },
 ]);
 
+// Spotlight: lines picked for the audience stay bright, the rest dims (Esc
+// clears). On screen only: never in the text, never saved.
+const setSpot = StateEffect.define<{ from: number; to: number } | null>();
+const spotLine = Decoration.line({ class: "cm-si-spot" });
+const spotField = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+  update(deco, tr) {
+    deco = deco.map(tr.changes);
+    for (const e of tr.effects) {
+      if (!e.is(setSpot)) continue;
+      if (!e.value) { deco = Decoration.none; continue; }
+      const b = new RangeSetBuilder<Decoration>();
+      for (let n = e.value.from; n <= e.value.to; n++) b.add(tr.state.doc.line(n).from, tr.state.doc.line(n).from, spotLine);
+      deco = b.finish();
+    }
+    return deco;
+  },
+  provide: (f) => [
+    EditorView.decorations.from(f),
+    EditorView.editorAttributes.compute([f], (st) => ({ class: st.field(f).size ? "cm-si-spotting" : "" })),
+  ],
+});
+const spotTheme = EditorView.theme({
+  "&.cm-si-spotting .cm-line:not(.cm-si-spot)": { opacity: "0.28" },
+  "&.cm-si-spotting .cm-line.cm-si-spot": { backgroundColor: "#7dd3fc14", boxShadow: "inset 4px 0 0 #7dd3fc", fontWeight: "600", color: "#fff" },
+  "&.cm-si-spotting .cm-activeLine:not(.cm-si-spot)": { backgroundColor: "transparent" },
+});
+function spotlight(view: EditorView) {
+  const sel = view.state.selection.main, doc = view.state.doc;
+  const from = doc.lineAt(sel.from).number;
+  let to = doc.lineAt(sel.to).number;
+  if (to > from && doc.line(to).from === sel.to) to--; // a selection ending at a line start leaves that line out
+  view.dispatch({ effects: setSpot.of({ from, to }) });
+}
+
 type Options = { doc: string; file: string; onChange?: () => void; onSave?: () => void };
 
 function create(parent: HTMLElement, o: Options) {
@@ -179,7 +214,9 @@ function create(parent: HTMLElement, o: Options) {
       lineNumbers(), highlightActiveLineGutter(), foldGutter(), lintGutter(), highlightSpecialChars(), history(),
       drawSelection(), rectangularSelection(), indentOnInput(), bracketMatching(), closeBrackets(),
       highlightActiveLine(), highlightSelectionMatches(), search({ top: true }), EditorState.tabSize.of(4),
+      spotField, spotTheme,
       keymap.of([
+        { key: "Escape", run: (v) => { if (!v.state.field(spotField).size) return false; v.dispatch({ effects: setSpot.of(null) }); return true; } },
         { key: "Mod-s", preventDefault: true, run: () => { o.onSave?.(); return true; } },
         ...closeBracketsKeymap, ...defaultKeymap, ...searchKeymap, ...historyKeymap, ...foldKeymap, indentWithTab,
       ]),
@@ -192,6 +229,8 @@ function create(parent: HTMLElement, o: Options) {
     getText: () => view.state.doc.toString(),
     setText: (text: string) => { o.doc = text; view.setState(state()); }, // a fresh history: Revert and Reload are not undone
     focus: () => view.focus(),
+    spotlight: () => spotlight(view),
+    clearSpotlight: () => view.dispatch({ effects: setSpot.of(null) }),
     destroy: () => view.destroy(),
   };
 }

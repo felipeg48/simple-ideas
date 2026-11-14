@@ -127,6 +127,8 @@ func (s *Server) Handler() http.Handler {
 		mux.HandleFunc("POST /_si/term/api/rename", localOnly(s.term.rename))
 		mux.HandleFunc("POST /_si/term/api/delete", localOnly(s.term.delete))
 		mux.HandleFunc("GET /_si/term/api/cwd", localOnly(s.term.cwd))
+		mux.HandleFunc("GET /_si/term/api/find", localOnly(s.term.find))
+		mux.HandleFunc("GET /_si/term/api/grep", localOnly(s.term.grep))
 		mux.HandleFunc("POST /_si/browser/open", localOnly(s.browserOpen))
 	}
 	static := http.FileServer(http.Dir(s.dir))

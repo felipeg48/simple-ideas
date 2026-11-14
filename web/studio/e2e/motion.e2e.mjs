@@ -80,6 +80,7 @@ try {
   await until(() => /frame3"\] \[data-part="rect1"\]\{transform:[^}]*scale\(1.5\)/.test(disk()), 6000, "size saved");
   await page.fill("#mo-dur", "1.2");
   await page.press("#mo-dur", "Enter");
+  await until(() => disk().includes('[data-state~="frame3"] *{transition-duration:1.2s'), 6000, "duration saved"); // one op at a time: the easing op carries the saved duration
   await page.selectOption("#mo-ease", "spring");
   await until(() => disk().includes('[data-state~="frame3"] *{transition-duration:1.2s;transition-timing-function:cubic-bezier(.3,1.5,.5,1)}'), 6000, "timing saved");
   // back to frame 1: the box goes home on the board

@@ -24,7 +24,10 @@ lazy-loaded on Edit; `POST /_si/term/api/save` with an mtime check; saves
 never live-reload). See `docs/terminal.md` "Viewer tabs".
 
 
-**Released and live: v3.8.0** (web demo promo kit: session keep, sticky
+**Released and live: v3.9.0** (the play workbench: split view with a
+draggable divider kept across reloads, ⌘P quick open, ⌘⇧F search in files
+opening at the line, line spotlight in the Viewer and editor;
+`internal/serve/search.go`). Before: **v3.8.0** (web demo promo kit: session keep, sticky
 headers, `si demo draft`, brand cards/music/lower thirds, vertical and
 highlight cuts, iframe steps). Before: **v3.7.0** (courses finished: SCORM, PDFs, SkillJar
 needs a real-account check, hashed quizzes). Before: v3.4–3.6 the play

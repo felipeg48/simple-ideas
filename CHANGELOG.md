@@ -3,6 +3,17 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.9.0:** the play workbench grows. **Split view:** ◫ (or right-click
+  a tab: Split right / Split down) shows two tabs side by side or stacked,
+  with a draggable divider (shells refit), tabs dragged onto a pane, swap,
+  and the split kept across a reload. **⌘P** (Ctrl+P) quick open: fuzzy
+  file names in the Viewer's folder, Enter opens in the active Viewer, ⌘Enter
+  in a new one. **⌘⇧F** search in files: plain text, match case or regular
+  expression, results grouped by file; a click opens the file at that line,
+  marked. Both skip `.git`, `node_modules`, `vendor`, `dist`, `build` and
+  dot-folders. **Spotlight:** click (Shift-click) line numbers in the
+  read-only view, or select lines in the editor and press Spotlight, to
+  light those lines for the audience; Esc clears.
 - **v3.8.0:** a promo kit for web demos. `session: keep` keeps one browser
   (cookies, local storage) across a run's features; `header-offset:
   auto|<px>|none` keeps spotlights and scrolling clear of sticky headers and

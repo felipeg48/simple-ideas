@@ -362,7 +362,9 @@ pass. The steps that matter:
   (`docker ps`, `cockroach start-single-node`, `cockroach sql`). Shipped as full
   xterm.js + PTY (`creack/pty`), play-only + loopback-only. Transport: chunked-GET
   output + POST input (no WebSocket dep). Toggle key: `` ` ``. Next: persist tab
-  layout across reloads; per-tab running indicator.
+  layout across reloads; per-tab running indicator. v3.9.0: split view
+  (two panes, divider, kept across reloads), ⌘P quick open and ⌘⇧F search
+  in files (`internal/serve/search.go`), line spotlight in the Viewer.
 - A `stage` fence that generates animated flow SVGs (Mermaid-like) is in
   (`docs/stage-diagrams.md`); next: step-driven reveal beyond highlight
   (show/hide, ok/alert per node), single-level fan-out polish.

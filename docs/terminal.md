@@ -271,6 +271,50 @@ editing, the same poll shows a changed-on-disk notice once per mtime
 user. The live-reload watcher skips `*.log` files, so a log a demo writes in
 the deck folder can be followed without reloading the deck.
 
+## Split view, quick open, search, spotlight (v3.9.0)
+
+**Split.** `split` in `term.js` is `null` or `{dir: 'right'|'down', ratio,
+a, b, focus}` (`a`, `b` are tab objects). No DOM moves: every pane stays an
+absolutely placed child of `.si-term-main`; `layout()` gives the two shown
+panes an `inset` from `ratio` (stacked when `dir` is `down` or the drawer is
+under 560 px wide), places `.si-term-div` (the divider) and refits every
+shown shell (`refit()`). `select(i)` shows a tab in the focused side (or
+focuses the side already showing it); a `pointerdown` inside a pane focuses
+it. Tabs are `draggable`; a drop on `.si-term-main` picks the side under the
+pointer (`placeIn`, swapping when the tab was on the other side). Closing a
+shown tab closes the split. The reload state (`si-term-state`) carries
+`split: {dir, ratio, a, b, focus}` with tab indexes, mapped back on restore.
+
+**Quick open.** `GET /_si/term/api/find?dir=&q=` (`internal/serve/search.go`,
+`localOnly`): walks `dir` (20 000 entries at most; skips `.git`,
+`node_modules`, `vendor`, `dist`, `build`, and dot-folders unless `q` starts
+with `.`), scores `q` as a case-insensitive subsequence of each relative path
+(`fuzzyScore`: runs, name-part starts, hits in the file name, and the file
+name alone tried first; shorter paths win ties), returns the best 50
+`{path, rel}` and `more`. The palette (`.si-qo`) is in the drawer; ⌘P / Ctrl+P
+and ⌘⇧F are caught on `root` in the capture phase, so xterm and the editor
+never see them (except Ctrl+P in a shell off macOS).
+
+**Search.** `GET /_si/term/api/grep?dir=&q=&case=1&re=1`: the same walk;
+regular files up to 1 MB, binary ones (a NUL in the first 8 KB) skipped; Go
+`regexp` (`q` quoted unless `re=1`, `(?i)` unless `case=1`; a bad pattern is
+400); returns `lines: [{path, rel, line, text, hits}]` with `hits` as UTF-16
+offsets (JavaScript string indexes) into `text`, a long line cut to 240
+characters around its first hit; stops at 1000 hits (`more`). The panel
+(`.si-rb.si-sr`) is a side panel like Runbook and Demos (`setPanel`,
+`localStorage` `si-search-open`). A result opens in the active Viewer, else
+the last one used, else a new Viewer (`openAt`); the Viewer's `t.open(path,
+line)` scrolls the line to a third of the view and marks it (`.ln.hit`).
+
+**Spotlight.** Read-only view: a `mousedown` left of a line's text (the
+`::before` number) sets `spot {a, from, to}`; `paintSpot()` puts
+`.is-spot` on the `<pre>` and `.on` on the lit lines (CSS dims the rest);
+Esc in the pane clears it. Editor: `term-editor.ts` has a `StateField` of
+line decorations (`cm-si-spot`) plus an editor class (`cm-si-spotting`),
+set from the selection by `spotlight()` and cleared by Esc; the editor API
+is now `{getText, setText, focus, destroy, spotlight, clearSpotlight}`.
+Never saved.
+
 ## Tools bar and panel width
 
 `.si-term-acts` (right edge of `.si-term-body`, `order:9`): icon buttons with

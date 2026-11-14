@@ -1319,6 +1319,38 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   MB. It pauses while the tab is hidden. While you edit, a change on disk
   shows a notice (**Reload** or **Keep editing**), never a refresh under
   you. `.log` files never live-reload the deck.
+- **Split view, quick open, search, spotlight** (the workbench, v3.9.0).
+  **◫** in the top bar (or right-click a tab: **Split right**, **Split
+  down**) shows two tabs at once: the active one and the next (a new shell
+  when there is only one). Each pane shows one tab; clicking a tab shows it
+  in the focused pane (the one with the blue edge; click inside a pane to
+  focus it), dragging a tab onto a pane puts it there, the right-click menu
+  has **Show in the other pane**, **Swap the panes**, **Stacked** / **Side by
+  side** and **Close the split**; **◫** again closes it. Drag the divider to
+  size the panes (shells refit as you drag). A narrow drawer (a phone)
+  stacks them. The split, its sizes and which tab is where survive a reload.
+  **⌘P** (Ctrl+P; in a shell on Linux and Windows Ctrl+P stays the shell's)
+  or the **Go to file** icon: type letters of a file's path (`chkgo` finds
+  `src/orders/checkout.go`) in the active Viewer's folder (from a shell: the
+  deck's folder); **Enter** opens it in the active Viewer (from a shell: a
+  new one), **⌘Enter** in a new Viewer. **⌘⇧F** or the **Search** icon:
+  search the text of the files in the same folder (**Aa** match case, **.\***
+  a regular expression); results grouped by file with the matches marked;
+  click one to open the file in a Viewer at that line, marked. Both skip
+  `.git`, `node_modules`, `vendor`, `dist`, `build` and dot-folders (start
+  the query with `.` to look in dot-folders); search reads text files up to 1 MB and
+  shows the first 1000 matches. **Spotlight**: in the read-only view, click a
+  line number to light that line for the audience (the rest dims),
+  Shift-click another to light the lines between, the same number again or
+  **Esc** to clear; in the editor, select lines and press **Spotlight**
+  (**Esc** clears). On screen only: nothing is saved.
+
+  ```text
+  shell 1 │ Viewer · checkout.go                ◫ +
+  $ go test ./orders │ 75  // the order is paid
+  ok  orders 0.4s    │ 76  // so we publish it
+                     │ 77  func Checkout(o Order) error {   ← lit
+  ```
 
   ```text
   Viewer · rabbitmq.conf ●     Save  Revert  Done  Copy path

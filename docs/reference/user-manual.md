@@ -304,7 +304,11 @@ address opens it ready.
 The **terminal drawer** (`` ` ``) slides up a tabbed, real shell for running
 commands mid-demo (`docker ps`, `psql`, …). It exists only under
 `si play` bound to a loopback address — never in a built deck, never on
-`--addr 0.0.0.0`. See `docs/terminal.md`.
+`--addr 0.0.0.0`. Viewer tabs read and edit files beside the shells; **◫**
+splits the drawer into two panes (drag the divider), **⌘P** opens a file by
+a few letters of its path, **⌘⇧F** searches the files' text and opens a
+result at its line, and clicking line numbers spotlights lines for the
+audience (Esc clears). See `docs/terminal.md`.
 
 A talk that shows something live can set it up itself: front matter
 `setup:` (must finish), `start:` (keeps running, `· wait for "ready"`),

@@ -49,6 +49,33 @@
     '.si-term-pane{position:absolute;inset:0;display:none;padding:6px 8px}' +
     '.si-term-pane.is-active{display:block}' +
     '.si-term .xterm{height:100%}' +
+    /* split view: two tabs side by side (or stacked), a divider between them */
+    '.si-term-div{position:absolute;z-index:4;display:none;top:0;bottom:0;width:7px;margin-left:-3px;cursor:ew-resize;background:#1d2536;background-clip:content-box;padding:0 3px;box-sizing:border-box}' +
+    '.si-term-main.is-split>.si-term-div{display:block}' +
+    '.si-term-main.is-down>.si-term-div{top:auto;left:0;right:0;width:auto;height:7px;margin:-3px 0 0;padding:3px 0;cursor:ns-resize}' +
+    '.si-term-div:hover,.si-term-div.is-drag{background-color:#7dd3fc;padding:0 2px}.si-term-main.is-down>.si-term-div:hover,.si-term-main.is-down>.si-term-div.is-drag{padding:2px 0}' +
+    '.si-term-main.is-split .si-term-pane.is-focus{box-shadow:inset 0 2px 0 #7dd3fc}' +
+    '.si-term-pane.is-drop{outline:2px dashed #7dd3fc;outline-offset:-6px}' +
+    '.si-term-tab.is-shown{background:#0f131c;color:#c8d0e0;box-shadow:inset 0 -2px 0 #3d4760}' +
+    '.si-term-tab.is-active.in-split{box-shadow:inset 0 -2px 0 #7dd3fc}' +
+    /* quick open (⌘P) */
+    '.si-qo{position:absolute;left:50%;top:44px;transform:translateX(-50%);width:min(680px,94%);max-height:70%;z-index:20;display:flex;flex-direction:column;' +
+    'background:#11151f;border:1px solid #2a3550;border-radius:8px;box-shadow:0 14px 44px rgba(0,0,0,.65);font:13px ui-sans-serif,system-ui,sans-serif;color:#c8d0e0}' +
+    '.si-qo input{margin:8px;background:#0b0e14;color:#e6e6e6;border:1px solid #7dd3fc;border-radius:6px;padding:7px 10px;font:14px ui-monospace,Menlo,monospace;outline:none}' +
+    '.si-qo-list{overflow:auto;padding:0 0 4px}.si-qo-row{display:flex;gap:10px;align-items:baseline;padding:4px 12px;cursor:pointer;white-space:nowrap}' +
+    '.si-qo-row .nm{color:#e6e6e6}.si-qo-row .dir{color:#5b6680;overflow:hidden;text-overflow:ellipsis;font-size:12px}' +
+    '.si-qo-row b{color:#7dd3fc;font-weight:700}.si-qo-row.is-on{background:#1b2436}' +
+    '.si-qo-hint{padding:5px 12px;color:#5b6680;font-size:11px;border-top:1px solid #1d2536;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    /* search in files (⌘⇧F) */
+    '.si-sr{min-width:0}.si-sr .si-rb-head{display:flex;gap:4px;align-items:center}.si-sr .si-rb-find{flex:1 1 auto;min-width:0}' +
+    '.si-sr-t{flex:0 0 auto;background:#11151f;color:#7d8aa5;border:1px solid #1d2536;border-radius:5px;padding:4px 6px;font:12px ui-monospace,Menlo,monospace;cursor:pointer}' +
+    '.si-sr-t.is-on{color:#0b0e14;background:#7dd3fc;border-color:#7dd3fc}' +
+    '.si-sr-sum{padding:4px 10px;font:11px ui-sans-serif,system-ui,sans-serif;color:#7f8bab;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    '.si-sr-file{padding:6px 10px 2px;font:600 12px ui-sans-serif,system-ui,sans-serif;color:#e6e6e6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    '.si-sr-file .n{color:#5b6680;font-weight:400;margin-left:6px}' +
+    '.si-sr-line{display:flex;gap:8px;padding:2px 10px 2px 18px;cursor:pointer;font:12px/1.45 ui-monospace,Menlo,monospace;color:#9aa7c0;white-space:pre;overflow:hidden;border-left:2px solid transparent}' +
+    '.si-sr-line:hover{background:#141a26;border-left-color:#7dd3fc}.si-sr-line .no{flex:0 0 auto;color:#3d4760;min-width:2.5em;text-align:right}' +
+    '.si-sr-line .tx{overflow:hidden;text-overflow:ellipsis}.si-sr-line mark{background:#5a4a10;color:#ffd080;border-radius:2px}' +
     /* runbook drawer */
     '.si-term-btn.is-on{color:#0b0e14;background:#7dd3fc}' +
     '.si-term-acts{flex:0 0 42px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;background:#11151f;border-left:1px solid #1d2536;order:9}' +
@@ -161,6 +188,12 @@
     '.si-fs-ask{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 8px;background:#2a2410;color:#ffd080;border-bottom:1px solid #4a3d14}' +
     '.si-fs-ask span{flex:1 1 auto}.si-fs-ask button{background:#1b2436;color:#e6e6e6;border:1px solid #2a3550;border-radius:4px;padding:3px 10px;font:calc(12px*var(--si-z,1)) ui-sans-serif,system-ui,sans-serif;cursor:pointer}' +
     '.si-fs-ask button.pri{background:#7dd3fc;color:#0b0e14;border-color:#7dd3fc}.si-fs-ask button:hover{border-color:#7dd3fc}' +
+    /* a line opened from a search; lines spotlit for the audience (click / shift-click the numbers) */
+    '.si-fs-body{position:relative}.si-fs-body:focus{outline:none}.si-fs-code .ln::before{cursor:pointer}' +
+    '.si-fs-code .ln.hit{background:#5a4a1055;box-shadow:inset 3px 0 0 #ffd080}' +
+    '.si-fs-code .ln{transition:opacity .2s}.si-fs-code.is-spot .ln:not(.on){opacity:.28}' +
+    '.si-fs-code.is-spot .ln.on{background:#7dd3fc14;box-shadow:inset 4px 0 0 #7dd3fc;font-weight:600;color:#fff}' +
+    '.si-fs-code.is-spot .ln.on::before{color:#7dd3fc}' +
     '.si-fs-msg{padding:14px;color:#7d8aa5}.si-fs-img{max-width:100%;display:block;margin:10px auto;background:#fff}' +
     ':is(.si-fs-code) .si-tk-k{color:#7dd3fc}:is(.si-fs-code) .si-tk-s{color:#a5e075}:is(.si-fs-code) .si-tk-n{color:#f5a05a}' +
     ':is(.si-fs-code) .si-tk-c{color:#5b6680;font-style:italic}:is(.si-fs-code) .si-tk-m{color:#c792ea}:is(.si-fs-code) .si-tk-f{color:#f5a05a}' +
@@ -185,6 +218,7 @@
     '<span class="si-term-zoom"><button class="si-term-btn" data-act="zout" title="Smaller (this tab only; ⌘-)">−</button>' +
     '<span class="pct" title="Text size of this tab; click for 100% (⌘0)">100%</span>' +
     '<button class="si-term-btn" data-act="zin" title="Larger (this tab only; ⌘=)">+</button></span>' +
+    '<button class="si-term-btn" data-act="split" title="Split right: this tab beside the next one (right-click a tab for more)" aria-label="Split right">◫</button>' +
     '<button class="si-term-btn" data-act="new" title="New shell tab">+</button>' +
     '<button class="si-term-btn" data-act="hide" title="Hide (`)">✕</button>' +
     '</div><div class="si-term-body"><div class="si-term-main"></div>' +
@@ -193,6 +227,8 @@
     (hasDemos ? '<button class="si-term-act" data-act="demos" title="Demos: the demo scripts"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 4.5v15l12-7.5z"/></svg></button>' : '') +
     (hasRunbook ? '<button class="si-term-act" data-act="runbook" title="Runbook: the command cheat-sheet"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="M9 8h6"/></svg></button>' : '') +
     '<button class="si-term-act" data-act="files" title="Viewer: a new tab with a folder\'s files, to read and edit"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></button>' +
+    '<button class="si-term-act" data-act="open" title="Go to file (' + (/Mac|iP/.test(navigator.platform) ? '⌘P' : 'Ctrl+P') + ')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M14 3v5h5v3"/><circle cx="16.5" cy="16.5" r="3"/><path d="M18.7 18.7L21 21"/></svg></button>' +
+    '<button class="si-term-act" data-act="search" title="Search in files (' + (/Mac|iP/.test(navigator.platform) ? '⌘⇧F' : 'Ctrl+Shift+F') + ')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M15.5 15.5L20 20"/></svg></button>' +
     '</div></div>';
   document.body.appendChild(root);
   var tabsEl = root.querySelector('.si-term-tabs');
@@ -205,18 +241,131 @@
 
   function post(path) { return fetch(API + path, { method: 'POST' }).catch(function () {}); }
 
+  /* split view: null, or {dir: 'right'|'down', ratio, a, b (tabs), focus: 'a'|'b'};
+     the focused pane shows the active tab, a click on a tab shows it there */
+  var split = null;
+  var divEl = document.createElement('div'); divEl.className = 'si-term-div'; divEl.title = 'Drag to resize the panes';
+  bodyEl.appendChild(divEl);
+  function shownTabs() { return split ? [split.a, split.b].filter(Boolean) : tabs[active] ? [tabs[active]] : []; }
+  function refit() {
+    shownTabs().forEach(function (t) { if (!t.viewer) { try { t.fit.fit(); } catch (e) {} sendResize(t); } });
+  }
+  /* stacked when asked, or when the drawer is too narrow for two columns (a phone) */
+  function isDown() { return !!split && (split.dir === 'down' || bodyEl.clientWidth < 560); }
+  function layout() {
+    var r = split ? split.ratio * 100 : 0, down = isDown();
+    bodyEl.classList.toggle('is-split', !!split); bodyEl.classList.toggle('is-down', !!down);
+    tabs.forEach(function (t, k) {
+      var side = split ? (t === split.a ? 'a' : t === split.b ? 'b' : '') : (k === active ? 'one' : '');
+      t.pane.classList.toggle('is-active', !!side);
+      t.pane.classList.toggle('is-focus', !!split && k === active);
+      t.tabEl.classList.toggle('is-active', k === active);
+      t.tabEl.classList.toggle('in-split', !!split && k === active);
+      t.tabEl.classList.toggle('is-shown', !!split && !!side && k !== active);
+      t.pane.style.inset = side === 'a' ? (down ? '0 0 ' + (100 - r) + '% 0' : '0 ' + (100 - r) + '% 0 0') :
+        side === 'b' ? (down ? r + '% 0 0 0' : '0 0 0 ' + r + '%') : '';
+    });
+    divEl.style.left = split && !down ? r + '%' : ''; divEl.style.top = down ? r + '%' : '';
+    var b = root.querySelector('[data-act="split"]');
+    b.classList.toggle('is-on', !!split);
+    b.title = split ? 'Close the split' : 'Split right: this tab beside the next one (right-click a tab for more)';
+    refit();
+  }
   /* quiet: no focus (a restore into a closed drawer must leave the deck's keys alone) */
   function select(i, quiet) {
+    var t = tabs[i]; if (!t) return;
+    if (split) {
+      var side = t === split.a ? 'a' : t === split.b ? 'b' : split.focus;
+      split[side] = t; split.focus = side;
+    }
     active = i;
-    tabs.forEach(function (t, k) {
-      var on = k === i;
-      t.pane.classList.toggle('is-active', on);
-      t.tabEl.classList.toggle('is-active', on);
-      if (on && !t.viewer) { lastShell = t; try { t.fit.fit(); } catch (e) {} sendResize(t); if (!quiet) t.term.focus(); }
-      else if (on && t.editor && !quiet) t.editor.focus();
-    });
-    if (tabs[i]) pctEl.textContent = Math.round(tabs[i].zoom * 100) + '%';
+    layout();
+    if (!t.viewer) { lastShell = t; if (!quiet) t.term.focus(); }
+    else { lastViewer = t; if (!quiet) focusTab(); }
+    pctEl.textContent = Math.round(t.zoom * 100) + '%';
   }
+  /* split the drawer: the active tab on one side, other (or the next tab, or a
+     new shell) on the other */
+  function splitOpen(dir, other) {
+    var a = tabs[active]; if (!a) return;
+    if (!other || other === a) other = tabs.length > 1 ? tabs[(active + 1) % tabs.length] : null;
+    split = { dir: dir || 'right', ratio: split ? split.ratio : 0.5, a: a, b: other, focus: 'b' };
+    if (other) select(tabs.indexOf(other)); else newTab();
+  }
+  function splitClose() {
+    if (!split) return;
+    var keep = tabs[active]; split = null;
+    select(Math.max(0, tabs.indexOf(keep)));
+  }
+  /* put a tab in one pane (a dragged tab, "Move to the other pane") */
+  function placeIn(t, side) {
+    if (!split) return;
+    var other = side === 'a' ? 'b' : 'a';
+    if (split[other] === t) split[other] = split[side]; // the two swap
+    split[side] = t; split.focus = side;
+    select(tabs.indexOf(t));
+  }
+  divEl.addEventListener('pointerdown', function (ev) {
+    if (ev.button !== 0 || !split) return;
+    ev.preventDefault(); divEl.setPointerCapture(ev.pointerId); divEl.classList.add('is-drag'); root.classList.add('is-resizing');
+    var box = bodyEl.getBoundingClientRect(), raf = 0;
+    function mv(e) {
+      var f = isDown() ? (e.clientY - box.top) / box.height : (e.clientX - box.left) / box.width;
+      split.ratio = Math.round(Math.max(0.15, Math.min(0.85, f)) * 1000) / 1000;
+      if (!raf) raf = requestAnimationFrame(function () { raf = 0; layout(); });
+    }
+    function up() {
+      divEl.removeEventListener('pointermove', mv); divEl.removeEventListener('pointerup', up);
+      divEl.classList.remove('is-drag'); root.classList.remove('is-resizing'); layout();
+    }
+    divEl.addEventListener('pointermove', mv); divEl.addEventListener('pointerup', up);
+  });
+  /* a tab's own handlers: click shows it (× closes), right-click a menu, drag it onto a pane */
+  var dragTab = null;
+  function wireTab(t) {
+    t.tabEl.draggable = true;
+    t.tabEl.addEventListener('click', function (e) {
+      if (e.target.classList.contains('x')) { closeTab(t); return; }
+      select(tabs.indexOf(t));
+    });
+    t.tabEl.addEventListener('dragstart', function (e) { dragTab = t; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', 'si-tab'); } catch (x) {} });
+    t.tabEl.addEventListener('dragend', function () { dragTab = null; dropMark(null); });
+    t.tabEl.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+      var items = [];
+      if (!split || (t !== split.a && t !== split.b)) {
+        items.push(['Split right', function () { if (t === tabs[active]) splitOpen('right'); else splitOpen('right', t); }]);
+        items.push(['Split down', function () { if (t === tabs[active]) splitOpen('down'); else splitOpen('down', t); }]);
+      }
+      if (split) {
+        items.push(['Show in the other pane', function () { placeIn(t, split.focus === 'a' ? 'b' : 'a'); }]);
+        items.push(['Swap the panes', function () { var a = split.a; split.a = split.b; split.b = a; split.focus = split.focus === 'a' ? 'b' : 'a'; layout(); }]);
+        items.push([split.dir === 'down' ? 'Side by side' : 'Stacked', function () { split.dir = split.dir === 'down' ? 'right' : 'down'; layout(); }]);
+        items.push(['Close the split', splitClose]);
+      }
+      items.push(null, ['Close tab', function () { closeTab(t); }, 'danger']);
+      showMenu(e.clientX, e.clientY, items);
+    });
+    /* a click inside a pane of the split makes it the focused one */
+    t.pane.addEventListener('pointerdown', function () {
+      if (split && tabs[active] !== t && (t === split.a || t === split.b)) select(tabs.indexOf(t), true);
+    }, true);
+  }
+  function sideAt(e) {
+    var box = bodyEl.getBoundingClientRect();
+    var f = isDown() ? (e.clientY - box.top) / box.height : (e.clientX - box.left) / box.width;
+    return f < split.ratio ? 'a' : 'b';
+  }
+  function dropMark(side) { tabs.forEach(function (t) { t.pane.classList.toggle('is-drop', !!(side && split && split[side] === t)); }); }
+  bodyEl.addEventListener('dragover', function (e) {
+    if (!dragTab || !split) return;
+    e.preventDefault(); e.dataTransfer.dropEffect = 'move'; dropMark(sideAt(e));
+  });
+  bodyEl.addEventListener('dragleave', function (e) { if (!bodyEl.contains(e.relatedTarget)) dropMark(null); });
+  bodyEl.addEventListener('drop', function (e) {
+    if (!dragTab || !split) return;
+    e.preventDefault(); dropMark(null); placeIn(dragTab, sideAt(e)); dragTab = null;
+  });
 
   /* text size per tab: a shell's xterm font, a Viewer's tree, view and editor;
      the last size used is the default for the next tab of that kind */
@@ -304,7 +453,7 @@
     term.open(pane);
 
     var t = { id: null, term: term, fit: fit, pane: pane, tabEl: tabEl, born: Date.now(), zoom: zoom };
-    tabs.push(t);
+    tabs.push(t); wireTab(t);
     var idx = tabs.length - 1;
     select(idx, restoring);
 
@@ -320,10 +469,6 @@
     else fetch(API + 'new', { method: 'POST' }).then(function (r) { return r.text(); }).then(attach)
       .catch(function () { term.write('\r\n\x1b[31msi: could not start a shell\x1b[0m\r\n'); });
 
-    tabEl.addEventListener('click', function (e) {
-      if (e.target.classList.contains('x')) { closeTab(t); return; }
-      select(tabs.indexOf(t));
-    });
   }
 
   function closeTab(t) {
@@ -334,10 +479,11 @@
     if (t.id) post('close?id=' + t.id);
     if (t.term) try { t.term.dispose(); } catch (e) {}
     t.pane.remove(); t.tabEl.remove();
-    var i = tabs.indexOf(t);
+    var i = tabs.indexOf(t), keep = null;
+    if (split && (t === split.a || t === split.b)) { keep = t === split.a ? split.b : split.a; split = null; }
     if (i >= 0) tabs.splice(i, 1);
-    if (tabs.length === 0) { hide(); return; }
-    select(Math.min(active, tabs.length - 1));
+    if (tabs.length === 0) { active = -1; hide(); return; }
+    select(keep && tabs.indexOf(keep) >= 0 ? tabs.indexOf(keep) : Math.min(active, tabs.length - 1));
   }
 
   function show(noShell) {
@@ -350,10 +496,10 @@
   function toggle() { if (root.classList.contains('is-open')) hide(); else show(); }
 
   root.querySelector('[data-act="new"]').addEventListener('click', newTab);
+  root.querySelector('[data-act="split"]').addEventListener('click', function () { if (split) splitClose(); else splitOpen('right'); });
   root.querySelector('[data-act="hide"]').addEventListener('click', hide);
   root.querySelector('[data-act="min"]').addEventListener('click', hide);
   /* maximise: the drawer takes the whole window; remembered */
-  function refit() { if (active >= 0 && tabs[active] && !tabs[active].viewer) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); } }
   function setMax(on) {
     root.classList.toggle('is-max', on);
     var b = root.querySelector('[data-act="max"]'); b.textContent = on ? '❐' : '□'; b.title = on ? 'Restore the drawer size' : 'Maximise: the whole window (double-click the bar too)';
@@ -363,7 +509,7 @@
   root.querySelector('[data-act="max"]').addEventListener('click', function () { setMax(!root.classList.contains('is-max')); });
   root.querySelector('.si-term-bar').addEventListener('dblclick', function (ev) { if (ev.target.closest('button,.si-term-tab')) return; setMax(!root.classList.contains('is-max')); });
   try { if (localStorage.getItem('si-term-max')) setMax(true); } catch (e) {}
-  window.addEventListener('resize', function () { if (active >= 0 && tabs[active] && !tabs[active].viewer) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); } });
+  window.addEventListener('resize', function () { if (split) layout(); else refit(); });
   /* the drawer height: drag its top edge (20%-100% of the window); remembered.
      Maximise still works and comes back to this height. */
   var drawerH = 0; try { drawerH = +localStorage.getItem('si-term-h') || 0; } catch (e) {}
@@ -397,12 +543,12 @@
       var right = p.getBoundingClientRect().right, body = root.querySelector('.si-term-body').getBoundingClientRect();
       function mv(e) {
         panelW = Math.round(Math.max(240, Math.min(body.width * 0.8, right - e.clientX)));
-        [rbPanel, dmPanel].forEach(function (x) { if (x) sizePanel(x); });
+        [rbPanel, dmPanel, srPanel].forEach(function (x) { if (x) sizePanel(x); });
       }
       function up() {
         g.removeEventListener('pointermove', mv); g.removeEventListener('pointerup', up); g.classList.remove('is-drag'); root.classList.remove('is-resizing');
         try { localStorage.setItem('si-panel-w', String(panelW)); } catch (e) {}
-        if (active >= 0 && tabs[active] && !tabs[active].viewer) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); }
+        refit();
       }
       g.addEventListener('pointermove', mv); g.addEventListener('pointerup', up);
     });
@@ -642,28 +788,19 @@
   }
   /* one side panel at a time: demos or runbook */
   function setPanel(which, open) {
-    [['demos', dmPanel, 'si-demos-open'], ['runbook', rbPanel, 'si-runbook-open']].forEach(function (p) {
+    [['demos', dmPanel, 'si-demos-open'], ['runbook', rbPanel, 'si-runbook-open'], ['search', srPanel, 'si-search-open']].forEach(function (p) {
       if (!p[1]) return;
       var on = p[0] === which ? open : (open ? false : p[1].classList.contains('is-open'));
       p[1].classList.toggle('is-open', on);
       var b = root.querySelector('[data-act="' + p[0] + '"]'); if (b) b.classList.toggle('is-on', on);
       try { localStorage.setItem(p[2], JSON.stringify(on)); } catch (e) {}
     });
-    if (active >= 0 && tabs[active]) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); }
+    refit();
   }
   function toggleDemos() { if (dmPanel) setPanel('demos', !dmPanel.classList.contains('is-open')); }
-  function toggleRunbook() {
-    if (!rbPanel) return;
-    if (dmPanel) { setPanel('runbook', !rbPanel.classList.contains('is-open')); return; }
-    var open = !rbPanel.classList.contains('is-open');
-    rbPanel.classList.toggle('is-open', open);
-    var btn = root.querySelector('[data-act="runbook"]');
-    if (btn) btn.classList.toggle('is-on', open);
-    try { localStorage.setItem('si-runbook-open', JSON.stringify(open)); } catch (e) {}
-    if (active >= 0 && tabs[active]) { try { tabs[active].fit.fit(); } catch (e) {} sendResize(tabs[active]); }
-  }
+  function toggleRunbook() { if (rbPanel) setPanel('runbook', !rbPanel.classList.contains('is-open')); }
   /* ---------- Viewer tabs: a folder as a tree, one file read-only or in the editor, as many as you like ---------- */
-  var viewerSeq = 0, lastShell = null;
+  var viewerSeq = 0, lastShell = null, lastViewer = null;
   function size(n) { return n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
   function join(d, n) { return d.replace(/\/+$/, '') + '/' + n; }
   function tb(f, title, path) {
@@ -717,8 +854,7 @@
     bodyEl.appendChild(pane);
     var t = { viewer: true, pane: pane, tabEl: tabEl, zoom: saved && saved.zoom || defZoom(true) };
     pane.style.setProperty('--si-z', t.zoom);
-    tabs.push(t);
-    tabEl.addEventListener('click', function (e) { if (e.target.classList.contains('x')) { closeTab(t); return; } select(tabs.indexOf(t)); });
+    tabs.push(t); wireTab(t);
 
     var root0 = '', cur = '';
     pane.innerHTML = '<div class="si-fs"><div class="si-fs-head"><button type="button" data-f="up" title="Parent folder">↑</button>' +
@@ -733,9 +869,10 @@
       '</div><div class="si-fs-tree" tabindex="-1"></div></div><div class="si-fs-view"><div class="si-fs-vh"><span class="nm">No file open</span><span class="in"></span>' +
       '<span class="ok"></span><button type="button" data-f="follow" title="Follow: show the file as it changes on disk, scrolled to the end (for logs)" hidden>Follow</button>' +
       '<button type="button" data-f="edit" title="Edit this file" hidden>Edit</button>' +
+      '<button type="button" data-f="spot" title="Spotlight the selected lines for the audience (Esc clears)" hidden>Spotlight</button>' +
       '<button type="button" data-f="save" class="pri" title="Save (⌘S)" hidden>Save</button><button type="button" data-f="revert" title="Back to the file as saved" hidden>Revert</button>' +
       '<button type="button" data-f="done" title="Back to the read-only view" hidden>Done</button>' +
-      '<button type="button" data-f="copy" title="Copy the path">Copy path</button></div><div class="si-fs-ask" hidden></div><div class="si-fs-body"><div class="si-fs-msg">Pick a file in the tree. Double-click a folder to make it the top.</div></div></div></div></div>';
+      '<button type="button" data-f="copy" title="Copy the path">Copy path</button></div><div class="si-fs-ask" hidden></div><div class="si-fs-body" tabindex="-1"><div class="si-fs-msg">Pick a file in the tree. Double-click a folder to make it the top.</div></div></div></div></div>';
     var pathEl = pane.querySelector('input'), tree = pane.querySelector('.si-fs-tree');
     var vName = pane.querySelector('.si-fs-vh .nm'), vInfo = pane.querySelector('.si-fs-vh .in'), body = pane.querySelector('.si-fs-body');
     var label = tabEl.querySelector('.label'), askEl = pane.querySelector('.si-fs-ask'), okEl = pane.querySelector('.si-fs-vh .ok');
@@ -748,7 +885,7 @@
       btn('edit').hidden = editing() || !file || typeof file.text !== 'string';
       btn('follow').hidden = editing() || !file || !!file.image || !!file.binary;
       btn('follow').classList.toggle('is-on', following);
-      ['save', 'revert', 'done'].forEach(function (f) { btn(f).hidden = !editing(); });
+      ['save', 'revert', 'done', 'spot'].forEach(function (f) { btn(f).hidden = !editing(); });
     }
     /* a question inside the panel (no confirm()): [label, fn, primary] choices */
     function ask(msg, choices) {
@@ -988,11 +1125,44 @@
       var top = body.scrollTop, pre = document.createElement('pre'); pre.className = 'si-fs-code';
       pre.innerHTML = j.html.split('\n').map(function (l) { return '<span class="ln">' + (l || ' ') + '</span>'; }).join('');
       body.innerHTML = ''; body.appendChild(pre);
-      body.scrollTop = scroll === 'end' ? body.scrollHeight : scroll === 'keep' ? top : 0;
+      /* a press on a line number spotlights that line, Shift extends, the same line again clears */
+      pre.addEventListener('mousedown', function (ev) {
+        var ln = ev.target.closest && ev.target.closest('.ln'); if (!ln || ev.button !== 0) return;
+        var gut = ln.getBoundingClientRect().left + (parseFloat(getComputedStyle(ln, '::before').width) || 0) + 10;
+        if (ev.clientX > gut) return;
+        ev.preventDefault(); body.focus({ preventScroll: true });
+        var n = Array.prototype.indexOf.call(pre.children, ln) + 1;
+        if (ev.shiftKey && spot) spot = { a: spot.a, from: Math.min(spot.a, n), to: Math.max(spot.a, n) };
+        else if (spot && spot.from === n && spot.to === n) spot = null;
+        else spot = { a: n, from: n, to: n };
+        paintSpot();
+      });
+      paintSpot();
+      if (hitLine && scroll !== 'end') markLine(hitLine, scroll === 'keep');
+      else body.scrollTop = scroll === 'end' ? body.scrollHeight : scroll === 'keep' ? top : 0;
     }
-    function openFile(p, name, edit, then) {
-      if (!t.leave(function () { openFile(p, name, edit, then); })) return;
+    /* spot: the lines spotlit ({a: the anchor, from, to}), purely on screen */
+    var spot = null, hitLine = 0;
+    function paintSpot() {
+      var pre = body.querySelector('.si-fs-code'); if (!pre) return;
+      pre.classList.toggle('is-spot', !!spot);
+      Array.prototype.forEach.call(pre.children, function (ln, k) { ln.classList.toggle('on', !!spot && k + 1 >= spot.from && k + 1 <= spot.to); });
+    }
+    /* the line a search opened: marked and scrolled to a third of the view */
+    function markLine(n, noScroll) {
+      hitLine = n;
+      var pre = body.querySelector('.si-fs-code'); if (!pre) return;
+      Array.prototype.forEach.call(pre.querySelectorAll('.ln.hit'), function (x) { x.classList.remove('hit'); });
+      var ln = pre.children[n - 1]; if (!ln) return;
+      ln.classList.add('hit');
+      if (!noScroll) body.scrollTop = Math.max(0, ln.offsetTop - body.clientHeight / 3);
+    }
+    function openFile(p, name, edit, then, line) {
+      if (!t.leave(function () { openFile(p, name, edit, then, line); })) return;
+      if (p === cur && file && !edit && !editing() && line) { markLine(line); return; } // already showing: just go to the line
       stopEditing();
+      if (p !== cur) spot = null;
+      hitLine = line || 0;
       cur = p; curName = name; file = null; buttons(); vName.textContent = name; vName.title = p; vInfo.textContent = ''; setDirty(false); tabEl.title = p;
       body.innerHTML = '<div class="si-fs-msg">Loading…</div>';
       fetchFile(p, following).then(function (j) {
@@ -1035,9 +1205,11 @@
     pathEl.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') go(pathEl.value); });
     pane.addEventListener('keydown', function (ev) {
       ev.stopPropagation(); // keys typed here never drive the deck
+      if (ev.key === 'Escape' && spot && !editing()) { ev.preventDefault(); spot = null; paintSpot(); return; }
       if ((ev.metaKey || ev.ctrlKey) && (ev.key === 's' || ev.key === 'S') && editing()) { ev.preventDefault(); save(false); }
     });
     btn('edit').addEventListener('click', startEditing);
+    btn('spot').addEventListener('click', function () { if (t.editor && t.editor.spotlight) { t.editor.spotlight(); t.editor.focus(); } });
     btn('save').addEventListener('click', function () { save(false); });
     btn('revert').addEventListener('click', function () { if (t.editor && file) { t.editor.setText(file.text); setDirty(false); askEl.hidden = true; t.editor.focus(); } });
     btn('done').addEventListener('click', function () { if (t.leave(function () { openFile(cur, curName); })) openFile(cur, curName); });
@@ -1048,6 +1220,9 @@
       fetch(API + 'cwd?id=' + sh.id).then(function (r) { return r.json(); }).then(function (j) { go(j.dir); });
     });
     pane.querySelector('[data-f="copy"]').addEventListener('click', function () { if (cur && navigator.clipboard) navigator.clipboard.writeText(cur); });
+    /* for quick open and search: the tree's folder, and a file (at a line) here */
+    t.dir = function () { return root0; };
+    t.open = function (p, line) { openFile(p, p.split('/').pop(), false, null, line); };
     /* what a reload needs to bring this tab back, unsaved edits included */
     t.snap = function () {
       return { k: 'v', n: n, dir: root0, file: cur || null, name: curName, edit: editing(), follow: following, zoom: t.zoom,
@@ -1058,12 +1233,152 @@
       openFile(saved.file, saved.name || saved.file.split('/').pop(), saved.edit, function () {
         if (saved.draft == null || !t.editor) return;
         t.editor.setText(saved.draft); file.mtime = saved.mtime; setDirty(true); // a save still checks the file against the version the edits began from
-      });
+      }, saved.line);
     });
     select(tabs.length - 1, restoring);
   }
+  /* ---------- quick open (⌘P) and search in files (⌘⇧F): over the active Viewer's folder, else the deck's ---------- */
+  function esc(x) { return String(x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function activeViewer() { var t = tabs[active]; return t && t.viewer ? t : null; }
+  function searchDir() { var v = activeViewer(); return v ? v.dir() : ''; }
+  function alive(t) { return t && tabs.indexOf(t) >= 0 ? t : null; }
+  /* a file into a Viewer at a line: v, else a new Viewer on dir */
+  function openAt(v, path, line, dir) {
+    show(true);
+    if (v) { select(tabs.indexOf(v)); v.open(path, line); return; }
+    newViewer({ dir: dir, file: path, line: line });
+  }
+  function focusTab() { var t = tabs[active]; if (!t) return; if (!t.viewer) t.term.focus(); else if (t.editor) t.editor.focus(); else { var b = t.pane.querySelector('.si-fs-body'); if (b) b.focus({ preventScroll: true }); } }
+  var qo = null;
+  function quickOpen() {
+    show(true);
+    if (qo) { qo.focus(); qo.select(); return; }
+    var dir = searchDir(), viewer = activeViewer();
+    var el = document.createElement('div'); el.className = 'si-qo'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Go to file');
+    el.innerHTML = '<input spellcheck="false" placeholder="Go to file…" aria-label="Go to file"><div class="si-qo-list" role="listbox"></div><div class="si-qo-hint"></div>';
+    root.appendChild(el);
+    var input = qo = el.firstChild, list = el.children[1], hint = el.children[2], files = [], at = 0, n = 0, timer = 0, base = '';
+    function say(x) { hint.textContent = x; }
+    var help = '⏎ open' + (viewer ? '' : ' in a new Viewer') + ' · ' + (mac ? '⌘' : 'Ctrl+') + '⏎ in a new Viewer · Esc close';
+    function close() { clearTimeout(timer); el.remove(); qo = null; focusTab(); }
+    function marked(rel, q) {
+      var k = rel.lastIndexOf('/') + 1, lq = q.toLowerCase(), lr = rel.toLowerCase();
+      var pick = function (from) { var on = {}, qi = 0; for (var i = from; i < lr.length && qi < lq.length; i++) if (lr[i] === lq[qi]) { on[i] = 1; qi++; } return qi === lq.length ? on : null; };
+      var on = pick(k) || pick(0) || {}; // the file name alone first, as the server scores it
+      var h = function (a, b) { var o = ''; for (var i = a; i < b; i++) o += on[i] ? '<b>' + esc(rel[i]) + '</b>' : esc(rel[i]); return o; };
+      return '<span class="nm">' + h(k, rel.length) + '</span><span class="dir">' + h(0, k) + '</span>';
+    }
+    function paint(q) {
+      list.innerHTML = files.map(function (f, i) { return '<div class="si-qo-row' + (i === at ? ' is-on' : '') + '" role="option" data-i="' + i + '">' + marked(f.rel, q) + '</div>'; }).join('');
+      var on = list.children[at]; if (on) on.scrollIntoView({ block: 'nearest' });
+    }
+    function find() {
+      var q = input.value.replace(/\s+/g, ''), my = ++n;
+      fetch(API + 'find?dir=' + encodeURIComponent(dir) + '&q=' + encodeURIComponent(q)).then(function (r) {
+        if (!r.ok) return r.text().then(function (m) { throw new Error(m.trim()); });
+        return r.json();
+      }).then(function (j) {
+        if (my !== n || qo !== input) return;
+        base = j.dir; files = j.files || []; at = 0; paint(q);
+        say((files.length ? '' : 'No file matches. ') + help + ' · in ' + base + (j.more ? ' · top 50' : ''));
+      }, function (err) { if (my === n) say(err.message); });
+    }
+    function go(fresh) {
+      var f = files[at]; if (!f) return;
+      close(); openAt(fresh ? null : viewer, f.path, 0, base);
+    }
+    input.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(find, 60); });
+    el.addEventListener('keydown', function (ev) {
+      ev.stopPropagation();
+      if (ev.key === 'Escape') { ev.preventDefault(); close(); }
+      else if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+        ev.preventDefault(); if (!files.length) return;
+        at = (at + (ev.key === 'ArrowDown' ? 1 : files.length - 1)) % files.length; paint(input.value.replace(/\s+/g, ''));
+      } else if (ev.key === 'Enter') { ev.preventDefault(); go(mac ? ev.metaKey : ev.ctrlKey); }
+    });
+    list.addEventListener('mousedown', function (ev) {
+      var row = ev.target.closest('.si-qo-row'); if (!row) return;
+      ev.preventDefault(); at = +row.dataset.i; go(mac ? ev.metaKey : ev.ctrlKey);
+    });
+    input.addEventListener('blur', function () { setTimeout(function () { if (qo === input && !el.contains(document.activeElement)) close(); }, 0); });
+    say(help); input.focus(); find();
+  }
+  var srPanel = null, srInput = null;
+  function buildSearch() {
+    srPanel = document.createElement('div'); srPanel.className = 'si-rb si-sr';
+    srPanel.innerHTML = '<div class="si-rb-head"><input class="si-rb-find" type="search" placeholder="Search in files…" spellcheck="false" aria-label="Search in files">' +
+      '<button type="button" class="si-sr-t" data-o="case" title="Match case" aria-pressed="false">Aa</button>' +
+      '<button type="button" class="si-sr-t" data-o="re" title="Regular expression" aria-pressed="false">.*</button></div>' +
+      '<div class="si-sr-sum"></div><div class="si-rb-list"></div>';
+    var input = srInput = srPanel.querySelector('input'), sum = srPanel.querySelector('.si-sr-sum'), list = srPanel.querySelector('.si-rb-list');
+    var opt = { case: false, re: false }, timer = 0, n = 0;
+    Array.prototype.forEach.call(srPanel.querySelectorAll('.si-sr-t'), function (b) {
+      b.addEventListener('click', function () {
+        opt[b.dataset.o] = !opt[b.dataset.o]; b.classList.toggle('is-on', opt[b.dataset.o]); b.setAttribute('aria-pressed', String(opt[b.dataset.o]));
+        run(); input.focus();
+      });
+    });
+    function run() {
+      clearTimeout(timer);
+      var q = input.value, my = ++n;
+      if (!q) { list.innerHTML = ''; sum.textContent = ''; return; }
+      var dir = searchDir(), from = activeViewer() || alive(lastViewer);
+      sum.textContent = 'Searching…';
+      fetch(API + 'grep?dir=' + encodeURIComponent(dir) + '&q=' + encodeURIComponent(q) + (opt.case ? '&case=1' : '') + (opt.re ? '&re=1' : '')).then(function (r) {
+        if (!r.ok) return r.text().then(function (m) { throw new Error(m.trim()); });
+        return r.json();
+      }).then(function (j) {
+        if (my !== n) return;
+        var groups = [], by = {};
+        j.lines.forEach(function (l) { if (!by[l.path]) groups.push(by[l.path] = { path: l.path, rel: l.rel, lines: [] }); by[l.path].lines.push(l); });
+        sum.textContent = j.hits + (j.hits === 1 ? ' match' : ' matches') + ' in ' + groups.length + (groups.length === 1 ? ' file' : ' files') + (j.more ? ' (the first 1000)' : '') + ' · ' + j.dir;
+        sum.title = j.dir;
+        list.innerHTML = '';
+        groups.forEach(function (g) {
+          var h = document.createElement('div'); h.className = 'si-sr-file'; h.title = g.path;
+          h.innerHTML = esc(g.rel) + '<span class="n">' + g.lines.length + '</span>';
+          list.appendChild(h);
+          g.lines.forEach(function (l) {
+            var row = document.createElement('div'), tx = '', k = 0; row.className = 'si-sr-line'; row.title = g.rel + ':' + l.line;
+            (l.hits || []).forEach(function (hh) { tx += esc(l.text.slice(k, hh[0])) + '<mark>' + esc(l.text.slice(hh[0], hh[1])) + '</mark>'; k = hh[1]; });
+            tx += esc(l.text.slice(k));
+            row.innerHTML = '<span class="no">' + l.line + '</span><span class="tx">' + tx + '</span>';
+            row.addEventListener('click', function () { var v = activeViewer() || alive(lastViewer) || alive(from); openAt(v, l.path, l.line, j.dir); });
+            list.appendChild(row);
+          });
+        });
+      }, function (err) { if (my === n) { sum.textContent = err.message; list.innerHTML = ''; } });
+    }
+    input.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(run, 250); });
+    srPanel.addEventListener('keydown', function (ev) {
+      ev.stopPropagation();
+      if (ev.key === 'Enter' && ev.target === input) { ev.preventDefault(); run(); }
+      else if (ev.key === 'Escape') { ev.preventDefault(); setPanel('search', false); focusTab(); }
+    });
+    addGrip(srPanel); root.querySelector('.si-term-body').appendChild(srPanel);
+    var open = false; try { open = JSON.parse(localStorage.getItem('si-search-open') || 'false'); } catch (e) {}
+    if (open) setPanel('search', true);
+  }
+  function openSearch(toggle) {
+    show(true);
+    if (toggle && srPanel.classList.contains('is-open')) { setPanel('search', false); return; }
+    setPanel('search', true); srInput.focus(); srInput.select();
+  }
+  /* ⌘P and ⌘⇧F (Ctrl elsewhere) anywhere in the drawer; on Linux and Windows
+     Ctrl+P in a shell stays the shell's (previous command) */
+  root.addEventListener('keydown', function (ev) {
+    if (!(mac ? ev.metaKey : ev.ctrlKey) || ev.altKey) return;
+    var k = (ev.key || '').toLowerCase();
+    if (k === 'p' && !ev.shiftKey) {
+      var t = tabs[active]; if (!mac && t && !t.viewer && t.pane.contains(ev.target)) return;
+      ev.preventDefault(); ev.stopPropagation(); quickOpen();
+    } else if (k === 'f' && ev.shiftKey) { ev.preventDefault(); ev.stopPropagation(); openSearch(); }
+  }, true);
   buildRunbook();
   buildDemos();
+  buildSearch();
+  root.querySelector('[data-act="open"]').addEventListener('click', quickOpen);
+  root.querySelector('[data-act="search"]').addEventListener('click', function () { openSearch(true); });
   root.querySelector('[data-act="files"]').addEventListener('click', function () { show(true); newViewer(); });
   var rbBtn = root.querySelector('[data-act="runbook"]');
   if (rbBtn) rbBtn.addEventListener('click', toggleRunbook);
@@ -1074,7 +1389,9 @@
      and this brings the drawer back as it was (sessionStorage, this browser tab) ---------- */
   var SKEY = 'si-term-state';
   function saveState() {
-    var st = { open: root.classList.contains('is-open'), active: active, tabs: tabs.map(function (t) {
+    var st = { open: root.classList.contains('is-open'), active: active,
+      split: split && split.a && split.b ? { dir: split.dir, ratio: split.ratio, a: tabs.indexOf(split.a), b: tabs.indexOf(split.b), focus: split.focus } : null,
+      tabs: tabs.map(function (t) {
       if (t.viewer) return t.snap();
       return t.id && !t.ended ? { k: 'sh', id: t.id, label: t.tabEl.querySelector('.label').textContent, zoom: t.zoom } : {};
     }) };
@@ -1087,20 +1404,24 @@
     if (!st || !st.tabs || !st.tabs.length) return;
     fetch(API + 'list').then(function (r) { return r.json(); }).catch(function () { return []; }).then(function (live) {
       var alive = {}; (live || []).forEach(function (x) { alive[x.id] = true; });
-      var at = -1;
+      var at = -1, map = {};
       restoring = true;
       st.tabs.forEach(function (s, i) {
         if (s.k === 'sh' && alive[s.id]) newTab(s); // a shell whose process ended is dropped
         else if (s.k === 'v') newViewer(s);
         else return;
+        map[i] = tabs[tabs.length - 1];
         if (i === st.active) at = tabs.length - 1;
       });
       restoring = false;
       if (!tabs.length) return;
+      var sp = st.split;
+      if (sp && map[sp.a] && map[sp.b]) split = { dir: sp.dir === 'down' ? 'down' : 'right', ratio: Math.max(0.15, Math.min(0.85, +sp.ratio || 0.5)), a: map[sp.a], b: map[sp.b], focus: sp.focus === 'a' ? 'a' : 'b' };
       if (st.open) show(true);
       select(at >= 0 ? at : 0, !st.open);
     });
   })();
 
-  window.siTerm = { toggle: toggle, show: show, hide: hide, runbook: toggleRunbook, demos: toggleDemos, viewer: function () { show(true); newViewer(); } };
+  window.siTerm = { toggle: toggle, show: show, hide: hide, runbook: toggleRunbook, demos: toggleDemos, viewer: function () { show(true); newViewer(); },
+    quickOpen: quickOpen, search: function () { openSearch(); }, split: function (dir) { if (dir) splitOpen(dir); else splitClose(); } };
 })();
