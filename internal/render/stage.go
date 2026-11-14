@@ -50,6 +50,7 @@ type stageGraph struct {
 	// filled by layout()
 	depth            []int
 	gap              []int // gap after each depth: sColGap, wider to fit an edge label
+	rowGap           int   // gap between siblings: sRowGap, wider (TB) so sibling edge labels clear
 	cx, cy, tlx, tly []int
 	vbW, vbH         int
 }
@@ -271,28 +272,84 @@ func (g *stageGraph) layout() {
 	}
 	g.cx, g.cy = make([]int, n), make([]int, n)
 	g.tlx, g.tly = make([]int, n), make([]int, n)
-	totalRows := maxRows*rowExtent(g.dir) + (maxRows-1)*sRowGap
+	// top to bottom, labels on sibling edges sit side by side between two
+	// rows: widen the sibling gap until no two of them overlap, up to sMaxGap
+	// (edgeLabel shrinks what still crowds there).
+	for g.rowGap = sRowGap; ; g.rowGap += 10 {
+		g.place(depth, rowOf, count, at, maxRows)
+		if g.dir != "TB" || g.rowGap >= sMaxGap || !g.labelsCrowd() {
+			break
+		}
+	}
+}
+
+// place sets every box from its depth and row at the current rowGap.
+func (g *stageGraph) place(depth, rowOf, count, at []int, maxRows int) {
+	cols := len(at)
+	totalRows := maxRows*rowExtent(g.dir) + (maxRows-1)*g.rowGap
 	for i := range g.nodes {
 		d, r := depth[i], rowOf[i]
-		colRows := count[d]*rowExtent(g.dir) + (count[d]-1)*sRowGap
+		colRows := count[d]*rowExtent(g.dir) + (count[d]-1)*g.rowGap
 		off := (totalRows - colRows) / 2
 		if g.dir == "TB" {
-			g.tlx[i] = sPad + off + r*(sBoxW+sRowGap)
+			g.tlx[i] = sPad + off + r*(sBoxW+g.rowGap)
 			g.tly[i] = sPad + d*sBoxH + at[d]
 		} else {
 			g.tlx[i] = sPad + d*sBoxW + at[d]
-			g.tly[i] = sPad + off + r*(sBoxH+sRowGap)
+			g.tly[i] = sPad + off + r*(sBoxH+g.rowGap)
 		}
 		g.cx[i] = g.tlx[i] + sBoxW/2
 		g.cy[i] = g.tly[i] + sBoxH/2
 	}
 	if g.dir == "TB" {
-		g.vbW = sPad*2 + maxRows*sBoxW + (maxRows-1)*sRowGap
+		g.vbW = sPad*2 + maxRows*sBoxW + (maxRows-1)*g.rowGap
 		g.vbH = sPad*2 + cols*sBoxH + at[cols-1]
 	} else {
 		g.vbW = sPad*2 + cols*sBoxW + at[cols-1]
-		g.vbH = sPad*2 + maxRows*sBoxH + (maxRows-1)*sRowGap
+		g.vbH = sPad*2 + maxRows*sBoxH + (maxRows-1)*g.rowGap
 	}
+}
+
+// sLblAir is the clear space kept between two edge labels side by side.
+const sLblAir = 8
+
+// labelsCrowd reports whether any two edge labels overlap at full size.
+func (g *stageGraph) labelsCrowd() bool {
+	for i := range g.edges {
+		if g.labelScale(i) < 1 {
+			return true
+		}
+	}
+	return false
+}
+
+// labelScale is the font-size factor (at most 1) that keeps edge label i
+// clear of every other edge label on the same band: two labels that would
+// overlap share the space between their anchors by width.
+func (g *stageGraph) labelScale(i int) float64 {
+	e := g.edges[i]
+	if e.label == "" {
+		return 1
+	}
+	s := g.edgeGeom(g.idx[e.from], g.idx[e.to])
+	w := edgeLabelW(e.label)
+	k := 1.0
+	for j, f := range g.edges {
+		if j == i || f.label == "" {
+			continue
+		}
+		t := g.edgeGeom(g.idx[f.from], g.idx[f.to])
+		if math.Abs(s.ly-t.ly) >= sLblH {
+			continue
+		}
+		v := edgeLabelW(f.label)
+		dx := math.Abs(s.lx - t.lx)
+		if dx >= (w+v)/2+sLblAir {
+			continue
+		}
+		k = math.Min(k, math.Max(0.3, 2*(dx-sLblAir)/(w+v)))
+	}
+	return k
 }
 
 // rowExtent is the per-row size along the cross axis (box height for LR, width for TB).
@@ -432,9 +489,9 @@ func genStage(body string, seq int) (svg string, stepOps []string, err error) {
 		fmt.Fprintf(&b, `<rect class="node n%d" x="%d" y="%d" width="%d" height="%d" rx="14"/>`, i, g.tlx[i], g.tly[i], sBoxW, sBoxH)
 		fmt.Fprintf(&b, `<text class="lbl l%d" x="%d" y="%d"%s>%s</text>`, i, g.cx[i], g.cy[i], labelFit(nd.label), html.EscapeString(nd.label))
 	}
-	for _, e := range g.edges { // edge labels on top, with a halo for legibility
+	for i, e := range g.edges { // edge labels on top, with a halo for legibility
 		if e.label != "" {
-			b.WriteString(g.edgeLabel(g.idx[e.from], g.idx[e.to], e.label))
+			b.WriteString(g.edgeLabel(i))
 		}
 	}
 	for i, a := range g.anims { // dots on top of everything
@@ -543,13 +600,13 @@ func (g *stageGraph) edgeGeom(a, b int) edgeSeg {
 	case skipLR:
 		sx, sy := ax, float64(g.tly[a]+sBoxH) // bottom centre of a
 		ex, ey := bx, float64(g.tly[b]+sBoxH)
-		yb := math.Max(sy, ey) + float64(sRowGap+20)
+		yb := math.Max(sy, ey) + float64(g.rowGap+20)
 		d := fmt.Sprintf("M%d %d C%d %d %d %d %d %d", rnd(sx), rnd(sy), rnd(sx), rnd(yb), rnd(ex), rnd(yb), rnd(ex), rnd(ey))
 		return edgeSeg{d, ex, ey, math.Atan2(ey-yb, 0) * 180 / math.Pi, (sx + ex) / 2, yb}
 	case skipTB:
 		sx, sy := float64(g.tlx[a]+sBoxW), ay // right centre of a
 		ex, ey := float64(g.tlx[b]+sBoxW), by
-		xb := math.Max(sx, ex) + float64(sRowGap+20)
+		xb := math.Max(sx, ex) + float64(g.rowGap+20)
 		d := fmt.Sprintf("M%d %d C%d %d %d %d %d %d", rnd(sx), rnd(sy), rnd(xb), rnd(sy), rnd(xb), rnd(ey), rnd(ex), rnd(ey))
 		return edgeSeg{d, ex, ey, math.Atan2(0, ex-xb) * 180 / math.Pi, xb, (sy + ey) / 2}
 	default:
@@ -569,18 +626,28 @@ func (g *stageGraph) arrow(a, b int) string {
 		s.d, rnd(s.hx), rnd(s.hy), s.ha)
 }
 
-// edgeLabel draws a label at the middle of its edge. The layout widened the
-// gap to fit it; a label wider than the widest gap (or, top to bottom, than
-// the diagram) is shrunk to fit.
-func (g *stageGraph) edgeLabel(a, b int, label string) string {
+// edgeLabel draws edge ei's label at the middle of its edge. The layout
+// widened the gap to fit it; a label wider than the widest gap (or, top to
+// bottom, than the diagram, or than the room beside a sibling's label) is
+// shrunk to fit.
+func (g *stageGraph) edgeLabel(ei int) string {
+	e := g.edges[ei]
+	a, b, label := g.idx[e.from], g.idx[e.to], e.label
 	s := g.edgeGeom(a, b)
 	room := float64(g.vbW - 2*8)
 	if da, db := g.depth[a], g.depth[b]; g.dir != "TB" && absInt(da-db) == 1 {
 		room = float64(g.gap[min(da, db)] - 2*sLblPad)
 	}
-	style := ""
+	k := 1.0
 	if w := edgeLabelW(label); w > room {
-		style = fmt.Sprintf(` style="font-size:%.1fpx"`, sLblSize*room/w)
+		k = room / w
+	}
+	if g.dir == "TB" { // sibling labels still crowding at the widest gap shrink too
+		k = math.Min(k, g.labelScale(ei))
+	}
+	style := ""
+	if k < 1 {
+		style = fmt.Sprintf(` style="font-size:%.1fpx"`, sLblSize*k)
 	}
 	return fmt.Sprintf(`<text class="elbl" x="%d" y="%d"%s>%s</text>`, rnd(s.lx), rnd(s.ly), style, html.EscapeString(label))
 }

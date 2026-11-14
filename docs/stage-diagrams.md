@@ -33,7 +33,10 @@ Rules of the grammar:
 - **`A --> B --> C`** chains; **`A -->|text| B`** puts `text` on the arrow.
   A label wider than the gap between two columns (a routing key such as
   `-->|order.*.created|`) widens that gap so it clears the boxes and the
-  arrowhead; past twice a box's width it is set smaller instead.
+  arrowhead; past twice a box's width it is set smaller instead. Top to
+  bottom (`dir: TB`), labels on sibling edges sit side by side between two
+  rows: the gap between the siblings widens until no two labels overlap (up
+  to twice a box's width; past that they are set smaller).
 - **`dot A..B [dur]`** and **`flow A..B [dur]`** animate the shortest route from
   `A` to `B`. A bare number means seconds (`2` → `2s`); default `1.6s`.
 - **`step <node...>`** adds a build step that acts on those nodes (cumulatively)

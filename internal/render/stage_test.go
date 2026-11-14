@@ -212,3 +212,42 @@ func TestStageEdgeLabelFitsGap(t *testing.T) {
 		t.Errorf("a label wider than the widest gap must shrink:\n%s", svg)
 	}
 }
+
+// Top to bottom, labels on sibling edges sit side by side: the sibling gap
+// widens until no two label boxes intersect (shrinking only past sMaxGap).
+func TestStageTBSiblingLabelsClear(t *testing.T) {
+	for _, body := range []string{
+		"dir: TB\nshop -->|order.*.created| billing\nshop -->|order.#| analytics\nshop -->|order.*.shipped| mail",
+		"dir: TB\nx -->|first routing key| a\nx -->|second routing key| b\nx -->|third routing key| c\nx -->|fourth routing key| d",
+		"dir: TB\nx -->|" + strings.Repeat("very.long.key.", 6) + "| a\nx -->|" + strings.Repeat("other.long.key.", 6) + "| b",
+	} {
+		g, err := parseStage(body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		g.layout()
+		type box struct{ x0, y0, x1, y1 float64 }
+		var boxes []box
+		for i, e := range g.edges {
+			s := g.edgeGeom(g.idx[e.from], g.idx[e.to])
+			w := edgeLabelW(e.label) * g.labelScale(i)
+			boxes = append(boxes, box{s.lx - w/2, s.ly - sLblH/2, s.lx + w/2, s.ly + sLblH/2})
+		}
+		for i := range boxes {
+			for j := i + 1; j < len(boxes); j++ {
+				a, b := boxes[i], boxes[j]
+				if a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1 {
+					t.Errorf("%q: labels %q and %q overlap", body, g.edges[i].label, g.edges[j].label)
+				}
+			}
+		}
+		if g.rowGap <= sRowGap {
+			t.Errorf("%q: sibling gap %d did not widen", body, g.rowGap)
+		}
+	}
+	g, _ := parseStage("dir: TB\na -->|ok| b\na -->|no| c") // short labels keep the default gap
+	g.layout()
+	if g.rowGap != sRowGap {
+		t.Errorf("short labels: sibling gap %d, want %d", g.rowGap, sRowGap)
+	}
+}

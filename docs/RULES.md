@@ -954,7 +954,9 @@ references shared assets as `../images/...`.
   smaller so it stays inside its box in every built-in theme, a short one
   keeps the full size. A long edge label (`-->|order.*.created|`) widens the
   gap between its two columns so it clears the boxes and the arrowhead; one
-  longer than twice a box is set smaller. Add `step <node...>` lines to walk the flow on build steps — each
+  longer than twice a box is set smaller. With `dir: TB`, labels on sibling
+  edges sit side by side, so the gap between the siblings widens until they
+  clear each other (up to twice a box; past that they are set smaller). Add `step <node...>` lines to walk the flow on build steps — each
   `step` line is one click. An optional op leads the line:
   `highlight` (default, accent outline), `ok` (green), `alert` (red, pulsing),
   `show` (the node starts hidden and fades in), `hide` (fades out):
