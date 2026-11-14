@@ -48,20 +48,26 @@ func TestClampCrop(t *testing.T) {
 func TestVideoArgsCrop(t *testing.T) {
 	cr := &rect{100, 60, 600, 400}
 	// no overlays: a -vf with crop before the even-size scale, output is the region
-	a := strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, 1, cr, nil, nil, "", "/o/a.video.mp4"), " ")
+	a := strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, 1, cr, nil, nil, nil, "", "/o/a.video.mp4"), " ")
 	if !strings.Contains(a, "-vf crop=600:400:100:60,scale=") {
 		t.Errorf("crop vf: %s", a)
 	}
 	// with a badge: the frame and the badge are both cropped, then overlaid
 	badges := []pic{{"/t/ff6.png", 4, 6}}
-	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, 1, cr, badges, nil, "", "/o/a.video.mp4"), " ")
+	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, 1, cr, badges, nil, nil, "", "/o/a.video.mp4"), " ")
 	if !strings.Contains(a, "[0:v]crop=600:400:100:60[c0];") || !strings.Contains(a, "[1:v]crop=600:400:100:60[p1];[c0][p1]overlay=0:0") {
 		t.Errorf("crop badge: %s", a)
+	}
+	// a lower third: drawn at the region's size and laid after the crop, uncut
+	thirds := []pic{{"/t/third00.png", 0.6, 4.6}}
+	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, 1, cr, badges, thirds, nil, "", "/o/a.video.mp4"), " ")
+	if !strings.Contains(a, "[o1][2:v]overlay=0:0:enable='between(t,0.600,4.600)'") || strings.Contains(a, "[2:v]crop=") {
+		t.Errorf("crop lower third: %s", a)
 	}
 	// captions variant: the cropped region (600x400) shrinks into the 1440x900
 	// band, its aspect kept; the captions are NOT cropped (frame-sized)
 	caps := []pic{{"/t/c0.png", 1, 2.5}}
-	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, 1, cr, nil, caps, "/o/a.voice.wav", "/o/a.captions.mp4"), " ")
+	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, 1, cr, nil, nil, caps, "/o/a.voice.wav", "/o/a.captions.mp4"), " ")
 	if !strings.Contains(a, "[c0]scale=") || !strings.Contains(a, "pad=1440:900:") {
 		t.Errorf("crop band: %s", a)
 	}

@@ -232,6 +232,11 @@ func (d *deckInfo) actsAt(nar *narration, i, k int) []viewAct {
 	return out
 }
 
+// dissolveActsNote is what si build says when a deck with [TERM …] /
+// [BROWSER …] cues is made of dissolving stills (--dissolve, or the motion
+// filming failed): the stills cannot act them.
+const dissolveActsNote = "the [TERM …] / [BROWSER …] cues in Notes: are not in this video: --dissolve makes it from still pictures of the slides, which have no drawer or windows; leave out --dissolve to film them (si build --mp4)"
+
 // hasActs reports whether a deck's Notes: drive si play's tools.
 func hasActs(d *deck.Deck) bool {
 	for i := range d.Slides {

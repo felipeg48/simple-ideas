@@ -188,24 +188,14 @@ func (c *Client) download(s *Source) ([]file, error) {
 		name := s.Name() + path.Ext(urlPath(s.URL))
 		return []file{{name, b}}, nil
 	case "gist":
-		b, err := c.github("gists/"+s.ID+"/"+s.Rev, "application/vnd.github+json")
+		all, err := c.gist(s)
 		if err != nil {
 			return nil, err
 		}
-		var g struct {
-			Files map[string]struct {
-				Filename, Content, RawURL string
-				Truncated                 bool
-			} `json:"files"`
-		}
-		if err := json.Unmarshal(b, &g); err != nil {
-			return nil, fmt.Errorf("gist %s: %v", s.ID, err)
-		}
 		var names []string
-		for n := range g.Files {
-			names = append(names, n)
+		for _, f := range all {
+			names = append(names, f.name)
 		}
-		sort.Strings(names)
 		pick := s.File
 		if pick == "" {
 			if len(names) != 1 {
@@ -213,19 +203,12 @@ func (c *Client) download(s *Source) ([]file, error) {
 			}
 			pick = names[0]
 		}
-		f, ok := g.Files[pick]
-		if !ok {
-			return nil, fmt.Errorf("gist:%s@%s has no file %s (it has %s)", s.ID, s.Rev, pick, strings.Join(names, ", "))
-		}
-		data := []byte(f.Content)
-		if f.Truncated {
-			b, code, err := c.get(f.RawURL, "")
-			if err != nil || code != 200 {
-				return nil, fmt.Errorf("gist %s: %s: %v %d", s.ID, pick, err, code)
+		for _, f := range all {
+			if f.name == pick {
+				return []file{f}, nil
 			}
-			data = b
 		}
-		return []file{{pick, data}}, nil
+		return nil, fmt.Errorf("gist:%s@%s has no file %s (it has %s)", s.ID, s.Rev, pick, strings.Join(names, ", "))
 	case "github":
 		if !s.Folder() {
 			b, err := c.github(contents(s, s.Path), "application/vnd.github.raw")
@@ -260,6 +243,37 @@ func (c *Client) download(s *Source) ([]file, error) {
 		return out, nil
 	}
 	return nil, fmt.Errorf("%s: not a script source", s.Text)
+}
+
+// gist fetches every file of a gist at its revision, in name order.
+func (c *Client) gist(s *Source) ([]file, error) {
+	b, err := c.github("gists/"+s.ID+"/"+s.Rev, "application/vnd.github+json")
+	if err != nil {
+		return nil, err
+	}
+	var g struct {
+		Files map[string]struct {
+			Filename, Content, RawURL string
+			Truncated                 bool
+		} `json:"files"`
+	}
+	if err := json.Unmarshal(b, &g); err != nil {
+		return nil, fmt.Errorf("gist %s: %v", s.ID, err)
+	}
+	var out []file
+	for n, f := range g.Files {
+		data := []byte(f.Content)
+		if f.Truncated {
+			b, code, err := c.get(f.RawURL, "")
+			if err != nil || code != 200 {
+				return nil, fmt.Errorf("gist %s: %s: %v %d", s.ID, n, err, code)
+			}
+			data = b
+		}
+		out = append(out, file{n, data})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].name < out[j].name })
+	return out, nil
 }
 
 func urlPath(u string) string {

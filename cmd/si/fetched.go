@@ -27,9 +27,10 @@ func newFetcher(trust bool, stderr io.Writer) *pinned.Client {
 }
 
 // fetchTarget turns what si demo, play, build and serve take into a local
-// path: github:owner/repo@REF/path (the repo at that pin, its layout kept) or
-// a pinned URL (one file) from the cache, fetched once and trusted once per
-// pin. A local path comes back as it is, with name "". name is the repo (or
+// path: github:owner/repo@REF/path (the repo at that pin, its layout kept), a
+// pinned URL (the file and what its files: key lists beside it) or
+// gist:ID@REV/file (the whole gist) from the cache, fetched once and trusted
+// once per pin. A local path comes back as it is, with name "". name is the repo (or
 // the URL's file) for output folders. preview lists, from the local path, the
 // files the trust question shows.
 func fetchTarget(t string, c func() *pinned.Client, preview func(string) []string) (local, name string, err error) {
@@ -41,11 +42,8 @@ func fetchTarget(t string, c func() *pinned.Client, preview func(string) []strin
 		local, err = c().Tree(src, preview)
 		return local, src.Name(), err
 	}
-	paths, err := c().Scripts(src)
-	if err != nil {
-		return "", "", err
-	}
-	return paths[0], src.Name(), nil
+	local, err = c().Document(src) // with the files beside it (files:, the gist's others)
+	return local, src.Name(), err
 }
 
 // demoScripts are the web demo scripts of a folder (type: demo with app:,

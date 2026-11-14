@@ -54,7 +54,10 @@ what you chose.
 8. Go stdlib plus goldmark only. `gofmt`, `go vet ./...` and `go test ./...`
    green before every commit. Plain commit messages, no attribution trailers.
    **Exception (v0.6.0, `si play` terminal only):** the presenter terminal
-   drawer adds `github.com/creack/pty` and bundles `xterm.js`. It is contained to
+   drawer adds `github.com/creack/pty` and bundles `xterm.js`; on Windows the
+   same shells run under ConPTY through `golang.org/x/sys/windows` (already in
+   the module graph through the Charm libraries, now a direct require; no new
+   module), both behind `internal/termpty`. It is contained to
    `si play` on a loopback address — a built deck never loads it — so rules #2 and
    #8 hold everywhere except that one play-only, loopback-only subsystem. See
    `docs/terminal.md`. Web demos (`si demo test|run`, v2.36.0) reuse the same

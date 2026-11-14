@@ -13,9 +13,10 @@ the git history of this file.
   multiple concurrent shells (tab 1 runs `postgres -D data`, tab 2
   runs `psql`, tab 3 runs `docker ps`). `+` opens a tab, `×` closes one,
   `✕` hides the drawer.
-- Each tab is a **real shell** (`$SHELL`, falling back to `/bin/sh`) running under
-  a **PTY**, started in the deck's directory. Because it is a true PTY, Ctrl-C,
-  arrow keys, REPL prompts (`psql`), and full-screen apps all work — the
+- Each tab is a **real shell** (`$SHELL`, falling back to `/bin/sh`; on Windows
+  PowerShell, `pwsh` then `powershell.exe`, else `cmd.exe`) running under a
+  **PTY** (ConPTY on Windows 10 1809 or later), started in the deck's
+  directory. Because it is a true PTY, Ctrl-C, arrow keys, REPL prompts (`psql`), and full-screen apps all work — the
   bytes travel straight through; `si` never parses commands.
 
 ![the terminal drawer, two tabs, a live shell](screenshots/readme/terminal-drawer.png)
@@ -24,8 +25,9 @@ the git history of this file.
 
 It deliberately relaxes two non-negotiable rules **for this subsystem only**:
 
-- **Rule #7 (Go stdlib + goldmark only):** adds `github.com/creack/pty` and
-  bundles `xterm.js` + the fit addon (vendored under
+- **Rule #7 (Go stdlib + goldmark only):** adds `github.com/creack/pty` (and, on
+  Windows, ConPTY through `golang.org/x/sys/windows`, already in the module
+  graph through the Charm libraries: no new module) and bundles `xterm.js` + the fit addon (vendored under
   `internal/assets/web/term/`).
 - **Rule #2 (self-contained output):** the drawer loads `xterm.js` from the
   `si play` server.
@@ -68,7 +70,11 @@ Go stdlib has no WebSocket, and we did not add one. Output streams over a
 `fetch().body.getReader()` and fed to `term.write()` as raw bytes; input is a
 **POST** body per `onData` (`/_si/term/api/in?id=`); resize is a POST with
 `cols`/`rows`. One stream per tab. This keeps the new-dependency count at exactly
-one (`creack/pty`) plus the bundled xterm.
+one (`creack/pty`) plus the bundled xterm. Both platforms sit behind
+`internal/termpty` (`Start`, `Resize`): creack/pty on Unix, a small ConPTY
+wrapper on Windows (`CreatePseudoConsole`, a process created with
+`PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE`, `exec.Cmd.Wait` working as after
+`Start`).
 
 ## Process lifecycle (decided)
 
@@ -79,7 +85,12 @@ one (`creack/pty`) plus the bundled xterm.
   `si play` gets, or by si.conf `terminal.prompt: clean`) a tab starts
   `webdemo.CleanShell`: zsh with a temp `ZDOTDIR` (`-d`, a `.zshrc` with
   `PROMPT` = the folder's name and `$`), bash `--noprofile --rcfile`, sh with
-  `ENV`; `PATH` and the environment kept, history off. The real prompt can
+  `ENV` (its mark inside `\[ \]` when sh is bash or busybox ash, so long
+  commands wrap right); on Windows PowerShell `-NoLogo -NoProfile -NoExit
+  -EncodedCommand` (PSReadLine removed, a `prompt` function: the folder's name
+  and `$`, the exit status in the window title `si;133;D;<code>;<n>`) or
+  `cmd /Q /K PROMPT <folder>$S$$$S`; `PATH` and the environment kept, history
+  off. The real prompt can
   show an email, a host or a cloud account; a live talk keeps it unless asked
   (`TestTerminalCleanPrompt`).
 - Ctrl-C needs no special endpoint: xterm sends `0x03` as input → the PTY delivers
@@ -256,7 +267,7 @@ refits and tells its shell the new size, the second streams its own output;
 both are on the page the screencast films. `focus N` sets the pane `run`,
 `press` and `expect output` go to (`__siTermFocus`, the other dims); `run …
 in 2` picks a pane for one step. Two panes at most. On Windows the shells
-are `cmd` on pipes, as for one terminal; ConPTY is not used.
+are PowerShell under ConPTY (`shell: cmd` on pipes), as for one terminal.
 
 ## The public API: `window.siPlay` (v1, issue #13)
 
@@ -305,7 +316,8 @@ is where Run and ⌂ Shell go):
 `GET /_si/term/api/ls?dir=` (folders first; 2000 entries), `cat?path=`
 (first MB, `render.Highlight` by extension, binary and image detection),
 `raw?path=` (pictures only, SVG under a no-script CSP), `cwd?id=` (the tab
-shell's folder: `/proc/PID/cwd` on Linux, `lsof -d cwd` elsewhere); all
+shell's folder: `/proc/PID/cwd` on Linux, `lsof -d cwd` elsewhere; not on
+Windows, where the Viewer stays on the deck's folder); all
 `localOnly` (`internal/serve/files.go`). Relative paths start at the deck's
 folder; `localStorage` `si-files-dir` (the last folder).
 

@@ -3,7 +3,8 @@
 //
 // It is a deliberate, documented exception to the project's non-negotiable
 // rules #2 (self-contained) and #7 (stdlib + goldmark only): it adds the
-// github.com/creack/pty dependency and the drawer bundles xterm.js. The
+// github.com/creack/pty dependency (ConPTY through golang.org/x/sys on
+// Windows, internal/termpty) and the drawer bundles xterm.js. The
 // exception is contained two ways — it is **si play only** (a built, static
 // .html has no server, so none of this exists there) and **loopback only**
 // (Server.Terminal is set from the listen address; it is false on
@@ -23,8 +24,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/creack/pty"
-
+	"github.com/felipeg48/simple-ideas/internal/termpty"
 	"github.com/felipeg48/simple-ideas/internal/webdemo"
 )
 
@@ -40,7 +40,7 @@ const termIdle = 10 * time.Minute
 // goroutine (pump) reads the PTY into a ring buffer and forwards to the page
 // attached now, if any; a newer attach replaces the older stream.
 type termSession struct {
-	pty     *os.File
+	pty     io.ReadWriteCloser
 	cmd     *exec.Cmd
 	title   string
 	created time.Time
@@ -84,10 +84,7 @@ func newTermHub(dir string) *termHub {
 
 // newTab starts a shell in a fresh PTY and returns its tab id.
 func (h *termHub) newTab(w http.ResponseWriter, r *http.Request) {
-	shell := os.Getenv("SHELL")
-	if shell == "" {
-		shell = "/bin/sh"
-	}
+	shell := webdemo.DefaultShell()
 	cmd, rcDone := exec.Command(shell), func() {}
 	cmd.Dir = h.dir
 	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
@@ -99,7 +96,7 @@ func (h *termHub) newTab(w http.ResponseWriter, r *http.Request) {
 		}
 		cmd, rcDone = c, done
 	}
-	f, err := pty.Start(cmd)
+	f, err := termpty.Start(cmd, 0, 0)
 	if err != nil {
 		rcDone()
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -310,7 +307,7 @@ func (h *termHub) resize(w http.ResponseWriter, r *http.Request) {
 	cols, _ := strconv.Atoi(r.URL.Query().Get("cols"))
 	rows, _ := strconv.Atoi(r.URL.Query().Get("rows"))
 	if cols > 0 && rows > 0 {
-		pty.Setsize(s.pty, &pty.Winsize{Rows: uint16(rows), Cols: uint16(cols)})
+		termpty.Resize(s.pty, cols, rows)
 	}
 	w.WriteHeader(http.StatusNoContent)
 }

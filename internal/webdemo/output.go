@@ -182,8 +182,17 @@ func (s *stripper) afterEsc(c byte) {
 
 func (s *stripper) endOSC(codes []int) []int {
 	s.state = 0
-	if v, ok := strings.CutPrefix(string(s.osc), "133;D"); ok {
-		n, err := strconv.Atoi(strings.TrimPrefix(v, ";"))
+	osc := string(s.osc)
+	// si's PowerShell prompt says it in the window title (ConPTY passes
+	// title changes on): 0;si;133;D;<code>;<count>
+	if t, ok := strings.CutPrefix(osc, "0;si;"); ok {
+		osc = t
+	} else if t, ok := strings.CutPrefix(osc, "2;si;"); ok {
+		osc = t
+	}
+	if v, ok := strings.CutPrefix(osc, "133;D"); ok {
+		v, _, _ = strings.Cut(strings.TrimPrefix(v, ";"), ";")
+		n, err := strconv.Atoi(v)
 		if err != nil {
 			n = 0
 		}

@@ -217,6 +217,18 @@ func TestStripper(t *testing.T) {
 	if _, ok := o.code(2); ok {
 		t.Error("a third code")
 	}
+	// si's PowerShell prompt on Windows: the mark in the title, with a count
+	w := newOutput(nil, nil)
+	w.Write([]byte("\x1b]0;C:\\pwsh.exe\x07\x1b]0;si;133;D;0;1\x07x $ \x1b]2;si;133;D;3;2\x07"))
+	if c, ok := w.code(0); !ok || c != 0 {
+		t.Errorf("title mark 1: %d %v", c, ok)
+	}
+	if c, ok := w.code(1); !ok || c != 3 {
+		t.Errorf("title mark 2: %d %v", c, ok)
+	}
+	if _, ok := w.code(2); ok || w.text(0) != "x $ " {
+		t.Errorf("an ordinary title is no mark: %q", w.text(0))
+	}
 	if !shows(o.text(0), "green   text") || shows(o.text(0), "greentext") {
 		t.Error("shows: white space")
 	}
@@ -367,6 +379,9 @@ func TestShellPrompt(t *testing.T) {
 			if err := tm.prompt(10 * time.Second); err != nil {
 				t.Fatal(err)
 			}
+			if s := tm.out.text(0); strings.Contains(s, `\[`) || strings.Contains(s, `\]`) {
+				t.Errorf("the prompt shows its \\[ \\]: %q", s)
+			}
 			at, n := tm.out.mark()
 			tm.runAt, tm.ran = at, true
 			tm.send("echo hi there; (exit 3)\r")
@@ -396,6 +411,47 @@ func TestShellPrompt(t *testing.T) {
 			tm.close()
 			waitGone(t, bg)
 		})
+	}
+}
+
+// TestShellPromptWidth: sh's mark takes no columns, so a command that fits
+// the line is echoed as typed (bash as sh counted the mark's 10 bytes and
+// broke the line early).
+func TestShellPromptWidth(t *testing.T) {
+	noWindows(t)
+	path, err := exec.LookPath("sh")
+	if err != nil {
+		t.Skip("no sh")
+	}
+	rc := t.TempDir()
+	if err := shellRC(rc); err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(t.TempDir(), "w")
+	os.Mkdir(dir, 0o755)
+	tm, err := openShell("T", path, dir, rc, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tm.close()
+	resizeShell(tm.rw, 30, 10)
+	if err := tm.prompt(10 * time.Second); err != nil {
+		t.Fatal(err)
+	}
+	at, _ := tm.out.mark()
+	line := "echo " + strings.Repeat("x", 19) // "w $ " + 24 = 28 of 30 columns
+	tm.send(line)
+	var raw string
+	for i := 0; i < 100; i++ {
+		time.Sleep(30 * time.Millisecond)
+		if raw = tm.out.text(at); strings.Contains(raw, "xxxxxxxxxxxxxxxxxxx") {
+			break
+		}
+	}
+	time.Sleep(200 * time.Millisecond)
+	b, _, _ := tm.out.from(0)
+	if got := tm.out.text(at); got != line {
+		t.Errorf("echo of a line that fits: %q, want %q (raw %q)", got, line, b)
 	}
 }
 

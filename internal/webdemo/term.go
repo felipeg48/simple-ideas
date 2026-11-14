@@ -13,7 +13,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -27,7 +26,8 @@ import (
 var termPageJS string
 
 // term is one terminal of a demo: a real shell in the script's folder under
-// a pseudo-terminal (pipes on Windows), shown by a page of its own.
+// a pseudo-terminal (ConPTY on Windows; pipes for cmd), shown by a page of
+// its own.
 type term struct {
 	name    string
 	opts    map[string]string
@@ -58,7 +58,17 @@ func shellRC(dir string) error {
 	files := map[string]string{
 		".zshrc": "unsetopt PROMPT_SP MONITOR BEEP BANG_HIST\nHISTFILE=\nPROMPT=$'%{\\e]133;D;%?\\a%}%F{cyan}%1~%f $ '\n",
 		"bashrc": "set +m +H\nunset HISTFILE PROMPT_COMMAND\nPS1='\\[\\e]133;D;$?\\a\\]\\[\\e[36m\\]\\W\\[\\e[0m\\] \\$ '\n",
-		"shrc":   "set +m\ncase $- in *H*) set +H;; esac\nPS1=\"$(printf '\\033]133;D;')\"'$?'\"$(printf '\\007')$(basename \"$PWD\") \"'$ '\n",
+		// sh is bash (macOS) or busybox ash with line editing, or dash
+		// without: the first two count the mark as visible (10 columns, so
+		// long commands wrapped wrong) unless it sits in \[ \]; dash would
+		// print \[ as it is
+		"shrc": `set +m
+case $- in *H*) set +H;; esac
+m="$(printf '\033]133;D;')"'$?'"$(printf '\007')"
+case "$BASH_VERSION$BB_ASH_VERSION" in ?*) m='\['"$m"'\]';; esac
+PS1="$m$(basename "$PWD") "'$ '
+unset m
+`,
 	}
 	for name, body := range files {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o600); err != nil {
@@ -68,40 +78,7 @@ func shellRC(dir string) error {
 	return nil
 }
 
-// shellCommand is the terminal's shell (shell:, else $SHELL, else sh; cmd on
-// Windows) with si's prompt from rc.
-func shellCommand(shell, dir, rc string) *exec.Cmd {
-	if runtime.GOOS == "windows" {
-		if shell == "" {
-			shell = "cmd"
-		}
-		c := exec.Command(shell, "/Q", "/K")
-		c.Dir = dir
-		return c
-	}
-	if shell == "" {
-		shell = os.Getenv("SHELL")
-	}
-	if shell == "" {
-		shell = "sh"
-	}
-	env := append(os.Environ(), "TERM=xterm-256color", "COLORTERM=truecolor", "BASH_SILENCE_DEPRECATION_WARNING=1")
-	var c *exec.Cmd
-	switch strings.TrimSuffix(filepath.Base(shell), ".exe") {
-	case "zsh":
-		c = exec.Command(shell, "-d", "-i")
-		env = append(env, "ZDOTDIR="+rc)
-	case "bash":
-		c = exec.Command(shell, "--noprofile", "--rcfile", filepath.Join(rc, "bashrc"), "-i")
-	default:
-		c = exec.Command(shell, "-i")
-		env = append(env, "ENV="+filepath.Join(rc, "shrc"))
-	}
-	c.Dir, c.Env = dir, env
-	return c
-}
-
-// CleanShell is the shell (shell:, else $SHELL, else sh) in dir with si's
+// CleanShell is the shell (shell:, else DefaultShell) in dir with si's
 // neutral prompt (the folder's name and $) and none of the user's rc files:
 // what the si play drawer runs when it is filmed, so no account name, host
 // or cloud context shows. done removes the rc folder once the shell is gone.

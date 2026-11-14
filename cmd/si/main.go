@@ -1085,6 +1085,9 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 				}
 			}
 			if err != nil {
+				if hasActs(d) { // stills: no drawer, no window, nothing typed
+					fmt.Fprintf(stderr, "si: %s: %s\n", d.Name, dissolveActsNote)
+				}
 				if err := exportDeckMP4(chrome, dest, out, d, o.dwell, nar, stdout); err != nil {
 					fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
 					failed = true

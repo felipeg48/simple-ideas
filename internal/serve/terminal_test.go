@@ -10,10 +10,13 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/felipeg48/simple-ideas/internal/webdemo"
 )
 
 // newTermServer returns an httptest server for a one-deck dir with Terminal set.
@@ -202,6 +205,9 @@ func TestTerminalFilesPanel(t *testing.T) {
 	}
 	if code := getJSON("/_si/term/api/raw?path=talk.md", &cat); code != http.StatusForbidden {
 		t.Fatalf("raw serves pictures only, got %d", code)
+	}
+	if runtime.GOOS == "windows" {
+		return // following cd reads /proc or lsof: Unix only
 	}
 	// the active shell's folder follows its cd
 	res, _ := http.Post(ts.URL+"/_si/term/api/new", "", nil)
@@ -623,7 +629,11 @@ func TestTerminalIdleReap(t *testing.T) {
 // own (home folder, user name, rc files).
 func TestTerminalCleanPrompt(t *testing.T) {
 	ansi := regexp.MustCompile(`\x1b\][^\x07]*\x07|\x1b\[[0-9;?]*[a-zA-Z]|\r`)
-	for _, sh := range []string{"/bin/zsh", "/bin/bash", "/bin/sh"} {
+	shells := []string{"/bin/zsh", "/bin/bash", "/bin/sh"}
+	if runtime.GOOS == "windows" { // PowerShell (or cmd) under ConPTY
+		shells = []string{webdemo.DefaultShell()}
+	}
+	for _, sh := range shells {
 		if _, err := os.Stat(sh); err != nil {
 			continue
 		}
@@ -641,7 +651,7 @@ func TestTerminalCleanPrompt(t *testing.T) {
 				t.Fatalf("no tab: %s", w.Body.String())
 			}
 			var out string
-			for i := 0; i < 100 && !strings.Contains(out, "$ "); i++ {
+			for i := 0; i < 600 && !strings.Contains(out, "$ "); i++ { // PowerShell starts slowly
 				time.Sleep(50 * time.Millisecond)
 				s.mu.Lock()
 				out = ansi.ReplaceAllString(string(s.ring), "")

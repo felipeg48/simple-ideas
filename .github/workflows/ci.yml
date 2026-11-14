@@ -87,3 +87,17 @@ jobs:
         with:
           name: demo-test-reports
           path: dist/demo-test
+
+  windows:
+    # the terminal on Windows: the si play drawer and web demo terminal scenes
+    # under ConPTY (internal/termpty), PowerShell and cmd prompts
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: build and vet
+        run: go build ./... && go vet ./...
+      - name: terminal tests
+        run: go test ./internal/termpty ./internal/serve ./internal/webdemo -run "Terminal|TestStripper|TestShellPrompt" -v

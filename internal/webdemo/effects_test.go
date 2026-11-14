@@ -22,7 +22,13 @@ func TestCSSSelectorWithSpaces(t *testing.T) {
 		`click [data-testid="pay now"] span`:     `[data-testid="pay now"] span`,
 		`click li:not(.done .x) a`:               "li:not(.done .x) a",
 		`expect .cart .total visible`:            ".cart .total",
-		`type "Ada" into form .name input`:       "",
+		`type "Ada" into form .name input`:       "form .name input",
+		`click main #cart button`:                "main #cart button",
+		`expect table [data-row] td visible`:     "table [data-row] td",
+		`click nav a`:                            "nav a",
+		`hover form input.email`:                 "form input.email",
+		`click Pay now`:                          "", // plain words, not tags: an error, as before
+		`click form`:                             "", // one word: an unquoted name
 		`type "Ada" into #signup .name input`:    "#signup .name input",
 		`wait for .toast .msg · within 10s`:      ".toast .msg",
 		`zoom to .chart .bar · 1.2s`:             ".chart .bar",
@@ -31,7 +37,7 @@ func TestCSSSelectorWithSpaces(t *testing.T) {
 		`drag from .lane .card to #done .column`: ".lane .card",
 	} {
 		st, err := ParseStep(in)
-		if want == "" { // form is a word, not CSS: still an error, as before
+		if want == "" { // plain words are not CSS: still an error, as before
 			if err == nil {
 				t.Errorf("%s: no error", in)
 			}

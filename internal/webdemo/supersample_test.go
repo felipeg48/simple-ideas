@@ -61,21 +61,21 @@ func TestScaledRegionCrop(t *testing.T) {
 func TestVideoArgsScaledDown(t *testing.T) {
 	// k 2: crop in frame pixels, then lanczos down to half (the region's CSS size)
 	cr := &rect{200, 120, 1200, 800}
-	a := strings.Join(videoArgs("/t/seq%05d.jpg", 2880, 1800, 2, cr, nil, nil, "", "/o/a.mp4"), " ")
+	a := strings.Join(videoArgs("/t/seq%05d.jpg", 2880, 1800, 2, cr, nil, nil, nil, "", "/o/a.mp4"), " ")
 	if !strings.Contains(a, "-vf crop=1200:800:200:120,scale=trunc(iw/2/2)*2:trunc(ih/2/2)*2:flags=lanczos") {
 		t.Errorf("2x crop: %s", a)
 	}
 	// badges (drawn at frame size) cropped like the frame; captions over the
 	// 2880x1800 band, then the whole is scaled down to 1440x900
 	badges, caps := []pic{{"/t/ff6.png", 4, 6}}, []pic{{"/t/c0.png", 1, 2}}
-	a = strings.Join(videoArgs("/t/seq%05d.jpg", 2880, 1800, 2, cr, badges, caps, "/o/v.wav", "/o/a.captions.mp4"), " ")
+	a = strings.Join(videoArgs("/t/seq%05d.jpg", 2880, 1800, 2, cr, badges, nil, caps, "/o/v.wav", "/o/a.captions.mp4"), " ")
 	for _, want := range []string{"[1:v]crop=1200:800:200:120[p1]", "pad=2880:1800:", "[band][2:v]overlay=0:0", "scale=trunc(iw/2/2)*2:trunc(ih/2/2)*2:flags=lanczos"} {
 		if !strings.Contains(a, want) {
 			t.Errorf("no %q in %s", want, a)
 		}
 	}
 	// k 1: the size is kept
-	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, 1, nil, nil, nil, "", "/o/a.mp4"), " ")
+	a = strings.Join(videoArgs("/t/seq%05d.jpg", 1440, 900, 1, nil, nil, nil, nil, "", "/o/a.mp4"), " ")
 	if !strings.Contains(a, "scale=trunc(iw/1/2)*2:trunc(ih/1/2)*2") {
 		t.Errorf("1x: %s", a)
 	}

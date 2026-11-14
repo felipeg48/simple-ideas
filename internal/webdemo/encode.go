@@ -195,12 +195,13 @@ func band(inW, inH, outW, outH int) string {
 
 // videoArgs encode the sequence of w×h frames with the badges over it. cr
 // crops every frame (and the badges, drawn at frame size) to a region: the
-// clip is then the region's size. With caps, the picture (the region when
+// clip is then the region's size. thirds (lower thirds) are laid after the
+// crop, uncut: drawn at the region's size when cropped, so none is cut off. With caps, the picture (the region when
 // cropped) shrinks into the top of the w×h frame (band), the captions go under
 // it and wav is the voice: the captions variant. Frames, badges and captions
 // are k times the viewport's size (cr in frame pixels); the clip is scaled
 // down k times at the end (outSize).
-func videoArgs(pattern string, w, h, k int, cr *rect, badges, caps []pic, wav, out string) []string {
+func videoArgs(pattern string, w, h, k int, cr *rect, badges, thirds, caps []pic, wav, out string) []string {
 	evenSize := outSize(k)
 	a := ff("-framerate", fmt.Sprint(fps), "-i", pattern)
 	cw, ch := w, h
@@ -209,7 +210,7 @@ func videoArgs(pattern string, w, h, k int, cr *rect, badges, caps []pic, wav, o
 		cw, ch = cr.W, cr.H
 		crop = fmt.Sprintf("crop=%d:%d:%d:%d,", cr.W, cr.H, cr.X, cr.Y)
 	}
-	if len(badges) == 0 && len(caps) == 0 && wav == "" {
+	if len(badges) == 0 && len(thirds) == 0 && len(caps) == 0 && wav == "" {
 		return append(append(a, "-vf", crop+evenSize), append(h264, out)...)
 	}
 	var g strings.Builder
@@ -234,6 +235,7 @@ func videoArgs(pattern string, w, h, k int, cr *rect, badges, caps []pic, wav, o
 		}
 	}
 	lay(badges, cr != nil)
+	lay(thirds, false)
 	if len(caps) > 0 {
 		fmt.Fprintf(&g, "[%s]%s[band];", last, band(cw, ch, w, h))
 		last = "band"

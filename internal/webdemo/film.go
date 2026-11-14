@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/felipeg48/simple-ideas/internal/assets"
+	"github.com/felipeg48/simple-ideas/internal/themefile"
 )
 
 //go:embed overlay.js
@@ -71,15 +72,25 @@ type liveNote struct {
 func tokens() string { return tokensOf("") }
 
 // tokensOf are a built-in theme's light tokens ("" or an unknown name:
-// studio's).
+// studio's), or a theme .css file's: the built-in it extends (else studio)
+// under its own light values.
 func tokensOf(name string) string {
+	var own map[string]string
+	if strings.HasSuffix(strings.ToLower(name), ".css") {
+		f := themefile.Parse("")
+		if b, err := os.ReadFile(name); err == nil {
+			f = themefile.Parse(string(b))
+		}
+		name = f.Extends
+		own, _ = f.Effective()
+	}
 	t, ok := assets.Themes[assets.CanonicalTheme(name)]
 	if !ok {
 		t = assets.Themes["studio"]
 	}
 	var keys []string
 	vals := map[string]string{}
-	for _, m := range []map[string]string{t.Base, t.Light} {
+	for _, m := range []map[string]string{t.Base, t.Light, own} {
 		for k, v := range m {
 			if _, ok := vals[k]; !ok {
 				keys = append(keys, k)
@@ -603,15 +614,26 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 		name, sub := splitThird(f.Third)
 		thirds = append([]third{{name, sub, 0.6, 0.6 + thirdSeconds}}, thirds...)
 	}
+	var lower []pic
 	for i, t := range thirds {
 		if t.From >= d {
 			continue
 		}
-		file, err := picture(thirdHTML(r.s.Brand.Theme, t.Name, t.Sub), fmt.Sprintf("third%02d.png", i))
+		page := thirdHTML(r.s.Brand.Theme, t.Name, t.Sub)
+		file, err := "", error(nil)
+		if crop != nil { // drawn at the region's size, laid after the crop: never cut off
+			file = filepath.Join(tk.dir, fmt.Sprintf("third%02d.png", i))
+			png, perr := r.pictureScaled(page, int(float64(crop.W)/fx.scale+.5), int(float64(crop.H)/fx.scale+.5), fx.scale)
+			if err = perr; err == nil {
+				err = os.WriteFile(file, png, 0o644)
+			}
+		} else {
+			file, err = picture(page, fmt.Sprintf("third%02d.png", i))
+		}
 		if err != nil {
 			return nil, err
 		}
-		badges = append(badges, pic{file, outT(fs, t.From), outT(fs, min(t.To, d))})
+		lower = append(lower, pic{file, outT(fs, t.From), outT(fs, min(t.To, d))})
 	}
 	card, err := r.picture(cardHTML(r.s.Brand.Theme, r.title(), f.Name, f.What), false)
 	if err != nil {
@@ -631,7 +653,7 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 	}
 	cl.Seconds = float64(n) / fps
 	k := max(1, int(fx.scale+.5)) // frame pixels per output pixel
-	if err := r.ffmpeg(videoArgs(pattern, wd, ht, k, crop, badges, nil, "", out(".silent.mp4"))); err != nil {
+	if err := r.ffmpeg(videoArgs(pattern, wd, ht, k, crop, badges, lower, nil, "", out(".silent.mp4"))); err != nil {
 		return nil, err
 	}
 	wav := filepath.Join(tk.dir, "voice.wav")
@@ -655,7 +677,7 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 		}
 	}
 	if len(caps) > 0 {
-		if err := r.ffmpeg(videoArgs(pattern, wd, ht, k, crop, badges, caps, wav, out(".captions.mp4"))); err != nil {
+		if err := r.ffmpeg(videoArgs(pattern, wd, ht, k, crop, badges, lower, caps, wav, out(".captions.mp4"))); err != nil {
 			return nil, err
 		}
 		cl.Captioned = true

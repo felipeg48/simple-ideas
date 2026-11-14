@@ -10,7 +10,8 @@ outro: Start free · A hundred orders a month, on us
 logo: harbor/logo.svg
 url: https://harbor.example
 music: harbor/bed.mp3 · 20%
-theme: forest
+theme: harbor/brand.css
+vertical-fill: theme
 ---
 
 # Harbor

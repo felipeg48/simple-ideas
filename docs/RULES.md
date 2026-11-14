@@ -108,6 +108,7 @@ lang: en
 | `session`, `slides`, `duration` | text | none | demo scripts: the facts under the title; `duration: 14 min` is checked against the script's steps (§22) |
 | `app`, `viewport`, `timeout`, `setup`, `voice` | URL or folder; WxH or phone, tablet, desktop; seconds; a shell command; engine:voice | none; desktop; 5s | web demos: `app:` turns a demo script into a script si runs against a web app (§27) |
 | `setup`, `start`, `stop`, `cleanup` (each may repeat) | a command, or a source: `gist:ID@REV`, `github:owner/repo@REF/path`, `https://… · sha256 HEX` | none | a talk that sets up what it shows live: `si play` and `si serve` run `setup:` (must finish) and `start:` (keeps running, `· wait for "ready"`) in the order written before the first page, then `stop:`, the programs stopped, `cleanup:` when they quit; `si build` never runs them ([§14](#14-presenting-keys-touch-overview-print), A talk that sets itself up) |
+| `files` | `path · sha256 HEX, …` | none | for a deck or a web demo opened from a pinned URL: the files beside it to fetch too (pictures, scripts, a theme), each relative to the URL and checked against its own fingerprint; ignored for a local file (§27, Scripts from anywhere) |
 | `prepare`, `step`, `cleanup` | web demos: a command run once before the first feature (`step:` is its alias); a command run after every program stopped | none | §27, Before and after |
 | `description` | text | none | documents: the lede under the title, the index tile subtitle and `<meta name="description">` (§19, §20) |
 | `edit-url` | URL | none | guides: base of the "Edit this page" link (§20) |
@@ -1549,7 +1550,8 @@ cleanup: rm -rf .live                                 # last, after the programs
   fetched once at that tag or commit into `~/.si/cache/repos`, its layout kept
   (a deck's `../images/…` still resolve), and served from there. A plain URL
   takes its fingerprint: `si play "https://example.com/talk.md · sha256 9f2a…"`
-  (one file; pictures beside it are not fetched). The same trust rules hold:
+  (with the pictures its `files:` key lists, each with its own fingerprint;
+  `gist:ID@REV/talk.md` brings the whole gist). The same trust rules hold:
   the first time, si shows where it comes from, its size and first lines, and
   asks; `--trust` says yes for one run (CI). A talk from a repo that sets
   nothing up just plays.
@@ -3227,7 +3229,9 @@ Say: A test card goes through in a second.
 text, a `<label>`, an `aria-label`, a placeholder, a title or an alt text
 (exact first, then any case, then a part). An element that starts with `#`,
 `.` or `[`, or with a tag followed by CSS (`button.pay`, `li:first-child`,
-`nav > a`), is a CSS selector, spaces included: it runs to ` · `, to the end
+`nav > a`, `form .name input`, `main #cart button`), or with two HTML tags
+(`form input`, `nav a`), is a CSS selector, spaces included (plain words that
+are not tags, `Pay now`, stay a name to quote): it runs to ` · `, to the end
 of the step, to `in frame`, or to the word that follows an element (`to` in a
 drag, the state in `expect`). `role=button "Pay"` narrows by role. Visible,
 enabled elements come first; text inside a button means the button. An
@@ -3236,6 +3240,7 @@ below the site's fixed or sticky header (`header-offset:`, see Promo kit).
 
 ```markdown
 - click .hm-eng.big .hm-open
+- type "Ada" into form .name input
 - expect #cart .total visible
 - drag from .lane .card to #done .column
 - wait for .toast .msg · within 10s
@@ -3325,7 +3330,7 @@ asked for with `--with`, a comma list that may repeat (`--with captions
 | `clips` | the same per feature: `<feature>.mp4` always, plus `<feature>.captions.mp4`, `.silent.mp4`, `.m4a`, `.srt`, `.vtt` for the kinds asked for |
 | `report` | `report.html` + `report.json` (and `shots/`): the run, linked to the videos it made |
 | `readme` | `README.md` + `README.html`: the files made, the video in the page, the script, how it was made |
-| `vertical` | `<script>.vertical.mp4`: 1080×1920 for phones and reels, the film across the middle over a blurred copy of itself, the captions large under it (see Promo kit) |
+| `vertical` | `<script>.vertical.mp4`: 1080×1920 for phones and reels, the film across the middle over a blurred copy of itself (or a colour: `vertical-fill:`), the captions large under it (see Promo kit) |
 | `highlight` | `<script>.highlight.mp4`: about 60 s, the first sentence of each feature with a breath around it, between the brand's cards (see Promo kit) |
 | `all` | all of the above |
 
@@ -3509,7 +3514,7 @@ Say: A load generator sends thirty messages.
 | `setup: <command>` | before each feature, in order when there are several; must exit 0 |
 | `stop: <command>` | after the last feature (passed, failed or interrupted), in order, while the programs still run, e.g. `make demo-down` |
 | `cleanup: <command>` | last, in order, after si has stopped every program, e.g. `rm -rf data/` |
-| `shell: bash` | the shell of the terminals: `sh`, `bash` or `zsh` (default `$SHELL`, else `sh`; `cmd` on Windows) |
+| `shell: bash` | the shell of the terminals: `sh`, `bash` or `zsh` (default `$SHELL`, else `sh`); on Windows `pwsh`, `powershell` or `cmd` (default PowerShell, else `cmd`) |
 | `app: none` | a terminal-only demo: no browser; every feature begins with `terminal` |
 
 | Step | What it does |
@@ -3568,8 +3573,14 @@ while it keeps running.
 - `si check` follows the scenes: a browser step while a terminal is in front
   (write `- browser` first), a terminal step with no terminal, and a program
   name no `start` gave are problems, with their line.
-- On Windows a terminal is `cmd` on pipes (no colours; ConPTY is not used
-  yet); `run … · wait`, `terminal split` and the rest work the same.
+- **On Windows** (10 1809 or later) a terminal is PowerShell (`pwsh`, else
+  `powershell.exe`) under ConPTY, Windows' pseudo console: colours, full-screen
+  programs and `run … · wait` as on a Mac. si's prompt is the folder's name
+  and `$` (no profile, no PSReadLine), and each command's exit status reaches
+  si through the window title, never shown. `shell: cmd` runs on pipes: no
+  colours, the prompt is the starting folder's name and `$`, and si asks for
+  the exit status after each command. `run … · wait`, `terminal split` and the
+  rest work the same.
 
 A server in one pane and its client in the other:
 
@@ -3761,10 +3772,26 @@ places as a file or a folder:
 |---|---|
 | `si demo test github:owner/repo@v2/demos/` | the repo at that pin, fetched once into `~/.si/cache/repos` with its layout kept; every demo script in the folder |
 | `si demo test github:owner/repo@v2/demos/shop.md` | one script of the repo, its folder and the rest of the repo alongside (`../../examples/…` resolves) |
-| `si demo test "https://…/shop.md · sha256 …"` | one script from the web, its fingerprint checked (files beside it are not fetched: its `app:` is a URL or `none`) |
+| `si demo test "https://…/shop.md · sha256 …"` | one script from the web, its fingerprint checked, with the files its `files:` key lists beside it |
+| `si demo test gist:abc123@4f2e9c1/shop.md` | one script of a gist at that revision, the gist's other files beside it (a gist is flat and pinned whole) |
 
-The same trust rules hold (the repo's pin is asked about once, with the
-scripts it will run); the output folder is local, `demo-out/<repo>/<script>/`.
+The same trust rules hold (the repo's or the gist's pin, or the URL and the
+files it lists, are asked about once, with the scripts they will run); the
+output folder is local, `demo-out/<repo>/<script>/`.
+
+A script from a URL names the files it needs beside it (`prepare:` scripts,
+pictures, a theme) in `files:`, each with its own fingerprint; they are
+fetched from the URL's folder, keep their folders, and a file whose
+fingerprint no longer matches stops the run:
+
+```markdown
+---
+type: demo
+app: none
+prepare: ./seed.sh
+files: seed.sh · sha256 9f2a…, brand/logo.png · sha256 41c0…
+---
+```
 
 ```bash
 si demo test github:acme/shop@v2.0/demos/ --trust --junit junit.xml   # CI
@@ -3927,7 +3954,8 @@ outro: Start free · A hundred orders a month, on us
 logo: brand/logo.svg        # on the intro and outro cards
 url: https://harbor.example # the address the cards show
 music: brand/bed.mp3 · 20%  # under the whole film, ducked while the voice speaks
-theme: forest               # a built-in theme for every card
+theme: forest               # a built-in theme for every card (or brand/harbor.css)
+vertical-fill: theme        # the vertical cut over the theme's background (blur, color #hex)
 ---
 
 ## Before
@@ -3966,18 +3994,24 @@ Say: Harbor puts the orders from every shop into one queue.
   title) are cards before the first chapter and after the last (3.5 s and
   4.5 s), with `logo:` above the title and `url:` under it, large on the
   outro. They belong to the first and last chapters, so chapters still start
-  at 0:00. `theme:` (a built-in theme: `forest`, `slate`, …) dresses them, the
-  feature title cards and the lower thirds.
+  at 0:00. `theme:` (a built-in theme: `forest`, `slate`, …, or a theme
+  `.css` file next to the script, `theme: brand/harbor.css`: the built-in it
+  `extends`, under its own light tokens, §15) dresses them, the feature title
+  cards and the lower thirds.
 - **`music: file · 20%`** is looped under the whole film (and the vertical
   and highlight cuts) at that level (25% when not given), fading in and out,
   and pressed down while the voice speaks (a sidechain compressor keyed by the
   narration). `<script>.m4a` stays the narration alone.
 - **`Lower-third: Name · Role`** under a feature heading puts a name caption
   at the bottom left for its first 4 s; the `lower-third` step puts one at that
-  moment.
+  moment. With `--region` (or `region:`) a lower third is drawn at the
+  region's size, after the crop, so it is never cut off.
 - **`--with vertical`** writes `<script>.vertical.mp4` (1080×1920), **`--with
   highlight`** `<script>.highlight.mp4` (each feature's first spoken sentence,
   about 60 s in all, between the intro and outro cards).
+- **`vertical-fill:`** what fills the vertical cut around the film: `blur` (a
+  blurred, darkened copy of the film, the default), `theme` (the background
+  of `theme:`), or `color #0b1020`.
 
 **A first script from the site:** `si demo draft` reads a site in headless
 Chrome and writes a promo script to start from.

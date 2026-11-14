@@ -72,7 +72,7 @@ si demo run shop.md             # the same steps filmed and narrated: ONE file, 
 si demo draft https://site --out site.md   # a first promo script read from a site (same origin, robots.txt
                                 # obeyed, nothing clicked): the site's own words, marked to polish; then si demo test
 si demo test docs/demos/        # every demo script in a folder: demo-out/<script>/ each, one combined report, one --junit
-si demo test github:owner/repo@v2/demos/ --trust   # demos from a repo at a pin (or "https://…/x.md · sha256 HEX");
+si demo test github:owner/repo@v2/demos/ --trust   # demos from a repo at a pin (or "https://…/x.md · sha256 HEX", gist:ID@REV/x.md);
                                 # --trust only in CI: a person is shown new code and asked once per pin
 si play github:owner/repo@v2/talks/talk.md         # a talk from a repo (si build and si serve too)
 ```
@@ -411,6 +411,11 @@ Not everything is a slide deck. Pick the type by what the reader does:
   3`, `next`, `prev`, `embed-terminal close`. Never drive the drawer with
   si's CSS classes (`.si-term`, `[data-act=…]`): they are not a contract;
   `window.siPlay` (RULES.md §14) is.
+- **Web demo selectors** (RULES.md §27): name elements the way a person
+  does, `"Pay"`; when a selector is needed, `form .name input`, `nav a`,
+  `#cart .total` and `button.pay` are read as CSS. On Windows the terminal
+  scenes run PowerShell under ConPTY (`shell: cmd` on pipes): write commands
+  for the shell the demo names.
 - **Web demos, before and after** (RULES.md §27, Before and after; Scripts
   from anywhere): the run's own set-up goes in front matter, in the order it
   must happen: `start:` (a program), `prepare:` (alias `step:`, a command that
@@ -422,7 +427,9 @@ Not everything is a slide deck. Pick the type by what the reader does:
   script from elsewhere is always pinned: `gist:ID@REV`,
   `github:owner/repo@TAG/path.sh`, `https://… · sha256 HEX`; never write one
   without its pin, and never add `--trust` to a command a person runs (CI
-  only).
+  only). A demo or deck shared as a URL lists the files it needs beside it in
+  `files: path · sha256 HEX, …` (each with its own fingerprint); a gist
+  (`gist:ID/demo.md`) brings all its files.
 - **A talk that sets itself up** (RULES.md §14): a deck that shows something
   live sets it up in front matter, `setup:` (must finish) and `start: <cmd> as
   NAME · wait for "ready"` in the order needed, `stop:` and `cleanup:` to tear
@@ -447,7 +454,9 @@ Not everything is a slide deck. Pick the type by what the reader does:
   `## Before`, never in a feature. Leave `header-offset:` out (auto finds a
   sticky header) unless a step lands under it. Reach into an iframe with
   `… in frame .selector`. Brand only with what the author gives you: `intro:`,
-  `outro:`, `logo:`, `url:`, `music:` (a file they own), `theme:`,
+  `outro:`, `logo:`, `url:`, `music:` (a file they own), `theme:` (a
+  built-in, or their theme `.css` file), `vertical-fill:` (blur, theme or
+  color #hex),
   `Lower-third: Name · Role` for a real person who agreed; never invent a
   logo, a name or music. Add `--with vertical` or `--with highlight` only when
   asked.

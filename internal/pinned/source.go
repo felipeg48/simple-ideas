@@ -139,16 +139,20 @@ func (s *Source) Name() string {
 }
 
 // ParseTarget reads what si demo test, si play, si build and si serve take
-// besides a local path: github:owner/repo@REF/path, or a URL followed by
-// "· sha256 HEX". ok is false when t is a local path.
+// besides a local path: github:owner/repo@REF/path, gist:ID@REV/file, or a
+// URL followed by "· sha256 HEX". ok is false when t is a local path.
 func ParseTarget(t string) (*Source, bool, error) {
 	t = strings.TrimSpace(t)
 	head, rest, _ := strings.Cut(t, "·")
 	head = strings.TrimSpace(head)
-	if !strings.HasPrefix(head, "github:") && !strings.HasPrefix(head, "https://") && !strings.HasPrefix(head, "http://") {
-		if strings.HasPrefix(head, "gist:") {
-			return nil, true, fmt.Errorf("%s: a gist holds scripts for start:, prepare:, setup:, stop: and cleanup:; a demo or a deck comes from github: or a URL", head)
+	if strings.HasPrefix(head, "gist:") { // gist:ID@REV/demo.md, the gist's other files beside it
+		s, err := Parse(head, "")
+		if err == nil && s.File == "" {
+			err = fmt.Errorf("%s: name the document, gist:%s@%s/<file>", head, s.ID, s.Rev)
 		}
+		return s, true, err
+	}
+	if !strings.HasPrefix(head, "github:") && !strings.HasPrefix(head, "https://") && !strings.HasPrefix(head, "http://") {
 		return nil, false, nil
 	}
 	sum := ""

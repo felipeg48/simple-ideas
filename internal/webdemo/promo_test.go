@@ -245,6 +245,22 @@ func TestParsePromo(t *testing.T) {
 	if len(s.Problems) != 5 {
 		t.Errorf("bad values: %v", s.Problems)
 	}
+	// a theme .css file for the cards: the built-in it extends, under its own tokens
+	os.WriteFile(filepath.Join(dir, "harbor.css"), []byte("/* si theme: Harbor · extends forest */\n:root {\n  --si-accent: #c2410c;\n  --si-bg: #0b1020;\n}\n"), 0o644)
+	s = Parse(p, "---\ntype: demo\napp: http://localhost:1\ntheme: harbor.css\nvertical-fill: theme\n---\n\n## A\n\n- go /\n")
+	if len(s.Problems) > 0 || s.Brand.Theme != filepath.Join(dir, "harbor.css") || s.Brand.VFill != "theme" {
+		t.Fatalf("theme file: %v %+v", s.Problems, s.Brand)
+	}
+	if tk := tokensOf(s.Brand.Theme); !strings.Contains(tk, "--si-accent:#c2410c;") || strings.Count(tk, "--si-fg:") != 1 {
+		t.Errorf("theme file tokens: %s", tk)
+	}
+	if f := themeFill(s.Brand.Theme); f != "0x0b1020" {
+		t.Errorf("the theme's fill: %s", f)
+	}
+	s = Parse(p, "---\ntype: demo\napp: http://localhost:1\ntheme: gone.css\nvertical-fill: stripes\n---\n\n## A\n\n- go /\n")
+	if len(s.Problems) != 2 {
+		t.Errorf("a missing theme file and a bad fill: %v", s.Problems)
+	}
 	if h, _ := ParseHeaderOffset("auto"); h != -1 {
 		t.Error("auto")
 	}
@@ -280,11 +296,28 @@ func TestPromoMath(t *testing.T) {
 			t.Errorf("music: %s lacks %s", a, w)
 		}
 	}
-	a = strings.Join(verticalArgs("all.mp4", 1440, 900, []pic{{"c.png", 1, 2}}, "v.mp4"), " ")
+	a = strings.Join(verticalArgs("all.mp4", 1440, 900, "", []pic{{"c.png", 1, 2}}, "v.mp4"), " ")
 	for _, w := range []string{"crop=1080:1920", "gblur", "scale=1080:-2", "overlay=0:", "[v0][1:v]overlay=0:0:enable='between(t,1.000,2.000)'"} {
 		if !strings.Contains(a, w) {
 			t.Errorf("vertical: %s lacks %s", a, w)
 		}
+	}
+	a = strings.Join(verticalArgs("all.mp4", 1440, 900, "0x0b1020", nil, "v.mp4"), " ")
+	if !strings.Contains(a, "color=c=0x0b1020:s=1080x1920") || strings.Contains(a, "gblur") || !strings.Contains(a, "shortest=1") {
+		t.Errorf("vertical over a colour: %s", a)
+	}
+	for in, want := range map[string]string{"blur": "", "": "", "theme": "theme", "color #0B1020": "0x0b1020", "color #fff": "0xffffff"} {
+		if got, err := ParseVerticalFill(in); err != nil || got != want {
+			t.Errorf("vertical-fill %q: %q %v", in, got, err)
+		}
+	}
+	for _, bad := range []string{"red", "color red", "color #12345"} {
+		if _, err := ParseVerticalFill(bad); err == nil {
+			t.Errorf("vertical-fill %q: no error", bad)
+		}
+	}
+	if f := themeFill(""); !strings.HasPrefix(f, "0x") || len(f) != 8 {
+		t.Errorf("studio's background: %q", f)
 	}
 	cuts := highlightCuts([]*clip{{Name: "a", Seconds: 20, Hi: &span{2, 6}}, {Name: "b", Seconds: 4}}, "/w", 60)
 	if len(cuts) != 2 || cuts[0].From != 1.6 || cuts[0].To != 6.5 || cuts[1].From != 0.5 || cuts[1].To != 4 || cuts[0].Clip != "/w/a.mp4" {

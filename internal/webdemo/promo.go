@@ -26,7 +26,8 @@ type Brand struct {
 	Volume       float64 // the music's level under the voice (0 to 1)
 	Logo         string  // an image (absolute) on the intro and outro cards
 	URL          string  // the address the outro shows
-	Theme        string  // a built-in theme for every card ("" = studio)
+	Theme        string  // a built-in theme for every card ("" = studio), or a theme .css file (absolute)
+	VFill        string  // vertical-fill: "" (blur), "theme", or a colour 0xRRGGBB
 }
 
 // Card is an intro: or outro: card: a title and a line under it.
@@ -86,10 +87,19 @@ func (s *Script) brand(fm map[string]string, line func(string) int) {
 		}
 	}
 	if t := fm["theme"]; t != "" {
-		if _, ok := assets.Themes[assets.CanonicalTheme(t)]; !ok {
-			s.problem(line("theme"), "theme %q: a built-in theme (%s)", t, strings.Join(assets.ThemeNames(), ", "))
+		if strings.HasSuffix(strings.ToLower(t), ".css") { // a theme file (si theme export, the Studio's Theme view)
+			t = file("theme", t)
+		} else if _, ok := assets.Themes[assets.CanonicalTheme(t)]; !ok {
+			s.problem(line("theme"), "theme %q: a built-in theme (%s) or a theme .css file next to the script", t, strings.Join(assets.ThemeNames(), ", "))
 		}
 		b.Theme = t
+	}
+	if v := fm["vertical-fill"]; v != "" {
+		f, err := ParseVerticalFill(v)
+		if err != nil {
+			s.problem(line("vertical-fill"), "%v", err)
+		}
+		b.VFill = f
 	}
 }
 
@@ -288,13 +298,65 @@ func wrapAt(s string, n int) []string {
 	return out
 }
 
+// ParseVerticalFill reads vertical-fill: blur (the default, ""), theme (the
+// cards' theme's background), or color #hex ("0xRRGGBB").
+func ParseVerticalFill(v string) (string, error) {
+	v = strings.TrimSpace(strings.ToLower(v))
+	switch v {
+	case "", "blur":
+		return "", nil
+	case "theme":
+		return "theme", nil
+	}
+	if c, ok := strings.CutPrefix(v, "color"); ok {
+		if hex := hexColor(strings.TrimSpace(c)); hex != "" {
+			return hex, nil
+		}
+	}
+	return "", fmt.Errorf("vertical-fill %q: blur (a blurred copy of the film, the default), theme (the theme's background) or color #0b1020", v)
+}
+
+// hexColor is #rgb or #rrggbb as ffmpeg's 0xRRGGBB ("" for anything else).
+func hexColor(c string) string {
+	c = strings.TrimPrefix(strings.ToLower(strings.TrimSpace(c)), "#")
+	if len(c) == 3 {
+		c = string([]byte{c[0], c[0], c[1], c[1], c[2], c[2]})
+	}
+	if len(c) != 6 {
+		return ""
+	}
+	if _, err := strconv.ParseUint(c, 16, 32); err != nil {
+		return ""
+	}
+	return "0x" + c
+}
+
+// themeFill is the background of a theme (a built-in or a .css file) for
+// the vertical cut; a near black when it is not a plain hex colour.
+func themeFill(theme string) string {
+	for _, kv := range strings.Split(tokensOf(theme), ";") {
+		if v, ok := strings.CutPrefix(kv, "--si-bg:"); ok {
+			if hex := hexColor(v); hex != "" {
+				return hex
+			}
+		}
+	}
+	return "0x111317"
+}
+
 // verticalArgs encode the vertical cut of a w×h film: the film across the
-// middle over a blurred, darkened copy of itself, the captions over that.
-func verticalArgs(video string, w, h int, caps []pic, out string) []string {
+// middle over a blurred, darkened copy of itself (fill "") or a colour (fill
+// 0xRRGGBB), the captions over that.
+func verticalArgs(video string, w, h int, fill string, caps []pic, out string) []string {
 	a := ff("-i", video)
 	var g strings.Builder
-	fmt.Fprintf(&g, "[0:v]split=2[a][b];[a]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,gblur=sigma=40,eq=brightness=-0.16[bg];[b]scale=%d:-2:flags=lanczos[fg];[bg][fg]overlay=0:%d[v0];",
-		vertW, vertH, vertW, vertH, vertW, vertTop(w, h))
+	if fill == "" {
+		fmt.Fprintf(&g, "[0:v]split=2[a][b];[a]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,gblur=sigma=40,eq=brightness=-0.16[bg];[b]scale=%d:-2:flags=lanczos[fg];[bg][fg]overlay=0:%d[v0];",
+			vertW, vertH, vertW, vertH, vertW, vertTop(w, h))
+	} else {
+		fmt.Fprintf(&g, "color=c=%s:s=%dx%d:r=30[bg];[0:v]scale=%d:-2:flags=lanczos[fg];[bg][fg]overlay=0:%d:shortest=1[v0];",
+			fill, vertW, vertH, vertW, vertTop(w, h))
+	}
 	last := "v0"
 	for i, c := range caps {
 		a = append(a, "-i", c.PNG)
@@ -436,7 +498,13 @@ func (r *runner) branded(parts []part) []part {
 // pictureAt renders HTML at w×h CSS pixels (one device pixel each), then
 // gives the page back its viewport.
 func (r *runner) pictureAt(page string, w, h int) ([]byte, error) {
-	if err := r.c.Call("Emulation.setDeviceMetricsOverride", map[string]any{"width": w, "height": h, "deviceScaleFactor": 1, "mobile": false}, nil); err != nil {
+	return r.pictureScaled(page, w, h, 1)
+}
+
+// pictureScaled draws page at w×h CSS pixels, k device pixels each (a lower
+// third at a region's size).
+func (r *runner) pictureScaled(page string, w, h int, k float64) ([]byte, error) {
+	if err := r.c.Call("Emulation.setDeviceMetricsOverride", map[string]any{"width": max(1, w), "height": max(1, h), "deviceScaleFactor": k, "mobile": false}, nil); err != nil {
 		return nil, err
 	}
 	defer r.c.Call("Emulation.setDeviceMetricsOverride", map[string]any{"width": r.s.W, "height": r.s.H, "deviceScaleFactor": r.k, "mobile": false}, nil)
@@ -470,7 +538,11 @@ func (r *runner) shorts(clips []*clip, cs []chapter) error {
 				caps = append(caps, pic{p.PNG, cs[i].Clip + p.From, cs[i].Clip + p.To})
 			}
 		}
-		if err := r.ffmpeg(verticalArgs(at(".mp4"), r.s.W, r.s.H, caps, at(".vertical.mp4"))); err != nil {
+		fill := b.VFill
+		if fill == "theme" {
+			fill = themeFill(b.Theme)
+		}
+		if err := r.ffmpeg(verticalArgs(at(".mp4"), r.s.W, r.s.H, fill, caps, at(".vertical.mp4"))); err != nil {
 			return err
 		}
 		if err := withMusic(at(".vertical.mp4"), end); err != nil {

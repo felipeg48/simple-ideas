@@ -138,4 +138,8 @@ func TestVoicedActs(t *testing.T) {
 	if !hasActs(d) {
 		t.Error("hasActs")
 	}
+	// --dissolve cannot act them: the build says so, and how to film them
+	if !strings.Contains(dissolveActsNote, "--dissolve") || !strings.Contains(dissolveActsNote, "[TERM") {
+		t.Errorf("the --dissolve note: %s", dissolveActsNote)
+	}
 }

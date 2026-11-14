@@ -481,7 +481,7 @@ si demo run harbor.md --with vertical,highlight
 - `session: keep`: the cookie banner accepted once, in `## Before`
 - Sticky headers stay clear: `header-offset: auto | 72px | none`
 - `click "Buy" in frame .preview`: steps inside framed pages
-- `intro:`, `outro:`, `logo:`, `url:`, `music: bed.mp3 · 20%`, `theme:`
+- `intro:`, `outro:`, `logo:`, `url:`, `music: bed.mp3 · 20%`, `theme:` (a built-in or a `.css` file)
 - `Lower-third: Ana Ruiz · Head of Operations`
 - `--with vertical` (9:16) and `--with highlight` (about a minute)
 
@@ -502,7 +502,8 @@ Points:
 - An element in view is no longer scrolled: the closing spotlight does not nudge the page
 - Frames: same-origin and cross-origin; `in frame "name"` matches name, title or id
 - Music is ducked by the voice (sidechain); `<script>.m4a` stays narration only
-- Highlight: each feature's first sentence; vertical: blurred fill, captions large
+- Highlight: each feature's first sentence; vertical: captions large, `vertical-fill: blur | theme | color #hex`
+- Lower thirds are drawn after a `--region` crop, never cut off
 - Example: `examples/webdemo/promo.md` (a sticky header, a cookie banner, a framed shop)
 
 ---
@@ -537,6 +538,7 @@ Points:
 - Three lifetimes: the run (`start:`, `stop:`), a feature (`start` step), some blocks (`start` … `stop`)
 - Programs stop by process group: SIGTERM, SIGKILL after 5 s, also on Ctrl-C
 - A failure shows the terminal's last 40 lines in the report and JUnit
+- Windows: PowerShell under ConPTY (colours, `· wait`, full-screen programs); `shell: cmd` runs on pipes
 - Example: `examples/webdemo/broker.md` (a tiny Go broker, `go run`)
 
 ---
@@ -558,7 +560,7 @@ Say: Let's see it in action.
 - `embed-terminal "Name"`: the play drawer's shell tab, by name; `· split right`; `embed-terminal min|max|close`
 - `embed-browser "Name"`: a `browser:` link (or a URL) in a window over the slides; `· at`, `· size`, `· zoom`
 - `slide 4`, `next`, `prev`; inside the window: `… in embed-browser "Name"`
-- Or in the deck's own `Notes:`: `[TERM Lab 1: make up]` and `[BROWSER Console]`, filmed by `si build --mp4 --voice`
+- Or in the deck's own `Notes:`: `[TERM Lab 1: make up]` and `[BROWSER Console]`, filmed by `si build --mp4 --voice` (not with `--dissolve`: stills have no drawer, and si build says so)
 
 Notes: (1 min)
 For a course, the best minute is often the one where the slide comes alive.
@@ -591,6 +593,7 @@ cleanup: rm -rf data/
 - `stop:` and `cleanup:` always run: a pass, a failure, Ctrl-C
 - `si demo test docs/demos/`: every script, one report, one JUnit
 - `gist:`, `github:…@tag`, `https://… · sha256`: pinned, asked once, `--trust` for CI
+- A script from a URL brings what its `files:` lists, each with its own sha256; a gist brings all its files
 
 Notes: (1 min)
 A real demo needs more than one program. The script starts the broker,

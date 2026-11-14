@@ -794,8 +794,34 @@ func value(s string) (Value, string, error) {
 var roleRE = regexp.MustCompile(`^role=([a-z]+)\s*`)
 
 // tagCSS is a selector that starts with a tag: button.primary, li:first-child,
-// a[href], nav > a.
-var tagCSS = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-]*(\s*[>+~]|[.#\[:])`)
+// a[href], nav > a, and a tag with a descendant after a space: form .name
+// input, main #cart, table [data-row].
+var tagCSS = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-]*(\s*[>+~]|[.#\[:]|\s+[.#\[])`)
+
+// tagTagCSS is a descendant selector of two HTML tags (form input, nav a,
+// table td): both words must be tags, so plain words stay plain.
+var tagTagCSS = regexp.MustCompile(`^([a-z][a-z0-9]*)\s+([a-z][a-z0-9]*)\b`)
+
+var htmlTags = map[string]bool{}
+
+func init() {
+	for _, t := range strings.Fields(`a abbr article aside audio b blockquote body button canvas caption code
+		dd details dialog div dl dt em fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 header
+		i iframe img input label legend li main mark menu nav ol optgroup option output p picture pre
+		section select small span strong summary sup sub svg table tbody td textarea tfoot th thead
+		tr u ul video`) {
+		htmlTags[t] = true
+	}
+}
+
+// startsCSS reports whether s starts with a CSS selector (see locator).
+func startsCSS(s string) bool {
+	if strings.HasPrefix(s, "#") || strings.HasPrefix(s, "[") || strings.HasPrefix(s, ".") || tagCSS.MatchString(s) {
+		return true
+	}
+	m := tagTagCSS.FindStringSubmatch(s)
+	return m != nil && htmlTags[m[1]] && htmlTags[m[2]]
+}
 
 // cssStop are the words that end a CSS selector: what a step writes after
 // its element (drag … to …, expect … visible).
@@ -804,7 +830,7 @@ var cssStop = map[string]bool{"to": true, "visible": true, "hidden": true, "disa
 
 // locator reads an element at the start of s: "text", role=name "text", or a
 // CSS selector: one that starts with #, [, . or a tag with CSS after it
-// (button.pay). A selector keeps its spaces (.cart .total, nav > a); it ends at
+// (button.pay, form .name input), or two HTML tags (form input). A selector keeps its spaces (.cart .total, nav > a); it ends at
 // ` · `, at one of cssStop, or at the end.
 func locator(s string) (Locator, string, error) {
 	l, rest, err := element(s)
@@ -851,7 +877,7 @@ func element(s string) (Locator, string, error) {
 		}
 		return Locator{Role: m[1], Name: name}, rest, nil
 	}
-	if strings.HasPrefix(s, "#") || strings.HasPrefix(s, "[") || strings.HasPrefix(s, ".") || tagCSS.MatchString(s) {
+	if startsCSS(s) {
 		end, depth := len(s), 0
 	scan:
 		for i := 0; i < len(s); i++ {
@@ -953,6 +979,7 @@ type jsonScript struct {
 	Style                                      string `json:"voice-style"`
 	Session, Intro, Outro, Music, Logo, URL    string
 	Theme                                      string
+	VFill                                      string   `json:"vertical-fill"`
 	Header                                     string   `json:"header-offset"`
 	Pronounce                                  []string `json:"pronounce"`
 	Start                                      []string `json:"start"`
@@ -1004,7 +1031,7 @@ func ParseJSON(path string, raw []byte) (*Script, error) {
 		return 0
 	}
 	fm := map[string]string{"title": j.Title, "app": j.App, "viewport": j.Viewport, "timeout": j.Timeout, "voice": j.Voice, "voice-style": j.Style, "shell": j.Shell, "with": j.With, "region": j.Region, "transition": j.Transition, "scale": j.Scale,
-		"session": j.Session, "header-offset": j.Header, "intro": j.Intro, "outro": j.Outro, "music": j.Music, "logo": j.Logo, "url": j.URL, "theme": j.Theme}
+		"session": j.Session, "header-offset": j.Header, "intro": j.Intro, "outro": j.Outro, "music": j.Music, "logo": j.Logo, "url": j.URL, "theme": j.Theme, "vertical-fill": j.VFill}
 	s.settings(fm, func(key string) int {
 		if k := strings.Index(src, `"`+key+`"`); k >= 0 {
 			return strings.Count(src[:k], "\n") + 1

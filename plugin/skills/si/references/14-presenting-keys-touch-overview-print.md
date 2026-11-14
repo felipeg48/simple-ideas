@@ -412,7 +412,8 @@ cleanup: rm -rf .live                                 # last, after the programs
   fetched once at that tag or commit into `~/.si/cache/repos`, its layout kept
   (a deck's `../images/…` still resolve), and served from there. A plain URL
   takes its fingerprint: `si play "https://example.com/talk.md · sha256 9f2a…"`
-  (one file; pictures beside it are not fetched). The same trust rules hold:
+  (with the pictures its `files:` key lists, each with its own fingerprint;
+  `gist:ID@REV/talk.md` brings the whole gist). The same trust rules hold:
   the first time, si shows where it comes from, its size and first lines, and
   asks; `--trust` says yes for one run (CI). A talk from a repo that sets
   nothing up just plays.

@@ -29,7 +29,7 @@ Say: Northwind keeps your orders behind one sign-in.
 What it does: a customer picks Express shipping and gift wrap, pays with a card and sees "Paid" at once.
 
 Say: Sign in with the demo account.
-- type "demo" into "Username"
+- type "demo" into form #username
 - type $SHOP_PASSWORD into "Password"
 - press Enter
 - wait for "Your orders"
