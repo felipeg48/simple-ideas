@@ -307,6 +307,12 @@ an example for every rule: [RULES.md](docs/RULES.md).
   inlined); works offline, from a USB stick; `--share-assets` for sites.
 - **`--pdf`**, **`--handout[=slides|lines|points|notes]`**, **`--mp4`** (the
   real motion, or `--dissolve`; `--narration` for your voice).
+- **Project structure:** a `structure:` block in si.conf maps each kind of
+  output to a folder (`slides/ deck`, `pdf/ deck:pdf`, `html/ site`,
+  `images/ image`, `dist/ html/:zip, deck:zip, course:scorm`); `si build`
+  writes each kind there, copies what is listed twice, rewrites every link,
+  zips the bundles last; `si new <name> --structure`; `si check` warns about
+  empty bundles and misplaced sources. No block: the flat layout.
 - **`si publish`:** LinkedIn (a deck as a swipeable document post, an article
   as a link post), dev.to, Hashnode, Ghost, WordPress; always a dry run unless
   `--yes`.

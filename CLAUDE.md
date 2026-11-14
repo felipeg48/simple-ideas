@@ -274,6 +274,11 @@ pass. The steps that matter:
   instructor guide), phase 4 (`si publish --to skilljar`), the Studio
   "New…" course entry, quiz answers out of the page source: the founder's
   next task (HANDOFF "NEXT TASK").
+- **Project structure** (DONE v3.13.0, RULES.md §31): `structure:` in
+  si.conf (`internal/config/structure.go`), `si build` stages the flat
+  build then routes, rewrites links and bundles (`cmd/si/structure.go`),
+  `si new --structure`, `si check` warnings, `examples/structure/`. Next:
+  `si play` serving the built layout, per-folder index pages.
 - **Timelines and infographics** (DONE v3.3.0, spec
   `docs/superpowers/specs/2026-11-12-timelines-infographics.md`, RULES §29,
   §30): `internal/deck/timeline.go`, `infographic.go`, `internal/render/

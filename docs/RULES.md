@@ -47,6 +47,7 @@ this file; `examples/showcase.md` uses every rule in a real talk.
 28. [Courses](#28-courses)
 29. [Timelines](#29-timelines)
 30. [Infographics](#30-infographics)
+31. [Project structure](#31-project-structure)
 
 ## 1. Decks and files
 
@@ -1789,8 +1790,10 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `demo.with: subtitles, chapters` | what `si demo run` writes besides `<script>.mp4` when `--with` and the script's `with:` say nothing (§27) |
 | `voice.Ada: kokoro:af_heart` | auto-play: one speaker's voice in a deck with `speakers:` (front matter `voices:` wins) |
 | `autoplay.dwell: 5` | auto-play: seconds on a slide with no `Notes:` and no `(N min)` (default 3) |
+| `structure:` + an indented block | where `si build` writes each kind of output: one folder per line (§31) |
 
-Nesting is written as dotted keys (`timer.animation.path`), not YAML.
+Nesting is written as dotted keys (`timer.animation.path`), not YAML. The one
+exception is `structure:`, an indented block of folders (§31).
 
 **Your own si.conf.** Besides the project's, si reads one si.conf of yours:
 `~/.si/si.conf` (on every system; `$SI_HOME` moves the whole `~/.si`
@@ -4364,3 +4367,91 @@ more checkouts
 - **`si new poster --type infographic`** writes a starter; `si --export
   example --type infographic` the two examples (a landscape story and a
   portrait poster).
+
+## 31. Project structure
+
+A course, a talk series, a training: the slides, the labs, the website, the
+videos and the zips you hand over each want a folder of their own. A
+`structure:` block in the project's `si.conf` is that map: one folder per
+line, nested by indentation, its name ending in `/`; after it, what goes
+there.
+
+```text
+structure:
+  rabbitmq/
+    md/           markdown
+    slides/       deck
+      pdf/        deck:pdf
+    labs/         lab
+    html/         site
+      images/     image
+      animations/ animation
+      pdfs/       deck:pdf
+    videos/       video
+    dist/         html/:zip, deck:zip, course:scorm
+```
+
+`si build rabbitmq` then writes the decks into `slides/`, their PDFs into
+`slides/pdf/` **and** `html/pdfs/`, the labs into `labs/`, the website into
+`html/` with its pictures in `html/images/`, the videos into `videos/`, and
+last the zips into `dist/`: `rabbitmq-html.zip` (the whole `html/` folder)
+and `rabbitmq-deck.zip` (every deck with what it links to). `index.html`
+stays at the root, its tiles pointing into the folders. The example project
+is `examples/structure/`.
+
+**No block, no change.** Without `structure:` a build writes what it always
+did, every page side by side in the output folder.
+
+**The top folder** names the project (the `<project>` of the zip names) and
+is the folder that holds `si.conf`; a map without one top folder uses the
+folder's own name. Paths of `html/:zip` are relative to it.
+
+**The words after a folder** (a comma list):
+
+| Kind | What goes there |
+|---|---|
+| `markdown` | sources: where `si new` puts them (sources may live in any folder of the map) |
+| `deck`, `lab`, `guide`, `course`, `site`, `article`, `timeline`, `infographic`, `mindmap`, `book`, `demo` | the pages of that type (`type:` in front matter; a folder with `_nav.md`, `_course.md` or `_site.md` for guide, course, site, book). One guide, course, site or book fills its folder; several get a subfolder each |
+| `image`, `animation`, `video` | the pictures (`.png`, `.jpg`, `.webp`), animations (`.svg`, `.gif`, and every SVG canvas also as a file) and videos and sound the pages use. With such a folder, pictures are linked from it, not inlined (as `--no-inline-media`); canvases stay inline in the slides, they must for their states |
+| `kind:format` | a derived file: `deck:pdf`, `deck:mp4`, `deck:handout`, `course:scorm`, `course:pdf` (the workbook), `book:pdf`, `timeline:png` / `pdf` / `svg`, `infographic:png` / `pdf` / `svg`, `mindmap:png` / `pdf` / `svg` / `mp4`. Naming one is the same as its flag (`--pdf`, `--mp4`, `--handout`, `--scorm`, `--png`, `--svg`): the map builds it |
+| `kind:zip` | a bundle: every output of that kind (pages and their derived files) with the pictures and videos they link to, paths as in the project: `<project>-<kind>.zip` |
+| `folder/:zip` | a bundle: a folder of the map, zipped whole after it is built: `<project>-<folder>.zip` |
+
+A kind listed in two folders is written to both (copies). A derived file the
+map does not place is not kept, unless you asked for it with its flag (then
+it goes where it always did); a page of a kind with no folder goes to the
+project root.
+
+**The build, in order:**
+
+1. read the sources, wherever they sit in the project (by `type:`);
+2. render each page into its kind's folder;
+3. copy the pictures, animations and videos into theirs;
+4. make the derived files (headless Chrome: PDF, MP4, PNG, SVG);
+5. copy what is listed twice;
+6. zip the bundles, last, from the finished folders.
+
+**Links follow the files.** Every page's links are rewritten from its new
+folder: pictures, videos, PDFs, the other decks and labs, the index tiles
+and their PDF badges, find (`/`), the navigation of guides, courses and
+sites, and the shared `_si/` of `--share-assets` (a copy in each top folder
+that uses it). A page links the nearest copy of a file listed twice, so
+`html/` zipped alone still finds its PDFs in `html/pdfs/`.
+
+**The output folder.** The map is laid out in the project folder itself;
+`-o out/` lays it out under `out/` instead.
+
+**`si new rabbitmq --structure`** writes `rabbitmq/si.conf` with the map
+above, makes its folders and puts the starter deck in `md/`. Plain `si new
+rabbitmq` does the same when `rabbitmq/si.conf` already has a
+`structure:` block (its folders, its markdown folder).
+
+**`si check`** checks every folder of sources and warns about the map: an
+unknown kind or format, an indentation that does not line up, a folder name
+without its `/` (each with its line in `si.conf`), a bundle naming a folder
+the map does not define, a bundle that would be empty, a source of a kind
+with no folder (it builds into the project root), and a source sitting in a
+folder meant for another kind (a lab in `slides/`).
+
+**`si play` and `si serve`** serve the sources as always, live, from where
+they sit: the map is about what `si build` writes.

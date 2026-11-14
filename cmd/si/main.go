@@ -53,7 +53,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "3.12.0"
+const version = "3.13.0"
 
 // Exit codes.
 const (
@@ -98,6 +98,9 @@ Usage:
         from the Notes: instead (kokoro:af_heart, system; needs ffmpeg)
         --autoplay[=inline] voices every part of the Notes: for auto-play (v) into
         <name>.voice/<slide>-<part>.m4a beside the page (=inline: inside it); needs ffmpeg
+        a project whose si.conf has a structure: block (folders, each with the kinds that go
+        there: deck, deck:pdf, html/:zip, ...) builds each kind into its folder, links
+        rewritten, bundles zipped last; without one, the layout above (RULES.md, Project structure)
   si [build] <map.md> [--svg] [--png [--scale 2]] [--pdf] [--mp4]
         mind map pages: every map as <name>-<id>.svg / .png (2D, theme and watermark
         baked in), pdfs/<name>.pdf with one page per map (map › links work), and
@@ -164,12 +167,17 @@ Usage:
   si check <dir|file.md> [--budget]
         validate decks: title, directives, assets, includes; exit 1 on a problem;
         --budget (or budget.page / budget.3d in si.conf) also fails pages over 1 MB (3D: 1.5 MB)
+        a project with a structure: also checks every folder of sources and warns about the
+        map: a bundle that would be empty, a kind with no folder, a source in another kind's folder
   si new <name> [--type deck|article|guide|book|course|site|website|page|lab|demo|mindmap|mindmap3d|codeshow|timeline|infographic]
         [--kind resume|portfolio|landing]
         scaffold <name>/ with a deck that uses every rule; with --type, a small
         starter of that type (<name>.md, or a <name>/ folder for guide, book,
         course and site), added to the menu of the guide or site it is created in; a website
         starts from a kind with --type website --kind resume (or --type resume)
+  si new <name> --structure
+        a project with a structure map: si.conf with the structure: block, its folders,
+        the deck in md/ (plain si new does the same when <name>/si.conf has a structure:)
   si fix <dir|file.md>... [--write]
         turn raw-HTML components into si syntax: <span class="hl"> into ==text==,
         the pill into <!-- badge -->, the logo lockup into <!-- logo -->, simple card
@@ -385,38 +393,42 @@ type options struct {
 	terminal, notes                              bool // si play --terminal [--notes]; si --terminal
 	dump                                         int  // si play --terminal --dump N
 	size                                         string
-	speaker                                      string    // si play --terminal --notes --speaker Ana
-	serveMode                                    bool      // si serve: play without the terminal (everything, for readers)
-	offline                                      bool      // code: / diff: from the cache only
-	noInstructor                                 bool      // si build: leave type: demo scripts out (a participant build)
-	instructor, zip, noFilm                      bool      // si build course/: --instructor, --zip, --no-film
-	scorm                                        scormFlag // si build course/ --scorm[=single]
-	svg, png                                     bool      // si build: mind map pages also as SVG / PNG
-	scale                                        float64   // si build --png: device pixels per CSS pixel
-	dwell                                        float64   // si build deck.md --mp4: seconds on every slide view
-	budget                                       bool      // si check --budget: fail pages over the size budget
-	review                                       bool      // si serve / si play --review: a keyed listener for reviewers' comments
-	reviewAddr                                   string    // --review-addr
-	to, mapID                                    string    // si mindmap export --to, --map
-	gif                                          bool      // si code --gif
-	showID                                       string    // si code --id
-	url, token, clientID, clientSecret, user     string    // si publish
-	canonical, baseURL                           string    // si publish
-	yes, copy, public, mp4                       bool      // si publish --yes/--copy/--public; --mp4
-	dissolve                                     bool      // --mp4 --dissolve: stills that dissolve, not the filmed motion
-	narration                                    string    // --mp4 --narration <dir|latest>: the teleprompter's recording paces and voices the video
-	port                                         int       // si publish login linkedin: the loopback redirect port
-	qrEC, qrLogo, qrStyle, qrFG, qrBG, qrName    string    // si qr
-	qrWifi, qrPassword, qrSecurity, qrVCard      string    // si qr --wifi / --vcard
-	qrLogoSize                                   float64   // si qr --logo-size, percent of the width
-	qrQuiet                                      int       // si qr --quiet, modules
-	qrJPG, qrECSet                               bool      // si qr --jpg; --ec given
-	audience                                     bool      // si play --audience: the room follows the talk on their phones
-	tunnel                                       bool      // si play --tunnel: the audience side on a temporary public address
-	format                                       string    // si theme export --format css|dtcg
-	use                                          bool      // si theme import --use: write theme: into si.conf
-	accent                                       string    // si theme from --accent: keep this colour
-	trust                                        bool      // si play/build/serve github:…/a URL: run code from elsewhere without asking (CI)
+	speaker                                      string     // si play --terminal --notes --speaker Ana
+	serveMode                                    bool       // si serve: play without the terminal (everything, for readers)
+	offline                                      bool       // code: / diff: from the cache only
+	noInstructor                                 bool       // si build: leave type: demo scripts out (a participant build)
+	instructor, zip, noFilm                      bool       // si build course/: --instructor, --zip, --no-film
+	scorm                                        scormFlag  // si build course/ --scorm[=single]
+	svg, png                                     bool       // si build: mind map pages also as SVG / PNG
+	scale                                        float64    // si build --png: device pixels per CSS pixel
+	dwell                                        float64    // si build deck.md --mp4: seconds on every slide view
+	budget                                       bool       // si check --budget: fail pages over the size budget
+	review                                       bool       // si serve / si play --review: a keyed listener for reviewers' comments
+	reviewAddr                                   string     // --review-addr
+	to, mapID                                    string     // si mindmap export --to, --map
+	gif                                          bool       // si code --gif
+	showID                                       string     // si code --id
+	url, token, clientID, clientSecret, user     string     // si publish
+	canonical, baseURL                           string     // si publish
+	yes, copy, public, mp4                       bool       // si publish --yes/--copy/--public; --mp4
+	dissolve                                     bool       // --mp4 --dissolve: stills that dissolve, not the filmed motion
+	narration                                    string     // --mp4 --narration <dir|latest>: the teleprompter's recording paces and voices the video
+	port                                         int        // si publish login linkedin: the loopback redirect port
+	qrEC, qrLogo, qrStyle, qrFG, qrBG, qrName    string     // si qr
+	qrWifi, qrPassword, qrSecurity, qrVCard      string     // si qr --wifi / --vcard
+	qrLogoSize                                   float64    // si qr --logo-size, percent of the width
+	qrQuiet                                      int        // si qr --quiet, modules
+	qrJPG, qrECSet                               bool       // si qr --jpg; --ec given
+	audience                                     bool       // si play --audience: the room follows the talk on their phones
+	tunnel                                       bool       // si play --tunnel: the audience side on a temporary public address
+	format                                       string     // si theme export --format css|dtcg
+	use                                          bool       // si theme import --use: write theme: into si.conf
+	accent                                       string     // si theme from --accent: keep this colour
+	trust                                        bool       // si play/build/serve github:…/a URL: run code from elsewhere without asking (CI)
+	structure                                    bool       // si new --structure: the project structure map and its folders
+	staged                                       bool       // a structured build's inner pass (writes the flat layout to staging)
+	srcDirs                                      []string   // more folders of sources (a project structure's folders)
+	collect                                      *collected // what the inner pass copied and inlined, for the structure
 	css                                          multi
 	args                                         []string
 }
@@ -452,6 +464,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.noOpen, "no-open", false, "")
 	fl.BoolVar(&o.noInline, "no-inline-media", false, "")
 	fl.BoolVar(&o.share, "share-assets", false, "")
+	fl.BoolVar(&o.structure, "structure", false, "")
 	fl.BoolVar(&o.pdf, "pdf", false, "")
 	fl.BoolVar(&o.svg, "svg", false, "")
 	fl.BoolVar(&o.png, "png", false, "")
@@ -681,6 +694,9 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		if o.budget && b.ThreeD == 0 {
 			b.ThreeD = defaultBudget.ThreeD
 		}
+		if st := cfg.Structure; st != nil && dir == rest[0] && !deck.IsGuideDir(dir) {
+			return checkStructured(dir, st, b, stdout, stderr)
+		}
 		return check(rest[0], b, stdout, stderr)
 	case "new":
 		if len(rest) != 1 {
@@ -696,6 +712,9 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		}
 		if o.kind != "" {
 			return newStarter(rest[0], o.kind, stdout, stderr)
+		}
+		if o.structure || hasStructure(rest[0]) { // the project's folders, sources in its markdown folder
+			return newStructured(rest[0], stdout, stderr)
 		}
 		return scaffold(rest[0], stdout, stderr)
 	case "fix":
@@ -757,6 +776,9 @@ func usageErr(stderr io.Writer, msg string) int {
 }
 
 func build(src string, o *options, stdout, stderr io.Writer) int {
+	if st := projectStructure(src, o); st != nil {
+		return buildStructured(src, st, o, stdout, stderr)
+	}
 	if g, ok := guideAt(src); ok {
 		out := o.output
 		if out == "" {
@@ -780,6 +802,11 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 		return exitProblems
 	}
 	guides := subGuides(src)
+	for _, d := range o.srcDirs { // a project structure's other folders of sources
+		more, _ := deck.List(d)
+		files = append(files, more...)
+		guides = append(guides, subGuides(d)...)
+	}
 	if len(files) == 0 && len(guides) == 0 {
 		fmt.Fprintf(stderr, "si: no decks (*.md) in %s\n", src)
 		return exitProblems
@@ -881,7 +908,9 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 				fmt.Fprintf(stderr, "si: %v\n", err)
 				failed = true
 			}
+			o.collect.media(filepath.Join(out, filepath.FromSlash(m.Rel)))
 		}
+		o.collect.canvas(res.CanvasFiles)
 		if render.UsesShared(res.HTML) && !sharedDone {
 			if err := render.WriteShared(out); err != nil {
 				fmt.Fprintf(stderr, "si: %v\n", err)
@@ -1936,7 +1965,9 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 				fmt.Fprintf(stderr, "si: %v\n", err)
 				ok = false
 			}
+			o.collect.media(filepath.Join(filepath.Dir(dest), filepath.FromSlash(m.Rel)))
 		}
+		o.collect.canvas(p.Result.CanvasFiles)
 		if render.UsesShared(p.Result.HTML) {
 			if err := render.WriteShared(out); err != nil {
 				fmt.Fprintf(stderr, "si: %v\n", err)

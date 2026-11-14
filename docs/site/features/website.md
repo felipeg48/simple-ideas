@@ -104,8 +104,37 @@ carousels, code, mind maps, QR codes and embedded talks.
 [See the whole example on GitHub](https://github.com/felipeg48/simple-ideas/tree/main/examples/site),
 or this very site: simple-ideas.org is built with si.
 
+## One project, every output in its folder
+
+A site rarely ships alone: the talk's slides and their PDFs, the labs, the
+videos and a zip for the people who host it come with it. A `structure:`
+block in the project's `si.conf` says where each kind goes:
+
+```text
+structure:
+  rabbitmq/
+    md/           markdown
+    slides/       deck
+      pdf/        deck:pdf
+    labs/         lab
+    html/         site
+      images/     image
+      animations/ animation
+      pdfs/       deck:pdf
+    videos/       video
+    dist/         html/:zip, deck:zip, course:scorm
+```
+
+`si build rabbitmq` writes the decks into `slides/`, their PDFs into
+`slides/pdf/` and `html/pdfs/`, the site into `html/` with its pictures, and
+zips `html/` and the decks into `dist/` last. Every link is rewritten from
+the page's new folder, so the site still finds its pictures and PDFs, and
+`html/` zipped alone still works. `si new rabbitmq --structure` starts a
+project with this map; without a block, a build stays one flat folder.
+
 <!-- si-deps: -->
 
 ## The rules
 
 - [23. Sites](../rules/23-sites.md)
+- [31. Project structure](../rules/31-project-structure.md)

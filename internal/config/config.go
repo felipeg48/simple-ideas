@@ -102,6 +102,22 @@ feature.autoplay:  on   # the Auto-play button and key
 # timer.animation: waves,orbit      # built-in: waves | orbit | bokeh; a comma list gives a toggle (off if unset)
 # timer.animation.path: ./anim      # optional dir of custom .js/.svg animations
 # timer.animation.name: waves       # the file stem(s) to run from that dir
+
+# si build: where each kind of output goes (none: every page side by side in
+# the output folder, as always). One folder per line, nested by indentation,
+# names end in /; after it the kinds that go there (RULES.md, Project structure)
+# structure:
+#   rabbitmq/
+#     md/           markdown
+#     slides/       deck
+#       pdf/        deck:pdf
+#     labs/         lab
+#     html/         site
+#       images/     image
+#       animations/ animation
+#       pdfs/       deck:pdf
+#     videos/       video
+#     dist/         html/:zip, deck:zip, course:scorm
 `
 
 // Config is a parsed si.conf. Zero value is a usable empty config.
@@ -125,6 +141,7 @@ type Config struct {
 	SpeakerVoices            map[string]string // voice.<Name>: one speaker's voice (auto-play of a talk with speakers:)
 	AutoplayDwell            float64           // autoplay.dwell: seconds on a slide with no Notes: (0 = 3)
 	ElevenLabsKey, OpenAIKey string            // voice.<engine>.key: kept from the user's si.conf only
+	Structure                *Structure        // structure: the project structure map (nil: today's flat build layout)
 	Path                     string            // the project si.conf Load read ("" when none)
 	Warnings                 []string          // unknown keys / bad values, for the caller to report
 
@@ -240,10 +257,26 @@ func empty() *Config { return &Config{Keys: map[string]string{}, Features: map[s
 // parse reads r into c: what r sets wins over what c already holds.
 func (c *Config) parse(r io.Reader) {
 	sc := bufio.NewScanner(r)
+	var st *Structure // the structure: block being read
+	warn := func(f string, a ...any) { c.Warnings = append(c.Warnings, fmt.Sprintf(f, a...)) }
+	defer func() {
+		if st != nil {
+			st.finish(warn)
+		}
+	}()
 	for ln := 1; sc.Scan(); ln++ {
-		line := strings.TrimSpace(sc.Text())
+		raw := sc.Text()
+		line := strings.TrimSpace(raw)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
+		}
+		if st != nil && (raw[0] == ' ' || raw[0] == '\t') { // an indented line of structure:
+			st.line(raw, ln, warn)
+			continue
+		}
+		if st != nil { // the block ends at the next key
+			st.finish(warn)
+			st = nil
 		}
 		k, v, ok := strings.Cut(line, ":")
 		if !ok {
@@ -260,6 +293,13 @@ func (c *Config) parse(r io.Reader) {
 		}
 		v = strings.TrimSpace(v)
 		switch {
+		case k == "structure":
+			if v != "" {
+				warn("line %d: structure: takes an indented block of folders on the lines below it", ln)
+			} else {
+				st = &Structure{top: -1}
+				c.Structure = st
+			}
 		case k == "theme":
 			c.Theme = v
 		case k == "fonts":
@@ -397,6 +437,10 @@ func (c *Config) readFile(p string) bool {
 // si.conf goes to git, so a key there is ignored with a warning.
 func Load(paths ...string) *Config {
 	c := LoadUser()
+	if c.Structure != nil { // a structure is one project's folders
+		c.Warnings = append(c.Warnings, UserPath()+": structure: belongs in a project's si.conf; ignored here")
+		c.Structure = nil
+	}
 	for _, p := range paths {
 		if p == "" {
 			continue

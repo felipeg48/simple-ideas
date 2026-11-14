@@ -22,8 +22,10 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `demo.with: subtitles, chapters` | what `si demo run` writes besides `<script>.mp4` when `--with` and the script's `with:` say nothing (§27) |
 | `voice.Ada: kokoro:af_heart` | auto-play: one speaker's voice in a deck with `speakers:` (front matter `voices:` wins) |
 | `autoplay.dwell: 5` | auto-play: seconds on a slide with no `Notes:` and no `(N min)` (default 3) |
+| `structure:` + an indented block | where `si build` writes each kind of output: one folder per line (§31) |
 
-Nesting is written as dotted keys (`timer.animation.path`), not YAML.
+Nesting is written as dotted keys (`timer.animation.path`), not YAML. The one
+exception is `structure:`, an indented block of folders (§31).
 
 **Your own si.conf.** Besides the project's, si reads one si.conf of yours:
 `~/.si/si.conf` (on every system; `$SI_HOME` moves the whole `~/.si`

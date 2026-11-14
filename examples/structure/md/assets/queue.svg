@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" class="queue">
+  <style>
+    .queue .box { fill: var(--si-surface, #fff); stroke: var(--si-ink, #222); stroke-width: 2; }
+    .queue text { fill: var(--si-ink, #222); font: 600 20px sans-serif; text-anchor: middle; }
+    .queue .msg { fill: var(--si-accent, #3657d6); }
+  </style>
+  <rect class="box" x="20" y="60" width="140" height="80" rx="10"/>
+  <text x="90" y="108">Producer</text>
+  <rect class="box" x="230" y="60" width="140" height="80" rx="10"/>
+  <text x="300" y="108">Queue</text>
+  <rect class="box" x="440" y="60" width="140" height="80" rx="10"/>
+  <text x="510" y="108">Consumer</text>
+  <path d="M160 100 H230" stroke="var(--si-ink, #222)" stroke-width="2" data-flow="sent"/>
+  <path d="M370 100 H440" stroke="var(--si-ink, #222)" stroke-width="2" data-flow="acked"/>
+  <circle class="msg" cx="300" cy="40" r="12" data-show="sent"/>
+  <text x="510" y="40" data-ok="acked" data-show="acked">ack</text>
+</svg>

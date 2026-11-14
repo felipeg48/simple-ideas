@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -109,6 +110,10 @@ type Result struct {
 	Media    []MediaFile    // files to copy next to the HTML (MediaCopy)
 	Steps    int
 	Canvases int
+	// CanvasFiles are the SVG files the page inlines as canvases (absolute
+	// paths, in order of first use): si build copies them into a project
+	// structure's animation folder.
+	CanvasFiles []string
 
 	// documents: what a whole-book pass needs after the page is rendered
 	body   string            // the page's text (the main column's content)
@@ -200,6 +205,11 @@ func Deck(d *deck.Deck, opt Options) Result {
 		slides.WriteString(sh)
 		res.Steps += sc.steps
 		res.Canvases += len(sc.canvases)
+		for _, c := range sc.canvases {
+			if p := filepath.Join(s.Dir, c.path); !slices.Contains(res.CanvasFiles, p) {
+				res.CanvasFiles = append(res.CanvasFiles, p)
+			}
+		}
 	}
 	dr.finish(&res)
 	res.HTML = dr.page(slides.String(), res.Problems, opt)

@@ -222,6 +222,12 @@ pages, blog posts, talks and guides inside it, search, light and dark.
 
 ![A website built with si](docs/site/features/img/site-home.jpg)
 
+One project, many outputs: a `structure:` block in si.conf puts each kind in
+its own folder (decks in `slides/`, their PDFs in `slides/pdf/` and
+`html/pdfs/`, the site in `html/`, zips in `dist/`), links rewritten, with
+`si new <name> --structure` to start one.
+[Project structure →](https://simple-ideas.org/rules/31-project-structure.html)
+
 ### Studio
 
 Write, preview, rehearse and present in one window, in the browser
@@ -331,6 +337,7 @@ Other agents: `si --export skill`, `si --export agent-rules` (AGENTS.md), or
 | `si new <name> --type deck\|article\|guide\|book\|course\|website\|lab\|mindmap\|codeshow` | a starter |
 | `si play <dir\|file>` | present with live reload (`--remote`, `--audience`, `--tunnel`, `--review`, `--https`) |
 | `si build <dir\|file> -o html/` | self-contained HTML (`--pdf`, `--mp4`, `--handout`, `--narration`, `--autoplay`, `--voice`) |
+| `si new <name> --structure` | a project whose si.conf maps each kind of output to a folder (`structure:`) |
 | `si check <dir\|file>` | every problem, with file and line |
 | `si --web [dir]` · `si --terminal [dir]` | the Studio, in the browser or the terminal |
 | `si demo test\|run <script>` | a web app's features as a test, or as narrated videos |

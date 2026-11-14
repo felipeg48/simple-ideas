@@ -1,0 +1,8 @@
+# what si build writes into this project
+/slides/
+/labs/
+/html/
+/videos/
+/dist/
+/index.html
+/_si/

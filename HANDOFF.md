@@ -3,7 +3,7 @@
 Read this, then `FEATURE.md`, then `CLAUDE.md`. This is a Go CLI (`si`) that turns
 Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
-## Current state (2026-11-13)
+## Current state (2026-11-14)
 
 **v3.6.0:** play terminal shells and Viewers survive a live reload (PTY
 kept with a 256 KB replay ring, `GET /_si/term/api/list`, `sessionStorage`
@@ -24,7 +24,16 @@ lazy-loaded on Edit; `POST /_si/term/api/save` with an mtime check; saves
 never live-reload). See `docs/terminal.md` "Viewer tabs".
 
 
-**Released and live: v3.12.0** (fixes #8, #9: a course whose pages are
+**Released and live: v3.13.0** (project structure map: a `structure:`
+block in si.conf, `internal/config/structure.go` parses it; `si build`
+of a project with one (`cmd/si/structure.go`) builds the usual flat layout
+into a staging folder, routes every file to its kind's folders (`route`),
+rewrites every quoted local path from each page's new folder (`rewrite`,
+nearest copy wins), copies canvases to `animation` folders, zips
+`kind:zip` / `folder/:zip` last (`bundle`); `si check` warns (`structureWarnings`),
+`si new <name> --structure`; RULES.md §31, `examples/structure/`; the
+no-structure build is pinned by `cmd/si/testdata/build-listing.golden`).
+Before: **v3.12.0** (fixes #8, #9: a course whose pages are
 not written yet reports `missing page` / `lists no pages` instead of a
 panic (`Guide.Home()`); `![c](x.mp4)` is a player on slides and pages,
 `poster=` in the image directive; linked local files and raw

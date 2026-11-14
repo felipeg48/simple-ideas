@@ -3,6 +3,25 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.13.0:** **Project structure.** A `structure:` block in a project's
+  `si.conf` maps each kind of output to a folder: one folder per line,
+  nested by indentation, names ending in `/`, then what goes there (`md/
+  markdown`, `slides/ deck`, `pdf/ deck:pdf`, `html/ site`, `images/
+  image`, `animations/ animation`, `videos/ video`, `dist/ html/:zip,
+  deck:zip, course:scorm`). `si build` reads the sources wherever they sit
+  in the project, renders each page into its kind's folder, copies
+  pictures, animations (canvases too) and videos into theirs, makes the
+  derived files the map names (as if `--pdf`, `--mp4`, `--handout`,
+  `--scorm`, `--png`, `--svg` were given), copies a kind listed twice into
+  both folders, and zips the bundles last (`<project>-html.zip`,
+  `<project>-deck.zip`). Every link is rewritten from its page's new folder:
+  pictures, videos, PDFs, other pages, index tiles and their PDF badges,
+  find (`/`), guide, course and site navigation, `_si/`. `si new <name>
+  --structure` writes the map and its folders, the deck in `md/`; `si check`
+  checks every folder of sources and warns about unknown kinds or formats
+  (with the line), empty bundles, kinds with no folder and sources in
+  another kind's folder. No block: the build is byte for byte what it was.
+  RULES.md §31, `examples/structure/`.
 - **v3.12.0:** fixes #8, #9. **Courses whose pages are not written yet:**
   `si check` and `si build` on a `_course.md` (or a `_nav.md`) whose listed
   pages do not exist report `missing page …` and `lists no pages` instead of

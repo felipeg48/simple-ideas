@@ -20,6 +20,7 @@ si build <dir> --handout        # handouts/<deck>.pdf for the audience: slides o
 si build talk.md --narration latest  # talk.mp4 paced and voiced by a teleprompter recording (● Record in si play)
 si build talk.md --autoplay     # auto-play (v) voiced: talk.voice/<slide>-<part>.m4a beside the page (=inline: inside it)
 si build talk.md --mp4 --voice kokoro  # talk.mp4 narrated from its own Notes: (needs ffmpeg)
+si new course --structure       # a project with a structure map in si.conf: folders per kind, sources in md/
 si rehearse talk.md             # a recording's pace: planned vs spoken per slide, words per minute
 si theme list                   # built-in themes for theme: / --theme
 si theme check themes/acme.css  # a .css theme: wrong values, WCAG contrast light and dark (with a passing colour)
@@ -223,6 +224,16 @@ Not everything is a slide deck. Pick the type by what the reader does:
   `si publish course/ --to skilljar --base-url URL` (a dry run without
   `--yes`). A quiz is a self-check, not a secure exam: never promise learners
   it is graded securely.
+- **Project structure** (RULES.md §31): when a project has many kinds of
+  output (decks, labs, a site, videos, zips), a `structure:` block in the
+  project's si.conf maps each to a folder: one folder per line, nested by
+  indentation, names ending in `/`, then the kinds (`deck`, `lab`, `site`,
+  `image`, `video`, `deck:pdf`, `course:scorm`, `deck:zip`, `html/:zip`).
+  `si build <project>` writes each kind there and rewrites the links; keep
+  sources in the `markdown` folder and link between sources as usual (by
+  `.md` file and relative picture paths), never to built paths. Run `si
+  check <project>`: it warns about empty bundles, kinds with no folder and
+  sources in the wrong folder. No block: the flat layout.
 - **Steps:** in a lab or a guide, `## Step 1: Start the stack` shows a
   numbered badge. Put the time and prerequisites in a key/value table at the
   top (`| | |` header, then `| **Time** | 10 minutes |`).

@@ -597,6 +597,26 @@ Points:
 
 ---
 
+## Project structure
+
+```text
+structure:
+  rabbitmq/
+    md/       markdown
+    slides/   deck
+      pdf/    deck:pdf
+    html/     site
+      images/ image
+    dist/     html/:zip, deck:zip
+```
+
+- A `structure:` block in si.conf: one folder per line, what goes there after it
+- `si build rabbitmq` writes each kind into its folder, links rewritten, zips last
+- No block: the flat layout as always; `si new rabbitmq --structure` makes one
+- RULES.md §31
+
+---
+
 ## The CLI
 
 ```bash
@@ -608,6 +628,7 @@ si demo test shop.md       # run a web demo script against a web app as a test (
 si demo run shop.md        # the same, filmed and narrated: shop.mp4 with chapters; --with captions,subtitles,clips,report,… for more
 si doctor                  # the optional programs (Chrome, ffmpeg, git…): found or not, how to install each
 si new <name>              # scaffold a deck (the showcase, every rule)
+si new <name> --structure  # a project with a structure map: folders per kind, sources in md/
 si new <name> --type article   # a small starter: deck, article, guide, book, course, site, page, lab, demo, mindmap, mindmap3d, codeshow
 si build course/ -o html/ --zip   # a course as a website bundle (+ zip); --instructor for the instructor's edition
 si build course/ -o html/ --scorm --pdf   # + <course>-scorm12.zip for an LMS and the learner workbook PDF
