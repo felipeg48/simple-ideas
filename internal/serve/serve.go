@@ -31,6 +31,7 @@ type Server struct {
 	Theme       string     // --theme override; empty keeps each deck's theme: front matter
 	Conf        string     // --conf path; empty falls back to si.conf next to the deck
 	Terminal    bool       // enable the play terminal drawer; set only on a loopback address
+	CleanPrompt bool       // the drawer's shells start with si's neutral prompt, no user rc (filming; si.conf terminal.prompt: clean)
 	watchMu     sync.Mutex // Watch's baseline, also moved by quietly
 	watchSig    uint64
 	Dev         bool             // --dev: in-place hot reload instead of full-page reload
@@ -78,6 +79,9 @@ func New(root string, css []string, theme, conf string) (*Server, error) {
 	}
 	s.term = newTermHub(s.dir)
 	s.term.quiet = s.quietly
+	s.term.clean = func() bool {
+		return s.CleanPrompt || config.Load(s.Conf, filepath.Join(s.dir, "si.conf")).TermPrompt == "clean"
+	}
 	s.relay = newRelay()
 	s.polls = newPolls()
 	s.qa = newQA()

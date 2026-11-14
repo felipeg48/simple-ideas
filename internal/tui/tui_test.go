@@ -279,3 +279,17 @@ func TestCodeShowStepsAreBuilds(t *testing.T) {
 		}
 	}
 }
+
+// TestTeleprompterActCues: [TERM …] and [BROWSER …] cues show as badges, not
+// as raw text, in the terminal teleprompter and the Studio's rehearse view.
+func TestTeleprompterActCues(t *testing.T) {
+	d := testDeck(t, "# Live\n\nThe broker runs.\n\nNotes: Here it is. [TERM Lab 1: docker ps] And the console. [BROWSER RabbitMQ] [CLICK] Done.\n")
+	m := &teleprompter{d: d, pal: PaletteFor("studio", ""), w: 140, h: 30, start: time.Now(), slideStart: time.Now(), f: &follower{}}
+	p := plain(m.render())
+	if !strings.Contains(p, "▶ TERM Lab 1: docker ps") || !strings.Contains(p, "▶ BROWSER RabbitMQ") || strings.Contains(p, "[TERM") || strings.Contains(p, "[BROWSER") {
+		t.Errorf("act cues as badges:\n%s", p)
+	}
+	if !strings.Contains(p, "CLICK") {
+		t.Errorf("the [CLICK] after them:\n%s", p)
+	}
+}

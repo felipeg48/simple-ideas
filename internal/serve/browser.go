@@ -81,7 +81,13 @@ func (b *browserProxies) open(target *url.URL) (string, error) {
 		}
 		return nil
 	}
-	srv := &http.Server{Handler: rp}
+	srv := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == fwdPath {
+			b.forward(w, r)
+			return
+		}
+		rp.ServeHTTP(w, r)
+	})}
 	go srv.Serve(ln)
 	if b.byHost == nil {
 		b.byHost = map[string]string{}
@@ -110,6 +116,27 @@ func (b *browserProxies) through(loc, key, origin string) string {
 	return o + u.String()
 }
 
+// fwdPath, on every proxy, sends a request on to another origin's proxy:
+// ?to=<real address> answers 307 to that address through its proxy (started
+// then), so a POST form to another site arrives there with its fields (a 307
+// keeps the method and the body). navScript points such forms here.
+const fwdPath = "/__si_fwd"
+
+func (b *browserProxies) forward(w http.ResponseWriter, r *http.Request) {
+	u, err := url.Parse(r.URL.Query().Get("to"))
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		http.Error(w, "an http(s) address, please", http.StatusBadRequest)
+		return
+	}
+	o, err := b.open(u)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	u.Scheme, u.Host = "", ""
+	http.Redirect(w, r, o+u.String(), http.StatusTemporaryRedirect)
+}
+
 // navScript goes into every proxied HTML page: it tells the window around it
 // where the page is (on load, links, history.pushState/replaceState, back and
 // forward), with its real address (the target origin T in place of the
@@ -118,11 +145,13 @@ func (b *browserProxies) through(loc, key, origin string) string {
 // hands a navigation to another origin to the window ({si:'nav-open'}), which
 // opens it through that origin's proxy: a link click; window.open; a GET form;
 // and, where the browser has the Navigation API (its navigate event: Chrome,
-// Edge, recent Safari and Firefox), location.assign/replace, location.href =
-// and any form, each cancelled and reopened. location's own methods cannot be
-// replaced (the browser forbids it), so without that API a script that sets
-// location, or a POST form, still leaves the proxy; a POST to another site is
-// reopened as a GET of its address, its body dropped.
+// Edge, recent Safari and Firefox), location.assign/replace and location.href
+// =, each cancelled and reopened. location's own methods cannot be replaced
+// (the browser forbids it), so without that API a script that sets location
+// still leaves the proxy. A POST form to another site (submitted, or sent by
+// form.submit()) keeps its fields: its action (or its button's formaction) is
+// pointed at this proxy's fwdPath, which hands it, body and all, to the other
+// site's proxy.
 func navScript(target string) string {
 	t, _ := json.Marshal(target) // escapes <, so it cannot end the script
 	return `<script>(function(){var P=window.parent;if(P===window)return;var T=` + string(t) + `;` +
@@ -133,7 +162,11 @@ func navScript(target string) string {
 		`addEventListener('click',function(e){if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;` +
 		`var a=e.target.closest&&e.target.closest('a[href]');if(a&&away(a.href))e.preventDefault()});` +
 		`var wo=window.open;window.open=function(u){if(u!=null&&u!==''&&away(u))return null;return wo.apply(window,arguments)};` +
-		`addEventListener('submit',function(e){var f=e.target,m=(f.getAttribute('method')||'get').toLowerCase();if(e.defaultPrevented||m!=='get')return;` +
+		`function meth(f,s){return((s&&s.getAttribute('formmethod'))||f.getAttribute('method')||'get').toLowerCase()}` +
+		`function post(f,s){var fa=s&&s.hasAttribute('formaction'),u;try{u=new URL(fa?s.formAction:f.action,location.href)}catch(x){return}` +
+		`if(!/^https?:$/.test(u.protocol)||u.origin===location.origin)return;var to=location.origin+'` + fwdPath + `?to='+encodeURIComponent(u.href);if(fa)s.formAction=to;else f.action=to}` +
+		`var fs=HTMLFormElement.prototype.submit;HTMLFormElement.prototype.submit=function(){if(meth(this)==='post')post(this);return fs.apply(this,arguments)};` +
+		`addEventListener('submit',function(e){var f=e.target,s=e.submitter,m=meth(f,s);if(e.defaultPrevented)return;if(m==='post'){post(f,s);return}if(m!=='get')return;` +
 		`var u;try{u=new URL(f.action,location.href)}catch(x){return}u.search=new URLSearchParams(new FormData(f)).toString();if(away(u.href))e.preventDefault()});` +
 		`if(window.navigation)navigation.addEventListener('navigate',function(e){if(!e.cancelable||e.navigationType==='traverse'||e.navigationType==='reload')return;` +
 		`var u;try{u=new URL(e.destination.url)}catch(x){return}if(u.origin!==location.origin&&away(u.href))e.preventDefault()});` +

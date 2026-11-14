@@ -148,12 +148,27 @@ func (m *teleprompter) localStep(dir int) {
 
 var (
 	clickRE = regexp.MustCompile(`(?i)\[click\]`)
-	// cueRE finds the [CLICK] cues after cueMark replaced them: private-use
-	// marks survive markdown (a NUL does not)
-	cueRE = regexp.MustCompile("\uE000CUE(\\d+)\uE001")
+	// cueRE finds the [CLICK] cues (CUE n) and the [TERM …] / [BROWSER …]
+	// cues (ACT n, the n-th of acts) after markCues replaced them:
+	// private-use marks survive markdown (a NUL does not)
+	cueRE = regexp.MustCompile("\uE000(CUE|ACT)(\\d+)\uE001")
 )
 
 func cueMark(n int) string { return fmt.Sprintf("\uE000CUE%d\uE001", n) }
+
+// markCues puts the marks cueMarks draws as badges in place of t's cues:
+// each [CLICK] numbered on from *cue, each [TERM …] / [BROWSER …] an index
+// into *acts, which keeps its text.
+func markCues(t string, cue *int, acts *[]string) string {
+	t = deck.ActCueRE.ReplaceAllStringFunc(t, func(c string) string {
+		*acts = append(*acts, strings.Trim(c, "[]"))
+		return fmt.Sprintf("\uE000ACT%d\uE001", len(*acts)-1)
+	})
+	return clickRE.ReplaceAllStringFunc(t, func(string) string {
+		*cue++
+		return cueMark(*cue)
+	})
+}
 
 func (m *teleprompter) View() tea.View {
 	v := tea.NewView(m.render())
@@ -187,7 +202,7 @@ func (m *teleprompter) voices(vs []deck.Voice, mark func(string) string, cue *in
 		default:
 			*cue += len(clickRE.FindAllString(v.Notes, -1))
 			if !m.points && v.Notes != "" {
-				w := strings.Fields(clickRE.ReplaceAllString(v.Notes, ""))
+				w := strings.Fields(deck.ActCueRE.ReplaceAllString(clickRE.ReplaceAllString(v.Notes, ""), ""))
 				more := ""
 				if len(w) > 8 {
 					w, more = w[:8], " …"
@@ -260,13 +275,8 @@ func (m *teleprompter) render() string {
 	if m.points {
 		src, label = s.Points, "Speaker notes"
 	}
-	cue := 0
-	mark := func(t string) string {
-		return clickRE.ReplaceAllStringFunc(t, func(string) string {
-			cue++
-			return cueMark(cue)
-		})
-	}
+	cue, acts := 0, []string(nil)
+	mark := func(t string) string { return markCues(t, &cue, &acts) }
 	if len(s.Voices) == 0 {
 		src = mark(src)
 	} else {
@@ -284,7 +294,7 @@ func (m *teleprompter) render() string {
 		script = append(script, b.lines...)
 	}
 	for i := range script {
-		script[i] = cueMarks(script[i], m.k, m.pal)
+		script[i] = cueMarks(script[i], m.k, acts, m.pal)
 	}
 	if len(script) == 0 {
 		script = []string{mu.Render("No " + strings.ToLower(map[bool]string{false: "Notes:", true: "Points:"}[m.points]) + " on this slide.")}

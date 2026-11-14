@@ -1085,8 +1085,8 @@ func (m *studioModel) rehearseView(w, h int) []string {
 	s := m.d.Slides[m.slide]
 	slide, steps := Slide(m.d, m.slide, m.k, sw-4, h-3, m.pal)
 	left := m.pane(fmt.Sprintf("Slide %d/%d · build %d/%d", m.slide+1, len(m.d.Slides), m.k, steps), strings.Split(slide, "\n"), sw, h, false)
-	cue := 0
-	src := clickRE.ReplaceAllStringFunc(s.Notes, func(string) string { cue++; return fmt.Sprintf("CUE%d", cue) })
+	cue, acts := 0, []string(nil)
+	src := markCues(s.Notes, &cue, &acts)
 	nr := &textRenderer{pal: m.pal, w: w - sw - 4, k: 1 << 30}
 	var script []string
 	for i, b := range nr.body(src) {
@@ -1096,7 +1096,7 @@ func (m *studioModel) rehearseView(w, h int) []string {
 		script = append(script, b.lines...)
 	}
 	for i := range script {
-		script[i] = cueMarks(script[i], m.k, m.pal)
+		script[i] = cueMarks(script[i], m.k, acts, m.pal)
 	}
 	if len(script) == 0 {
 		script = []string{m.st().Foreground(m.pal.Muted).Render("No Notes: on this slide.")}
@@ -1109,11 +1109,20 @@ func (m *studioModel) rehearseView(w, h int) []string {
 	return out
 }
 
-// cueMarks draws the [CLICK] placeholders of a script line: done ✓, next ▶ CLICK.
-func cueMarks(l string, k int, pal Palette) string {
+// cueMarks draws the cue placeholders of a script line (markCues): a
+// [CLICK] done ✓, next ▶ CLICK; a [TERM …] / [BROWSER …] as its own badge
+// (▶ TERM Lab 1: docker ps), never as raw text.
+func cueMarks(l string, k int, acts []string, pal Palette) string {
 	st := lipgloss.NewStyle().Foreground(pal.FG)
 	return cueRE.ReplaceAllStringFunc(l, func(c string) string {
-		n, _ := strconv.Atoi(cueRE.FindStringSubmatch(c)[1])
+		sm := cueRE.FindStringSubmatch(c)
+		n, _ := strconv.Atoi(sm[2])
+		if sm[1] == "ACT" {
+			if n < len(acts) {
+				return lipgloss.NewStyle().Foreground(pal.Accent).Bold(true).Render("▶ " + acts[n])
+			}
+			return ""
+		}
 		switch {
 		case n <= k:
 			return st.Foreground(pal.Muted).Render("✓ click")

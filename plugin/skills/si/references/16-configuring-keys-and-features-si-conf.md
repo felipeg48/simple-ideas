@@ -10,6 +10,7 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `keys.<action>: <key>` | remap a command key |
 | `feature.<name>: off` | turn a feature off (its key stops working and its toolbar button is hidden) |
 | `handout.paper: letter` | the paper of `si build --handout` PDFs: `a4` (default) or `letter` |
+| `terminal.prompt: clean` | the shells of `si play`'s terminal drawer: `real` (default: your own `$SHELL` with its rc files and prompt) or `clean` (si's neutral prompt, the folder's name and `$`, no rc files; `PATH` and the environment kept). Filming always uses `clean`: `si demo test`/`run` and `si build --mp4` with `[TERM …]` cues |
 | `draw.hold: shift` | the key you hold in draw mode to draw with the cursor, no click: `alt` (⌥ Option, the default), `shift`, `ctrl`, `meta` (⌘ Command), or `off` |
 | `links.<label>: <url>` | a page outside the build that find (`/`) offers, e.g. `links.Team wiki: https://wiki.example.com`; relative paths work too |
 | `timer.time: 10,15,30` | break-timer presets (default `5,10,15,20,30,45,60`) |

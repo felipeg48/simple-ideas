@@ -53,7 +53,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "3.17.0"
+const version = "3.18.0"
 
 // Exit codes.
 const (
@@ -1318,6 +1318,7 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		return exitProblems
 	}
 	srv.Dev = o.dev
+	srv.CleanPrompt = os.Getenv("SI_TERM_PROMPT") == "clean" // si demo's own si play (webdemo.playProgram)
 	srv.Autoplay = o.autoplay != ""
 	srv.Instructor = !o.serveMode || o.instructor // a course: si play is the instructor's, si serve the learner's
 	srv.Title = o.title

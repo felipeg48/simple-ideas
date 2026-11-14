@@ -98,7 +98,7 @@ func TestSinceRun(t *testing.T) {
 
 func TestPlayProgram(t *testing.T) {
 	p := playProgram("/usr/local/bin/si", "/a b/talk.md", 7411, "/bin/bash")
-	if p.Cmd != "SHELL='/bin/bash' exec '/usr/local/bin/si' play '/a b/talk.md' --addr 127.0.0.1:7411" && p.Cmd != "SHELL=/bin/bash exec /usr/local/bin/si play '/a b/talk.md' --addr 127.0.0.1:7411" {
+	if p.Cmd != "SHELL='/bin/bash' SI_TERM_PROMPT=clean exec '/usr/local/bin/si' play '/a b/talk.md' --addr 127.0.0.1:7411" && p.Cmd != "SHELL=/bin/bash SI_TERM_PROMPT=clean exec /usr/local/bin/si play '/a b/talk.md' --addr 127.0.0.1:7411" {
 		t.Errorf("cmd = %s", p.Cmd)
 	}
 	if p.Ready.Port != 7411 || p.Within != time.Minute || p.Name != "si-play" {

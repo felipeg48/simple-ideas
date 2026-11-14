@@ -179,3 +179,50 @@ func TestBrowserProxyAcrossSites(t *testing.T) {
 		t.Error("a target can end the script")
 	}
 }
+
+// TestBrowserProxyForwardsPost: a POST form to another site, pointed by the
+// nav script at its page's proxy's fwdPath, reaches the other site through
+// that site's own proxy with its method and fields.
+func TestBrowserProxyForwardsPost(t *testing.T) {
+	two := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+		io.WriteString(w, r.Method+" "+r.URL.Path+" user="+r.PostForm.Get("user")+" pass="+r.PostForm.Get("pass"))
+	}))
+	defer two.Close()
+	one := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "one") }))
+	defer one.Close()
+	var b browserProxies
+	defer b.closeAll()
+	u, _ := url.Parse(one.URL + "/")
+	oneProxy, err := b.open(u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := http.PostForm(oneProxy+fwdPath+"?to="+url.QueryEscape(two.URL+"/login?next=/home"), url.Values{"user": {"ana"}, "pass": {"s3cret"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	if string(body) != "POST /login user=ana pass=s3cret" {
+		t.Fatalf("forwarded: %q", body)
+	}
+	tu, _ := url.Parse(two.URL)
+	twoProxy, _ := b.open(tu)
+	if !strings.HasPrefix(res.Request.URL.String(), twoProxy+"/login?next=") {
+		t.Errorf("not through the other site's proxy: %s (its proxy %s)", res.Request.URL, twoProxy)
+	}
+	for _, bad := range []string{"", "javascript:alert(1)", "/relative"} {
+		r, err := http.Get(oneProxy + fwdPath + "?to=" + url.QueryEscape(bad))
+		if err != nil {
+			t.Fatal(err)
+		}
+		r.Body.Close()
+		if r.StatusCode != http.StatusBadRequest {
+			t.Errorf("to=%q: status %d", bad, r.StatusCode)
+		}
+	}
+	if s := navScript("http://x"); !strings.Contains(s, fwdPath+"?to=") || !strings.Contains(s, "HTMLFormElement.prototype.submit") {
+		t.Error("nav script does not point POST forms at the forward")
+	}
+}

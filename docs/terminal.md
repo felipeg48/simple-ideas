@@ -74,6 +74,14 @@ one (`creack/pty`) plus the bundled xterm.
 
 - One PTY-backed `$SHELL` per tab; cwd = deck dir; env inherited (+ `TERM=
   xterm-256color`).
+- **A clean prompt when filmed (v3.18.0).** With `Server.CleanPrompt` (set by
+  `si build --mp4`'s cue films, by `SI_TERM_PROMPT=clean` that `si demo`'s own
+  `si play` gets, or by si.conf `terminal.prompt: clean`) a tab starts
+  `webdemo.CleanShell`: zsh with a temp `ZDOTDIR` (`-d`, a `.zshrc` with
+  `PROMPT` = the folder's name and `$`), bash `--noprofile --rcfile`, sh with
+  `ENV`; `PATH` and the environment kept, history off. The real prompt can
+  show an email, a host or a cloud account; a live talk keeps it unless asked
+  (`TestTerminalCleanPrompt`).
 - Ctrl-C needs no special endpoint: xterm sends `0x03` as input → the PTY delivers
   SIGINT to the foreground process naturally.
 - A tab's shell is killed on close; all shells are killed on `si play` shutdown.
@@ -224,10 +232,16 @@ http(s) origin; a relative `Location` stays. Script navigations (v3.14.0):
 `nav-open`, `null` returned), cancels a GET form to another origin (its
 fields as the query), and, where `window.navigation` exists, cancels any
 other cross-origin `navigate` event (`location.assign`/`replace`,
-`location.href =`, POST forms; not `traverse` or `reload`) and posts it.
+`location.href =`; not `traverse` or `reload`) and posts it.
 `location`'s methods are unforgeable, so without the Navigation API those
-still leave the proxy; a POST is reopened as a GET of its address, body
-dropped.
+still leave the proxy. POST forms (v3.18.0): on submit (and in a wrapped
+`HTMLFormElement.prototype.submit`), a POST to another origin has its
+`action` (or the submitter's `formaction`) pointed at the page's own proxy's
+`/__si_fwd?to=<real address>`, which starts that origin's proxy and answers
+`307` to the address through it: the browser re-sends the method and body,
+so a login form keeps its fields, with or without the Navigation API
+(`TestBrowserProxyForwardsPost`, the login and `form.submit()` cases of
+`browser.e2e.mjs`).
 `TestBrowserProxyAcrossSites`; `web/studio/e2e/browser.e2e.mjs` (two local
 origins, headless).
 

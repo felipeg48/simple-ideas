@@ -24,6 +24,8 @@ import (
 	"time"
 
 	"github.com/creack/pty"
+
+	"github.com/felipeg48/simple-ideas/internal/webdemo"
 )
 
 // ringMax is how much recent output a tab keeps to replay when a page
@@ -73,6 +75,7 @@ type termHub struct {
 	idle    time.Duration // detached shells are closed after this
 	janitor sync.Once
 	lines   map[string]lineCount // Follow's line counts, per file (files.go lineAt)
+	clean   func() bool          // start shells with si's neutral prompt (Server.CleanPrompt)
 }
 
 func newTermHub(dir string) *termHub {
@@ -85,11 +88,20 @@ func (h *termHub) newTab(w http.ResponseWriter, r *http.Request) {
 	if shell == "" {
 		shell = "/bin/sh"
 	}
-	cmd := exec.Command(shell)
+	cmd, rcDone := exec.Command(shell), func() {}
 	cmd.Dir = h.dir
 	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
+	if h.clean != nil && h.clean() { // filmed: no account, host or cloud context in the prompt
+		c, done, err := webdemo.CleanShell(shell, h.dir)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		cmd, rcDone = c, done
+	}
 	f, err := pty.Start(cmd)
 	if err != nil {
+		rcDone()
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -102,6 +114,7 @@ func (h *termHub) newTab(w http.ResponseWriter, r *http.Request) {
 	go s.pump()
 	go func() { // reap when the shell exits, after its last output is read
 		cmd.Wait()
+		rcDone()
 		select {
 		case <-s.exited:
 		case <-time.After(time.Second): // a background child still holds the PTY

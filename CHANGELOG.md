@@ -3,6 +3,20 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.18.0:** the workbench, finished, and a privacy fix for filming.
+  **A clean prompt when si films the drawer:** `si demo test` / `run` (an
+  `app:` deck) and `si build --mp4` with `[TERM …]` cues start the drawer's
+  shells with si's neutral prompt, the folder's name and `$` (zsh with its
+  own `ZDOTDIR`, bash `--noprofile --rcfile`, sh `ENV`; `PATH` and the
+  environment kept, history off), so no email, host or cloud account from
+  your own prompt reaches a video. A live `si play` keeps your shell unless
+  si.conf says `terminal.prompt: clean`. **A POST form to another site keeps
+  its fields** in a browser window (a login page on another origin): the
+  page's proxy hands it on, method and body, to that site's proxy (a 307),
+  in every browser. **The terminal teleprompter** (`si play --terminal
+  --notes`, and the terminal Studio's rehearse view) shows `[TERM …]` and
+  `[BROWSER …]` cues as badges, not raw text; the Studio's rehearse view
+  also draws its `[CLICK]` badges again.
 - **v3.17.0:** the deck on stage (#13). Web demo steps drive `si play`'s
   own tools by name: `embed-terminal "Lab 1"` (then `run`, `type`, `press`,
   `expect output` go to that drawer tab; `· split right|down`;

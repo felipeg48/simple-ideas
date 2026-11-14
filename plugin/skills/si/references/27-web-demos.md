@@ -438,7 +438,8 @@ browser window over the slide, as the presenter would show them. With
 `app:` a deck (a `.md` path next to the script), `si demo test` and `si demo
 run` start `si play <deck> --addr 127.0.0.1:<free port>` themselves (with
 the `start:` programs, first; `shell:` is the drawer's shell) and stop it at
-the end; `app:` may also be the URL of a deck `si play` already serves.
+the end; its drawer's shells start with a clean prompt (the folder's name and
+`$`, none of your rc files), so no account, host or cloud name gets filmed; `app:` may also be the URL of a deck `si play` already serves.
 These steps drive the tools by name, through the page's public API
 `window.siPlay` (§14), never through si's markup:
 

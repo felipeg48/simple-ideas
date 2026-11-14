@@ -37,7 +37,8 @@ Points: What to cover, not a script
   `[TERM close]` set the drawer. `[BROWSER RabbitMQ]` opens the deck's
   `browser:` link named `RabbitMQ` (or a URL) in a window over the slides;
   `[BROWSER close]` closes every window. Like `[CLICK]` they are never read
-  aloud: the teleprompter shows each as a badge with its text, auto-play in
+  aloud: the teleprompter (and `si play --terminal --notes`) shows each as a
+  badge with its text, auto-play in
   `si play` acts on them as it reaches them, and `si build talk.md --mp4
   --voice` films them at that point of the narration (the deck then plays on
   `si play`'s page, the drawer and the windows in the video). They are no

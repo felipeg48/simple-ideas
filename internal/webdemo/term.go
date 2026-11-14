@@ -101,6 +101,22 @@ func shellCommand(shell, dir, rc string) *exec.Cmd {
 	return c
 }
 
+// CleanShell is the shell (shell:, else $SHELL, else sh) in dir with si's
+// neutral prompt (the folder's name and $) and none of the user's rc files:
+// what the si play drawer runs when it is filmed, so no account name, host
+// or cloud context shows. done removes the rc folder once the shell is gone.
+func CleanShell(shell, dir string) (cmd *exec.Cmd, done func(), err error) {
+	rc, err := os.MkdirTemp("", "si-rc-")
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := shellRC(rc); err != nil {
+		os.RemoveAll(rc)
+		return nil, nil, err
+	}
+	return shellCommand(shell, dir, rc), func() { os.RemoveAll(rc) }, nil
+}
+
 // openShell starts a terminal's shell and keeps its output.
 func openShell(name, shell, dir, rc string, mask func(string) string) (*term, error) {
 	t := &term{name: name, cmd: shellCommand(shell, dir, rc), out: newOutput(mask, nil), done: make(chan struct{})}

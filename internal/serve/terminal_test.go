@@ -617,3 +617,42 @@ func TestTerminalIdleReap(t *testing.T) {
 		t.Errorf("after the idle time: idle tab alive %v, attached tab alive %v", a, b)
 	}
 }
+
+// TestTerminalCleanPrompt: with clean on (filming), each shell's first output
+// is si's neutral prompt, the folder's name and $, and nothing of the user's
+// own (home folder, user name, rc files).
+func TestTerminalCleanPrompt(t *testing.T) {
+	ansi := regexp.MustCompile(`\x1b\][^\x07]*\x07|\x1b\[[0-9;?]*[a-zA-Z]|\r`)
+	for _, sh := range []string{"/bin/zsh", "/bin/bash", "/bin/sh"} {
+		if _, err := os.Stat(sh); err != nil {
+			continue
+		}
+		t.Run(filepath.Base(sh), func(t *testing.T) {
+			t.Setenv("SHELL", sh)
+			dir := filepath.Join(t.TempDir(), "orders")
+			os.Mkdir(dir, 0o755)
+			h := newTermHub(dir)
+			h.clean = func() bool { return true }
+			t.Cleanup(h.closeAll)
+			w := httptest.NewRecorder()
+			h.newTab(w, httptest.NewRequest("POST", "/_si/term/api/new", nil))
+			s := h.tabs[w.Body.String()]
+			if s == nil {
+				t.Fatalf("no tab: %s", w.Body.String())
+			}
+			var out string
+			for i := 0; i < 100 && !strings.Contains(out, "$ "); i++ {
+				time.Sleep(50 * time.Millisecond)
+				s.mu.Lock()
+				out = ansi.ReplaceAllString(string(s.ring), "")
+				s.mu.Unlock()
+			}
+			if strings.TrimSpace(out) != "orders $" {
+				t.Errorf("first output %q, want the clean prompt %q", out, "orders $ ")
+			}
+			if home := os.Getenv("HOME"); home != "" && strings.Contains(out, home) {
+				t.Errorf("the home folder shows: %q", out)
+			}
+		})
+	}
+}

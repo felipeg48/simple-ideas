@@ -290,6 +290,7 @@ func playForFilm(src string, o *options) (string, func(), error) {
 		return "", nil, err
 	}
 	srv.Terminal = true
+	srv.CleanPrompt = true // filmed: si's neutral prompt, not the presenter's
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return "", nil, err

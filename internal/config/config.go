@@ -69,6 +69,10 @@ speakers.control: any
 autoplay.dwell: 3
 # voice.Ana: kokoro:af_heart
 
+# si play's terminal drawer: real (your own shell and prompt) or clean (si's
+# neutral prompt, no rc files: the folder and $). Filming always uses clean
+terminal.prompt: real
+
 # draw (a): hold this key and move to draw with the cursor, no click
 draw.hold: alt         # alt (⌥ Option), shift, ctrl, meta (⌘ Command), or off
 
@@ -132,6 +136,7 @@ type Config struct {
 	Links                    []Link            // links.<label>: <url>, searchable from find (/), in file order
 	Budget                   Budget            // budget.page / budget.3d: si check fails on bigger pages
 	DrawHold                 string            // draw.hold: the key that draws with the cursor ("" = alt)
+	TermPrompt               string            // terminal.prompt: clean (si's neutral prompt in the drawer) or real ("" = real)
 	HandoutPaper             string            // handout.paper: a4 (default) or letter
 	AudienceOff              bool              // audience.save: off: keep no poll counts or questions
 	SpeakersTurn             bool              // speakers.control: turn: only the speaker whose turn it is advances
@@ -393,6 +398,12 @@ func (c *Config) parse(r io.Reader) {
 				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: draw.hold wants alt, shift, ctrl, meta or off, got %q", ln, v))
 			} else {
 				c.DrawHold = hold
+			}
+		case k == "terminal.prompt":
+			if v != "clean" && v != "real" {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: terminal.prompt wants clean or real, got %q", ln, v))
+			} else {
+				c.TermPrompt = v
 			}
 		case strings.HasPrefix(k, "keys."):
 			c.setKey(strings.TrimPrefix(k, "keys."), v, ln)

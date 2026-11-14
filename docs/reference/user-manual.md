@@ -334,8 +334,11 @@ result at its line, and clicking line numbers spotlights lines for the
 audience (Esc clears). **w** opens web pages (a broker's console) in floating
 windows over the slides, each origin through a loopback proxy so consoles
 that refuse framing still show; links and redirects to other sites stay
-proxied, the address box shows the real address, and ← → cross sites. See
-`docs/terminal.md`.
+proxied (a login form's POST to another site keeps its fields), the address
+box shows the real address, and ← → cross sites. When si films the drawer
+(`si demo`, `si build --mp4` with `[TERM …]` cues) its shells start with a
+clean prompt, the folder and `$`, never your own; si.conf `terminal.prompt:
+clean` asks for it in a live talk too. See `docs/terminal.md`.
 
 A talk that shows something live can set it up itself: front matter
 `setup:` (must finish), `start:` (keeps running, `· wait for "ready"`),

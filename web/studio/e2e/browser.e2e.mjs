@@ -2,7 +2,8 @@
 // redirect to another origin both stay proxied (each origin its own proxy),
 // the address bar shows the real address, back and forward cross the sites;
 // a script that sends the page to another site (location.assign, replace,
-// location.href =, window.open, a form) stays proxied too.
+// location.href =, window.open, a form) stays proxied too, and a POST form
+// to another site (a login) arrives there with its fields.
 // Two local origins, si play, headless. Needs ../../bin/si (make build).
 // Run: npm run e2e:browser
 import { chromium } from "playwright";
@@ -19,8 +20,14 @@ const listen = (h) => new Promise((ok) => { const s = createServer(h); s.listen(
 const page = (title, body) => `<!doctype html><html><head><title>${title}</title></head><body><h1>${title}</h1>${body}</body></html>`;
 const two = await listen((q, r) => {
   // framing refused, as consoles do: only the proxy shows it
-  r.writeHead(200, { "Content-Type": "text/html", "X-Frame-Options": "DENY" });
-  r.end(page("Two " + q.url, ""));
+  let body = "";
+  q.on("data", (c) => (body += c));
+  q.on("end", () => {
+    r.writeHead(200, { "Content-Type": "text/html", "X-Frame-Options": "DENY" });
+    // a POST shows its fields in the title: "Two POST /login user=ana"
+    const f = new URLSearchParams(body);
+    r.end(page("Two " + (q.method === "POST" ? "POST " + q.url + " user=" + f.get("user") + " pass=" + f.get("pass") : q.url), ""));
+  });
 });
 const twoURL = "http://localhost:" + two.address().port;
 const one = await listen((q, r) => {
@@ -31,7 +38,10 @@ const one = await listen((q, r) => {
     <button id="replace" onclick="location.replace('${twoURL}/replaced')">replace</button>
     <button id="href" onclick="location.href='${twoURL}/href'">href</button>
     <button id="open" onclick="window.open('${twoURL}/opened')">open</button>
-    <form action="${twoURL}/form" method="get"><input name="q" value="orders"><button id="form">form</button></form>`));
+    <form action="${twoURL}/form" method="get"><input name="q" value="orders"><button id="form">form</button></form>
+    <form action="${twoURL}/login" method="post"><input name="user" value="ana"><input name="pass" type="password" value="s3cret"><button id="login">log in</button></form>
+    <form id="sf" action="${twoURL}/signin" method="POST"><input name="user" value="bo"><input name="pass" value="pw"></form>
+    <button id="submit" onclick="document.getElementById('sf').submit()">submit()</button>`));
 });
 const oneURL = "http://127.0.0.1:" + one.address().port;
 
@@ -85,6 +95,17 @@ try {
     await f.click("#" + id);
     f = await waitText("Two " + path);
     check(!!f && !f.url().startsWith(twoURL), id + " to another site stays proxied: " + (f && f.url()));
+    await sleep(200);
+    check((await addr()) === twoURL + path, id + ": address bar " + (await addr()));
+  }
+  // a POST form to the other site (a login) keeps its fields, through that site's proxy
+  for (const [id, title, path] of [["login", "Two POST /login user=ana pass=s3cret", "/login"], ["submit", "Two POST /signin user=bo pass=pw", "/signin"]]) {
+    await p.click('[data-a="back"]');
+    f = await waitText("One");
+    if (!f) { check(false, "back to the first site before " + id); continue; }
+    await f.click("#" + id);
+    f = await waitText(title);
+    check(!!f && !f.url().startsWith(twoURL), id + ": a POST to another site keeps its fields, proxied: " + (f && (await f.title()) + " " + f.url()));
     await sleep(200);
     check((await addr()) === twoURL + path, id + ": address bar " + (await addr()));
   }

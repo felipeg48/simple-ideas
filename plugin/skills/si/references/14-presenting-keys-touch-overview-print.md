@@ -184,8 +184,9 @@
   `location.replace`, `location.href = …`, `window.open` and forms (in
   Chrome, Edge and other browsers with the Navigation API; elsewhere only
   `window.open` and GET forms are caught, since a page cannot replace
-  `location`'s methods). A form that POSTs to another site opens that address
-  without its fields; type the address in the box when a page still leaves.
+  `location`'s methods). A form that POSTs to another site (a login page)
+  arrives there with its fields, in every browser: si sends it on through
+  that site's proxy. Type the address in the box when a page still leaves.
   Keys typed in a window never drive the deck.
 
   ```markdown

@@ -135,9 +135,10 @@ func (r *runner) playDeck() (string, error) {
 	return fmt.Sprintf("http://127.0.0.1:%d", port), nil
 }
 
-// playProgram is the start: program of an app: deck (shell: is the drawer's shell).
+// playProgram is the start: program of an app: deck (shell: is the drawer's
+// shell); its drawer's shells start with si's neutral prompt (SI_TERM_PROMPT).
 func playProgram(bin, deckPath string, port int, shell string) *Program {
-	cmd := fmt.Sprintf("exec %s play %s --addr 127.0.0.1:%d", shellQuote(bin), shellQuote(deckPath), port)
+	cmd := fmt.Sprintf("SI_TERM_PROMPT=clean exec %s play %s --addr 127.0.0.1:%d", shellQuote(bin), shellQuote(deckPath), port)
 	if shell != "" {
 		cmd = "SHELL=" + shellQuote(shell) + " " + cmd
 	}

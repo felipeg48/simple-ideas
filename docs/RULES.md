@@ -570,7 +570,8 @@ Points: What to cover, not a script
   `[TERM close]` set the drawer. `[BROWSER RabbitMQ]` opens the deck's
   `browser:` link named `RabbitMQ` (or a URL) in a window over the slides;
   `[BROWSER close]` closes every window. Like `[CLICK]` they are never read
-  aloud: the teleprompter shows each as a badge with its text, auto-play in
+  aloud: the teleprompter (and `si play --terminal --notes`) shows each as a
+  badge with its text, auto-play in
   `si play` acts on them as it reaches them, and `si build talk.md --mp4
   --voice` films them at that point of the narration (the deck then plays on
   `si play`'s page, the drawer and the windows in the video). They are no
@@ -1318,8 +1319,9 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   `location.replace`, `location.href = …`, `window.open` and forms (in
   Chrome, Edge and other browsers with the Navigation API; elsewhere only
   `window.open` and GET forms are caught, since a page cannot replace
-  `location`'s methods). A form that POSTs to another site opens that address
-  without its fields; type the address in the box when a page still leaves.
+  `location`'s methods). A form that POSTs to another site (a login page)
+  arrives there with its fields, in every browser: si sends it on through
+  that site's proxy. Type the address in the box when a page still leaves.
   Keys typed in a window never drive the deck.
 
   ```markdown
@@ -1852,6 +1854,7 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `keys.<action>: <key>` | remap a command key |
 | `feature.<name>: off` | turn a feature off (its key stops working and its toolbar button is hidden) |
 | `handout.paper: letter` | the paper of `si build --handout` PDFs: `a4` (default) or `letter` |
+| `terminal.prompt: clean` | the shells of `si play`'s terminal drawer: `real` (default: your own `$SHELL` with its rc files and prompt) or `clean` (si's neutral prompt, the folder's name and `$`, no rc files; `PATH` and the environment kept). Filming always uses `clean`: `si demo test`/`run` and `si build --mp4` with `[TERM …]` cues |
 | `draw.hold: shift` | the key you hold in draw mode to draw with the cursor, no click: `alt` (⌥ Option, the default), `shift`, `ctrl`, `meta` (⌘ Command), or `off` |
 | `links.<label>: <url>` | a page outside the build that find (`/`) offers, e.g. `links.Team wiki: https://wiki.example.com`; relative paths work too |
 | `timer.time: 10,15,30` | break-timer presets (default `5,10,15,20,30,45,60`) |
@@ -3544,7 +3547,8 @@ browser window over the slide, as the presenter would show them. With
 `app:` a deck (a `.md` path next to the script), `si demo test` and `si demo
 run` start `si play <deck> --addr 127.0.0.1:<free port>` themselves (with
 the `start:` programs, first; `shell:` is the drawer's shell) and stop it at
-the end; `app:` may also be the URL of a deck `si play` already serves.
+the end; its drawer's shells start with a clean prompt (the folder's name and
+`$`, none of your rc files), so no account, host or cloud name gets filmed; `app:` may also be the URL of a deck `si play` already serves.
 These steps drive the tools by name, through the page's public API
 `window.siPlay` (§14), never through si's markup:
 
