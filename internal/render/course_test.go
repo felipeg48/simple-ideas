@@ -228,3 +228,49 @@ func TestGuideNavLayout(t *testing.T) {
 		t.Error("nav: on a guide sets the layout and the navigation attributes")
 	}
 }
+
+// TestDemoLessons (issue #13): a filmed web demo under kind=demo is a learner
+// lesson labelled Demo with its video; a demo without app: stays the
+// instructor's live runbook, out of the learner build.
+func TestDemoLessons(t *testing.T) {
+	dir := t.TempDir()
+	for name, body := range map[string]string{
+		"_course.md": "---\ntitle: T\n---\n- Module 1: M\n  - [Intro](m/intro.md)\n  - [D](m/d.md) · kind=demo\n  - [Live](m/live.md) · kind=demo\n",
+		"m/intro.md": "# Intro\n\nWords.\n",
+		"m/d.md":     "---\ntype: demo\ntitle: D\napp: http://localhost:1\n---\n\n## F\n\nSay: Look.\n- go /\n",
+		"m/d.mp4":    "",
+		"m/d.vtt":    "WEBVTT\n",
+		"m/live.md":  "---\ntype: demo\ntitle: Live\n---\n\n## Here it is\n\nRun it.\n",
+	} {
+		p := filepath.Join(dir, filepath.FromSlash(name))
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte(body), 0o644)
+	}
+	g, err := deck.LoadGuide(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pages, probs, _ := RenderGuide(g.ForAudience(false), Options{})
+	if len(probs) != 0 {
+		t.Fatal(probs)
+	}
+	got := map[string]string{}
+	for _, p := range pages {
+		got[p.Rel] = string(p.Result.HTML)
+	}
+	d := got["m/d.html"]
+	for _, want := range []string{`<span class="si-course-crumb-kind">Demo</span>`, `<video controls preload="metadata" playsinline src="d.mp4"><track kind="captions" src="d.vtt"`} {
+		if !strings.Contains(d, want) {
+			t.Errorf("the filmed demo lacks %s", want)
+		}
+	}
+	if strings.Contains(d, "An instructor demo") {
+		t.Error("a filmed demo is no instructor demo")
+	}
+	if !strings.Contains(got["m/intro.html"], "Then: Demo") {
+		t.Error("the next-lesson line says Demo")
+	}
+	if _, ok := got["m/live.html"]; ok {
+		t.Error("a demo without app: stays out of the learner build")
+	}
+}

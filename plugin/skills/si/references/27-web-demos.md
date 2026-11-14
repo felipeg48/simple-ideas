@@ -430,6 +430,65 @@ whose coupon does not work; `broker.md`, a tiny broker in Go started with
 `go run`, filmed in a terminal and in its console; `morning.md`, seeded and
 cleaned up around its feature).
 
+### The deck on stage: embed-terminal and embed-browser
+
+A course video often wants the slides on screen with `si play`'s own tools
+over them: the terminal drawer running the lab's commands and a console in a
+browser window over the slide, as the presenter would show them. With
+`app:` a deck (a `.md` path next to the script), `si demo test` and `si demo
+run` start `si play <deck> --addr 127.0.0.1:<free port>` themselves (with
+the `start:` programs, first; `shell:` is the drawer's shell) and stop it at
+the end; `app:` may also be the URL of a deck `si play` already serves.
+These steps drive the tools by name, through the page's public API
+`window.siPlay` (§14), never through si's markup:
+
+| Step | What it does |
+|---|---|
+| `embed-terminal "Lab 1"` | opens the drawer on the shell tab `Lab 1` (created when missing, raised when it is there); the `run`, `type` (with no field), `press`, `expect output` and `wait for output` steps after it go to that tab |
+| `embed-terminal "Server" · split right` | the tab `Server` in a pane beside the tab in front (`split down`: below it); the steps after it go to `Server` |
+| `embed-terminal min` · `max` · `restore` · `close` | the drawer: hidden (its shells run on), the whole window, back to its size, hidden and restored; after `min` or `close` the steps act on the page again |
+| `embed-browser "RabbitMQ"` | opens the deck's `browser:` link `RabbitMQ` (or a URL, `embed-browser "http://localhost:15672/#/queues"`) in a window over the slides; an open one comes to the front |
+| `embed-browser "RabbitMQ" · at 80,60 · size 1100x700 · zoom 125%` | places it (CSS pixels from the top left; zoom 30% to 300%), the same on every take |
+| `embed-browser "RabbitMQ" close` · `min` | closes or minimises it |
+| `click "Queues" in embed-browser "RabbitMQ"` | a step inside the window's page: any element step takes `in embed-browser "Name"` as it takes `in frame` |
+| `slide 4` · `next` · `prev` | moves the deck (slide numbers from 1; `next` and `prev` step through the build steps, as → and ← do) |
+
+```markdown
+---
+type: demo
+title: The broker on stage
+app: onstage/talk.md
+shell: sh
+start: si serve onstage/console --addr 127.0.0.1:7421 as console · wait for port 7421
+---
+
+## The queue fills
+
+What it does: the drawer starts a producer under the slide, and the console shows the queue grow.
+
+Say: Here is the slide about the queue. Let's see it in action.
+- slide 2
+- embed-terminal "Lab 1"
+- run "echo sending 3 orders"
+- expect output "sending 3 orders"
+
+Say: And the console, right over the slide.
+- embed-browser "Console" · at 700,60 · size 640x420 · zoom 110%
+- click "Queues" in embed-browser "Console"
+- expect "orders: 3 messages" visible in embed-browser "Console"
+- embed-browser "Console" close
+- embed-terminal close
+- next
+```
+
+In a take, `run` and `type` type at a person's pace. A tab of the drawer is
+not a `terminal` step's window: `run … · wait`, `· exit`, `· fails`, `expect
+no output`, `in 2` and `note … at line` are for `terminal` steps, and `si
+check` says so; follow a long command with `wait for output "…"`. The same
+moments can live in a deck's own `Notes:` instead, as `[TERM Lab 1: make up]`
+and `[BROWSER RabbitMQ]` cues (§11), filmed by `si build talk.md --mp4
+--voice` with no demo script. Example: `examples/webdemo/onstage.md`.
+
 ### Before and after
 
 A real demo needs more than one program and one command: start a broker,

@@ -20,6 +20,10 @@ func TestParts(t *testing.T) {
 		{"markdown plain", "", "Notes: See [the docs](http://x) and `si play`, _really_.\n- a list item\n", "See the docs and si play, really. a list item//"},
 		{"snake_case kept", "", "Notes: the max_step value", "the max_step value//"},
 		{"two speakers", "speakers: Ana, Ravi\n", "Notes[Ana]: Hi. [CLICK] More.\n\nNotes[Ravi]: Mine.", "Hi./Ana/|More./Ana/k|Mine./Ravi/"},
+		{"tool cues split, never said", "", "Notes: Let's see. [TERM Lab 1: docker compose up -d] Up.\n[BROWSER RabbitMQ] The queue. [CLICK]",
+			"Let's see.//|Up.//+term:Lab 1:docker compose up -d|The queue.//+browser:RabbitMQ:|//k"},
+		{"cue after a click", "", "Notes: One. [CLICK] [TERM close] Two.", "One.//|Two.//k+term::"},
+		{"malformed cue dropped", "", "Notes: A [TERM] B", "A//|B//"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -30,7 +34,11 @@ func TestParts(t *testing.T) {
 			}
 			var got []string
 			for _, p := range d.Parts()[1] {
-				got = append(got, fmt.Sprintf("%s/%s/%s", p.Text, p.Speaker, map[bool]string{true: "k"}[p.Click]))
+				g := fmt.Sprintf("%s/%s/%s", p.Text, p.Speaker, map[bool]string{true: "k"}[p.Click])
+				for _, a := range p.Acts {
+					g += "+" + a.Tool + ":" + a.Name + ":" + a.Cmd
+				}
+				got = append(got, g)
 			}
 			if g := strings.Join(got, "|"); g != tc.want {
 				t.Errorf("parts = %q, want %q", g, tc.want)
@@ -54,5 +62,38 @@ func TestVoicesMeta(t *testing.T) {
 	dir = write(t, map[string]string{"d.md": "---\nvoices: Ana\n---\n# T\n"})
 	if d, _ := Parse(filepath.Join(dir, "d.md")); len(d.Problems) != 1 || !strings.Contains(d.Problems[0].Msg, "Name=voice") {
 		t.Errorf("bad voices: problems = %v", d.Problems)
+	}
+}
+
+func TestParseAct(t *testing.T) {
+	for _, tc := range []struct{ tool, body, want, err string }{
+		{"TERM", " Lab 1: echo hi", "term|Lab 1|echo hi|", ""},
+		{"TERM", " Lab 1", "term|Lab 1||", ""},
+		{"TERM", " max", "term|||max", ""},
+		{"TERM", " http://x:1", "term|http://x:1||", ""},
+		{"TERM", "", "", "needs a tab name"},
+		{"TERM", " : ls", "", "needs a tab name"},
+		{"TERM", " Lab:", "", "empty command"},
+		{"BROWSER", " RabbitMQ", "browser|RabbitMQ||", ""},
+		{"BROWSER", " http://localhost:15672/#/queues", "browser|http://localhost:15672/#/queues||", ""},
+		{"BROWSER", " close", "browser|||close", ""},
+		{"BROWSER", "", "", "needs a browser: link"},
+	} {
+		a, err := ParseAct(tc.tool, tc.body)
+		if tc.err != "" {
+			if err == nil || !strings.Contains(err.Error(), tc.err) {
+				t.Errorf("%s%q: err = %v, want %q", tc.tool, tc.body, err, tc.err)
+			}
+			continue
+		}
+		if got := a.Tool + "|" + a.Name + "|" + a.Cmd + "|" + a.State; err != nil || got != tc.want {
+			t.Errorf("%s%q = %q, %v; want %q", tc.tool, tc.body, got, err, tc.want)
+		}
+	}
+	if acts, errs := Acts("x [TERM a: b] [BROWSER] [TERMINAL no] [CLICK]"); len(acts) != 1 || len(errs) != 1 {
+		t.Errorf("Acts = %v, %v", acts, errs)
+	}
+	if p := Plain("Up [TERM a: b] now"); p != "Up now" {
+		t.Errorf("Plain = %q", p)
 	}
 }

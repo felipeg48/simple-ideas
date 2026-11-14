@@ -27,7 +27,8 @@ type narration struct {
 	spoken     map[[2]int]float64 // slide, step (0-based) -> seconds on screen
 	marks      []recMark
 	sha        string
-	cues       []webdemo.Cue // a voiced script: each part's words and time, for <name>.vtt
+	cues       []webdemo.Cue        // a voiced script: each part's words and time, for <name>.vtt
+	acts       map[[2]int][]viewAct // a voiced script's [TERM …] / [BROWSER …] cues, by slide and step
 }
 
 type recMark struct {

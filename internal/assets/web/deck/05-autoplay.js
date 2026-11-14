@@ -69,6 +69,8 @@
       if (cur !== at) { ap.part = 0; apRun(); return; }
     }
     var p = parts[ap.part];
+    /* [TERM …] / [BROWSER …] cues: si play's drawer and windows, before the words (once: not on a resume) */
+    if (p.a && window.siPlay && !(ap.from && ap.from.j === ap.part)) window.siPlay.act(p.a).catch(function (e) { console.warn('si auto-play:', e && e.message); });
     if (!p.t) { ap.part++; apRun(); return; }
     apSpeak(p, g, function () { if (g === ap.gen) { ap.pos = null; ap.part++; apRun(); } });
   }

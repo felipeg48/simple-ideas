@@ -325,9 +325,10 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 		// a canvas change, the next slide): a cue in the teleprompter, never read aloud
 		clicks := 0
 		script := func(md string) string {
+			md, cues := dr.toolCues(sc, md)
 			h := dr.postprocess(dr.toHTML(md, nil), s.Dir, sc)
 			clicks += len(clickCueRE.FindAllStringIndex(h, -1))
-			return clickCueRE.ReplaceAllString(h, `<span class="si-cue">click</span>`)
+			return cues.Replace(clickCueRE.ReplaceAllString(h, `<span class="si-cue">click</span>`))
 		}
 		var notes string
 		if len(s.Voices) == 0 {

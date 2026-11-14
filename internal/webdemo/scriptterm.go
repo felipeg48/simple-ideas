@@ -394,12 +394,43 @@ func (s *Script) checkScenes(f *Feature) {
 		}
 	}
 	term := ""                 // the current terminal ("" = the browser)
+	embed := ""                // the si play drawer tab in front (embed-terminal)
 	split := map[string]bool{} // terminals split in two
 	if first := firstStep(f); s.App == "none" && first != nil && first.Kind != "terminal" {
 		s.problem(first.Line, `with app: none (a terminal-only demo) a feature begins with terminal "Name"`)
 	}
 	for _, b := range f.Blocks {
 		for _, st := range b.Steps {
+			if embedKinds[st.Kind] {
+				switch {
+				case s.App == "none":
+					s.problem(st.Line, "%q: app: none has no si play page (app: a deck, talk.md, or a URL si play serves)", st.Text)
+				case !deckApp(s.App) && !strings.Contains(s.App, "://"):
+					s.problem(st.Line, "%q needs si play: app: is a deck (talk.md) or a URL si play serves, not a folder", st.Text)
+				case term != "":
+					s.problem(st.Line, "%q acts on si play's page, but terminal %q is in front: write - browser before it", st.Text, term)
+				case st.Kind == "embed-terminal" && st.State == "":
+					embed = st.Name
+				case st.Kind == "embed-terminal" && (st.State == "close" || st.State == "min"):
+					embed = ""
+				}
+				continue
+			}
+			if term == "" && embed != "" && st.Name == "" {
+				switch {
+				case st.Kind == "run" && st.Block:
+					s.problem(st.Line, "%q: · wait, · exit and · fails are for a terminal step; in embed-terminal %q, follow the run with wait for output \"…\"", st.Text, embed)
+				case st.Kind == "expect-no-output" || st.Pane != 0 || (st.Kind == "note" && st.AtLine):
+					s.problem(st.Line, "%q is for a terminal step, not embed-terminal %q", st.Text, embed)
+				case st.Kind == "press":
+					if _, err := termKey(st.Value.Text); err != nil {
+						s.problem(st.Line, "%q: %v", st.Text, err)
+					}
+				}
+				if inTerminal[st.Kind] || st.Kind == "press" || st.Kind == "note" {
+					continue
+				}
+			}
 			switch {
 			case s.App == "none" && (st.Kind == "browser" || (inBrowser[st.Kind] && term == "")):
 				s.problem(st.Line, "%q: app: none has no browser (a terminal-only demo)", st.Text)

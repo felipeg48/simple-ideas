@@ -116,6 +116,8 @@
     zl.addEventListener('click', function () { zoomBy(0); });
     el.querySelector('.si-web-name').textContent = w.name;
     var input = el.querySelector('.si-web-url'), frame = el.querySelector('iframe');
+    frame.setAttribute('data-si-window', w.name); // the public API's handle on the page (window.siPlay.browser.frame)
+    w.setZoom = function (z) { w.zoom = Math.max(0.3, Math.min(3, z)); applyZoom(); };
     input.value = url;
     /* back / forward: the page's own history, told by the script the proxy puts
        in each page ({si:'nav'} messages) and driven with {si:'nav-cmd'}; hist is
@@ -255,5 +257,39 @@
     });
   });
 
-  window.siWeb = { picker: picker, open: open, restoreOnly: function () {} };
+  /* windows by name, for window.siPlay.browser (the public API in the deck
+     runtime, docs/terminal.md): a browser: link's name or a URL; o places it
+     ({x, y, w, h} in CSS pixels, zoom 1.25 = 125 %) */
+  function byName(n) { return wins.filter(function (w) { return w.name === n || w.key === n; })[0] || null; }
+  var api = {
+    open: function (n, o) {
+      o = o || {};
+      var link = LINKS.filter(function (l) { return l.name === n; })[0];
+      if (!link && !/[\/.:]/.test(n)) return Promise.reject(new Error('no browser: link named ' + n + ' (and it is not a URL)'));
+      var w = byName(n);
+      if (w) {
+        if (w.el.classList.contains('is-min')) minimise(w, false);
+        front(w);
+        if (o.x != null) w.el.style.left = o.x + 'px'; if (o.y != null) w.el.style.top = o.y + 'px';
+        if (o.w != null) w.el.style.width = o.w + 'px'; if (o.h != null) w.el.style.height = o.h + 'px';
+        if (o.zoom) w.setZoom(o.zoom);
+        save();
+        return Promise.resolve(n);
+      }
+      var k = wins.length, at = { x: innerWidth * 0.45 + k * 28, y: innerHeight * 0.08 + k * 28, w: innerWidth * 0.5, h: innerHeight * 0.66, zoom: o.zoom };
+      ['x', 'y', 'w', 'h'].forEach(function (p) { if (o[p] != null) at[p] = o[p]; });
+      w = open(link ? link.name : '', link ? link.url : n, at);
+      w.key = n; w.frame.setAttribute('data-si-window', n);
+      return new Promise(function (ok) { /* its page loaded (or 10 s) */
+        var f = w.frame, done = function () { clearTimeout(tm); f.removeEventListener('load', done); ok(n); }, tm = setTimeout(done, 10000);
+        f.addEventListener('load', done);
+      });
+    },
+    close: function (n) { (n ? [byName(n)] : wins.slice()).forEach(function (w) { if (w) close(w); }); },
+    min: function (n) { var w = byName(n); if (w) minimise(w, true); },
+    frame: function (n) { var w = byName(n); return w ? w.frame : null; },
+    names: function () { return wins.map(function (w) { return w.name; }); }
+  };
+
+  window.siWeb = { api: api, picker: picker, open: open, restoreOnly: function () {} };
 })();

@@ -244,6 +244,45 @@ both are on the page the screencast films. `focus N` sets the pane `run`,
 in 2` picks a pane for one step. Two panes at most. On Windows the shells
 are `cmd` on pipes, as for one terminal; ConPTY is not used.
 
+## The public API: `window.siPlay` (v1, issue #13)
+
+Web demos (`embed-terminal`, `embed-browser`, `slide N`, RULES §27), a
+deck's `Notes:` cues (`[TERM Name: command]`, `[BROWSER Name]`, §11, played
+by auto-play and filmed by `si build --mp4 --voice`) and tests drive the
+drawer, the browser windows and the deck through one object the play page
+defines, never through the markup (`.si-term`, `[data-act=…]`,
+`.si-web-url` are not a contract and may change). Where it lives:
+`internal/assets/web/deck/05-playapi.js` (only when `cfg.terminal`, i.e.
+`si play` on a loopback address, and not a remote role), on top of
+`window.siTerm.api` (`term.js`: tabs by label, `shellReady`, `typeOut`) and
+`window.siWeb.api` (`web.js`: windows by link name or the name they were
+opened with; the iframe carries `data-si-window`). Lazy loading stays:
+the first call loads xterm.js / term.js or web.js (callbacks queue while a
+load is in flight). The full table of calls is in RULES §14;
+`internal/webdemo/embed_e2e_test.go` pins it (`TestPlayAPIContract`: the
+shape, version 1, and what each call does against a real `si play` server
+and a local fake console).
+
+- `terminal.open(name, {split})` resolves once the tab's shell has printed
+  and gone quiet (80 ms with bracketed paste, 250 ms without, or after 3 s
+  of continuous output); `run` pastes (bracketed where the shell has it),
+  `{typing: ms}` types; `type` sends keys raw; `output` reads the xterm
+  buffer, wrapped lines joined.
+- `browser.open(name, {x, y, w, h, zoom})`: a link name, else anything with
+  `/`, `.` or `:` is a URL (refused otherwise); resolves on the frame's load.
+- `slide(n, step)`, `next()`, `prev()`, `at()`: the runtime's own `go`,
+  `forward`, `backward` (same as `window.SI`).
+- `act(cues)`: `deck.Act` objects (`{tool, name, cmd, state}`), in order.
+
+When a demo's `app:` is a `.md` deck, `si demo` adds `exec si play <deck>
+--addr 127.0.0.1:<free port>` (`SHELL=` from `shell:`) at the front of the
+`start:` programs (`internal/webdemo/embed.go`, `playDeck`; `Options.SIBin`
+names the binary, else `os.Executable`), so it is stopped and logged like
+any program. `si build --mp4` of a deck with cues serves it in-process
+(`cmd/si/motion.go`, `playForFilm`, terminal on, loopback) and films each
+view holding cues as it plays (`filmActs`), at the time the voiced script
+reaches them.
+
 ## Viewer tabs
 
 The Viewer icon (`term.js` `newViewer`): a tab `{viewer: true, pane, tabEl}` in the

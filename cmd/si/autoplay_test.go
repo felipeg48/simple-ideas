@@ -102,3 +102,40 @@ func TestVoicedNarration(t *testing.T) {
 		t.Errorf("audio %v %v for %g s", st, err, n.seconds)
 	}
 }
+
+// TestVoicedActs: a Notes: script's [TERM …] / [BROWSER …] cues fall where
+// they are said: after the words before them, in their build step.
+func TestVoicedActs(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "talk.md")
+	os.WriteFile(src, []byte("---\nbrowser: Console=http://localhost:1/\n---\n# T\n\n---\n\n## Demo\n\n<!-- steps -->\n- a\n\nNotes: Let us see. [TERM Lab: echo hi] It runs. [CLICK] [BROWSER Console] Here.\n"), 0o644)
+	d, _ := deck.Parse(src)
+	dv, _, err := webdemo.ForDeck(d, nil, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines, err := dv.VoiceParts(&halfSecond{t: t, dir: t.TempDir()}, d.Parts())
+	if err != nil {
+		t.Fatal(err)
+	}
+	n, err := voicedNarration(d, []int{0, 1}, lines, 2, "system", filepath.Join(dir, "n.wav"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	a0, a1 := n.acts[[2]int{1, 0}], n.acts[[2]int{1, 1}]
+	if len(a0) != 1 || a0[0].at != 0.5 || a0[0].acts[0].Cmd != "echo hi" || len(a1) != 1 || a1[0].at != 0 || a1[0].acts[0].Name != "Console" {
+		t.Errorf("acts = %+v / %+v", a0, a1)
+	}
+	for _, c := range n.cues {
+		if strings.Contains(c.Text, "TERM") || strings.Contains(c.Text, "BROWSER") {
+			t.Errorf("a cue is never said: %q", c.Text)
+		}
+	}
+	info := &deckInfo{slides: d.Slides}
+	if a := info.actsAt(nil, 1, 1); len(a) != 1 || a[0].acts[0].Tool != "browser" {
+		t.Errorf("actsAt without narration = %+v", a)
+	}
+	if !hasActs(d) {
+		t.Error("hasActs")
+	}
+}

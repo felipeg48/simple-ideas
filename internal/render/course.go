@@ -79,7 +79,7 @@ func courseMinutes(g *deck.Guide) string {
 
 // countsTowards reports whether a lesson counts in the progress (an
 // instructor demo does not: learners only see a placeholder, if anything).
-func countsTowards(it *deck.NavItem) bool { return it.Kind != "demo" }
+func countsTowards(it *deck.NavItem) bool { return !it.LiveDemo() }
 
 func ringSVG() string {
 	c := 2 * math.Pi * 7
@@ -264,7 +264,7 @@ func (dr *deckRenderer) courseLesson(g *deck.Guide, page string, mod, idx, inMod
 	}
 	if dr.opt.Instructor {
 		note := strings.TrimSpace(dr.d.Meta.Instructor)
-		if kind == "demo" && note == "" {
+		if it != nil && it.LiveDemo() && note == "" {
 			note = "An instructor demo: the learner build leaves it out"
 			if g.Meta.InstructorDemos == "show-placeholder" {
 				note = "An instructor demo: learners see a placeholder in its place"

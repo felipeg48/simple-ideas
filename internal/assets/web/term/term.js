@@ -517,7 +517,7 @@
       term.onData(function (d) { if (t.id && !t.mute) sendIn(t, d); });
       term.onResize(function () { sendResize(t); });
     }
-    if (saved) { t.everBP = true; attach(saved.id); } // a shell that was ready before the reload
+    if (saved && saved.id) { t.everBP = true; attach(saved.id); } // a shell that was ready before the reload
     else fetch(API + 'new', { method: 'POST' }).then(function (r) { return r.text(); }).then(attach)
       .catch(function () { term.write('\r\n\x1b[31msi: could not start a shell\x1b[0m\r\n'); });
 
@@ -1511,6 +1511,74 @@
     });
   })();
 
-  window.siTerm = { toggle: toggle, show: show, hide: hide, runbook: toggleRunbook, demos: toggleDemos, viewer: function () { show(true); newViewer(); },
+  /* shell tabs by name, for window.siPlay.terminal (the public API in the deck
+     runtime, docs/terminal.md): web demos and a deck's [TERM …] cues drive the
+     drawer through these, never through its markup */
+  function labelOf(t) { return t.tabEl.querySelector('.label').textContent; }
+  function byName(n) { for (var i = 0; i < tabs.length; i++) if (!tabs[i].viewer && !tabs[i].ended && labelOf(tabs[i]) === n) return tabs[i]; return null; }
+  /* resolves once the tab's shell has printed something (its prompt); quiet:
+     and gone quiet too, or kept talking for 3 s (a command still running) */
+  function shellReady(n, quiet) {
+    var t = byName(n);
+    if (!t) return Promise.reject(new Error('no shell tab named ' + n + ' in the drawer'));
+    return new Promise(function (ok, no) {
+      var start = Date.now();
+      (function wait() {
+        var bp = !!(t.term.modes && t.term.modes.bracketedPasteMode), now = Date.now();
+        if (t.id && t.lastOut && (!quiet || now - t.lastOut > (bp ? 80 : 250) || now - start > 3000)) { ok(t); return; }
+        if (now - start > 20000) { no(new Error('the shell of tab ' + n + ' did not start')); return; }
+        setTimeout(wait, 50);
+      })();
+    });
+  }
+  function typeOut(t, text, ms) {
+    if (!ms) { sendIn(t, text); return Promise.resolve(); }
+    var cs = Array.from(text);
+    return new Promise(function (ok) {
+      (function one(i) { if (i >= cs.length) { ok(); return; } sendIn(t, cs[i]); setTimeout(function () { one(i + 1); }, ms); })(0);
+    });
+  }
+  var api = {
+    open: function (n, dir) {
+      if (!n) return Promise.reject(new Error('a shell tab needs a name'));
+      root.classList.add('is-open');
+      var t = byName(n), shown = tabs[active];
+      if (!t) {
+        newTab({ label: n }); t = tabs[tabs.length - 1];
+        if (dir && shown) { select(tabs.indexOf(shown), true); splitOpen(dir, t); }
+      } else if (dir && paneOf(t) < 0 && shown && shown !== t) splitOpen(dir, t);
+      else select(tabs.indexOf(t));
+      return shellReady(n, true).then(function () { return n; });
+    },
+    input: function (n, text, ms) { return shellReady(n).then(function (t) { return typeOut(t, String(text), ms); }); },
+    run: function (n, text, ms) {
+      return shellReady(n, true).then(function (t) {
+        text = String(text).replace(/\n+$/, '');
+        var bp = !!(t.term.modes && t.term.modes.bracketedPasteMode);
+        if (!ms) { sendIn(t, (bp ? '\x1b[200~' + text + '\x1b[201~' : text) + '\r'); return; }
+        return typeOut(t, text, ms).then(function () { return new Promise(function (ok) { setTimeout(ok, 250); }); }).then(function () { sendIn(t, '\r'); });
+      });
+    },
+    text: function (n) {
+      var t = byName(n); if (!t) return '';
+      var b = t.term.buffer.active, out = [];
+      for (var i = 0; i < b.length; i++) {
+        var l = b.getLine(i); if (!l) continue;
+        var s = l.translateToString(true);
+        if (l.isWrapped && out.length) out[out.length - 1] += s; else out.push(s); /* a long line, whole */
+      }
+      return out.join('\n').replace(/\s+$/, '');
+    },
+    names: function () { return tabs.filter(function (t) { return !t.viewer && !t.ended; }).map(labelOf); },
+    state: function (s) {
+      if (s === 'max' || s === 'restore') { root.classList.add('is-open'); setMax(s === 'max'); }
+      else if (s === 'min') hide();
+      else if (s === 'close') { if (root.classList.contains('is-max')) setMax(false); hide(); }
+      else throw new Error('drawer state ' + s + ': min, max, restore or close');
+      return s;
+    }
+  };
+
+  window.siTerm = { api: api, toggle: toggle, show: show, hide: hide, runbook: toggleRunbook, demos: toggleDemos, viewer: function () { show(true); newViewer(); },
     quickOpen: quickOpen, search: function () { openSearch(); }, split: function (dir) { if (dir) splitOpen(dir === 'add' ? null : dir); else splitClose(); } };
 })();

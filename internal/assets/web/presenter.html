@@ -21,6 +21,8 @@ body{overflow:hidden;height:100%}
 .pv-notes .si-cue{display:inline-block;margin:0 .2em;padding:.05em .55em .1em;border-radius:.35em;font:700 .62em/1.4 var(--si-font-mono);letter-spacing:.1em;text-transform:uppercase;
   color:var(--si-on-accent);background:var(--si-accent);vertical-align:.18em}
 .pv-notes .si-cue::before{content:"\25B6\00a0"}
+/* a presenter-tool cue ([TERM Lab 1: make up], [BROWSER Console]): what si play opens there, as written */
+.pv-notes .si-cue[data-cue]{text-transform:none;letter-spacing:.02em;font-weight:600;background:var(--si-fg);color:var(--si-bg)}
 .pv-notes[hidden]{display:none}
 /* two presenters (speakers:): your script in full, the others as one quiet cue line */
 .pv-who{font-family:var(--si-font-mono);font-size:.5em;color:var(--si-accent);margin:.4em 0 .2em}

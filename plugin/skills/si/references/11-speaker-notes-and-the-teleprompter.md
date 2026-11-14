@@ -29,6 +29,28 @@ Points: What to cover, not a script
   The token reaches payments and turns red. [CLICK] Thirty seconds later one
   retry goes through. [CLICK] And the payment tile turns green.
   ```
+- **Presenter-tool cues: `[TERM Name: command]` and `[BROWSER Name]`.** Where
+  the script says them, `si play`'s own tools act (§14): `[TERM Lab 1:
+  docker compose up -d]` opens the terminal drawer on the shell tab `Lab 1`
+  (created when missing, raised when it is there) and runs the command;
+  `[TERM Lab 1]` only opens the tab; `[TERM min]`, `[TERM max]` and
+  `[TERM close]` set the drawer. `[BROWSER RabbitMQ]` opens the deck's
+  `browser:` link named `RabbitMQ` (or a URL) in a window over the slides;
+  `[BROWSER close]` closes every window. Like `[CLICK]` they are never read
+  aloud: the teleprompter shows each as a badge with its text, auto-play in
+  `si play` acts on them as it reaches them, and `si build talk.md --mp4
+  --voice` films them at that point of the narration (the deck then plays on
+  `si play`'s page, the drawer and the windows in the video). They are no
+  advance: they do not count as `[CLICK]` cues. `si check` reports a
+  malformed cue and a `[BROWSER Name]` with no such `browser:` link (one
+  with `/`, `.` or `:` is a URL). A cue ends at the first `]`.
+
+  ```markdown
+  Notes: (1 min)
+  Let's see it in action. [TERM Lab 1: docker compose up -d --wait] The broker
+  is up. [BROWSER RabbitMQ] Here is the queue, filling as the producer runs.
+  [TERM close] [BROWSER close] [CLICK]
+  ```
 - A line starting with `Points:` starts the slide's **speaker-notes talking
   points**: the main points of the topic as short bullets, to glance at if
   you'd rather talk than read. Reminders for the speaker (pace, emphasis,

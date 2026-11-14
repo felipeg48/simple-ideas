@@ -58,7 +58,7 @@ func skilljarCourse(g *deck.Guide, base string, stderr io.Writer) (publish.SJCou
 	for i, m := range learner.Items {
 		c.Lessons = append(c.Lessons, publish.SJLesson{Key: fmt.Sprintf("module-%d", i+1), Title: deck.ModuleTitle(m.Title), Type: "SECTION"})
 		for _, it := range m.Children {
-			if it.File == "" || it.Kind == "demo" { // an instructor demo is never published
+			if it.File == "" || it.LiveDemo() { // an instructor demo is never published
 				continue
 			}
 			key, _ := filepath.Rel(g.Dir, it.File)

@@ -153,7 +153,7 @@ func (dr *deckRenderer) courseBookLesson(g *deck.Guide, it *deck.NavItem, p Guid
 			}
 			b.WriteString(`<li>` + dr.inline(t))
 			if instr && strings.TrimSpace(s.Notes) != "" {
-				b.WriteString(`<blockquote>` + dr.toHTML(strings.ReplaceAll(s.Notes, "[CLICK]", ""), nil) + `</blockquote>`)
+				b.WriteString(`<blockquote>` + dr.toHTML(deck.ActCueRE.ReplaceAllString(strings.ReplaceAll(s.Notes, "[CLICK]", ""), ""), nil) + `</blockquote>`)
 			}
 			b.WriteString(`</li>`)
 		}

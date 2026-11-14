@@ -114,9 +114,10 @@
   /* Play terminal drawer: lazy-load the runtime (xterm.js + term.js) on first
    * toggle, so a page that never opens the terminal pays nothing for it, and a
    * built deck (termEnabled false) never references it at all. */
-  var termLoaded = false;
+  var termLoaded = false, termThen = [];
   function loadTerm(then) {
-    if (termLoaded) return; // load in flight
+    if (then) termThen.push(then);
+    if (termLoaded) return; // load in flight: then runs when it is in
     termLoaded = true;
     var css = document.createElement('link');
     css.rel = 'stylesheet'; css.href = '/_si/term/assets/xterm.css';
@@ -124,7 +125,7 @@
     function add(src, next) { var s = document.createElement('script'); s.src = src; s.onload = next; document.head.appendChild(s); }
     add('/_si/term/assets/xterm.js', function () {
       add('/_si/term/assets/addon-fit.js', function () {
-        add('/_si/term/assets/term.js', function () { if (window.siTerm && then) then(); });
+        add('/_si/term/assets/term.js', function () { if (window.siTerm) termThen.splice(0).forEach(function (f) { f(); }); });
       });
     });
   }
@@ -136,13 +137,14 @@
 
   /* Floating browser windows (w, si play only): lazy-load web.js; reopen the
    * windows a live reload closed (sessionStorage si-web) without the picker. */
-  var webLoaded = false;
+  var webLoaded = false, webThen = [];
   function loadWeb(then) {
     if (window.siWeb) { if (then) then(); return; }
+    if (then) webThen.push(then);
     if (webLoaded) return;
     webLoaded = true;
     var s = document.createElement('script'); s.src = '/_si/term/assets/web.js';
-    s.onload = function () { if (then) then(); };
+    s.onload = function () { webThen.splice(0).forEach(function (f) { f(); }); };
     document.head.appendChild(s);
   }
   function toggleBrowser() { if (termEnabled && !role) loadWeb(function () { window.siWeb.picker(); }); }

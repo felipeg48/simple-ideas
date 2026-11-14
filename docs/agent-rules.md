@@ -126,6 +126,13 @@ speaker's voice, addressed to the audience.
   and advances at each cue, so the cues must match the steps (`si check`
   warns when they do not); that is one more reason the script must be words
   a voice can say, with no stage directions.
+- **`[TERM Name: command]` and `[BROWSER Name]` are the other allowed marks**
+  (RULES.md §11), for a talk that shows `si play`'s own tools: where the
+  script says them, the drawer's shell tab `Name` opens and runs the command,
+  or the `browser:` link `Name` opens in a window over the slides (`[TERM
+  close]`, `[BROWSER close]` put them away). They are never read aloud, are no
+  `[CLICK]` (no advance), and `si build --mp4 --voice` films them where they
+  are said. A `[BROWSER Name]` needs a `browser:` link with that name.
 
 **`Points:` is the Speaker Notes tab.** It holds the main points of the
 topic, as short bullets the speaker glances at to talk freely instead of
@@ -209,7 +216,8 @@ Not everything is a slide deck. Pick the type by what the reader does:
   modules (`- Module 1: Title`), the links under them lessons. A lesson's kind
   comes from its target: a page is a reading, `type: deck` slides, a `.mp4` (or
   a `type: demo` with `app:`) a video, `type: lab` a lab, `type: demo` without
-  `app:` an instructor demo, `type: quiz` a quiz; `· kind=…`, `· minutes=…`,
+  `app:` an instructor demo, `type: quiz` a quiz; a filmed demo (`app:`) with
+  `· kind=demo` is a learner lesson labelled Demo (its video, like Video); `· kind=…`, `· minutes=…`,
   `· prerequisites=…` after a link override. A deck lesson for self-paced
   learners can be its narrated video: `[Title](03/deck.md) · kind=video · pdf`
   (`· handout`, `· slides` too); `si build` films `deck.mp4` with `.vtt`
@@ -350,6 +358,14 @@ Not everything is a slide deck. Pick the type by what the reader does:
   "…" in 1` or `focus 2`. Every program is stopped for you; do not add
   `kill` steps. Run `si check` (it follows the scenes), then `si demo test`;
   a failed `expect output` shows the terminal's last 40 lines.
+- **Web demos on the deck itself** (RULES.md §27, The deck on stage): to film
+  the slides with `si play`'s drawer and browser windows over them, set
+  `app: talk.md` (si demo starts and stops `si play`), then `embed-terminal
+  "Lab 1"` + `run "…"` / `expect output "…"`, `embed-browser "Console" · at
+  700,60 · size 640x420`, `click "Queues" in embed-browser "Console"`, `slide
+  3`, `next`, `prev`, `embed-terminal close`. Never drive the drawer with
+  si's CSS classes (`.si-term`, `[data-act=…]`): they are not a contract;
+  `window.siPlay` (RULES.md §14) is.
 - **Web demos, before and after** (RULES.md §27, Before and after; Scripts
   from anywhere): the run's own set-up goes in front matter, in the order it
   must happen: `start:` (a program), `prepare:` (alias `step:`, a command that

@@ -116,12 +116,20 @@ func (r *runner) locateIn(l Locator, want string, scroll bool) (found, error) {
 		return f, err
 	}
 	q, _ := json.Marshal(l.Frame)
-	o, err := r.c.Eval(`(function(f){var r=f.getBoundingClientRect(),s=getComputedStyle(f);return [r.left+f.clientLeft+parseFloat(s.paddingLeft),r.top+f.clientTop+parseFloat(s.paddingTop)]})(document.querySelector(` + string(q) + `))`)
-	var off [2]float64
+	// a scaled iframe (an embed-browser window's zoom): its CSS pixels times the scale
+	o, err := r.c.Eval(`(function(f){var r=f.getBoundingClientRect(),s=getComputedStyle(f),k=f.offsetWidth?r.width/f.offsetWidth:1;return [r.left+(f.clientLeft+parseFloat(s.paddingLeft))*k,r.top+(f.clientTop+parseFloat(s.paddingTop))*k,k]})(document.querySelector(` + string(q) + `))`)
+	var off [3]float64
 	if err != nil || json.Unmarshal(o, &off) != nil {
 		return found{}, nil
 	}
-	f.X, f.Y = f.X+off[0], f.Y+off[1]
+	k := off[2]
+	if k <= 0 {
+		k = 1
+	}
+	f.X, f.Y = off[0]+f.X*k, off[1]+f.Y*k
+	for i := range f.Box {
+		f.Box[i] *= k
+	}
 	r.fr = fc
 	if f.Found {
 		r.c.Eval(fmt.Sprintf(`window.__siT={get isConnected(){return !!document.querySelector(%s)},getBoundingClientRect:function(){var f=document.querySelector(%s);if(!f)return {left:0,top:0,width:0,height:0,right:0,bottom:0};var r=f.getBoundingClientRect(),s=getComputedStyle(f),x=r.left+f.clientLeft+parseFloat(s.paddingLeft)+%g,y=r.top+f.clientTop+parseFloat(s.paddingTop)+%g;return {left:x,top:y,width:%g,height:%g,right:x+%g,bottom:y+%g}}}`,

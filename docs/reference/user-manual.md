@@ -536,6 +536,40 @@ Points:
 
 ---
 
+## The deck on stage
+
+```markdown
+app: onstage/talk.md
+
+Say: Let's see it in action.
+- slide 2
+- embed-terminal "Lab 1"
+- run "docker compose up -d --wait"
+- embed-browser "Console" · at 700,60 · size 640x420
+- click "Queues" in embed-browser "Console"
+```
+
+- `app:` a deck: si demo starts `si play` on it, and stops it at the end
+- `embed-terminal "Name"`: the play drawer's shell tab, by name; `· split right`; `embed-terminal min|max|close`
+- `embed-browser "Name"`: a `browser:` link (or a URL) in a window over the slides; `· at`, `· size`, `· zoom`
+- `slide 4`, `next`, `prev`; inside the window: `… in embed-browser "Name"`
+- Or in the deck's own `Notes:`: `[TERM Lab 1: make up]` and `[BROWSER Console]`, filmed by `si build --mp4 --voice`
+
+Notes: (1 min)
+For a course, the best minute is often the one where the slide comes alive.
+The demo can play the deck itself: the slide stays on screen, the presenter's
+drawer opens under it and runs the lab's commands, and the broker's console
+opens in a window right over the slide. The same moments can be written in
+the deck's own script, so the narrated video shows them where they are said. [CLICK]
+
+Points:
+- Everything goes through `window.siPlay`, the play page's public API (RULES §14), never si's CSS classes
+- `si demo test` runs the same steps headless as a check
+- Teleprompter: `[TERM …]` and `[BROWSER …]` are badges, never read aloud; auto-play acts on them
+- Example: `examples/webdemo/onstage.md`
+
+---
+
 ## Before, after, and from anywhere
 
 ```markdown
@@ -605,6 +639,7 @@ the instructor, and publishes straight to SkillJar. [CLICK]
 Points:
 - Lesson kinds come from the link target; `· kind=` overrides
 - A deck as a video lesson: `· kind=video · pdf · handout · slides`; `si build` films it, with captions and its first slide as the poster (`· poster=` to change it)
+- A filmed web demo with `· kind=demo`: a learner lesson labelled Demo; without `app:` it stays the instructor's runbook
 - `nav:` also places the menu of guides, books and sites: left, right, top, bottom
 - `si new web-course --type course` writes an example with every kind
 - `--scorm` one SCO per lesson, `--scorm=single` one for the course

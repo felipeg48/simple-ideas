@@ -167,7 +167,8 @@ var Viewports = map[string][2]int{"phone": {400, 800}, "tablet": {820, 1180}, "d
 
 // StepWords are the step names, for messages and docs.
 var StepWords = []string{"go", "click", "type", "press", "select", "check", "uncheck", "hover", "scroll to", "wait", "wait for", "note", "expect", "screenshot",
-	"terminal", "run", "browser", "start", "stop", "window", "drag", "zoom to", "pan to", "zoom out", "spotlight", "focus", "lower-third"}
+	"terminal", "run", "browser", "start", "stop", "window", "drag", "zoom to", "pan to", "zoom out", "spotlight", "focus", "lower-third",
+	"embed-terminal", "embed-browser", "slide", "next", "prev"}
 
 // IsWebDemo reports whether a Markdown or AsciiDoc source is a web demo:
 // `type: demo` with an `app:` in its front matter.
@@ -678,6 +679,10 @@ func ParseStep(line string) (*Step, error) {
 		return expect(st, rest)
 	case "terminal", "browser", "run", "start", "stop":
 		return termStep(st, word, rest)
+	case "embed-terminal", "embed-browser":
+		return embedStep(st, word, rest)
+	case "slide", "next", "prev":
+		return navStep(st, word, rest)
 	default:
 		return nil, fmt.Errorf("unknown step %q (steps: %s)", st.Text, strings.Join(StepWords, ", "))
 	}
@@ -815,6 +820,13 @@ func locator(s string) (Locator, string, error) {
 func inFrame(s string) (string, string, error) {
 	in, r := cutWord(s)
 	fr, r2 := cutWord(r)
+	if in == "in" && fr == "embed-browser" { // a window over the slides (si play)
+		name, tail, err := quoted(r2)
+		if err != nil || name == "" {
+			return "", s, fmt.Errorf(`in embed-browser needs the window's "Name"`)
+		}
+		return embedWindow(name), tail, nil
+	}
 	if in != "in" || fr != "frame" {
 		return "", s, nil
 	}
@@ -853,7 +865,7 @@ func element(s string) (Locator, string, error) {
 					continue
 				}
 				next := strings.TrimSpace(s[i:])
-				if w, _ := cutWord(next); strings.HasPrefix(next, "·") || cssStop[w] || strings.HasPrefix(next, "in frame ") {
+				if w, _ := cutWord(next); strings.HasPrefix(next, "·") || cssStop[w] || strings.HasPrefix(next, "in frame ") || strings.HasPrefix(next, "in embed-browser ") {
 					end = i
 					break scan
 				}

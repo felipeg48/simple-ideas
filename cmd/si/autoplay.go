@@ -121,8 +121,17 @@ func voicedNarration(d *deck.Deck, steps []int, lines map[[2]int]webdemo.Line, d
 		for k := 0; k <= last; k++ {
 			secs := 0.0
 			for j := range parts {
+				if int(view(j)) != k {
+					continue
+				}
+				if len(parts[j].Acts) > 0 { // [TERM …] / [BROWSER …]: at this point of the narration
+					if n.acts == nil {
+						n.acts = map[[2]int][]viewAct{}
+					}
+					n.acts[[2]int{i, k}] = append(n.acts[[2]int{i, k}], viewAct{secs, parts[j].Acts})
+				}
 				l, ok := lines[[2]int{i, j}]
-				if !ok || int(view(j)) != k {
+				if !ok {
 					continue
 				}
 				if secs > 0 {

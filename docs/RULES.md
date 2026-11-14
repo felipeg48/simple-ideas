@@ -562,6 +562,28 @@ Points: What to cover, not a script
   The token reaches payments and turns red. [CLICK] Thirty seconds later one
   retry goes through. [CLICK] And the payment tile turns green.
   ```
+- **Presenter-tool cues: `[TERM Name: command]` and `[BROWSER Name]`.** Where
+  the script says them, `si play`'s own tools act (§14): `[TERM Lab 1:
+  docker compose up -d]` opens the terminal drawer on the shell tab `Lab 1`
+  (created when missing, raised when it is there) and runs the command;
+  `[TERM Lab 1]` only opens the tab; `[TERM min]`, `[TERM max]` and
+  `[TERM close]` set the drawer. `[BROWSER RabbitMQ]` opens the deck's
+  `browser:` link named `RabbitMQ` (or a URL) in a window over the slides;
+  `[BROWSER close]` closes every window. Like `[CLICK]` they are never read
+  aloud: the teleprompter shows each as a badge with its text, auto-play in
+  `si play` acts on them as it reaches them, and `si build talk.md --mp4
+  --voice` films them at that point of the narration (the deck then plays on
+  `si play`'s page, the drawer and the windows in the video). They are no
+  advance: they do not count as `[CLICK]` cues. `si check` reports a
+  malformed cue and a `[BROWSER Name]` with no such `browser:` link (one
+  with `/`, `.` or `:` is a URL). A cue ends at the first `]`.
+
+  ```markdown
+  Notes: (1 min)
+  Let's see it in action. [TERM Lab 1: docker compose up -d --wait] The broker
+  is up. [BROWSER RabbitMQ] Here is the queue, filling as the producer runs.
+  [TERM close] [BROWSER close] [CLICK]
+  ```
 - A line starting with `Points:` starts the slide's **speaker-notes talking
   points**: the main points of the topic as short bullets, to glance at if
   you'd rather talk than read. Reminders for the speaker (pace, emphasis,
@@ -1305,6 +1327,31 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   browser: RabbitMQ=http://localhost:15672, Grafana=http://localhost:3000
   ---
   ```
+
+- **The presenter tools API, `window.siPlay`** (`si play` on a loopback
+  address only, never in a built deck): what web demos (§27 `embed-terminal`,
+  `embed-browser`, `slide`), a deck's `[TERM …]` / `[BROWSER …]` cues (§11)
+  and auto-play use to drive the drawer, the browser windows and the deck by
+  name. It is a contract (version 1; si's markup and CSS classes are not):
+  a script of your own in the page, or a test, may call it too. Calls that
+  open or type return a Promise; `output`, `frame`, `names` and `at` answer
+  at once.
+
+  | Call | What it does |
+  |---|---|
+  | `siPlay.terminal.open(name, {split})` | opens the drawer on the shell tab `name` (created when missing); `split: 'right'` or `'down'` puts it beside the tab in front; resolves when its shell has drawn its prompt |
+  | `siPlay.terminal.run(name, command, {typing})` | runs a command in that tab (pasted; `typing: 55` types it, 55 ms a character) |
+  | `siPlay.terminal.type(name, keys, {typing})` | sends keys as they are (`'\r'` Enter, `'\x03'` Ctrl+C) |
+  | `siPlay.terminal.output(name)` | the tab's screen and scrollback as text (`''` for no such tab) |
+  | `siPlay.terminal.state(s)` | the drawer: `'min'` (hidden, the shells run on), `'max'`, `'restore'`, `'close'` |
+  | `siPlay.terminal.names()` | the open shell tabs |
+  | `siPlay.browser.open(name, {x, y, w, h, zoom})` | a window with the `browser:` link `name` (or a URL), placed in CSS pixels, zoom `1.25` = 125 %; an open one comes to the front; resolves when its page has loaded |
+  | `siPlay.browser.close(name)` · `.min(name)` | closes (no name: every window) or minimises it |
+  | `siPlay.browser.frame(name)` | the window's `<iframe>`, also `iframe[data-si-window="name"]` |
+  | `siPlay.browser.names()` | the open windows |
+  | `siPlay.slide(n, step)` · `.next()` · `.prev()` | moves the deck (slide from 1) like the keys; resolve with `siPlay.at()` |
+  | `siPlay.at()` | `{slide, step, slides}` |
+  | `siPlay.act(cues)` | runs cues as `[TERM …]` / `[BROWSER …]` do: `[{tool: 'term', name, cmd}, {tool: 'browser', name}, {tool: 'term', state: 'close'}]` |
 
 - **The tools bar**: the play terminal's tools sit in a narrow bar of icons
   on its right edge, as in an editor: **Demos** (▷), **Runbook** (the book)
@@ -3489,6 +3536,65 @@ whose coupon does not work; `broker.md`, a tiny broker in Go started with
 `go run`, filmed in a terminal and in its console; `morning.md`, seeded and
 cleaned up around its feature).
 
+### The deck on stage: embed-terminal and embed-browser
+
+A course video often wants the slides on screen with `si play`'s own tools
+over them: the terminal drawer running the lab's commands and a console in a
+browser window over the slide, as the presenter would show them. With
+`app:` a deck (a `.md` path next to the script), `si demo test` and `si demo
+run` start `si play <deck> --addr 127.0.0.1:<free port>` themselves (with
+the `start:` programs, first; `shell:` is the drawer's shell) and stop it at
+the end; `app:` may also be the URL of a deck `si play` already serves.
+These steps drive the tools by name, through the page's public API
+`window.siPlay` (§14), never through si's markup:
+
+| Step | What it does |
+|---|---|
+| `embed-terminal "Lab 1"` | opens the drawer on the shell tab `Lab 1` (created when missing, raised when it is there); the `run`, `type` (with no field), `press`, `expect output` and `wait for output` steps after it go to that tab |
+| `embed-terminal "Server" · split right` | the tab `Server` in a pane beside the tab in front (`split down`: below it); the steps after it go to `Server` |
+| `embed-terminal min` · `max` · `restore` · `close` | the drawer: hidden (its shells run on), the whole window, back to its size, hidden and restored; after `min` or `close` the steps act on the page again |
+| `embed-browser "RabbitMQ"` | opens the deck's `browser:` link `RabbitMQ` (or a URL, `embed-browser "http://localhost:15672/#/queues"`) in a window over the slides; an open one comes to the front |
+| `embed-browser "RabbitMQ" · at 80,60 · size 1100x700 · zoom 125%` | places it (CSS pixels from the top left; zoom 30% to 300%), the same on every take |
+| `embed-browser "RabbitMQ" close` · `min` | closes or minimises it |
+| `click "Queues" in embed-browser "RabbitMQ"` | a step inside the window's page: any element step takes `in embed-browser "Name"` as it takes `in frame` |
+| `slide 4` · `next` · `prev` | moves the deck (slide numbers from 1; `next` and `prev` step through the build steps, as → and ← do) |
+
+```markdown
+---
+type: demo
+title: The broker on stage
+app: onstage/talk.md
+shell: sh
+start: si serve onstage/console --addr 127.0.0.1:7421 as console · wait for port 7421
+---
+
+## The queue fills
+
+What it does: the drawer starts a producer under the slide, and the console shows the queue grow.
+
+Say: Here is the slide about the queue. Let's see it in action.
+- slide 2
+- embed-terminal "Lab 1"
+- run "echo sending 3 orders"
+- expect output "sending 3 orders"
+
+Say: And the console, right over the slide.
+- embed-browser "Console" · at 700,60 · size 640x420 · zoom 110%
+- click "Queues" in embed-browser "Console"
+- expect "orders: 3 messages" visible in embed-browser "Console"
+- embed-browser "Console" close
+- embed-terminal close
+- next
+```
+
+In a take, `run` and `type` type at a person's pace. A tab of the drawer is
+not a `terminal` step's window: `run … · wait`, `· exit`, `· fails`, `expect
+no output`, `in 2` and `note … at line` are for `terminal` steps, and `si
+check` says so; follow a long command with `wait for output "…"`. The same
+moments can live in a deck's own `Notes:` instead, as `[TERM Lab 1: make up]`
+and `[BROWSER RabbitMQ]` cues (§11), filmed by `si build talk.md --mp4
+--voice` with no demo script. Example: `examples/webdemo/onstage.md`.
+
 ### Before and after
 
 A real demo needs more than one program and one command: start a broker,
@@ -3895,10 +4001,25 @@ A lesson's kind comes from what it links to; `· kind=reading` (or `slides`,
 | `type: deck` | Slides | the deck in the page, with auto-play (`v`) |
 | a `.mp4`, `.webm`, `.m4v` or `.mov` | Video | a player; the file is copied beside the page |
 | `type: demo` with `app:` | Video | its `<script>.mp4`, filmed by `si build` when missing or older than the script |
+| `type: demo` with `app:` and `· kind=demo` | Demo | the same filmed video, for learners too, labelled Demo |
 | `type: lab` | Lab | the lab; its task-list boxes can be ticked |
 | `type: demo` without `app:` | Demo | the runbook (instructor build only) |
 | `type: quiz` | Quiz | the questions, scored |
 | `type: deck` with `· kind=video` | Video | the deck's narrated `<deck>.mp4`, filmed by `si build` when missing or older than the deck |
+
+**Demo lessons for learners.** A filmed web demo (`type: demo` with `app:`,
+such as one that shows the deck with `si play`'s drawer and a console over
+it, §27) under `· kind=demo` is a learner lesson labelled **Demo** in the
+menu and in the next-lesson line: the player with its captions, its done
+tick following the video, as a Video lesson. So a course can say Video for
+the narrated slides and Demo for "let's see it in action". A demo without
+`app:` stays the instructor's live runbook.
+
+```markdown
+- Module 2: First messages
+  - [Publish and consume](02/first-messages.md) · kind=video · pdf
+  - [See it in action](02/in-action.md) · kind=demo
+```
 
 **Video lessons from a deck.** For self-paced learners a slides lesson can be
 the deck's narrated video, with the slides to keep:
@@ -3944,7 +4065,7 @@ prerequisites=…`) or a lesson (front matter) are shown, not enforced.
 ### Two audiences
 
 - **Learner** (`si build course/`, `si serve course/`): readings, slides,
-  videos, labs, quizzes. Instructor demos are left out of the menu, or with
+  videos, filmed demos, labs, quizzes. Instructor demos (no `app:`) are left out of the menu, or with
   `instructor-demos: show-placeholder` shown as "Your instructor shows this
   live". Decks carry no speaker notes; lab solutions are folded.
 - **Instructor** (`si build course/ --instructor`, `si play course/`):

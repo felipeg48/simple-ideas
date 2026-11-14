@@ -194,6 +194,31 @@
   ---
   ```
 
+- **The presenter tools API, `window.siPlay`** (`si play` on a loopback
+  address only, never in a built deck): what web demos (§27 `embed-terminal`,
+  `embed-browser`, `slide`), a deck's `[TERM …]` / `[BROWSER …]` cues (§11)
+  and auto-play use to drive the drawer, the browser windows and the deck by
+  name. It is a contract (version 1; si's markup and CSS classes are not):
+  a script of your own in the page, or a test, may call it too. Calls that
+  open or type return a Promise; `output`, `frame`, `names` and `at` answer
+  at once.
+
+  | Call | What it does |
+  |---|---|
+  | `siPlay.terminal.open(name, {split})` | opens the drawer on the shell tab `name` (created when missing); `split: 'right'` or `'down'` puts it beside the tab in front; resolves when its shell has drawn its prompt |
+  | `siPlay.terminal.run(name, command, {typing})` | runs a command in that tab (pasted; `typing: 55` types it, 55 ms a character) |
+  | `siPlay.terminal.type(name, keys, {typing})` | sends keys as they are (`'\r'` Enter, `'\x03'` Ctrl+C) |
+  | `siPlay.terminal.output(name)` | the tab's screen and scrollback as text (`''` for no such tab) |
+  | `siPlay.terminal.state(s)` | the drawer: `'min'` (hidden, the shells run on), `'max'`, `'restore'`, `'close'` |
+  | `siPlay.terminal.names()` | the open shell tabs |
+  | `siPlay.browser.open(name, {x, y, w, h, zoom})` | a window with the `browser:` link `name` (or a URL), placed in CSS pixels, zoom `1.25` = 125 %; an open one comes to the front; resolves when its page has loaded |
+  | `siPlay.browser.close(name)` · `.min(name)` | closes (no name: every window) or minimises it |
+  | `siPlay.browser.frame(name)` | the window's `<iframe>`, also `iframe[data-si-window="name"]` |
+  | `siPlay.browser.names()` | the open windows |
+  | `siPlay.slide(n, step)` · `.next()` · `.prev()` | moves the deck (slide from 1) like the keys; resolve with `siPlay.at()` |
+  | `siPlay.at()` | `{slide, step, slides}` |
+  | `siPlay.act(cues)` | runs cues as `[TERM …]` / `[BROWSER …]` do: `[{tool: 'term', name, cmd}, {tool: 'browser', name}, {tool: 'term', state: 'close'}]` |
+
 - **The tools bar**: the play terminal's tools sit in a narrow bar of icons
   on its right edge, as in an editor: **Demos** (▷), **Runbook** (the book)
   and **Viewer** (the page). Demos and Runbook open as a side panel (one at a

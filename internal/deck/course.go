@@ -375,8 +375,14 @@ func ModuleMinutes(mod *NavItem) int {
 	return n
 }
 
+// LiveDemo reports whether a lesson is an instructor's live demo: kind=demo
+// with no video (a runbook page, or a web demo without app:). A filmed demo
+// (a web demo with app:) under kind=demo is a learner lesson labelled Demo,
+// its video like kind=video.
+func (it *NavItem) LiveDemo() bool { return it.Kind == "demo" && it.Video == "" }
+
 // ForAudience is the course a build shows: the instructor's has everything;
-// a learner's leaves the instructor demos out, unless `instructor-demos:
+// a learner's leaves the instructor's live demos out, unless `instructor-demos:
 // show-placeholder` keeps them as placeholders. g itself is not changed.
 func (g *Guide) ForAudience(instructor bool) *Guide {
 	if instructor || g.Meta.InstructorDemos == "show-placeholder" {
@@ -388,7 +394,7 @@ func (g *Guide) ForAudience(instructor bool) *Guide {
 		mc := *m
 		mc.Children = nil
 		for _, it := range m.Children {
-			if it.Kind == "demo" {
+			if it.LiveDemo() {
 				continue
 			}
 			ic := *it

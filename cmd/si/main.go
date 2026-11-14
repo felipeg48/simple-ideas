@@ -1038,8 +1038,19 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 					}
 					return morphSeconds(d.Slides[i].MorphDuration)
 				}}
+				info.slides = d.Slides
 				var n int
-				if n, err = exportDeckMotion(chrome, dest, out, info, o.dwell, nar); err == nil {
+				film, stop := dest, func() {}
+				if hasActs(d) { // [TERM …] / [BROWSER …] in Notes: filmed on si play's own page
+					var perr error
+					if film, stop, perr = playForFilm(d.Path, o); perr != nil {
+						film, stop = dest, func() {}
+						fmt.Fprintf(stderr, "si: %s: %v; the [TERM …] / [BROWSER …] cues are not filmed\n", d.Name, perr)
+					}
+				}
+				n, err = exportDeckMotion(chrome, film, out, info, o.dwell, nar)
+				stop()
+				if err == nil {
 					fmt.Fprintf(stdout, "  %-28s (mp4, in motion, %d views, %d KB)\n", d.Name+".mp4", n, fileKB(filepath.Join(out, d.Name+".mp4")))
 				} else {
 					fmt.Fprintf(stderr, "si: %s: filming the motion failed (%v); falling back to --dissolve\n", d.Name, err)

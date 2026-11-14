@@ -124,6 +124,32 @@ func TestClickCues(t *testing.T) {
 	}
 }
 
+func TestToolCues(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "d.md")
+	os.WriteFile(p, []byte("---\nbrowser: RabbitMQ=http://localhost:15672\n---\n# T\n\n---\n\n## Demo\n\nNotes:\nUp. [TERM Lab 1: ls *.md _x_] Then [BROWSER RabbitMQ] and [BROWSER http://x/q]. [TERM close]\n\n---\n\n## Bad\n\nNotes:\nA [TERM] b [BROWSER Nope] c [TERM x:]\n"), 0o644)
+	d, _ := deck.Parse(p)
+	res := Deck(d, Options{})
+	h := string(res.HTML)
+	for _, want := range []string{`<span class="si-cue" data-cue="term">TERM Lab 1: ls *.md _x_</span>`, `<span class="si-cue" data-cue="browser">BROWSER RabbitMQ</span>`,
+		`<span class="si-cue" data-cue="browser">BROWSER http://x/q</span>`, `<span class="si-cue" data-cue="term">TERM close</span>`} {
+		if !strings.Contains(h, want) {
+			t.Errorf("missing %s", want)
+		}
+	}
+	var msgs []string
+	for _, pr := range res.Problems {
+		msgs = append(msgs, pr.Msg)
+	}
+	all := strings.Join(msgs, "\n")
+	if len(msgs) != 3 || !strings.Contains(all, "needs a tab name") || !strings.Contains(all, "no browser: link is named Nope") || !strings.Contains(all, "empty command") {
+		t.Errorf("problems = %v", msgs)
+	}
+	if len(res.Warnings) != 0 {
+		t.Errorf("tool cues are no [CLICK] cues: %v", res.Warnings)
+	}
+}
+
 func TestDocumentSearchData(t *testing.T) {
 	dir := t.TempDir()
 	for name, body := range map[string]string{

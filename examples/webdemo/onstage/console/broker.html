@@ -1,0 +1,35 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harbor broker console</title>
+<style>
+  :root { color-scheme: light; font: 15px/1.5 system-ui, sans-serif; color: #1d2433; background: #f4f6fa; }
+  body { margin: 0; }
+  header { display: flex; align-items: center; gap: 1em; padding: .8em 1.2em; background: #1d2433; color: #fff; }
+  header b { font-size: 1.05em; }
+  nav { display: flex; gap: .4em; padding: .8em 1.2em; border-bottom: 1px solid #dde2ec; background: #fff; }
+  nav button { font: inherit; padding: .35em .9em; border: 1px solid #c9d1e0; border-radius: .4em; background: #fff; cursor: pointer; }
+  nav button[aria-pressed="true"] { background: #2f6fde; border-color: #2f6fde; color: #fff; }
+  main { padding: 1.2em; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #dde2ec; }
+  th, td { text-align: left; padding: .5em .8em; border-bottom: 1px solid #eef1f6; }
+  td.n { font-variant-numeric: tabular-nums; font-weight: 600; }
+</style>
+<header><b>Harbor</b> broker console</header>
+<nav>
+  <button type="button" aria-pressed="true" data-view="overview">Overview</button>
+  <button type="button" aria-pressed="false" data-view="queues">Queues</button>
+</nav>
+<main id="view"><p>1 node running · 2 queues · 0 consumers</p></main>
+<script>
+  var views = {
+    overview: '<p>1 node running · 2 queues · 0 consumers</p>',
+    queues: '<table><tr><th>Queue</th><th>Messages</th></tr><tr><td>orders</td><td class="n">orders: 3 messages</td></tr><tr><td>refunds</td><td class="n">0</td></tr></table>'
+  };
+  document.querySelectorAll('nav button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('nav button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      document.getElementById('view').innerHTML = views[b.getAttribute('data-view')];
+    });
+  });
+</script>

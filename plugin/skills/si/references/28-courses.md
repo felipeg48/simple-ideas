@@ -54,10 +54,25 @@ A lesson's kind comes from what it links to; `· kind=reading` (or `slides`,
 | `type: deck` | Slides | the deck in the page, with auto-play (`v`) |
 | a `.mp4`, `.webm`, `.m4v` or `.mov` | Video | a player; the file is copied beside the page |
 | `type: demo` with `app:` | Video | its `<script>.mp4`, filmed by `si build` when missing or older than the script |
+| `type: demo` with `app:` and `· kind=demo` | Demo | the same filmed video, for learners too, labelled Demo |
 | `type: lab` | Lab | the lab; its task-list boxes can be ticked |
 | `type: demo` without `app:` | Demo | the runbook (instructor build only) |
 | `type: quiz` | Quiz | the questions, scored |
 | `type: deck` with `· kind=video` | Video | the deck's narrated `<deck>.mp4`, filmed by `si build` when missing or older than the deck |
+
+**Demo lessons for learners.** A filmed web demo (`type: demo` with `app:`,
+such as one that shows the deck with `si play`'s drawer and a console over
+it, §27) under `· kind=demo` is a learner lesson labelled **Demo** in the
+menu and in the next-lesson line: the player with its captions, its done
+tick following the video, as a Video lesson. So a course can say Video for
+the narrated slides and Demo for "let's see it in action". A demo without
+`app:` stays the instructor's live runbook.
+
+```markdown
+- Module 2: First messages
+  - [Publish and consume](02/first-messages.md) · kind=video · pdf
+  - [See it in action](02/in-action.md) · kind=demo
+```
 
 **Video lessons from a deck.** For self-paced learners a slides lesson can be
 the deck's narrated video, with the slides to keep:
@@ -103,7 +118,7 @@ prerequisites=…`) or a lesson (front matter) are shown, not enforced.
 ### Two audiences
 
 - **Learner** (`si build course/`, `si serve course/`): readings, slides,
-  videos, labs, quizzes. Instructor demos are left out of the menu, or with
+  videos, filmed demos, labs, quizzes. Instructor demos (no `app:`) are left out of the menu, or with
   `instructor-demos: show-placeholder` shown as "Your instructor shows this
   live". Decks carry no speaker notes; lab solutions are folded.
 - **Instructor** (`si build course/ --instructor`, `si play course/`):

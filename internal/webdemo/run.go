@@ -62,6 +62,9 @@ type Options struct {
 	// Progress gets each start:, prepare:, step:, stop: and cleanup: line's
 	// result as it ends (si play's getting-ready page; nil: none)
 	Progress func(StepResult)
+
+	// SIBin is the si that serves an app: deck (si play); "" = this program
+	SIBin string
 }
 
 // failure is a step that did not pass: what it expected, what it found, the
@@ -115,8 +118,10 @@ type runner struct {
 	pm       sync.Mutex
 	terms    map[string]*term // this feature's terminals
 	allTerms []*term
-	cur      *term            // the terminal in front (nil: the browser)
-	procs    map[string]*proc // programs by name
+	cur      *term                // the terminal in front (nil: the browser)
+	embed    string               // the si play drawer tab embed-terminal put in front ("" = none)
+	embedRan map[string][2]string // per drawer tab: its output before the last run, and the command (embed.go)
+	procs    map[string]*proc     // programs by name
 	all      []*proc
 	stopping bool          // shutdown has begun: nothing new starts
 	local    []*proc       // this feature's start steps
@@ -195,7 +200,14 @@ func Run(s *Script, o Options) (*Report, error) {
 		defer func() { r.shutdown(); os.RemoveAll(work) }() // its programs' logs are closed first
 		r.o.Out = work
 	}
-	base, stop, err := serveApp(s)
+	var base string
+	var err error
+	stop := func() {}
+	if deckApp(s.App) { // si play serves it: started with the start: programs
+		base, err = r.playDeck()
+	} else {
+		base, stop, err = serveApp(s)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -631,7 +643,7 @@ func (r *runner) feature(f *Feature, section bool) (fr FeatureResult, cl *clip) 
 	r.mu.Lock()
 	r.errs, r.reqs, r.urls, r.loading, r.inner, r.oopif = nil, nil, map[string]string{}, 0, map[string]bool{}, map[string]string{}
 	r.mu.Unlock()
-	r.fr = nil
+	r.fr, r.embed, r.embedRan = nil, "", nil
 	tid, err := r.c.OpenPage(ctx.BrowserContextID, r.s.W, r.s.H)
 	if err != nil {
 		return fail(StepResult{Text: "open a page", Status: "failed", Found: err.Error()})
@@ -1035,6 +1047,12 @@ func (r *runner) value(v Value) (string, error) {
 
 // step runs one step; it returns a screenshot's path when it took one.
 func (r *runner) step(st *Step) (string, error) {
+	if r.toEmbed(st) { // si play's drawer, browser windows and slides (embed.go)
+		if st.Kind == "waitfor-output" || st.Kind == "expect-output" {
+			defer r.waiting()()
+		}
+		return "", r.embedStep(st)
+	}
 	switch st.Kind {
 	case "expect-output", "waitfor-output", "start", "stop":
 		defer r.waiting()()
