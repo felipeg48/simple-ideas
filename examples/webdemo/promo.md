@@ -40,6 +40,7 @@ Say: There is one plan. You start free with a hundred orders a month, and above 
 - go /
 - scroll to #pricing
 - spotlight #pricing h2 · label "Pricing"
+- spotlight off
 - zoom to .plan
 - zoom out
 

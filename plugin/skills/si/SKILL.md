@@ -64,8 +64,11 @@ si demo test shop.md            # a web demo script (type: demo + app:) run agai
 si demo run shop.md             # the same steps filmed and narrated: ONE file, demo-out/shop/shop.mp4 (title cards,
                                 # chapters); more only with --with (comma list, may repeat; or with: in front matter,
                                 # demo.with: in si.conf): captions, silent, audio, subtitles (.srt + .vtt), transcript
-                                # (.txt), chapters (chapters.txt), clips (per feature), report, readme, all;
+                                # (.txt), chapters (chapters.txt), clips (per feature), report, readme, vertical
+                                # (9:16), highlight (about 60 s), all;
                                 # long waits play faster (--fast-forward 3s, --no-fast-forward); --voice, --viewport
+si demo draft https://site --out site.md   # a first promo script read from a site (same origin, robots.txt
+                                # obeyed, nothing clicked): the site's own words, marked to polish; then si demo test
 si demo test docs/demos/        # every demo script in a folder: demo-out/<script>/ each, one combined report, one --junit
 si demo test github:owner/repo@v2/demos/ --trust   # demos from a repo at a pin (or "https://…/x.md · sha256 HEX");
                                 # --trust only in CI: a person is shown new code and asked once per pin
@@ -367,6 +370,18 @@ Not everything is a slide deck. Pick the type by what the reader does:
   back); `drag from "A" to "B"` (or `from X,Y to X,Y`, `by DX,DY`) is a real
   drag. `What it does:` is shown as written: start it lower case only when the
   word is (si).
+- **Web demo promos** (RULES.md §27, Promo kit): for a public site, start from
+  `si demo draft <url> --out promo.md`, then rewrite every `Say:` under a
+  `<!-- draft: polish this line -->` mark as narration (keep to what the site
+  itself says: no figures, customers or claims it does not state) and delete
+  the marks. Put `session: keep` in front matter and accept a cookie banner in
+  `## Before`, never in a feature. Leave `header-offset:` out (auto finds a
+  sticky header) unless a step lands under it. Reach into an iframe with
+  `… in frame .selector`. Brand only with what the author gives you: `intro:`,
+  `outro:`, `logo:`, `url:`, `music:` (a file they own), `theme:`,
+  `Lower-third: Name · Role` for a real person who agreed; never invent a
+  logo, a name or music. Add `--with vertical` or `--with highlight` only when
+  asked.
 - **Sites** take opt-in branding in `_site.md`: `logo: brand/mark.svg Name` (a
   picture with the name), `favicon:`, `touch-icon:`, `og-image:` (an https URL)
   and `version: v1.2.0 → <release notes URL>`. Never add si's own logo to a
