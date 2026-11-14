@@ -70,7 +70,7 @@ var Features = []feature{
 			{"`→ other.md`", "a linked map: drill-down, inlined in the page"},
 			{"`[!sticky]` ```` ```go ````", "sticky notes and code topics"},
 		},
-		Commands: "si new ideas --type mindmap\nsi --web .                       # the Studio's Map view: Tab, Enter, drag\nsi build ideas.md --svg --png --pdf --mp4\nsi mindmap import notes.opml     # also FreeMind, XMind, Mermaid",
+		Commands: "si new ideas --type mindmap\nsi --web .                       # the Studio's Map view: Tab, Enter, drag\nsi build ideas.md --svg --png --pdf --mp4   # view: 3d: PNG/PDF of the 3D view\nsi mindmap import notes.opml     # also FreeMind, XMind, Mermaid\nsi mindmap export ideas.md --to xmind8   # also opml, freemind, xmind, mermaid",
 		Rules:    []string{"24"}},
 	{Slug: "timelines", Title: "Timelines",
 		Lede: "Eras, dates, pictures and sources on one 16:9 page: an infographic you can present, print and check against a rubric.",

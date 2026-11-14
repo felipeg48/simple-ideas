@@ -1,7 +1,11 @@
 package mindmap
 
 import (
+	"archive/zip"
+	"bytes"
+	"encoding/xml"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -142,6 +146,91 @@ func TestExportRoundTrip(t *testing.T) {
 	}
 	if out, _ := Export(d, "xmind", ""); !strings.Contains(string(mustSheets(t, out)), "Refunds") {
 		t.Error("the xmind export lost the second map")
+	}
+}
+
+func TestExportXMind8(t *testing.T) {
+	raw, _ := os.ReadFile("../../examples/mindmap/payments.md")
+	d := Parse(string(raw))
+	out, err := Export(d, "xmind8", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	z, err := zip.NewReader(bytes.NewReader(out), int64(len(out)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := map[string][]byte{}
+	for _, f := range z.File {
+		r, _ := f.Open()
+		files[f.Name], _ = io.ReadAll(r)
+		r.Close()
+	}
+	// every part parses, in its XMind 8 namespace
+	for name, want := range map[string]string{"content.xml": "urn:xmind:xmap:xmlns:content:2.0 xmap-content",
+		"meta.xml": "urn:xmind:xmap:xmlns:meta:2.0 meta", "META-INF/manifest.xml": "urn:xmind:xmap:xmlns:manifest:1.0 manifest"} {
+		var root struct{ XMLName xml.Name }
+		if err := xml.Unmarshal(files[name], &root); err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if got := root.XMLName.Space + " " + root.XMLName.Local; got != want {
+			t.Errorf("%s: root %q, want %q", name, got, want)
+		}
+	}
+	var c struct {
+		Sheets []struct {
+			ID    string `xml:"id,attr"`
+			Title string `xml:"title"`
+			Topic struct {
+				ID       string `xml:"id,attr"`
+				Title    string `xml:"title"`
+				Children struct {
+					Topics []struct {
+						Type  string `xml:"type,attr"`
+						Topic []struct {
+							Title  string   `xml:"title"`
+							Href   string   `xml:"http://www.w3.org/1999/xlink href,attr"`
+							Labels []string `xml:"labels>label"`
+						} `xml:"topic"`
+					} `xml:"topics"`
+				} `xml:"children"`
+			} `xml:"topic"`
+		} `xml:"sheet"`
+	}
+	if err := xml.Unmarshal(files["content.xml"], &c); err != nil {
+		t.Fatal(err)
+	}
+	if len(c.Sheets) != 2 || c.Sheets[1].Title != "Refunds" || c.Sheets[1].Topic.ID == "" {
+		t.Fatalf("sheets: %+v", c.Sheets)
+	}
+	kids := c.Sheets[0].Topic.Children.Topics
+	if len(kids) != 1 || kids[0].Type != "attached" {
+		t.Fatalf("children: %+v", kids)
+	}
+	links := 0
+	for _, k := range kids[0].Topic {
+		if k.Title == "Refunds" {
+			links++
+			if k.Href != "xmind:#"+c.Sheets[1].Topic.ID {
+				t.Errorf("→ #refunds is %q", k.Href)
+			}
+		}
+	}
+	if links != 1 {
+		t.Error("no Refunds topic on the first sheet")
+	}
+	if !bytes.Contains(files["content.xml"], []byte("<label>0.82</label>")) {
+		t.Error("the badge is not a label")
+	}
+	back, err := Import("x.xmind", out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := back.String()
+	for _, want := range []string{"# Payment", "- Fraud score", "  - Model {badge=0.82}", "- Refunds → #refunds", "# Refunds"} {
+		if !strings.Contains(s, want) {
+			t.Errorf("round trip lost %q:\n%s", want, s)
+		}
 	}
 }
 

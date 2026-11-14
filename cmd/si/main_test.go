@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"github.com/felipeg48/simple-ideas/internal/config"
+	"image/png"
 	"io"
 	"os"
 	"path/filepath"
@@ -380,6 +381,52 @@ func TestMindmapImportExport(t *testing.T) {
 	}
 	if code := run([]string{"mindmap", "import", mmd}, &out, &errb); code == 0 {
 		t.Fatal("import overwrote plan.md")
+	}
+	x8 := filepath.Join(dir, "plan8.xmind")
+	if code := run([]string{"mindmap", "export", filepath.Join(dir, "plan.md"), "--to", "xmind8", "-o", x8}, &out, &errb); code != 0 {
+		t.Fatalf("export xmind8: %d %s", code, errb.String())
+	}
+	if code := run([]string{"mindmap", "import", x8}, &out, &errb); code != 0 {
+		t.Fatalf("import xmind8: %d %s", code, errb.String())
+	}
+	if back, _ := os.ReadFile(filepath.Join(dir, "plan8.md")); !strings.Contains(string(back), "# Launch\n\n- Plan\n  - Budget\n- Ship\n") {
+		t.Fatalf("xmind8 round trip:\n%s", back)
+	}
+}
+
+// TestMindmap3DExport: a view: 3d page's --png and --pdf picture the 3D view
+// (software WebGL, default camera, --scale), and --svg stays 2D, said plainly.
+func TestMindmap3DExport(t *testing.T) {
+	if findChrome() == "" || testing.Short() {
+		t.Skip("needs Chrome")
+	}
+	dir := t.TempDir()
+	md := filepath.Join(dir, "plan.md")
+	os.WriteFile(md, []byte("---\ntype: mindmap\ntitle: Launch\nview: 3d\n---\n# Launch\n\n- Plan\n  - Budget\n- Ship\n"), 0o644)
+	var out, errb strings.Builder
+	if code := run([]string{"build", md, "--png", "--pdf", "--svg", "--scale", "1.5", "-o", filepath.Join(dir, "out")}, &out, &errb); code != 0 {
+		t.Fatalf("build: %d %s %s", code, out.String(), errb.String())
+	}
+	f, err := os.Open(filepath.Join(dir, "out", "plan.png"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	cfg, err := png.DecodeConfig(f)
+	if err != nil || cfg.Width != 2400 || cfg.Height != 1500 {
+		t.Errorf("plan.png: %dx%d %v, want the 3D view at 1.5x: 2400x1500", cfg.Width, cfg.Height, err)
+	}
+	if pdf, _ := os.ReadFile(filepath.Join(dir, "out", "pdfs", "plan.pdf")); !bytes.HasPrefix(pdf, []byte("%PDF")) {
+		t.Error("no pdfs/plan.pdf")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "out", "plan-launch.svg")); err != nil {
+		t.Errorf("--svg still writes the 2D map: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "out", "plan-launch.png")); err == nil {
+		t.Error("a 3D page wrote a 2D PNG")
+	}
+	if !strings.Contains(out.String(), "3D is raster only") {
+		t.Errorf("--svg on a 3D page says nothing:\n%s", out.String())
 	}
 }
 

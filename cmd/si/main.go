@@ -105,7 +105,9 @@ Usage:
         mind map pages: every map as <name>-<id>.svg / .png (2D, theme and watermark
         baked in), pdfs/<name>.pdf with one page per map (map › links work), and
         <name>.mp4: the first map's Play as video, in 3D when the page is view: 3d
-        (--mp4 needs ffmpeg)
+        (--mp4 needs ffmpeg); a view: 3d page: --png is <name>.png and --pdf a one-page
+        pdfs/<name>.pdf of the 3D view (software WebGL, default camera, --scale up to 4);
+        no SVG of the 3D view (raster only): --svg writes the 2D maps
   si [build] <timeline.md|infographic.md> [--png [--scale 2]] [--pdf] [--svg]
         timelines and infographics: <name>.png, pdfs/<name>.pdf (a timeline: paged and
         -compact) and <name>.svg, the frame as a vector picture with real text
@@ -142,8 +144,8 @@ Usage:
         so this laptop's browser shows the remote pages as secure too; untrust takes it out
   si mindmap import <file.opml|.mm|.xmind|.mmd> [-o out.md]
         turn an OPML, FreeMind, XMind or Mermaid mindmap file into a mind map page
-  si mindmap export <map.md> --to opml|freemind|xmind|mermaid [--map id] [-o file|-]
-        write a mind map in another format (XMind: every map, one sheet each)
+  si mindmap export <map.md> --to opml|freemind|xmind|xmind8|mermaid [--map id] [-o file|-]
+        write a mind map in another format (XMind and XMind 8 with xmind8: every map, one sheet each)
   si demo test <script.md> [--feature "Name"] [--junit report.xml] [-o dir]
         run a web demo script (type: demo with app:, a URL or the app's folder) in headless
         Chrome as a test: clicks, typing, expectations; report.html + report.json in
@@ -949,7 +951,23 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 				d.Name+".html", len(d.Slides), strconv.FormatFloat(d.Minutes(), 'f', -1, 64), res.Steps, res.Canvases, len(res.HTML)/1024)
 		}
 		if chrome != "" && d.IsMindmap() { // mind maps: every map as SVG / PNG, the PDF one page per map
-			if rel, err := exportMindmap(chrome, dest, out, d.Name, o.svg, o.png, o.pdf, o.scale, stdout); err != nil {
+			if d.Meta.MapView == "3d" { // the 3D view as a picture; SVG stays 2D (3D is raster only)
+				if o.svg {
+					if _, err := exportMindmap(chrome, dest, out, d.Name, true, false, false, o.scale, stdout); err != nil {
+						fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
+						failed = true
+					}
+					fmt.Fprintln(stdout, "  (no SVG of the 3D view: 3D is raster only; the .svg files draw the 2D map, --png and --pdf picture the 3D view)")
+				}
+				if o.png || o.pdf {
+					if rel, err := exportMindmap3D(chrome, dest, out, d.Name, o.png, o.pdf, o.scale, stdout); err != nil {
+						fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
+						failed = true
+					} else if rel != "" {
+						entry.PDF = rel
+					}
+				}
+			} else if rel, err := exportMindmap(chrome, dest, out, d.Name, o.svg, o.png, o.pdf, o.scale, stdout); err != nil {
 				fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
 				failed = true
 			} else if rel != "" {

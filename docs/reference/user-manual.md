@@ -152,7 +152,9 @@ A nested list becomes a map you can fold, move and drill into:
 - `view: 3d` · `camera:` iso, perspective · `floors:` on, off: pills on a floor, linked maps hover above
 - `kind:` blocks, bricks, toy: pills, studded bricks on a baseplate, or a cartoon island
 - On a slide, `steps` shows one branch per click; `flow: on` runs dots along the lines
-- `si build map.md --svg --png --pdf`; `si mindmap import plan.opml`, `export --to xmind`
+- `si build map.md --svg --png --pdf`; `si mindmap import plan.opml`, `export --to xmind` (or `xmind8`, the legacy XMind 8 file)
+- A `view: 3d` map: `--png` / `--pdf` picture the 3D view (`--scale`); no SVG of 3D (raster only: `--svg` writes the 2D map)
+- 3D on a phone (≤ 480 px wide or upright): branches on one side, labels read level, icon tools; one finger orbits, two pinch and pan, a tap opens the card
 - In the Studio, Map view: Tab adds a child, Enter a sibling, drag to move, typing renames
 
 ---
