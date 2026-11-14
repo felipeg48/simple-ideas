@@ -94,7 +94,7 @@ func TestExamplesStructure(t *testing.T) {
 		t.Fatalf("build exit %d: %s", code, stderr.String())
 	}
 	want := []string{"index.html", "slides/intro.html", "labs/lab-queues.html", "html/index.html", "html/brokers.html",
-		"html/images/broker.png", "html/images/exchange.png", "html/animations/queue.svg", "videos/publish.mp4",
+		"html/images/broker.png", "html/images/exchange.png", "html/images/publish.poster.jpg", "html/animations/queue.svg", "videos/publish.mp4",
 		"dist/rabbitmq-deck.zip", "dist/rabbitmq-html.zip"}
 	chrome := findChrome() != ""
 	if chrome {
@@ -133,18 +133,18 @@ func TestExamplesStructure(t *testing.T) {
 		}
 	}
 	page, _ := os.ReadFile(filepath.Join(dir, "slides", "intro.html"))
-	for _, l := range []string{`src="../html/images/exchange.png"`, `src="../videos/publish.mp4"`, `"href":"../labs/lab-queues.html"`} {
+	for _, l := range []string{`src="../html/images/exchange.png"`, `src="../videos/publish.mp4"`, `poster="../html/images/publish.poster.jpg"`, `"href":"../labs/lab-queues.html"`} {
 		if !bytes.Contains(page, []byte(l)) {
 			t.Errorf("slides/intro.html lacks %s", l)
 		}
 	}
 	zips := map[string]string{
-		"dist/rabbitmq-deck.zip": "html/images/exchange.png slides/intro.html videos/publish.mp4",
-		"dist/rabbitmq-html.zip": "animations/queue.svg brokers.html images/broker.png images/exchange.png index.html",
+		"dist/rabbitmq-deck.zip": "html/images/exchange.png html/images/publish.poster.jpg slides/intro.html videos/publish.mp4",
+		"dist/rabbitmq-html.zip": "animations/queue.svg brokers.html images/broker.png images/exchange.png images/publish.poster.jpg index.html",
 	}
 	if chrome {
-		zips["dist/rabbitmq-deck.zip"] = "html/images/exchange.png slides/intro.html slides/pdf/intro.pdf videos/publish.mp4"
-		zips["dist/rabbitmq-html.zip"] = "animations/queue.svg brokers.html images/broker.png images/exchange.png index.html pdfs/intro.pdf"
+		zips["dist/rabbitmq-deck.zip"] = "html/images/exchange.png html/images/publish.poster.jpg slides/intro.html slides/pdf/intro.pdf videos/publish.mp4"
+		zips["dist/rabbitmq-html.zip"] = "animations/queue.svg brokers.html images/broker.png images/exchange.png images/publish.poster.jpg index.html pdfs/intro.pdf"
 	}
 	for z, w := range zips {
 		r, err := zip.OpenReader(filepath.Join(dir, z))

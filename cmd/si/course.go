@@ -46,7 +46,8 @@ func filmStale(g *deck.Guide, film bool, voice string, cfg *config.Config, stdou
 // deckLesson makes what a deck lesson shown as its video needs, beside the
 // deck, when it is missing or older than the deck: <deck>.mp4 (and
 // <deck>.vtt) narrated from its Notes: with the voice (--voice, else the
-// deck's or si.conf's), <deck>.pdf (· pdf) and <deck>.handout.pdf
+// deck's or si.conf's) and its still <deck>.poster.jpg (the first slide),
+// <deck>.pdf (· pdf) and <deck>.handout.pdf
 // (· handout), all from one si build of the deck.
 // ponytail: only the deck file's own time counts, not its includes'.
 func deckLesson(it *deck.NavItem, film bool, voice string, cfg *config.Config, stdout, stderr io.Writer) {
@@ -69,7 +70,7 @@ func deckLesson(it *deck.NavItem, film bool, voice string, cfg *config.Config, s
 			}
 		}
 		args = append(args, "--mp4", "--voice", voice)
-		moves = append(moves, [2]string{name + ".mp4", it.Video}, [2]string{name + ".vtt", base + ".vtt"})
+		moves = append(moves, [2]string{name + ".mp4", it.Video}, [2]string{name + ".vtt", base + ".vtt"}, [2]string{name + ".poster.jpg", render.PosterOf(it.Video)})
 	}
 	if it.PDF && stale(pdf) {
 		args = append(args, "--pdf")

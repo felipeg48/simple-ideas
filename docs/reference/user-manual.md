@@ -67,7 +67,7 @@ Points: Talking points
 | `Points:` | speaker-notes talking points (the teleprompter's second tab) |
 | `Notes[Ana]:` / `Points[Ana]:` | one speaker's script and points, with `speakers: Ana, Felipe` in the front matter |
 | `<!-- layout: two-col -->` | a layout directive (see next) |
-| `![Caption](clip.mp4)` | a video player (`<!-- image: poster=still.jpg -->` for its still), copied beside the page |
+| `![Caption](clip.mp4)` | a video player (`<!-- image: poster=still.jpg -->` for its still, else `clip.poster.jpg`, its first frame), copied beside the page |
 | `[The slides (PDF)](talk.pdf)` | a link to a local file, copied beside the built page (missing: `si check` says so) |
 
 Everything is in **`si rules`** (or RULES.md) with an example for each.
@@ -604,7 +604,7 @@ the instructor, and publishes straight to SkillJar. [CLICK]
 
 Points:
 - Lesson kinds come from the link target; `· kind=` overrides
-- A deck as a video lesson: `· kind=video · pdf · handout · slides`; `si build` films it, with captions
+- A deck as a video lesson: `· kind=video · pdf · handout · slides`; `si build` films it, with captions and its first slide as the poster (`· poster=` to change it)
 - `nav:` also places the menu of guides, books and sites: left, right, top, bottom
 - `si new web-course --type course` writes an example with every kind
 - `--scorm` one SCO per lesson, `--scorm=single` one for the course

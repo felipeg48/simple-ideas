@@ -156,6 +156,7 @@ type Meta struct {
 	LinkedIn     string // si publish: the text of the LinkedIn post (default: description, then title)
 	Tags         string // si publish: comma-separated tags for dev.to and Hashnode
 	Canonical    string // si publish: the article's original URL (canonical_url; a LinkedIn link post)
+	Poster       string // a video lesson's still (course): an image beside the deck, or off
 	Cover        string // si publish: the picture of a LinkedIn link post (default: the article's first picture)
 	Handout      string // si build --handout: points (default), lines or grid
 	HandoutURL   string // si build --handout: a QR code to this address in the handout's header
@@ -607,7 +608,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"description": &m.Description, "edit-url": &m.EditURL, "header": &m.Header, "footer-page": &m.FooterPage, "unlisted": &m.Unlisted, "fonts": &m.Fonts, "fonts-subset": &m.FontsSubset, "repo": &m.Repo,
 		"subtitle": &m.Subtitle, "edition": &m.Edition, "session": &m.Session, "slides": &m.SlidesRef, "duration": &m.Duration,
 		"navigator": &m.Navigator, "logo": &m.Logo, "cta": &m.CTA,
-		"linkedin": &m.LinkedIn, "tags": &m.Tags, "canonical": &m.Canonical, "cover": &m.Cover, "handout": &m.Handout, "handout-url": &m.HandoutURL, "speakers": &m.Speakers, "app": &m.App, "viewport": &m.Viewport, "timeout": &m.Timeout, "setup": &m.Setup, "voice": &m.Voice, "voices": &m.Voices, "voice-style": &m.VoiceStyle, "pronounce": &m.Pronounce, "start": &m.Start, "stop": &m.Stop, "shell": &m.Shell, "with": &m.With, "prepare": &m.Prepare, "step": &m.Prepare, "cleanup": &m.Cleanup,
+		"linkedin": &m.LinkedIn, "tags": &m.Tags, "canonical": &m.Canonical, "cover": &m.Cover, "poster": &m.Poster, "handout": &m.Handout, "handout-url": &m.HandoutURL, "speakers": &m.Speakers, "app": &m.App, "viewport": &m.Viewport, "timeout": &m.Timeout, "setup": &m.Setup, "voice": &m.Voice, "voices": &m.Voices, "voice-style": &m.VoiceStyle, "pronounce": &m.Pronounce, "start": &m.Start, "stop": &m.Stop, "shell": &m.Shell, "with": &m.With, "prepare": &m.Prepare, "step": &m.Prepare, "cleanup": &m.Cleanup,
 		"layout": &m.MapLayout, "lines": &m.MapLines, "nodes": &m.MapNodes, "map-theme": &m.MapTheme, "watermark-position": &m.WatermarkPos, "favicon": &m.Favicon, "touch-icon": &m.TouchIcon, "og-image": &m.OGImage,
 		"nav": &m.Nav, "level": &m.Level, "instructor-demos": &m.InstructorDemos, "certificate": &m.Certificate, "pass": &m.Pass, "minutes": &m.Minutes, "prerequisites": &m.Prerequisites, "instructor": &m.Instructor,
 		"view": &m.MapView, "camera": &m.MapCamera, "floors": &m.MapFloors, "kind": &m.MapKind, "flow": &m.MapFlow,

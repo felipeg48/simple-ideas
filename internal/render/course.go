@@ -570,7 +570,17 @@ func videoBody(page string, it *deck.NavItem) (string, []MediaFile) {
 		track = fmt.Sprintf(`<track kind="captions" src="%s" srclang="%s" label="Captions" default>`, html.EscapeString(vr), html.EscapeString(lang))
 		media = append(media, MediaFile{Src: vtt, Rel: vr})
 	}
-	return fmt.Sprintf("<figure class=\"si-course-video\"><video controls preload=\"metadata\" playsinline src=\"%s\">%s</video></figure>\n", html.EscapeString(r), track), media
+	poster := ""
+	still := it.Poster // · poster= or the page's poster:, else <video>.poster.jpg
+	if still == "" {
+		still = autoPoster(it.Video)
+	}
+	if still != "" && still != "off" {
+		pr := besidePage(page, still)
+		poster = ` poster="` + html.EscapeString(pr) + `"`
+		media = append(media, MediaFile{Src: still, Rel: pr})
+	}
+	return fmt.Sprintf("<figure class=\"si-course-video\"><video controls preload=\"metadata\" playsinline src=\"%s\"%s>%s</video></figure>\n", html.EscapeString(r), poster, track), media
 }
 
 // DeckCompanions are the files beside a deck lesson's video (<deck>.mp4)

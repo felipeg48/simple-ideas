@@ -115,6 +115,7 @@ lang: en
 | `repo` | `OWNER/REPO`, a github.com URL, or a local clone folder | none | the default repo of `code:` and `diff:` (§13) |
 | `voices` | `Name=voice, Name=voice` (`Ada=af_heart, Ravi=kokoro:am_michael`) | every speaker in `voice:` | auto-play in a deck with `speakers:`: each speaker's part in their own voice; a bare name is a voice of the deck's engine (§11, Auto-play) |
 | `linkedin`, `tags`, `canonical`, `cover` | text; comma-separated tags; a URL; a picture | none | `si publish` (§26): the LinkedIn post text, dev.to / Hashnode tags, the article's original URL, the picture of a LinkedIn link post |
+| `poster` | a picture beside the page, or `off` | the first slide (`<deck>.poster.jpg`) | a course video lesson's still (§28, Video lessons from a deck) |
 
 An included module's own front matter is ignored; the including deck decides.
 
@@ -367,6 +368,14 @@ alt text) is the caption, `poster=` in the `image` directive its still.
 
 It renders `<figure class="si-image" data-video><video controls
 preload="metadata" playsinline src="assets/cluster.mp4" …></video><figcaption>`.
+
+A video without a `poster=` still opens on its first frame rather than on
+black: `si build` uses `cluster.poster.jpg` beside the video, and when there is
+none it writes one from the frame at 0.5 s with ffmpeg (skipped quietly
+without ffmpeg). It is made once; delete it to make it again, or give
+`poster=` to choose the picture. `si build talk.md --mp4` writes
+`talk.poster.jpg` too: the deck's first slide at 1920×1080. A `poster=` file
+that is missing is a `si check` problem.
 A video is never inlined as a data URI: `si build` copies it beside the page
 (in every media mode), and so does the `src` of a raw `<video>`, `<source>`
 or `<audio>` you write yourself.
@@ -3914,6 +3923,14 @@ the deck's narrated video, with the slides to keep:
   `exchanges.slides.html`: the deck, built, in no menu.
 - The done tick follows the video (watched to 90 %, or to the end).
 - `· pdf`, `· handout` and `· slides` on any other lesson fail `si check`.
+- **Poster.** A video lesson opens on a still, not on black: a deck's
+  `exchanges.poster.jpg` is its first slide (1920×1080), written by the same
+  build that films it; a `.mp4` lesson's `<video>.poster.jpg` is its frame at
+  0.5 s (ffmpeg). `· poster=assets/cover.jpg` (beside `_course.md`) or
+  `poster: cover.jpg` in the deck's front matter (beside the deck) picks
+  another picture; `· poster=off` leaves the player without one. A missing
+  poster file fails `si check`, and so does `· poster=` on a lesson that is
+  not a video.
 
 **Minutes.** A lesson's `minutes:` front matter (or `· minutes=` in
 `_course.md`) sets its length; otherwise si estimates it: reading time at 230

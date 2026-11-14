@@ -82,6 +82,14 @@ the deck's narrated video, with the slides to keep:
   `exchanges.slides.html`: the deck, built, in no menu.
 - The done tick follows the video (watched to 90 %, or to the end).
 - `· pdf`, `· handout` and `· slides` on any other lesson fail `si check`.
+- **Poster.** A video lesson opens on a still, not on black: a deck's
+  `exchanges.poster.jpg` is its first slide (1920×1080), written by the same
+  build that films it; a `.mp4` lesson's `<video>.poster.jpg` is its frame at
+  0.5 s (ffmpeg). `· poster=assets/cover.jpg` (beside `_course.md`) or
+  `poster: cover.jpg` in the deck's front matter (beside the deck) picks
+  another picture; `· poster=off` leaves the player without one. A missing
+  poster file fails `si check`, and so does `· poster=` on a lesson that is
+  not a video.
 
 **Minutes.** A lesson's `minutes:` front matter (or `· minutes=` in
 `_course.md`) sets its length; otherwise si estimates it: reading time at 230

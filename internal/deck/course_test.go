@@ -94,6 +94,46 @@ func TestCourseProblems(t *testing.T) {
 	}
 }
 
+// A video lesson's still (issue #12): · poster= beside _course.md, or off;
+// else the deck's poster:; a missing file and a poster on another kind are
+// problems.
+func TestCoursePoster(t *testing.T) {
+	dir := writeTree(t, map[string]string{
+		"_course.md": "---\ntitle: C\n---\n- Module 1: M\n" +
+			"  - [Clip](clip.mp4) · poster=assets/cover.jpg\n" +
+			"  - [Off](clip.mp4) · poster=off\n" +
+			"  - [Talk](talk.md) · kind=video\n" +
+			"  - [Plain](clip.mp4)\n",
+		"clip.mp4":         "x",
+		"assets/cover.jpg": "x",
+		"talk.md":          "---\ntype: deck\nposter: talk-cover.jpg\n---\n# Talk\n",
+		"talk-cover.jpg":   "x",
+	})
+	g, err := LoadGuide(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ls := g.Lessons()
+	if len(g.Problems) != 0 || len(ls) != 4 {
+		t.Fatalf("problems %v, %d lessons", g.Problems, len(ls))
+	}
+	for i, want := range []string{filepath.Join(dir, "assets", "cover.jpg"), "off", filepath.Join(dir, "talk-cover.jpg"), ""} {
+		if ls[i].Poster != want {
+			t.Errorf("lesson %d: poster %q, want %q", i, ls[i].Poster, want)
+		}
+	}
+	for _, tc := range []struct{ nav, want string }{
+		{"  - [Clip](clip.mp4) · poster=gone.jpg\n", "poster=gone.jpg (_course.md): missing file"},
+		{"  - [A](a.md) · poster=cover.jpg\n", "· poster: only a video lesson has it"},
+	} {
+		dir := writeTree(t, map[string]string{"_course.md": "---\ntitle: C\n---\n- Module 1: M\n" + tc.nav, "a.md": "# A\n", "clip.mp4": "x", "cover.jpg": "x"})
+		g, _ := LoadGuide(dir)
+		if len(g.Problems) != 1 || !strings.Contains(g.Problems[0].Msg, tc.want) {
+			t.Errorf("%q: want %q, got %v", tc.nav, tc.want, g.Problems)
+		}
+	}
+}
+
 func TestParseNav(t *testing.T) {
 	for _, tc := range []struct {
 		in   string

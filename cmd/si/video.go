@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	"image/jpeg"
 	"image/png"
 	"io"
 	"os"
@@ -298,6 +300,62 @@ func exportDeckMP4(chrome, htmlPath, out string, d *deck.Deck, dwell float64, na
 	}
 	fmt.Fprintf(stdout, "  %-28s (mp4, %d views, %d KB)\n", d.Name+".mp4", len(shots), fileKB(dest))
 	return nil
+}
+
+// deckPoster writes a filmed deck's still (still, a JPEG): its first slide at
+// 1920×1080, as the video opens.
+func deckPoster(chrome, htmlPath, still string) error {
+	abs, _ := filepath.Abs(htmlPath)
+	tmp, err := os.MkdirTemp("", "si-poster-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmp)
+	p := filepath.Join(tmp, "first.png")
+	if err := chromeRun(chrome, "--screenshot="+p, "--window-size=1920,1080", "--hide-scrollbars", "--virtual-time-budget=2500",
+		"file://"+filepath.ToSlash(abs)+"#1.0"); err != nil {
+		return err
+	}
+	return pngToJPEG(p, still)
+}
+
+// pngToJPEG writes the PNG file src as the JPEG file dst.
+func pngToJPEG(src, dst string) error {
+	f, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	img, err := png.Decode(f)
+	if err != nil {
+		return err
+	}
+	var b bytes.Buffer
+	if err := jpeg.Encode(&b, img, &jpeg.Options{Quality: 85}); err != nil {
+		return err
+	}
+	return os.WriteFile(dst, b.Bytes(), 0o644)
+}
+
+// ffmpegPoster writes the frame at 0.5 s of video (the first one of a
+// shorter video) to still as a JPEG; false, quietly, without ffmpeg or when
+// ffmpeg cannot read the video. render.MakePoster under si build.
+func ffmpegPoster(video, still string) bool {
+	ff := tools.Find("ffmpeg")
+	if ff == "" {
+		return false
+	}
+	tmp := strings.TrimSuffix(still, ".jpg") + ".part.jpg" // an older still stays until a new one is made
+	defer os.Remove(tmp)
+	for _, at := range []string{"0.5", "0"} {
+		os.Remove(tmp)
+		if exec.Command(ff, "-y", "-loglevel", "error", "-ss", at, "-i", video, "-frames:v", "1", "-q:v", "3", tmp).Run() == nil {
+			if st, err := os.Stat(tmp); err == nil && st.Size() > 0 {
+				return os.Rename(tmp, still) == nil
+			}
+		}
+	}
+	return false
 }
 
 func fileKB(p string) int64 {

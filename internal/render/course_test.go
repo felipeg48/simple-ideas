@@ -102,6 +102,48 @@ func TestCourseBuild(t *testing.T) {
 	}
 }
 
+// A video gets a still (issue #12): the lesson's own poster, none with off,
+// else <video>.poster.jpg, made by MakePoster when it is missing; a video in
+// a document gets the same.
+func TestVideoPoster(t *testing.T) {
+	dir := t.TempDir()
+	clip, cover := filepath.Join(dir, "m1", "clip.mp4"), filepath.Join(dir, "cover.jpg")
+	os.MkdirAll(filepath.Dir(clip), 0o755)
+	os.WriteFile(clip, []byte("x"), 0o644)
+	os.WriteFile(cover, []byte("x"), 0o644)
+	page := filepath.Join(dir, "m1", "clip.md")
+	body := func(poster string) (string, []MediaFile) {
+		return videoBody(page, &deck.NavItem{Video: clip, Poster: poster})
+	}
+	if b, m := body(cover); !strings.Contains(b, ` poster="../cover.jpg"`) || len(m) != 2 {
+		t.Errorf("· poster=: %s %v", b, m)
+	}
+	if b, _ := body("off"); strings.Contains(b, "poster=") {
+		t.Errorf("poster=off: %s", b)
+	}
+	if b, _ := body(""); strings.Contains(b, "poster=") {
+		t.Errorf("no still and no MakePoster: %s", b)
+	}
+	made := 0
+	MakePoster = func(video, still string) bool { made++; return os.WriteFile(still, []byte("x"), 0o644) == nil }
+	defer func() { MakePoster = nil }()
+	if b, _ := body(""); !strings.Contains(b, ` poster="clip.poster.jpg"`) || made != 1 {
+		t.Errorf("first frame: %s (made %d)", b, made)
+	}
+	if body(""); made != 1 {
+		t.Error("a still made once is kept")
+	}
+	doc := filepath.Join(dir, "m1", "d.md")
+	os.WriteFile(doc, []byte("---\ntype: lab\n---\n# D\n\n![A clip](clip.mp4)\n"), 0o644)
+	d, err := deck.Parse(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if h := string(Deck(d, Options{Media: MediaLink}).HTML); !strings.Contains(h, `<video poster="clip.poster.jpg" controls`) {
+		t.Errorf("a document video gets its still:\n%s", h[strings.Index(h, "<video"):][:200])
+	}
+}
+
 func TestQuizRender(t *testing.T) {
 	form := func(page string) string { // the quiz form only, not the page scripts
 		i := strings.Index(page, `<form class="si-quiz"`)

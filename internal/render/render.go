@@ -385,6 +385,14 @@ func (dr *deckRenderer) postprocess(h, dir string, sc *slideCtx) string {
 		return m[1] + html.EscapeString(uri) + `"`
 	})
 	h = mediaTagRE.ReplaceAllStringFunc(h, func(tag string) string {
+		if m := videoSrcRE.FindStringSubmatch(tag); m != nil && !strings.Contains(tag, ` poster="`) && !strings.Contains(tag, "si-bg-media") && !isExternal(m[1]) {
+			// a video without a still gets its first frame (<video>.poster.jpg)
+			if still := autoPoster(filepath.Join(dir, filepath.FromSlash(cleanSrc(html.UnescapeString(m[1]))))); still != "" {
+				if r, err := filepath.Rel(dir, still); err == nil {
+					tag = strings.Replace(tag, `<video `, `<video poster="`+html.EscapeString(filepath.ToSlash(r))+`" `, 1)
+				}
+			}
+		}
 		return mediaSrcRE.ReplaceAllStringFunc(tag, func(attr string) string {
 			m := mediaSrcRE.FindStringSubmatch(attr)
 			src := html.UnescapeString(m[3])
@@ -433,6 +441,7 @@ var (
 	// src and poster attributes.
 	mediaTagRE = regexp.MustCompile(`<(?:video|audio|source)\b[^>]*>`)
 	mediaSrcRE = regexp.MustCompile(`(\s)(src|poster)="([^"]*)"`)
+	videoSrcRE = regexp.MustCompile(`^<video\s[^>]*?\bsrc="([^"]+)"`)
 )
 
 // rendered are the extensions of pages si renders itself (or writes): a link

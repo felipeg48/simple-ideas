@@ -787,6 +787,7 @@ func usageErr(stderr io.Writer, msg string) int {
 }
 
 func build(src string, o *options, stdout, stderr io.Writer) int {
+	render.MakePoster = ffmpegPoster // a video without a still gets its first frame
 	if st := projectStructure(src, o); st != nil {
 		return buildStructured(src, st, o, stdout, stderr)
 	}
@@ -1049,6 +1050,13 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 					fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
 					failed = true
 					nar = nil
+				}
+			}
+			if _, err := os.Stat(filepath.Join(out, d.Name+".mp4")); err == nil { // its still: the first slide
+				if err := deckPoster(chrome, dest, filepath.Join(out, d.Name+".poster.jpg")); err != nil {
+					fmt.Fprintf(stderr, "si: %s: poster: %v\n", d.Name, err)
+				} else {
+					fmt.Fprintf(stdout, "  %-28s (poster, the first slide)\n", d.Name+".poster.jpg")
 				}
 			}
 			if nar != nil {

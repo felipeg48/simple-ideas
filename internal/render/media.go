@@ -224,6 +224,31 @@ func toneOf(v string) string {
 	return "light"
 }
 
+// MakePoster, when set (si build), writes the first frame of a video file to
+// the still file and reports whether it did (ffmpeg); nil leaves the files as
+// they are (si check, si play, tests).
+var MakePoster func(video, still string) bool
+
+// PosterOf is the still si keeps beside a video: x.mp4 → x.poster.jpg.
+func PosterOf(video string) string {
+	return strings.TrimSuffix(video, filepath.Ext(video)) + ".poster.jpg"
+}
+
+// autoPoster is the still of a video file that has none of its own: its
+// <video>.poster.jpg, made from the first frame when it is missing and
+// MakePoster is set; "" when there is none. ponytail: made once, never
+// remade by time (git checkouts scramble mtimes); delete it to remake it.
+func autoPoster(video string) string {
+	if v, err := os.Stat(video); err != nil || v.IsDir() {
+		return ""
+	}
+	still := PosterOf(video)
+	if _, err := os.Stat(still); err == nil || (MakePoster != nil && MakePoster(video, still)) {
+		return still
+	}
+	return ""
+}
+
 // isVideo reports whether src names a video file (by its extension).
 func isVideo(src string) bool {
 	return strings.HasPrefix(extraTypes[strings.ToLower(filepath.Ext(cleanSrc(src)))], "video/")

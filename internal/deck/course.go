@@ -43,7 +43,7 @@ var videoExts = map[string]bool{".mp4": true, ".webm": true, ".m4v": true, ".mov
 func IsVideoPath(p string) bool { return videoExts[strings.ToLower(filepath.Ext(p))] }
 
 var (
-	itemOptRE  = regexp.MustCompile(`^(kind|minutes|prerequisites)=(.*)$`)
+	itemOptRE  = regexp.MustCompile(`^(kind|minutes|prerequisites|poster)=(.*)$`)
 	itemFlagRE = regexp.MustCompile(`^(pdf|handout|slides)$`) // a deck video lesson's companions
 )
 
@@ -161,6 +161,7 @@ func (g *Guide) lesson(it *NavItem, o map[string]string) {
 			it.SlidesLink = true
 		}
 	}
+	g.lessonPoster(it, o["poster"])
 	if v := o["minutes"]; v != "" {
 		if m, err := strconv.ParseFloat(v, 64); err == nil && m > 0 {
 			it.Minutes = int(math.Ceil(m))
@@ -170,6 +171,38 @@ func (g *Guide) lesson(it *NavItem, o map[string]string) {
 	}
 	if v := o["prerequisites"]; v != "" {
 		it.Prerequisites = v
+	}
+}
+
+// lessonPoster sets a video lesson's still: `· poster=` (a file beside
+// _course.md, or off), else the poster: of its deck or script, else none
+// (the build uses <video>.poster.jpg). A missing file is a problem.
+func (g *Guide) lessonPoster(it *NavItem, opt string) {
+	file := rel(filepath.Join(g.Dir, CourseFile))
+	if it.Video == "" {
+		if opt != "" {
+			g.Problems = append(g.Problems, Problem{File: file, Line: it.Line, Msg: "· poster: only a video lesson has it"})
+		}
+		return
+	}
+	p, base, from := opt, g.Dir, CourseFile
+	for _, src := range []string{it.Deck, it.Script} {
+		if p != "" || src == "" {
+			continue
+		}
+		if d, err := ParseWith(src, g.Defaults()); err == nil && d.Meta.Poster != "" {
+			p, base, from = d.Meta.Poster, filepath.Dir(src), Rel(src)
+		}
+	}
+	switch p {
+	case "", "off":
+		it.Poster = p
+		return
+	}
+	it.Poster = filepath.Join(base, filepath.FromSlash(p))
+	if !fileExists(it.Poster) {
+		g.Problems = append(g.Problems, Problem{File: file, Line: it.Line, Msg: fmt.Sprintf("poster=%s (%s): missing file", p, from)})
+		it.Poster = ""
 	}
 }
 

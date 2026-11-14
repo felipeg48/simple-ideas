@@ -55,6 +55,7 @@ lang: en
 | `repo` | `OWNER/REPO`, a github.com URL, or a local clone folder | none | the default repo of `code:` and `diff:` (§13) |
 | `voices` | `Name=voice, Name=voice` (`Ada=af_heart, Ravi=kokoro:am_michael`) | every speaker in `voice:` | auto-play in a deck with `speakers:`: each speaker's part in their own voice; a bare name is a voice of the deck's engine (§11, Auto-play) |
 | `linkedin`, `tags`, `canonical`, `cover` | text; comma-separated tags; a URL; a picture | none | `si publish` (§26): the LinkedIn post text, dev.to / Hashnode tags, the article's original URL, the picture of a LinkedIn link post |
+| `poster` | a picture beside the page, or `off` | the first slide (`<deck>.poster.jpg`) | a course video lesson's still (§28, Video lessons from a deck) |
 
 An included module's own front matter is ignored; the including deck decides.
 

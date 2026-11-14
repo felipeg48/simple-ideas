@@ -70,6 +70,7 @@ type NavItem struct {
 	PDF           bool   // `· pdf`: a Download the slides (PDF) button under the video (<deck>.pdf)
 	Handout       bool   // `· handout`: the handout too (<deck>.handout.pdf)
 	SlidesLink    bool   // `· slides`: a link to the interactive slides (<deck>.slides.html, not in the menu)
+	Poster        string // a video lesson's still: a file (absolute, from `· poster=` or the page's poster:), "off", or "" for <video>.poster.jpg
 	Prerequisites string // what to know first (shown, not enforced)
 }
 

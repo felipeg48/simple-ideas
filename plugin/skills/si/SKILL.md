@@ -238,7 +238,8 @@ Not everything is a slide deck. Pick the type by what the reader does:
   `· prerequisites=…` after a link override. A deck lesson for self-paced
   learners can be its narrated video: `[Title](03/deck.md) · kind=video · pdf`
   (`· handout`, `· slides` too); `si build` films `deck.mp4` with `.vtt`
-  captions and prints `deck.pdf` beside the deck when missing or stale. Give each lesson a one-sentence
+  captions, a `deck.poster.jpg` still (the first slide; `· poster=cover.jpg` or
+  `· poster=off` to change it) and `deck.pdf` beside the deck when missing or stale. Give each lesson a one-sentence
   `description:` and, when the estimate is wrong, `minutes:`. Quizzes: `## `
   questions, `- [x]` right answers, `> Explanation: …`, `pass: 70%`; a
   ```` ```quiz ```` fence works in any lesson. A lab's answer goes between
