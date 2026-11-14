@@ -182,7 +182,7 @@ Not everything is a slide deck. Pick the type by what the reader does:
 | a résumé, a portfolio, a product or event page | a site of that kind | start with `si new <name> --type website --kind resume\|portfolio\|landing`, then replace the content; a landing hero is the page's title, `description:` and its own `cta:` |
 | show code changing, step by step, in a window | a code show | fences with `window=mac` and the same `id=`, one per step, `<!-- callout: LINE text -->` after a fence |
 | explore a topic and how its parts connect | a mind map | `type: mindmap`, a `# Title`, then a nested list of topics; or a ```` ```mindmap ```` fence on a slide or in a document; `view: 3d` (or `view=3d`) for pills on a floor with linked maps as floors above; `kind: bricks` (studded bricks) or `kind: toy` (cartoon island) for other 3D looks |
-| take in a story's numbers at a glance (a report, a class, one slide) | an infographic | `type: infographic`, `title:`, `subtitle:`, `orientation: landscape` (a 16:9 slide, `Notes:` after the last block, `steps: on` for a block per click) or `portrait` (a tall poster); each `## heading · kind` is a block: `stat` (the number is the heading), `compare` and `chart=bar\|donut\|line\|progress` (from a Markdown table of numbers), `steps`, `quote`, `icons`, `image`, `sources`; `wide`, `tall`, `accent` for the grid; or an ```` ```infographic ```` fence on a slide; `si build x.md --png --pdf` |
+| take in a story's numbers at a glance (a report, a class, one slide) | an infographic | `type: infographic`, `title:`, `subtitle:`, `orientation: landscape` (a 16:9 slide, `Notes:` after the last block, `steps: on` for a block per click) or `portrait` (a tall poster); each `## heading · kind` is a block: `stat` (the number is the heading), `compare` and `chart=bar\|donut\|line\|progress` (from a Markdown table of numbers), `steps`, `quote`, `icons`, `image`, `sources`; `wide`, `tall`, `accent` for the grid; or an ```` ```infographic ```` fence on a slide; text shrinks to fit a block down to 60% (`si check` warns past that: shorten the block); `si build x.md --png --pdf --svg` |
 
 - **Guides:** write `_nav.md` first (front matter for the guide-wide
   settings, then a nested list: `- [Title](page.md)` pages, plain items as
@@ -274,10 +274,11 @@ Not everything is a slide deck. Pick the type by what the reader does:
   never invent or drop a milestone. `## Fuentes · sources` holds the sources;
   `closing:` the last line; `require: 20 dates, 15 images` lets `si check`
   verify a rubric. `layout: snake` (landscape default, 30 milestones fit
-  16:9), `line`, `vertical` (portrait default); `orientation: portrait` makes
-  a scrolling poster. A landscape page is one slide with one build step per
+  16:9), `line`, `vertical` (portrait default), `eras` (a column per era with
+  a coloured header; 30 fit 16:9), `cards` (picture cards on a dated rail);
+  `orientation: portrait` makes a scrolling poster. A landscape page is one slide with one build step per
   era after the first: write one `[CLICK]` per era step in `Notes:`. Export
-  with `si build x.md --png --pdf`; credit every picture's licence.
+  with `si build x.md --png --pdf --svg`; credit every picture's licence.
 - **Code windows** (RULES.md §25): `window=mac|windows|terminal|none` on a
   code fence draws it as a window (`title="file.go"`, `theme=night|paper|dusk`,
   `backdrop=dusk|ocean|mint|graphite`, `numbers`, `hl=`); callouts go right

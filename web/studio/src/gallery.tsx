@@ -18,6 +18,8 @@ export const galleryKinds: { kind: string; icon: IconName; label: string; what: 
   { kind: "mindmap", icon: "mindmap", label: "A mind map", what: "Topics that branch, in 2D", name: "Ideas" },
   { kind: "mindmap3d", icon: "mindmap", label: "A 3D mind map", what: "The same map as blocks you fly over", name: "Ideas in 3D" },
   { kind: "codeshow", icon: "article", label: "A code show", what: "Code in a window, step by step", name: "Code walkthrough" },
+  { kind: "timeline", icon: "deck", label: "A timeline", what: "Eras and dated milestones on one frame", name: "Our story" },
+  { kind: "infographic", icon: "deck", label: "An infographic", what: "Numbers, charts and steps in a grid", name: "In numbers" },
 ];
 
 export function Gallery(p: { dir: string; ok(kind: string, path: string, title: string): Promise<void>; onClose(): void }) {

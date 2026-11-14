@@ -3,6 +3,23 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.10.0:** timelines and infographics, the four open items. Two new
+  timeline layouts: **`layout: eras`**, one column per era (a coloured header
+  with the era's name and dates, its milestones stacked under it, pictures as
+  small medallions; the 30-milestone example fits one 16:9 frame), and
+  **`layout: cards`**, a grid of picture cards on a thin dated rail in each
+  era's colour; both landscape (a frame, one era per click) and portrait (a
+  poster), every theme, light and dark, the paged PDF too. **`si build
+  --svg`** writes `<name>.svg` of a timeline or an infographic: a vector
+  picture of the frame as shown, its text as real text, pictures inside,
+  theme colours resolved (soft glows and shadows left out), made from the
+  page Chrome laid out. **Infographic text fits its block:** a block whose
+  text does not fit gets a smaller text size step by step, down to 60%; `si
+  check` warns when a block would need less. **The Studio** lists Timeline
+  and Infographic in New… and the start gallery (14 starters), and
+  **the terminal** (`si play --terminal`, `si --terminal`) shows a timeline
+  as its eras and milestones and an infographic as its blocks, a stat's
+  number in block letters.
 - **v3.9.0:** the play workbench grows. **Split view:** ◫ (or right-click
   a tab: Split right / Split down) shows two tabs side by side or stacked,
   with a draggable divider (shells refit), tabs dragged onto a pane, swap,

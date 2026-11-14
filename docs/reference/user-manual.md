@@ -172,11 +172,11 @@ The sort Python still uses.
 ```
 
 - Page: `type: timeline` · `## Era · color=` · `### date · title`, a description, `![caption](pic "credit")`
-- `layout:` snake (rows, 30 fit one 16:9 page), line, vertical · `orientation:` landscape (a slide), portrait (a poster)
+- `layout:` snake (rows, 30 fit one 16:9 page), line, vertical, eras (a column per era), cards (picture cards on a dated rail) · `orientation:` landscape (a slide), portrait (a poster)
 - `alternate:` on, off · `scale:` even, time · `closing:` a last line · `## Fuentes · sources`
 - A landscape page is one slide: each era a build step, `Notes:` for the teleprompter
 - `si check` counts milestones, pictures, eras; `require: 20 dates, 15 images` checks a rubric
-- `si build timeline.md --png --pdf`; `si new history --type timeline`; full guide: RULES.md §29
+- `si build timeline.md --png --pdf --svg` (`--svg`: a vector picture, text as text); `si new history --type timeline`; full guide: RULES.md §29
 ## Infographics
 
 ```infographic steps=off
@@ -194,7 +194,8 @@ The sort Python still uses.
 - Every `##` is a block: `## 2.4 s · stat`, `## Share · chart=donut · wide`; no kind: si guesses
 - `orientation: landscape` is a 16:9 slide (`steps: on`: one block per click); `portrait` a poster that scrolls
 - `layout:` grid, columns, flow · `aspect:` 16:9, 4:3, 9:16, a4 · `sources:` the footer
-- `si build poster.md --png --pdf` (`--scale 3` for print); full guide: RULES.md §30
+- A block's text shrinks to fit it (down to 60%; `si check` warns past that)
+- `si build poster.md --png --pdf --svg` (`--scale 3` for print; `--svg` a vector picture); full guide: RULES.md §30
 
 ---
 

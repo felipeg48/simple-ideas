@@ -11,3 +11,10 @@ var TimelineCSS string
 
 //go:embed web/timeline.js
 var TimelineJS string
+
+// SVGExportJS defines window.siSVGExport(selector): a vector SVG of a rendered
+// element, evaluated in headless Chrome by si build --svg (timelines and
+// infographics); never part of a page.
+//
+//go:embed web/svgexport.js
+var SVGExportJS string

@@ -123,6 +123,14 @@ func (dr *deckRenderer) igHTML(ig *deck.Infographic, o igOpts, sc *slideCtx) str
 		cols = igCols(ig.Blocks, o.layout)
 	}
 	pos, rows, _ := igPlace(ig.Blocks, cols, o.layout)
+	if o.orient == "landscape" {
+		r := igRatios[o.aspect]
+		for i, bl := range ig.Blocks {
+			if f := igFit(bl, pos[i], cols, rows, r[0]/r[1], o.title != "", o.subtitle != ""); f < igFitFloor {
+				dr.warnings = append(dr.warnings, dr.at(sc, "infographic: block %q holds more text than its cell, even at %d%% text size (it would need about %d%%): shorten it, make it wide or tall, or move a block out", bl.Title, int(igFitFloor*100), int(f*100)))
+			}
+		}
+	}
 	fmt.Fprintf(&b, `<div class="si-ig-grid" style="--_cols:%d;--_rows:%d">`+"\n", cols, rows)
 	for i, bl := range ig.Blocks {
 		cls := "si-ig-block"
@@ -707,4 +715,63 @@ func Infographic(d *deck.Deck, opt Options) Result {
 	b.WriteString("</body>\n</html>\n")
 	res.HTML, res.body = b.Bytes(), body.String()
 	return res
+}
+
+// igFitFloor is the smallest text size (of the block's own) infographic.js
+// lowers a block to.
+const igFitFloor = 0.6
+
+// igFit estimates the text size (1 = as designed) a landscape block needs so
+// its text fits its cell: the frame is 100/1.12 em wide (font-size 1.12cqi),
+// characters about 0.46 em wide, lines 1.35 em. Only text kinds are estimated
+// (charts, pictures and comparisons scale with their cell): 1 for the rest.
+// ponytail: a character-count model, not a layout; the browser's fit pass
+// (infographic.js) is the truth, this only warns in si check before it.
+func igFit(b *deck.IGBlock, p [4]int, cols, rows int, ratio float64, title, sub bool) float64 {
+	switch b.Kind {
+	case "text", "list", "steps", "quote", "stat", "icons":
+	default:
+		return 1
+	}
+	const gap = 0.85
+	w := 100/1.12 - 6
+	h := (100/1.12)/ratio - 4 - 2*1.2 - 2 // padding, gaps, footer
+	if title {
+		h -= 2.7
+	}
+	if sub {
+		h -= 1.6
+	}
+	cw, ch := (w-gap*float64(cols-1))/float64(cols), (h-gap*float64(rows-1))/float64(rows)
+	bw := cw*float64(p[3]) + gap*float64(p[3]-1) - 2.4
+	bh := ch*float64(p[2]) + gap*float64(p[2]-1) - 2.1
+	var paras []string
+	for _, l := range strings.Split(b.Body, "\n") {
+		l = strings.TrimSpace(l)
+		if l == "" || strings.HasPrefix(l, "|") || strings.HasPrefix(l, "![") {
+			continue
+		}
+		l = strings.TrimLeft(l, "-*+>0123456789.) ")
+		paras = append(paras, strings.NewReplacer("**", "", "*", "", "`", "").Replace(l))
+	}
+	need := func(f float64) float64 {
+		height := 0.0
+		if b.Kind == "stat" {
+			height += 3.2 * f // the number
+		} else if b.Title != "" {
+			height += 1.8 * f // the label and its rule
+		}
+		perLine := math.Max(1, bw/(0.46*f))
+		for _, t := range paras {
+			lines := math.Ceil(float64(len([]rune(t))) / perLine)
+			height += lines*1.35*f + 0.5*f
+		}
+		return height
+	}
+	for f := 1.0; f >= 0.2; f -= 0.05 {
+		if need(f) <= bh {
+			return f
+		}
+	}
+	return 0.2
 }

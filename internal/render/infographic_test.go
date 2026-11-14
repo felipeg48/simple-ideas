@@ -80,3 +80,35 @@ func TestInfographicRender(t *testing.T) {
 		t.Errorf("portrait page wrong")
 	}
 }
+
+// TestInfographicFit: the page carries the fit pass, and si check warns
+// about a block with more text than its cell holds at the floor.
+func TestInfographicFit(t *testing.T) {
+	long := strings.Repeat("Every request first passes the edge cache, then the gateway checks the token. ", 30)
+	for _, c := range []struct {
+		body string
+		warn bool
+	}{
+		{"## Short · text\nA line.\n\n## 3× · stat\nfaster\n\n## Two · text\nAnother.\n", false},
+		{"## Long · text\n" + long + "\n\n## 3× · stat\nfaster\n\n## A · text\nx\n\n## B · text\ny\n\n## C · text\nz\n\n## D · text\nw\n\n## E · text\nv\n\n## F · text\nu\n", true},
+	} {
+		dir := t.TempDir()
+		p := filepath.Join(dir, "ig.md")
+		os.WriteFile(p, []byte("---\ntype: infographic\ntitle: Fit\n---\n\n"+c.body), 0o644)
+		d, err := deck.Parse(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res := Deck(d, Options{})
+		if !strings.Contains(string(res.HTML), "window.siInfographicFit") {
+			t.Error("page lacks the fit pass")
+		}
+		warned := false
+		for _, w := range res.Warnings {
+			warned = warned || strings.Contains(w.Msg, "holds more text than its cell")
+		}
+		if warned != c.warn {
+			t.Errorf("warned %v, want %v: %v", warned, c.warn, res.Warnings)
+		}
+	}
+}

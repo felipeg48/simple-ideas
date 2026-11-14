@@ -4081,7 +4081,7 @@ Notes: Empezamos en la Antigüedad. [CLICK] En la Edad Media…
 |---|---|---|
 | `type` | `timeline` | |
 | `title`, `subtitle` | the header | |
-| `layout` | `snake` (the line wraps across rows: 30 milestones fit one 16:9 page), `line` (one horizontal line, two levels a side), `vertical` (one line down the page, cards left and right) | `snake`; `vertical` when portrait |
+| `layout` | `snake` (the line wraps across rows: 30 milestones fit one 16:9 page), `line` (one horizontal line, two levels a side), `vertical` (one line down the page, cards left and right), `eras` (one column per era: a coloured header with the era's name and dates, its milestones stacked under it, pictures as small medallions; 30 milestones fit one 16:9 page), `cards` (a grid of picture cards on a thin dated rail, each in its era's colour) | `snake`; `vertical` when portrait |
 | `orientation` | `landscape` (a slide: a frame of `aspect:` that scales like a picture), `portrait` (a tall scrolling poster, a document page) | `landscape` |
 | `aspect` | the landscape frame: `16:9`, `16:10`, `4:3`, `1:1` | `16:9` |
 | `alternate` | `on` (milestones above and below the line, or left and right), `off` (one side) | `on` |
@@ -4091,8 +4091,20 @@ Notes: Empezamos en la Antigüedad. [CLICK] En la Edad Media…
 | `require` | a rubric for `si check`: `20 dates, 15 images, 7 eras, 4 sources` | none |
 | `lang`, `theme` | as on any page; every built-in theme works, light and dark | |
 
-On a phone (narrow or portrait screen) every layout becomes `vertical`, with
-the line on the left.
+On a phone (narrow or portrait screen) `snake` and `line` become `vertical`,
+with the line on the left; `eras` stacks its era columns and `cards` shows one
+or two cards a row. A portrait `eras` poster puts its eras side by side as far
+as the width allows; a portrait `cards` poster is a grid of cards. On a wide
+screen every layout but `vertical` is a frame of `aspect:` whose text shrinks
+until the fullest card (or era column) fits.
+
+```markdown
+---
+type: timeline
+title: Hitos en Algoritmos y Complejidad Computacional
+layout: eras
+---
+```
 
 ### In a slide or a document
 
@@ -4128,8 +4140,10 @@ a document it is `vertical` unless `layout=` says otherwise.
   text reads well; the title on every page, the closing line and sources on
   the last), and `pdfs/timeline-compact.pdf`, the whole timeline on one page
   like the PNG. The pages are pictures of the timeline (the text is not
-  selectable). A portrait poster's `--pdf` is the printed page. All need
-  Chrome.
+  selectable). A portrait poster's `--pdf` is the printed page. `--svg`
+  writes `timeline.svg`: the same frame as a vector picture, its text as
+  real text, its pictures inside it and the theme's colours resolved (soft
+  background glows and shadows are left out). All need Chrome.
 - `si new history --type timeline` writes an example timeline with its
   pictures; `si --export example --type timeline` the same.
 
@@ -4262,11 +4276,18 @@ more checkouts
 - **`si build talk.md --png --pdf`** writes `talk.png` (the slide at 1600 ×
   900, or the whole poster at 1080 wide; `--scale 2`, the default, doubles
   the pixels; `--scale 3` for print) and `pdfs/talk.pdf` (one page, vector
-  text). `si play` presents a landscape one.
+  text). **`--svg`** writes `talk.svg`, the frame as a vector picture (text
+  as text, pictures inside, theme colours resolved; background glows and
+  shadows left out). `si play` presents a landscape one.
+- **Text fits its block.** A block whose text does not fit its cell gets a
+  smaller text size, step by step, down to 60% of its own; `si check` warns
+  when a block would need less than that (shorten it, make it `wide` or
+  `tall`, or move a block out).
 - **`si check`** reports an unknown kind or option, a chart cell that is not a
   number (or a negative one in a donut), a compare or chart without a table,
-  an empty block, a stat without its number, and `[CLICK]` cues that do not
-  match the blocks.
+  an empty block, a stat without its number, a block with more text than its
+  cell holds at 60% text size, and `[CLICK]` cues that do not match the
+  blocks.
 - **`si new poster --type infographic`** writes a starter; `si --export
   example --type infographic` the two examples (a landscape story and a
   portrait poster).

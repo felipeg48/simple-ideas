@@ -279,8 +279,12 @@ pass. The steps that matter:
   §30): `internal/deck/timeline.go`, `infographic.go`, `internal/render/
   timeline.go`, `infographic.go`, `web/timeline.*`, `web/infographic.*`,
   `cmd/si/timeline.go`, `infographic.go` (`pageShot` PNG/PDF); `orientation:`
-  and `steps:` are shared Meta keys (timeline steps: eras|on|off). Next:
-  timeline `eras`/`cards` layouts, `--svg`, auto-shrink of infographic text.
+  and `steps:` are shared Meta keys (timeline steps: eras|on|off). v3.10.0:
+  `eras`/`cards` layouts (`data-frame` marks a 16:9 frame), `--svg`
+  (`cmd/si/svgexport.go` + `web/svgexport.js`: the laid-out DOM walked into
+  SVG in headless Chrome), infographic fit pass (`web/infographic.js`, floor
+  60%, `igFit` check estimate), Studio New/gallery starters and TUI text
+  views (`internal/tui/timeline.go`). Next: gradients/shadows in the SVG.
 - **Browser windows** (DONE v3.2.2): `si play` key w, `browser:` front matter,
   `internal/serve/browser.go` (per-origin loopback proxy), `web/term/web.js`.
 - **Auto-play** (DONE v2.40.0, spec `docs/superpowers/specs/2026-11-10-autoplay.md`):

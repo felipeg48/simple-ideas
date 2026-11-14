@@ -259,7 +259,11 @@ func (dr *deckRenderer) timelineHTML(t *deck.Timeline, o tlOpts, dir string, sc 
 	var b strings.Builder
 	ms := t.Milestones()
 	snake := o.layout == "snake" || o.layout == "line"
+	eras, cards := o.layout == "eras", o.layout == "cards"
 	fmt.Fprintf(&b, `<div class="si-tl" data-layout="%s" data-orient="%s" style="--_tl-ar:%s"`, o.layout, o.orient, pct(o.ratio))
+	if snake || ((eras || cards) && o.orient != "portrait") {
+		b.WriteString(` data-frame`) // a 16:9 (aspect:) frame on a wide screen
+	}
 	if o.page {
 		b.WriteString(` data-page`)
 	}
@@ -289,21 +293,25 @@ func (dr *deckRenderer) timelineHTML(t *deck.Timeline, o tlOpts, dir string, sc 
 				if e.Name == "" {
 					continue
 				}
-				span := ""
-				if len(e.Items) > 0 {
-					first, last := e.Items[0].Date, e.Items[len(e.Items)-1].Date
-					span = html.EscapeString(first)
-					if last != first {
-						span += " – " + html.EscapeString(last)
-					}
-				}
-				fmt.Fprintf(&b, `<li%s><b>%s</b><span>%s</span></li>`, tlEraStyle(e, i), dr.inline(e.Name), span)
+				fmt.Fprintf(&b, `<li%s><b>%s</b><span>%s</span></li>`, tlEraStyle(e, i), dr.inline(e.Name), tlEraSpan(e))
 			}
 			b.WriteString("</ol>")
 		}
 		b.WriteString("</header>\n")
 	}
-	b.WriteString(`<div class="si-tl-track">` + "\n")
+	switch {
+	case eras: // one column per era, wider for more milestones
+		var cols []string
+		for _, e := range t.Eras {
+			cols = append(cols, fmt.Sprintf("minmax(0,%sfr)", pct(float64(len(e.Items))+3)))
+		}
+		fmt.Fprintf(&b, `<div class="si-tl-track" style="--_tl-cols:%s">`+"\n", strings.Join(cols, " "))
+	case cards:
+		cols, rows := tlCardGrid(len(ms), o.ratio)
+		fmt.Fprintf(&b, `<div class="si-tl-track" style="--_tl-cc:%d;--_tl-cr:%d">`+"\n", cols, rows)
+	default:
+		b.WriteString(`<div class="si-tl-track">` + "\n")
+	}
 	var places []tlPlace
 	var rows int
 	var counts []int
@@ -333,7 +341,9 @@ func (dr *deckRenderer) timelineHTML(t *deck.Timeline, o tlOpts, dir string, sc 
 		if snake {
 			fmt.Fprintf(&b, `<svg class="si-tl-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">%s</svg>`+"\n", tlPaths(t, o, rows, counts, places, ei))
 		}
-		if e.Name != "" {
+		if eras { // a coloured header: the name and its dates
+			fmt.Fprintf(&b, `<header class="si-tl-era-head"><h2 class="si-tl-era-name">%s</h2><p class="si-tl-era-span">%s</p></header>`+"\n", dr.inline(e.Name), tlEraSpan(e))
+		} else if e.Name != "" {
 			fmt.Fprintf(&b, `<h2 class="si-tl-era-name">%s</h2>`+"\n", dr.inline(e.Name))
 		}
 		for _, m := range e.Items {
@@ -367,6 +377,11 @@ func (dr *deckRenderer) timelineHTML(t *deck.Timeline, o tlOpts, dir string, sc 
 				brk = ` data-break`
 			}
 			fmt.Fprintf(&b, `<article class="si-tl-ms" data-side="%s"%s%s>`, side, brk, style)
+			date := fmt.Sprintf(`<p class="si-tl-date"><time>%s</time></p>`, html.EscapeString(m.Date))
+			if cards { // the date sits on the rail, above the picture
+				b.WriteString(date)
+				date = ""
+			}
 			pic := ""
 			if m.Img != "" {
 				if src, ok := dr.tlPicture(dir, m.Img, sc); ok {
@@ -379,7 +394,7 @@ func (dr *deckRenderer) timelineHTML(t *deck.Timeline, o tlOpts, dir string, sc 
 				b.WriteString(`<span class="si-tl-node si-tl-dot"></span>`)
 			}
 			b.WriteString(`<div class="si-tl-card">`)
-			fmt.Fprintf(&b, `<p class="si-tl-date"><time>%s</time></p>`, html.EscapeString(m.Date))
+			b.WriteString(date)
 			fmt.Fprintf(&b, `<h3 class="si-tl-name">%s</h3>`, dr.inline(m.Title))
 			if m.Text != "" {
 				fmt.Fprintf(&b, `<p class="si-tl-desc">%s</p>`, dr.inline(m.Text))
@@ -423,6 +438,27 @@ func (dr *deckRenderer) timelineHTML(t *deck.Timeline, o tlOpts, dir string, sc 
 		sc.steps += len(t.Eras) - 1
 	}
 	return b.String()
+}
+
+// tlEraSpan is an era's dates: "first – last" as written.
+func tlEraSpan(e *deck.TimelineEra) string {
+	if len(e.Items) == 0 {
+		return ""
+	}
+	first, last := e.Items[0].Date, e.Items[len(e.Items)-1].Date
+	span := html.EscapeString(first)
+	if last != first {
+		span += " – " + html.EscapeString(last)
+	}
+	return span
+}
+
+// tlCardGrid is the cards layout's grid on a frame of the given aspect: rows
+// so each card is about 0.62 as wide as tall (picture on top, text under it),
+// the track being about 0.72 of the frame's height.
+func tlCardGrid(n int, ratio float64) (cols, rows int) {
+	rows = max(1, int(math.Round(math.Sqrt(float64(n)*0.62/(ratio/0.72)))))
+	return (n + rows - 1) / rows, rows
 }
 
 // tlEraStyle is an era's colour: its own color=, else the theme palette's
@@ -523,8 +559,12 @@ func (dr *deckRenderer) timelineCSS(b *bytes.Buffer) {
 	}
 }
 
+// timelineJS adds the fit scripts: timelines and infographics.
 func (dr *deckRenderer) timelineJS(b *bytes.Buffer) {
 	if dr.timeline {
 		b.WriteString("<script>\n" + assets.TimelineJS + "</script>\n")
+	}
+	if dr.infographic {
+		b.WriteString("<script>\n" + assets.InfographicJS + "</script>\n")
 	}
 }

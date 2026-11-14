@@ -24,7 +24,11 @@ lazy-loaded on Edit; `POST /_si/term/api/save` with an mtime check; saves
 never live-reload). See `docs/terminal.md` "Viewer tabs".
 
 
-**Released and live: v3.9.0** (the play workbench: split view with a
+**Released and live: v3.10.0** (timelines `eras` and `cards` layouts,
+`--svg` for timelines and infographics as real vector SVG, infographic text
+that shrinks to fit its block with a `si check` warning past 60%, both types
+in the Studio's New… and gallery and as text in the terminal). Before:
+**v3.9.0** (the play workbench: split view with a
 draggable divider kept across reloads, ⌘P quick open, ⌘⇧F search in files
 opening at the line, line spotlight in the Viewer and editor;
 `internal/serve/search.go`). Before: **v3.8.0** (web demo promo kit: session keep, sticky

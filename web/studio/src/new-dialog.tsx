@@ -19,6 +19,8 @@ export const starterKinds: { kind: string; icon?: Kind; label: string; what: str
   { kind: "lab", label: "Lab", what: "Hands-on steps with commands and output" },
   { kind: "demo", label: "Demo script", what: "What the presenter says and runs, live" },
   { kind: "mindmap", label: "Mind map", what: "Topics that branch out, and maps that open into maps" },
+  { kind: "timeline", icon: "deck", label: "Timeline", what: "Eras and dated milestones with pictures, on one 16:9 frame" },
+  { kind: "infographic", icon: "deck", label: "Infographic", what: "One page of numbers, charts and steps in a grid of blocks" },
 ];
 
 /** slug turns a name into a file or folder name: "Our Q3 Plan" → "our-q3-plan". */

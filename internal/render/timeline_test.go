@@ -73,3 +73,75 @@ func TestTimelineFence(t *testing.T) {
 		t.Errorf("steps %d", res.Steps)
 	}
 }
+
+// TestTimelineEraAndCardLayouts renders testdata/timeline.md as eras and as
+// cards and compares each with its golden file.
+func TestTimelineEraAndCardLayouts(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("testdata", "timeline.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, layout := range []string{"eras", "cards"} {
+		dir := t.TempDir()
+		p := filepath.Join(dir, "timeline.md")
+		src := strings.Replace(string(raw), "type: timeline\n", "type: timeline\nlayout: "+layout+"\n", 1)
+		if err := os.WriteFile(p, []byte(src), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		d, err := deck.Parse(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res := Deck(d, Options{})
+		if len(res.Problems) > 0 {
+			t.Fatalf("%s: problems: %v", layout, res.Problems)
+		}
+		if res.Steps != 2 {
+			t.Errorf("%s: steps = %d, want one per era after the first (2)", layout, res.Steps)
+		}
+		got := tlRE.FindString(string(res.HTML))
+		if !strings.Contains(got, `data-layout="`+layout+`" data-orient="landscape" style="--_tl-ar:1.78" data-frame`) {
+			t.Errorf("%s: no landscape frame in\n%.300s", layout, got)
+		}
+		golden := filepath.Join("testdata", "timeline-"+layout+".golden.html")
+		if *update {
+			if err := os.WriteFile(golden, []byte(got), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		want, err := os.ReadFile(golden)
+		if err != nil {
+			t.Fatalf("%v (run with -update to create it)", err)
+		}
+		if got != string(want) {
+			t.Errorf("%s golden mismatch (run go test ./internal/render -update if intended)\n%s", layout, got)
+		}
+	}
+}
+
+func TestTimelineCardGrid(t *testing.T) {
+	for _, c := range []struct{ n, cols, rows int }{{30, 10, 3}, {12, 6, 2}, {4, 4, 1}, {1, 1, 1}} {
+		if cols, rows := tlCardGrid(c.n, 16.0/9); cols != c.cols || rows != c.rows {
+			t.Errorf("%d cards: %d×%d, want %d×%d", c.n, cols, rows, c.cols, c.rows)
+		}
+	}
+}
+
+// TestTimelinePortraitErasHaveNoFrame: a portrait eras timeline is a poster
+// that flows (no 16:9 frame).
+func TestTimelinePortraitErasHaveNoFrame(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "t.md")
+	os.WriteFile(p, []byte("---\ntype: timeline\nlayout: eras\norientation: portrait\n---\n\n## One\n\n### 1900 · A\nUno.\n\n## Two\n\n### 1950 · B\nDos.\n"), 0o644)
+	d, err := deck.Parse(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := string(Deck(d, Options{}).HTML)
+	if !strings.Contains(page, `data-layout="eras" data-orient="portrait"`) || strings.Contains(page, `" data-frame`) {
+		t.Errorf("portrait eras: want a flowing poster")
+	}
+	if !strings.Contains(page, `<header class="si-tl-era-head"><h2 class="si-tl-era-name">One</h2><p class="si-tl-era-span">1900</p></header>`) {
+		t.Errorf("no era header with its dates")
+	}
+}

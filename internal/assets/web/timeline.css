@@ -60,6 +60,46 @@
 .si-tl-sources li{padding-left:1em;text-indent:-1em;overflow-wrap:anywhere}
 .si-tl-sources a{color:inherit}
 
+/* eras: one column per era (a band of its own when narrow): a coloured header
+   with the era's name and dates, its milestones stacked under it, pictures as
+   small medallions beside the date and title */
+.si-tl[data-layout="eras"] .si-tl-legend{display:none}
+.si-tl:is([data-layout="eras"],[data-layout="cards"]) .si-tl-track::before,
+.si-tl:is([data-layout="eras"],[data-layout="cards"]) .si-tl-era::before{display:none}
+.si-tl[data-layout="eras"] .si-tl-track{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,16em),1fr));align-items:start;gap:1em;padding:.5em .6em 1.5em}
+.si-tl[data-layout="eras"] .si-tl-era{display:flex;flex-direction:column;gap:.75em;padding:0 0 .8em;border-radius:.7em;overflow:hidden;
+  background:color-mix(in oklab,var(--si-tl-c) 8%,var(--si-tl-bg));border:.08em solid color-mix(in oklab,var(--si-tl-c) 32%,transparent)}
+.si-tl-era-head{padding:.55em .8em .5em;background:oklch(from var(--si-tl-c) .47 c h);color:#fff}
+.si-tl[data-layout="eras"] .si-tl-era-name{display:block;width:auto;max-width:none;margin:0;padding:0;border:0;border-radius:0;background:none;color:inherit;
+  text-align:start;font-size:.95em;letter-spacing:.04em;line-height:1.15}
+.si-tl-era-span{margin-top:.15em;font-size:.78em;font-weight:600;opacity:.9;font-variant-numeric:tabular-nums}
+.si-tl[data-layout="eras"] .si-tl-ms{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.1em .6em;align-items:center;margin:0;padding-inline:.75em;text-align:start}
+.si-tl[data-layout="eras"] .si-tl-ms .si-tl-card{display:contents;text-align:start}
+.si-tl[data-layout="eras"] .si-tl-node{grid-column:1;grid-row:1 / span 2;align-self:center}
+.si-tl[data-layout="eras"] .si-tl-date{grid-column:2;grid-row:1;align-self:end}
+.si-tl[data-layout="eras"] .si-tl-name{grid-column:2;grid-row:2;align-self:start;margin:0;hyphens:auto;overflow-wrap:break-word}
+.si-tl[data-layout="eras"] :is(.si-tl-desc,.si-tl-cap){grid-column:1 / -1}
+.si-tl[data-layout="eras"] .si-tl-pic{width:2.8em;border-width:.16em;box-shadow:none}
+.si-tl[data-layout="eras"] .si-tl-dot{width:.9em;height:.9em;border-width:.25em;margin-inline:.4em}
+
+/* cards: a grid of picture cards on a thin rail, each with its date on the
+   rail and its era's colour */
+.si-tl[data-layout="cards"] .si-tl-track{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,13em),1fr));gap:1.4em 1em;padding:.8em 1em 1.5em}
+.si-tl[data-layout="cards"] .si-tl-era{display:contents}
+.si-tl[data-layout="cards"] .si-tl-era>*{opacity:inherit} /* an era is a build step: its cards follow it; the rail is ::before so it is painted first (si build --svg paints in DOM order) */
+.si-tl[data-layout="cards"] .si-tl-era-name{display:none}
+.si-tl[data-layout="cards"] .si-tl-ms{display:flex;flex-direction:column;gap:.45em;margin:0;min-width:0;text-align:start;position:relative}
+.si-tl[data-layout="cards"] .si-tl-ms::before{content:"";position:absolute;top:.5em;left:0;right:-1em;height:.14em;border-radius:1em;background:var(--si-tl-c);opacity:.6}
+.si-tl[data-layout="cards"] .si-tl-ms>.si-tl-date{position:relative;z-index:1;align-self:flex-start;display:flex;align-items:center;gap:.4em;padding-right:.5em;background:var(--si-tl-bg)}
+.si-tl[data-layout="cards"] .si-tl-ms>.si-tl-date::before{content:"";flex:none;width:.75em;height:.75em;border-radius:50%;background:var(--si-tl-c)}
+.si-tl[data-layout="cards"] .si-tl-node{grid-column:auto}
+.si-tl[data-layout="cards"] .si-tl-pic{width:100%;aspect-ratio:16/10;border-radius:.5em;border:0;border-bottom:.3em solid var(--si-tl-c);
+  box-shadow:0 .2em .6em color-mix(in oklab,var(--si-fg) 16%,transparent)}
+.si-tl[data-layout="cards"] .si-tl-dot{display:none}
+.si-tl[data-layout="cards"] .si-tl-ms .si-tl-card{grid-column:auto;padding:0;text-align:start}
+.si-tl[data-layout="cards"] .si-tl-ms:not(:has(.si-tl-pic)) .si-tl-card{border-top:.3em solid var(--si-tl-c);padding-top:.4em}
+.si-tl[data-layout="cards"] .si-tl-name{margin-top:0}
+
 /* a phone: the line on the left, every card on its right */
 @container (max-width: 34rem){
   .si-tl-track::before{left:2.9em}
@@ -78,24 +118,25 @@
 .si-tl-slide .si-inner>.si-tl{margin:auto}
 .si-figure.si-tl-figure,.si-body:has(>.si-tl-figure){margin-inline:0;width:100%;align-self:stretch}
 
-/* snake and line on a wide screen: a frame of the page's aspect, the line an SVG */
+/* a frame on a wide screen (data-frame: snake, line; eras and cards when landscape):
+   the page's aspect; snake and line draw their line as an SVG */
 @media (min-width: 40em) and (min-aspect-ratio: 4/5){
-  .si-tl:is([data-layout="snake"],[data-layout="line"]){display:flex;flex-direction:column;aspect-ratio:var(--_tl-ar);overflow:hidden;
+  .si-tl[data-frame]{display:flex;flex-direction:column;aspect-ratio:var(--_tl-ar);overflow:hidden;
     width:min(100%,calc(var(--si-figure-max,70vh) * var(--_tl-ar)));
     background:radial-gradient(120% 80% at 0% 0%,color-mix(in oklab,var(--si-tl-base) 7%,transparent),transparent 60%),
       radial-gradient(100% 70% at 100% 100%,color-mix(in oklab,var(--si-tl-base) 6%,transparent),transparent 60%),var(--si-tl-bg)}
-  .si-tl-slide .si-tl:is([data-layout="snake"],[data-layout="line"]){width:min(100cqi,calc(100cqb * var(--_tl-ar)))}
-  .si-tl:is([data-layout="snake"],[data-layout="line"]) > :is(.si-tl-head,.si-tl-track,.si-tl-foot){font-size:calc(1cqi * var(--_fit,1))}
-  .si-tl:is([data-layout="snake"],[data-layout="line"]) > :is(.si-tl-head,.si-tl-foot){font-size:1cqi}
-  .si-tl:is([data-layout="snake"],[data-layout="line"]) > .si-tl-head{flex:none;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:2.5em;padding:1.5em 3em 0;text-align:start}
-  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-title{font-size:2.2em}
-  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-sub{font-size:1.1em;margin-top:.25em}
-  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5em 1.2em;font-size:.74em;justify-content:stretch}
-  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-legend li{flex-wrap:wrap;gap:0 .45em;white-space:normal}
-  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-legend li{display:grid;grid-template-columns:auto 1fr;align-items:start;gap:0 .5em;line-height:1.2}
-  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-legend li::before{grid-row:span 2;align-self:stretch;width:.4em;height:auto;border-radius:1em}
-  .si-tl:is([data-layout="snake"],[data-layout="line"]) > .si-tl-track{flex:1;min-height:0;margin:1em 0 .3em;padding:0;--_gap:calc(var(--_r) + .35em);--_r:1.4em}
-  .si-tl:is([data-layout="snake"],[data-layout="line"]) > .si-tl-track::before{display:none}
+  .si-tl-slide .si-tl[data-frame]{width:min(100cqi,calc(100cqb * var(--_tl-ar)))}
+  .si-tl[data-frame] > :is(.si-tl-head,.si-tl-track,.si-tl-foot){font-size:calc(1cqi * var(--_fit,1))}
+  .si-tl[data-frame] > :is(.si-tl-head,.si-tl-foot){font-size:1cqi}
+  .si-tl[data-frame] > .si-tl-head{flex:none;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:2.5em;padding:1.5em 3em 0;text-align:start}
+  .si-tl[data-frame] .si-tl-title{font-size:2.2em}
+  .si-tl[data-frame] .si-tl-sub{font-size:1.1em;margin-top:.25em}
+  .si-tl[data-frame] .si-tl-legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5em 1.2em;font-size:.74em;justify-content:stretch}
+  .si-tl[data-frame] .si-tl-legend li{flex-wrap:wrap;gap:0 .45em;white-space:normal}
+  .si-tl[data-frame] .si-tl-legend li{display:grid;grid-template-columns:auto 1fr;align-items:start;gap:0 .5em;line-height:1.2}
+  .si-tl[data-frame] .si-tl-legend li::before{grid-row:span 2;align-self:stretch;width:.4em;height:auto;border-radius:1em}
+  .si-tl[data-frame] > .si-tl-track{flex:1;min-height:0;margin:1em 0 .3em;padding:0;--_gap:calc(var(--_r) + .35em);--_r:1.4em}
+  .si-tl[data-frame] > .si-tl-track::before{display:none}
   .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-svg{display:block;position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
   .si-tl-rail{fill:none;stroke:var(--si-tl-rail);stroke-width:.35cqi;vector-effect:non-scaling-stroke;stroke-linecap:round}
   .si-tl-band{fill:none;stroke:var(--si-tl-c);stroke-opacity:.16;stroke-width:2.6cqi;vector-effect:non-scaling-stroke;stroke-linecap:butt}
@@ -118,12 +159,33 @@
   .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-name{font-size:.98em}
   .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-desc{font-size:.76em;line-height:1.24;margin-top:.15em}
   .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-cap{font-size:.6em;margin-top:.15em;line-height:1.2}
-  .si-tl:is([data-layout="snake"],[data-layout="line"]) > .si-tl-foot{flex:none;grid-template-columns:minmax(0,.62fr) minmax(0,2fr);align-items:center;gap:2.5em;padding:.2em 3em 1em}
-  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-closing{font-size:1.15em;text-align:start;padding:.5em 0 .5em 1em;border:0;border-left:.3em solid var(--si-tl-base)}
-  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-sources{display:grid;grid-template-columns:auto 1fr;gap:1.2em;align-items:start}
-  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-sources h2{writing-mode:horizontal-tb;font-size:.72em;margin:0;padding-top:.15em}
-  .si-tl:is([data-layout="snake"],[data-layout="line"]) .si-tl-sources ul{grid-template-columns:repeat(3,minmax(0,1fr));gap:.25em 1.4em;font-size:.56em}
+  .si-tl[data-frame] > .si-tl-foot{flex:none;grid-template-columns:minmax(0,.62fr) minmax(0,2fr);align-items:center;gap:2.5em;padding:.2em 3em 1em}
+  .si-tl[data-frame] .si-tl-closing{font-size:1.15em;text-align:start;padding:.5em 0 .5em 1em;border:0;border-left:.3em solid var(--si-tl-base)}
+  .si-tl[data-frame] .si-tl-sources{display:grid;grid-template-columns:auto 1fr;gap:1.2em;align-items:start}
+  .si-tl[data-frame] .si-tl-sources h2{writing-mode:horizontal-tb;font-size:.72em;margin:0;padding-top:.15em}
+  .si-tl[data-frame] .si-tl-sources ul{grid-template-columns:repeat(3,minmax(0,1fr));gap:.25em 1.4em;font-size:.56em}
   /* line: one row, two levels a side */
   .si-tl[data-layout="line"] > .si-tl-track{--_r:1.35em}
+}
+/* eras and cards in a landscape frame: every era (or card) in one 16:9 view */
+@media (min-width: 40em) and (min-aspect-ratio: 4/5){
+  .si-tl[data-frame][data-layout="eras"] > .si-tl-head{grid-template-columns:minmax(0,1fr)}
+  .si-tl[data-frame][data-layout="eras"] .si-tl-legend{display:none}
+  .si-tl[data-frame][data-layout="eras"] > .si-tl-track{grid-template-columns:var(--_tl-cols);align-items:stretch;gap:.8em;padding:0 2.2em;margin:1.3em 0 .8em}
+  .si-tl[data-frame][data-layout="eras"] .si-tl-era{min-height:0;gap:.6em}
+  .si-tl[data-frame][data-layout="eras"] .si-tl-cap{display:none}
+  .si-tl[data-frame][data-layout="eras"] .si-tl-date{font-size:.74em}
+  .si-tl[data-frame][data-layout="eras"] .si-tl-name{font-size:.9em}
+  .si-tl[data-frame][data-layout="eras"] .si-tl-desc{font-size:.74em;line-height:1.24;margin-top:.1em}
+  .si-tl[data-frame][data-layout="cards"] > .si-tl-track{grid-template-columns:repeat(var(--_tl-cc),minmax(0,1fr));grid-template-rows:repeat(var(--_tl-cr),minmax(0,1fr));
+    gap:1.1em .9em;padding:0 2.2em;margin:1.1em 0 .6em}
+  .si-tl[data-frame][data-layout="cards"] .si-tl-ms{min-height:0;gap:.35em}
+  .si-tl[data-frame][data-layout="cards"] .si-tl-ms::before{right:-.9em}
+  .si-tl[data-frame][data-layout="cards"] .si-tl-pic{flex:none;aspect-ratio:auto;height:40%;min-height:2.5em}
+  .si-tl[data-frame][data-layout="cards"] .si-tl-card{flex:1;min-height:0;overflow:hidden}
+  .si-tl[data-frame][data-layout="cards"] .si-tl-date{font-size:.74em}
+  .si-tl[data-frame][data-layout="cards"] .si-tl-name{font-size:.88em}
+  .si-tl[data-frame][data-layout="cards"] .si-tl-desc{font-size:.72em;line-height:1.22;margin-top:.15em}
+  .si-tl[data-frame][data-layout="cards"] .si-tl-cap{font-size:.58em;margin-top:.15em}
 }
 @media print{.si-tl{break-inside:avoid}}

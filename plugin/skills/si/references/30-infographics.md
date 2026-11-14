@@ -127,11 +127,18 @@ more checkouts
 - **`si build talk.md --png --pdf`** writes `talk.png` (the slide at 1600 ×
   900, or the whole poster at 1080 wide; `--scale 2`, the default, doubles
   the pixels; `--scale 3` for print) and `pdfs/talk.pdf` (one page, vector
-  text). `si play` presents a landscape one.
+  text). **`--svg`** writes `talk.svg`, the frame as a vector picture (text
+  as text, pictures inside, theme colours resolved; background glows and
+  shadows left out). `si play` presents a landscape one.
+- **Text fits its block.** A block whose text does not fit its cell gets a
+  smaller text size, step by step, down to 60% of its own; `si check` warns
+  when a block would need less than that (shorten it, make it `wide` or
+  `tall`, or move a block out).
 - **`si check`** reports an unknown kind or option, a chart cell that is not a
   number (or a negative one in a donut), a compare or chart without a table,
-  an empty block, a stat without its number, and `[CLICK]` cues that do not
-  match the blocks.
+  an empty block, a stat without its number, a block with more text than its
+  cell holds at 60% text size, and `[CLICK]` cues that do not match the
+  blocks.
 - **`si new poster --type infographic`** writes a starter; `si --export
   example --type infographic` the two examples (a landscape story and a
   portrait poster).

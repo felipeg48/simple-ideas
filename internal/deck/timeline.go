@@ -16,7 +16,7 @@ import (
 
 // Timeline layouts, orientations and scales.
 var (
-	TimelineLayouts      = []string{"snake", "line", "vertical"}
+	TimelineLayouts      = []string{"snake", "line", "vertical", "eras", "cards"}
 	TimelineOrientations = []string{"landscape", "portrait"}
 	TimelineScales       = []string{"even", "time"}
 )

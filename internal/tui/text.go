@@ -412,6 +412,10 @@ func (r *textRenderer) fence(f *ast.FencedCodeBlock) []string {
 		return r.stage(code)
 	case "mindmap":
 		return r.mindmap(code)
+	case "timeline":
+		return r.timeline(code)
+	case "infographic":
+		return r.infographic(code)
 	case "mermaid":
 		lines := strings.Split(strings.TrimRight(code, "\n"), "\n")
 		if len(lines) > 8 {

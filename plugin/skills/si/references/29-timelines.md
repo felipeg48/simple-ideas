@@ -64,7 +64,7 @@ Notes: Empezamos en la Antigüedad. [CLICK] En la Edad Media…
 |---|---|---|
 | `type` | `timeline` | |
 | `title`, `subtitle` | the header | |
-| `layout` | `snake` (the line wraps across rows: 30 milestones fit one 16:9 page), `line` (one horizontal line, two levels a side), `vertical` (one line down the page, cards left and right) | `snake`; `vertical` when portrait |
+| `layout` | `snake` (the line wraps across rows: 30 milestones fit one 16:9 page), `line` (one horizontal line, two levels a side), `vertical` (one line down the page, cards left and right), `eras` (one column per era: a coloured header with the era's name and dates, its milestones stacked under it, pictures as small medallions; 30 milestones fit one 16:9 page), `cards` (a grid of picture cards on a thin dated rail, each in its era's colour) | `snake`; `vertical` when portrait |
 | `orientation` | `landscape` (a slide: a frame of `aspect:` that scales like a picture), `portrait` (a tall scrolling poster, a document page) | `landscape` |
 | `aspect` | the landscape frame: `16:9`, `16:10`, `4:3`, `1:1` | `16:9` |
 | `alternate` | `on` (milestones above and below the line, or left and right), `off` (one side) | `on` |
@@ -74,8 +74,20 @@ Notes: Empezamos en la Antigüedad. [CLICK] En la Edad Media…
 | `require` | a rubric for `si check`: `20 dates, 15 images, 7 eras, 4 sources` | none |
 | `lang`, `theme` | as on any page; every built-in theme works, light and dark | |
 
-On a phone (narrow or portrait screen) every layout becomes `vertical`, with
-the line on the left.
+On a phone (narrow or portrait screen) `snake` and `line` become `vertical`,
+with the line on the left; `eras` stacks its era columns and `cards` shows one
+or two cards a row. A portrait `eras` poster puts its eras side by side as far
+as the width allows; a portrait `cards` poster is a grid of cards. On a wide
+screen every layout but `vertical` is a frame of `aspect:` whose text shrinks
+until the fullest card (or era column) fits.
+
+```markdown
+---
+type: timeline
+title: Hitos en Algoritmos y Complejidad Computacional
+layout: eras
+---
+```
 
 ### In a slide or a document
 
@@ -111,7 +123,9 @@ a document it is `vertical` unless `layout=` says otherwise.
   text reads well; the title on every page, the closing line and sources on
   the last), and `pdfs/timeline-compact.pdf`, the whole timeline on one page
   like the PNG. The pages are pictures of the timeline (the text is not
-  selectable). A portrait poster's `--pdf` is the printed page. All need
-  Chrome.
+  selectable). A portrait poster's `--pdf` is the printed page. `--svg`
+  writes `timeline.svg`: the same frame as a vector picture, its text as
+  real text, its pictures inside it and the theme's colours resolved (soft
+  background glows and shadows are left out). All need Chrome.
 - `si new history --type timeline` writes an example timeline with its
   pictures; `si --export example --type timeline` the same.

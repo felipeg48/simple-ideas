@@ -187,8 +187,9 @@ search and Play. In 3D too, with floors for the maps a topic links to.
 Eras, dates, pictures and sources on one 16:9 page: `## Era` headings become
 colour bands, `### date · title` lines milestones with picture medallions. A
 landscape timeline is a slide (one era per click), a portrait one a poster;
+five layouts (`snake`, `line`, `vertical`, `eras` columns, picture `cards`);
 `si check` verifies a rubric (`require: 20 dates, 15 images`), `si build
---png --pdf` exports it.
+--png --pdf --svg` exports it.
 [Timelines →](https://simple-ideas.org/features/timelines.html)
 
 ![A 30-milestone timeline on one page](docs/screenshots/readme/timeline.jpg)
@@ -198,7 +199,7 @@ One page of numbers that tell a story: every `##` heading is a block (a big
 stat, a before/after, steps, a quote, icons) and every Markdown table of
 numbers becomes a chart drawn to scale (bars, donut, line, progress). A
 landscape one is a 16:9 slide you present; a portrait one a poster.
-`si build --png --pdf` exports both.
+Text shrinks to fit each block; `si build --png --pdf --svg` exports both.
 [Infographics →](https://simple-ideas.org/features/infographics.html)
 
 ![An infographic: a web performance story on one slide](docs/screenshots/readme/infographic.jpg)

@@ -1,14 +1,14 @@
-/* simple-ideas timelines: on the snake and line layouts every card has a
-   fixed room beside the line; the text shrinks (--_fit on the track) until the
-   fullest card fits. Text is in cqi, so the fit holds at every size and is
+/* simple-ideas timelines: in a frame (data-frame: snake and line, eras and
+   cards when landscape) every card (eras: every era column) has a fixed room;
+   the text shrinks (--_fit on the track) until the fullest one fits. Text is in cqi, so the fit holds at every size and is
    only measured again when the frame changes shape. */
 (function () {
   function fit(tl) {
     var track = tl.querySelector('.si-tl-track');
     if (!track) return;
-    var cards = tl.querySelectorAll('.si-tl-card');
+    var cards = tl.querySelectorAll(tl.getAttribute('data-layout') === 'eras' ? '.si-tl-era' : '.si-tl-card');
     track.style.setProperty('--_fit', 1);
-    if (getComputedStyle(cards[0] || track).position !== 'absolute') return; /* vertical: plain flow */
+    if (!tl.hasAttribute('data-frame') || getComputedStyle(tl).aspectRatio === 'auto') return; /* plain flow */
     var f = 1;
     for (var pass = 0; pass < 8; pass++) {
       var worst = 1;

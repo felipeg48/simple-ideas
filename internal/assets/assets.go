@@ -61,6 +61,11 @@ var MindmapCSS string
 //go:embed web/infographic.css
 var InfographicCSS string
 
+// InfographicJS shrinks a block's text until it fits its cell.
+//
+//go:embed web/infographic.js
+var InfographicJS string
+
 //go:embed web/mindmap.js
 var MindmapJS string
 

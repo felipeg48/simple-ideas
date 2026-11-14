@@ -161,12 +161,16 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - `type: timeline`: eras (`## Era · color=`), milestones (`### date · title`,
   a description, a picture medallion with caption and credit), a closing line
   and sources; dates kept as written, read for order.
-- Layouts `snake` (30 milestones on one 16:9 page), `line`, `vertical`;
+- Layouts `snake` (30 milestones on one 16:9 page), `line`, `vertical`,
+  `eras` (a column per era under a coloured header, also 30 on one page) and
+  `cards` (picture cards on a thin dated rail);
   landscape is a slide (one era per click, `Notes:`), portrait a scrolling
   poster; a ```` ```timeline ```` fence in any slide or page; every theme,
-  light and dark; a phone always gets the vertical layout.
+  light and dark; on a phone the line layouts turn vertical and eras and
+  cards stack.
 - `https://` pictures fetched and inlined at build; `si check` counts and
-  checks order and a `require:` rubric; `si build --png --pdf`.
+  checks order and a `require:` rubric; `si build --png --pdf --svg` (a
+  paged PDF and a one-page one; a vector SVG with real text).
 ## Infographics
 
 - `type: infographic`: every `## heading · kind` is a block of a bento grid:
@@ -176,7 +180,12 @@ an example for every rule: [RULES.md](docs/RULES.md).
   progress; every built-in theme, light and dark.
 - Landscape is a 16:9 slide (one block per click, a teleprompter script);
   portrait a tall poster; an ```` ```infographic ```` fence on any slide.
-- `si build --png --pdf`: a high-resolution picture and a one-page PDF.
+- A block's text shrinks to fit its cell (down to 60%); `si check` warns
+  about a block that would need less.
+- `si build --png --pdf --svg`: a high-resolution picture, a one-page PDF and
+  a vector SVG with real text.
+- Both show in the Studio (New… lists them) and as text in the terminal
+  (`si play --terminal`, `si --terminal`).
 
 ## Code
 

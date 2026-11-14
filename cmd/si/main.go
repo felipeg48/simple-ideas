@@ -53,7 +53,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "3.9.0"
+const version = "3.10.0"
 
 // Exit codes.
 const (
@@ -103,6 +103,9 @@ Usage:
         baked in), pdfs/<name>.pdf with one page per map (map › links work), and
         <name>.mp4: the first map's Play as video, in 3D when the page is view: 3d
         (--mp4 needs ffmpeg)
+  si [build] <timeline.md|infographic.md> [--png [--scale 2]] [--pdf] [--svg]
+        timelines and infographics: <name>.png, pdfs/<name>.pdf (a timeline: paged and
+        -compact) and <name>.svg, the frame as a vector picture with real text
   si code <file.md> [--id show] [--png [--scale 2]] [--svg] [--gif] [--mp4] [-o dir]
         code windows and shows: one <file>-<id>-<n>.png / .svg per step (window,
         backdrop and callouts) and <file>-<id>.gif / .mp4, the whole show animated
@@ -926,6 +929,12 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 					fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
 					failed = true
 				}
+			}
+		}
+		if chrome != "" && o.svg && (d.IsTimeline() || d.IsInfographic()) { // the frame as a vector picture
+			if err := exportFrameSVG(chrome, dest, out, d, stdout); err != nil {
+				fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
+				failed = true
 			}
 		}
 		if chrome != "" && d.IsTimeline() { // a timeline as one picture; a poster's PDF is the printed page

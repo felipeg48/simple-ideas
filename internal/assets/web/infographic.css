@@ -37,7 +37,7 @@
 .si-ig-block{grid-area:var(--r)/var(--c)/span var(--h)/span var(--w);container:si-igb/inline-size;
   --_c:var(--_c1);--_cm:color-mix(in srgb,var(--_c) 38%,var(--_card));
   position:relative;display:flex;flex-direction:column;gap:.55em;min-inline-size:0;min-block-size:0;overflow:hidden;
-  padding:1.05em 1.2em;border-radius:var(--si-radius,.6em);background:var(--_card);
+  padding:1.05em 1.2em;border-radius:var(--si-radius,.6em);background:var(--_card);font-size:calc(1em * var(--_fit,1));
   box-shadow:0 .05em 0 color-mix(in srgb,var(--si-fg) 6%,transparent),inset 0 0 0 .06em color-mix(in srgb,var(--si-line) 70%,transparent)}
 .si-ig-block:nth-child(even){--_c:var(--_c2)}
 .si-ig-block.si-ig-accent{--_c:var(--si-on-accent);--_card:var(--si-accent);--_ink:var(--si-on-accent);
