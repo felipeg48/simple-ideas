@@ -15,13 +15,17 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/render"
 	"github.com/felipeg48/simple-ideas/internal/tools"
 	"github.com/felipeg48/simple-ideas/internal/webdemo"
+	"github.com/felipeg48/simple-ideas/internal/webhook"
 )
 
 const demoUsage = `Usage:
-  si demo test <script.md|.adoc|.json|folder/|source> [--feature "Name"] [--junit report.xml] [--viewport V] [-o dir] [--trust]
+  si demo test <script.md|.adoc|.json|folder/|source> [--feature "Name"] [--junit report.xml] [--webhook URL] [--viewport V] [-o dir] [--trust]
         run a web demo script (type: demo with app:) in headless Chrome as a test: one line
         per step, report.html + report.json in demo-out/<script>/ (or -o dir), exit 1 on a failure;
         --junit also writes JUnit XML (one test case per feature) for CI.
+        --webhook URL [--webhook-format json|slack|teams|discord] posts one summary at the end
+        (passed, failed, seconds, the report or $SI_REPORT_URL, the failed steps), signed
+        with webhook-secret (your si.conf or SI_WEBHOOK_SECRET); a failed post is a warning.
         A folder runs every demo script in it, in name order, each in demo-out/<script>/, with one
         combined report.html + report.json in demo-out/ and one JUnit file (a test suite per script).
         A source: github:owner/repo@REF/path/script.md or …/folder/ (the repo fetched once at that
@@ -90,12 +94,14 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 	}
 	fl := flag.NewFlagSet("si demo", flag.ContinueOnError)
 	fl.SetOutput(io.Discard)
-	var feature, junit, out, viewport, voice, region, crop, trans, scale string
+	var feature, junit, out, viewport, voice, region, crop, trans, scale, hook, hookFormat string
 	var help, captions, noCaptions, noFF, trust bool
 	var with multi
 	fastFwd := 3 * time.Second
 	fl.StringVar(&feature, "feature", "", "")
 	fl.StringVar(&junit, "junit", "", "")
+	fl.StringVar(&hook, "webhook", "", "")
+	fl.StringVar(&hookFormat, "webhook-format", "json", "")
 	fl.StringVar(&out, "output", "", "")
 	fl.StringVar(&out, "o", "", "")
 	fl.StringVar(&viewport, "viewport", "", "")
@@ -148,6 +154,13 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 	if _, _, err := demoWith(with, "", ""); err != nil {
 		fmt.Fprintf(stderr, "si demo: --%v\n", err)
 		return exitUsage
+	}
+	if _, err := (webhook.Summary{}).Body(hookFormat); err != nil {
+		fmt.Fprintf(stderr, "si demo: %v (xapi is for courses: a test run is no learning record)\n", err)
+		return exitUsage
+	}
+	if hook != "" && !strings.HasPrefix(hook, "https://") {
+		fmt.Fprintf(stderr, "warning: --webhook %s is not https://: the summary travels in clear text\n", hook)
 	}
 	if region != "" && crop != "" {
 		fmt.Fprintf(stderr, "si demo: use --region or --crop, not both\n")
@@ -248,6 +261,7 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 	}
 	suite := &webdemo.Suite{Title: filepath.Base(strings.TrimSuffix(local, string(filepath.Separator))), SI: version, Date: time.Now().Format(time.RFC3339)}
 	var last *webdemo.Report
+	lastDir := root
 	code := exitOK
 	for _, s := range scripts {
 		dir := root
@@ -271,7 +285,14 @@ func runDemo(argv []string, stdout, stderr io.Writer) int {
 		}
 		rel, _ := filepath.Rel(root, dir)
 		suite.Add(rep, rel)
-		last = rep
+		last, lastDir = rep, dir
+	}
+	if hook != "" { // the run in one message for the team (never changes the exit code)
+		report := filepath.Join(lastDir, "report.html")
+		if folder {
+			report = filepath.Join(root, "report.html")
+		}
+		postDemoSummary(hook, hookFormat, demoSummary(suite, report), stdout, stderr)
 	}
 	if folder {
 		if err := os.MkdirAll(root, 0o755); err == nil {
@@ -508,4 +529,38 @@ func checkWebDemo(path string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintf(stdout, "si check: %s OK\n", path)
 	return exitOK
+}
+
+// demoSummary is a demo run for --webhook: the counts, the report (or
+// $SI_REPORT_URL, a CI job's link to it) and every failed step.
+func demoSummary(s *webdemo.Suite, report string) webhook.Summary {
+	if u := os.Getenv("SI_REPORT_URL"); u != "" {
+		report = u
+	}
+	sum := webhook.Summary{Title: s.Title, Passed: s.Passed, Failed: s.Failed, Skipped: s.Skipped, Seconds: s.Seconds,
+		OK: s.OK(), Report: report, SI: version, Time: time.Now().UTC().Format(time.RFC3339)}
+	for _, r := range s.Reports {
+		for _, f := range r.Features {
+			for _, st := range f.Steps {
+				if st.Status == "failed" {
+					sum.Failures = append(sum.Failures, webhook.Failure{Script: r.Script, Feature: f.Name, Step: st.Text})
+				}
+			}
+		}
+	}
+	return sum
+}
+
+// postDemoSummary sends the summary, signed with webhook-secret when set; a
+// failure is a warning.
+func postDemoSummary(url, format string, sum webhook.Summary, stdout, stderr io.Writer) {
+	body, err := sum.Body(format)
+	if err == nil {
+		err = webhook.Post(url, format, body, webhook.Secret(config.LoadUser().WebhookSecret), "")
+	}
+	if err != nil {
+		fmt.Fprintf(stderr, "warning: --webhook: %v\n", err)
+		return
+	}
+	fmt.Fprintf(stdout, "si demo: summary sent to the webhook (%s)\n", format)
 }

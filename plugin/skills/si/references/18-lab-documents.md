@@ -56,6 +56,9 @@ title: Trace an Order Through the Hand-offs
   as its own deck or lab. A split lab keeps paths relative to each module, as
   a split deck does: `sections/01-setup.md` writes `![x](../images/x.svg)`,
   and problems point at the module's own file and line.
+- `<!-- check: <command> · expect "text" -->` under a step shows how to
+  check it; in `si play` a **✓ Check** button runs it (§28, Labs that check
+  themselves). `<!-- solution -->` … `<!-- end -->` folds the step's answer.
 - Slide and body directives (`layout`, `steps`, `svg`, and so on) have no
   effect in a lab. Each one is reported by `si check` as a warning and
   otherwise ignored; an unknown directive (`<!-- columns -->`) is also only a

@@ -348,6 +348,9 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 			bodyAttrs += ` data-si-course`
 		}
 	}
+	if dr.opt.Checks {
+		bodyAttrs += ` data-si-checks` // si play: a lab check's ✓ Check runs it (doc.js, POST /_si/check)
+	}
 	if wm := dr.watermark(nil); wm != "" { // labs, articles, guides, books, demos: one fixed layer, repeated on every printed page
 		var decls []string
 		if dr.wmImg != "" {
@@ -509,6 +512,9 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	dr.mermaidScript(&b)
 	b.WriteString("<script>\n" + assets.DocJS + "</script>\n")
 	if g != nil && g.IsCourse() {
+		if w := dr.webhookConfig(g); w != "" { // before course.js, which reports to it
+			b.WriteString("<script>\nwindow.SI_WEBHOOK = " + w + ";\n" + assets.WebhookJS + "</script>\n")
+		}
 		b.WriteString("<script>\n" + assets.CourseJS + "</script>\n")
 	}
 	if dr.mindmap {

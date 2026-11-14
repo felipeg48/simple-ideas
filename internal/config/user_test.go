@@ -43,6 +43,22 @@ func TestDemoWith(t *testing.T) {
 	}
 }
 
+// TestWebhookSettings: course.webhook from any si.conf (warned when not
+// https); webhook-secret only from the user's, like an API key.
+func TestWebhookSettings(t *testing.T) {
+	writeUser(t, "webhook-secret: user-secret\n", 0o600)
+	proj := filepath.Join(t.TempDir(), "si.conf")
+	os.WriteFile(proj, []byte("course.webhook: http://hooks.example.com/x\nwebhook-secret: leaked\n"), 0o644)
+	c := Load("", proj)
+	if c.CourseWebhook != "http://hooks.example.com/x" || c.WebhookSecret != "user-secret" {
+		t.Errorf("webhook %q secret %q", c.CourseWebhook, c.WebhookSecret)
+	}
+	all := strings.Join(c.Warnings, "\n")
+	if !strings.Contains(all, "is not https://") || !strings.Contains(all, "webhook-secret is ignored") || strings.Contains(all, "leaked") {
+		t.Errorf("warnings: %v", c.Warnings)
+	}
+}
+
 func TestUserAndProject(t *testing.T) {
 	user := writeUser(t, "theme: paper\nvoice: openai:nova\nvoice.style: calm\nvoice.openai.key: sk-user-1234567890\n", 0o600)
 	proj := filepath.Join(t.TempDir(), "si.conf")

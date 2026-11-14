@@ -5,7 +5,9 @@
  * when read to the end, its video watched to 90 %, its lab's boxes ticked,
  * its quiz passed. In a SCORM 1.2 package (si build --scorm) it also reports
  * to the LMS's API found in a parent or opener window: status, quiz score,
- * the progress as suspend data. No dependencies; works from file://. */
+ * the progress as suspend data. With a webhook: (webhook.js, before this
+ * file) it also sends lesson.completed and course.completed. No
+ * dependencies; works from file://. */
 (function () {
   'use strict';
   var root = document.querySelector('.si-course');
@@ -184,12 +186,17 @@
     }
     var fin = root.querySelector('.si-course-finished');
     if (fin) fin.hidden = !finished;
+    if (finished) hook('course.completed', { lessons: total }); // once per learner (webhook.js remembers)
     if (view === 'complete') complete(finished, done, total, todo);
   }
   function mark(p) {
     if (!p || st.done[p]) return;
-    st.done[p] = 1; save(); paint();
+    st.done[p] = 1; save();
+    hook('lesson.completed');
+    paint();
   }
+  // hook sends a result event when the course has a webhook: (webhook.js)
+  function hook(type, data) { if (window.siWebhook && window.siWebhook.emit) window.siWebhook.emit(type, data); }
 
   /* ---------- the completion page and its certificate ---------- */
   function complete(finished, done, total, todo) {

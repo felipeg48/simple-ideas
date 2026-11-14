@@ -25,7 +25,7 @@ import (
 //	<!-- embed: … -->             see embed.go
 
 // Plugins are the plugin directive names (documents only).
-var Plugins = []string{"alert", "badge", "logo", "qr", "poll", "cloud", "accordion", "modal", "solution", "end", "carousel", "event", "embed"}
+var Plugins = []string{"alert", "badge", "logo", "qr", "poll", "cloud", "accordion", "modal", "solution", "check", "end", "carousel", "event", "embed"}
 
 // pluginKinds are the looks of an alert or a badge.
 var pluginKinds = map[string]bool{"info": true, "ok": true, "warn": true, "crit": true}
@@ -94,6 +94,18 @@ func (dr *deckRenderer) logoHTML(val string, s *deck.Slide, sc *slideCtx) string
 	}
 	b.WriteString("</div>")
 	return b.String()
+}
+
+// checkHTML is a lab check: the command and what passes. The ✓ Check button
+// stays hidden unless the page is served by si play with checks on.
+func checkHTML(c deck.Check) string {
+	want := fmt.Sprintf("It passes when it exits with %d", c.Exit)
+	if c.Expect != "" {
+		want += ` and prints “` + html.EscapeString(c.Expect) + `”`
+	}
+	return fmt.Sprintf(`<div class="si-check" data-cmd="%s"><p class="si-check-how">Run this to check:</p><pre><code>%s</code></pre><p class="si-check-want">%s.</p>`+
+		`<p class="si-check-bar" hidden><button type="button" class="si-check-run">✓ Check</button><span class="si-check-result" role="status" aria-live="polite"></span></p><pre class="si-check-out" hidden></pre></div>`,
+		html.EscapeString(c.Cmd), html.EscapeString(c.Cmd), want)
 }
 
 func isPlugin(name string) bool {
@@ -278,6 +290,14 @@ func (dr *deckRenderer) plugins(doc ast.Node, src []byte, s *deck.Slide, sc *sli
 			}
 			doc.ReplaceChild(doc, c, sol)
 			next = k
+		case "check": // a lab step's self-check: shown as a command; si play adds ✓ Check (doc.js, serve/check.go)
+			ck, err := deck.ParseCheck(val)
+			if err != nil {
+				dr.problemAt(sc, hb, src, "%v", err)
+				doc.RemoveChild(doc, c)
+				break
+			}
+			doc.ReplaceChild(doc, c, &rawNode{html: checkHTML(ck)})
 		case "end":
 			dr.problemAt(sc, hb, src, "end: without a <!-- modal: … --> or <!-- solution --> before it")
 			doc.RemoveChild(doc, c)

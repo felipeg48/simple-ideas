@@ -86,6 +86,11 @@ draw.hold: alt         # alt (⌥ Option), shift, ctrl, meta (⌘ Command), or o
 # readme, all)
 # demo.with: subtitles, chapters
 
+# courses: where every course sends its result events (a _course.md
+# webhook: wins); webhook-secret: signs what si serve / si play forward
+# (X-Si-Signature): only in your own si.conf, or SI_WEBHOOK_SECRET
+# course.webhook: https://hooks.example.com/si
+
 feature.draw:      on
 feature.timer:     on
 feature.presenter: on
@@ -143,6 +148,8 @@ type Config struct {
 	Voice                    string            // voice: engine:name for si demo run and si voice say
 	VoiceStyle               string            // voice.style: a tone for engines that take one (openai)
 	DemoWith                 string            // demo.with: what si demo run writes besides <script>.mp4 (a comma list)
+	CourseWebhook            string            // course.webhook: where every course sends its result events (a _course.md webhook: wins)
+	WebhookSecret            string            // webhook-secret: signs what the si server forwards (X-Si-Signature); kept from the user's si.conf only
 	SpeakerVoices            map[string]string // voice.<Name>: one speaker's voice (auto-play of a talk with speakers:)
 	AutoplayDwell            float64           // autoplay.dwell: seconds on a slide with no Notes: (0 = 3)
 	ElevenLabsKey, OpenAIKey string            // voice.<engine>.key: kept from the user's si.conf only
@@ -373,6 +380,14 @@ func (c *Config) parse(r io.Reader) {
 			c.VoiceStyle = v
 		case k == "demo.with":
 			c.DemoWith = v
+		case k == "course.webhook":
+			if v != "relay" && !strings.HasPrefix(v, "https://") {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: course.webhook %q is not https:// (or relay): events would travel in clear text", ln, v))
+			}
+			c.CourseWebhook = v
+		case k == "webhook-secret", k == "webhook.secret":
+			c.WebhookSecret = v
+			c.secretLines = append(c.secretLines, fmt.Sprintf("line %d: %s", ln, k))
 		case k == "voice.elevenlabs.key":
 			c.ElevenLabsKey = v
 			c.secretLines = append(c.secretLines, fmt.Sprintf("line %d: %s", ln, k))
@@ -456,14 +471,14 @@ func Load(paths ...string) *Config {
 		if p == "" {
 			continue
 		}
-		before, eleven, openai := len(c.secretLines), c.ElevenLabsKey, c.OpenAIKey
+		before, eleven, openai, secret := len(c.secretLines), c.ElevenLabsKey, c.OpenAIKey, c.WebhookSecret
 		if !c.readFile(p) {
 			continue
 		}
 		for _, l := range c.secretLines[before:] {
-			c.Warnings = append(c.Warnings, p+": "+l+" is ignored: a project si.conf goes to git, so API keys go only in your own "+UserPath()+" (si voice login)")
+			c.Warnings = append(c.Warnings, p+": "+l+" is ignored: a project si.conf goes to git, so API keys and secrets go only in your own "+UserPath()+" (si voice login; or SI_WEBHOOK_SECRET)")
 		}
-		c.secretLines, c.ElevenLabsKey, c.OpenAIKey, c.Path = c.secretLines[:before], eleven, openai, p
+		c.secretLines, c.ElevenLabsKey, c.OpenAIKey, c.WebhookSecret, c.Path = c.secretLines[:before], eleven, openai, secret, p
 		break
 	}
 	return c

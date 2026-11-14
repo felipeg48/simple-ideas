@@ -1,6 +1,7 @@
 package render
 
 import (
+	"encoding/json"
 	"fmt"
 	"html"
 	"math"
@@ -8,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/felipeg48/simple-ideas/internal/deck"
+	"github.com/felipeg48/simple-ideas/internal/webhook"
 )
 
 // Courses: a folder with a _course.md (internal/deck/course.go). Every
@@ -17,6 +19,55 @@ import (
 // tick), the lesson, and a bottom bar (on phones, and for nav: bottom). The
 // home page (index.html) and the completion page (complete.html) are
 // generated. course.js keeps the progress in localStorage.
+
+// SIVersion is si's version (the CLI sets it); result events carry it.
+var SIVersion string
+
+// webhookConfig is window.SI_WEBHOOK for a course page: where its result
+// events go and how (web/webhook.js), or "" when the course sends none.
+// webhook: relay (or a page served with the relay on) posts to the si
+// server's /_si/relay, so the address stays off the page; a static build of
+// a relay course sends nothing.
+func (dr *deckRenderer) webhookConfig(g *deck.Guide) string {
+	m := g.Meta
+	url := m.Webhook
+	if url == "" && dr.opt.Config != nil {
+		url = dr.opt.Config.CourseWebhook
+	}
+	if url == "" || (url == "relay" && !dr.opt.Relay) {
+		return ""
+	}
+	or := func(v, def string) string {
+		if v == "" {
+			return def
+		}
+		return v
+	}
+	events := deck.WebhookEventList(m.WebhookEvents)
+	if len(events) == 0 {
+		events = webhook.Events
+	}
+	audience := "learner"
+	if dr.opt.Instructor {
+		audience = "instructor"
+	}
+	c := map[string]any{"format": or(m.WebhookFormat, "json"), "events": events, "learner": or(m.WebhookLearner, "random"),
+		"consent": or(m.WebhookConsent, "notice"), "notice": m.WebhookNotice, "si": SIVersion, "audience": audience,
+		"course": map[string]string{"id": filepath.Base(g.Dir), "title": g.Meta.Title}}
+	if dr.opt.Relay {
+		c["relay"] = "/_si/relay"
+	} else {
+		c["url"] = url
+		if m.WebhookToken != "" {
+			c["token"] = m.WebhookToken
+		}
+		if m.WebhookAuth != "" {
+			c["auth"] = m.WebhookAuth
+		}
+	}
+	b, _ := json.Marshal(c) // json escapes <, > and & for a <script>
+	return string(b)
+}
 
 // kindName is a lesson kind as the crumb names it.
 var kindName = map[string]string{"reading": "Reading", "slides": "Slides", "video": "Video", "lab": "Lab", "demo": "Demo", "quiz": "Quiz"}

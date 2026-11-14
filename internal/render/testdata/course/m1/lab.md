@@ -8,6 +8,8 @@ type: lab
 
 - [ ] done
 
+<!-- check: test -f page.html -->
+
 <!-- solution -->
 
 The answer.

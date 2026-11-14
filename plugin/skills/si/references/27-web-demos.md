@@ -120,6 +120,21 @@ si demo: 0 passed, 1 failed in 6.9s; report: demo-out/shop/report.html
   `report.json` into `demo-out/<script>/`, exits 1 when a feature failed,
   and with `--junit file.xml` writes JUnit XML (one test case per feature).
   `--viewport phone|tablet|WxH` overrides the script's size (both commands).
+- `--webhook URL` posts one summary when the run ends (a script or a folder),
+  so the team sees it in its channel; `--webhook-format json` (default),
+  `slack`, `teams` or `discord`. json is `{"version": 1, "event":
+  "demo.test", "title", "passed", "failed", "skipped", "seconds", "ok",
+  "report", "failures": [{"script", "feature", "step"}], "si", "time"}`; the
+  chat formats are one sentence ("si demo test docs/demos: 5 passed, 1 failed
+  in 42.0 s. Failed: studio.md › Open a file › click "Open". Report: …").
+  `report` is the report's path, or `$SI_REPORT_URL` when the CI job sets
+  one. With `webhook-secret:` in your own si.conf (or `SI_WEBHOOK_SECRET`) the
+  post carries `X-Si-Signature: sha256=<HMAC-SHA256 of the body>`. A post
+  that fails is a warning; it never changes the exit code.
+
+```text
+si demo test docs/demos/ --junit junit.xml --webhook "$SLACK_HOOK" --webhook-format slack
+```
 - A failed step stops its feature; the report shows expected and found, the
   closest elements, a screenshot, and the page's console errors and failed
   requests.

@@ -348,7 +348,7 @@
       e.preventDefault();
       var missing = Array.prototype.filter.call(qs, function (q) { return !q.querySelector('input:checked'); }).length;
       if (missing) { score.textContent = missing === 1 ? 'Answer the last question first.' : 'Answer every question first (' + missing + ' to go).'; return; }
-      var right = 0, salt = f.getAttribute('data-salt');
+      var right = 0, salt = f.getAttribute('data-salt'), each = [];
       Array.prototype.forEach.call(qs, function (q, n) {
         var good = true, ins = q.querySelectorAll('input');
         if (salt !== null) { // a learner page: only a hash of the right answers (render.QuizKey)
@@ -370,6 +370,7 @@
         q.classList.toggle('is-right', good); q.classList.toggle('is-wrong', !good);
         var why = q.querySelector('.si-quiz-why'); if (why) why.hidden = false;
         if (good) right++;
+        each.push({ id: 'q' + (n + 1), correct: good }); // a result event's per-question line: never the answer
       });
       var pct = qs.length ? Math.round(100 * right / qs.length) : 0, passed = pct >= pass;
       score.textContent = right + ' of ' + qs.length + ' right, ' + pct + ' %' + (pass ? (passed ? '. Passed.' : '. The pass mark is ' + pass + ' %.') : '.');
@@ -379,12 +380,39 @@
         f.setAttribute('data-passed', '');
         try { document.dispatchEvent(new CustomEvent('si-quiz-pass', { detail: { score: pct } })); } catch (x) {}
       }
-      try { f.dispatchEvent(new CustomEvent('si-quiz-score', { bubbles: true, detail: { score: pct, passed: passed } })); } catch (x) {} // course.js: the score for SCORM
+      try { f.dispatchEvent(new CustomEvent('si-quiz-score', { bubbles: true, detail: { score: pct, passed: passed, pass: pass, questions: each } })); } catch (x) {} // course.js: the score for SCORM; webhook.js: quiz.submitted
     });
     again.addEventListener('click', function () {
       Array.prototype.forEach.call(f.querySelectorAll('input'), function (i) { i.disabled = false; i.checked = false; var l = i.closest('label'); l.classList.remove('is-ok', 'is-wrong'); });
       Array.prototype.forEach.call(qs, function (q) { q.classList.remove('is-right', 'is-wrong'); var why = q.querySelector('.si-quiz-why'); if (why) why.hidden = true; });
       f.classList.remove('is-passed', 'is-failed'); score.textContent = ''; checkBtn.hidden = false; again.hidden = true;
+    });
+  });
+
+  /* ---------- lab checks: in si play (data-si-checks) ✓ Check runs the step's command on the server ---------- */
+  var checks = document.querySelectorAll('.si-check');
+  if (document.body.hasAttribute('data-si-checks')) Array.prototype.forEach.call(checks, function (box, i) {
+    var bar = box.querySelector('.si-check-bar'), btn = box.querySelector('.si-check-run'), res = box.querySelector('.si-check-result'), out = box.querySelector('.si-check-out');
+    bar.hidden = false;
+    var title = ''; // the ## step it belongs to
+    Array.prototype.forEach.call(document.querySelectorAll('h2'), function (h) {
+      if (!(h.compareDocumentPosition(box) & 4)) return;
+      var c = h.cloneNode(true), n = c.querySelector('.si-step-num');
+      Array.prototype.forEach.call(c.querySelectorAll('.si-anchor'), function (a) { a.remove(); });
+      if (n) n.textContent = 'Step ' + n.textContent + ': ';
+      title = c.textContent.trim();
+    });
+    btn.addEventListener('click', function () {
+      btn.disabled = true; res.textContent = 'Checking…'; box.removeAttribute('data-pass');
+      fetch('/_si/check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: location.pathname, cmd: box.getAttribute('data-cmd') }) })
+        .then(function (r) { return r.ok ? r.json() : r.text().then(function (t) { throw new Error(t.trim() || r.statusText); }); })
+        .then(function (c) {
+          box.setAttribute('data-pass', c.pass ? 'yes' : 'no');
+          res.textContent = (c.pass ? 'Passed' : c.timedOut ? 'Timed out' : 'Not yet') + ' · exit ' + c.exit + ' · ' + (c.ms / 1000).toFixed(1) + ' s';
+          out.textContent = c.output || ''; out.hidden = !c.output;
+          try { document.dispatchEvent(new CustomEvent('si-lab-check', { detail: { step: i + 1, title: title, pass: c.pass, exit: c.exit, ms: c.ms } })); } catch (x) {}
+        }, function (e) { res.textContent = 'Could not run it: ' + e.message; })
+        .then(function () { btn.disabled = false; });
     });
   });
 

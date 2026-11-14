@@ -133,6 +133,17 @@ an example for every rule: [RULES.md](docs/RULES.md).
   lesson or `--scorm=single`; status, score and progress reported), a learner
   workbook and an instructor guide as PDF (`--pdf`), and `si publish --to
   skilljar` (sections, HTML, video and SCORM lessons, updated in place).
+- **Course results:** `webhook:` sends lessons done, quiz scores (with which
+  questions were right, never the answers), lab checks, videos watched and
+  the course finished to Slack, Teams, Discord, your own endpoint (JSON) or a
+  learning record store (xAPI 1.0.3); a notice (or required consent) first,
+  an offline queue, and `si serve --relay` to keep the address off the page
+  and sign every event (HMAC-SHA256).
+- **Labs that check themselves:** `<!-- check: command · expect "text" -->`
+  under a lab step: "Run this to check" in every build, a ✓ Check button in
+  `si play` that runs it and shows the result.
+- **CI results:** `si demo test --webhook URL --webhook-format slack` posts
+  the run's summary (passed, failed, the failed steps, the report).
 - **Quizzes:** `type: quiz` pages and ```` ```quiz ```` fences: single and
   multiple choice, explanations, a score and a pass mark; learner pages keep
   the right answers only as hashes (a self-check, not a secure exam).

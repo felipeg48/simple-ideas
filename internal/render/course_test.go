@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 )
 
@@ -83,6 +84,10 @@ func TestCourseBuild(t *testing.T) {
 	if lab := learner["m1/lab.html"]; !strings.Contains(lab, `<details class="si-solution">`) {
 		t.Error("lab: the solution is folded")
 	}
+	if lab := learner["m1/lab.html"]; !strings.Contains(lab, `<div class="si-check" data-cmd="test -f page.html">`) || !strings.Contains(lab, "Run this to check:") ||
+		!strings.Contains(lab, `<p class="si-check-bar" hidden>`) || regexp.MustCompile(`<body[^>]* data-si-checks`).MatchString(lab) || strings.Contains(lab, "window.SI_WEBHOOK =") {
+		t.Error("lab: a built check is a command to run, no ✓ Check; no webhook, no events")
+	}
 	if !strings.Contains(learner["complete.html"], "si-course-cert") {
 		t.Error("certificate: on")
 	}
@@ -99,6 +104,52 @@ func TestCourseBuild(t *testing.T) {
 		if p.Rel == "m1/live.html" || strings.Contains(string(p.Result.HTML), `href="live.html"`) {
 			t.Errorf("%s: the demo should be gone", p.Rel)
 		}
+	}
+}
+
+// TestCourseWebhookConfig: a course with webhook: gets window.SI_WEBHOOK
+// and webhook.js before course.js; the relay keeps the address and the auth
+// off the page; webhook: relay in a static build sends nothing.
+func TestCourseWebhookConfig(t *testing.T) {
+	g, err := deck.LoadGuide(filepath.Join("testdata", "course"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.Meta.Webhook, g.Meta.WebhookFormat, g.Meta.WebhookAuth, g.Meta.WebhookEvents = "https://lrs.example.com/statements", "xapi", "Basic dTpw", "quiz.submitted, course.completed"
+	g.Meta.WebhookConsent, g.Meta.WebhookNotice = "required", "Scores go to </script> Ana."
+	page := func(o Options) string {
+		pages, _, _ := RenderGuide(g, o)
+		for _, p := range pages {
+			if p.Rel == "m1/quiz.html" {
+				return string(p.Result.HTML)
+			}
+		}
+		t.Fatal("no quiz page")
+		return ""
+	}
+	SIVersion = "9.9.9"
+	defer func() { SIVersion = "" }()
+	built := page(Options{})
+	for _, want := range []string{`window.SI_WEBHOOK = {`, `"url":"https://lrs.example.com/statements"`, `"format":"xapi"`, `"auth":"Basic dTpw"`,
+		`"events":["quiz.submitted","course.completed"]`, `"consent":"required"`, `"si":"9.9.9"`, `"audience":"learner"`, `"course":{"id":"course","title":"Golden course"}`, "Scores go to \\u003c/script\\u003e Ana."} {
+		if !strings.Contains(built, want) {
+			t.Errorf("built page lacks %s", want)
+		}
+	}
+	if strings.Index(built, "window.siWebhook = {") > strings.Index(built, "simple-ideas course runtime") {
+		t.Error("webhook.js comes before course.js")
+	}
+	relayed := page(Options{Relay: true, Instructor: true})
+	if !strings.Contains(relayed, `"relay":"/_si/relay"`) || strings.Contains(relayed, "lrs.example.com") || strings.Contains(relayed, "dTpw") || !strings.Contains(relayed, `"audience":"instructor"`) {
+		t.Error("relayed: the page posts to /_si/relay and holds no address or auth; the instructor build says so")
+	}
+	g.Meta.Webhook = "relay"
+	if strings.Contains(page(Options{}), "SI_WEBHOOK") {
+		t.Error("webhook: relay in a static build: no events")
+	}
+	g.Meta.Webhook = ""
+	if strings.Contains(page(Options{Config: &config.Config{CourseWebhook: "https://hooks.example.com/all"}}), `"url":"https://hooks.example.com/all"`) == false {
+		t.Error("si.conf course.webhook is the default")
 	}
 }
 

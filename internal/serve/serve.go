@@ -32,6 +32,7 @@ type Server struct {
 	Conf        string     // --conf path; empty falls back to si.conf next to the deck
 	Terminal    bool       // enable the play terminal drawer; set only on a loopback address
 	CleanPrompt bool       // the drawer's shells start with si's neutral prompt, no user rc (filming; si.conf terminal.prompt: clean)
+	Relay       bool       // POST /_si/relay: forward and sign course result events (a loopback address, or --relay)
 	watchMu     sync.Mutex // Watch's baseline, also moved by quietly
 	watchSig    uint64
 	Dev         bool             // --dev: in-place hot reload instead of full-page reload
@@ -134,6 +135,10 @@ func (s *Server) Handler() http.Handler {
 		mux.HandleFunc("GET /_si/term/api/find", localOnly(s.term.find))
 		mux.HandleFunc("GET /_si/term/api/grep", localOnly(s.term.grep))
 		mux.HandleFunc("POST /_si/browser/open", localOnly(s.browserOpen))
+		mux.HandleFunc("POST /_si/check", localOnly(s.check)) // a lab's ✓ Check: runs only the page's own check commands
+	}
+	if s.Relay {
+		mux.HandleFunc("POST /_si/relay", s.hookRelay) // course result events, signed and forwarded (check.go)
 	}
 	static := http.FileServer(http.Dir(s.dir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -201,7 +206,7 @@ func (s *Server) deckPage(w http.ResponseWriter, md string, term, audience bool)
 	if v, ok := cfg.Features["terminal"]; ok && !v {
 		termOn = false
 	}
-	opt := render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Remote: s.Remote, RemoteQR: s.RemoteQR, Pages: s.pages(cfg), NoSpeakerText: audience, VoiceServer: !audience, Autoplay: s.Autoplay && !audience, Instructor: s.Instructor && !audience}
+	opt := render.Options{LiveReload: true, Dev: s.Dev, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Terminal: termOn, Checks: termOn, Relay: s.Relay && !audience, Remote: s.Remote, RemoteQR: s.RemoteQR, Pages: s.pages(cfg), NoSpeakerText: audience, VoiceServer: !audience, Autoplay: s.Autoplay && !audience, Instructor: s.Instructor && !audience}
 	if g := deck.FindGuide(md, s.dir); g != nil && g.Item(md) != nil { // a guide or book renders as a whole (numbering, search across pages)
 		s.writeBookPage(w, g, opt, filepath.Join(filepath.Dir(md), strings.TrimSuffix(filepath.Base(md), filepath.Ext(md))+".html"))
 		return
@@ -235,7 +240,7 @@ func (s *Server) bookPage(w http.ResponseWriter, p string) bool {
 		return false
 	}
 	cfg := config.Load(s.Conf, filepath.Join(s.dir, "si.conf"))
-	opt := render.Options{LiveReload: true, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Instructor: s.Instructor}
+	opt := render.Options{LiveReload: true, ShowProblems: true, UserCSS: s.css(), Media: render.MediaLink, Theme: s.Theme, Config: cfg, Instructor: s.Instructor, Relay: s.Relay}
 	s.writeBookPage(w, g, opt, file)
 	return true
 }

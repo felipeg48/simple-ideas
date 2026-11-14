@@ -244,6 +244,8 @@ Flags (GNU style, before or after the path):
                         <!-- qr: audience --> on a slide shows the code; works with --remote and --https
       --https[=tailscale] play --remote, --audience, --review: serve those pages over HTTPS, with si's own certificate authority
                         (each phone trusts it once, from the "first time" code) or a Tailscale certificate
+      --relay           play, serve: a course's result events go through this server's /_si/relay, signed
+                        with webhook-secret and forwarded to its webhook:, on any address (always on loopback)
       --offline         code: / diff: use the cache only (CI, a plane); fails on what was never fetched
       --no-instructor   build: leave the instructor demo scripts (type: demo) out of a participant build
       --instructor      build a course (_course.md) for the instructor: the demos' runbooks, the decks' teleprompter,
@@ -427,6 +429,7 @@ type options struct {
 	qrJPG, qrECSet                               bool       // si qr --jpg; --ec given
 	audience                                     bool       // si play --audience: the room follows the talk on their phones
 	tunnel                                       bool       // si play --tunnel: the audience side on a temporary public address
+	relay                                        bool       // si play / si serve --relay: /_si/relay on any address (always on loopback)
 	format                                       string     // si theme export --format css|dtcg
 	use                                          bool       // si theme import --use: write theme: into si.conf
 	accent                                       string     // si theme from --accent: keep this colour
@@ -532,6 +535,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.StringVar(&o.qrVCard, "vcard", "", "")
 	fl.BoolVar(&o.audience, "audience", false, "")
 	fl.BoolVar(&o.tunnel, "tunnel", false, "")
+	fl.BoolVar(&o.relay, "relay", false, "")
 	fl.StringVar(&o.format, "format", "", "")
 	fl.BoolVar(&o.use, "use", false, "")
 	fl.StringVar(&o.accent, "accent", "", "")
@@ -570,6 +574,7 @@ func main() {
 }
 
 func run(argv []string, stdout, stderr io.Writer) int {
+	render.SIVersion = version              // course result events carry it
 	if len(argv) > 0 && argv[0] == "demo" { // its own flags (--feature takes a name)
 		return runDemo(argv[1:], stdout, stderr)
 	}
@@ -1389,7 +1394,9 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		cmdName = "si serve"
 	}
 	fmt.Fprintf(stdout, "%s: serving %s at %s (live reload on; Ctrl+C stops)\n", cmdName, src, url)
+	srv.Relay = o.relay // course result events through /_si/relay: always on loopback, elsewhere only when asked
 	if ta, ok := ln.Addr().(*net.TCPAddr); ok {
+		srv.Relay = srv.Relay || ta.IP.IsLoopback()
 		if o.serveMode {
 			// readers: decks, articles, guides and labs, no terminal drawer
 		} else if ta.IP.IsLoopback() {

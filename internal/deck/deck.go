@@ -68,6 +68,7 @@ var Directives = map[string]string{
 	"modal":      "body",  // a dialog up to <!-- end -->, opened by a link to #id
 	"end":        "body",  // ends a modal or a solution
 	"solution":   "body",  // a lab's answer up to <!-- end -->: folded for learners, open for instructors
+	"check":      "body",  // a lab step's self-check: <!-- check: command · expect "text" · exit 0 --> (si play runs it)
 	"carousel":   "body",  // the image paragraphs that follow
 	"event":      "body",  // a countdown toast as a date nears
 	"embed":      "body",  // a deck, document or guide/book/site, framed, as a card, in full or one section
@@ -186,6 +187,16 @@ type Meta struct {
 	Prerequisites   string // course or lesson: what to know first (shown, not enforced)
 	Instructor      string // lesson: a note only the instructor build shows, in a box above the lesson
 
+	// course result events (_course.md; docs/superpowers/specs/2026-11-14-results-webhooks.md)
+	Webhook        string // webhook: https://… or relay: where the course sends its events
+	WebhookFormat  string // webhook-format: json (default), slack, teams, discord, xapi
+	WebhookEvents  string // webhook-events: a comma list (default all)
+	WebhookToken   string // webhook-token: json: "token" in every event (not a secret)
+	WebhookAuth    string // webhook-auth: xapi: the Authorization header value
+	WebhookLearner string // webhook-learner: random (default) or ask
+	WebhookConsent string // webhook-consent: notice (default) or required
+	WebhookNotice  string // webhook-notice: the text of the notice bar
+
 	Timeline TimelineMeta      // timeline: alternate, scale, orientation, closing, require, steps (timeline.go)
 	Demo     map[string]string // a web demo's own keys (DemoKeys), read and checked by internal/webdemo
 
@@ -202,7 +213,7 @@ var DemoKeys = []string{"region", "header-offset", "intro", "outro", "music", "u
 func init() { MetaKeys = append(MetaKeys, DemoKeys...) }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "browser", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup", "nav", "level", "instructor-demos", "certificate", "pass", "minutes", "prerequisites", "instructor", "orientation", "sources", "steps", "animate"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "browser", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup", "nav", "level", "instructor-demos", "certificate", "pass", "minutes", "prerequisites", "instructor", "webhook", "webhook-format", "webhook-events", "webhook-token", "webhook-auth", "webhook-learner", "webhook-consent", "webhook-notice", "orientation", "sources", "steps", "animate"}
 
 // MetaLine is one front matter line kept as written: its key, its value and
 // its line in the file.
@@ -560,6 +571,7 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 		}
 	}
 	d.timelineMeta(file, keyLine)
+	d.webhookMeta(file, keyLine)
 	d.infographicMeta(file, keyLine)
 	for _, k := range []string{"layout", "aspect"} {
 		if ln, ok := keyLine[k]; ok {
@@ -611,6 +623,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"linkedin": &m.LinkedIn, "tags": &m.Tags, "canonical": &m.Canonical, "cover": &m.Cover, "poster": &m.Poster, "handout": &m.Handout, "handout-url": &m.HandoutURL, "speakers": &m.Speakers, "app": &m.App, "viewport": &m.Viewport, "timeout": &m.Timeout, "setup": &m.Setup, "voice": &m.Voice, "voices": &m.Voices, "voice-style": &m.VoiceStyle, "pronounce": &m.Pronounce, "start": &m.Start, "stop": &m.Stop, "shell": &m.Shell, "with": &m.With, "prepare": &m.Prepare, "step": &m.Prepare, "cleanup": &m.Cleanup,
 		"layout": &m.MapLayout, "lines": &m.MapLines, "nodes": &m.MapNodes, "map-theme": &m.MapTheme, "watermark-position": &m.WatermarkPos, "favicon": &m.Favicon, "touch-icon": &m.TouchIcon, "og-image": &m.OGImage,
 		"nav": &m.Nav, "level": &m.Level, "instructor-demos": &m.InstructorDemos, "certificate": &m.Certificate, "pass": &m.Pass, "minutes": &m.Minutes, "prerequisites": &m.Prerequisites, "instructor": &m.Instructor,
+		"webhook": &m.Webhook, "webhook-format": &m.WebhookFormat, "webhook-events": &m.WebhookEvents, "webhook-token": &m.WebhookToken, "webhook-auth": &m.WebhookAuth, "webhook-learner": &m.WebhookLearner, "webhook-consent": &m.WebhookConsent, "webhook-notice": &m.WebhookNotice,
 		"view": &m.MapView, "camera": &m.MapCamera, "floors": &m.MapFloors, "kind": &m.MapKind, "flow": &m.MapFlow,
 		"orientation": &m.Orientation, "sources": &m.Sources, "steps": &m.Steps, "animate": &m.Animate,
 	}[key]
@@ -1263,4 +1276,4 @@ var durationRE = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*min`)
 
 // docDirectives are the directives a document uses (the rest are deck-only).
 var docDirectives = map[string]bool{"tabs": true, "callout": true, "slides": true, "alert": true, "badge": true, "logo": true, "qr": true, "poll": true, "cloud": true, "cards": true, "accordion": true,
-	"modal": true, "solution": true, "end": true, "carousel": true, "event": true, "embed": true, "image": true}
+	"modal": true, "solution": true, "check": true, "end": true, "carousel": true, "event": true, "embed": true, "image": true}

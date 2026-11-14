@@ -78,6 +78,9 @@
 .si-course-cert p{margin:.3rem auto}
 .si-course-cert-form{display:flex;flex-wrap:wrap;align-items:end;gap:.6rem 1rem}
 .si-course-cert-form label{display:flex;flex-direction:column;gap:.3rem}
+.si-webhook-notice{position:fixed;inset-inline:1rem;bottom:calc(1rem + env(safe-area-inset-bottom,0px));z-index:60;max-width:42rem;margin-inline:auto;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .8rem;padding:.7rem 1rem}
+.si-webhook-notice p{margin:0;flex:1 1 16rem}
+.si-webhook-name{flex:1 1 10rem;min-width:0}
 @media (width < 50rem){
   .si-course-body,.si-course[data-nav] .si-course-body{grid-template-columns:minmax(0,1fr)}
   .si-course .si-course-top{position:sticky;top:0;z-index:20}
@@ -96,7 +99,7 @@
 .si-course[data-scorm="lesson"] .si-course-brand{pointer-events:none}
 @media (prefers-reduced-motion:reduce){.si-course-chev{transition:none}}
 @media print{
-  .si-course-top,.si-course-nav,.si-course-dock,.si-course-next,.si-course-cert-form,.si-doc-foot{display:none!important}
+  .si-course-top,.si-course-nav,.si-course-dock,.si-course-next,.si-course-cert-form,.si-doc-foot,.si-webhook-notice{display:none!important}
   .si-course-body{display:block}
   .si-course-complete>:not(.si-course-cert){display:none}
   .si-course-cert{margin:0}
@@ -174,6 +177,10 @@
 .si-course-status{font-size:1.05rem}
 .si-course-todo{padding-left:1.2rem}
 .si-course-cert-form input{padding:.5rem .6rem;border:1px solid var(--si-line);border-radius:var(--si-radius);background:var(--si-bg);color:var(--si-fg);font:inherit}
+.si-webhook-notice{border:1px solid var(--si-line);border-radius:var(--si-radius);background:var(--si-surface);color:var(--si-fg);box-shadow:0 .5rem 1.5rem color-mix(in srgb,var(--si-fg) 18%,transparent);font-size:.92rem}
+.si-webhook-name{padding:.45rem .6rem;border:1px solid var(--si-line);border-radius:var(--si-radius);background:var(--si-bg);color:var(--si-fg);font:inherit}
+.si-webhook-ok,.si-webhook-no{padding:.45rem .9rem;border:1px solid var(--si-accent);border-radius:var(--si-radius);background:var(--si-accent);color:var(--si-on-accent);font:650 .9rem/1.2 var(--si-font-body);cursor:pointer}
+.si-webhook-no{background:transparent;color:var(--si-fg);border-color:var(--si-line)}
 .si-course-cert{border:3px double var(--si-accent);border-radius:var(--si-radius);background:var(--si-surface)}
 .si-course-cert-kicker{font:600 .75rem/1.4 var(--si-font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--si-accent)}
 .si-course-cert-name{font:var(--si-heading-weight,700) clamp(1.8rem,1.2rem + 3vw,3rem)/1.15 var(--si-font-heading)}

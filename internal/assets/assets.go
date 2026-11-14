@@ -115,6 +115,12 @@ var CourseCSS string
 //go:embed web/course.js
 var CourseJS string
 
+// WebhookJS sends a course's result events (webhook: in _course.md): the
+// formats, the queue, the notice. Only in a course with a webhook.
+//
+//go:embed web/webhook.js
+var WebhookJS string
+
 // DocJS is the lab document runtime: copy buttons, d for light/dark, the
 // table of contents highlight, Mermaid.
 //

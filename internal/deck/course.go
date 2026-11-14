@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/felipeg48/simple-ideas/internal/webhook"
 )
 
 // A course is a folder with a _course.md: the guide format, `type: course`
@@ -464,4 +466,60 @@ func ParsePass(v string) (int, bool) {
 	}
 	n, _ := strconv.Atoi(m[1])
 	return n, n <= 100
+}
+
+// webhookMeta warns about a course's webhook settings: a URL that is not
+// https (or relay), unknown formats, events, learner and consent values, and
+// webhook keys outside _course.md (a lesson inherits the course's).
+func (d *Deck) webhookMeta(file string, keyLine map[string]int) {
+	warn := func(key, format string, a ...any) {
+		d.Warnings = append(d.Warnings, Problem{File: rel(file), Line: keyLine[key], Msg: fmt.Sprintf(format, a...)})
+	}
+	m := d.Meta
+	for _, k := range []string{"webhook", "webhook-format", "webhook-events", "webhook-token", "webhook-auth", "webhook-learner", "webhook-consent", "webhook-notice"} {
+		if _, ok := keyLine[k]; ok && filepath.Base(file) != CourseFile {
+			warn(k, "%s: belongs in the course's _course.md (si.conf course.webhook for every course)", k)
+		}
+	}
+	if _, ok := keyLine["webhook"]; ok {
+		if msg := WebhookURLProblem(m.Webhook); msg != "" {
+			warn("webhook", "%s", msg)
+		}
+	}
+	if _, ok := keyLine["webhook-format"]; ok && !contains(webhook.Formats, m.WebhookFormat) {
+		warn("webhook-format", "webhook-format: %q is not one of %s", m.WebhookFormat, strings.Join(webhook.Formats, ", "))
+	}
+	if _, ok := keyLine["webhook-events"]; ok {
+		for _, e := range WebhookEventList(m.WebhookEvents) {
+			if !contains(webhook.Events, e) {
+				warn("webhook-events", "webhook-events: %q is not one of %s", e, strings.Join(webhook.Events, ", "))
+			}
+		}
+	}
+	if _, ok := keyLine["webhook-learner"]; ok && m.WebhookLearner != "random" && m.WebhookLearner != "ask" {
+		warn("webhook-learner", "webhook-learner: %q is not random or ask", m.WebhookLearner)
+	}
+	if _, ok := keyLine["webhook-consent"]; ok && m.WebhookConsent != "notice" && m.WebhookConsent != "required" {
+		warn("webhook-consent", "webhook-consent: %q is not notice or required", m.WebhookConsent)
+	}
+	if _, ok := keyLine["webhook-auth"]; ok && m.WebhookFormat != "xapi" {
+		warn("webhook-auth", "webhook-auth: only xapi sends it (webhook-format: xapi)")
+	}
+	if _, ok := keyLine["webhook-token"]; ok && m.WebhookFormat != "" && m.WebhookFormat != "json" {
+		warn("webhook-token", "webhook-token: only json events carry it")
+	}
+}
+
+// WebhookURLProblem is what is wrong with a webhook address ("" when fine):
+// it is https://… or relay.
+func WebhookURLProblem(u string) string {
+	if u == "relay" || strings.HasPrefix(u, "https://") {
+		return ""
+	}
+	return fmt.Sprintf("webhook: %q is not https:// (or relay): events would travel in clear text", u)
+}
+
+// WebhookEventList splits a webhook-events value ("a, b" or "a · b").
+func WebhookEventList(v string) []string {
+	return strings.FieldsFunc(v, func(r rune) bool { return r == ',' || r == '·' || r == ' ' })
 }

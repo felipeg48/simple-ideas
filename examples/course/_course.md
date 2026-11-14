@@ -8,6 +8,9 @@ author: Mira Okafor
 instructor-demos: show-placeholder
 certificate: on
 prerequisites: a text editor and a web browser
+# webhook: https://hooks.example.com/web101
+# webhook-format: slack
+# webhook-learner: ask
 ---
 
 - Module 1: How the web works

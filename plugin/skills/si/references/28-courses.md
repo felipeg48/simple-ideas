@@ -218,13 +218,128 @@ finds its end).
 ### Progress
 
 Progress is kept in the learner's browser (localStorage, per course; nothing
-is sent anywhere). A lesson is done when it is read to the end, its video
+is sent anywhere unless the course has a `webhook:`, below). A lesson is done when it is read to the end, its video
 watched to 90 %, its lab's boxes all ticked, or its quiz passed. The menu
 ticks done lessons and fills each module's ring; the top bar shows the
 course's percentage; the home page's **Start** becomes **Continue: <the
 next lesson>**. `complete.html` lists what is left and, when everything is
 done, says so; with `certificate: on` the learner types a name and prints a
 certificate.
+
+### Results to your team: `webhook:`
+
+A course with `webhook:` in `_course.md` sends small result events from the
+learner's browser to an address you choose: a Slack, Teams or Discord
+channel, a learning record store, or your own endpoint (a Zap, a sheet, a
+small server). It works in the website bundle, from `file://` and inside a
+SCORM package (as well as the LMS calls).
+
+```markdown
+---
+title: A first web page
+webhook: https://hooks.slack.com/services/T000/B000/XXXX
+webhook-format: slack
+webhook-events: quiz.submitted, course.completed
+webhook-learner: ask
+webhook-consent: required
+webhook-notice: Your quiz scores go to your trainer, Ana.
+---
+```
+
+| Key | What |
+|---|---|
+| `webhook:` | `https://…` (si check warns on anything else), or `relay` (below). si.conf `course.webhook:` is the default for every course |
+| `webhook-format:` | `json` (default), `slack`, `teams`, `discord`, `xapi` |
+| `webhook-events:` | which events (default all five) |
+| `webhook-token:` | json: a `"token"` in every event, to tell classes apart. It is in the page: not a secret |
+| `webhook-auth:` | xapi: the `Authorization` header (`Basic …`) of the learning record store. In the page too: use a write-only key, or the relay |
+| `webhook-learner:` | `random` (default): a random id per browser; `ask`: the notice has a name field |
+| `webhook-consent:` | `notice` (default): events are sent, the notice stays until OK; `required`: nothing is sent before OK (events wait), **No thanks** sends nothing, ever |
+| `webhook-notice:` | the notice's text (default: "This course sends your progress (lessons done, quiz scores) to its organizers.") |
+
+The events:
+
+| Event | When | `data` |
+|---|---|---|
+| `lesson.completed` | a lesson is done (as for the ticks above) | `{}` |
+| `quiz.submitted` | Check my answers | `score` (0-100), `pass`, `passMark`, `attempt`, `questions: [{"id": "q1", "correct": true}, …]` |
+| `lab.step.checked` | a lab's **✓ Check** ran (below) | `step`, `title`, `pass`, `exit`, `ms` |
+| `demo.watched` | a lesson's video ends, or the learner leaves after watching some | `percent`, `seconds` |
+| `course.completed` | the last lesson that counts is done | `lessons` |
+
+`json` events (`version: 1`; a field may be added, none changes without
+version 2):
+
+```json
+{
+  "version": 1, "event": "quiz.submitted", "id": "5f0c9a6b-2d41-4e8f-9a3c-0d1e2f3a4b5c",
+  "time": "2026-11-14T10:02:11.418Z", "si": "3.18.0", "audience": "learner",
+  "course": { "id": "web101", "title": "A first web page", "url": "https://learn.example.com/web101/index.html" },
+  "lesson": { "id": "02-html/quiz.html", "title": "Check yourself", "kind": "quiz", "url": "https://learn.example.com/web101/02-html/quiz.html" },
+  "learner": { "id": "l-3f9a0c71b2e4", "name": "Ana" },
+  "data": { "score": 80, "pass": true, "passMark": 70, "attempt": 2,
+            "questions": [ { "id": "q1", "correct": true }, { "id": "q2", "correct": false } ] },
+  "token": "c42-7f3a"
+}
+```
+
+`id` is a UUID per event (drop duplicates by it: an event queued offline may
+arrive twice); `course.id` is the course folder's name, `lesson.id` the
+page's path in the course (`course.completed` has no `lesson`);
+`audience` is `instructor` in the instructor build, so you can ignore the
+trainer's own clicks. `slack`, `teams` (an Adaptive Card) and `discord` get
+one sentence: "Ana passed the quiz “Check yourself” in A first web page:
+80 % (attempt 2)." `xapi` sends an xAPI 1.0.3 statement: the learner as an
+account (`homePage` the course URL, `name` the learner id), ADL verbs
+(`completed`, `passed` / `failed`, `answered` for a lab check,
+`experienced` for a video), the lesson's URL as the activity, the course as
+its parent, `result.score.scaled` and `success`; point `webhook:` at the
+LRS's `…/statements` endpoint.
+
+How it is sent: `json` and `slack` with `navigator.sendBeacon` (a
+`text/plain` JSON body: no CORS preflight, and it leaves even as the page
+closes); `teams`, `discord` and `xapi` with `fetch` (keepalive), which needs
+the receiver to allow CORS. What cannot leave (offline, refused) waits in
+localStorage (the newest 100) and goes with the next page.
+
+**Privacy.** Events never carry the answers a learner picked, a lab's output,
+or a name the learner did not type; the learner id is random and kept in
+that browser. A notice at the bottom of the course says results are sent
+before anything else happens.
+
+**The relay.** `webhook: relay` keeps the address (and `webhook-auth:`) off
+the page: `si serve` (or `si play`) answers `POST /_si/relay`, forwards each
+event to the course's address (`course.webhook:` in si.conf) and signs it:
+`X-Si-Signature: sha256=<hex HMAC-SHA256 of the body>` with `webhook-secret:`
+from your own si.conf or `SI_WEBHOOK_SECRET`. A page served by si sends
+through the relay whenever it is on: always on a loopback address, and on any
+address with `--relay` (`si serve course/ --addr 0.0.0.0:8080 --relay`). The
+relay only ever forwards to a course's own configured address. A static
+build of a `webhook: relay` course sends nothing.
+
+### Labs that check themselves: `<!-- check: -->`
+
+In a lab, `<!-- check: <command> -->` under a step says how to tell the step
+works: `· expect "text"` (the output must contain it) and `· exit N` (the
+exit code that passes, 0 by default).
+
+```markdown
+## Step 1: Create the file
+
+Make a folder called `my-page` and, inside it, a file called `index.html`.
+
+<!-- check: ls my-page/index.html · expect "index.html" -->
+```
+
+Every build shows it as **Run this to check:** with the command and what
+passes. In `si play` on a loopback address (where the terminal drawer
+works) it gets a **✓ Check** button: si runs the command in a process of its
+own (`sh -c`, `cmd /C` on Windows; never the drawer's shell), with the
+page's folder as the working folder and a 30 s limit, and shows Passed or Not
+yet with the exit code and the output. si runs only commands written in a
+`<!-- check: -->` of that page. In a course the result is a
+`lab.step.checked` event (through the relay, signed). `si check` reports a
+check with no command or an option it does not know.
 
 ### Build, serve, check
 

@@ -1,0 +1,140 @@
+[
+  {
+    "version": 1,
+    "event": "lesson.completed",
+    "id": "5f0c9a6b-2d41-4e8f-9a3c-0d1e2f3a4b5c",
+    "time": "2026-11-14T10:02:11.418Z",
+    "si": "3.18.0",
+    "audience": "learner",
+    "course": {
+      "id": "web101",
+      "title": "A first web page",
+      "url": "https://learn.example.com/web101/index.html"
+    },
+    "lesson": {
+      "id": "02-html/tags.html",
+      "title": "Tags, elements and attributes",
+      "kind": "reading",
+      "url": "https://learn.example.com/web101/02-html/tags.html"
+    },
+    "learner": {
+      "id": "l-3f9a0c71b2e4"
+    },
+    "data": {}
+  },
+  {
+    "version": 1,
+    "event": "quiz.submitted",
+    "id": "6a1d0b7c-3e52-4f90-8b4d-1e2f3a4b5c6d",
+    "time": "2026-11-14T10:05:00.000Z",
+    "si": "3.18.0",
+    "audience": "learner",
+    "course": {
+      "id": "web101",
+      "title": "A first web page",
+      "url": "https://learn.example.com/web101/index.html"
+    },
+    "lesson": {
+      "id": "02-html/quiz.html",
+      "title": "Check yourself",
+      "kind": "quiz",
+      "url": "https://learn.example.com/web101/02-html/quiz.html"
+    },
+    "learner": {
+      "id": "l-3f9a0c71b2e4",
+      "name": "Ana"
+    },
+    "data": {
+      "score": 80,
+      "pass": true,
+      "passMark": 70,
+      "attempt": 2,
+      "questions": [
+        {
+          "id": "q1",
+          "correct": true
+        },
+        {
+          "id": "q2",
+          "correct": false
+        }
+      ]
+    },
+    "token": "c42"
+  },
+  {
+    "version": 1,
+    "event": "lab.step.checked",
+    "id": "7b2e1c8d-4f63-4a01-9c5e-2f3a4b5c6d7e",
+    "time": "2026-11-14T10:09:30.000Z",
+    "si": "3.18.0",
+    "audience": "instructor",
+    "course": {
+      "id": "web101",
+      "title": "A first web page",
+      "url": "https://learn.example.com/web101/index.html"
+    },
+    "lesson": {
+      "id": "02-html/first-page.html",
+      "title": "Build your first page",
+      "kind": "lab",
+      "url": "https://learn.example.com/web101/02-html/first-page.html"
+    },
+    "learner": {
+      "id": "l-3f9a0c71b2e4"
+    },
+    "data": {
+      "step": 2,
+      "title": "Step 2: Add the skeleton",
+      "pass": false,
+      "exit": 1,
+      "ms": 412
+    }
+  },
+  {
+    "version": 1,
+    "event": "demo.watched",
+    "id": "8c3f2d9e-5074-4b12-8d6f-3a4b5c6d7e8f",
+    "time": "2026-11-14T10:12:00.000Z",
+    "si": "3.18.0",
+    "audience": "learner",
+    "course": {
+      "id": "web101",
+      "title": "A first web page",
+      "url": "https://learn.example.com/web101/index.html"
+    },
+    "lesson": {
+      "id": "01-web/page-load.html",
+      "title": "A page loads, step by step",
+      "kind": "video",
+      "url": "https://learn.example.com/web101/01-web/page-load.html"
+    },
+    "learner": {
+      "id": "l-3f9a0c71b2e4"
+    },
+    "data": {
+      "percent": 100,
+      "seconds": 95
+    }
+  },
+  {
+    "version": 1,
+    "event": "course.completed",
+    "id": "9d4a3e0f-6185-4c23-9e7a-4b5c6d7e8f90",
+    "time": "2026-11-14T11:00:00.000Z",
+    "si": "3.18.0",
+    "audience": "learner",
+    "course": {
+      "id": "web101",
+      "title": "A first web page",
+      "url": "https://learn.example.com/web101/index.html"
+    },
+    "learner": {
+      "id": "l-3f9a0c71b2e4",
+      "name": "Ana"
+    },
+    "data": {
+      "lessons": 10
+    }
+  }
+]

@@ -653,6 +653,41 @@ Points:
 
 ---
 
+## Course results, to your team
+
+```markdown
+---
+title: A first web page
+webhook: https://hooks.slack.com/services/…
+webhook-format: slack
+webhook-learner: ask
+---
+```
+
+- Lessons done, quiz scores, lab checks, videos watched, the course finished
+- As JSON, a Slack, Teams or Discord message, or an xAPI statement for an LRS
+- A notice tells learners first; `webhook-consent: required` waits for their OK
+- `<!-- check: command · expect "text" -->` in a lab: **✓ Check** in `si play`
+
+Notes: (1 min)
+A course can tell you how the class is doing. With one line it sends small
+events as learners go: a lesson done, a quiz score with which questions were
+right, a lab step that passed, a video watched, the whole course finished.
+They arrive in your Slack, Teams or Discord channel, in your own endpoint, or
+in a learning record store as xAPI. Learners see a notice first, and the
+events never carry their answers. [CLICK] A lab step can check itself too:
+the command written under it runs with one click, and the result comes back
+as one more event.
+
+Points:
+- Sent by the page itself (sendBeacon, a queue offline): website bundle, file://, SCORM
+- `webhook: relay` + `si serve --relay`: the address off the page, events signed (`X-Si-Signature`, `webhook-secret:` in your own si.conf)
+- `audience: instructor` marks the trainer's own clicks
+- `si demo test --webhook URL --webhook-format slack`: a CI run's summary in the channel
+- RULES.md §28 (Results to your team; Labs that check themselves), §27
+
+---
+
 ## Project structure
 
 ```text
@@ -680,7 +715,7 @@ si play <dir>              # serve with live reload (--dev: in-place hot reload)
 si build <dir> --pdf       # self-contained HTML (+ PDF)
 si build talk.md --handout # handouts/talk.pdf: slides only; =lines, =points, =notes add space or speaker text
 si check <dir>             # validate; exit 1 on a problem
-si demo test shop.md       # run a web demo script against a web app as a test (report.html, --junit)
+si demo test shop.md       # run a web demo script against a web app as a test (report.html, --junit, --webhook URL)
 si demo run shop.md        # the same, filmed and narrated: shop.mp4 with chapters; --with captions,subtitles,clips,report,… for more
 si doctor                  # the optional programs (Chrome, ffmpeg, git…): found or not, how to install each
 si new <name>              # scaffold a deck (the showcase, every rule)

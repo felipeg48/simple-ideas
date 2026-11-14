@@ -56,6 +56,12 @@ type Options struct {
 	// Set only by si play on a loopback address; always false for build/export,
 	// so a self-contained deck never loads the terminal runtime.
 	Terminal bool
+	// Checks shows a lab check's ✓ Check button (POST /_si/check). Set only
+	// by si play on a loopback address with the terminal on.
+	Checks bool
+	// Relay sends a course's result events through the si server's
+	// /_si/relay (signed there, the webhook URL kept off the page).
+	Relay bool
 	// Remote joins the page to the `si play --remote` relay (SI_CONFIG.remote):
 	// presenter state, commands and ink also travel over /_si/remote/*.
 	// Play only; a built deck keeps BroadcastChannel alone.

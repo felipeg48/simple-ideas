@@ -120,7 +120,7 @@ var Features = []feature{
 		Rules:    []string{"21"}},
 	{Slug: "courses", Title: "Courses",
 		Lede: "Readings, slides that present themselves, videos, labs, instructor demos and quizzes, in modules, with progress and a certificate.",
-		What: "A course is a folder with a `_course.md`: its top-level items are modules, the links under them lessons, and each lesson's kind comes from what it links to. `si build` makes a website bundle with a home page and Continue; the learner's progress stays in their browser. `--instructor` builds the instructor's edition with the demos, the teleprompter and the lab solutions. `--scorm` packs it for any learning platform, `--pdf` prints a workbook (or, for the instructor, a guide), and `si publish --to skilljar` sends it to SkillJar.",
+		What: "A course is a folder with a `_course.md`: its top-level items are modules, the links under them lessons, and each lesson's kind comes from what it links to. `si build` makes a website bundle with a home page and Continue; the learner's progress stays in their browser. `--instructor` builds the instructor's edition with the demos, the teleprompter and the lab solutions. `--scorm` packs it for any learning platform, `--pdf` prints a workbook (or, for the instructor, a guide), and `si publish --to skilljar` sends it to SkillJar. With `webhook:` the course tells your team how the class is doing (Slack, Teams, Discord, JSON or xAPI), and lab steps can check themselves.",
 		Live: func() string { return "<!-- embed: ../live/course/ -->" }, Open: "../live/course/",
 		Source: "course/_course.md",
 		Options: [][2]string{
@@ -129,6 +129,9 @@ var Features = []feature{
 			{"`nav:`", "left, right, top, bottom · sticky · accordion, collapsed (guides, books and sites too)"},
 			{"`type: quiz` `pass: 70%`", "questions, `- [x]` right answers, `> Explanation:`"},
 			{"`<!-- solution -->`", "a lab's answer, folded for learners"},
+			{"`<!-- check: cmd · expect \"text\" -->`", "a lab step that checks itself: Run this to check, and a ✓ Check button in si play"},
+			{"`webhook:` `webhook-format:`", "results to your team: lessons done, quiz scores, lab checks, videos watched, as JSON, Slack, Teams, Discord or xAPI"},
+			{"`webhook-consent:` `webhook-learner:`", "required: nothing sent before the learner's OK; ask: the learner types a name"},
 			{"`instructor-demos:` `certificate:`", "show-placeholder for demos; on for a printable certificate"},
 			{"`--scorm` `--scorm=single`", "a SCORM 1.2 zip for any LMS: one SCO per lesson, or one for the course"},
 			{"`--pdf`", "the learner workbook; with `--instructor` the instructor guide"},

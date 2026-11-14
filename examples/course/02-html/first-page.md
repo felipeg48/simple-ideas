@@ -18,6 +18,8 @@ Open it in your editor and in your browser.
 
 - [ ] I can see an empty page in the browser
 
+<!-- check: ls my-page/index.html · expect "index.html" -->
+
 ## Step 2: Add the skeleton
 
 Every page has the same frame around its content.

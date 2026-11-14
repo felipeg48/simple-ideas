@@ -1,0 +1,102 @@
+[
+  {
+    "type": "message",
+    "attachments": [
+      {
+        "contentType": "application/vnd.microsoft.card.adaptive",
+        "content": {
+          "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+          "type": "AdaptiveCard",
+          "version": "1.4",
+          "body": [
+            {
+              "type": "TextBlock",
+              "text": "Learner 3f9a finished “Tags, elements and attributes” in A first web page.",
+              "wrap": true
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "type": "message",
+    "attachments": [
+      {
+        "contentType": "application/vnd.microsoft.card.adaptive",
+        "content": {
+          "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+          "type": "AdaptiveCard",
+          "version": "1.4",
+          "body": [
+            {
+              "type": "TextBlock",
+              "text": "Ana passed the quiz “Check yourself” in A first web page: 80 % (attempt 2).",
+              "wrap": true
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "type": "message",
+    "attachments": [
+      {
+        "contentType": "application/vnd.microsoft.card.adaptive",
+        "content": {
+          "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+          "type": "AdaptiveCard",
+          "version": "1.4",
+          "body": [
+            {
+              "type": "TextBlock",
+              "text": "Learner 3f9a checked step 2 of “Build your first page” in A first web page: failed. (instructor build)",
+              "wrap": true
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "type": "message",
+    "attachments": [
+      {
+        "contentType": "application/vnd.microsoft.card.adaptive",
+        "content": {
+          "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+          "type": "AdaptiveCard",
+          "version": "1.4",
+          "body": [
+            {
+              "type": "TextBlock",
+              "text": "Learner 3f9a watched 100 % of “A page loads, step by step” in A first web page.",
+              "wrap": true
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "type": "message",
+    "attachments": [
+      {
+        "contentType": "application/vnd.microsoft.card.adaptive",
+        "content": {
+          "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+          "type": "AdaptiveCard",
+          "version": "1.4",
+          "body": [
+            {
+              "type": "TextBlock",
+              "text": "Ana completed the course A first web page.",
+              "wrap": true
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

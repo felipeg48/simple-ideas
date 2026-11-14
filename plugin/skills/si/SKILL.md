@@ -61,7 +61,8 @@ si play talk.md --audience      # the room follows on their phones; <!-- qr: aud
                                 # their questions arrive in the teleprompter's Q&A tab
 si play talk.md --tunnel        # the same for a remote audience (a video call): a temporary public link
 si demo test shop.md            # a web demo script (type: demo + app:) run against the web app in headless Chrome:
-                                # report.html + report.json in demo-out/shop/, exit 1 on a failure, --junit junit.xml for CI
+                                # report.html + report.json in demo-out/shop/, exit 1 on a failure, --junit junit.xml for CI,
+                                # --webhook URL [--webhook-format slack|teams|discord|json]: the summary to the team
 si demo run shop.md             # the same steps filmed and narrated: ONE file, demo-out/shop/shop.mp4 (title cards,
                                 # chapters); more only with --with (comma list, may repeat; or with: in front matter,
                                 # demo.with: in si.conf): captions, silent, audio, subtitles (.srt + .vtt), transcript
@@ -259,6 +260,18 @@ Not everything is a slide deck. Pick the type by what the reader does:
   `si publish course/ --to skilljar --base-url URL` (a dry run without
   `--yes`). A quiz is a self-check, not a secure exam: never promise learners
   it is graded securely.
+- **Course results** (RULES.md §28): `webhook: https://…` in `_course.md` (or
+  si.conf `course.webhook:`) sends `lesson.completed`, `quiz.submitted`,
+  `lab.step.checked`, `demo.watched`, `course.completed` from the learner's
+  browser; `webhook-format: json|slack|teams|discord|xapi`, `webhook-events:`,
+  `webhook-learner: ask`, `webhook-consent: required`, `webhook-notice:`.
+  Only `https://` (or `relay`: `si serve --relay` forwards and signs with
+  `webhook-secret:` from the user's own si.conf / `SI_WEBHOOK_SECRET`). Never
+  put a secret in `_course.md`: `webhook-token:` and `webhook-auth:` are
+  visible in the page. A lab step can check itself: `<!-- check: command ·
+  expect "text" · exit 0 -->` (a ✓ Check button in `si play`, a "Run this to
+  check" box in every build). CI: `si demo test … --webhook URL
+  --webhook-format slack` posts the run's summary.
 - **Project structure** (RULES.md §31): when a project has many kinds of
   output (decks, labs, a site, videos, zips), a `structure:` block in the
   project's si.conf maps each to a folder: one folder per line, nested by
