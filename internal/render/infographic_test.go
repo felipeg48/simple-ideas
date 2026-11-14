@@ -82,6 +82,40 @@ func TestInfographicRender(t *testing.T) {
 	}
 }
 
+// A line chart whose x column is numbers (years) or dates places each point
+// by its value with nice ticks; text labels stay evenly spaced.
+func TestIGLineByValue(t *testing.T) {
+	render := func(rows string) string {
+		dir := t.TempDir()
+		p := filepath.Join(dir, "ig.md")
+		os.WriteFile(p, []byte("---\ntype: infographic\ntitle: Load\n---\n\n## Users · chart=line\n| year | n |\n|---|---|\n"+rows+"\n"), 0o644)
+		d, err := deck.Parse(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(Deck(d, Options{}).HTML)
+	}
+	// 2000, 2010, 2020, 2022: x at 0, 45.45, 90.91, 100 (not 0, 33, 67, 100)
+	page := render("| 2000 | 1 |\n| 2010 | 2 |\n| 2020 | 3 |\n| 2022 | 4 |")
+	for _, want := range []string{`points="0,`, ` 45.45,`, ` 90.91,`, ` 100,`, `class="si-ig-x si-ig-xv"`,
+		`left:0%;translate:-0% 0">2000<`, `left:90.91%;translate:-90.91% 0">2020<`} {
+		if !strings.Contains(page, want) {
+			t.Errorf("years: page lacks %s", want)
+		}
+	}
+	if strings.Contains(page, `>2022<`) || strings.Contains(page, ` 33.33,`) {
+		t.Errorf("years: ticks must be nice values, points by value")
+	}
+	page = render("| 2024-01-01 | 1 |\n| 2024-01-11 | 2 |\n| 2024-01-21 | 3 |\n| 2024-03-01 | 4 |")
+	if !strings.Contains(page, ` 16.67,`) || !strings.Contains(page, `translate:-33.33% 0">2024-01-21<`) || strings.Contains(page, `>2024-01-11<`) {
+		t.Errorf("dates: not placed by date")
+	}
+	page = render("| Jan | 1 |\n| Feb | 2 |\n| Mar | 3 |")
+	if !strings.Contains(page, ` 50,`) || strings.Contains(page, `class="si-ig-x si-ig-xv"`) {
+		t.Errorf("text labels must stay evenly spaced")
+	}
+}
+
 // TestInfographicFit: the page carries the fit pass, and si check warns
 // about a block with more text than its cell holds at the floor.
 func TestInfographicFit(t *testing.T) {

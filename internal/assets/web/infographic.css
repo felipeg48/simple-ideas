@@ -153,6 +153,8 @@
 .si-ig-area{fill:color-mix(in srgb,var(--_c) 16%,transparent)}
 .si-ig-axis{stroke:var(--si-line);stroke-width:.08em}
 .si-ig-x{display:flex;justify-content:space-between;gap:.4em;font-size:.72em;color:var(--si-muted)}
+.si-ig-xv{display:block;position:relative;block-size:1.3em}
+.si-ig-xv>span{position:absolute;white-space:nowrap}
 .si-ig-last{position:absolute;inset-inline-end:0;translate:0 -130%;font-weight:850;font-size:1.45em;line-height:1;color:var(--_c);font-family:var(--si-font-heading)}
 .si-ig-accent .si-ig-x,.si-ig-accent .si-ig-y,.si-ig-accent .si-ig-dl{color:inherit;fill:currentColor;opacity:.85}
 

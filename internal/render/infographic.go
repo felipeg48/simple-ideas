@@ -8,8 +8,10 @@ import (
 	"math"
 	"net/http"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/felipeg48/simple-ideas/internal/assets"
 	"github.com/felipeg48/simple-ideas/internal/deck"
@@ -607,6 +609,83 @@ func igData(body string) (igSeries, bool) {
 	return s, true
 }
 
+// igXNumbers reads a line chart's x labels as numbers (years too) or, failing
+// that, as dates; ok is false when any label is neither or all are equal.
+func igXNumbers(labels []string) (v []float64, dates, ok bool) {
+	num := func(l string) (float64, bool) {
+		f, err := strconv.ParseFloat(strings.TrimSpace(l), 64)
+		return f, err == nil
+	}
+	date := func(l string) (float64, bool) {
+		for _, f := range []string{"2006-01-02", "2006-01", "Jan 2006", "January 2006", "2 Jan 2006", "Jan 2, 2006"} {
+			if t, err := time.Parse(f, strings.TrimSpace(l)); err == nil {
+				return float64(t.Unix()) / 86400, true
+			}
+		}
+		return 0, false
+	}
+	for _, read := range []func(string) (float64, bool){num, date} {
+		v = v[:0]
+		for _, l := range labels {
+			f, good := read(l)
+			if !good {
+				break
+			}
+			v = append(v, f)
+		}
+		if len(v) == len(labels) && len(v) > 1 && slices.Min(v) < slices.Max(v) {
+			return v, dates, true
+		}
+		dates = true
+	}
+	return nil, false, false
+}
+
+// igXValues places each row of a line chart along x, in percent, by its
+// value when every x label is a number or a date (a linear scale from the
+// smallest to the largest); nil keeps the rows evenly spaced.
+func igXValues(labels []string) (x []float64, dates bool) {
+	v, dates, ok := igXNumbers(labels)
+	if !ok {
+		return nil, false
+	}
+	lo, hi := slices.Min(v), slices.Max(v)
+	for _, f := range v {
+		x = append(x, (f-lo)/(hi-lo)*100)
+	}
+	return x, dates
+}
+
+// igTicks are the nice x ticks of a numeric line chart (steps of 1, 2 or 5
+// times a power of ten, whole numbers when the labels are), as
+// {percent along x, value} pairs.
+func igTicks(labels []string) [][2]float64 {
+	v, _, _ := igXNumbers(labels)
+	lo, hi := slices.Min(v), slices.Max(v)
+	raw := (hi - lo) / 5
+	mag := math.Pow(10, math.Floor(math.Log10(raw)))
+	step := 10 * mag
+	for _, m := range []float64{1, 2, 5} {
+		if raw <= m*mag {
+			step = m * mag
+			break
+		}
+	}
+	whole := true
+	for _, f := range v {
+		whole = whole && f == math.Trunc(f)
+	}
+	if whole {
+		step = math.Max(1, math.Round(step))
+	}
+	var t [][2]float64
+	for i := math.Ceil(lo / step); i*step <= hi+step*1e-9; i++ {
+		f := i * step
+		t = append(t, [2]float64{(f - lo) / (hi - lo) * 100, f})
+	}
+	return t
+}
+
 // IGScale is a value's share of the axis, in percent: 0 at zero, 100 at top
 // (a bar or progress drawn to scale).
 func IGScale(v, top float64) float64 {
@@ -674,6 +753,10 @@ func (dr *deckRenderer) igChart(b *deck.IGBlock) string {
 			}
 			return float64(i) / float64(n-1) * 100
 		}
+		xv, dates := igXValues(s.labels) // numbers or dates: placed by value
+		if xv != nil {
+			x = func(i int) float64 { return xv[i] }
+		}
 		num := func(f float64) string { return html.EscapeString(strconv.FormatFloat(f, 'f', -1, 64)) }
 		o.WriteString(`<div class="si-ig-chart si-ig-line">`)
 		fmt.Fprintf(&o, `<div class="si-ig-y" aria-hidden="true"><span>%s</span><span>%s</span></div><div class="si-ig-plot">`, num(top), num(lo))
@@ -696,10 +779,33 @@ func (dr *deckRenderer) igChart(b *deck.IGBlock) string {
 			fmt.Fprintf(&o, `<polyline style="stroke:%s" vector-effect="non-scaling-stroke" points="%s"/>`, colour(k), strings.Join(pts, " "))
 		}
 		end := pct(y(s.vals[n-1][0]) * 2) // percent of the plot's height
-		fmt.Fprintf(&o, `</svg><span class="si-ig-end" style="top:%s%%;background:%s"></span><b class="si-ig-last" style="top:%s%%">%s</b></div><div class="si-ig-x">`,
-			end, colour(0), end, html.EscapeString(s.text[n-1][0]))
-		for _, l := range s.labels {
-			o.WriteString(`<span>` + dr.inline(l) + `</span>`)
+		xcls := "si-ig-x"
+		if xv != nil {
+			xcls += " si-ig-xv"
+		}
+		fmt.Fprintf(&o, `</svg><span class="si-ig-end" style="top:%s%%;background:%s"></span><b class="si-ig-last" style="top:%s%%">%s</b></div><div class="%s">`,
+			end, colour(0), end, html.EscapeString(s.text[n-1][0]), xcls)
+		switch {
+		case xv == nil:
+			for _, l := range s.labels {
+				o.WriteString(`<span>` + dr.inline(l) + `</span>`)
+			}
+		case dates: // a date tick is the row's own label, at its date
+			// ponytail: a date label is wide, so one closer than a fifth of the
+			// axis to the last one kept (or to the end) is left out; measure if
+			// that ever leaves too few.
+			kept := -100.0
+			for i, l := range s.labels {
+				if i > 0 && i < n-1 && (xv[i]-kept < 22 || 100-xv[i] < 22) {
+					continue
+				}
+				kept = xv[i]
+				fmt.Fprintf(&o, `<span style="left:%s%%;translate:-%s%% 0">%s</span>`, pct(xv[i]), pct(xv[i]), dr.inline(l))
+			}
+		default: // numbers: ticks at nice values
+			for _, t := range igTicks(s.labels) {
+				fmt.Fprintf(&o, `<span style="left:%s%%;translate:-%s%% 0">%s</span>`, pct(t[0]), pct(t[0]), html.EscapeString(strconv.FormatFloat(t[1], 'f', -1, 64)))
+			}
 		}
 		o.WriteString(`</div></div>`)
 		if series > 1 {
