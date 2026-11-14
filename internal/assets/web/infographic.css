@@ -188,8 +188,12 @@ html:has(.si-ig-page),.si-ig-page{block-size:auto;overflow:visible}
 .si-ig-page .si-ig-frame{border-radius:calc(var(--si-radius,.6em) * 1.4);box-shadow:var(--si-shadow,none)}
 @media print{
   .si-ig-page>main{padding:0}
-  .si-ig-page .si-ig-frame{border-radius:0;box-shadow:none}
-  .si-ig-block,.si-ig-frame{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* a poster printed over several pages: each page gets its own glows and
+   * padding (clone), and the page behind the frame is the frame's ground */
+  .si-ig-page .si-ig-frame{border-radius:0;box-shadow:none;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+  .si-ig-page{background:var(--si-ig-bg,var(--si-bg))}
+  .si-ig-page .si-ig-block{break-inside:avoid}
+  .si-ig-page,.si-ig-block,.si-ig-frame{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 
 /* motion (animate: build | loop): infographic.js moves the parts from one

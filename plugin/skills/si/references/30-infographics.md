@@ -223,7 +223,9 @@ page; a wide or square one a slide.
   the pixels; `--scale 3` for print) and `pdfs/talk.pdf` (one page, vector
   text). **`--svg`** writes `talk.svg`, the frame as a vector picture (text
   as text, pictures inside, theme colours resolved; background glows and
-  shadows left out). `si play` presents a landscape one.
+  shadows left out). `si play` presents a landscape one. Printed from the
+  browser, a portrait poster that runs over several pages keeps its glows
+  and padding on every page, and no block is cut between two pages.
 - **Text fits its block.** A block whose text does not fit its cell gets a
   smaller text size, step by step, down to 60% of its own; `si check` warns
   when a block would need less than that (shorten it, make it `wide` or

@@ -80,6 +80,14 @@ func TestInfographicRender(t *testing.T) {
 	if !strings.Contains(page, `class="si-doc si-ig-page"`) || !strings.Contains(page, `data-orient="portrait"`) || strings.Contains(page, `si-step" data-step`) {
 		t.Errorf("portrait page wrong")
 	}
+	// printed over several pages, every page keeps the frame's glows and ground
+	print := page[strings.Index(page, "@media print{\n  .si-ig-page>main"):]
+	print = print[:strings.Index(print, "\n}")]
+	for _, want := range []string{"box-decoration-break:clone", ".si-ig-page{background:var(--si-ig-bg", ".si-ig-block{break-inside:avoid}"} {
+		if !strings.Contains(print, want) {
+			t.Errorf("print CSS lacks %s", want)
+		}
+	}
 }
 
 // A line chart whose x column is numbers (years) or dates places each point
