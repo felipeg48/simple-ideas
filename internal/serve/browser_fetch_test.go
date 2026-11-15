@@ -45,7 +45,7 @@ func TestBrowserProxyFetchThrough(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req, _ := http.NewRequest("POST", proxy+fwdPath+"?x=1&to="+url.QueryEscape(api.URL+"/api"), strings.NewReader(`{"n":1}`))
+	req, _ := http.NewRequest("POST", proxy+fwdPath+"?t="+b.fwdToken()+"&x=1&to="+url.QueryEscape(api.URL+"/api"), strings.NewReader(`{"n":1}`))
 	req.Header.Set("Cookie", "session=framed-site")
 	req.Header.Set("Origin", proxy)
 	res, err := http.DefaultClient.Do(req)
@@ -60,13 +60,13 @@ func TestBrowserProxyFetchThrough(t *testing.T) {
 	if res.Header.Get("Set-Cookie") != "" || res.Request.URL.String() != req.URL.String() {
 		t.Errorf("a cookie came back (%q) or it was redirected (%s)", res.Header.Get("Set-Cookie"), res.Request.URL)
 	}
-	res, err = http.Get(proxy + fwdPath + "?x=1&to=" + url.QueryEscape(api.URL+"/moved"))
+	res, err = http.Get(proxy + fwdPath + "?t=" + b.fwdToken() + "&x=1&to=" + url.QueryEscape(api.URL+"/moved"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	body, _ = io.ReadAll(res.Body)
 	res.Body.Close()
-	if !strings.HasPrefix(string(body), "GET /api ") || !strings.HasPrefix(res.Request.URL.String(), proxy+fwdPath+"?x=1&to=") {
+	if !strings.HasPrefix(string(body), "GET /api ") || !strings.HasPrefix(res.Request.URL.String(), proxy+fwdPath+"?t="+b.fwdToken()+"&x=1&to=") {
 		t.Errorf("a redirect: %q at %s", body, res.Request.URL)
 	}
 }

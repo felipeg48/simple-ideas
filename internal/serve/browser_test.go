@@ -168,14 +168,14 @@ func TestBrowserProxyAcrossSites(t *testing.T) {
 		t.Fatalf("page on the second proxy lacks its real origin: %.300s", body)
 	}
 	for _, want := range []string{"window.open=", "'submit'", "navigation.addEventListener('navigate'"} {
-		if !strings.Contains(navScript("x"), want) {
+		if !strings.Contains(navScript("x", "tok"), want) {
 			t.Errorf("navScript lacks %s", want)
 		}
 	}
-	if !strings.Contains(navScript("x"), "nav-open") {
+	if !strings.Contains(navScript("x", "tok"), "nav-open") {
 		t.Error("the nav script does not hand cross-origin links to the window")
 	}
-	if strings.Contains(navScript("http://a/</script>"), "</script>\"") {
+	if strings.Contains(navScript("http://a/</script>", "tok"), "</script>\"") {
 		t.Error("a target can end the script")
 	}
 }
@@ -198,7 +198,7 @@ func TestBrowserProxyForwardsPost(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := http.PostForm(oneProxy+fwdPath+"?to="+url.QueryEscape(two.URL+"/login?next=/home"), url.Values{"user": {"ana"}, "pass": {"s3cret"}})
+	res, err := http.PostForm(oneProxy+fwdPath+"?t="+b.fwdToken()+"&to="+url.QueryEscape(two.URL+"/login?next=/home"), url.Values{"user": {"ana"}, "pass": {"s3cret"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +213,7 @@ func TestBrowserProxyForwardsPost(t *testing.T) {
 		t.Errorf("not through the other site's proxy: %s (its proxy %s)", res.Request.URL, twoProxy)
 	}
 	for _, bad := range []string{"", "javascript:alert(1)", "/relative"} {
-		r, err := http.Get(oneProxy + fwdPath + "?to=" + url.QueryEscape(bad))
+		r, err := http.Get(oneProxy + fwdPath + "?t=" + b.fwdToken() + "&to=" + url.QueryEscape(bad))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -222,7 +222,19 @@ func TestBrowserProxyForwardsPost(t *testing.T) {
 			t.Errorf("to=%q: status %d", bad, r.StatusCode)
 		}
 	}
-	if s := navScript("http://x"); !strings.Contains(s, fwdPath+"?to=") || !strings.Contains(s, "HTMLFormElement.prototype.submit") {
+	if s := navScript("http://x", "tok"); !strings.Contains(s, fwdPath+"?t=tok&to=") || !strings.Contains(s, "HTMLFormElement.prototype.submit") {
 		t.Error("nav script does not point POST forms at the forward")
+	}
+	// without this run's key the forwarder serves nobody (another page in the
+	// browser that guesses the port must not read other sites through it)
+	for _, q := range []string{"?to=", "?t=wrong&to=", "?x=1&to=", "?t=wrong&x=1&to="} {
+		r, err := http.Get(oneProxy + fwdPath + q + url.QueryEscape(two.URL+"/login"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		r.Body.Close()
+		if r.StatusCode != http.StatusForbidden {
+			t.Errorf("%s without the key: status %d, want 403", q, r.StatusCode)
+		}
 	}
 }

@@ -12,6 +12,9 @@ package serve
 
 import (
 	"bytes"
+	"crypto/rand"
+	"crypto/subtle"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"net"
@@ -28,6 +31,22 @@ type browserProxies struct {
 	mu      sync.Mutex
 	byHost  map[string]string // target origin -> proxy origin
 	servers []*http.Server
+	tok     string // a random key every fwdPath request must carry (see forward)
+}
+
+// fwdToken is this run's forwarder key, made once: the nav script si injects
+// carries it, so only si's own framed pages can use fwdPath, never another
+// page in the browser that guesses a proxy's loopback port (which would
+// otherwise read any http(s) address, local services included, through it).
+func (b *browserProxies) fwdToken() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.tok == "" {
+		var k [16]byte
+		rand.Read(k[:])
+		b.tok = hex.EncodeToString(k[:])
+	}
+	return b.tok
 }
 
 var cookieAttrRE = regexp.MustCompile(`(?i);\s*(domain=[^;]*|secure|samesite=[^;]*)`)
@@ -67,7 +86,7 @@ func (b *browserProxies) open(target *url.URL) (string, error) {
 			}
 			h.Set("Content-Security-Policy", strings.Join(keep, ";"))
 		}
-		if err := injectNav(res, key); err != nil {
+		if err := injectNav(res, key, b.fwdToken()); err != nil {
 			return err
 		}
 		if loc := h.Get("Location"); loc != "" {
@@ -123,13 +142,17 @@ func (b *browserProxies) through(loc, key, origin string) string {
 const fwdPath = "/__si_fwd"
 
 func (b *browserProxies) forward(w http.ResponseWriter, r *http.Request, key string) {
+	if subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("t")), []byte(b.fwdToken())) != 1 {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
 	u, err := url.Parse(r.URL.Query().Get("to"))
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 		http.Error(w, "an http(s) address, please", http.StatusBadRequest)
 		return
 	}
 	if r.URL.Query().Get("x") != "" {
-		fetchThrough(w, r, u, key)
+		fetchThrough(w, r, u, key, b.fwdToken())
 		return
 	}
 	o, err := b.open(u)
@@ -149,7 +172,7 @@ func (b *browserProxies) forward(w http.ResponseWriter, r *http.Request, key str
 // site, and the other site's own live on its proxy's origin, out of reach;
 // its Set-Cookie is dropped for the same reason. A redirect it answers comes
 // back through fwdPath, so fetch follows it here too.
-func fetchThrough(w http.ResponseWriter, r *http.Request, to *url.URL, key string) {
+func fetchThrough(w http.ResponseWriter, r *http.Request, to *url.URL, key, tok string) {
 	rp := &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
 			u := *to
@@ -164,7 +187,7 @@ func fetchThrough(w http.ResponseWriter, r *http.Request, to *url.URL, key strin
 			res.Header.Del("Set-Cookie")
 			if loc := res.Header.Get("Location"); loc != "" {
 				if l, err := to.Parse(loc); err == nil && (l.Scheme == "http" || l.Scheme == "https") {
-					res.Header.Set("Location", fwdPath+"?x=1&to="+url.QueryEscape(l.String()))
+					res.Header.Set("Location", fwdPath+"?t="+url.QueryEscape(tok)+"&x=1&to="+url.QueryEscape(l.String()))
 				}
 			}
 			return nil
@@ -190,7 +213,7 @@ func fetchThrough(w http.ResponseWriter, r *http.Request, to *url.URL, key strin
 // site's proxy. Its own fetch and XMLHttpRequest calls to an absolute
 // http(s) address on another origin go to fwdPath?x=1 (fetchThrough), and
 // to its own site's address to this proxy.
-func navScript(target string) string {
+func navScript(target, tok string) string {
 	t, _ := json.Marshal(target) // escapes <, so it cannot end the script
 	return `<script>(function(){var P=window.parent;if(P===window)return;var T=` + string(t) + `;` +
 		`function real(){var o=location.origin;return location.href.indexOf(o)===0?T+location.href.slice(o.length):location.href}` +
@@ -203,13 +226,13 @@ func navScript(target string) string {
 		// fetch and XMLHttpRequest to an absolute http(s) address elsewhere:
 		// the framed site's own origin to this proxy, another through fwdPath
 		`function via(h){var u;try{u=new URL(String(h),location.href)}catch(x){return null}if(!/^https?:$/.test(u.protocol)||u.origin===location.origin)return null;` +
-		`if(u.origin===T)return location.origin+u.pathname+u.search+u.hash;return location.origin+'` + fwdPath + `?x=1&to='+encodeURIComponent(u.href)}` +
+		`if(u.origin===T)return location.origin+u.pathname+u.search+u.hash;return location.origin+'` + fwdPath + `?t=` + tok + `&x=1&to='+encodeURIComponent(u.href)}` +
 		`var F=window.fetch;if(F)window.fetch=function(i,o){var R=window.Request&&i instanceof Request,v=via(R?i.url:i);if(!v)return F.apply(window,arguments);if(!R)return F.call(window,v,o);` +
 		`return(/^(GET|HEAD)$/.test(i.method)?Promise.resolve(void 0):i.blob()).then(function(b){return F.call(window,new Request(v,{method:i.method,headers:i.headers,body:b,credentials:i.credentials,cache:i.cache,redirect:i.redirect,integrity:i.integrity,keepalive:i.keepalive,signal:i.signal}),o)})};` +
 		`var XO=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,h){var v=via(h);if(!v)return XO.apply(this,arguments);var a=[].slice.call(arguments);a[1]=v;return XO.apply(this,a)};` +
 		`function meth(f,s){return((s&&s.getAttribute('formmethod'))||f.getAttribute('method')||'get').toLowerCase()}` +
 		`function post(f,s){var fa=s&&s.hasAttribute('formaction'),u;try{u=new URL(fa?s.formAction:f.action,location.href)}catch(x){return}` +
-		`if(!/^https?:$/.test(u.protocol)||u.origin===location.origin)return;var to=location.origin+'` + fwdPath + `?to='+encodeURIComponent(u.href);if(fa)s.formAction=to;else f.action=to}` +
+		`if(!/^https?:$/.test(u.protocol)||u.origin===location.origin)return;var to=location.origin+'` + fwdPath + `?t=` + tok + `&to='+encodeURIComponent(u.href);if(fa)s.formAction=to;else f.action=to}` +
 		`var fs=HTMLFormElement.prototype.submit;HTMLFormElement.prototype.submit=function(){if(meth(this)==='post')post(this);return fs.apply(this,arguments)};` +
 		`addEventListener('submit',function(e){var f=e.target,s=e.submitter,m=meth(f,s);if(e.defaultPrevented)return;if(m==='post'){post(f,s);return}if(m!=='get')return;` +
 		`var u;try{u=new URL(f.action,location.href)}catch(x){return}u.search=new URLSearchParams(new FormData(f)).toString();if(away(u.href))e.preventDefault()});` +
@@ -229,7 +252,7 @@ var headRE, htmlRE = regexp.MustCompile(`(?i)<head(\s[^>]*)?>`), regexp.MustComp
 // first) and drops its CSP so the inline script runs. Other types, and a body
 // still encoded (an upstream that ignored the plain-text request), pass as they are.
 // target is the real origin the page comes from.
-func injectNav(res *http.Response, target string) error {
+func injectNav(res *http.Response, target, tok string) error {
 	ct := strings.ToLower(res.Header.Get("Content-Type"))
 	if !strings.HasPrefix(ct, "text/html") || res.Header.Get("Content-Encoding") != "" || res.Body == nil {
 		return nil
@@ -245,7 +268,7 @@ func injectNav(res *http.Response, target string) error {
 	} else if loc := htmlRE.FindIndex(top); loc != nil {
 		at = loc[1]
 	}
-	nav := navScript(target)
+	nav := navScript(target, tok)
 	out := make([]byte, 0, len(body)+len(nav))
 	out = append(append(append(out, body[:at]...), nav...), body[at:]...)
 	res.Body = io.NopCloser(bytes.NewReader(out))

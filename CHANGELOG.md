@@ -3,6 +3,23 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.26.0:** eighteen improvements. **Courses and build:** posters are
+  remade when their video's content changes (a fingerprint inside the JPEG);
+  `nav: … numbered` numbers lessons 1.1, 1.2; the example course has a deck
+  video lesson; a deck is re-filmed when an included file changes; `kind:zip`
+  follows links all the way (every link inside resolves); `si build` of a
+  page or guide inside a project with a `structure:` map builds the project
+  with its map; SCORM progress over 4096 characters is packed to fit.
+  **Demos, workbench, visuals:** `shell:` in a deck picks the drawer's shell
+  (`clean` for the clean prompt); a framed page's `fetch`/XHR to another site
+  goes through the proxy (the forwarder now needs this run's key);
+  `[TERM]` cues take `· split`, `· max|min`, `· opacity`, `· typing`;
+  without a voice, cues land where their words would be spoken; `files:`
+  in JSON demo scripts; the Viewer follows `cd` on Windows (and from OSC 7);
+  Studio icons for timelines and infographics; flow boxes take icons
+  (`[db] Orders`) and `· dir=lr|tb`; `--svg` keeps gradients and shadows and
+  embeds the fonts used; XMind 8 notes carry HTML; a 3D page's `--png`
+  writes one picture per map as well.
 - **v3.25.0:** steadier tests, webhook and class view follow-ups.
   **Headless Chrome:** every one-shot Chrome run (screenshots, PDFs,
   handouts, mind map and code exports, `--dump-dom`) goes through
