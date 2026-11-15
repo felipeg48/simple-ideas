@@ -544,7 +544,11 @@
     if (tabs.length === 0) newTab();
     else select(active < 0 ? 0 : active);
   }
-  function hide() { root.classList.remove('is-open'); }
+  /* hidden, the drawer gives the keys back to the deck (→ must not go to a shell no one sees) */
+  function hide() {
+    root.classList.remove('is-open');
+    var a = document.activeElement; if (a && a !== document.body && root.contains(a)) { a.blur(); try { window.focus(); } catch (e) {} }
+  }
   function toggle() { if (root.classList.contains('is-open')) hide(); else show(); }
 
   root.querySelector('[data-act="new"]').addEventListener('click', newTab);

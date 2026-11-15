@@ -184,7 +184,7 @@ func exportDeckMotion(chrome, page, out string, d *deckInfo, dwell float64, nar 
 			if k == n { // arriving at an animated infographic: film it building
 				span = max(span, d.animOf(i+1)+0.3)
 			}
-			shots, err := film(c, span, tmp, fmt.Sprintf("m%03d-%02d", i, k), func() error { return c.Key("ArrowRight", 39) })
+			shots, err := film(c, span, tmp, fmt.Sprintf("m%03d-%02d", i, k), func() error { return advance(c) })
 			if err != nil {
 				return views, err
 			}
@@ -192,6 +192,16 @@ func exportDeckMotion(chrome, page, out string, d *deckInfo, dwell float64, nar 
 		}
 	}
 	return views, encodeMP4(video, filepath.Join(out, d.name+".mp4"))
+}
+
+// advance moves the filmed deck on one view, as → does: through
+// window.siPlay.next() on si play's page (a key would go to whatever has the
+// focus, a terminal tab of the drawer), → on a built page.
+func advance(c *cdp.Client) error {
+	if v, err := c.Eval(`!!(window.siPlay && (siPlay.next(), true))`); err == nil && string(v) == "true" {
+		return nil
+	}
+	return c.Key("ArrowRight", 39)
 }
 
 type deckInfo struct {

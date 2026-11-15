@@ -210,14 +210,17 @@
   function minimise(w, on) {
     w.el.classList.toggle('is-min', on);
     if (on) {
+      release(w.el);
       var pill = w.pill = document.createElement('button'); pill.className = 'si-web-pill'; pill.textContent = '▢ ' + w.name; pill.title = 'Restore';
       pill.addEventListener('click', function () { minimise(w, false); front(w); });
       dock.appendChild(pill);
     } else if (w.pill) { w.pill.remove(); w.pill = null; }
     save();
   }
+  /* the keys go back to the deck when a window that has them goes */
+  function release(el) { var a = document.activeElement; if (a && a !== document.body && el.contains(a)) { a.blur(); try { window.focus(); } catch (e) {} } }
   function close(w) {
-    w.el.remove(); if (w.pill) w.pill.remove();
+    release(w.el); w.el.remove(); if (w.pill) w.pill.remove();
     wins = wins.filter(function (x) { return x !== w; }); save();
   }
 
