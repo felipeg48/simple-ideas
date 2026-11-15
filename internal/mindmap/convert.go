@@ -487,8 +487,38 @@ type x8Labels struct {
 	Label []string `xml:"label"`
 }
 
+// x8Notes carries a topic's notes twice, as XMind 8 writes them: plain text
+// and an html element of xhtml:p paragraphs (one per line, code kept
+// monospaced), which XMind 8 shows formatted.
 type x8Notes struct {
 	Plain string `xml:"plain"`
+	HTML  x8HTML `xml:"html"`
+}
+
+type x8HTML struct {
+	P []x8P `xml:"xhtml:p"`
+}
+
+type x8P struct {
+	Span *x8Span `xml:"xhtml:span,omitempty"`
+}
+
+type x8Span struct {
+	Style string `xml:"style,attr"`
+	Text  string `xml:",chardata"`
+}
+
+func x8NotesOf(notes []string) *x8Notes {
+	n := &x8Notes{Plain: strings.Join(notes, "\n\n")}
+	for i, note := range notes {
+		if i > 0 {
+			n.HTML.P = append(n.HTML.P, x8P{})
+		}
+		for _, l := range strings.Split(note, "\n") {
+			n.HTML.P = append(n.HTML.P, x8P{Span: &x8Span{Style: "font-family:monospace", Text: l}})
+		}
+	}
+	return n
 }
 
 type x8Children struct {
@@ -533,7 +563,7 @@ func writeXMind8(w io.Writer, maps []*Map, title func(*Map) string) error {
 			x.Children.Topics.Topic = append(x.Children.Topics.Topic, topic(k))
 		}
 		if len(notes) > 0 {
-			x.Notes = &x8Notes{Plain: strings.Join(notes, "\n\n")}
+			x.Notes = x8NotesOf(notes)
 		}
 		return x
 	}

@@ -252,6 +252,37 @@ func TestCodeWindowRoundTrip(t *testing.T) {
 	}
 }
 
+// TestXMind8HTMLNotes: a code topic is its parent's notes, plain and as
+// XMind 8's html element (one xhtml:p per line).
+func TestXMind8HTMLNotes(t *testing.T) {
+	out, err := Export(Parse("# Plan\n\n- Retry\n  ```go\n  a := 1 < 2\n  b()\n  ```\n"), "xmind8", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	z, _ := zip.NewReader(bytes.NewReader(out), int64(len(out)))
+	var content []byte
+	for _, f := range z.File {
+		if f.Name == "content.xml" {
+			r, _ := f.Open()
+			content, _ = io.ReadAll(r)
+		}
+	}
+	var c struct {
+		Notes []struct {
+			Plain string `xml:"plain"`
+			HTML  struct {
+				P []string `xml:"http://www.w3.org/1999/xhtml p>span"`
+			} `xml:"html"`
+		} `xml:"sheet>topic>children>topics>topic>notes"`
+	}
+	if err := xml.Unmarshal(content, &c); err != nil {
+		t.Fatal(err)
+	}
+	if len(c.Notes) != 1 || c.Notes[0].Plain != "a := 1 < 2\nb()" || fmt.Sprint(c.Notes[0].HTML.P) != "[a := 1 < 2 b()]" {
+		t.Fatalf("notes: %+v\n%s", c.Notes, content)
+	}
+}
+
 func TestCopyCutPaste(t *testing.T) {
 	src := "# Plan\n\n- A\n  - A1 {badge=x}\n  - A2\n- B\n- C → #other\n"
 	d := Parse(src)

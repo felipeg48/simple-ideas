@@ -2964,7 +2964,8 @@ file (a zip of `content.xml` in the xmind-2.0 namespace, `meta.xml` and
 `META-INF/manifest.xml`) for XMind 8 and the tools that read only it: badges
 become labels, web links and `→ #id` links to another map (the central topic
 of that sheet) become topic links, and a code topic becomes a note on its
-parent; importing it back gives the badges and map links again. Pictures,
+parent (plain text, and HTML paragraphs in monospace that XMind 8 shows
+formatted); importing it back gives the badges and map links again. Pictures,
 sticky-note looks and the other formats' missing pieces stay in si.
 Import never overwrites a file.
 
