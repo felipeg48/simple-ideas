@@ -178,7 +178,13 @@ func narrateFromNotes(d *deck.Deck, dest string, cfg *config.Config, voice strin
 	if err != nil {
 		return nil, err
 	}
-	lines, err := dv.VoiceParts(&webdemo.Synth{FFmpeg: ff, Cache: webdemo.VoiceCache(), Log: stderr}, d.Parts())
+	return narrateWith(d, dest, dv, &webdemo.Synth{FFmpeg: ff, Cache: webdemo.VoiceCache(), Log: stderr}, dwell)
+}
+
+// narrateWith voices the deck's parts with sy into a WAV file of this run's
+// own: two builds of one deck at once never share it (the caller removes it).
+func narrateWith(d *deck.Deck, dest string, dv webdemo.DeckVoice, sy webdemo.Voicer, dwell float64) (*narration, error) {
+	lines, err := dv.VoiceParts(sy, d.Parts())
 	if err != nil {
 		return nil, err
 	}
@@ -186,5 +192,14 @@ func narrateFromNotes(d *deck.Deck, dest string, cfg *config.Config, voice strin
 	if err != nil {
 		return nil, err
 	}
-	return voicedNarration(d, slideSteps(string(page)), lines, dwell, dv.Default.String(), filepath.Join(os.TempDir(), "si-voice-"+d.Name+".wav"))
+	f, err := os.CreateTemp("", "si-voice-"+d.Name+"-*.wav")
+	if err != nil {
+		return nil, err
+	}
+	f.Close()
+	n, err := voicedNarration(d, slideSteps(string(page)), lines, dwell, dv.Default.String(), f.Name())
+	if err != nil {
+		os.Remove(f.Name())
+	}
+	return n, err
 }
