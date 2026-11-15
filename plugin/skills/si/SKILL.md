@@ -158,7 +158,11 @@ speaker's voice, addressed to the audience.
   or the `browser:` link `Name` opens in a window over the slides (`[TERM
   close]`, `[BROWSER close]` put them away). They are never read aloud, are no
   `[CLICK]` (no advance), and `si build --mp4 --voice` films them where they
-  are said. A `[BROWSER Name]` needs a `browser:` link with that name.
+  are said, after running the deck's `setup:` / `start:` (`--no-live` skips
+  them). A `[BROWSER Name]` needs a `browser:` link with that name;
+  `· at X,Y · size WxH · zoom N%` after the name place the window (a filmed
+  console at `zoom 125%` is readable at 1080p), and `[BROWSER Name: URL]`
+  takes the open window to another page instead of opening a second one.
 
 **`Points:` is the Speaker Notes tab.** It holds the main points of the
 topic, as short bullets the speaker glances at to talk freely instead of

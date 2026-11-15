@@ -128,6 +128,10 @@
   slowed down while it films, so the motion is smooth whatever the machine;
   `--dissolve` films still views that dissolve into each other in 0.4 s
   instead (faster, and what si falls back to when filming the motion fails).
+  A deck with `[TERM …]` / `[BROWSER …]` cues (§11) is filmed on `si play`'s
+  page, with its `setup:` and `start:` run first and `stop:` / `cleanup:`
+  after (§14; `--no-live` skips them). Two builds may film the same deck at
+  once: each narrates into a file of its own.
 - **Open on a phone**: run `si play <dir> --addr 0.0.0.0:7070` to serve on your
   network; `si play` then prints a LAN URL and a QR code to scan. (The default
   address is loopback-only, so it prints the `--addr` hint instead.)
@@ -397,8 +401,14 @@ cleanup: rm -rf .live                                 # last, after the programs
   page; meanwhile every page is a **getting ready** page that shows each step
   (waiting, running, ✓, ✗) and opens the talk once they are done. A failed step
   is shown there and in the terminal; si then runs `stop:` and `cleanup:` and
-  exits 1. `si build` never runs them (a built deck is a file); `si check`
-  checks each line and the pin of each source. A web demo script (§27) has its
+  exits 1. `si build` does not run them (a built deck is a file), except
+  to film the deck's `[TERM …]` / `[BROWSER …]` cues (§11): `si build
+  talk.md --mp4` of a deck with cues runs `setup:` and `start:` (in order,
+  with their waits) before it films, so the cues show the live system, then
+  `stop:`, the programs' end and `cleanup:` (always, a failure too), as
+  `si play` would; `--no-live` films without them. A course build filming a
+  stale `kind=video` deck does the same (`--no-live` and `--trust` pass on).
+  `si check` checks each line and the pin of each source. A web demo script (§27) has its
   own meaning for these keys.
 - **The programs.** The play terminal drawer's shells have `$SI_RUN_LOGS`, the
   folder of the programs' logs (`tail -f $SI_RUN_LOGS/broker.log`); the

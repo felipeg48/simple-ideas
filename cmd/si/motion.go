@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -298,21 +299,32 @@ func filmActs(c *cdp.Client, dur float64, dir, tag string, acts []viewAct) ([]vi
 
 // playForFilm serves a deck with si play's drawer and browser windows on a
 // loopback port of its own, for filming its [TERM …] / [BROWSER …] cues; it
-// returns the deck's URL and a stop that ends its shells.
-func playForFilm(src string, o *options) (string, func(), error) {
+// returns the deck's URL and a stop that ends its shells. Unless --no-live,
+// the deck's setup: and start: run first, as si play runs them, and stop
+// runs its stop:, the programs and cleanup: too.
+func playForFilm(src string, o *options, log io.Writer) (string, func(), error) {
+	down := func() {}
+	if !o.noLive {
+		var err error
+		if down, err = liveStage(src, o, log); err != nil {
+			return "", nil, err
+		}
+	}
 	srv, err := serve.New(src, o.css, o.theme, o.conf)
 	if err != nil {
+		down()
 		return "", nil, err
 	}
 	srv.Terminal = true
 	srv.CleanPrompt = true // filmed: si's neutral prompt, not the presenter's
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
+		down()
 		return "", nil, err
 	}
 	hs := &http.Server{Handler: srv.Handler()}
 	go hs.Serve(ln)
-	stop := func() { srv.CloseTerminals(); hs.Close() }
+	stop := func() { srv.CloseTerminals(); hs.Close(); down() }
 	return "http://" + ln.Addr().String() + "/" + strings.TrimSuffix(filepath.Base(src), filepath.Ext(src)) + ".html", stop, nil
 }
 

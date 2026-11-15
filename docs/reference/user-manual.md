@@ -347,7 +347,8 @@ A talk that shows something live can set it up itself: front matter
 `stop:` and `cleanup:`, each repeatable, in the order written. `si play` and
 `si serve` run them before the first page (a **getting ready** page shows each
 step), keep the programs running while you present, and stop and clean up
-when they quit; `si build` never runs them. A talk can also come from a repo
+when they quit; `si build` runs them only to film the talk's `[TERM …]` /
+`[BROWSER …]` cues (`si build talk.md --mp4`, `--no-live` to skip). A talk can also come from a repo
 or a URL: `si play github:acme/talks@v2.1/orders/talk.md`, asked once per pin
 (`--trust` for CI). Example: `examples/live/talk.md`.
 
@@ -560,7 +561,7 @@ Say: Let's see it in action.
 - `embed-terminal "Name"`: the play drawer's shell tab, by name; `· split right`; `embed-terminal min|max|close`
 - `embed-browser "Name"`: a `browser:` link (or a URL) in a window over the slides; `· at`, `· size`, `· zoom`
 - `slide 4`, `next`, `prev`; inside the window: `… in embed-browser "Name"`
-- Or in the deck's own `Notes:`: `[TERM Lab 1: make up]` and `[BROWSER Console]`, filmed by `si build --mp4 --voice` (not with `--dissolve`: stills have no drawer, and si build says so)
+- Or in the deck's own `Notes:`: `[TERM Lab 1: make up]` and `[BROWSER Console · at 560,40 · size 1010x640 · zoom 125%]` (`[BROWSER Console: http://…/#/queues]` moves that window), filmed by `si build --mp4 --voice` with the deck's `setup:` / `start:` run first (not with `--dissolve`: stills have no drawer, and si build says so)
 
 Notes: (1 min)
 For a course, the best minute is often the one where the slide comes alive.

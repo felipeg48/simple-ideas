@@ -93,6 +93,8 @@ Usage:
         --mp4 [--dwell 3] also films each deck to <name>.mp4 (1080p): every slide and build
         step, held for its share of (N min) or --dwell seconds, and the transitions and
         canvas morphs as they move (--dissolve: stills dissolving into each other);
+        a deck with [TERM …] / [BROWSER …] cues is filmed on si play's page, its setup: and
+        start: run first and stop: / cleanup: after, as si play runs them (--no-live: not run);
         --narration <dir|latest>: a recording from the teleprompter's Record button paces
         each view as you spoke it, with your voice; --voice <engine[:name]> narrates it
         from the Notes: instead (kokoro:af_heart, system; needs ffmpeg)
@@ -425,6 +427,7 @@ type options struct {
 	canonical, baseURL                           string     // si publish
 	yes, copy, public, mp4                       bool       // si publish --yes/--copy/--public; --mp4
 	dissolve                                     bool       // --mp4 --dissolve: stills that dissolve, not the filmed motion
+	noLive                                       bool       // --mp4 --no-live: film a deck's cues without running its setup:/start:
 	narration                                    string     // --mp4 --narration <dir|latest>: the teleprompter's recording paces and voices the video
 	port                                         int        // si publish login linkedin: the loopback redirect port
 	qrEC, qrLogo, qrStyle, qrFG, qrBG, qrName    string     // si qr
@@ -503,6 +506,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.mp4, "mp4", false, "")
 	fl.StringVar(&o.narration, "narration", "", "")
 	fl.BoolVar(&o.dissolve, "dissolve", false, "")
+	fl.BoolVar(&o.noLive, "no-live", false, "")
 	fl.BoolVar(&o.budget, "budget", false, "")
 	fl.BoolVar(&o.review, "review", false, "")
 	fl.StringVar(&o.reviewAddr, "review-addr", "", "")
@@ -1071,7 +1075,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 				film, stop := dest, func() {}
 				if hasActs(d) { // [TERM …] / [BROWSER …] in Notes: filmed on si play's own page
 					var perr error
-					if film, stop, perr = playForFilm(d.Path, o); perr != nil {
+					if film, stop, perr = playForFilm(d.Path, o, stdout); perr != nil {
 						film, stop = dest, func() {}
 						fmt.Fprintf(stderr, "si: %s: %v; the [TERM …] / [BROWSER …] cues are not filmed\n", d.Name, perr)
 					}
@@ -2040,7 +2044,7 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 	}
 	ro := render.Options{UserCSS: css, Media: mode, Theme: o.theme, Config: cfg, SharedAssets: o.share || o.noInline || g.IsCourse(), Instructor: o.instructor}
 	if g.IsCourse() {
-		filmStale(g, !o.noFilm, o.voice, cfg, stdout, stderr)
+		filmStale(g, !o.noFilm, o.voice, filmFlags(o), cfg, stdout, stderr)
 		if fresh, err := deck.LoadGuide(g.Dir); err == nil {
 			g = fresh // the new videos' lengths
 		}

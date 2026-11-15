@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/pinned"
@@ -209,6 +210,38 @@ func runStages(stages []*webdemo.Script, g *readyGate, stdout io.Writer, fail fu
 				sts[i].Down()
 			}
 		})
+	}
+}
+
+// liveStage runs a filmed deck's setup: and start: lines as si play does
+// (si build --mp4 of a deck with [TERM …] / [BROWSER …] cues), and waits
+// for them: the film shows the live system they set up. The returned func
+// runs stop:, stops the programs and runs cleanup:; on a failure they have
+// run already.
+func liveStage(src string, o *options, log io.Writer) (func(), error) {
+	stages, err := deckStages(src, func() *pinned.Client { return newFetcher(o.trust, log) })
+	if err != nil || len(stages) == 0 {
+		return func() {}, err
+	}
+	g := newGate(nil, stages)
+	fmt.Fprintf(log, "  getting ready to film: %d step(s) of setup: / start: (--no-live skips them)\n", len(g.steps))
+	failed := make(chan struct{})
+	down := runStages(stages, g, log, func() { close(failed) })
+	for {
+		g.mu.Lock()
+		open := g.open
+		g.mu.Unlock()
+		if open {
+			return down, nil
+		}
+		select {
+		case <-failed:
+			down()
+			g.mu.Lock()
+			defer g.mu.Unlock()
+			return nil, fmt.Errorf("getting ready failed: %s", g.fail)
+		case <-time.After(100 * time.Millisecond):
+		}
 	}
 }
 

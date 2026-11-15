@@ -20,10 +20,10 @@ import (
 // the script. A failure is a warning: the lesson then says it is not filmed.
 // Deck lessons shown as their video (kind=video) go through deckLesson.
 // film is false with --no-film: no video is made, the PDFs still are.
-func filmStale(g *deck.Guide, film bool, voice string, cfg *config.Config, stdout, stderr io.Writer) {
+func filmStale(g *deck.Guide, film bool, voice string, flags []string, cfg *config.Config, stdout, stderr io.Writer) {
 	for _, it := range g.Lessons() {
 		if it.Deck != "" {
-			deckLesson(it, film, voice, cfg, stdout, stderr)
+			deckLesson(it, film, voice, flags, cfg, stdout, stderr)
 			continue
 		}
 		if it.Script == "" || !film {
@@ -50,7 +50,8 @@ func filmStale(g *deck.Guide, film bool, voice string, cfg *config.Config, stdou
 // <deck>.pdf (· pdf) and <deck>.handout.pdf
 // (· handout), all from one si build of the deck.
 // ponytail: only the deck file's own time counts, not its includes'.
-func deckLesson(it *deck.NavItem, film bool, voice string, cfg *config.Config, stdout, stderr io.Writer) {
+// flags go to that si build as they are (--no-live, --trust).
+func deckLesson(it *deck.NavItem, film bool, voice string, flags []string, cfg *config.Config, stdout, stderr io.Writer) {
 	src, err := os.Stat(it.Deck)
 	if err != nil {
 		return
@@ -69,7 +70,7 @@ func deckLesson(it *deck.NavItem, film bool, voice string, cfg *config.Config, s
 				}
 			}
 		}
-		args = append(args, "--mp4", "--voice", voice)
+		args = append(append(args, "--mp4", "--voice", voice), flags...)
 		moves = append(moves, [2]string{name + ".mp4", it.Video}, [2]string{name + ".vtt", base + ".vtt"}, [2]string{name + ".poster.jpg", render.PosterOf(it.Video)})
 	}
 	if it.PDF && stale(pdf) {
@@ -102,6 +103,20 @@ func deckLesson(it *deck.NavItem, film bool, voice string, cfg *config.Config, s
 			os.Remove(m[1]) // a silent video: older captions would not fit it
 		}
 	}
+}
+
+// filmFlags are the course build's flags a deck lesson's filming keeps: a
+// stale kind=video deck with cues runs its setup: and start: as si play does
+// unless --no-live; --trust answers for its pinned sources.
+func filmFlags(o *options) []string {
+	var out []string
+	if o.noLive {
+		out = append(out, "--no-live")
+	}
+	if o.trust {
+		out = append(out, "--trust")
+	}
+	return out
 }
 
 // zipDir writes every file under dir into the zip file dest (paths inside

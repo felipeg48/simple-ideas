@@ -409,7 +409,7 @@ func (r *runner) startResult(p *Program) StepResult {
 // Stage is a deck's own setup: si play and si serve run its setup: and
 // start: lines (in the order written) before the talk, keep its programs
 // running while they serve, and run stop:, stop the programs and run
-// cleanup: when they quit. si build never runs them.
+// cleanup: when they quit. si build runs them only to film a deck's cues.
 type Stage struct {
 	r *runner
 }
