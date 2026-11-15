@@ -1,6 +1,7 @@
 ---
 title: Orders wait in a queue
 browser: Console=http://127.0.0.1:7421/broker.html
+shell: clean
 ---
 
 # Orders wait in a queue
@@ -21,7 +22,8 @@ Notes: (1 min)
 The shop puts each order in the queue and moves on. The warehouse takes them
 at its own pace, and nothing is lost while it catches up. Let's see it in
 action. [TERM Lab 1 · opacity 85%: echo "sending 3 orders" && sleep 1 && echo "sent 3 orders to the queue"]
-Three orders go out from the terminal. [BROWSER Console] And here is the
+Three orders go out from the terminal, [TERM Warehouse · split right · typing slow: echo "the warehouse takes 1 order"]
+and the warehouse takes the first one when it is ready. [BROWSER Console] And here is the
 broker's console: the queue is holding them. [TERM close] [BROWSER close] [CLICK]
 
 Points:

@@ -167,6 +167,10 @@ func TestPlayAPIContract(t *testing.T) {
 	// the cues of a Notes: script
 	eval(`siPlay.act([{tool:"term",name:"Cue",cmd:"echo from-a-cue"},{tool:"browser",name:"Console"}])`)
 	until(`siPlay.terminal.output("Cue").indexOf("from-a-cue")>=0&&siPlay.browser.names().length===1`, "act")
+	// [TERM Lab 1 · split down · max · typing fast: echo split-cue] (a tab already open: a test page keeps few connections)
+	eval(`siPlay.act([{tool:"term",name:"Lab 1",split:"down",state:"max",typing:20,cmd:"echo split-cue"}])`)
+	until(`siPlay.terminal.output("Lab 1").indexOf("split-cue")>=0&&!!document.querySelector(".is-max")`, "act with split, max and typing")
+	eval(`siPlay.terminal.state("restore")`)
 }
 
 // TestEmbedSteps runs a web demo on si play's drawer, a browser window over

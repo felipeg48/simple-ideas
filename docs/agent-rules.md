@@ -140,7 +140,8 @@ speaker's voice, addressed to the audience.
   takes the open window to another page instead of opening a second one.
   `[TERM Name · opacity 80%]` (40 % to 100 %) lets the slide show through
   the drawer while the commands run (si.conf `terminal.opacity: 85%` sets
-  the default).
+  the default); `· split right|down`, `· max|min` and `· typing
+  slow|fast` after the name split the drawer, size it and pace the typing.
 
 **`Points:` is the Speaker Notes tab.** It holds the main points of the
 topic, as short bullets the speaker glances at to talk freely instead of

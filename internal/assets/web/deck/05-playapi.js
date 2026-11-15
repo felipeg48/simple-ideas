@@ -47,8 +47,13 @@
           return p.then(function () {
             if (a.tool === 'term') {
               if (a.opacity) siPlay.terminal.opacity(a.opacity);
-              if (a.state) return siPlay.terminal.state(a.state);
-              return siPlay.terminal.open(a.name).then(function () { if (a.cmd) return siPlay.terminal.run(a.name, a.cmd, { typing: 45 }); });
+              if (a.state && !a.name) return siPlay.terminal.state(a.state);
+              /* · split right|down, then · max|min, then the command (· typing slow|fast: ms per character) */
+              return siPlay.terminal.open(a.name, { split: a.split }).then(function () {
+                return a.state && siPlay.terminal.state(a.state);
+              }).then(function () {
+                if (a.cmd) return siPlay.terminal.run(a.name, a.cmd, { typing: a.typing || 45 });
+              });
             }
             if (a.tool === 'browser') {
               if (a.state) return siPlay.browser.close();

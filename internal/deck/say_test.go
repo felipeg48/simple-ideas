@@ -120,8 +120,11 @@ func TestParseAct(t *testing.T) {
 		{" Ops · opacity 80%", "Ops||80", ""},
 		{" Ops · opacity 75%: curl -s http://x/a·b", "Ops|curl -s http://x/a·b|75", ""},
 		{" min · opacity 60%", "|min|60", ""},
+		{" Lab 1 · split down · max · typing slow: ls -l", "Lab 1|ls -lmax|0|down|90", ""},
+		{" Lab 2 · split right · typing fast · min", "Lab 2|min|0|right|20", ""},
 		{" Ops · opacity 20%", "", "40% to 100%"},
-		{" Ops · split right", "", "· opacity N%"},
+		{" Ops · split sideways", "", "split right|down"},
+		{" Ops · typing medium", "", "typing slow|fast"},
 	} {
 		a, err := ParseAct("TERM", tc.body)
 		if tc.err != "" {
@@ -130,7 +133,7 @@ func TestParseAct(t *testing.T) {
 			}
 			continue
 		}
-		if got := fmt.Sprintf("%s|%s%s|%d", a.Name, a.Cmd, a.State, a.Opacity); err != nil || got != tc.want {
+		if got := fmt.Sprintf("%s|%s%s|%d%s", a.Name, a.Cmd, a.State, a.Opacity, map[bool]string{true: fmt.Sprintf("|%s|%d", a.Split, a.Typing)}[a.Split != "" || a.Typing > 0]); err != nil || got != tc.want {
 			t.Errorf("TERM%q = %q, %v; want %q", tc.body, got, err, tc.want)
 		}
 	}

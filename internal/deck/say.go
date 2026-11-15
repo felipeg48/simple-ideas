@@ -36,8 +36,15 @@ type Act struct {
 	URL   string             `json:"url,omitempty"`   // BROWSER Name: URL: the page the window Name goes to
 	Place map[string]float64 `json:"o,omitempty"`     // BROWSER: x, y, w, h (CSS pixels), zoom (1.25 = 125 %), as siPlay.browser.open takes them
 	// TERM … · opacity N%: the drawer's opacity (40-100), as siPlay.terminal.opacity takes it
-	Opacity int `json:"opacity,omitempty"`
+	Opacity int    `json:"opacity,omitempty"`
+	Split   string `json:"split,omitempty"`  // TERM … · split right|down: the tab opens beside (or under) the one in front
+	Typing  int    `json:"typing,omitempty"` // TERM … · typing slow|fast: ms per character (0: the default, 45)
 }
+
+// termTyping is · typing slow|fast, in ms per character (the default is 45).
+var termTyping = map[string]int{"slow": 90, "fast": 20}
+
+const termCueForm = "[TERM Lab 1 · split right · max · opacity 80% · typing slow: command]"
 
 // ActCueRE finds the presenter-tool cues in a Notes: script.
 // ponytail: a cue ends at the first ], so a command holding ] cannot be cued.
@@ -117,10 +124,18 @@ func ParseAct(tool, body string) (Act, error) {
 		if actZoomRE.MatchString(v) {
 			fmt.Sscan(strings.TrimSuffix(v, "%"), &n)
 		}
-		if k != "opacity" || n < 40 || n > 100 {
-			return a, fmt.Errorf("[TERM %s]: %q: the drawer takes · opacity N%% (40%% to 100%%): [TERM Lab 1 · opacity 80%%]", body, strings.TrimSpace(c))
+		switch {
+		case k == "opacity" && n >= 40 && n <= 100:
+			a.Opacity = n
+		case k == "split" && (v == "right" || v == "down"):
+			a.Split = v
+		case (k == "max" || k == "min") && v == "":
+			a.State = k
+		case k == "typing" && termTyping[v] > 0:
+			a.Typing = termTyping[v]
+		default:
+			return a, fmt.Errorf("[TERM %s]: %q: a tab takes · split right|down · max|min · opacity N%% (40%% to 100%%) · typing slow|fast: %s", body, strings.TrimSpace(c), termCueForm)
 		}
-		a.Opacity = n
 	}
 	a.Name, a.Cmd = strings.TrimSpace(name), strings.TrimSpace(cmd)
 	switch {
