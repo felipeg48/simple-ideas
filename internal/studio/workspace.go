@@ -84,6 +84,7 @@ type Node struct {
 	Path     string `json:"path"`
 	Kind     string `json:"kind"`
 	Guide    string `json:"guide,omitempty"` // a folder holding a guide, book or site: which one
+	Look     string `json:"look,omitempty"`  // the icon when it is not the kind's: timeline, infographic
 	Children []Node `json:"children,omitempty"`
 }
 
@@ -162,6 +163,9 @@ func (w *Workspace) walk(dir string, inc map[string]bool, gs guides) ([]Node, er
 		if node.Kind == "deck" {
 			if d, g, err := gs.parsePage(filepath.Join(dir, n), w.Root); err == nil {
 				node.Kind = pageKind(d, g)
+				if t := d.Meta.Type; t == "timeline" || t == "infographic" {
+					node.Look = t
+				}
 			}
 		} else if isNavFile(n) {
 			node.Kind = "nav"

@@ -103,3 +103,24 @@ func TestTreeKindLab(t *testing.T) {
 		t.Errorf("kinds = %v", got)
 	}
 }
+
+// TestTreeLook: timelines and infographics keep their kind (a landscape one
+// is slides) and say which icon the tree shows.
+func TestTreeLook(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "story.md"), []byte("---\ntype: timeline\n---\n# Our story\n\n## 2020\n\n- Start\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "numbers.md"), []byte("---\ntype: infographic\n---\n# In numbers\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "talk.md"), []byte("# T\n"), 0o644)
+	w, _ := OpenWorkspace(dir)
+	root, err := w.Tree()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]string{}
+	for _, c := range root.Children {
+		got[c.Name] = c.Look
+	}
+	if got["story.md"] != "timeline" || got["numbers.md"] != "infographic" || got["talk.md"] != "" {
+		t.Errorf("looks = %v", got)
+	}
+}

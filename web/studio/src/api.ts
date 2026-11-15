@@ -3,7 +3,7 @@
 export type Kind = "dir" | "deck" | "lab" | "article" | "guide" | "book" | "demo" | "site" | "page" | "mindmap" | "nav"
   | "markdown" | "svg" | "css" | "json" | "image" | "other";
 /** guide marks a folder that holds a guide, book or site. */
-export interface Node { name: string; path: string; kind: Kind; guide?: "guide" | "book" | "site"; children?: Node[] }
+export interface Node { name: string; path: string; kind: Kind; guide?: "guide" | "book" | "site"; look?: "timeline" | "infographic"; children?: Node[] }
 export interface FileData { path: string; content: string; etag: string }
 /** A deck, document page, or a guide / book / site (its _nav.md or _site.md); url is its live page. */
 export interface DeckInfo { path: string; title: string; files: string[]; runbook?: string; kind: Kind; url: string; guide?: string }

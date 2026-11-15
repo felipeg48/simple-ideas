@@ -2,10 +2,10 @@
 // server writes a small starter for that type and never overwrites.
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Kind } from "./api";
-import { Icon } from "./navigator";
+import { Icon, type IconName } from "./navigator";
 
 // kind is a starter kind (the server's StarterKinds); icon defaults to it
-export const starterKinds: { kind: string; icon?: Kind; label: string; what: string; folder?: boolean }[] = [
+export const starterKinds: { kind: string; icon?: IconName; label: string; what: string; folder?: boolean }[] = [
   { kind: "deck", label: "Slides", what: "A talk: slides, notes for the teleprompter" },
   { kind: "article", label: "Article", what: "One long read with a lede and contents" },
   { kind: "guide", label: "Guide", what: "A folder of pages in order, with a sidebar", folder: true },
@@ -19,8 +19,8 @@ export const starterKinds: { kind: string; icon?: Kind; label: string; what: str
   { kind: "lab", label: "Lab", what: "Hands-on steps with commands and output" },
   { kind: "demo", label: "Demo script", what: "What the presenter says and runs, live" },
   { kind: "mindmap", label: "Mind map", what: "Topics that branch out, and maps that open into maps" },
-  { kind: "timeline", icon: "deck", label: "Timeline", what: "Eras and dated milestones with pictures, on one 16:9 frame" },
-  { kind: "infographic", icon: "deck", label: "Infographic", what: "One page of numbers, charts and steps in a grid of blocks" },
+  { kind: "timeline", icon: "timeline", label: "Timeline", what: "Eras and dated milestones with pictures, on one 16:9 frame" },
+  { kind: "infographic", icon: "infographic", label: "Infographic", what: "One page of numbers, charts and steps in a grid of blocks" },
 ];
 
 /** slug turns a name into a file or folder name: "Our Q3 Plan" → "our-q3-plan". */
