@@ -59,6 +59,11 @@ func (h *termHub) resolve(p string) string {
 			p = home + p[1:]
 		}
 	}
+	// On Windows "/x" or "\x" is rooted but not absolute: it means the root of
+	// the served folder's drive, never a path inside the served folder.
+	if !filepath.IsAbs(p) && (strings.HasPrefix(p, "/") || strings.HasPrefix(p, `\`)) {
+		p = filepath.VolumeName(h.dir) + p
+	}
 	if !filepath.IsAbs(p) {
 		p = filepath.Join(h.dir, p)
 	}
@@ -464,7 +469,8 @@ func (h *termHub) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p := h.resolve(req.Path)
-	if strings.TrimSpace(req.Path) == "" || filepath.Dir(p) == p {
+	// never a drive or file-system root, nor the served folder itself
+	if strings.TrimSpace(req.Path) == "" || filepath.Dir(p) == p || p == filepath.Clean(h.dir) {
 		http.Error(w, "refusing to delete "+p, http.StatusBadRequest)
 		return
 	}

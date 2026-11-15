@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -272,7 +273,7 @@ func TestTerminalFilesSave(t *testing.T) {
 	if b, _ := os.ReadFile(c.Path); string(b) != "# Talk\n\nmore\n" {
 		t.Fatalf("saved text: %q", b)
 	}
-	if st, _ := os.Stat(c.Path); st.Mode().Perm() != 0o600 {
+	if st, _ := os.Stat(c.Path); runtime.GOOS != "windows" && st.Mode().Perm() != 0o600 { // Windows has no Unix modes
 		t.Fatalf("mode not kept: %v", st.Mode())
 	}
 	var saved struct{ Mtime string }
@@ -664,5 +665,27 @@ func TestTerminalCleanPrompt(t *testing.T) {
 				t.Errorf("the home folder shows: %q", out)
 			}
 		})
+	}
+}
+
+// TestTerminalDeleteRefusesServedFolder: neither the served folder itself nor
+// a root (on Windows "/" is rooted, not absolute) can be deleted.
+func TestTerminalDeleteRefusesServedFolder(t *testing.T) {
+	dir := t.TempDir()
+	h := newTermHub(dir)
+	if got := h.resolve("/"); filepath.Dir(got) != got {
+		t.Fatalf(`"/" resolves to %q, not a root`, got)
+	}
+	for _, p := range []string{"/", ".", dir} {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("POST", "/_si/term/api/delete", strings.NewReader(`{"path":`+strconv.Quote(p)+`}`))
+		r.Header.Set("Content-Type", "application/json")
+		h.delete(w, r)
+		if w.Code != 400 {
+			t.Fatalf("delete %q: %d, want 400", p, w.Code)
+		}
+	}
+	if _, err := os.Stat(dir); err != nil {
+		t.Fatalf("served folder gone: %v", err)
 	}
 }
