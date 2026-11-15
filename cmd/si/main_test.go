@@ -430,6 +430,35 @@ func TestMindmap3DExport(t *testing.T) {
 	}
 }
 
+// TestMindmap3DExportPerMap: a 3D page of several maps writes the combined
+// view and one picture of each map alone, <name>-<map id>.png.
+func TestMindmap3DExportPerMap(t *testing.T) {
+	if findChrome() == "" || testing.Short() {
+		t.Skip("needs Chrome")
+	}
+	dir := t.TempDir()
+	md := filepath.Join(dir, "plan.md")
+	os.WriteFile(md, []byte("---\ntype: mindmap\ntitle: Launch\nview: 3d\n---\n# Launch\n\n- Plan\n  - Budget\n- Refunds → #refunds\n\n# Refunds\n\n- Ask\n- Approve\n- Pay back\n"), 0o644)
+	var out, errb strings.Builder
+	if code := run([]string{"build", md, "--png", "--scale", "1", "-o", filepath.Join(dir, "out")}, &out, &errb); code != 0 {
+		t.Fatalf("build: %d %s %s", code, out.String(), errb.String())
+	}
+	pics := map[string][]byte{}
+	for _, n := range []string{"plan.png", "plan-launch.png", "plan-refunds.png"} {
+		b, err := os.ReadFile(filepath.Join(dir, "out", n))
+		if err != nil {
+			t.Fatalf("%s: %v\n%s", n, err, out.String())
+		}
+		if cfg, err := png.DecodeConfig(bytes.NewReader(b)); err != nil || cfg.Width != 1600 || cfg.Height != 1000 {
+			t.Errorf("%s: %dx%d %v", n, cfg.Width, cfg.Height, err)
+		}
+		pics[n] = b
+	}
+	if bytes.Equal(pics["plan-launch.png"], pics["plan-refunds.png"]) {
+		t.Error("the two maps' pictures are the same")
+	}
+}
+
 func TestCheckBudget(t *testing.T) {
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, "talk.md"), []byte("# Talk\n\n---\n\n## One\n\nText.\n"), 0o644)

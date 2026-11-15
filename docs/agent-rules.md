@@ -331,7 +331,8 @@ Not everything is a slide deck. Pick the type by what the reader does:
   fence: `layout= lines= nodes= theme= flow=`). On a slide, ```` ```mindmap steps ````
   reveals one first-level branch per click: write one `[CLICK]` per branch in
   `Notes:`. Exports: `si build map.md --svg --png --pdf` (a `view: 3d` map:
-  PNG and PDF of the 3D view; 3D has no SVG, `--svg` writes the 2D map); other tools:
+  PNG and PDF of the 3D view, plus `map-<id>.png` per map on a page of several;
+  3D has no SVG, `--svg` writes the 2D map); other tools:
   `si mindmap import file.opml|.mm|.xmind|.mmd`, `si mindmap export map.md --to
   opml|freemind|xmind|xmind8|mermaid` (`xmind8`: the legacy XMind 8 file). The Studio edits maps visually (Map view);
   the Markdown it writes is the same you would write by hand.

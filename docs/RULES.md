@@ -2944,7 +2944,9 @@ the PDF also has the linked maps, and a `map ›` topic there jumps to its page.
 A `view: 3d` page exports its 3D view instead: `--png` writes `map.png`, the
 first map with its floors at the default camera, in the page's kind, camera
 and theme (1600 × 1000 at `--scale`, up to 4×), rendered by Chrome's software
-WebGL; `--pdf` writes `pdfs/map.pdf`, one page of that picture. The 3D view has
+WebGL. A page of several maps also gets one picture of each map alone, no
+floors: `map-<id>.png` (`map-launch.png`, `map-refunds.png`).
+`--pdf` writes `pdfs/map.pdf`, one page of the first picture. The 3D view has
 no SVG: it is raster only, so `--svg` on a 3D page writes the 2D maps
 (`map-<id>.svg`) and says so.
 

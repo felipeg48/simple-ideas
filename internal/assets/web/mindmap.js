@@ -700,17 +700,21 @@
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(play); else play();
     }
     /* #si-play3d-K: view K of a 3D map's Play, still, for si build --mp4;
-       #si-shot3d: the 3D view at its default camera, no chrome, for --png / --pdf */
-    var p3 = /^#si-(?:play3d-(\d+)|shot3d)$/.exec(location.hash);
+       #si-shot3d: the 3D view at its default camera, no chrome, for --png / --pdf;
+       #si-shot3d-<map id>: that map alone (no floors), for its own --png */
+    var p3 = /^#si-(?:play3d-(\d+)|shot3d(?:-(.+))?)$/.exec(location.hash);
     if (p3 && first) {
       var still = function () {
-        var d3 = first.siMindmap.is3d && first.siMindmap.d3, pre = document.createElement('pre');
+        var mm = first.siMindmap, d3 = mm.is3d && mm.d3, pre = document.createElement('pre');
         pre.hidden = true;
         if (!d3) { pre.id = 'si-export-error'; pre.textContent = 'no 3D view'; document.body.appendChild(pre); return; }
         first.querySelectorAll(p3[1] ? '.si-mm-tools' : '.si-mm-tools, .si-mm-crumbs').forEach(function (t) { t.style.display = 'none'; });
-        d3.tour = { k: 0 };
-        d3.tourGo(+(p3[1] || 0));
+        var one = p3[2] && decodeURIComponent(p3[2]);
+        if (one && mm.maps[one]) { d3.floors = false; d3.st.map = one; d3.rebuild(false); d3.fit(0); }
+        else { d3.tour = { k: 0 }; d3.tourGo(+(p3[1] || 0)); }
         pre.id = p3[1] ? 'si-play3d' : 'si-shot3d'; pre.textContent = String(d3.steps().length);
+        /* the page's own maps, for one picture each */
+        pre.setAttribute('data-maps', [].concat(mm.order || Object.keys(mm.maps)).slice(0, mm.own || 1).join(' '));
         document.body.appendChild(pre);
       };
       (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { setTimeout(still, 300); });

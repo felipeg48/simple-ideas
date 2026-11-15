@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html"
 	"io"
+	neturl "net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -116,7 +117,20 @@ func exportMindmap(chrome, htmlPath, out, name string, svg, png, pdf bool, scale
 	return filepath.ToSlash(rel), nil
 }
 
-var shot3DRE = regexp.MustCompile(`<pre[^>]*id="si-shot3d"`)
+var (
+	shot3DRE     = regexp.MustCompile(`<pre[^>]*id="si-shot3d"`)
+	shot3DMapsRE = regexp.MustCompile(`<pre[^>]*id="si-shot3d"[^>]*data-maps="([^"]*)"`)
+)
+
+// shot3DMaps are the page's own maps a #si-shot3d page lists (data-maps),
+// in order: one --png picture each when there are several.
+func shot3DMaps(dom []byte) []string {
+	m := shot3DMapsRE.FindSubmatch(dom)
+	if m == nil {
+		return nil
+	}
+	return strings.Fields(html.UnescapeString(string(m[1])))
+}
 
 // exportMindmap3D writes <name>.png (the 3D view of the first map, with its
 // floors, at the default camera; Chrome's software WebGL) and
@@ -157,6 +171,17 @@ func exportMindmap3D(chrome, htmlPath, out, name string, png, pdf bool, scale fl
 	}
 	if png {
 		fmt.Fprintf(stdout, "  %-28s (png, 3D view, %d × %d)\n", name+".png", int(w*scale), int(h*scale))
+		// a page of several maps: each alone too, <name>-<map id>.png
+		if ids := shot3DMaps(dom); len(ids) > 1 {
+			for _, id := range ids {
+				base := name + "-" + id
+				p, _ := filepath.Abs(filepath.Join(out, base+".png"))
+				if msg, err := run(fmt.Sprintf("--force-device-scale-factor=%g", scale), "--screenshot="+p, url+"-"+neturl.PathEscape(id)); err != nil {
+					return "", fmt.Errorf("png %s: %v %s", base, err, strings.TrimSpace(string(msg)))
+				}
+				fmt.Fprintf(stdout, "  %-28s (png, 3D view of map %s, %d × %d)\n", base+".png", id, int(w*scale), int(h*scale))
+			}
+		}
 	}
 	if !pdf {
 		return "", nil
