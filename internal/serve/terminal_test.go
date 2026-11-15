@@ -714,6 +714,36 @@ func TestTerminalCleanPrompt(t *testing.T) {
 	}
 }
 
+// TestTerminalDeckShell: a deck's shell: picks the drawer's shell and its
+// clean prompt for the tabs its page opens; another page keeps the default.
+func TestTerminalDeckShell(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("sh is a Unix shell")
+	}
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "talk.md"), []byte("---\ntitle: T\nshell: sh · clean\n---\n# A\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "plain.md"), []byte("# B\n"), 0o644)
+	s, err := New(dir, nil, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("SHELL", "/bin/zsh-not-here")
+	for ref, want := range map[string]string{"http://127.0.0.1:1/talk.html": "sh true", "http://127.0.0.1:1/plain.html": "zsh-not-here false", "": "zsh-not-here false"} {
+		r := httptest.NewRequest("POST", "/_si/term/api/new", nil)
+		r.Header.Set("Referer", ref)
+		sh, clean := s.term.shellFor(r)
+		if got := fmt.Sprint(filepath.Base(sh), " ", clean); got != want {
+			t.Errorf("%q: %s, want %s", ref, got, want)
+		}
+	}
+	for v, want := range map[string]string{"zsh": "zsh false", "clean": " true", "bash · clean": "bash true", "clean /bin/zsh": "/bin/zsh true", "": " false"} {
+		sh, clean := webdemo.SplitShell(v)
+		if got := fmt.Sprint(sh, " ", clean); got != want {
+			t.Errorf("SplitShell(%q) = %q, want %q", v, got, want)
+		}
+	}
+}
+
 // TestTerminalDeleteRefusesServedFolder: neither the served folder itself nor
 // a root (on Windows "/" is rooted, not absolute) can be deleted.
 func TestTerminalDeleteRefusesServedFolder(t *testing.T) {

@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -86,6 +87,21 @@ func New(root string, css []string, theme, conf string) (*Server, error) {
 	s.term.quiet = s.quietly
 	s.term.clean = func() bool {
 		return s.CleanPrompt || config.Load(s.Conf, filepath.Join(s.dir, "si.conf")).TermPrompt == "clean"
+	}
+	s.term.deckShell = func(r *http.Request) string { // the page that opens the tab names its deck
+		u, err := url.Parse(r.Referer())
+		if err != nil {
+			return ""
+		}
+		md := s.source(strings.TrimSuffix(path.Clean("/"+u.Path), ".html"))
+		if md == "" {
+			return ""
+		}
+		d, err := deck.Parse(md)
+		if err != nil {
+			return ""
+		}
+		return d.Meta.Shell
 	}
 	s.relay = newRelay()
 	s.polls = newPolls()

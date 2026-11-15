@@ -78,6 +78,20 @@ unset m
 	return nil
 }
 
+// SplitShell reads a shell: value: a shell (a name on PATH or a path) and
+// the word clean (si's neutral prompt), in any order, apart by spaces or ·:
+// `zsh`, `clean`, `bash · clean`.
+func SplitShell(v string) (shell string, clean bool) {
+	for _, w := range strings.Fields(strings.ReplaceAll(v, "·", " ")) {
+		if strings.EqualFold(w, "clean") {
+			clean = true
+		} else if shell == "" {
+			shell = w
+		}
+	}
+	return shell, clean
+}
+
 // CleanShell is the shell (shell:, else DefaultShell) in dir with si's
 // neutral prompt (the folder's name and $) and none of the user's rc files:
 // what the si play drawer runs when it is filmed, so no account name, host

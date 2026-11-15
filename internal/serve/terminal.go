@@ -14,6 +14,7 @@ package serve
 import (
 	"bytes"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -71,24 +72,44 @@ type termHub struct {
 	tabs map[string]*termSession
 	// quiet runs a Viewer save so the live-reload watcher does not see it: a
 	// reload would close the drawer, its shells and the editor.
-	quiet   func(write func())
-	idle    time.Duration // detached shells are closed after this
-	janitor sync.Once
-	lines   map[string]lineCount // Follow's line counts, per file (files.go lineAt)
-	clean   func() bool          // start shells with si's neutral prompt (Server.CleanPrompt)
+	quiet     func(write func())
+	idle      time.Duration // detached shells are closed after this
+	janitor   sync.Once
+	lines     map[string]lineCount         // Follow's line counts, per file (files.go lineAt)
+	clean     func() bool                  // start shells with si's neutral prompt (Server.CleanPrompt)
+	deckShell func(r *http.Request) string // the shell: of the deck the request comes from ("" = none)
 }
 
 func newTermHub(dir string) *termHub {
 	return &termHub{dir: dir, tabs: map[string]*termSession{}, quiet: func(f func()) { f() }, idle: termIdle}
 }
 
+// shellFor is the shell a new tab runs: the deck's shell: (a name on PATH or
+// a path; one not found falls back, logged) else DefaultShell, and whether
+// that shell: asks for si's clean prompt.
+func (h *termHub) shellFor(r *http.Request) (shell string, clean bool) {
+	shell = webdemo.DefaultShell()
+	if h.deckShell == nil {
+		return shell, false
+	}
+	name, clean := webdemo.SplitShell(h.deckShell(r))
+	if name != "" {
+		if p, err := exec.LookPath(name); err == nil {
+			shell = p
+		} else {
+			log.Printf("si play: shell: %s: %v; the drawer runs %s", name, err, shell)
+		}
+	}
+	return shell, clean
+}
+
 // newTab starts a shell in a fresh PTY and returns its tab id.
 func (h *termHub) newTab(w http.ResponseWriter, r *http.Request) {
-	shell := webdemo.DefaultShell()
+	shell, clean := h.shellFor(r)
 	cmd, rcDone := exec.Command(shell), func() {}
 	cmd.Dir = h.dir
 	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
-	if h.clean != nil && h.clean() { // filmed: no account, host or cloud context in the prompt
+	if clean || h.clean != nil && h.clean() { // filmed: no account, host or cloud context in the prompt
 		c, done, err := webdemo.CleanShell(shell, h.dir)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

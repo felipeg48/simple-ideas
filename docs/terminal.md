@@ -93,6 +93,11 @@ wrapper on Windows (`CreatePseudoConsole`, a process created with
   off. The real prompt can
   show an email, a host or a cloud account; a live talk keeps it unless asked
   (`TestTerminalCleanPrompt`).
+- **A deck picks its shell.** `shell:` in a deck's front matter (`zsh`, a path,
+  `clean`, `bash · clean`; `webdemo.SplitShell`) sets the shell and the clean
+  prompt of the tabs its page opens: `newTab` reads the deck from the
+  request's `Referer` (`termHub.shellFor`); a shell not found falls back to
+  `$SHELL`, logged (`TestTerminalDeckShell`).
 - Ctrl-C needs no special endpoint: xterm sends `0x03` as input → the PTY delivers
   SIGINT to the foreground process naturally.
 - A tab's shell is killed on close; all shells are killed on `si play` shutdown.

@@ -256,7 +256,8 @@ func (s *Script) warn(line int, format string, a ...any) {
 // settings applies the front matter (line: where to report a bad value).
 func (s *Script) settings(fm map[string]string, line func(string) int) {
 	s.Title, s.App, s.Voice, s.Viewport, s.Style = fm["title"], fm["app"], fm["voice"], fm["viewport"], fm["voice-style"]
-	s.Shell, s.With = fm["shell"], fm["with"]
+	s.Shell, _ = SplitShell(fm["shell"]) // a demo's shells are always clean
+	s.With = fm["with"]
 	s.Region, s.Zoom = regionValue(fm["region"])
 	if v := fm["transition"]; v != "" {
 		if t, err := ParseTransition(v); err != nil {
