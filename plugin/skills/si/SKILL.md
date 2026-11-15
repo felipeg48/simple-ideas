@@ -165,7 +165,8 @@ speaker's voice, addressed to the audience.
   takes the open window to another page instead of opening a second one.
   `[TERM Name · opacity 80%]` (40 % to 100 %) lets the slide show through
   the drawer while the commands run (si.conf `terminal.opacity: 85%` sets
-  the default).
+  the default); `· split right|down`, `· max|min` and `· typing
+  slow|fast` after the name split the drawer, size it and pace the typing.
 
 **`Points:` is the Speaker Notes tab.** It holds the main points of the
 topic, as short bullets the speaker glances at to talk freely instead of
@@ -232,7 +233,7 @@ Not everything is a slide deck. Pick the type by what the reader does:
 | show code changing, step by step, in a window | a code show | fences with `window=mac` and the same `id=`, one per step, `<!-- callout: LINE text -->` after a fence |
 | explore a topic and how its parts connect | a mind map | `type: mindmap`, a `# Title`, then a nested list of topics; or a ```` ```mindmap ```` fence on a slide or in a document; `view: 3d` (or `view=3d`) for pills on a floor with linked maps as floors above; `kind: bricks` (studded bricks) or `kind: toy` (cartoon island) for other 3D looks |
 | take in a story's numbers at a glance (a report, a class, one slide) | an infographic | `type: infographic`, `title:`, `subtitle:`, `orientation: landscape` (a 16:9 slide, `Notes:` after the last block, `steps: on` for a block per click) or `portrait` (a tall poster); each `## heading · kind` is a block: `stat` (the number is the heading), `compare` and `chart=bar\|donut\|line\|progress` (from a Markdown table of numbers; a line chart places years and dates at their real value), `steps`, `quote`, `icons`, `image`, `sources`; `wide`, `tall`, `accent` for the grid; or an ```` ```infographic ```` fence on a slide; text shrinks to fit a block down to 60% (`si check` warns past that: shorten the block); `si build x.md --png --pdf --svg` |
-| show a system or a process moving (a request's path, a message through a broker) as a GIF or video for social posts | an animated infographic | `type: infographic`, `animate: build` (once) or `loop`, `duration: 12s`, `aspect: phone\|story\|portrait\|square\|landscape\|1080x1350`; a `## The path · flow` block of paths (`Client -> API -[SQL]-> Database`, one per line, an arrow back is fine); per block `· enter=fade\|rise\|grow\|count · at=3s`; `si build x.md --gif --mp4 --png` (`--size phone,square` for several); look at frames of the GIF, not only the page |
+| show a system or a process moving (a request's path, a message through a broker) as a GIF or video for social posts | an animated infographic | `type: infographic`, `animate: build` (once) or `loop`, `duration: 12s`, `aspect: phone\|story\|portrait\|square\|landscape\|1080x1350`; a `## The path · flow` block of paths (`Client -> API -[SQL]-> Database`, one per line, an arrow back is fine; icons `[user] Client`, `[db] Orders`; `· dir=lr\|tb`); per block `· enter=fade\|rise\|grow\|count · at=3s`; `si build x.md --gif --mp4 --png` (`--size phone,square` for several); look at frames of the GIF, not only the page |
 
 - **Guides:** write `_nav.md` first (front matter for the guide-wide
   settings, then a nested list: `- [Title](page.md)` pages, plain items as
@@ -355,7 +356,8 @@ Not everything is a slide deck. Pick the type by what the reader does:
   fence: `layout= lines= nodes= theme= flow=`). On a slide, ```` ```mindmap steps ````
   reveals one first-level branch per click: write one `[CLICK]` per branch in
   `Notes:`. Exports: `si build map.md --svg --png --pdf` (a `view: 3d` map:
-  PNG and PDF of the 3D view; 3D has no SVG, `--svg` writes the 2D map); other tools:
+  PNG and PDF of the 3D view, plus `map-<id>.png` per map on a page of several;
+  3D has no SVG, `--svg` writes the 2D map); other tools:
   `si mindmap import file.opml|.mm|.xmind|.mmd`, `si mindmap export map.md --to
   opml|freemind|xmind|xmind8|mermaid` (`xmind8`: the legacy XMind 8 file). The Studio edits maps visually (Map view);
   the Markdown it writes is the same you would write by hand.

@@ -138,6 +138,9 @@
 
 - **Play terminal** (`` ` ``, backtick): a drawer of real shells on your machine
   for live demos — play-only and loopback-only, never shipped in a built deck.
+  `shell:` in the front matter picks its shell: `shell: zsh` (a name on `PATH`
+  or a path), `shell: clean` (si's neutral prompt, the folder's name and `$`,
+  no rc files, as when filmed), or both, `shell: bash · clean`.
   Full reference: `docs/terminal.md`.
 
 - **Runbook** (front matter `runbook: runbook.json`): a command cheat-sheet in a
@@ -190,7 +193,11 @@
   `window.open` and GET forms are caught, since a page cannot replace
   `location`'s methods). A form that POSTs to another site (a login page)
   arrives there with its fields, in every browser: si sends it on through
-  that site's proxy. Type the address in the box when a page still leaves.
+  that site's proxy. A page's own `fetch` and `XMLHttpRequest` calls to
+  another site (an API on another port) go through the page's proxy too, so
+  they get their answers whatever that site's CORS rules; they carry no
+  cookies there and bring none back. Type the address in the box when a page
+  still leaves.
   Keys typed in a window never drive the deck.
 
   ```markdown

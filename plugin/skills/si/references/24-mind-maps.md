@@ -351,7 +351,9 @@ the PDF also has the linked maps, and a `map ›` topic there jumps to its page.
 A `view: 3d` page exports its 3D view instead: `--png` writes `map.png`, the
 first map with its floors at the default camera, in the page's kind, camera
 and theme (1600 × 1000 at `--scale`, up to 4×), rendered by Chrome's software
-WebGL; `--pdf` writes `pdfs/map.pdf`, one page of that picture. The 3D view has
+WebGL. A page of several maps also gets one picture of each map alone, no
+floors: `map-<id>.png` (`map-launch.png`, `map-refunds.png`).
+`--pdf` writes `pdfs/map.pdf`, one page of the first picture. The 3D view has
 no SVG: it is raster only, so `--svg` on a 3D page writes the 2D maps
 (`map-<id>.svg`) and says so.
 
@@ -384,7 +386,8 @@ file (a zip of `content.xml` in the xmind-2.0 namespace, `meta.xml` and
 `META-INF/manifest.xml`) for XMind 8 and the tools that read only it: badges
 become labels, web links and `→ #id` links to another map (the central topic
 of that sheet) become topic links, and a code topic becomes a note on its
-parent; importing it back gives the badges and map links again. Pictures,
+parent (plain text, and HTML paragraphs in monospace that XMind 8 shows
+formatted); importing it back gives the badges and map links again. Pictures,
 sticky-note looks and the other formats' missing pieces stay in si.
 Import never overwrites a file.
 

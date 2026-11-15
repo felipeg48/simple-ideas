@@ -676,6 +676,9 @@ files: seed.sh · sha256 9f2a…, brand/logo.png · sha256 41c0…
 ---
 ```
 
+A JSON script lists them as `"files"`, one string or a list of them:
+`"files": ["seed.sh · sha256 9f2a…", "brand/logo.png · sha256 41c0…"]`.
+
 ```bash
 si demo test github:acme/shop@v2.0/demos/ --trust --junit junit.xml   # CI
 ```

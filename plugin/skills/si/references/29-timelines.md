@@ -125,7 +125,9 @@ a document it is `vertical` unless `layout=` says otherwise.
   like the PNG. The pages are pictures of the timeline (the text is not
   selectable). A portrait poster's `--pdf` is the printed page. `--svg`
   writes `timeline.svg`: the same frame as a vector picture, its text as
-  real text, its pictures inside it and the theme's colours resolved (soft
-  background glows and shadows are left out). All need Chrome.
+  real text, its pictures inside it and the theme's colours resolved, its
+  background glows as SVG gradients and its shadows as blurred SVG filters,
+  and the web fonts its text uses embedded (whole files, as data URIs; an
+  animated infographic is taken finished). All need Chrome.
 - `si new history --type timeline` writes an example timeline with its
   pictures; `si --export example --type timeline` the same.

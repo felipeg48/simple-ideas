@@ -34,9 +34,13 @@ Points: What to cover, not a script
   docker compose up -d]` opens the terminal drawer on the shell tab `Lab 1`
   (created when missing, raised when it is there) and runs the command;
   `[TERM Lab 1]` only opens the tab; `[TERM min]`, `[TERM max]` and
-  `[TERM close]` set the drawer; `· opacity N%` after the name (40 % to
-  100 %) sets its opacity too: `[TERM Lab 1 · opacity 80%: make up]`, the
-  slide showing through. `[BROWSER RabbitMQ]` opens the deck's
+  `[TERM close]` set the drawer. Options after the name, each after a `·`:
+  `· split right` (or `down`) opens a new tab beside (or under) the one in
+  front, `· max` or `· min` sets the drawer once the tab is open,
+  `· opacity N%` (40 % to 100 %) its opacity (the slide showing through),
+  `· typing slow` or `· typing fast` how fast the command is typed (90 or
+  20 ms a character; 45 by default): `[TERM Lab 2 · split right · typing
+  slow: make up]`, `[TERM Lab 1 · max · opacity 80%: docker compose logs -f]`. `[BROWSER RabbitMQ]` opens the deck's
   `browser:` link named `RabbitMQ` (or a URL) in a window over the slides;
   after the name, `· at X,Y` (CSS pixels from the top left), `· size WxH`
   and `· zoom N%` (30 % to 300 %) place, size and zoom it, as a web demo's
@@ -51,7 +55,9 @@ Points: What to cover, not a script
   aloud: the teleprompter (and `si play --terminal --notes`) shows each as a
   badge with its text, auto-play in
   `si play` acts on them as it reaches them, and `si build talk.md --mp4
-  --voice` films them at that point of the narration (the deck then plays on
+  --voice` films them at that point of the narration (without `--voice`,
+  where the words before them would end read at auto-play's pace, 150 words
+  a minute, fitted into the step's time; the deck then plays on
   `si play`'s page, the drawer and the windows in the video; the deck's
   `setup:` and `start:` run first, §14). They are no
   advance: they do not count as `[CLICK]` cues. `si check` reports a

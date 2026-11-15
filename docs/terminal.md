@@ -288,8 +288,11 @@ are PowerShell under ConPTY (`shell: cmd` on pipes), as for one terminal.
 ## The public API: `window.siPlay` (v1, issue #13)
 
 Web demos (`embed-terminal`, `embed-browser`, `slide N`, RULES §27), a
-deck's `Notes:` cues (`[TERM Name: command]`, `[BROWSER Name]`, §11, played
-by auto-play and filmed by `si build --mp4 --voice`) and tests drive the
+deck's `Notes:` cues (`[TERM Name: command]`, with `· split right|down`,
+`· max|min`, `· opacity N%` and `· typing slow|fast` mapped onto `open(name,
+{split})`, `state`, `opacity` and `run(…, {typing: 90|20})`; `[BROWSER Name]`;
+§11, played by auto-play and filmed by `si build --mp4`, at the narration's
+timing with `--voice`, else at the words' reading time) and tests drive the
 drawer, the browser windows and the deck through one object the play page
 defines, never through the markup (`.si-term`, `[data-act=…]`,
 `.si-web-url` are not a contract and may change). Where it lives:
