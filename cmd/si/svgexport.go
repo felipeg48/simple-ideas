@@ -98,6 +98,8 @@ func pageRun(chrome, url string, w, h int, tall bool, js string) (json.RawMessag
 	if _, err := c.OpenPage("", w, h); err != nil {
 		return nil, err
 	}
+	// reduced motion: an animated infographic is shown finished, as in print
+	c.Call("Emulation.setEmulatedMedia", map[string]any{"features": []map[string]string{{"name": "prefers-reduced-motion", "value": "reduce"}}}, nil)
 	if err := c.Call("Page.navigate", map[string]any{"url": url}, nil); err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/xml"
 	"io"
 	"os"
@@ -51,6 +52,53 @@ func TestFrameSVG(t *testing.T) {
 	}
 	if !strings.Contains(got, `0.6!`) || !strings.HasPrefix(got, `"1 `) {
 		t.Errorf("fit: block sizes %s, want the long block at the 0.6 floor, marked, and the stat untouched", got)
+	}
+}
+
+// TestFrameSVGLooks: gradients, box shadows and web fonts reach the SVG: a
+// linear and a radial background as SVG gradients, a shadow as a blurred rect
+// under its box, and the @font-face of the family the text uses (only that
+// one) with its file as a data URI.
+func TestFrameSVGLooks(t *testing.T) {
+	chrome := findChrome()
+	if chrome == "" || testing.Short() {
+		t.Skip("needs Chrome")
+	}
+	font, err := os.ReadFile("../../examples/site/fonts/fraunces-600.woff2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	uri := "data:font/woff2;base64," + base64.StdEncoding.EncodeToString(font)
+	page := filepath.Join(t.TempDir(), "p.html")
+	os.WriteFile(page, []byte(`<!doctype html><style>
+@font-face{font-family:"Fraunces";src:url("`+uri+`") format("woff2");font-weight:600}
+@font-face{font-family:"Unused";src:url("data:font/woff2;base64,AAAA") format("woff2")}
+body{margin:0}
+.f{width:600px;height:400px;padding:20px;box-sizing:border-box;background:linear-gradient(90deg,#ff0000,#0000ff 80%)}
+.c{width:200px;height:100px;border-radius:12px;background:radial-gradient(circle at 25% 50%,rgba(255,255,0,.5),#008000);box-shadow:0 8px 24px rgba(0,0,0,.25);font:600 30px Fraunces,serif}
+</style><div class="f"><div class="c">Hello</div></div>`), 0o644)
+	svg, err := frameSVG(chrome, "file://"+filepath.ToSlash(page), ".f", 800, 600, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		`<linearGradient id="si-g`, `stop-color="rgb(255,0,0)"`, `<stop offset="0.8" stop-color="rgb(0,0,255)"`,
+		`<radialGradient id="si-g`, `stop-color="rgb(255,255,0)" stop-opacity="0.5"`,
+		`<feGaussianBlur stdDeviation="12"/>`, `fill-opacity="0.25" filter="url(#si-s`,
+		`font-family:`, uri[:80], `>Hello</text>`,
+	} {
+		if !strings.Contains(svg, want) {
+			t.Errorf("svg lacks %q", want)
+		}
+	}
+	if strings.Contains(svg, "Unused") {
+		t.Error("a font the text does not use went in")
+	}
+	if strings.Index(svg, `filter="url(#si-s`) > strings.LastIndex(svg, `fill="url(#si-g`) {
+		t.Error("the shadow is drawn over its box")
+	}
+	if err := xml.NewDecoder(strings.NewReader(svg)).Decode(new(struct{})); err != nil {
+		t.Errorf("not well-formed: %v", err)
 	}
 }
 

@@ -108,12 +108,14 @@ Usage:
         mind map pages: every map as <name>-<id>.svg / .png (2D, theme and watermark
         baked in), pdfs/<name>.pdf with one page per map (map › links work), and
         <name>.mp4: the first map's Play as video, in 3D when the page is view: 3d
-        (--mp4 needs ffmpeg); a view: 3d page: --png is <name>.png and --pdf a one-page
+        (--mp4 needs ffmpeg); a view: 3d page: --png is <name>.png (and <name>-<id>.png per
+        map when it has several) and --pdf a one-page
         pdfs/<name>.pdf of the 3D view (software WebGL, default camera, --scale up to 4);
         no SVG of the 3D view (raster only): --svg writes the 2D maps
   si [build] <timeline.md|infographic.md> [--png [--scale 2]] [--pdf] [--svg]
         timelines and infographics: <name>.png, pdfs/<name>.pdf (a timeline: paged and
-        -compact) and <name>.svg, the frame as a vector picture with real text
+        -compact) and <name>.svg, the frame as a vector picture with real text,
+        gradients, shadows and the web fonts it uses
   si [build] <infographic.md> [--gif] [--mp4] [--fps 15] [--scale S] [--size phone,square,...]
         an animated infographic (animate: build|loop): <name>.gif (720 px wide, loops for
         loop, plays once for build) and <name>.mp4 (full size; needs ffmpeg); --size films
