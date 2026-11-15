@@ -38,6 +38,7 @@
   // session). One SCO for the course (--scorm=single): scorm.html holds the
   // session and this page only reports through it. No API: the web.
   var lms = null, single = false;
+  var B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'; // packed suspend data, below
   (function () {
     function look(w) {
       for (var n = 0; w && n < 12; n++) {
@@ -51,7 +52,7 @@
     if (!api) return;
     try {
       if (!single && String(api.LMSInitialize('')) !== 'true' && String(api.LMSGetLastError()) !== '101') return;
-      var sd = JSON.parse(api.LMSGetValue('cmi.suspend_data') || 'null');
+      var sd = unpack(JSON.parse(api.LMSGetValue('cmi.suspend_data') || 'null'));
       if (sd && typeof sd === 'object') { // the LMS's copy joins this browser's: another device, a cleared cache
         (sd.d || []).forEach(function (p) { st.done[p] = 1; });
         for (var p in sd.s || {}) st.scores[p] = Math.max(st.scores[p] || 0, sd.s[p]);
@@ -63,11 +64,49 @@
       root.setAttribute('data-scorm', single ? 'course' : 'lesson');
     } catch (e) { lms = null; }
   })();
+  // SCORM 1.2 keeps 4096 characters of suspend data. The plain form
+  // ({d: pages done, s: scores, l: last page}) when it fits, else a packed
+  // one: lessons by their place in the menu (done as a bit string, 6 to a
+  // character), with a hash of the menu so a republished course with other
+  // lessons ignores it rather than ticking the wrong ones. Still too long:
+  // nothing is sent and the progress stays in this browser. (B64 is set
+  // above the LMS lookup, which unpacks.)
+  function menuPages() { return Array.prototype.map.call(lessons(), function (a) { return a.getAttribute('data-page'); }); }
+  function hash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36); }
+  function pack() {
+    var plain = JSON.stringify({ d: Object.keys(st.done), s: st.scores, l: st.last });
+    if (plain.length <= 4096) return plain;
+    var ps = menuPages(), at = {}, d = '', s = [];
+    ps.forEach(function (p, i) { at[p] = i; });
+    for (var i = 0; i < ps.length; i += 6) {
+      var v = 0;
+      for (var j = 0; j < 6 && i + j < ps.length; j++) if (st.done[ps[i + j]]) v |= 1 << j;
+      d += B64.charAt(v);
+    }
+    for (var p in st.scores) if (at[p] !== undefined) s.push(at[p].toString(36) + ':' + st.scores[p]);
+    var packed = JSON.stringify({ v: 2, h: hash(ps.join('\n')), d: d, s: s.join(','), l: at[st.last] !== undefined ? at[st.last] : -1 });
+    return packed.length <= 4096 ? packed : null;
+  }
+  function unpack(sd) {
+    if (!sd || sd.v !== 2) return sd;
+    var ps = menuPages();
+    if (sd.h !== hash(ps.join('\n'))) return null; // another lesson list: its places mean other lessons
+    var out = { d: [], s: {}, l: ps[sd.l] || '' };
+    for (var i = 0; i < ps.length; i++) {
+      var c = B64.indexOf(String(sd.d || '').charAt(Math.floor(i / 6)));
+      if (c > 0 && c & (1 << (i % 6))) out.d.push(ps[i]);
+    }
+    String(sd.s || '').split(',').forEach(function (kv) {
+      var k = kv.split(':'), p = ps[parseInt(k[0], 36)];
+      if (p && k.length === 2) out.s[p] = Number(k[1]);
+    });
+    return out;
+  }
   function report() {
     if (!lms) return;
     try {
-      var data = JSON.stringify({ d: Object.keys(st.done), s: st.scores, l: st.last });
-      if (data.length <= 4096) lms.LMSSetValue('cmi.suspend_data', data); // ponytail: SCORM 1.2's limit; a bigger course keeps the rest in this browser only
+      var data = pack();
+      if (data !== null) lms.LMSSetValue('cmi.suspend_data', data);
       var status, score;
       if (single) {
         var all = Array.prototype.every.call(lessons(), function (a) { return !a.hasAttribute('data-count') || st.done[a.getAttribute('data-page')]; });

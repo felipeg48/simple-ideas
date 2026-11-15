@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/felipeg48/simple-ideas/internal/deck"
+	"github.com/felipeg48/simple-ideas/internal/render"
 )
 
 // MP4 exports (si code --mp4, si build map.md --mp4): headless Chrome renders
@@ -325,7 +326,11 @@ func deckPoster(chrome, htmlPath, video, still string) error {
 	if img, err := readPNG(p); err == nil && nearlyUniform(img) && ffmpegPoster(video, still) {
 		return nil
 	}
-	return pngToJPEG(p, still)
+	if err := pngToJPEG(p, still); err != nil {
+		return err
+	}
+	render.StampPoster(still, video) // remade when the video changes (no video yet: no stamp)
+	return nil
 }
 
 // nearlyUniform reports whether a picture is (almost) only its background:
@@ -398,6 +403,7 @@ func ffmpegPoster(video, still string) bool {
 		os.Remove(tmp)
 		if exec.Command(ff, "-y", "-loglevel", "error", "-ss", at, "-i", video, "-frames:v", "1", "-q:v", "3", tmp).Run() == nil {
 			if st, err := os.Stat(tmp); err == nil && st.Size() > 0 {
+				render.StampPoster(tmp, video) // the video's fingerprint: remade when it changes
 				return os.Rename(tmp, still) == nil
 			}
 		}

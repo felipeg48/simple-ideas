@@ -1,11 +1,15 @@
 package render
 
 import (
+	"bytes"
+	"image"
+	"image/jpeg"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
@@ -107,6 +111,38 @@ func TestCourseBuild(t *testing.T) {
 	}
 }
 
+// TestCourseNumbered: nav: … numbered numbers lessons within their module
+// (1.1, 1.2) in the menu and on the next-lesson card; without it, none.
+func TestCourseNumbered(t *testing.T) {
+	g, err := deck.LoadGuide(filepath.Join("testdata", "course"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	read := func() string {
+		pages, _, _ := RenderGuide(g, Options{})
+		for _, p := range pages {
+			if p.Rel == "m1/read.html" {
+				return string(p.Result.HTML)
+			}
+		}
+		t.Fatal("no m1/read.html")
+		return ""
+	}
+	if strings.Contains(read(), `<span class="si-course-lt">1.1 `) {
+		t.Error("no numbered: no lesson numbers")
+	}
+	g.Meta.Nav = "left numbered"
+	page := read()
+	for _, want := range []string{`<span class="si-course-lt">1.1 `, `<span class="si-course-lt">1.2 `} {
+		if !strings.Contains(page, want) {
+			t.Errorf("menu lacks %q", want)
+		}
+	}
+	if !regexp.MustCompile(`<a rel="next" href="[^"]*"><small>[^<]*</small>1\.2 `).MatchString(page) {
+		t.Error("the next-lesson card carries 1.2")
+	}
+}
+
 // TestCourseWebhookConfig: a course with webhook: gets window.SI_WEBHOOK
 // and webhook.js before course.js; the relay keeps the address and the auth
 // off the page; webhook: relay in a static build sends nothing.
@@ -183,6 +219,35 @@ func TestVideoPoster(t *testing.T) {
 	}
 	if body(""); made != 1 {
 		t.Error("a still made once is kept")
+	}
+	// a still si made carries its video's fingerprint: a new video remakes it,
+	// the same one (whatever its mtime) does not; an unstamped still is kept
+	still := PosterOf(clip)
+	var jb bytes.Buffer
+	jpeg.Encode(&jb, image.NewGray(image.Rect(0, 0, 2, 2)), nil)
+	MakePoster = func(video, still string) bool {
+		made++
+		return os.WriteFile(still, jb.Bytes(), 0o644) == nil && StampPoster(still, video) == nil
+	}
+	os.WriteFile(still, jb.Bytes(), 0o644)
+	if body(""); made != 1 {
+		t.Error("a still without a fingerprint (made by hand) is kept")
+	}
+	StampPoster(still, clip)
+	if posterStamp(still) != VideoStamp(clip) {
+		t.Fatalf("stamp: %q", posterStamp(still))
+	}
+	sb, _ := os.ReadFile(still)
+	if _, err := jpeg.Decode(bytes.NewReader(sb)); err != nil {
+		t.Errorf("a stamped still is still a JPEG: %v", err)
+	}
+	os.Chtimes(clip, time.Now().Add(time.Hour), time.Now().Add(time.Hour))
+	if body(""); made != 1 {
+		t.Error("the same video (newer mtime) keeps its still")
+	}
+	os.WriteFile(clip, []byte("a new take"), 0o644)
+	if body(""); made != 2 || posterStamp(still) != VideoStamp(clip) {
+		t.Errorf("a changed video remakes its still (made %d)", made)
 	}
 	doc := filepath.Join(dir, "m1", "d.md")
 	os.WriteFile(doc, []byte("---\ntype: lab\n---\n# D\n\n![A clip](clip.mp4)\n"), 0o644)

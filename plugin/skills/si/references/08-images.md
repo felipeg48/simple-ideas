@@ -42,8 +42,11 @@ preload="metadata" playsinline src="assets/cluster.mp4" …></video><figcaption>
 A video without a `poster=` still opens on its first frame rather than on
 black: `si build` uses `cluster.poster.jpg` beside the video, and when there is
 none it writes one from the frame at 0.5 s with ffmpeg (skipped quietly
-without ffmpeg). It is made once; delete it to make it again, or give
-`poster=` to choose the picture. `si build talk.md --mp4` writes
+without ffmpeg). The still si writes carries its video's fingerprint (size
+and SHA-256, in a JPEG comment), so it is made again when the video's
+content changes, never because of file times (a git checkout scrambles
+them); a still you put there yourself, without that comment, is kept as it
+is. Give `poster=` to choose the picture. `si build talk.md --mp4` writes
 `talk.poster.jpg` too: the deck's first slide at 1920×1080, at rest (taken
 with reduced motion, so a theme whose slides animate in shows the slide, not
 its empty start; a still that comes out blank gives way to the video's frame

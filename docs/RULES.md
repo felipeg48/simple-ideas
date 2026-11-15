@@ -373,8 +373,11 @@ preload="metadata" playsinline src="assets/cluster.mp4" …></video><figcaption>
 A video without a `poster=` still opens on its first frame rather than on
 black: `si build` uses `cluster.poster.jpg` beside the video, and when there is
 none it writes one from the frame at 0.5 s with ffmpeg (skipped quietly
-without ffmpeg). It is made once; delete it to make it again, or give
-`poster=` to choose the picture. `si build talk.md --mp4` writes
+without ffmpeg). The still si writes carries its video's fingerprint (size
+and SHA-256, in a JPEG comment), so it is made again when the video's
+content changes, never because of file times (a git checkout scrambles
+them); a still you put there yourself, without that comment, is kept as it
+is. Give `poster=` to choose the picture. `si build talk.md --mp4` writes
 `talk.poster.jpg` too: the deck's first slide at 1920×1080, at rest (taken
 with reduced motion, so a theme whose slides animate in shows the slide, not
 its empty start; a still that comes out blank gives way to the video's frame
@@ -4192,6 +4195,9 @@ the deck's narrated video, with the slides to keep:
   films it beside the deck (as `si build exchanges.md --mp4 --voice` would:
   narrated from its `Notes:` with `--voice`, else the deck's or si.conf's
   `voice:`) when it is missing or older than the deck; `--no-film` skips it.
+  The deck's time is the newest of its file and the files its `<!-- include:
+  -->` lines bring in (sections, code), so editing a section re-films it;
+  pictures and canvases it uses do not count (touch the deck to re-film).
   The same build writes `exchanges.vtt` captions from the narration's words and
   timing, which the player shows (`<track kind="captions" default>`, the deck's
   `lang:`, else `en`).
@@ -4246,7 +4252,7 @@ prerequisites=…`) or a lesson (front matter) are shown, not enforced.
 | `accordion` (default) | one module open; opening another closes the rest; the current lesson's module stays open |
 | `collapsed` | every module closed but the current one |
 | `open` | every module open |
-| `numbered` | numbers on guide sections (modules are always numbered) |
+| `numbered` | lessons numbered within their module (`1.1`, `1.2`, `2.1`) in the menu and on the Previous / Next cards (modules are always numbered) |
 
 Each module shows its number, a progress ring and its minutes; each lesson
 its kind (Read, Slides, Video, Lab, Demo, Quiz), its minutes and a done tick.
@@ -4556,7 +4562,11 @@ to it: `LMSInitialize`, `cmi.core.lesson_status` (`incomplete`, then
 `completed`; a quiz `passed` or `failed`), `cmi.core.score.raw` from the
 quizzes (0 to 100; one SCO for the course reports their mean),
 `cmi.suspend_data` with the progress (the done lessons, quiz scores, the last
-lesson; so a learner continues on another device), `LMSCommit` and
+lesson; so a learner continues on another device; SCORM 1.2 keeps 4096
+characters of it, so a course whose progress is longer sends it packed, its
+lessons by their place in the menu with a hash of the menu: a republished
+course with other lessons starts that copy afresh, and progress that does
+not fit even packed stays in the browser), `LMSCommit` and
 `LMSFinish`. A quiz lesson with `pass:` gets that mark as its
 `adlcp:masteryscore`. The package has no network dependencies and still
 works with no LMS (progress in the browser, as on the web). `--scorm` packs
@@ -5021,7 +5031,7 @@ folder's own name. Paths of `html/:zip` are relative to it.
 | `deck`, `lab`, `guide`, `course`, `site`, `article`, `timeline`, `infographic`, `mindmap`, `book`, `demo` | the pages of that type (`type:` in front matter; a folder with `_nav.md`, `_course.md` or `_site.md` for guide, course, site, book). One guide, course, site or book fills its folder; several get a subfolder each |
 | `image`, `animation`, `video` | the pictures (`.png`, `.jpg`, `.webp`), animations (`.svg`, `.gif`, and every SVG canvas also as a file) and videos and sound the pages use. With such a folder, pictures are linked from it, not inlined (as `--no-inline-media`); canvases stay inline in the slides, they must for their states |
 | `kind:format` | a derived file: `deck:pdf`, `deck:mp4`, `deck:handout`, `course:scorm`, `course:pdf` (the workbook), `book:pdf`, `timeline:png` / `pdf` / `svg`, `infographic:png` / `pdf` / `svg`, `mindmap:png` / `pdf` / `svg` / `mp4`. Naming one is the same as its flag (`--pdf`, `--mp4`, `--handout`, `--scorm`, `--png`, `--svg`): the map builds it |
-| `kind:zip` | a bundle: every output of that kind (pages and their derived files) with the pictures and videos they link to, and the built pages they link to (the index, a lab) with their pictures, one level deep, paths as in the project, so the bundle's links work: `<project>-<kind>.zip` |
+| `kind:zip` | a bundle: every output of that kind (pages and their derived files) with the pictures and videos they link to, and the built pages they link to (the index, a lab), then the pages and files those link to, and so on (each once), paths as in the project, so every local link inside the bundle works: `<project>-<kind>.zip` |
 | `folder/:zip` | a bundle: a folder of the map, zipped whole after it is built: `<project>-<folder>.zip` |
 
 A kind listed in two folders is written to both (copies). A derived file the
@@ -5047,6 +5057,15 @@ that uses it). A page links the nearest copy of a file listed twice, so
 
 **The output folder.** The map is laid out in the project folder itself;
 `-o out/` lays it out under `out/` instead.
+
+**From inside the project.** `si build md/intro.md` or `si build md/site`
+(a page, or a guide, course or site folder, in one of the map's folders or
+at the project root) finds the project: the nearest `si.conf` above it with
+a `structure:` block, looking no higher than the top of the git repository
+or your home folder. It then builds the whole project with its map, as `si
+build rabbitmq` does, so the page lands in its kind's folder and its links,
+the index and the bundles stay whole. A page outside the map's folders (a
+`notes/` the map does not name) builds as it always did.
 
 **`si new rabbitmq --structure`** writes `rabbitmq/si.conf` with the map
 above, makes its folders and puts the starter deck in `md/`. Plain `si new

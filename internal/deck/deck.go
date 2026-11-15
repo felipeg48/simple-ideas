@@ -302,6 +302,7 @@ type Deck struct {
 	Problems []Problem
 	Warnings []Problem // non-fatal (e.g. a slide directive in a lab)
 	Timeline *Timeline // a timeline page (type: timeline), parsed
+	Includes []string  // the files <!-- include: --> spliced in (Markdown and code), in order
 }
 
 // Types are the accepted values of the `type` front matter key.
@@ -782,6 +783,7 @@ func (d *Deck) expandIncludes(file string, lines []srcLine, stack []string) []sr
 		if path, opts := splitIncludeValue(val); !isDeckFile(filepath.Base(path)) {
 			// a code file: a fenced code block (lines=, tag=, lang=, title=, hl=, linenos, indent=keep)
 			block, err := codeInclude(filepath.Join(filepath.Dir(l.file), path), opts)
+			d.Includes = append(d.Includes, filepath.Join(filepath.Dir(l.file), path))
 			if err != nil {
 				d.problem(l.file, l.no, "include %s: %v", path, quoteHint(val, err))
 				out = append(out, srcLine{l.file, l.no, ""})
@@ -810,6 +812,7 @@ func (d *Deck) expandIncludes(file string, lines []srcLine, stack []string) []sr
 			out = append(out, srcLine{l.file, l.no, ""})
 			continue
 		}
+		d.Includes = append(d.Includes, target)
 		rawStr := string(raw)
 		if ext := strings.ToLower(filepath.Ext(target)); ext == ".adoc" || ext == ".asciidoc" {
 			rawStr = adocToMarkdown(rawStr) // included AsciiDoc is converted too

@@ -1,9 +1,11 @@
 package render
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"html"
+	"io"
 	"mime"
 	"net/url"
 	"os"
@@ -236,17 +238,91 @@ func PosterOf(video string) string {
 
 // autoPoster is the still of a video file that has none of its own: its
 // <video>.poster.jpg, made from the first frame when it is missing and
-// MakePoster is set; "" when there is none. ponytail: made once, never
-// remade by time (git checkouts scramble mtimes); delete it to remake it.
+// MakePoster is set; "" when there is none. A still si made carries its
+// video's fingerprint (StampPoster) and is remade when the video's content
+// changes (never by time: git checkouts scramble mtimes); a still without
+// one (made by hand, or by an older si) is kept as it is.
 func autoPoster(video string) string {
 	if v, err := os.Stat(video); err != nil || v.IsDir() {
 		return ""
 	}
 	still := PosterOf(video)
-	if _, err := os.Stat(still); err == nil || (MakePoster != nil && MakePoster(video, still)) {
+	if _, err := os.Stat(still); err == nil {
+		if MakePoster != nil {
+			if s := posterStamp(still); s != "" && s != VideoStamp(video) {
+				MakePoster(video, still) // the older still stays if this fails
+			}
+		}
+		return still
+	}
+	if MakePoster != nil && MakePoster(video, still) {
 		return still
 	}
 	return ""
+}
+
+// VideoStamp is a video file's fingerprint: its size and the start of its
+// SHA-256 ("" when it cannot be read).
+func VideoStamp(video string) string {
+	f, err := os.Open(video)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	h := sha256.New()
+	n, err := io.Copy(h, f)
+	if err != nil {
+		return ""
+	}
+	return fmt.Sprintf("si-video %d %x", n, h.Sum(nil)[:8])
+}
+
+// StampPoster writes video's fingerprint into the JPEG still as a comment
+// (COM segment after SOI), replacing an older si one, so a later build
+// knows which video the still was made from.
+func StampPoster(still, video string) error {
+	b, err := os.ReadFile(still)
+	if err != nil {
+		return err
+	}
+	stamp := VideoStamp(video)
+	if len(b) < 2 || b[0] != 0xFF || b[1] != 0xD8 || stamp == "" {
+		return fmt.Errorf("%s: not a JPEG", still)
+	}
+	if i, n := stampSegment(b); i > 0 {
+		b = append(b[:i:i], b[i+n:]...)
+	}
+	seg := []byte{0xFF, 0xFE, byte((len(stamp) + 2) >> 8), byte(len(stamp) + 2)}
+	out := append(append(append([]byte{0xFF, 0xD8}, seg...), stamp...), b[2:]...)
+	return os.WriteFile(still, out, 0o644)
+}
+
+// posterStamp is the video fingerprint si wrote into a still, "" for none.
+func posterStamp(still string) string {
+	b, err := os.ReadFile(still)
+	if err != nil {
+		return ""
+	}
+	if i, n := stampSegment(b); i > 0 {
+		return string(b[i+4 : i+n])
+	}
+	return ""
+}
+
+// stampSegment finds si's COM segment in a JPEG before its image data: its
+// offset and length (marker included), or 0, 0.
+func stampSegment(b []byte) (int, int) {
+	for i := 2; i+4 <= len(b) && b[i] == 0xFF; {
+		m, n := b[i+1], int(b[i+2])<<8|int(b[i+3])
+		if m == 0xDA || n < 2 || i+2+n > len(b) { // image data: no more headers
+			break
+		}
+		if m == 0xFE && strings.HasPrefix(string(b[i+4:i+2+n]), "si-video ") {
+			return i, 2 + n
+		}
+		i += 2 + n
+	}
+	return 0, 0
 }
 
 // isVideo reports whether src names a video file (by its extension).

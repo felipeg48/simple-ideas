@@ -255,7 +255,10 @@ Not everything is a slide deck. Pick the type by what the reader does:
   learners can be its narrated video: `[Title](03/deck.md) · kind=video · pdf`
   (`· handout`, `· slides` too); `si build` films `deck.mp4` with `.vtt`
   captions, a `deck.poster.jpg` still (the first slide; `· poster=cover.jpg` or
-  `· poster=off` to change it) and `deck.pdf` beside the deck when missing or stale. Give each lesson a one-sentence
+  `· poster=off` to change it) and `deck.pdf` beside the deck when missing or
+  older than the deck or any file it includes; commit them so builds never
+  film. In a course, `nav: … numbered` numbers lessons 1.1, 1.2 in each
+  module. Give each lesson a one-sentence
   `description:` and, when the estimate is wrong, `minutes:`. Quizzes: `## `
   questions, `- [x]` right answers, `> Explanation: …`, `pass: 70%`; a
   ```` ```quiz ```` fence works in any lesson. A lab's answer goes between
@@ -299,7 +302,9 @@ Not everything is a slide deck. Pick the type by what the reader does:
   check <project>`: it warns about empty folder bundles, kinds with no folder
   and sources in the wrong folder (a kind bundle with no source yet, such as
   `course:scorm` before the course, is only a note). `deck:zip` carries the
-  pages the decks link to (index, labs). No block: the flat layout.
+  pages the decks link to (index, labs) and what those link to, so every
+  link in the zip works. `si build md/talk.md` (or a guide folder) inside such
+  a project builds the whole project with its map. No block: the flat layout.
 - **Steps:** in a lab or a guide, `## Step 1: Start the stack` shows a
   numbered badge. Put the time and prerequisites in a key/value table at the
   top (`| | |` header, then `| **Time** | 10 minutes |`).

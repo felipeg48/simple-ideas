@@ -139,11 +139,11 @@ func TestExamplesStructure(t *testing.T) {
 		}
 	}
 	zips := map[string]string{
-		"dist/rabbitmq-deck.zip": "html/images/exchange.png html/images/publish.poster.jpg index.html labs/lab-queues.html slides/intro.html videos/publish.mp4", // with the pages the deck links to
+		"dist/rabbitmq-deck.zip": "html/brokers.html html/images/broker.png html/images/exchange.png html/images/publish.poster.jpg html/index.html index.html labs/lab-queues.html slides/intro.html videos/publish.mp4", // with the pages the deck links to, and theirs
 		"dist/rabbitmq-html.zip": "animations/queue.svg brokers.html images/broker.png images/exchange.png images/publish.poster.jpg index.html",
 	}
 	if chrome {
-		zips["dist/rabbitmq-deck.zip"] = "html/images/exchange.png html/images/publish.poster.jpg index.html labs/lab-queues.html slides/intro.html slides/pdf/intro.pdf videos/publish.mp4"
+		zips["dist/rabbitmq-deck.zip"] = "html/brokers.html html/images/broker.png html/images/exchange.png html/images/publish.poster.jpg html/index.html index.html labs/lab-queues.html slides/intro.html slides/pdf/intro.pdf videos/publish.mp4"
 		zips["dist/rabbitmq-html.zip"] = "animations/queue.svg brokers.html images/broker.png images/exchange.png images/publish.poster.jpg index.html pdfs/intro.pdf"
 	}
 	for z, w := range zips {
@@ -160,10 +160,15 @@ func TestExamplesStructure(t *testing.T) {
 		if strings.Join(names, " ") != w {
 			t.Errorf("%s holds %v, want %s", z, names, w)
 		}
-		if z == "dist/rabbitmq-deck.zip" { // every page the deck links to comes along
-			for _, ref := range localRefs(dir, "slides/intro.html") {
-				if !strings.Contains(" "+w+" ", " "+ref+" ") {
-					t.Errorf("%s lacks %s, linked from slides/intro.html", z, ref)
+		if z == "dist/rabbitmq-deck.zip" { // every local link of every zipped page resolves inside the zip
+			for _, n := range names {
+				if !strings.HasSuffix(n, ".html") {
+					continue
+				}
+				for _, ref := range localRefs(dir, n) {
+					if !strings.Contains(" "+w+" ", " "+ref+" ") {
+						t.Errorf("%s lacks %s, linked from %s", z, ref, n)
+					}
 				}
 			}
 		}
@@ -235,6 +240,39 @@ func TestStructureRoute(t *testing.T) {
 		if !strings.Contains(warns, w) {
 			t.Errorf("warnings lack %q:\n%s", w, warns)
 		}
+	}
+}
+
+// TestStructureFromInside: si build of a page or a guide folder inside a
+// project with a structure map builds the project with its map; a page in a
+// folder the map does not name, or outside the project, builds as before.
+func TestStructureFromInside(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "p")
+	os.MkdirAll(filepath.Join(dir, "md", "guide"), 0o755)
+	os.MkdirAll(filepath.Join(dir, "notes"), 0o755)
+	os.WriteFile(filepath.Join(dir, "si.conf"), []byte("structure:\n  md/ markdown\n  slides/ deck\n  docs/ guide\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "md", "talk.md"), []byte("# Talk\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "md", "guide", "_nav.md"), []byte("---\ntitle: G\n---\n\n- [One](one.md)\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "md", "guide", "one.md"), []byte("---\ntype: guide\n---\n# One\n\nText.\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "notes", "n.md"), []byte("# Note\n"), 0o644)
+	for _, src := range []string{filepath.Join(dir, "md", "talk.md"), filepath.Join(dir, "md", "guide")} {
+		os.RemoveAll(filepath.Join(dir, "slides"))
+		os.RemoveAll(filepath.Join(dir, "docs"))
+		var stdout, stderr bytes.Buffer
+		if code := run([]string{"build", src}, &stdout, &stderr); code != 0 {
+			t.Fatalf("build %s: %d %s", src, code, stderr.String())
+		}
+		for _, f := range []string{"slides/talk.html", "docs/one.html"} {
+			if _, err := os.Stat(filepath.Join(dir, f)); err != nil {
+				t.Errorf("si build %s: the map puts %s", src, f)
+			}
+		}
+	}
+	if enclosingProject(filepath.Join(dir, "notes", "n.md"), &options{}) != "" {
+		t.Error("notes/ is not in the map: not a source of the project")
+	}
+	if enclosingProject(dir, &options{}) != "" {
+		t.Error("nothing above the project")
 	}
 }
 

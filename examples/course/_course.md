@@ -25,4 +25,5 @@ prerequisites: a text editor and a web browser
 - Module 3: Styling with CSS
   - [Selectors and the cascade](03-css/cascade.md)
   - [Style your page](03-css/style-lab.md)
+  - [The whole page, in one minute](03-css/recap.md) · kind=video · pdf · slides
   - [Final check](03-css/final-quiz.md)

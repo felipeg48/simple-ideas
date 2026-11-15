@@ -1,0 +1,21 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:03.712
+Before the final check, here is everything
+from this course in one minute.
+
+00:00:04.312 --> 00:00:08.528
+HTML says what each part of the
+page is. CSS says how it looks.
+
+00:00:08.528 --> 00:00:14.083
+And when several rules match the same
+element, the cascade picks the one that wins.
+
+00:00:14.683 --> 00:00:19.843
+The browser does the rest. It reads your
+file, builds the page and draws it, every
+
+00:00:19.843 --> 00:00:22.235
+single time. Now take the final check.
+

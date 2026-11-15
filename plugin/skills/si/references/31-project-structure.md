@@ -45,7 +45,7 @@ folder's own name. Paths of `html/:zip` are relative to it.
 | `deck`, `lab`, `guide`, `course`, `site`, `article`, `timeline`, `infographic`, `mindmap`, `book`, `demo` | the pages of that type (`type:` in front matter; a folder with `_nav.md`, `_course.md` or `_site.md` for guide, course, site, book). One guide, course, site or book fills its folder; several get a subfolder each |
 | `image`, `animation`, `video` | the pictures (`.png`, `.jpg`, `.webp`), animations (`.svg`, `.gif`, and every SVG canvas also as a file) and videos and sound the pages use. With such a folder, pictures are linked from it, not inlined (as `--no-inline-media`); canvases stay inline in the slides, they must for their states |
 | `kind:format` | a derived file: `deck:pdf`, `deck:mp4`, `deck:handout`, `course:scorm`, `course:pdf` (the workbook), `book:pdf`, `timeline:png` / `pdf` / `svg`, `infographic:png` / `pdf` / `svg`, `mindmap:png` / `pdf` / `svg` / `mp4`. Naming one is the same as its flag (`--pdf`, `--mp4`, `--handout`, `--scorm`, `--png`, `--svg`): the map builds it |
-| `kind:zip` | a bundle: every output of that kind (pages and their derived files) with the pictures and videos they link to, and the built pages they link to (the index, a lab) with their pictures, one level deep, paths as in the project, so the bundle's links work: `<project>-<kind>.zip` |
+| `kind:zip` | a bundle: every output of that kind (pages and their derived files) with the pictures and videos they link to, and the built pages they link to (the index, a lab), then the pages and files those link to, and so on (each once), paths as in the project, so every local link inside the bundle works: `<project>-<kind>.zip` |
 | `folder/:zip` | a bundle: a folder of the map, zipped whole after it is built: `<project>-<folder>.zip` |
 
 A kind listed in two folders is written to both (copies). A derived file the
@@ -71,6 +71,15 @@ that uses it). A page links the nearest copy of a file listed twice, so
 
 **The output folder.** The map is laid out in the project folder itself;
 `-o out/` lays it out under `out/` instead.
+
+**From inside the project.** `si build md/intro.md` or `si build md/site`
+(a page, or a guide, course or site folder, in one of the map's folders or
+at the project root) finds the project: the nearest `si.conf` above it with
+a `structure:` block, looking no higher than the top of the git repository
+or your home folder. It then builds the whole project with its map, as `si
+build rabbitmq` does, so the page lands in its kind's folder and its links,
+the index and the bundles stay whole. A page outside the map's folders (a
+`notes/` the map does not name) builds as it always did.
 
 **`si new rabbitmq --structure`** writes `rabbitmq/si.conf` with the map
 above, makes its folders and puts the starter deck in `md/`. Plain `si new

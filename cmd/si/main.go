@@ -808,6 +808,10 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	if st := projectStructure(src, o); st != nil {
 		return buildStructured(src, st, o, stdout, stderr)
 	}
+	if root := enclosingProject(src, o); root != "" { // a page or guide of a mapped project: the project, so every link holds
+		fmt.Fprintf(stdout, "si: %s is part of the project %s (its si.conf has a structure: map): building the project\n", src, root)
+		return buildStructured(root, projectStructure(root, o), o, stdout, stderr)
+	}
 	if g, ok := guideAt(src); ok {
 		out := o.output
 		if out == "" {

@@ -160,8 +160,20 @@ func ringSVG() string {
 	return fmt.Sprintf(`<svg class="si-course-ring" viewBox="0 0 20 20" aria-hidden="true"><circle class="si-course-ring-bg" cx="10" cy="10" r="7"/><circle class="si-course-ring-fg" cx="10" cy="10" r="7" stroke-dasharray="0 %.2f"/></svg>`, c)
 }
 
+// lessonNum is a lesson's number within its module ("1.2 ") when nav: is
+// numbered, else "".
+func lessonNum(g *deck.Guide, file string, numbered bool) string {
+	if !numbered {
+		return ""
+	}
+	if mod, idx, _ := moduleOf(g, file); mod >= 0 {
+		return fmt.Sprintf("%d.%d ", mod+1, idx+1)
+	}
+	return ""
+}
+
 // courseLessonLink is one lesson in the navigator.
-func courseLessonLink(g *deck.Guide, it *deck.NavItem, page string) string {
+func courseLessonLink(g *deck.Guide, it *deck.NavItem, page string, numbered bool) string {
 	cur := ""
 	if it.File == page {
 		cur = ` aria-current="page"`
@@ -171,7 +183,7 @@ func courseLessonLink(g *deck.Guide, it *deck.NavItem, page string) string {
 		count = ` data-count`
 	}
 	return fmt.Sprintf(`<li><a href="%s" data-page="%s" data-kind="%s"%s%s><span class="si-course-kind" data-kind="%s">%s</span><span class="si-course-lt">%s</span><span class="si-course-lm">%s</span><span class="si-course-done" aria-hidden="true"></span></a></li>`,
-		html.EscapeString(pageHref(page, it.File)), html.EscapeString(guideRel(g, it.File)), it.Kind, count, cur, it.Kind, deck.KindLabel[it.Kind], html.EscapeString(it.Title), lessonMin(it.Minutes))
+		html.EscapeString(pageHref(page, it.File)), html.EscapeString(guideRel(g, it.File)), it.Kind, count, cur, it.Kind, deck.KindLabel[it.Kind], html.EscapeString(lessonNum(g, it.File, numbered)+it.Title), lessonMin(it.Minutes))
 }
 
 // courseNav renders the modules and their lessons for page; open is the
@@ -192,7 +204,7 @@ func (dr *deckRenderer) courseNav(g *deck.Guide, page string, open int, nl deck.
 			cls, i+1, isOpen, i+1, ringSVG(), html.EscapeString(deck.ModuleTitle(m.Title)), longMin(deck.ModuleMinutes(m)))
 		for _, it := range m.Children {
 			if it.File != "" {
-				b.WriteString(courseLessonLink(g, it, page))
+				b.WriteString(courseLessonLink(g, it, page, nl.Numbered))
 			}
 		}
 		b.WriteString(`</ul></div>`)
@@ -202,7 +214,7 @@ func (dr *deckRenderer) courseNav(g *deck.Guide, page string, open int, nl deck.
 		b.WriteString(`<ul class="si-course-tabrow">`)
 		for _, it := range g.Items[open].Children {
 			if it.File != "" {
-				b.WriteString(courseLessonLink(g, it, page))
+				b.WriteString(courseLessonLink(g, it, page, nl.Numbered))
 			}
 		}
 		b.WriteString(`</ul>`)
@@ -398,6 +410,7 @@ func (dr *deckRenderer) coursePager(g *deck.Guide, page string) string {
 		}
 	}
 	dr.opt.Prev, dr.opt.Next = DocLink{}, DocLink{}
+	numbered := dr.courseLayout(g).Numbered
 	var b strings.Builder
 	b.WriteString(`<nav class="si-course-next" aria-label="Lessons">`)
 	for _, l := range []struct {
@@ -417,7 +430,7 @@ func (dr *deckRenderer) coursePager(g *deck.Guide, page string) string {
 		if l.it.Minutes > 0 {
 			small += " · " + longMin(l.it.Minutes)
 		}
-		fmt.Fprintf(&b, `<a rel="%s" href="%s"><small>%s</small>%s</a>`, l.rel, html.EscapeString(href), html.EscapeString(small), html.EscapeString(l.it.Title))
+		fmt.Fprintf(&b, `<a rel="%s" href="%s"><small>%s</small>%s</a>`, l.rel, html.EscapeString(href), html.EscapeString(small), html.EscapeString(lessonNum(g, l.it.File, numbered)+l.it.Title))
 	}
 	if next == nil {
 		fmt.Fprintf(&b, `<a rel="next" href="%s"><small>The end</small>Finish the course</a>`, html.EscapeString(pageHref(page, filepath.Join(g.Dir, "complete.md"))))

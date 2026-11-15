@@ -86,6 +86,9 @@ the deck's narrated video, with the slides to keep:
   films it beside the deck (as `si build exchanges.md --mp4 --voice` would:
   narrated from its `Notes:` with `--voice`, else the deck's or si.conf's
   `voice:`) when it is missing or older than the deck; `--no-film` skips it.
+  The deck's time is the newest of its file and the files its `<!-- include:
+  -->` lines bring in (sections, code), so editing a section re-films it;
+  pictures and canvases it uses do not count (touch the deck to re-film).
   The same build writes `exchanges.vtt` captions from the narration's words and
   timing, which the player shows (`<track kind="captions" default>`, the deck's
   `lang:`, else `en`).
@@ -140,7 +143,7 @@ prerequisites=…`) or a lesson (front matter) are shown, not enforced.
 | `accordion` (default) | one module open; opening another closes the rest; the current lesson's module stays open |
 | `collapsed` | every module closed but the current one |
 | `open` | every module open |
-| `numbered` | numbers on guide sections (modules are always numbered) |
+| `numbered` | lessons numbered within their module (`1.1`, `1.2`, `2.1`) in the menu and on the Previous / Next cards (modules are always numbered) |
 
 Each module shows its number, a progress ring and its minutes; each lesson
 its kind (Read, Slides, Video, Lab, Demo, Quiz), its minutes and a done tick.
@@ -450,7 +453,11 @@ to it: `LMSInitialize`, `cmi.core.lesson_status` (`incomplete`, then
 `completed`; a quiz `passed` or `failed`), `cmi.core.score.raw` from the
 quizzes (0 to 100; one SCO for the course reports their mean),
 `cmi.suspend_data` with the progress (the done lessons, quiz scores, the last
-lesson; so a learner continues on another device), `LMSCommit` and
+lesson; so a learner continues on another device; SCORM 1.2 keeps 4096
+characters of it, so a course whose progress is longer sends it packed, its
+lessons by their place in the menu with a hash of the menu: a republished
+course with other lessons starts that copy afresh, and progress that does
+not fit even packed stays in the browser), `LMSCommit` and
 `LMSFinish`. A quiz lesson with `pass:` gets that mark as its
 `adlcp:masteryscore`. The package has no network dependencies and still
 works with no LMS (progress in the browser, as on the web). `--scorm` packs

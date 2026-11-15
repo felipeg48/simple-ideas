@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
@@ -48,15 +49,16 @@ func filmStale(g *deck.Guide, film bool, voice string, flags []string, cfg *conf
 // <deck>.vtt) narrated from its Notes: with the voice (--voice, else the
 // deck's or si.conf's) and its still <deck>.poster.jpg (the first slide),
 // <deck>.pdf (· pdf) and <deck>.handout.pdf
-// (· handout), all from one si build of the deck.
-// ponytail: only the deck file's own time counts, not its includes'.
+// (· handout), all from one si build of the deck. The deck's time is the
+// newest of its file and the files it includes (sections, code).
+// ponytail: pictures and canvases it uses do not count; touch the deck.
 // flags go to that si build as they are (--no-live, --trust).
 func deckLesson(it *deck.NavItem, film bool, voice string, flags []string, cfg *config.Config, stdout, stderr io.Writer) {
-	src, err := os.Stat(it.Deck)
-	if err != nil {
+	if _, err := os.Stat(it.Deck); err != nil {
 		return
 	}
-	stale := func(f string) bool { st, err := os.Stat(f); return err != nil || st.ModTime().Before(src.ModTime()) }
+	changed := deckChanged(it.Deck)
+	stale := func(f string) bool { st, err := os.Stat(f); return err != nil || st.ModTime().Before(changed) }
 	name := strings.TrimSuffix(filepath.Base(it.Deck), filepath.Ext(it.Deck))
 	pdf, handout := render.DeckCompanions(it.Deck)
 	base := strings.TrimSuffix(it.Deck, filepath.Ext(it.Deck))
@@ -103,6 +105,22 @@ func deckLesson(it *deck.NavItem, film bool, voice string, flags []string, cfg *
 			os.Remove(m[1]) // a silent video: older captions would not fit it
 		}
 	}
+}
+
+// deckChanged is the newest modification time of a deck file and of the
+// files its <!-- include: --> lines splice in.
+func deckChanged(file string) time.Time {
+	files := []string{file}
+	if d, _ := deck.Parse(file); d != nil {
+		files = append(files, d.Includes...)
+	}
+	var t time.Time
+	for _, f := range files {
+		if st, err := os.Stat(f); err == nil && st.ModTime().After(t) {
+			t = st.ModTime()
+		}
+	}
+	return t
 }
 
 // filmFlags are the course build's flags a deck lesson's filming keeps: a

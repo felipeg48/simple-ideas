@@ -61,6 +61,43 @@ func projectStructure(src string, o *options) *config.Structure {
 	return config.Load(o.conf, filepath.Join(src, "si.conf")).Structure
 }
 
+// enclosingProject is the project folder whose structure map src (a page, or
+// a folder such as a guide, inside the project) belongs to: the nearest
+// si.conf above src with a structure: block, never past the top of a git
+// repository or the home folder; "" when there is none or src is not one of
+// its sources (in the root itself, or in one of the map's folders at any depth).
+func enclosingProject(src string, o *options) string {
+	if o.staged {
+		return ""
+	}
+	abs, err := filepath.Abs(src)
+	if err != nil {
+		return ""
+	}
+	if _, err := os.Stat(abs); err != nil {
+		return ""
+	}
+	home, _ := os.UserHomeDir()
+	for d := filepath.Dir(abs); ; d = filepath.Dir(d) {
+		if _, err := os.Stat(filepath.Join(d, "si.conf")); err == nil {
+			if st := projectStructure(d, o); st != nil {
+				if filepath.Dir(abs) == d {
+					return d
+				}
+				for _, s := range sourceDirs(d, st) {
+					if r, err := filepath.Rel(s, abs); err == nil && r != "." && !strings.HasPrefix(r, "..") {
+						return d
+					}
+				}
+				return ""
+			}
+		}
+		if _, err := os.Stat(filepath.Join(d, ".git")); err == nil || d == home || filepath.Dir(d) == d {
+			return ""
+		}
+	}
+}
+
 // projectName names the zips: the map's top folder, else the project folder.
 func projectName(src string, st *config.Structure) string {
 	if st.Project != "" {
@@ -573,20 +610,19 @@ func bundle(root, project string, st *config.Structure, items []*item, stdout, s
 				if it.kind != r.Kind || it.format == "zip" || len(it.dests) == 0 {
 					continue
 				}
-				add(it.dests[0])
-				if strings.HasSuffix(it.dests[0], ".html") {
-					// its pictures and videos, and the built pages it links to
-					// (the index, a lab) with theirs: one level, so the bundle's
-					// links work without pulling in the whole project
-					for _, ref := range localRefs(root, it.dests[0]) {
-						add(ref)
-						if strings.HasSuffix(ref, ".html") {
-							for _, r2 := range localRefs(root, ref) {
-								if !strings.HasSuffix(r2, ".html") {
-									add(r2)
-								}
-							}
-						}
+				// its pictures and videos, and the built pages it links to (the
+				// index, a lab) with theirs, page after page: every local link
+				// inside the bundle resolves; seen stops at pages already in
+				todo := []string{it.dests[0]}
+				for len(todo) > 0 {
+					p := todo[0]
+					todo = todo[1:]
+					if seen[p] {
+						continue
+					}
+					add(p)
+					if strings.HasSuffix(p, ".html") {
+						todo = append(todo, localRefs(root, p)...)
 					}
 				}
 			}

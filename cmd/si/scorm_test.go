@@ -270,3 +270,62 @@ f.addEventListener('load', function once() {
 		}
 	}
 }
+
+// TestSCORMSuspendPacked: progress whose plain suspend data is over SCORM
+// 1.2's 4096 characters goes to the LMS packed (lessons by their place in
+// the menu), and a lesson opened later with this browser's copy gone gets
+// its ticks back from the packed data.
+func TestSCORMSuspendPacked(t *testing.T) {
+	needChrome(t)
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "web101")
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"new", src, "--type", "course"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("new: %s", stderr.String())
+	}
+	out := filepath.Join(tmp, "html")
+	if code := run([]string{"build", src, "-o", out, "--scorm", "--no-film"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("build: %s", stderr.String())
+	}
+	big := []string{"01-web/journey.html"} // done earlier, with pages of an older edition: over 4096 characters
+	for i := 0; i < 120; i++ {
+		big = append(big, "old-edition/a-lesson-with-a-long-file-name-"+strings.Repeat("x", 10)+string(rune('a'+i%26))+string(rune('a'+i/26))+".html")
+	}
+	bj, _ := json.Marshal(map[string]any{"d": big, "s": map[string]int{}, "l": ""})
+	lms := `<!doctype html><meta charset="utf-8"><pre id="log"></pre><iframe id="f" src="01-web/browser.html"></iframe><script>
+var log = [], st = {'cmi.core.lesson_status': 'not attempted', 'cmi.suspend_data': ` + "`" + string(bj) + "`" + `};
+function say(s) { log.push(s); document.getElementById('log').textContent = log.join('\n'); }
+window.API = {
+  LMSInitialize: function () { return 'true'; },
+  LMSGetValue: function (k) { return st[k] || ''; },
+  LMSSetValue: function (k, v) { st[k] = v; if (k === 'cmi.suspend_data') say('sd ' + v.length + ' ' + v); return 'true'; },
+  LMSCommit: function () { return 'true'; },
+  LMSFinish: function () { return 'true'; },
+  LMSGetLastError: function () { return '0'; }
+};
+var f = document.getElementById('f'), n = 0;
+f.addEventListener('load', function () {
+  n++;
+  setTimeout(function () {
+    if (n === 1) { f.contentWindow.localStorage.clear(); f.src = '02-html/tags.html'; return; }
+    var done = [].map.call(f.contentDocument.querySelectorAll('.si-course-nav a.is-done'), function (a) { return a.getAttribute('data-page'); });
+    say('done=' + done.join(' '));
+  }, 300);
+});
+</script>`
+	os.WriteFile(filepath.Join(out, "lms.html"), []byte(lms), 0o644)
+	srv := httptest.NewServer(http.FileServer(http.Dir(out)))
+	defer srv.Close()
+	dom, err := cdp.Output(chromeWait, findChrome(), "--headless=new", "--use-mock-keychain", "--disable-gpu",
+		"--virtual-time-budget=5000", "--dump-dom", srv.URL+"/lms.html")
+	if err != nil {
+		t.Fatalf("chrome: %v", err)
+	}
+	got := strings.ReplaceAll(string(dom), "&quot;", `"`)
+	if !strings.Contains(got, `{"v":2,"h":`) {
+		t.Errorf("no packed suspend data:\n%s", got)
+	}
+	if !strings.Contains(got, "done=01-web/journey.html") {
+		t.Errorf("the packed data brings the ticks back:\n%s", got)
+	}
+}
