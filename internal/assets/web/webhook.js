@@ -5,8 +5,11 @@
  * as json, slack, teams, discord or an xAPI 1.0.3 statement. json, slack and
  * the si relay go by navigator.sendBeacon with a text/plain body (no CORS
  * preflight, leaves as the page closes); teams, discord and xapi by fetch
- * with keepalive. What cannot leave waits in localStorage and goes with the
- * next page. A notice bar tells the learner; with webhook-consent: required
+ * with keepalive. What cannot leave waits in localStorage and is tried again
+ * on this page with backoff (2 s doubling to a minute, and when the browser
+ * is back online), else with the next page. Course and lesson urls (the xAPI
+ * activity ids) sit under webhook-base: when set, are the page's own address
+ * when it is http(s), else urn:si:course:<id>[:<page>] (never a file:// path). A notice bar tells the learner; with webhook-consent: required
  * nothing leaves before OK. No answers, no lab output, no names unless the
  * learner types one. No dependencies; works from file:// and inside SCORM. */
 (function () {
@@ -91,18 +94,25 @@
   if (!/^l-[0-9a-f]{12}$/.test(learner || '')) { learner = 'l-' + hex(6); put('si-learner', learner); }
   var body = document.body, page = body.getAttribute('data-si-page') || '';
   var okKey = 'si-webhook-ok:' + C.course.id, doneKey = 'si-webhook-done:' + C.course.id, QK = 'si-webhook-queue';
-  function abs(href) { try { return new URL(href, location.href).href.split('#')[0]; } catch (e) { return href; } }
+  function abs(href) { try { return new URL(href, location.href).href.split('#')[0].split('?')[0]; } catch (e) { return href; } }
   var brand = document.querySelector('.si-course-brand');
-  var home = brand ? abs(brand.getAttribute('href')) : abs('index.html');
+  var home = brand ? abs(brand.getAttribute('href')) : abs('index.html'), root = home.replace(/[^\/]*$/, '');
+  // id is a page's stable id: under webhook-base, its own http(s) address, else a URN
+  function id(u) {
+    var rel = u.indexOf(root) === 0 ? u.slice(root.length) : u.replace(/^.*\//, ''), course = rel === '' || rel === 'index.html';
+    if (C.base) return C.base.replace(/\/?$/, '/') + (course ? '' : rel);
+    if (/^https?:/.test(u)) return u;
+    return 'urn:si:course:' + encodeURIComponent(C.course.id) + (course ? '' : ':' + rel);
+  }
   var cur = document.querySelector('.si-course-mods a[aria-current="page"]');
   var view = (document.querySelector('.si-course') || body).getAttribute('data-view');
 
   function make(type, data) {
     var ev = { version: 1, event: type, id: uuid(), time: new Date().toISOString(), si: C.si || '', audience: C.audience || 'learner',
-      course: { id: C.course.id, title: C.course.title, url: home } };
+      course: { id: C.course.id, title: C.course.title, url: id(home) } };
     if (type !== 'course.completed' && view === 'lesson') {
       var h = document.querySelector('.si-course-lesson .si-doc-title');
-      ev.lesson = { id: page, title: (h ? h.textContent : document.title).trim(), kind: cur ? cur.getAttribute('data-kind') || '' : '', url: abs(location.href) };
+      ev.lesson = { id: page, title: (h ? h.textContent : document.title).trim(), kind: cur ? cur.getAttribute('data-kind') || '' : '', url: id(abs(location.href)) };
     }
     ev.learner = { id: learner };
     var name = get('si-learner-name');
@@ -116,7 +126,13 @@
   function allowed() { return C.consent !== 'required' || get(okKey) === 'yes'; }
   function load() { try { var q = JSON.parse(get(QK) || '[]'); return Array.isArray(q) ? q : []; } catch (e) { return []; } }
   function store(q) { put(QK, JSON.stringify(q.slice(-100))); } // ponytail: the newest 100; a long offline stretch loses the oldest
-  function later(it) { var q = load(); q.push(it); store(q); }
+  function later(it) { var q = load(); q.push(it); store(q); retry(); }
+  var wait = 0, timer = 0;
+  function retry() { // this page tries again: 2 s, 4 s … a minute apart
+    if (timer || !allowed()) return;
+    wait = Math.min(wait ? wait * 2 : 2000, 60000);
+    timer = setTimeout(function () { timer = 0; flush(); }, wait);
+  }
   function beacon(u, b) { try { return navigator.sendBeacon(u, new Blob([b], { type: 'text/plain;charset=UTF-8' })); } catch (e) { return false; } }
   function deliver(it) { // true when it left (a failed fetch queues it again)
     if (navigator.onLine === false) return false;
@@ -139,6 +155,7 @@
       if (it.course !== C.course.id || !deliver(it)) keep.push(it);
     });
     if (keep.length) store(load().concat(keep));
+    if (keep.some(function (it) { return it.course === C.course.id; })) retry(); else wait = 0;
   }
   function emit(type, data) {
     if ((C.events || []).indexOf(type) < 0 || get(okKey) === 'no') return;
@@ -152,7 +169,7 @@
     its.forEach(function (it) { if (!allowed() || !deliver(it)) later(it); });
   }
   window.siWebhook.emit = emit;
-  window.addEventListener('online', flush);
+  window.addEventListener('online', function () { clearTimeout(timer); timer = 0; wait = 0; flush(); });
 
   /* ---------- the notice ---------- */
   if (get(okKey) !== 'yes' && get(okKey) !== 'no') {

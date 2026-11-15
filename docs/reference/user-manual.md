@@ -690,8 +690,9 @@ the command written under it runs with one click, and the result comes back
 as one more event.
 
 Points:
-- Sent by the page itself (sendBeacon, a queue offline): website bundle, file://, SCORM
-- `webhook: relay` + `si serve --relay`: the address off the page, events signed (`X-Si-Signature`, `webhook-secret:` in your own si.conf)
+- Sent by the page itself (sendBeacon, a queue offline, retried on the page with backoff): website bundle, file://, SCORM
+- `webhook-base: https://…`: stable xAPI activity ids wherever the course is opened (else `urn:si:course:…` from disk)
+- `webhook: relay` + `si serve --relay` (and the `--remote` listener): the address off the page, events signed (`X-Si-Timestamp`, `X-Si-Signature` over timestamp.body, 5-minute window; `webhook-secret:` in your own si.conf)
 - `audience: instructor` marks the trainer's own clicks
 - `si demo test --webhook URL --webhook-format slack`: a CI run's summary in the channel
 - RULES.md §28 (Results to your team; Labs that check themselves), §27
@@ -719,7 +720,8 @@ you know what to explain again.
 Points:
 - `/_si/class` on the loopback, or the keyed link + QR si prints for a tablet
 - Names only when learners type one (`webhook-learner: ask`, the default with `--class`); No thanks keeps them out
-- Kept in `.si/class/<date>.jsonl`; a restart picks up today's class
+- Kept in `.si/class/<date>.jsonl`; a restart picks up today's class; the Day picker opens earlier days
+- Quiz questions named by their titles; no class view in the Studio or the terminal
 - Works beside a `webhook:`; no webhook needed
 - RULES.md §28 (The live class view)
 

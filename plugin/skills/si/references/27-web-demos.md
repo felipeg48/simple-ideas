@@ -132,7 +132,8 @@ si demo: 0 passed, 1 failed in 6.9s; report: demo-out/shop/report.html
   in 42.0 s. Failed: studio.md › Open a file › click "Open". Report: …").
   `report` is the report's path, or `$SI_REPORT_URL` when the CI job sets
   one. With `webhook-secret:` in your own si.conf (or `SI_WEBHOOK_SECRET`) the
-  post carries `X-Si-Signature: sha256=<HMAC-SHA256 of the body>`. A post
+  post carries `X-Si-Timestamp` and `X-Si-Signature: sha256=<HMAC-SHA256 of
+  "<timestamp>.<body>">` (refuse a timestamp over 5 minutes off). A post
   that fails is a warning; it never changes the exit code.
 
 ```text

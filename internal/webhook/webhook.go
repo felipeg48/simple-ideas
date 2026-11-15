@@ -14,6 +14,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -26,23 +27,42 @@ var Formats = []string{"json", "slack", "teams", "discord", "xapi"}
 // ChatFormats are the formats a run summary (si demo test --webhook) takes.
 var ChatFormats = []string{"json", "slack", "teams", "discord"}
 
-// SignatureHeader carries the HMAC of the body when a secret is set.
+// SignatureHeader carries the HMAC of the timestamp and body when a secret is set.
 const SignatureHeader = "X-Si-Signature"
+
+// TimestampHeader carries when the post was signed, in Unix seconds. The
+// signature covers "<timestamp>.<body>", so a receiver that refuses a
+// timestamp more than Window away from its clock refuses replays.
+const TimestampHeader = "X-Si-Timestamp"
+
+// Window is how far a signed post's timestamp may be from the receiver's clock.
+const Window = 5 * time.Minute
 
 // SecretEnv overrides webhook-secret in the user's si.conf.
 const SecretEnv = "SI_WEBHOOK_SECRET"
 
-// Sign is the signature header value of body: "sha256=" and the hex HMAC-SHA256.
-func Sign(secret string, body []byte) string {
+// Sign is the signature header value of a post signed at ts (Unix seconds,
+// as sent in TimestampHeader): "sha256=" and the hex HMAC-SHA256 of
+// "<ts>.<body>".
+func Sign(secret, ts string, body []byte) string {
 	m := hmac.New(sha256.New, []byte(secret))
+	m.Write([]byte(ts + "."))
 	m.Write(body)
 	return "sha256=" + hex.EncodeToString(m.Sum(nil))
 }
 
-// Verify reports whether sig is body's signature under secret (for receivers
-// written in Go, and the tests).
-func Verify(secret string, body []byte, sig string) bool {
-	return hmac.Equal([]byte(Sign(secret, body)), []byte(sig))
+// Verify reports whether sig is the signature of body sent at ts under
+// secret, and ts is within Window of now (for receivers written in Go, and
+// the tests).
+func Verify(secret, ts string, body []byte, sig string, now time.Time) bool {
+	n, err := strconv.ParseInt(ts, 10, 64)
+	if err != nil {
+		return false
+	}
+	if d := now.Sub(time.Unix(n, 0)); d > Window || d < -Window {
+		return false
+	}
+	return hmac.Equal([]byte(Sign(secret, ts, body)), []byte(sig))
 }
 
 // Post sends body to url, signed when secret is set; auth (xAPI) becomes the
@@ -61,7 +81,9 @@ func Post(url, format string, body []byte, secret, auth string) error {
 		req.Header.Set("Authorization", auth)
 	}
 	if secret != "" {
-		req.Header.Set(SignatureHeader, Sign(secret, body))
+		ts := strconv.FormatInt(time.Now().Unix(), 10)
+		req.Header.Set(TimestampHeader, ts)
+		req.Header.Set(SignatureHeader, Sign(secret, ts, body))
 	}
 	c := &http.Client{Timeout: 15 * time.Second}
 	res, err := c.Do(req)

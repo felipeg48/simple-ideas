@@ -476,7 +476,7 @@ func (d *Deck) webhookMeta(file string, keyLine map[string]int) {
 		d.Warnings = append(d.Warnings, Problem{File: rel(file), Line: keyLine[key], Msg: fmt.Sprintf(format, a...)})
 	}
 	m := d.Meta
-	for _, k := range []string{"webhook", "webhook-format", "webhook-events", "webhook-token", "webhook-auth", "webhook-learner", "webhook-consent", "webhook-notice"} {
+	for _, k := range []string{"webhook", "webhook-format", "webhook-events", "webhook-token", "webhook-auth", "webhook-learner", "webhook-consent", "webhook-notice", "webhook-base"} {
 		if _, ok := keyLine[k]; ok && filepath.Base(file) != CourseFile {
 			warn(k, "%s: belongs in the course's _course.md (si.conf course.webhook for every course)", k)
 		}
@@ -485,6 +485,9 @@ func (d *Deck) webhookMeta(file string, keyLine map[string]int) {
 		if msg := WebhookURLProblem(m.Webhook); msg != "" {
 			warn("webhook", "%s", msg)
 		}
+	}
+	if _, ok := keyLine["webhook-base"]; ok && !strings.HasPrefix(m.WebhookBase, "https://") {
+		warn("webhook-base", "webhook-base: %q is not an https:// address (where the course is published)", m.WebhookBase)
 	}
 	if _, ok := keyLine["webhook-format"]; ok && !contains(webhook.Formats, m.WebhookFormat) {
 		warn("webhook-format", "webhook-format: %q is not one of %s", m.WebhookFormat, strings.Join(webhook.Formats, ", "))

@@ -23,7 +23,8 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `voice.style: calm, friendly` | the tone, for engines that take one (`openai`), when the script sets no `voice-style:` |
 | `demo.with: subtitles, chapters` | what `si demo run` writes besides `<script>.mp4` when `--with` and the script's `with:` say nothing (§27) |
 | `course.webhook: https://hooks.example.com/si` | where every course of the project sends its result events (a `_course.md` `webhook:` wins; §28) |
-| `webhook-secret: …` | signs what `si serve` / `si play` forward through `/_si/relay` and what `si demo test --webhook` posts (`X-Si-Signature`); only in your own si.conf (a project's is ignored with a warning), or `SI_WEBHOOK_SECRET` |
+| `course.base: https://learn.example.com` | where the project's courses are published: their event and xAPI activity ids sit under it (a `_course.md` `webhook-base:` wins; §28) |
+| `webhook-secret: …` | signs what `si serve` / `si play` forward through `/_si/relay` and what `si demo test --webhook` posts (`X-Si-Timestamp`, `X-Si-Signature` over `"<timestamp>.<body>"`); only in your own si.conf (a project's is ignored with a warning), or `SI_WEBHOOK_SECRET` |
 | `voice.Ada: kokoro:af_heart` | auto-play: one speaker's voice in a deck with `speakers:` (front matter `voices:` wins) |
 | `autoplay.dwell: 5` | auto-play: seconds on a slide with no `Notes:` and no `(N min)` (default 3) |
 | `structure:` + an indented block | where `si build` writes each kind of output: one folder per line (§31) |

@@ -7,17 +7,25 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
-// TestSign: the RFC 4231 test case 2 key and data, as GitHub-style sha256=hex.
+// TestSign: HMAC-SHA256 of "<timestamp>.<body>" (the RFC 4231 case 2 key
+// and data after a timestamp), as GitHub-style sha256=hex; Verify takes the
+// right body within the 5-minute window only.
 func TestSign(t *testing.T) {
-	got := Sign("Jefe", []byte("what do ya want for nothing?"))
-	want := "sha256=5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
+	body := []byte("what do ya want for nothing?")
+	got := Sign("Jefe", "1700000000", body)
+	want := "sha256=1cdd0650c8be1cb0974b1788d458b1e781206cfef59b85faafc582d2e182c57e"
 	if got != want {
 		t.Fatalf("Sign = %s, want %s", got, want)
 	}
-	if !Verify("Jefe", []byte("what do ya want for nothing?"), want) || Verify("Jefe", []byte("other"), want) {
+	at := time.Unix(1700000000, 0)
+	if !Verify("Jefe", "1700000000", body, want, at.Add(4*time.Minute)) || Verify("Jefe", "1700000000", []byte("other"), want, at) {
 		t.Error("Verify must accept the right body only")
+	}
+	if Verify("Jefe", "1700000000", body, want, at.Add(-6*time.Minute)) || Verify("Jefe", "soon", body, want, at) {
+		t.Error("Verify must refuse a timestamp outside the window, or not a number")
 	}
 }
 
@@ -75,13 +83,20 @@ func TestPostSigns(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got.Header.Get("Content-Type") != "application/json" || got.Header.Get("X-Experience-API-Version") != "1.0.3" ||
-		got.Header.Get("Authorization") != "Basic dTpw" || !Verify("s3cret", body, got.Header.Get(SignatureHeader)) {
+		got.Header.Get("Authorization") != "Basic dTpw" || !Verify("s3cret", got.Header.Get(TimestampHeader), body, got.Header.Get(SignatureHeader), time.Now()) {
 		t.Errorf("headers %v", got.Header)
+	}
+	ts := got.Header.Get(TimestampHeader)
+	if Verify("s3cret", ts, body, got.Header.Get(SignatureHeader), time.Now().Add(6*time.Minute)) {
+		t.Error("a replay after the 5-minute window must fail")
+	}
+	if Verify("s3cret", "1"+ts, body, Sign("s3cret", ts, body), time.Now()) {
+		t.Error("another timestamp, the same signature: must fail")
 	}
 	if err := Post(srv.URL+"/no", "json", []byte(`{}`), "", ""); err == nil {
 		t.Error("a 403 is an error")
 	}
-	if got.Header.Get(SignatureHeader) != "" {
+	if got.Header.Get(SignatureHeader) != "" || got.Header.Get(TimestampHeader) != "" {
 		t.Error("no secret, no signature")
 	}
 }

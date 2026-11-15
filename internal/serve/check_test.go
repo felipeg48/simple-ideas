@@ -131,7 +131,7 @@ func TestRelay(t *testing.T) {
 	if c := send("/c/01/a.html", ts.URL, `{"verb":"x"}`); c != http.StatusAccepted {
 		t.Fatalf("relay: %d", c)
 	}
-	if len(got) != 1 || string(bodies[0]) != `{"verb":"x"}` || !webhook.Verify("s3cret", bodies[0], got[0].Header.Get(webhook.SignatureHeader)) ||
+	if len(got) != 1 || string(bodies[0]) != `{"verb":"x"}` || !webhook.Verify("s3cret", got[0].Header.Get(webhook.TimestampHeader), bodies[0], got[0].Header.Get(webhook.SignatureHeader), time.Now()) ||
 		got[0].Header.Get("Authorization") != "Basic dTpw" || got[0].Header.Get("X-Experience-API-Version") != "1.0.3" {
 		t.Errorf("forwarded: %d %v", len(got), got)
 	}
@@ -158,5 +158,22 @@ func TestRelay(t *testing.T) {
 	defer ts2.Close()
 	if res, _ := http.Post(ts2.URL+"/_si/relay?page=/c/01/a.html", "text/plain", strings.NewReader(`{}`)); res.StatusCode == http.StatusAccepted {
 		t.Error("no --relay on a reachable address: no relay")
+	}
+	// si play --remote: the network listener relays too, behind the run's key
+	rt := httptest.NewServer(s.RemoteHandler("sekret", []string{"tp"}))
+	defer rt.Close()
+	post := func(q string) int {
+		res, err := http.Post(rt.URL+"/_si/relay?page=/c/01/a.html"+q, "text/plain", strings.NewReader(`{"verb":"remote"}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		res.Body.Close()
+		return res.StatusCode
+	}
+	if c := post(""); c != http.StatusForbidden {
+		t.Errorf("the remote relay without the key: %d", c)
+	}
+	if c := post("&k=sekret"); c != http.StatusAccepted || string(bodies[len(bodies)-1]) != `{"verb":"remote"}` {
+		t.Errorf("the remote relay with the key: %d", c)
 	}
 }

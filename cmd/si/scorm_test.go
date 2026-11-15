@@ -3,18 +3,16 @@ package main
 import (
 	"archive/zip"
 	"bytes"
-	"context"
 	"encoding/json"
 	"encoding/xml"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
+	"github.com/felipeg48/simple-ideas/internal/cdp"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 )
 
@@ -256,10 +254,8 @@ f.addEventListener('load', function once() {
 	os.WriteFile(filepath.Join(out, "lms.html"), []byte(lms), 0o644)
 	srv := httptest.NewServer(http.FileServer(http.Dir(out)))
 	defer srv.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-	dom, err := exec.CommandContext(ctx, findChrome(), "--headless=new", "--use-mock-keychain", "--disable-gpu",
-		"--virtual-time-budget=5000", "--dump-dom", srv.URL+"/lms.html").Output()
+	dom, err := cdp.Output(chromeWait, findChrome(), "--headless=new", "--use-mock-keychain", "--disable-gpu",
+		"--virtual-time-budget=5000", "--dump-dom", srv.URL+"/lms.html")
 	if err != nil {
 		t.Fatalf("chrome: %v", err)
 	}

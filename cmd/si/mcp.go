@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -15,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/felipeg48/simple-ideas/docs"
+	"github.com/felipeg48/simple-ideas/internal/cdp"
 	"github.com/felipeg48/simple-ideas/internal/docsite"
 	"github.com/felipeg48/simple-ideas/internal/mcp"
 )
@@ -278,7 +278,7 @@ func chromeShot(page, slide string, w, h int, dark bool) ([]byte, error) {
 	if dark {
 		args = append(args, "--force-dark-mode", "--blink-settings=preferredColorScheme=0")
 	}
-	if b, err := exec.Command(chrome, append(args, url)...).CombinedOutput(); err != nil {
+	if b, err := cdp.Run(chromeWait, chrome, append(args, url)...); err != nil {
 		return nil, fmt.Errorf("chrome: %v: %s", err, b)
 	}
 	return os.ReadFile(png)

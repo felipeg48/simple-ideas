@@ -110,7 +110,7 @@ func TestClassViewHeadless(t *testing.T) {
 	post("c1", "quiz.submitted", "l-cccccccccccc", "", "02-html/quiz.html", strings.Replace(strings.Replace(q, "%d", "67", 1), "%t", "false", 2))
 	wait("document.querySelectorAll('.cv-grid tbody tr').length", "3") // live: no reload
 	wait("document.body.dataset.ready", "7")
-	if got := eval("document.querySelector('.cv-q').textContent"); !strings.Contains(got, "Question 21/2 wrong") {
+	if got := eval("document.querySelector('.cv-q').textContent"); !strings.Contains(got, "2. Where does the title element go?1/2 wrong") {
 		t.Errorf("quiz questions: %q", got)
 	}
 	if got := eval("document.querySelector('.cv-tiles').textContent"); !strings.Contains(got, "3learners") {

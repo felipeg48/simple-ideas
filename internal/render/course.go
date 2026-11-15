@@ -62,6 +62,13 @@ func (dr *deckRenderer) webhookConfig(g *deck.Guide) string {
 	c := map[string]any{"format": or(m.WebhookFormat, "json"), "events": events, "learner": learner,
 		"consent": or(m.WebhookConsent, "notice"), "notice": m.WebhookNotice, "si": SIVersion, "audience": audience,
 		"course": map[string]string{"id": filepath.Base(g.Dir), "title": g.Meta.Title}}
+	base := m.WebhookBase
+	if base == "" && dr.opt.Config != nil {
+		base = dr.opt.Config.CourseBase
+	}
+	if base != "" {
+		c["base"] = base // event and xAPI activity ids under it, wherever the page is opened (webhook.js)
+	}
 	if dr.opt.Class {
 		c["class"] = "/_si/class/event" // si serve --class: the server's live class view gets every event as JSON
 		if hook := deck.WebhookEventList(m.WebhookEvents); len(hook) > 0 {

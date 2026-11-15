@@ -60,7 +60,7 @@ thead tr:first-child th{color:var(--si-fg);border-bottom:2px solid var(--si-acce
 .cv-dot[data-fail]{background:var(--si-crit)}
 .cv-sum td,.cv-sum th{text-align:right}
 .cv-sum td:first-child,.cv-sum th:first-child{text-align:left;white-space:normal}
-.cv-q{display:grid;grid-template-columns:auto 1fr auto;gap:.3em .6em;align-items:center;margin:0 0 1em}
+.cv-q{display:grid;grid-template-columns:minmax(0,2fr) minmax(4em,1fr) auto;gap:.3em .6em;align-items:center;margin:0 0 1em}
 .cv-q h3{grid-column:1/-1;font-size:.95em;margin:.2em 0}
 .cv-bar{height:.7em;border-radius:1em;background:var(--si-surface-2);overflow:hidden}
 .cv-bar i{display:block;height:100%;background:var(--si-crit)}
@@ -73,6 +73,7 @@ footer{font-size:.8em;color:var(--si-muted)}
   <h1><small>Class view</small><span id="cv-title">{{TITLE}}</span></h1>
   <div class="cv-tools">
     <label id="cv-course-l" hidden>Course<select id="cv-course"></select></label>
+    <label>Day<select id="cv-day"></select></label>
     <label>Module<select id="cv-module"><option value="">All modules</option></select></label>
     <label>Stuck after<select id="cv-stuck"><option value="5">5 min</option><option value="10" selected>10 min</option><option value="15">15 min</option><option value="30">30 min</option></select></label>
     <a class="cv-btn" id="cv-csv" href="#">Export CSV</a>
@@ -93,7 +94,7 @@ footer{font-size:.8em;color:var(--si-muted)}
   'use strict';
   var P = new URLSearchParams(location.search), key = P.get('k') || '';
   var $ = function (id) { return document.getElementById(id); };
-  var course = P.get('course') || '', view = null, timer = 0;
+  var course = P.get('course') || '', day = P.get('day') || '', view = null, timer = 0;
   function h(tag, attrs, kids) { // a DOM element; text always as text
     var e = document.createElement(tag);
     for (var a in attrs || {}) if (attrs[a] != null && attrs[a] !== false) e.setAttribute(a, attrs[a] === true ? '' : attrs[a]);
@@ -104,6 +105,7 @@ footer{font-size:.8em;color:var(--si-muted)}
     var q = new URLSearchParams();
     if (key) q.set('k', key);
     if (course) q.set('course', course);
+    if (day) q.set('day', day);
     q.set('stuck', $('cv-stuck').value);
     return p + '?' + q.toString();
   }
@@ -153,6 +155,15 @@ footer{font-size:.8em;color:var(--si-muted)}
       v.courses.forEach(function (c) { cs.appendChild(h('option', { value: c.id }, c.title)); });
     }
     cs.value = v.course.id;
+    var ds = $('cv-day');
+    if (ds.options.length !== v.days.length) {
+      ds.textContent = '';
+      v.days.forEach(function (d, i) { ds.appendChild(h('option', { value: d }, i === 0 ? 'Today (' + d + ')' : d)); });
+    }
+    ds.value = v.day;
+    var past = v.day !== v.days[0];
+    $('cv-live').hidden = past;
+    document.body.toggleAttribute('data-past', past);
     var ms = $('cv-module'), mods = [];
     v.course.lessons.forEach(function (l) { if (mods.indexOf(l.module) < 0) mods.push(l.module); });
     if (ms.options.length !== mods.length + 1) {
@@ -211,7 +222,7 @@ footer{font-size:.8em;color:var(--si-muted)}
       var rows = [h('h3', null, q.title + ' · ' + q.takers + ' took it')];
       q.questions.forEach(function (x) {
         var pct = x.answered ? Math.round(100 * x.wrong / x.answered) : 0;
-        rows.push(h('span', null, 'Question ' + x.id.slice(1)), h('div', { 'class': 'cv-bar', role: 'img', 'aria-label': x.wrong + ' of ' + x.answered + ' wrong' }, h('i', { style: 'width:' + pct + '%' })), h('span', null, x.wrong + '/' + x.answered + ' wrong'));
+        rows.push(h('span', { title: 'Question ' + x.id.slice(1) }, x.text ? x.id.slice(1) + '. ' + x.text : 'Question ' + x.id.slice(1)), h('div', { 'class': 'cv-bar', role: 'img', 'aria-label': x.wrong + ' of ' + x.answered + ' wrong' }, h('i', { style: 'width:' + pct + '%' })), h('span', null, x.wrong + '/' + x.answered + ' wrong'));
       });
       qz.appendChild(h('div', { 'class': 'cv-q' }, rows));
     });
@@ -225,6 +236,7 @@ footer{font-size:.8em;color:var(--si-muted)}
   }
   function soon() { clearTimeout(timer); timer = setTimeout(load, 250); }
   $('cv-course').addEventListener('change', function () { course = this.value; load(); });
+  $('cv-day').addEventListener('change', function () { day = this.selectedIndex === 0 ? '' : this.value; load(); });
   $('cv-module').addEventListener('change', function () { if (view) render(); });
   $('cv-stuck').addEventListener('change', load);
   $('cv-mode').addEventListener('click', function () {

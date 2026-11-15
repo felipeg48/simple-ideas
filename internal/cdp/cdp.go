@@ -41,6 +41,7 @@ type Client struct {
 	dead    error
 	Session string
 	Scale   float64 // device pixels per CSS pixel of the pages OpenPage opens (0 = 1)
+	profile string  // the profile folder Launch made, removed by Close
 }
 
 // Launch starts headless Chrome with the DevTools pipe, a window of w×h CSS
@@ -59,14 +60,19 @@ func Launch(chrome string, w, h int, extra ...string) (*Client, error) {
 		// must keep drawing and ticking, or a filmed window freezes
 		"--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows", "--disable-background-timer-throttling",
 		fmt.Sprintf("--window-size=%d,%d", w, h)}, extra...)
+	profile := profileDir(extra) // its own profile: two Chromes never share one
+	if profile != "" {
+		args = append(args, "--user-data-dir="+profile)
+	}
 	cmd := exec.Command(chrome, append(args, "about:blank")...)
 	cmd.ExtraFiles = []*os.File{toChrome, fromChrome}
 	if err := cmd.Start(); err != nil {
+		os.RemoveAll(profile)
 		return nil, err
 	}
 	toChrome.Close()
 	fromChrome.Close()
-	c := &Client{cmd: cmd, w: cw, pending: map[int]chan reply{}}
+	c := &Client{cmd: cmd, w: cw, pending: map[int]chan reply{}, profile: profile}
 	go c.read(bufio.NewReaderSize(cr, 1<<20))
 	return c, nil
 }
@@ -117,6 +123,9 @@ func (c *Client) Close() {
 	c.w.Close()
 	c.cmd.Process.Kill()
 	c.cmd.Wait()
+	if c.profile != "" {
+		os.RemoveAll(c.profile)
+	}
 }
 
 func (c *Client) read(r *bufio.Reader) {

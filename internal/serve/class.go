@@ -52,6 +52,7 @@ var (
 	learnerRE  = regexp.MustCompile(`^l-[0-9a-f]{12}$`)
 	questionRE = regexp.MustCompile(`^q[0-9]{1,3}$`)
 	eventIDRE  = regexp.MustCompile(`^[A-Za-z0-9-]{1,64}$`)
+	dayRE      = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2}$`)
 )
 
 //go:embed class.html
@@ -273,6 +274,9 @@ type classLesson struct {
 	Title  string `json:"title"`
 	Kind   string `json:"kind"`
 	Module string `json:"module"`
+	// Questions are a quiz lesson's question titles, in order (q1 is the
+	// first), read from its source, so the view names them.
+	Questions []string `json:"questions,omitempty"`
 }
 
 type classCourse struct {
@@ -307,10 +311,28 @@ func (s *Server) classCourses() []classCourse {
 				}
 				r, _ := filepath.Rel(g.Dir, it.File)
 				c.Lessons = append(c.Lessons, classLesson{ID: filepath.ToSlash(strings.TrimSuffix(r, filepath.Ext(r)) + ".html"),
-					Title: it.Title, Kind: it.Kind, Module: m.Title})
+					Title: it.Title, Kind: it.Kind, Module: m.Title, Questions: quizTitles(it.File, it.Kind)})
 			}
 		}
 		out = append(out, c)
+	}
+	return out
+}
+
+// quizTitles are the question titles of a quiz lesson (type: quiz), as
+// plain text, in the order doc.js numbers them; nil for any other lesson.
+func quizTitles(file, kind string) []string {
+	if kind != "quiz" {
+		return nil
+	}
+	d, err := deck.Parse(file)
+	if err != nil || len(d.Slides) == 0 {
+		return nil
+	}
+	_, qs, _ := deck.ParseQuiz(d.Slides[0].Body)
+	var out []string
+	for _, q := range qs {
+		out = append(out, strings.NewReplacer("**", "", "__", "", "`", "", "*", "").Replace(q.Title))
 	}
 	return out
 }
@@ -391,6 +413,7 @@ type classLessonSum struct {
 
 type classQuizQ struct {
 	ID       string `json:"id"`
+	Text     string `json:"text,omitempty"` // the question's title, from the quiz source
 	Wrong    int    `json:"wrong"`
 	Answered int    `json:"answered"`
 }
@@ -412,6 +435,8 @@ type classView struct {
 	StuckAfter int              `json:"stuckAfter"` // minutes
 	Events     int              `json:"events"`
 	Now        time.Time        `json:"now"`
+	Day        string           `json:"day"`  // the day shown: today (live), or a saved one
+	Days       []string         `json:"days"` // the days with a .si/class/<day>.jsonl, newest first, today always
 }
 
 // learnerLabel is how a learner is shown: the typed name, else "Learner 3f9a".
@@ -593,7 +618,11 @@ func classAggregate(course classCourse, events []classEvent, now time.Time, stuc
 			})
 			qz := classQuiz{Lesson: ls.ID, Title: ls.Title, Takers: sum.QuizTakers}
 			for _, id := range qids {
-				qz.Questions = append(qz.Questions, *wrong[id])
+				q := *wrong[id]
+				if n, _ := strconv.Atoi(id[1:]); n >= 1 && n <= len(ls.Questions) {
+					q.Text = ls.Questions[n-1]
+				}
+				qz.Questions = append(qz.Questions, q)
 			}
 			v.Quizzes = append(v.Quizzes, qz)
 		}
@@ -739,15 +768,45 @@ func (s *Server) classView(r *http.Request) (classView, bool) {
 	if err != nil || n < 1 || n > 24*60 {
 		n = classStuckDefault
 	}
-	v := classAggregate(c, s.room().list(), time.Now(), time.Duration(n)*time.Minute)
-	v.Courses = cs
+	today := time.Now().Format("2006-01-02")
+	day := r.URL.Query().Get("day")
+	events, now := s.room().list(), time.Now()
+	if day != "" && day != today {
+		t, err := time.ParseInLocation("2006-01-02", day, time.Local)
+		if !dayRE.MatchString(day) || err != nil {
+			return classView{}, false
+		}
+		// a saved day: read from its file, "now" its last event, so stuck reads as at the close
+		events, now = newClassRoom(s.room().dir, t).list(), t
+		if len(events) > 0 {
+			now = events[len(events)-1].At
+		}
+	} else {
+		day = today
+	}
+	v := classAggregate(c, events, now, time.Duration(n)*time.Minute)
+	v.Courses, v.Day, v.Days = cs, day, classDays(s.room().dir, today)
 	return v, true
+}
+
+// classDays are the days with saved events (.si/class/<day>.jsonl), newest
+// first, today always.
+func classDays(dir, today string) []string {
+	days := []string{today}
+	files, _ := filepath.Glob(filepath.Join(dir, "*.jsonl"))
+	for _, f := range files {
+		if d := strings.TrimSuffix(filepath.Base(f), ".jsonl"); dayRE.MatchString(d) && d != today {
+			days = append(days, d)
+		}
+	}
+	slices.SortFunc(days, func(a, b string) int { return strings.Compare(b, a) })
+	return days
 }
 
 func (s *Server) classData(w http.ResponseWriter, r *http.Request) {
 	v, ok := s.classView(r)
 	if !ok {
-		http.Error(w, "no course here (a folder with _course.md)", http.StatusNotFound)
+		http.Error(w, "no course here (a folder with _course.md), or no such day", http.StatusNotFound)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -761,7 +820,7 @@ func (s *Server) classCSVFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s-class-%s.csv"`, v.Course.ID, time.Now().Format("2006-01-02")))
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s-class-%s.csv"`, v.Course.ID, v.Day))
 	w.Write(classCSV(v))
 }
 

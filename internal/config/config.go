@@ -93,8 +93,9 @@ draw.hold: alt         # alt (⌥ Option), shift, ctrl, meta (⌘ Command), or o
 
 # courses: where every course sends its result events (a _course.md
 # webhook: wins); webhook-secret: signs what si serve / si play forward
-# (X-Si-Signature): only in your own si.conf, or SI_WEBHOOK_SECRET
+# (X-Si-Timestamp, X-Si-Signature): only in your own si.conf, or SI_WEBHOOK_SECRET
 # course.webhook: https://hooks.example.com/si
+# course.base: https://learn.example.com
 
 feature.draw:      on
 feature.timer:     on
@@ -156,6 +157,7 @@ type Config struct {
 	VoiceStyle               string            // voice.style: a tone for engines that take one (openai)
 	DemoWith                 string            // demo.with: what si demo run writes besides <script>.mp4 (a comma list)
 	CourseWebhook            string            // course.webhook: where every course sends its result events (a _course.md webhook: wins)
+	CourseBase               string            // course.base: https://… where courses are published: stable event ids (a _course.md webhook-base: wins)
 	WebhookSecret            string            // webhook-secret: signs what the si server forwards (X-Si-Signature); kept from the user's si.conf only
 	SpeakerVoices            map[string]string // voice.<Name>: one speaker's voice (auto-play of a talk with speakers:)
 	AutoplayDwell            float64           // autoplay.dwell: seconds on a slide with no Notes: (0 = 3)
@@ -392,6 +394,11 @@ func (c *Config) parse(r io.Reader) {
 				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: course.webhook %q is not https:// (or relay): events would travel in clear text", ln, v))
 			}
 			c.CourseWebhook = v
+		case k == "course.base":
+			if !strings.HasPrefix(v, "https://") {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: course.base %q is not an https:// address", ln, v))
+			}
+			c.CourseBase = v
 		case k == "webhook-secret", k == "webhook.secret":
 			c.WebhookSecret = v
 			c.secretLines = append(c.secretLines, fmt.Sprintf("line %d: %s", ln, k))

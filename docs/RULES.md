@@ -1913,7 +1913,8 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `voice.style: calm, friendly` | the tone, for engines that take one (`openai`), when the script sets no `voice-style:` |
 | `demo.with: subtitles, chapters` | what `si demo run` writes besides `<script>.mp4` when `--with` and the script's `with:` say nothing (§27) |
 | `course.webhook: https://hooks.example.com/si` | where every course of the project sends its result events (a `_course.md` `webhook:` wins; §28) |
-| `webhook-secret: …` | signs what `si serve` / `si play` forward through `/_si/relay` and what `si demo test --webhook` posts (`X-Si-Signature`); only in your own si.conf (a project's is ignored with a warning), or `SI_WEBHOOK_SECRET` |
+| `course.base: https://learn.example.com` | where the project's courses are published: their event and xAPI activity ids sit under it (a `_course.md` `webhook-base:` wins; §28) |
+| `webhook-secret: …` | signs what `si serve` / `si play` forward through `/_si/relay` and what `si demo test --webhook` posts (`X-Si-Timestamp`, `X-Si-Signature` over `"<timestamp>.<body>"`); only in your own si.conf (a project's is ignored with a warning), or `SI_WEBHOOK_SECRET` |
 | `voice.Ada: kokoro:af_heart` | auto-play: one speaker's voice in a deck with `speakers:` (front matter `voices:` wins) |
 | `autoplay.dwell: 5` | auto-play: seconds on a slide with no `Notes:` and no `(N min)` (default 3) |
 | `structure:` + an indented block | where `si build` writes each kind of output: one folder per line (§31) |
@@ -3320,7 +3321,8 @@ si demo: 0 passed, 1 failed in 6.9s; report: demo-out/shop/report.html
   in 42.0 s. Failed: studio.md › Open a file › click "Open". Report: …").
   `report` is the report's path, or `$SI_REPORT_URL` when the CI job sets
   one. With `webhook-secret:` in your own si.conf (or `SI_WEBHOOK_SECRET`) the
-  post carries `X-Si-Signature: sha256=<HMAC-SHA256 of the body>`. A post
+  post carries `X-Si-Timestamp` and `X-Si-Signature: sha256=<HMAC-SHA256 of
+  "<timestamp>.<body>">` (refuse a timestamp over 5 minutes off). A post
   that fails is a warning; it never changes the exit code.
 
 ```text
@@ -4347,6 +4349,7 @@ webhook-events: quiz.submitted, course.completed
 webhook-learner: ask
 webhook-consent: required
 webhook-notice: Your quiz scores go to your trainer, Ana.
+webhook-base: https://learn.example.com/web101
 ---
 ```
 
@@ -4360,6 +4363,7 @@ webhook-notice: Your quiz scores go to your trainer, Ana.
 | `webhook-learner:` | `random` (default): a random id per browser; `ask`: the notice has a name field |
 | `webhook-consent:` | `notice` (default): events are sent, the notice stays until OK; `required`: nothing is sent before OK (events wait), **No thanks** sends nothing, ever |
 | `webhook-notice:` | the notice's text (default: "This course sends your progress (lessons done, quiz scores) to its organizers.") |
+| `webhook-base:` | `https://…` where the course is published: `course.url` and `lesson.url` (the xAPI activity ids) are under it wherever the page is opened (`…/web101/` and `…/web101/02-html/quiz.html`). Without it: the page's own address when it is `http(s)`, else `urn:si:course:<id>` and `urn:si:course:<id>:<page>` (never a `file://` path). si.conf `course.base:` is the default for every course |
 
 The events:
 
@@ -4403,8 +4407,10 @@ LRS's `…/statements` endpoint.
 How it is sent: `json` and `slack` with `navigator.sendBeacon` (a
 `text/plain` JSON body: no CORS preflight, and it leaves even as the page
 closes); `teams`, `discord` and `xapi` with `fetch` (keepalive), which needs
-the receiver to allow CORS. What cannot leave (offline, refused) waits in
-localStorage (the newest 100) and goes with the next page.
+the receiver to allow CORS. What cannot leave (offline, refused, a 5xx)
+waits in localStorage (the newest 100) and the page tries again: after 2 s,
+then 4 s, 8 s … up to a minute apart, and at once when the browser is back
+online; what is still waiting when the learner leaves goes with the next page.
 
 **Privacy.** Events never carry the answers a learner picked, a lab's output,
 or a name the learner did not type; the learner id is random and kept in
@@ -4414,12 +4420,23 @@ before anything else happens.
 **The relay.** `webhook: relay` keeps the address (and `webhook-auth:`) off
 the page: `si serve` (or `si play`) answers `POST /_si/relay`, forwards each
 event to the course's address (`course.webhook:` in si.conf) and signs it:
-`X-Si-Signature: sha256=<hex HMAC-SHA256 of the body>` with `webhook-secret:`
-from your own si.conf or `SI_WEBHOOK_SECRET`. A page served by si sends
-through the relay whenever it is on: always on a loopback address, and on any
-address with `--relay` (`si serve course/ --addr 0.0.0.0:8080 --relay`). The
+`X-Si-Timestamp: <Unix seconds>` and `X-Si-Signature: sha256=<hex
+HMAC-SHA256 of "<timestamp>.<body>">` with `webhook-secret:` from your own
+si.conf or `SI_WEBHOOK_SECRET`. A receiver checks both: recompute the HMAC
+over the timestamp header, a dot and the raw body, compare in constant time,
+and refuse a timestamp more than **5 minutes** from its own clock, so a
+captured post cannot be replayed later (drop a repeated event `id` inside the
+window too). A page served by si sends through the relay whenever it is on:
+always on a loopback address, and on any address with `--relay` (`si serve
+course/ --addr 0.0.0.0:8080 --relay`). With `si play --remote` the network
+listener relays too, behind the run's key like the other remote pages. The
 relay only ever forwards to a course's own configured address. A static
 build of a `webhook: relay` course sends nothing.
+
+```text
+X-Si-Timestamp: 1763114531
+X-Si-Signature: sha256=hex(HMAC-SHA256(secret, "1763114531." + body))
+```
 
 ### Labs that check themselves: `<!-- check: -->`
 
@@ -4487,17 +4504,23 @@ with the run's key (the printed link; a new key each run). It shows, live
   by default).
 - **Lessons:** done, quiz average and passed, learners failing a check,
   average watched, per lesson. **Quiz questions:** for each quiz, how many
-  got each question wrong (each learner's last attempt).
+  got each question wrong (each learner's last attempt), each question
+  named by its title from the quiz's source.
 - **Module** filter, **Export CSV** (one row per learner and lesson), light
   and dark, the course's theme. More than one course in the folder: a Course
   picker.
+- **Day:** today, live, or any earlier day with a saved
+  `.si/class/<date>.jsonl`, read back as it stood at that day's last event
+  (CSV too).
 
 Every event is appended to `.si/class/<date>.jsonl` beside the served folder
 as it arrives; a restarted server starts again from today's file. Kept: the
 event, the lesson, the score, the step and the random learner id, and the
 name the learner typed: no address, no browser, no answers, no lab output.
 Delete the files when the class is over. `si play course/ --class` does the
-same for the instructor's build (its events say `instructor`).
+same for the instructor's build (its events say `instructor`). The class
+view is a browser page of `si serve` / `si play` only: the Studio (`si
+--web`) and the terminal (`si --terminal`, `si play --terminal`) have none.
 
 ### Build, serve, check
 

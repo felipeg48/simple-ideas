@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/felipeg48/simple-ideas/internal/webdemo"
 	"github.com/felipeg48/simple-ideas/internal/webhook"
@@ -20,10 +21,10 @@ func TestDemoTestWebhook(t *testing.T) {
 	t.Setenv(webhook.SecretEnv, "ci-secret")
 	t.Setenv("SI_REPORT_URL", "https://ci.example.com/job/7/report.html")
 	var got []byte
-	var sig string
+	var sig, ts string
 	hook := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		got, _ = io.ReadAll(r.Body)
-		sig = r.Header.Get(webhook.SignatureHeader)
+		sig, ts = r.Header.Get(webhook.SignatureHeader), r.Header.Get(webhook.TimestampHeader)
 		if strings.HasSuffix(r.URL.Path, "/down") {
 			w.WriteHeader(http.StatusServiceUnavailable)
 		}
@@ -43,7 +44,7 @@ func TestDemoTestWebhook(t *testing.T) {
 		len(s.Failures) != 1 || s.Failures[0].Step != `click "Open"` || s.Failures[0].Feature != "Open a file" {
 		t.Errorf("summary: %+v", s)
 	}
-	if !webhook.Verify("ci-secret", got, sig) {
+	if !webhook.Verify("ci-secret", ts, got, sig, time.Now()) {
 		t.Error("signed with SI_WEBHOOK_SECRET")
 	}
 	stderr.Reset()

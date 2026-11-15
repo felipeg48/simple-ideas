@@ -1,18 +1,16 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"html"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
+	"github.com/felipeg48/simple-ideas/internal/cdp"
 	"github.com/felipeg48/simple-ideas/internal/mindmap"
 )
 
@@ -35,10 +33,8 @@ func mapSVGs(chrome, htmlPath string) ([]mapSVG, error) {
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-	out, err := exec.CommandContext(ctx, chrome, "--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--virtual-time-budget=4000",
-		"--window-size=1600,1000", "--dump-dom", "file://"+filepath.ToSlash(abs)+"#si-export").Output()
+	out, err := cdp.Output(chromeWait, chrome, "--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--virtual-time-budget=4000",
+		"--window-size=1600,1000", "--dump-dom", "file://"+filepath.ToSlash(abs)+"#si-export")
 	if err != nil {
 		return nil, fmt.Errorf("chrome: %v", err)
 	}
@@ -134,10 +130,8 @@ func exportMindmap3D(chrome, htmlPath, out, name string, png, pdf bool, scale fl
 	}
 	url := "file://" + filepath.ToSlash(abs) + "#si-shot3d"
 	run := func(args ...string) ([]byte, error) {
-		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-		defer cancel()
 		all := append(append([]string{}, chromeGL...), fmt.Sprintf("--window-size=%d,%d", w, h), "--virtual-time-budget=8000")
-		return exec.CommandContext(ctx, chrome, append(all, args...)...).CombinedOutput()
+		return cdp.Run(chromeWait, chrome, append(all, args...)...)
 	}
 	dom, err := run("--dump-dom", url)
 	if err != nil || !shot3DRE.Match(dom) { // software WebGL on a busy machine: one more try
@@ -186,10 +180,7 @@ func exportMindmap3D(chrome, htmlPath, out, name string, png, pdf bool, scale fl
 }
 
 func chromeRun(chrome string, args ...string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, chrome, append([]string{"--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu"}, args...)...)
-	if out, err := cmd.CombinedOutput(); err != nil {
+	if out, err := cdp.Run(chromeWait, chrome, append([]string{"--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu"}, args...)...); err != nil {
 		return fmt.Errorf("%v: %s", err, strings.TrimSpace(string(out)))
 	}
 	return nil

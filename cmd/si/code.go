@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -13,8 +12,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
+	"github.com/felipeg48/simple-ideas/internal/cdp"
 	"github.com/felipeg48/simple-ideas/internal/codeshow"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/render"
@@ -179,10 +178,8 @@ func runCode(path string, o *options, stdout, stderr io.Writer) int {
 
 // codeFrames has headless Chrome load the windows page at #si-code-export.
 func codeFrames(chrome, page string) ([]codeExport, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer cancel()
-	out, err := exec.CommandContext(ctx, chrome, "--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--virtual-time-budget=5000",
-		"--window-size=1800,1200", "--dump-dom", "file://"+filepath.ToSlash(page)+"#si-code-export").Output()
+	out, err := cdp.Output(chromeWait, chrome, "--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--virtual-time-budget=5000",
+		"--window-size=1800,1200", "--dump-dom", "file://"+filepath.ToSlash(page)+"#si-code-export")
 	if err != nil {
 		return nil, fmt.Errorf("chrome: %v", err)
 	}

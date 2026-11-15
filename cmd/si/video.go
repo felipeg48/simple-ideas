@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/cdp"
 	"github.com/felipeg48/simple-ideas/internal/tools"
 	"html"
 	"image"
@@ -118,10 +119,8 @@ func exportMindmapMP4(chrome, htmlPath, out, name string, scale float64, stdout 
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer cancel()
-	dom, err := exec.CommandContext(ctx, chrome, "--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--virtual-time-budget=6000",
-		"--window-size=1600,1000", "--dump-dom", "file://"+filepath.ToSlash(abs)+"#si-export-play").Output()
+	dom, err := cdp.Output(chromeWait, chrome, "--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--virtual-time-budget=6000",
+		"--window-size=1600,1000", "--dump-dom", "file://"+filepath.ToSlash(abs)+"#si-export-play")
 	if err != nil {
 		return fmt.Errorf("chrome: %v", err)
 	}
@@ -430,9 +429,7 @@ func exportMindmap3DMP4(chrome, htmlPath, out, name string, stdout io.Writer) er
 	gl := append(append([]string{}, chromeGL...), "--window-size=1600,1000")
 	url := func(k int) string { return fmt.Sprintf("file://%s#si-play3d-%d", filepath.ToSlash(abs), k) }
 	run := func(args ...string) ([]byte, error) {
-		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-		defer cancel()
-		return exec.CommandContext(ctx, chrome, append(append([]string{}, gl...), args...)...).CombinedOutput()
+		return cdp.Run(chromeWait, chrome, append(append([]string{}, gl...), args...)...)
 	}
 	dom, err := run("--virtual-time-budget=8000", "--dump-dom", url(0))
 	if err != nil {

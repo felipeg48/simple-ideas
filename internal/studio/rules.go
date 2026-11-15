@@ -65,6 +65,7 @@ var help = map[string]string{
 	"webhook-learner":   "course: random (default) learner ids, or ask: the learner types a name",
 	"webhook-consent":   "course: notice (default) or required: nothing is sent before the learner's OK",
 	"webhook-notice":    "course: the text of the bar that says results are sent",
+	"webhook-base":      "course: https://… where the course is published: event and xAPI activity ids under it",
 	"pass":              "quiz: the pass mark, 70%",
 	"minutes":           "lesson: its length in minutes (else estimated)",
 	"prerequisites":     "course or lesson: what to know first (shown, not enforced)",

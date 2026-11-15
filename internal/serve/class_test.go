@@ -120,7 +120,7 @@ func TestClassAggregate(t *testing.T) {
 	if lab.Done != 1 || lab.Started != 2 || lab.Failing != 1 || quiz.QuizTakers != 2 || quiz.QuizPassed != 1 || quiz.QuizAvg != 75 {
 		t.Errorf("lessons: %+v %+v", lab, quiz)
 	}
-	if len(v.Quizzes) != 1 || fmt.Sprint(v.Quizzes[0].Questions) != "[{q1 0 2} {q2 1 2}]" {
+	if len(v.Quizzes) != 1 || fmt.Sprint(v.Quizzes[0].Questions) != "[{q1  0 2} {q2  1 2}]" {
 		t.Errorf("quiz questions (each learner's last attempt): %+v", v.Quizzes)
 	}
 
@@ -306,5 +306,49 @@ func TestClassHTTP(t *testing.T) {
 	page.Body.Close()
 	if strings.Contains(string(html), "/_si/class/event") || strings.Contains(string(html), "SI_WEBHOOK") {
 		t.Error("without --class or a webhook a course sends nothing")
+	}
+}
+
+// TestClassQuizTextAndDays: the view names a quiz's questions from its
+// source, and opens a saved day (.si/class/<day>.jsonl) besides today.
+func TestClassQuizTextAndDays(t *testing.T) {
+	s, dir := classServer(t)
+	os.WriteFile(filepath.Join(dir, "c", "_course.md"), []byte("---\ntitle: Web 101\n---\n- Module 1: Basics\n  - [A](01/a.md)\n  - [Q](01/q.md)\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "c", "01", "q.md"), []byte("---\ntype: quiz\n---\n# Q\n\n## What is **HTTP**?\n\n- [x] A protocol\n- [ ] A fish\n\n## Port of HTTPS?\n\n- [ ] 80\n- [x] 443\n"), 0o644)
+	day := "2026-11-01"
+	os.MkdirAll(filepath.Join(dir, ".si", "class"), 0o755)
+	old, _ := parseClassEvent([]byte(classEv("e-old", "quiz.submitted", "l-bbbbbbbbbbbb", "01/q.html", `{"score":50,"questions":[{"id":"q1","correct":true},{"id":"q2","correct":false}]}`)), "c",
+		time.Date(2026, 11, 1, 10, 0, 0, 0, time.Local))
+	line, _ := json.Marshal(old)
+	os.WriteFile(filepath.Join(dir, ".si", "class", day+".jsonl"), append(line, '\n'), 0o644)
+	os.WriteFile(filepath.Join(dir, ".si", "class", "notes.jsonl"), nil, 0o644)
+	ts := httptest.NewServer(s.Handler())
+	defer ts.Close()
+	get := func(q string) (classView, int) {
+		res, err := http.Get(ts.URL + "/_si/class/data" + q)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		var v classView
+		json.NewDecoder(res.Body).Decode(&v)
+		return v, res.StatusCode
+	}
+	v, _ := get("")
+	today := time.Now().Format("2006-01-02")
+	if v.Day != today || len(v.Days) != 2 || v.Days[0] != today || v.Days[1] != day || len(v.Learners) != 0 {
+		t.Errorf("today: day %q days %v learners %d", v.Day, v.Days, len(v.Learners))
+	}
+	v, _ = get("?day=" + day)
+	if v.Day != day || len(v.Learners) != 1 || len(v.Quizzes) != 1 {
+		t.Fatalf("saved day: %+v", v)
+	}
+	if qs := v.Quizzes[0].Questions; len(qs) != 2 || qs[0].Text != "What is HTTP?" || qs[1].Text != "Port of HTTPS?" || qs[1].Wrong != 1 {
+		t.Errorf("question text: %+v", qs)
+	}
+	for _, bad := range []string{"../x", "2026-13-40", "notes"} {
+		if _, code := get("?day=" + bad); code != http.StatusNotFound {
+			t.Errorf("day=%s: %d", bad, code)
+		}
 	}
 }

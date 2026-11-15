@@ -271,9 +271,13 @@ Not everything is a slide deck. Pick the type by what the reader does:
   si.conf `course.webhook:`) sends `lesson.completed`, `quiz.submitted`,
   `lab.step.checked`, `demo.watched`, `course.completed` from the learner's
   browser; `webhook-format: json|slack|teams|discord|xapi`, `webhook-events:`,
-  `webhook-learner: ask`, `webhook-consent: required`, `webhook-notice:`.
+  `webhook-learner: ask`, `webhook-consent: required`, `webhook-notice:`,
+  `webhook-base: https://…` (where the course is published: stable xAPI
+  activity ids; without it a course opened from disk uses `urn:si:course:…`).
   Only `https://` (or `relay`: `si serve --relay` forwards and signs with
-  `webhook-secret:` from the user's own si.conf / `SI_WEBHOOK_SECRET`). Never
+  `webhook-secret:` from the user's own si.conf / `SI_WEBHOOK_SECRET`:
+  `X-Si-Timestamp` + `X-Si-Signature` over `"<timestamp>.<body>"`; tell
+  receivers to refuse a timestamp over 5 minutes off). Never
   put a secret in `_course.md`: `webhook-token:` and `webhook-auth:` are
   visible in the page. A lab step can check itself: `<!-- check: command ·
   expect "text" · exit 0 -->` (a ✓ Check button in `si play`, a "Run this to
@@ -281,8 +285,9 @@ Not everything is a slide deck. Pick the type by what the reader does:
   --webhook-format slack` posts the run's summary. A live class: `si serve
   course/ --class --addr 0.0.0.0:8000` (no `webhook:` needed) shows the
   trainer learners by lessons, who's stuck, quiz questions most got wrong
-  and a CSV at `/_si/class` (loopback, or the keyed link si prints); events
-  are kept in `.si/class/<date>.jsonl`.
+  (by title) and a CSV at `/_si/class` (loopback, or the keyed link si
+  prints); events are kept in `.si/class/<date>.jsonl` and earlier days
+  open from its Day picker. No class view in the Studio or the terminal.
 - **Project structure** (RULES.md §31): when a project has many kinds of
   output (decks, labs, a site, videos, zips), a `structure:` block in the
   project's si.conf maps each to a folder: one folder per line, nested by

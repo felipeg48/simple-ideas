@@ -18,6 +18,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/felipeg48/simple-ideas/internal/brand"
+	"github.com/felipeg48/simple-ideas/internal/cdp"
 	"github.com/felipeg48/simple-ideas/internal/tools"
 	"github.com/felipeg48/simple-ideas/internal/webdemo"
 	"html"
@@ -53,7 +54,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "3.24.0"
+const version = "3.25.0"
 
 // Exit codes.
 const (
@@ -1872,6 +1873,11 @@ func lanIPs() []string {
 // findChrome returns a path to a headless-capable Chromium browser, or "".
 func findChrome() string { return tools.Find("chrome") }
 
+// chromeWait bounds one headless Chrome run (a screenshot, a PDF, a
+// --dump-dom) once it has its slot (cdp.Command): generous, since a busy
+// machine slows Chrome down many times over, but never endless.
+const chromeWait = 3 * time.Minute
+
 // deckToPDF renders a built deck HTML to a self-contained PDF with headless
 // Chrome. The deck is loaded at #print so deck.js shows every slide in its
 // final state (all steps revealed, canvases at their last state).
@@ -1885,13 +1891,10 @@ func pagePDF(chrome, htmlPath, pdfPath, query string) error {
 		return err
 	}
 	url := "file://" + filepath.ToSlash(abs) + query + "#print"
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, chrome,
+	if out, err := cdp.Run(chromeWait, chrome,
 		"--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--no-pdf-header-footer", atRest,
 		"--virtual-time-budget=2000",
-		"--print-to-pdf="+pdfPath, url)
-	if out, err := cmd.CombinedOutput(); err != nil {
+		"--print-to-pdf="+pdfPath, url); err != nil {
 		return fmt.Errorf("%v: %s", err, strings.TrimSpace(string(out)))
 	}
 	if fi, err := os.Stat(pdfPath); err != nil || fi.Size() == 0 {

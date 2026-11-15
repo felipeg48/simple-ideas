@@ -194,6 +194,9 @@ func (s *Server) RemoteHandler(key string, roles []string) http.Handler {
 	mux.HandleFunc("POST /_si/remote/send", s.relay.send)
 	mux.HandleFunc("POST /_si/qa", s.qaState) // a phone teleprompter's Q&A buttons (presenter key)
 	mux.HandleFunc("POST /_si/cloud", s.cloudHide)
+	if s.Relay {
+		mux.HandleFunc("POST /_si/relay", s.hookRelay) // a course page's result events, as on loopback (check.go)
+	}
 	static := http.FileServer(http.Dir(s.dir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path
