@@ -78,7 +78,8 @@ try {
   check((await look()).pct === "40", "opacity is kept at 40 % or more");
   await page.evaluate(() => window.siPlay.terminal.opacity(70));
   await page.screenshot({ path: join(process.env.SI_SHOTS || dir, "drawer-opacity.png") });
-  await page.reload(); await page.waitForFunction(() => window.siTerm);
+  // a live reload (si.conf changed above) may land at the same moment and abort this one: then reload again
+  await page.reload().catch(() => page.reload()); await page.waitForFunction(() => window.siTerm);
   check(await until(async () => (await look()).pct === "70"), "the opacity is remembered");
   check(errors.length === 0, "no page errors" + (errors.length ? ": " + errors.join("; ") : ""));
 } catch (e) {
