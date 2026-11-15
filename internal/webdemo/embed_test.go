@@ -1,6 +1,12 @@
 package webdemo
 
 import (
+	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -101,10 +107,78 @@ func TestPlayProgram(t *testing.T) {
 	if p.Cmd != "SHELL='/bin/bash' SI_TERM_PROMPT=clean exec '/usr/local/bin/si' play '/a b/talk.md' --addr 127.0.0.1:7411" && p.Cmd != "SHELL=/bin/bash SI_TERM_PROMPT=clean exec /usr/local/bin/si play '/a b/talk.md' --addr 127.0.0.1:7411" {
 		t.Errorf("cmd = %s", p.Cmd)
 	}
-	if p.Ready.Port != 7411 || p.Within != time.Minute || p.Name != "si-play" {
+	if p.Ready.Port != 7411 || !p.Ready.Gate || p.Within != 10*time.Minute || p.Name != "si-play" {
 		t.Errorf("program = %+v", p)
 	}
 	if !deckApp("../m/talk.md") || deckApp("http://x/talk.md") || deckApp("app") {
 		t.Error("deckApp: a .md path only")
+	}
+}
+
+// fakeGate serves si play's /_si/ready: state gives ready and failed.
+func fakeGate(t *testing.T, state func() (bool, string)) int {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/_si/ready" {
+			http.NotFound(w, r)
+			return
+		}
+		ready, failed := state()
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"ready":%t,"failed":%q,"steps":[]}`, ready, failed)
+	}))
+	t.Cleanup(srv.Close)
+	return srv.Listener.Addr().(*net.TCPAddr).Port
+}
+
+// TestDeckGate (#18): with app: a deck, si play is ready once it serves the
+// talk, past its getting-ready page, so the demo's prepare: runs after the
+// deck's setup:, never beside it; a failed setup: fails the run with its
+// error; a deck with no setup: (no gate) is ready at once.
+func TestDeckGate(t *testing.T) {
+	noWindows(t)
+	dir := t.TempDir()
+	marker := filepath.Join(dir, "set-up")
+	polls := 0
+	port := fakeGate(t, func() (bool, string) { // the deck's setup: takes three polls, then leaves its mark
+		polls++
+		if polls < 3 {
+			return false, ""
+		}
+		os.WriteFile(marker, nil, 0o644)
+		return true, ""
+	})
+	path := filepath.Join(dir, "d.md")
+	os.WriteFile(path, []byte("---\ntype: demo\napp: none\nprepare: test -f set-up\n---\n## F\n- terminal \"T\"\n"), 0o644)
+	s, _ := ParseFile(path)
+	play := &Program{Name: "si-play", Cmd: "sleep 30", Ready: Ready{Port: port, Gate: true}, Within: 10 * time.Second, Text: "si play talk.md (app:)"}
+	s.Prelude = append([]Prep{{Start: play}}, s.Prelude...) // as playDeck does
+	r := &runner{s: s, o: Options{Log: io.Discard}, procs: map[string]*proc{}, terms: map[string]*term{}, abort: make(chan struct{})}
+	if f := r.prelude(); f != nil {
+		t.Errorf("prepare: after the deck's setup: %+v", f)
+	}
+	r.shutdown()
+
+	same := func(s string) string { return s }
+	p, err := startProc("si-play", "sleep 30", dir, "", same)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.stop()
+	failed := fakeGate(t, func() (bool, string) { return false, "setup: docker compose up: exit status 1" })
+	if err := p.ready(Ready{Port: failed, Gate: true}, 5*time.Second); err == nil || !strings.Contains(err.(*failure).found, "getting ready failed: setup: docker compose up") {
+		t.Errorf("a failed setup: %v", err)
+	}
+	talk := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "<!doctype html><title>talk</title>") }))
+	defer talk.Close()
+	if err := p.ready(Ready{Port: talk.Listener.Addr().(*net.TCPAddr).Port, Gate: true}, 5*time.Second); err != nil {
+		t.Errorf("no gate: %v", err)
+	}
+	// si play exits on a failed setup: its last words say why
+	q, err := startProc("si-play", "echo 'si play: getting ready failed: setup: make: exit status 2'; exit 1", dir, "", same)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := q.ready(Ready{Port: 1, Gate: true}, 5*time.Second); err == nil || err.(*failure).found != "getting ready failed: setup: make: exit status 2" {
+		t.Errorf("si play exited: %v", err)
 	}
 }

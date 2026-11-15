@@ -142,7 +142,10 @@ func playProgram(bin, deckPath string, port int, shell string) *Program {
 	if shell != "" {
 		cmd = "SHELL=" + shellQuote(shell) + " " + cmd
 	}
-	return &Program{Name: "si-play", Cmd: cmd, Ready: Ready{Port: port}, Within: time.Minute, Text: "si play " + filepath.Base(deckPath) + " (app:)"}
+	// ready once the talk is served, past the deck's own setup: and start:
+	// (its getting-ready page): the demo's prepare: and features come after
+	// (#18); si play gives up on a setup: line past its own within: first
+	return &Program{Name: "si-play", Cmd: cmd, Ready: Ready{Port: port, Gate: true}, Within: 10 * time.Minute, Text: "si play " + filepath.Base(deckPath) + " (app:)"}
 }
 
 // siPlay runs a window.siPlay call in the app's page and returns its value.

@@ -380,7 +380,9 @@ Not everything is a slide deck. Pick the type by what the reader does:
   a failed `expect output` shows the terminal's last 40 lines.
 - **Web demos on the deck itself** (RULES.md §27, The deck on stage): to film
   the slides with `si play`'s drawer and browser windows over them, set
-  `app: talk.md` (si demo starts and stops `si play`), then `embed-terminal
+  `app: talk.md` (si demo starts and stops `si play`, and waits past the
+  deck's own `setup:` before the demo's `prepare:`: give a stack to one of
+  them, not both), then `embed-terminal
   "Lab 1"` + `run "…"` / `expect output "…"`, `embed-browser "Console" · at
   700,60 · size 640x420`, `click "Queues" in embed-browser "Console"`, `slide
   3`, `next`, `prev`, `embed-terminal close`. Never drive the drawer with

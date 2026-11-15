@@ -89,7 +89,8 @@ type runner struct {
 	reqs       []string // failed requests of this feature
 	urls       map[string]string
 	session    string          // the page whose events count
-	loading    int             // the page's own frame loading now (a click or a key may start a navigation)
+	loading    map[string]bool // the page's own frames loading now, by frame id (a click or a key may start a navigation)
+	lastLoad   time.Time       // the last start or stop of a load
 	inner      map[string]bool // frames inside the page (iframes): their loads never hold a step
 	shotN      int
 	curFeature *Feature        // the feature running now (for its region)
@@ -513,17 +514,24 @@ func (r *runner) event(e cdp.Event) {
 		var p struct{ FrameID string }
 		json.Unmarshal(e.Params, &p)
 		r.inner[p.FrameID] = true
-	case "Page.frameStartedLoading", "Page.frameStoppedLoading":
+	case "Page.frameStartedLoading", "Page.frameStoppedLoading", "Page.frameDetached":
+		// per frame, not a count: Chrome does not pair start and stop when a
+		// load is replaced by another (a page that reloads itself, #14); a
+		// stop clears its frame however many starts came before it
 		var p struct{ FrameID string }
 		json.Unmarshal(e.Params, &p)
 		if r.inner[p.FrameID] {
 			return
 		}
-		if e.Method == "Page.frameStartedLoading" {
-			r.loading++
-		} else if r.loading > 0 {
-			r.loading--
+		if r.loading == nil {
+			r.loading = map[string]bool{}
 		}
+		if e.Method == "Page.frameStartedLoading" {
+			r.loading[p.FrameID] = true
+		} else {
+			delete(r.loading, p.FrameID)
+		}
+		r.lastLoad = time.Now()
 	case "Runtime.exceptionThrown":
 		var p struct {
 			ExceptionDetails struct {
@@ -641,7 +649,7 @@ func (r *runner) feature(f *Feature, section bool) (fr FeatureResult, cl *clip) 
 	defer r.endFeature() // its terminals and start steps' programs, before its context goes
 	r.ctx = ctx.BrowserContextID
 	r.mu.Lock()
-	r.errs, r.reqs, r.urls, r.loading, r.inner, r.oopif = nil, nil, map[string]string{}, 0, map[string]bool{}, map[string]string{}
+	r.errs, r.reqs, r.urls, r.loading, r.inner, r.oopif = nil, nil, map[string]string{}, map[string]bool{}, map[string]bool{}, map[string]string{}
 	r.mu.Unlock()
 	r.fr, r.embed, r.embedRan = nil, "", nil
 	tid, err := r.c.OpenPage(ctx.BrowserContextID, r.s.W, r.s.H)
@@ -902,16 +910,24 @@ func (r *runner) settle() error {
 }
 
 // loaded waits, after a click or a key, for a navigation it started to
-// finish, so the next step does not look at the page being left.
+// finish, so the next step does not look at the page being left. The page's
+// own word has the last say: a frame Chrome never sends a stop for does not
+// hold the step once the document is complete and no load has started or
+// stopped for loadQuiet.
 func (r *runner) loaded() error {
 	time.Sleep(60 * time.Millisecond)
 	end := time.Now().Add(r.s.Timeout)
 	for {
 		r.mu.Lock()
-		n := r.loading
+		n, quiet := len(r.loading), time.Since(r.lastLoad) > loadQuiet
 		r.mu.Unlock()
-		if n <= 0 {
+		if n == 0 {
 			return nil
+		}
+		if quiet {
+			if v, err := r.c.Eval("document.readyState"); err == nil && string(v) == `"complete"` {
+				return nil
+			}
 		}
 		if time.Now().After(end) {
 			return &failure{expected: "the page finishes loading", found: "still loading"}
@@ -919,6 +935,10 @@ func (r *runner) loaded() error {
 		time.Sleep(30 * time.Millisecond)
 	}
 }
+
+// loadQuiet is how long the loads must be still before a complete document
+// ends loaded's wait on a frame Chrome left loading.
+const loadQuiet = time.Second
 
 // found is the locator's answer (locate.js).
 type found struct {
