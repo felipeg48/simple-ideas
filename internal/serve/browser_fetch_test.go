@@ -102,7 +102,7 @@ Promise.all([
 		t.Fatal(err)
 	}
 	host := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, `<!doctype html><script>addEventListener('message',function(e){window.got=JSON.stringify(e.data)})</script><iframe src="%s/"></iframe>`, proxy)
+		fmt.Fprintf(w, `<!doctype html><script>addEventListener('message',function(e){if(e.data&&(e.data.res||e.data.err))window.got=JSON.stringify(e.data)})</script><iframe src="%s/"></iframe>`, proxy)
 	}))
 	defer host.Close()
 	c, err := cdp.Start(chrome, 800, 600)
