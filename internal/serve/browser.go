@@ -83,7 +83,7 @@ func (b *browserProxies) open(target *url.URL) (string, error) {
 	}
 	srv := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == fwdPath {
-			b.forward(w, r)
+			b.forward(w, r, key)
 			return
 		}
 		rp.ServeHTTP(w, r)
@@ -122,10 +122,14 @@ func (b *browserProxies) through(loc, key, origin string) string {
 // keeps the method and the body). navScript points such forms here.
 const fwdPath = "/__si_fwd"
 
-func (b *browserProxies) forward(w http.ResponseWriter, r *http.Request) {
+func (b *browserProxies) forward(w http.ResponseWriter, r *http.Request, key string) {
 	u, err := url.Parse(r.URL.Query().Get("to"))
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 		http.Error(w, "an http(s) address, please", http.StatusBadRequest)
+		return
+	}
+	if r.URL.Query().Get("x") != "" {
+		fetchThrough(w, r, u, key)
 		return
 	}
 	o, err := b.open(u)
@@ -135,6 +139,38 @@ func (b *browserProxies) forward(w http.ResponseWriter, r *http.Request) {
 	}
 	u.Scheme, u.Host = "", ""
 	http.Redirect(w, r, o+u.String(), http.StatusTemporaryRedirect)
+}
+
+// fetchThrough is fwdPath with ?x=1: a page's own fetch or XMLHttpRequest
+// to another site (navScript points it here), sent on from this proxy, so
+// the page sees a same-origin answer and no CORS rule of the proxy's origin
+// gets in the way. The other site gets the request as the page's real origin
+// (key) sent it, minus cookies: this proxy's cookies belong to the framed
+// site, and the other site's own live on its proxy's origin, out of reach;
+// its Set-Cookie is dropped for the same reason. A redirect it answers comes
+// back through fwdPath, so fetch follows it here too.
+func fetchThrough(w http.ResponseWriter, r *http.Request, to *url.URL, key string) {
+	rp := &httputil.ReverseProxy{
+		Rewrite: func(pr *httputil.ProxyRequest) {
+			u := *to
+			pr.Out.URL, pr.Out.Host = &u, to.Host
+			pr.Out.Header.Del("Cookie")
+			pr.Out.Header.Del("Referer")
+			if pr.In.Header.Get("Origin") != "" {
+				pr.Out.Header.Set("Origin", key)
+			}
+		},
+		ModifyResponse: func(res *http.Response) error {
+			res.Header.Del("Set-Cookie")
+			if loc := res.Header.Get("Location"); loc != "" {
+				if l, err := to.Parse(loc); err == nil && (l.Scheme == "http" || l.Scheme == "https") {
+					res.Header.Set("Location", fwdPath+"?x=1&to="+url.QueryEscape(l.String()))
+				}
+			}
+			return nil
+		},
+	}
+	rp.ServeHTTP(w, r)
 }
 
 // navScript goes into every proxied HTML page: it tells the window around it
@@ -151,7 +187,9 @@ func (b *browserProxies) forward(w http.ResponseWriter, r *http.Request) {
 // still leaves the proxy. A POST form to another site (submitted, or sent by
 // form.submit()) keeps its fields: its action (or its button's formaction) is
 // pointed at this proxy's fwdPath, which hands it, body and all, to the other
-// site's proxy.
+// site's proxy. Its own fetch and XMLHttpRequest calls to an absolute
+// http(s) address on another origin go to fwdPath?x=1 (fetchThrough), and
+// to its own site's address to this proxy.
 func navScript(target string) string {
 	t, _ := json.Marshal(target) // escapes <, so it cannot end the script
 	return `<script>(function(){var P=window.parent;if(P===window)return;var T=` + string(t) + `;` +
@@ -162,6 +200,13 @@ func navScript(target string) string {
 		`addEventListener('click',function(e){if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;` +
 		`var a=e.target.closest&&e.target.closest('a[href]');if(a&&away(a.href))e.preventDefault()});` +
 		`var wo=window.open;window.open=function(u){if(u!=null&&u!==''&&away(u))return null;return wo.apply(window,arguments)};` +
+		// fetch and XMLHttpRequest to an absolute http(s) address elsewhere:
+		// the framed site's own origin to this proxy, another through fwdPath
+		`function via(h){var u;try{u=new URL(String(h),location.href)}catch(x){return null}if(!/^https?:$/.test(u.protocol)||u.origin===location.origin)return null;` +
+		`if(u.origin===T)return location.origin+u.pathname+u.search+u.hash;return location.origin+'` + fwdPath + `?x=1&to='+encodeURIComponent(u.href)}` +
+		`var F=window.fetch;if(F)window.fetch=function(i,o){var R=window.Request&&i instanceof Request,v=via(R?i.url:i);if(!v)return F.apply(window,arguments);if(!R)return F.call(window,v,o);` +
+		`return(/^(GET|HEAD)$/.test(i.method)?Promise.resolve(void 0):i.blob()).then(function(b){return F.call(window,new Request(v,{method:i.method,headers:i.headers,body:b,credentials:i.credentials,cache:i.cache,redirect:i.redirect,integrity:i.integrity,keepalive:i.keepalive,signal:i.signal}),o)})};` +
+		`var XO=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,h){var v=via(h);if(!v)return XO.apply(this,arguments);var a=[].slice.call(arguments);a[1]=v;return XO.apply(this,a)};` +
 		`function meth(f,s){return((s&&s.getAttribute('formmethod'))||f.getAttribute('method')||'get').toLowerCase()}` +
 		`function post(f,s){var fa=s&&s.hasAttribute('formaction'),u;try{u=new URL(fa?s.formAction:f.action,location.href)}catch(x){return}` +
 		`if(!/^https?:$/.test(u.protocol)||u.origin===location.origin)return;var to=location.origin+'` + fwdPath + `?to='+encodeURIComponent(u.href);if(fa)s.formAction=to;else f.action=to}` +

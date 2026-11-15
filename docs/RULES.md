@@ -1358,7 +1358,11 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   `window.open` and GET forms are caught, since a page cannot replace
   `location`'s methods). A form that POSTs to another site (a login page)
   arrives there with its fields, in every browser: si sends it on through
-  that site's proxy. Type the address in the box when a page still leaves.
+  that site's proxy. A page's own `fetch` and `XMLHttpRequest` calls to
+  another site (an API on another port) go through the page's proxy too, so
+  they get their answers whatever that site's CORS rules; they carry no
+  cookies there and bring none back. Type the address in the box when a page
+  still leaves.
   Keys typed in a window never drive the deck.
 
   ```markdown

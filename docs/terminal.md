@@ -258,6 +258,17 @@ still leave the proxy. POST forms (v3.18.0): on submit (and in a wrapped
 so a login form keeps its fields, with or without the Navigation API
 (`TestBrowserProxyForwardsPost`, the login and `form.submit()` cases of
 `browser.e2e.mjs`).
+Requests a page sends itself: `fetch` (a string, a `URL` or a `Request`,
+whose body is read and sent again) and `XMLHttpRequest.open` with an
+absolute http(s) address on another origin go to `/__si_fwd?x=1&to=<real
+address>`, which sends the request on in place (no redirect, so no CORS rule
+applies to the page): method, body and headers kept, `Origin` the framed
+site's real origin, never the proxy's cookies (they are the framed site's;
+the other site's own cookies live on its proxy's origin), its `Set-Cookie`
+dropped, a redirect it answers brought back through `/__si_fwd`; an absolute
+address on the framed site itself goes to its own proxy
+(`TestBrowserProxyFetchThrough`, `TestBrowserProxyFetchInChrome`: two local
+origins, no CORS headers).
 `TestBrowserProxyAcrossSites`; `web/studio/e2e/browser.e2e.mjs` (two local
 origins, headless).
 
