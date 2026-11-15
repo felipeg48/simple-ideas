@@ -127,12 +127,14 @@ func TestClickCues(t *testing.T) {
 func TestToolCues(t *testing.T) {
 	dir := t.TempDir()
 	p := filepath.Join(dir, "d.md")
-	os.WriteFile(p, []byte("---\nbrowser: RabbitMQ=http://localhost:15672\n---\n# T\n\n---\n\n## Demo\n\nNotes:\nUp. [TERM Lab 1: ls *.md _x_] Then [BROWSER RabbitMQ] and [BROWSER http://x/q]. [TERM close]\n\n---\n\n## Bad\n\nNotes:\nA [TERM] b [BROWSER Nope] c [TERM x:]\n"), 0o644)
+	os.WriteFile(p, []byte("---\nbrowser: RabbitMQ=http://localhost:15672\n---\n# T\n\n---\n\n## Demo\n\nNotes:\nUp. [TERM Lab 1: ls *.md _x_] Then [BROWSER RabbitMQ] and [BROWSER http://x/q]. [BROWSER RabbitMQ · at 560,40 · size 1010x640 · zoom 125%] [BROWSER RabbitMQ: http://localhost:15672/#/queues] [TERM close]\n\n---\n\n## Bad\n\nNotes:\nA [TERM] b [BROWSER Nope] c [TERM x:] d [BROWSER RabbitMQ · zoom 900%]\n"), 0o644)
 	d, _ := deck.Parse(p)
 	res := Deck(d, Options{})
 	h := string(res.HTML)
 	for _, want := range []string{`<span class="si-cue" data-cue="term">TERM Lab 1: ls *.md _x_</span>`, `<span class="si-cue" data-cue="browser">BROWSER RabbitMQ</span>`,
-		`<span class="si-cue" data-cue="browser">BROWSER http://x/q</span>`, `<span class="si-cue" data-cue="term">TERM close</span>`} {
+		`<span class="si-cue" data-cue="browser">BROWSER http://x/q</span>`, `<span class="si-cue" data-cue="term">TERM close</span>`,
+		`<span class="si-cue" data-cue="browser">BROWSER RabbitMQ · at 560,40 · size 1010x640 · zoom 125%</span>`,
+		`<span class="si-cue" data-cue="browser">BROWSER RabbitMQ: http://localhost:15672/#/queues</span>`} {
 		if !strings.Contains(h, want) {
 			t.Errorf("missing %s", want)
 		}
@@ -142,7 +144,7 @@ func TestToolCues(t *testing.T) {
 		msgs = append(msgs, pr.Msg)
 	}
 	all := strings.Join(msgs, "\n")
-	if len(msgs) != 3 || !strings.Contains(all, "needs a tab name") || !strings.Contains(all, "no browser: link is named Nope") || !strings.Contains(all, "empty command") {
+	if len(msgs) != 4 || !strings.Contains(all, "needs a tab name") || !strings.Contains(all, "no browser: link is named Nope") || !strings.Contains(all, "empty command") || !strings.Contains(all, "30% to 300%") {
 		t.Errorf("problems = %v", msgs)
 	}
 	if len(res.Warnings) != 0 {

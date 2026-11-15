@@ -286,6 +286,15 @@
       });
     },
     close: function (n) { (n ? [byName(n)] : wins.slice()).forEach(function (w) { if (w) close(w); }); },
+    go: function (n, u) {
+      var w = byName(n);
+      if (!w) return Promise.reject(new Error('no open browser window named ' + n));
+      try { u = new URL(u, w.url).href; } catch (e) {}
+      return new Promise(function (ok) { /* its page loaded (a same-page #hash fires no load: 5 s) */
+        var f = w.frame, done = function () { clearTimeout(tm); f.removeEventListener('load', done); ok(n); }, tm = setTimeout(done, 5000);
+        f.addEventListener('load', done); front(w); w.go(u);
+      });
+    },
     min: function (n) { var w = byName(n); if (w) minimise(w, true); },
     frame: function (n) { var w = byName(n); return w ? w.frame : null; },
     names: function () { return wins.map(function (w) { return w.name; }); }

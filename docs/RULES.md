@@ -573,21 +573,34 @@ Points: What to cover, not a script
   `[TERM Lab 1]` only opens the tab; `[TERM min]`, `[TERM max]` and
   `[TERM close]` set the drawer. `[BROWSER RabbitMQ]` opens the deck's
   `browser:` link named `RabbitMQ` (or a URL) in a window over the slides;
-  `[BROWSER close]` closes every window. Like `[CLICK]` they are never read
+  after the name, `· at X,Y` (CSS pixels from the top left), `· size WxH`
+  and `· zoom N%` (30 % to 300 %) place, size and zoom it, as a web demo's
+  `embed-browser` does (§27): `[BROWSER RabbitMQ · at 560,40 · size
+  1010x640 · zoom 125%]`; on a window already open they move it. `[BROWSER
+  RabbitMQ: http://localhost:15672/#/queues]` takes the open window
+  `RabbitMQ` to that page (an address relative to its page, `#/queues`,
+  works too) instead of opening another; with no such window it opens the
+  link, then goes there. `[BROWSER close]` closes every window. Closing the
+  drawer or a window gives the keys back to the slides (→ moves on again).
+  Like `[CLICK]` they are never read
   aloud: the teleprompter (and `si play --terminal --notes`) shows each as a
   badge with its text, auto-play in
   `si play` acts on them as it reaches them, and `si build talk.md --mp4
   --voice` films them at that point of the narration (the deck then plays on
-  `si play`'s page, the drawer and the windows in the video). They are no
+  `si play`'s page, the drawer and the windows in the video; the deck's
+  `setup:` and `start:` run first, §14). They are no
   advance: they do not count as `[CLICK]` cues. `si check` reports a
-  malformed cue and a `[BROWSER Name]` with no such `browser:` link (one
+  malformed cue (a window option it does not know too) and a `[BROWSER
+  Name]` with no such `browser:` link (one
   with `/`, `.` or `:` is a URL). A cue ends at the first `]`.
 
   ```markdown
   Notes: (1 min)
   Let's see it in action. [TERM Lab 1: docker compose up -d --wait] The broker
-  is up. [BROWSER RabbitMQ] Here is the queue, filling as the producer runs.
-  [TERM close] [BROWSER close] [CLICK]
+  is up. [BROWSER RabbitMQ · at 560,40 · size 1010x640 · zoom 125%] Here is
+  the queue, filling as the producer runs.
+  [BROWSER RabbitMQ: http://localhost:15672/#/exchanges] And the exchange
+  that feeds it. [TERM close] [BROWSER close] [CLICK]
   ```
 - A line starting with `Points:` starts the slide's **speaker-notes talking
   points**: the main points of the topic as short bullets, to glance at if
@@ -1354,12 +1367,13 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   | `siPlay.terminal.state(s)` | the drawer: `'min'` (hidden, the shells run on), `'max'`, `'restore'`, `'close'` |
   | `siPlay.terminal.names()` | the open shell tabs |
   | `siPlay.browser.open(name, {x, y, w, h, zoom})` | a window with the `browser:` link `name` (or a URL), placed in CSS pixels, zoom `1.25` = 125 %; an open one comes to the front; resolves when its page has loaded |
-  | `siPlay.browser.close(name)` · `.min(name)` | closes (no name: every window) or minimises it |
+  | `siPlay.browser.go(name, url)` | takes the open window `name` to `url` (relative to its page: `'#/queues'`); resolves when it has loaded (5 s at most) |
+  | `siPlay.browser.close(name)` · `.min(name)` | closes (no name: every window) or minimises it; the keys go back to the deck |
   | `siPlay.browser.frame(name)` | the window's `<iframe>`, also `iframe[data-si-window="name"]` |
   | `siPlay.browser.names()` | the open windows |
   | `siPlay.slide(n, step)` · `.next()` · `.prev()` | moves the deck (slide from 1) like the keys; resolve with `siPlay.at()` |
   | `siPlay.at()` | `{slide, step, slides}` |
-  | `siPlay.act(cues)` | runs cues as `[TERM …]` / `[BROWSER …]` do: `[{tool: 'term', name, cmd}, {tool: 'browser', name}, {tool: 'term', state: 'close'}]` |
+  | `siPlay.act(cues)` | runs cues as `[TERM …]` / `[BROWSER …]` do: `[{tool: 'term', name, cmd}, {tool: 'browser', name, o: {x, y, w, h, zoom}, url}, {tool: 'term', state: 'close'}]` |
 
 - **The tools bar**: the play terminal's tools sit in a narrow bar of icons
   on its right edge, as in an editor: **Demos** (▷), **Runbook** (the book)

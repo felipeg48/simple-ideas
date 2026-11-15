@@ -213,12 +213,13 @@
   | `siPlay.terminal.state(s)` | the drawer: `'min'` (hidden, the shells run on), `'max'`, `'restore'`, `'close'` |
   | `siPlay.terminal.names()` | the open shell tabs |
   | `siPlay.browser.open(name, {x, y, w, h, zoom})` | a window with the `browser:` link `name` (or a URL), placed in CSS pixels, zoom `1.25` = 125 %; an open one comes to the front; resolves when its page has loaded |
-  | `siPlay.browser.close(name)` · `.min(name)` | closes (no name: every window) or minimises it |
+  | `siPlay.browser.go(name, url)` | takes the open window `name` to `url` (relative to its page: `'#/queues'`); resolves when it has loaded (5 s at most) |
+  | `siPlay.browser.close(name)` · `.min(name)` | closes (no name: every window) or minimises it; the keys go back to the deck |
   | `siPlay.browser.frame(name)` | the window's `<iframe>`, also `iframe[data-si-window="name"]` |
   | `siPlay.browser.names()` | the open windows |
   | `siPlay.slide(n, step)` · `.next()` · `.prev()` | moves the deck (slide from 1) like the keys; resolve with `siPlay.at()` |
   | `siPlay.at()` | `{slide, step, slides}` |
-  | `siPlay.act(cues)` | runs cues as `[TERM …]` / `[BROWSER …]` do: `[{tool: 'term', name, cmd}, {tool: 'browser', name}, {tool: 'term', state: 'close'}]` |
+  | `siPlay.act(cues)` | runs cues as `[TERM …]` / `[BROWSER …]` do: `[{tool: 'term', name, cmd}, {tool: 'browser', name, o: {x, y, w, h, zoom}, url}, {tool: 'term', state: 'close'}]` |
 
 - **The tools bar**: the play terminal's tools sit in a narrow bar of icons
   on its right edge, as in an editor: **Demos** (▷), **Runbook** (the book)

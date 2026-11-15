@@ -24,31 +24,79 @@ type Part struct {
 // browser windows): [TERM Name: command] opens (or raises) the drawer's
 // shell tab Name and runs command, [TERM Name] only opens it, [TERM close],
 // [TERM min] and [TERM max] set the drawer; [BROWSER Name] opens the
-// browser: link Name (or a URL) in a window over the slides, [BROWSER close]
-// closes every window. Never read aloud.
+// browser: link Name (or a URL) in a window over the slides (· at X,Y ·
+// size WxH · zoom N% place it), [BROWSER Name: URL] takes the window Name to
+// URL, [BROWSER close] closes every window. Never read aloud.
 type Act struct {
-	Tool  string `json:"tool"`            // term or browser
-	Name  string `json:"name,omitempty"`  // the tab, the browser: link name or a URL
-	Cmd   string `json:"cmd,omitempty"`   // TERM: the command to run
-	State string `json:"state,omitempty"` // close, min, max
+	Tool  string             `json:"tool"`            // term or browser
+	Name  string             `json:"name,omitempty"`  // the tab, the browser: link name or a URL
+	Cmd   string             `json:"cmd,omitempty"`   // TERM: the command to run
+	State string             `json:"state,omitempty"` // close, min, max
+	URL   string             `json:"url,omitempty"`   // BROWSER Name: URL: the page the window Name goes to
+	Place map[string]float64 `json:"o,omitempty"`     // BROWSER: x, y, w, h (CSS pixels), zoom (1.25 = 125 %), as siPlay.browser.open takes them
 }
 
 // ActCueRE finds the presenter-tool cues in a Notes: script.
 // ponytail: a cue ends at the first ], so a command holding ] cannot be cued.
 var ActCueRE = regexp.MustCompile(`\[(TERM|BROWSER)(\b[^\]]*)\]`)
 
+var (
+	actAtRE   = regexp.MustCompile(`^(-?\d+)\s*,\s*(-?\d+)$`)
+	actSizeRE = regexp.MustCompile(`^(\d+)\s*[x×]\s*(\d+)$`)
+	actZoomRE = regexp.MustCompile(`^(\d+)%$`)
+	actURLRE  = regexp.MustCompile(`^https?://`)
+)
+
+const browserCueForm = "[BROWSER Name · at 560,40 · size 1010x640 · zoom 125%]"
+
 // ParseAct reads one cue's tool (TERM, BROWSER) and what follows it.
 func ParseAct(tool, body string) (Act, error) {
 	body = strings.TrimSpace(body)
 	a := Act{Tool: strings.ToLower(tool)}
 	if a.Tool == "browser" {
+		parts := strings.Split(body, "·")
+		head := strings.TrimSpace(parts[0])
 		switch {
-		case body == "":
+		case head == "":
 			return a, fmt.Errorf("[BROWSER] needs a browser: link name or a URL ([BROWSER RabbitMQ])")
-		case body == "close":
-			a.State = body
-		default:
-			a.Name = body
+		case head == "close":
+			if len(parts) > 1 {
+				return a, fmt.Errorf("[BROWSER %s]: close takes no options", body)
+			}
+			a.State = head
+			return a, nil
+		}
+		// Name: URL (a colon then a space, or then http(s)://) takes the open
+		// window Name to URL; a URL's own colon (http://, localhost:8080) is none
+		a.Name = head
+		if i := strings.Index(head, ":"); i > 0 {
+			rest := head[i+1:]
+			if rest == "" || strings.HasPrefix(rest, " ") || strings.HasPrefix(rest, "\t") || actURLRE.MatchString(rest) {
+				a.Name, a.URL = strings.TrimSpace(head[:i]), strings.TrimSpace(rest)
+				if a.URL == "" {
+					return a, fmt.Errorf("[BROWSER %s] has an empty address after the colon", body)
+				}
+			}
+		}
+		for _, c := range parts[1:] {
+			k, v, _ := strings.Cut(strings.TrimSpace(c), " ")
+			v = strings.TrimSpace(v)
+			if a.Place == nil {
+				a.Place = map[string]float64{}
+			}
+			num := func(s string) float64 { var f float64; fmt.Sscan(s, &f); return f }
+			switch {
+			case k == "at" && actAtRE.MatchString(v):
+				m := actAtRE.FindStringSubmatch(v)
+				a.Place["x"], a.Place["y"] = num(m[1]), num(m[2])
+			case k == "size" && actSizeRE.MatchString(v):
+				m := actSizeRE.FindStringSubmatch(v)
+				a.Place["w"], a.Place["h"] = num(m[1]), num(m[2])
+			case k == "zoom" && actZoomRE.MatchString(v) && num(strings.TrimSuffix(v, "%")) >= 30 && num(strings.TrimSuffix(v, "%")) <= 300:
+				a.Place["zoom"] = num(strings.TrimSuffix(v, "%")) / 100
+			default:
+				return a, fmt.Errorf("[BROWSER %s]: %q: a window takes · at X,Y · size WxH · zoom N%% (30%% to 300%%): %s", body, strings.TrimSpace(c), browserCueForm)
+			}
 		}
 		return a, nil
 	}

@@ -90,6 +90,31 @@ func TestParseAct(t *testing.T) {
 			t.Errorf("%s%q = %q, %v; want %q", tc.tool, tc.body, got, err, tc.want)
 		}
 	}
+	// a window's place, size and zoom; Name: URL takes the window Name there
+	for _, tc := range []struct{ body, want, err string }{
+		{" RabbitMQ · at 560,40 · size 1010x640 · zoom 125%", "RabbitMQ| map[h:640 w:1010 x:560 y:40 zoom:1.25]", ""},
+		{" RabbitMQ: http://localhost:15701/#/queues", "RabbitMQ|http://localhost:15701/#/queues map[]", ""},
+		{" RabbitMQ:http://localhost:15701/", "RabbitMQ|http://localhost:15701/ map[]", ""},
+		{" RabbitMQ: #/queues · zoom 80%", "RabbitMQ|#/queues map[zoom:0.8]", ""},
+		{" localhost:15672", "localhost:15672| map[]", ""},
+		{" http://localhost:15672/ · at -10,0", "http://localhost:15672/| map[x:-10 y:0]", ""},
+		{" RabbitMQ · zoom 500%", "", "30% to 300%"},
+		{" RabbitMQ · size big", "", "· size WxH"},
+		{" RabbitMQ · left", "", "· at X,Y"},
+		{" close · at 1,2", "", "close takes no options"},
+		{" RabbitMQ: ", "", "empty address"},
+	} {
+		a, err := ParseAct("BROWSER", tc.body)
+		if tc.err != "" {
+			if err == nil || !strings.Contains(err.Error(), tc.err) {
+				t.Errorf("BROWSER%q: err = %v, want %q", tc.body, err, tc.err)
+			}
+			continue
+		}
+		if got := a.Name + "|" + a.URL + " " + fmt.Sprint(a.Place); err != nil || got != tc.want {
+			t.Errorf("BROWSER%q = %q, %v; want %q", tc.body, got, err, tc.want)
+		}
+	}
 	if acts, errs := Acts("x [TERM a: b] [BROWSER] [TERMINAL no] [CLICK]"); len(acts) != 1 || len(errs) != 1 {
 		t.Errorf("Acts = %v, %v", acts, errs)
 	}

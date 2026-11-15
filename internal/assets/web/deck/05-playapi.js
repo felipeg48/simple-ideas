@@ -26,6 +26,8 @@
       browser: {
         /* a window over the slides: a browser: link's name or a URL; o {x, y, w, h} CSS pixels, zoom (1.25 = 125 %) */
         open: function (name, o) { return wApi().then(function (a) { return a.open(name, o); }); },
+        /* the open window name to url (relative to its page: '#/queues'); resolves when it loads */
+        go: function (name, url) { return wApi().then(function (a) { return a.go(name, url); }); },
         close: function (name) { return wApi().then(function (a) { a.close(name); }); }, /* no name: every window */
         min: function (name) { return wApi().then(function (a) { a.min(name); }); },
         /* the window's <iframe> (also iframe[data-si-window="name"]), or null */
@@ -37,7 +39,7 @@
       next: function () { forward(); return Promise.resolve(siPlay.at()); },
       prev: function () { backward(); return Promise.resolve(siPlay.at()); },
       at: function () { return { slide: cur + 1, step: step, slides: n }; },
-      /* a Notes: script's cues, in order (deck.Act: {tool, name, cmd, state}) */
+      /* a Notes: script's cues, in order (deck.Act: {tool, name, cmd, state, url, o}) */
       act: function (acts) {
         return (acts || []).reduce(function (p, a) {
           return p.then(function () {
@@ -45,7 +47,11 @@
               if (a.state) return siPlay.terminal.state(a.state);
               return siPlay.terminal.open(a.name).then(function () { if (a.cmd) return siPlay.terminal.run(a.name, a.cmd, { typing: 45 }); });
             }
-            if (a.tool === 'browser') return a.state ? siPlay.browser.close() : siPlay.browser.open(a.name);
+            if (a.tool === 'browser') {
+              if (a.state) return siPlay.browser.close();
+              var w = siPlay.browser.open(a.name, a.o); /* opened, or raised and placed */
+              return a.url ? w.then(function () { return siPlay.browser.go(a.name, a.url); }) : w;
+            }
           });
         }, Promise.resolve());
       }

@@ -36,21 +36,34 @@ Points: What to cover, not a script
   `[TERM Lab 1]` only opens the tab; `[TERM min]`, `[TERM max]` and
   `[TERM close]` set the drawer. `[BROWSER RabbitMQ]` opens the deck's
   `browser:` link named `RabbitMQ` (or a URL) in a window over the slides;
-  `[BROWSER close]` closes every window. Like `[CLICK]` they are never read
+  after the name, `· at X,Y` (CSS pixels from the top left), `· size WxH`
+  and `· zoom N%` (30 % to 300 %) place, size and zoom it, as a web demo's
+  `embed-browser` does (§27): `[BROWSER RabbitMQ · at 560,40 · size
+  1010x640 · zoom 125%]`; on a window already open they move it. `[BROWSER
+  RabbitMQ: http://localhost:15672/#/queues]` takes the open window
+  `RabbitMQ` to that page (an address relative to its page, `#/queues`,
+  works too) instead of opening another; with no such window it opens the
+  link, then goes there. `[BROWSER close]` closes every window. Closing the
+  drawer or a window gives the keys back to the slides (→ moves on again).
+  Like `[CLICK]` they are never read
   aloud: the teleprompter (and `si play --terminal --notes`) shows each as a
   badge with its text, auto-play in
   `si play` acts on them as it reaches them, and `si build talk.md --mp4
   --voice` films them at that point of the narration (the deck then plays on
-  `si play`'s page, the drawer and the windows in the video). They are no
+  `si play`'s page, the drawer and the windows in the video; the deck's
+  `setup:` and `start:` run first, §14). They are no
   advance: they do not count as `[CLICK]` cues. `si check` reports a
-  malformed cue and a `[BROWSER Name]` with no such `browser:` link (one
+  malformed cue (a window option it does not know too) and a `[BROWSER
+  Name]` with no such `browser:` link (one
   with `/`, `.` or `:` is a URL). A cue ends at the first `]`.
 
   ```markdown
   Notes: (1 min)
   Let's see it in action. [TERM Lab 1: docker compose up -d --wait] The broker
-  is up. [BROWSER RabbitMQ] Here is the queue, filling as the producer runs.
-  [TERM close] [BROWSER close] [CLICK]
+  is up. [BROWSER RabbitMQ · at 560,40 · size 1010x640 · zoom 125%] Here is
+  the queue, filling as the producer runs.
+  [BROWSER RabbitMQ: http://localhost:15672/#/exchanges] And the exchange
+  that feeds it. [TERM close] [BROWSER close] [CLICK]
   ```
 - A line starting with `Points:` starts the slide's **speaker-notes talking
   points**: the main points of the topic as short bullets, to glance at if

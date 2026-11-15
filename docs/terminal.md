@@ -295,9 +295,14 @@ and a local fake console).
   buffer, wrapped lines joined.
 - `browser.open(name, {x, y, w, h, zoom})`: a link name, else anything with
   `/`, `.` or `:` is a URL (refused otherwise); resolves on the frame's load.
+- `browser.go(name, url)`: the open window's `w.go`, `url` resolved against
+  its page; resolves on the frame's load or after 5 s (a `#hash` change
+  fires none). Closing or minimising a window, and hiding the drawer, blur
+  what had the focus inside them, so keys reach the deck again.
 - `slide(n, step)`, `next()`, `prev()`, `at()`: the runtime's own `go`,
   `forward`, `backward` (same as `window.SI`).
-- `act(cues)`: `deck.Act` objects (`{tool, name, cmd, state}`), in order.
+- `act(cues)`: `deck.Act` objects (`{tool, name, cmd, state, url, o}`), in
+  order; a browser cue opens (or places) `name` with `o`, then `go`es to `url`.
 
 When a demo's `app:` is a `.md` deck, `si demo` adds `exec si play <deck>
 --addr 127.0.0.1:<free port>` (`SHELL=` from `shell:`) at the front of the
