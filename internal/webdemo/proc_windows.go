@@ -90,13 +90,15 @@ func DefaultShell() string {
 // PSReadLine (no predictions, no history file), and each command's exit
 // status in the window title, "si;133;D;<status>;<count>" (ConPTY passes
 // title changes on; the count makes every prompt a change), which output
-// reads like the OSC 133;D mark of si's Unix prompts.
+// reads like the OSC 133;D mark of si's Unix prompts; after them ";7;" and
+// the current folder, which si play's Viewer follows (serve oscCwd: a
+// ConPTY child's folder cannot be asked for).
 const psPrompt = `Remove-Module PSReadLine -ErrorAction SilentlyContinue
 $global:siN = 0
 function global:prompt {
   $c = if ($?) { 0 } elseif ($LASTEXITCODE) { $LASTEXITCODE } else { 1 }
   $global:siN++
-  $Host.UI.RawUI.WindowTitle = 'si;133;D;' + $c + ';' + $global:siN
+  $Host.UI.RawUI.WindowTitle = 'si;133;D;' + $c + ';' + $global:siN + ';7;' + $PWD.ProviderPath
   (Split-Path -Leaf (Get-Location)) + ' $ '
 }`
 
@@ -151,4 +153,23 @@ func cmdLeaf(dir string) string {
 		leaf = "$P"
 	}
 	return leaf
+}
+
+// psFollow wraps the user's own PowerShell prompt (after their profile) so
+// it also puts the current folder in the window title, "si;7;<folder>",
+// which si play's Viewer follows: ConPTY gives no other way to ask.
+const psFollow = `$global:siPrompt = $function:prompt
+function global:prompt {
+  $Host.UI.RawUI.WindowTitle = 'si;7;' + $PWD.ProviderPath
+  & $global:siPrompt
+}`
+
+// LiveShell is the user's own shell as si play's drawer runs it live (not
+// clean): PowerShell with its profile and prompt, the folder in the title.
+func LiveShell(shell string) *exec.Cmd {
+	switch shellName(shell) {
+	case "pwsh", "powershell":
+		return exec.Command(shell, "-NoLogo", "-NoExit", "-EncodedCommand", encoded(psFollow))
+	}
+	return exec.Command(shell)
 }

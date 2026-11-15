@@ -253,10 +253,8 @@ func TestTerminalFilesPanel(t *testing.T) {
 	if code := getJSON("/_si/term/api/raw?path=talk.md", &cat); code != http.StatusForbidden {
 		t.Fatalf("raw serves pictures only, got %d", code)
 	}
-	if runtime.GOOS == "windows" {
-		return // following cd reads /proc or lsof: Unix only
-	}
-	// the active shell's folder follows its cd
+	// the active shell's folder follows its cd: /proc or lsof on Unix, the
+	// folder PowerShell's prompt puts in its title on Windows (oscCwd)
 	res, _ := http.Post(ts.URL+"/_si/term/api/new", "", nil)
 	id, _ := io.ReadAll(res.Body)
 	res.Body.Close()
@@ -266,12 +264,12 @@ func TestTerminalFilesPanel(t *testing.T) {
 	}
 	sub := filepath.Join(ls.Dir, "sub")
 	os.Mkdir(sub, 0o755)
-	http.Post(ts.URL+"/_si/term/api/in?id="+string(id), "", strings.NewReader("cd sub\n"))
+	http.Post(ts.URL+"/_si/term/api/in?id="+string(id), "", strings.NewReader("cd sub\r"))
 	var cwd struct{ Dir string }
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 300; i++ { // PowerShell starts slowly
 		time.Sleep(100 * time.Millisecond)
 		getJSON("/_si/term/api/cwd?id="+string(id), &cwd)
-		if r, _ := filepath.EvalSymlinks(cwd.Dir); strings.HasSuffix(r, "/sub") {
+		if r, _ := filepath.EvalSymlinks(cwd.Dir); strings.HasSuffix(r, string(filepath.Separator)+"sub") {
 			return
 		}
 	}

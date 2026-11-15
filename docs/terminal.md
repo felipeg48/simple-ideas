@@ -369,8 +369,14 @@ is where Run and ⌂ Shell go):
 `GET /_si/term/api/ls?dir=` (folders first; 2000 entries), `cat?path=`
 (first MB, `render.Highlight` by extension, binary and image detection),
 `raw?path=` (pictures only, SVG under a no-script CSP), `cwd?id=` (the tab
-shell's folder: `/proc/PID/cwd` on Linux, `lsof -d cwd` elsewhere; not on
-Windows, where the Viewer stays on the deck's folder); all
+shell's folder: first the last one its output reported, an OSC 7
+`file://host/path` mark (zsh, fish, many bash and Windows Terminal setups),
+Windows Terminal's OSC `9;9;"<dir>"`, or si's PowerShell title (`si;7;<dir>`
+from `webdemo.LiveShell`'s wrapped prompt, `…;7;<dir>` after the clean
+prompt's `133;D` fields), read as it streams (`termcwd.go`, `TestOscCwd`);
+else `/proc/PID/cwd` on Linux, `lsof -d cwd` on macOS; on Windows, ConPTY
+having no way to ask, a shell that reports nothing leaves the Viewer on the
+deck's folder); all
 `localOnly` (`internal/serve/files.go`). Relative paths start at the deck's
 folder; `localStorage` `si-files-dir` (the last folder).
 

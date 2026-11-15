@@ -315,13 +315,24 @@ func (h *termHub) cwd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pid := s.cmd.Process.Pid
-	dir := ""
-	if runtime.GOOS == "linux" {
+	s.mu.Lock()
+	dir := s.dir // what the shell's prompt reported (OSC 7; on Windows the only way)
+	s.mu.Unlock()
+	if dir != "" {
+		if st, err := os.Stat(dir); err != nil || !st.IsDir() {
+			dir = ""
+		}
+	}
+	switch {
+	case dir != "", runtime.GOOS == "windows": // no other way to ask a ConPTY child
+	case runtime.GOOS == "linux":
 		dir, _ = os.Readlink("/proc/" + strconv.Itoa(pid) + "/cwd")
-	} else if out, err := exec.Command("lsof", "-a", "-p", strconv.Itoa(pid), "-d", "cwd", "-Fn").Output(); err == nil {
-		for _, l := range strings.Split(string(out), "\n") {
-			if strings.HasPrefix(l, "n") {
-				dir = l[1:]
+	default:
+		if out, err := exec.Command("lsof", "-a", "-p", strconv.Itoa(pid), "-d", "cwd", "-Fn").Output(); err == nil {
+			for _, l := range strings.Split(string(out), "\n") {
+				if strings.HasPrefix(l, "n") {
+					dir = l[1:]
+				}
 			}
 		}
 	}

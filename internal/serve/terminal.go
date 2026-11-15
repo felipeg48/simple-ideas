@@ -53,6 +53,8 @@ type termSession struct {
 	sub      *termSub
 	attached bool      // a page has attached at least once
 	idle     time.Time // when the last page detached (or the tab was made)
+	dir      string    // the folder the shell last reported (OSC 7, si's PowerShell title; termcwd.go)
+	oscTail  []byte    // an OSC mark a read cut, until its end arrives
 }
 
 // termSub is one attached out stream.
@@ -106,7 +108,7 @@ func (h *termHub) shellFor(r *http.Request) (shell string, clean bool) {
 // newTab starts a shell in a fresh PTY and returns its tab id.
 func (h *termHub) newTab(w http.ResponseWriter, r *http.Request) {
 	shell, clean := h.shellFor(r)
-	cmd, rcDone := exec.Command(shell), func() {}
+	cmd, rcDone := webdemo.LiveShell(shell), func() {}
 	cmd.Dir = h.dir
 	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
 	if clean || h.clean != nil && h.clean() { // filmed: no account, host or cloud context in the prompt
@@ -166,6 +168,7 @@ func (s *termSession) pump() {
 		if n > 0 {
 			b := append([]byte(nil), buf[:n]...)
 			s.mu.Lock()
+			s.track(b)
 			s.ring = append(s.ring, b...)
 			if len(s.ring) > 2*ringMax { // trim now and then, not on every read
 				s.ring = append([]byte(nil), s.ring[len(s.ring)-ringMax:]...)

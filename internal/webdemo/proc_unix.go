@@ -69,3 +69,7 @@ func shellCommand(shell, dir, rc string) *exec.Cmd {
 	c.Dir, c.Env = dir, env
 	return c
 }
+
+// LiveShell is the user's own shell as si play's drawer runs it live (not
+// clean): as it is; its folder is asked of the system.
+func LiveShell(shell string) *exec.Cmd { return exec.Command(shell) }
