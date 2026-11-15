@@ -26,7 +26,19 @@ const browser = await chromium.launch();
 const page = await (await browser.newContext({ viewport: { width: 1600, height: 900 } })).newPage();
 const errors = []; page.on("pageerror", (e) => errors.push(e.message));
 let failed = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") + what); if (!ok) failed++; };
-const out = (n) => page.evaluate((n) => window.siPlay.terminal.output(n), n);
+const out = (n) => ev((n) => window.siPlay.terminal.output(n), n);
+// si play reloads the page when it sees a file change in the deck folder (a
+// shell's own files can do that); a call cut off by such a reload waits for
+// the reloaded drawer and runs again, so the checks test the drawer, not timing
+const ev = async (fn, arg) => {
+  for (let i = 0; ; i++) {
+    try { return await page.evaluate(fn, arg); }
+    catch (e) {
+      if (i >= 3 || !/context was destroyed|navigat/i.test(String(e))) throw e;
+      await page.waitForFunction(() => window.siTerm && window.siPlay, null, { timeout: 20000 }).catch(() => {});
+    }
+  }
+};
 const until = async (fn, ms = 15000) => { for (let t = Date.now(); Date.now() - t < ms;) { if (await fn()) return true; await sleep(100); } return false; };
 
 const put = `curl -s -u acemq:acemq-lab -X PUT -H 'content-type: application/json' -d '{"durable":true,"arguments":{"x-queue-type":"quorum"}}' -w 'created: %{http_code}\\n' http://localhost:15801/api/queues/%2F/ops.smoke`;
@@ -38,23 +50,23 @@ try {
   await page.waitForFunction(() => window.siPlay);
   // the founder's sequence: a short command, the drawer minimised, a browser
   // window over the slides, the window minimised, back to the same tab, long lines
-  await page.evaluate(() => window.siPlay.terminal.open("Ops"));
-  await page.evaluate(() => window.siPlay.terminal.run("Ops", "echo first", { typing: 20 }));
+  await ev(() => window.siPlay.terminal.open("Ops"));
+  await ev(() => window.siPlay.terminal.run("Ops", "echo first", { typing: 20 }));
   check(await until(async () => /\nfirst/.test(await out("Ops"))), "a short command runs");
-  await page.evaluate(() => window.siPlay.terminal.state("min"));
-  await page.evaluate((u) => window.siPlay.browser.open(u, { x: 560, y: 40, w: 1010, h: 640 }), base + "#2");
+  await ev(() => window.siPlay.terminal.state("min"));
+  await ev((u) => window.siPlay.browser.open(u, { x: 560, y: 40, w: 1010, h: 640 }), base + "#2");
   await sleep(400);
-  await page.evaluate((u) => window.siPlay.browser.min(u), base + "#2");
-  await page.evaluate(() => window.siPlay.terminal.open("Ops"));
+  await ev((u) => window.siPlay.browser.min(u), base + "#2");
+  await ev(() => window.siPlay.terminal.open("Ops"));
 
-  const size = await page.evaluate(() => window.siTerm.api.size ? window.siTerm.api.size("Ops") : null);
-  await page.evaluate(() => window.siPlay.terminal.run("Ops", "stty size", { typing: 10 }));
+  const size = await ev(() => window.siTerm.api.size ? window.siTerm.api.size("Ops") : null);
+  await ev(() => window.siPlay.terminal.run("Ops", "stty size", { typing: 10 }));
   await until(async () => /stty size\n\d+ \d+/.test(await out("Ops")));
   const m = /stty size\n(\d+) (\d+)/.exec(await out("Ops"));
   check(size && size.cols > 150 && m && +m[2] === size.cols && +m[1] === size.rows, `the shell's size is the tab's (stty ${m && m[1] + "x" + m[2]}, xterm ${size && size.rows + "x" + size.cols})`);
 
-  await page.evaluate((c) => window.siPlay.terminal.run("Ops", c, { typing: 4 }), line(put, "PUT"));
-  await page.evaluate((c) => window.siPlay.terminal.run("Ops", c), line(pub, "POST"));
+  await ev((c) => window.siPlay.terminal.run("Ops", c, { typing: 4 }), line(put, "PUT"));
+  await ev((c) => window.siPlay.terminal.run("Ops", c), line(pub, "POST"));
   check(await until(async () => (await out("Ops")).split("\nPOST ").length > 1), "both long commands ran");
   const text = await out("Ops");
   for (const [tag, c] of [["PUT", put], ["POST", pub]]) {
@@ -62,21 +74,21 @@ try {
     check(text.includes("$ " + l + "\n"), `${tag}: the long line reads back whole after the prompt (${l.length} chars)`);
   }
   // no row of the screen starts in the middle of a word of a command (the overwrite left "ttp://…")
-  const rows = await page.evaluate(() => { const b = document.querySelector(".si-term-pane.is-active .xterm-rows"); return b ? Array.from(b.children, (r) => r.textContent) : []; });
+  const rows = await ev(() => { const b = document.querySelector(".si-term-pane.is-active .xterm-rows"); return b ? Array.from(b.children, (r) => r.textContent) : []; });
   check(!rows.some((r) => /^(ttp:|ad_encoding)/.test(r)), "no row starts with the tail of an overwritten line");
   await page.screenshot({ path: join(process.env.SI_SHOTS || dir, "drawer-long.png") });
 
   // opacity: si.conf's 90 %, then the API; the text stays opaque
-  const look = () => page.evaluate(() => { const r = document.querySelector(".si-term"), x = document.querySelector(".si-term-pane.is-active .xterm-rows");
+  const look = () => ev(() => { const r = document.querySelector(".si-term"), x = document.querySelector(".si-term-pane.is-active .xterm-rows");
     return { bg: getComputedStyle(r).backgroundColor, op: getComputedStyle(r).opacity, text: x && getComputedStyle(x).color, pct: r.dataset.opacity }; });
   let l = await look();
   check(/rgba\(11, 14, 20, 0\.9\)/.test(l.bg) && l.op === "1", `si.conf terminal.opacity: 90% (${l.bg})`);
-  await page.evaluate(() => window.siPlay.terminal.opacity(60));
+  await ev(() => window.siPlay.terminal.opacity(60));
   l = await look();
   check(/rgba\(11, 14, 20, 0\.6\)/.test(l.bg) && l.op === "1" && l.text === "rgb(230, 230, 230)", `siPlay.terminal.opacity(60): background ${l.bg}, text ${l.text}`);
-  await page.evaluate(() => window.siPlay.terminal.opacity(10));
+  await ev(() => window.siPlay.terminal.opacity(10));
   check((await look()).pct === "40", "opacity is kept at 40 % or more");
-  await page.evaluate(() => window.siPlay.terminal.opacity(70));
+  await ev(() => window.siPlay.terminal.opacity(70));
   await page.screenshot({ path: join(process.env.SI_SHOTS || dir, "drawer-opacity.png") });
   // a live reload (si.conf changed above) may land at the same moment and abort this one: then reload again
   await page.reload().catch(() => page.reload()); await page.waitForFunction(() => window.siTerm);
