@@ -1095,7 +1095,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 				}
 			}
 			if _, err := os.Stat(filepath.Join(out, d.Name+".mp4")); err == nil { // its still: the first slide
-				if err := deckPoster(chrome, dest, filepath.Join(out, d.Name+".poster.jpg")); err != nil {
+				if err := deckPoster(chrome, dest, filepath.Join(out, d.Name+".mp4"), filepath.Join(out, d.Name+".poster.jpg")); err != nil {
 					fmt.Fprintf(stderr, "si: %s: poster: %v\n", d.Name, err)
 				} else {
 					fmt.Fprintf(stdout, "  %-28s (poster, the first slide)\n", d.Name+".poster.jpg")
@@ -1884,7 +1884,7 @@ func pagePDF(chrome, htmlPath, pdfPath, query string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, chrome,
-		"--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--no-pdf-header-footer",
+		"--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--no-pdf-header-footer", atRest,
 		"--virtual-time-budget=2000",
 		"--print-to-pdf="+pdfPath, url)
 	if out, err := cmd.CombinedOutput(); err != nil {

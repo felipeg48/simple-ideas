@@ -375,7 +375,10 @@ black: `si build` uses `cluster.poster.jpg` beside the video, and when there is
 none it writes one from the frame at 0.5 s with ffmpeg (skipped quietly
 without ffmpeg). It is made once; delete it to make it again, or give
 `poster=` to choose the picture. `si build talk.md --mp4` writes
-`talk.poster.jpg` too: the deck's first slide at 1920×1080. A `poster=` file
+`talk.poster.jpg` too: the deck's first slide at 1920×1080, at rest (taken
+with reduced motion, so a theme whose slides animate in shows the slide, not
+its empty start; a still that comes out blank gives way to the video's frame
+at 0.5 s). PDFs, handouts and the dissolving stills are taken at rest too. A `poster=` file
 that is missing is a `si check` problem.
 A video is never inlined as a data URI: `si build` copies it beside the page
 (in every media mode), and so does the `src` of a raw `<video>`, `<source>`

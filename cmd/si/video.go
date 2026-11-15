@@ -279,7 +279,7 @@ func exportDeckMP4(chrome, htmlPath, out string, d *deck.Deck, dwell float64, na
 		}
 		for k := 0; k <= n; k++ {
 			p := filepath.Join(tmp, fmt.Sprintf("shot%03d-%02d.png", i, k))
-			if err := chromeRun(chrome, "--screenshot="+p, "--window-size=1920,1080", "--hide-scrollbars", "--virtual-time-budget=2500",
+			if err := chromeRun(chrome, atRest, "--screenshot="+p, "--window-size=1920,1080", "--hide-scrollbars", "--virtual-time-budget=2500",
 				fmt.Sprintf("file://%s#%d.%d", filepath.ToSlash(abs), i+1, k)); err != nil {
 				return fmt.Errorf("slide %d.%d: %v", i+1, k, err)
 			}
@@ -302,9 +302,16 @@ func exportDeckMP4(chrome, htmlPath, out string, d *deck.Deck, dwell float64, na
 	return nil
 }
 
+// atRest is the Chrome flag for a single picture of a page whose slides must
+// be at rest: with reduced motion the layout drops every transition and
+// animation, so a theme whose slides animate in is not caught mid-entrance
+// (blank) by the screenshot.
+const atRest = "--force-prefers-reduced-motion"
+
 // deckPoster writes a filmed deck's still (still, a JPEG): its first slide at
-// 1920×1080, as the video opens.
-func deckPoster(chrome, htmlPath, still string) error {
+// 1920×1080, as the video opens. A nearly uniform picture (a slide still
+// empty) gives way to the video's frame at 0.5 s.
+func deckPoster(chrome, htmlPath, video, still string) error {
 	abs, _ := filepath.Abs(htmlPath)
 	tmp, err := os.MkdirTemp("", "si-poster-")
 	if err != nil {
@@ -312,11 +319,52 @@ func deckPoster(chrome, htmlPath, still string) error {
 	}
 	defer os.RemoveAll(tmp)
 	p := filepath.Join(tmp, "first.png")
-	if err := chromeRun(chrome, "--screenshot="+p, "--window-size=1920,1080", "--hide-scrollbars", "--virtual-time-budget=2500",
+	if err := chromeRun(chrome, atRest, "--screenshot="+p, "--window-size=1920,1080", "--hide-scrollbars", "--virtual-time-budget=2500",
 		"file://"+filepath.ToSlash(abs)+"#1.0"); err != nil {
 		return err
 	}
+	if img, err := readPNG(p); err == nil && nearlyUniform(img) && ffmpegPoster(video, still) {
+		return nil
+	}
 	return pngToJPEG(p, still)
+}
+
+// nearlyUniform reports whether a picture is (almost) only its background:
+// under 0.3 % of a sample of its pixels stand out (by more than 24 of 255 on
+// a channel) from the most common colour. A faint grid or a slide counter
+// stays under it; a title is well above it.
+func nearlyUniform(img image.Image) bool {
+	r := img.Bounds()
+	var px [][3]int
+	count := map[[3]int]int{}
+	for y := r.Min.Y; y < r.Max.Y; y += 4 {
+		for x := r.Min.X; x < r.Max.X; x += 4 {
+			c, g, b, _ := img.At(x, y).RGBA()
+			p := [3]int{int(c >> 8), int(g >> 8), int(b >> 8)}
+			px = append(px, p)
+			count[p]++
+		}
+	}
+	var bg [3]int
+	for p, k := range count {
+		if k > count[bg] {
+			bg = p
+		}
+	}
+	off := 0
+	for _, p := range px {
+		if max(absInt(p[0]-bg[0]), absInt(p[1]-bg[1]), absInt(p[2]-bg[2])) > 24 {
+			off++
+		}
+	}
+	return len(px) > 0 && float64(off) < 0.003*float64(len(px))
+}
+
+func absInt(v int) int {
+	if v < 0 {
+		return -v
+	}
+	return v
 }
 
 // pngToJPEG writes the PNG file src as the JPEG file dst.
