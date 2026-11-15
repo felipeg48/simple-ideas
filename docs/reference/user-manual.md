@@ -340,7 +340,11 @@ proxied (a login form's POST to another site keeps its fields), the address
 box shows the real address, and ← → cross sites. When si films the drawer
 (`si demo`, `si build --mp4` with `[TERM …]` cues) its shells start with a
 clean prompt, the folder and `$`, never your own; si.conf `terminal.prompt:
-clean` asks for it in a live talk too. See `docs/terminal.md`.
+clean` asks for it in a live talk too. The slider in the drawer's bar sets
+its opacity (40 % to 100 %, remembered): the slide shows through, dimmed,
+and the text stays opaque; si.conf `terminal.opacity: 85%`, a cue's
+`· opacity 80%` and `embed-terminal "Lab 1" · opacity 80%` set it too. See
+`docs/terminal.md`.
 
 A talk that shows something live can set it up itself: front matter
 `setup:` (must finish), `start:` (keeps running, `· wait for "ready"`),

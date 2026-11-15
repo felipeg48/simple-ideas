@@ -163,6 +163,9 @@ speaker's voice, addressed to the audience.
   `· at X,Y · size WxH · zoom N%` after the name place the window (a filmed
   console at `zoom 125%` is readable at 1080p), and `[BROWSER Name: URL]`
   takes the open window to another page instead of opening a second one.
+  `[TERM Name · opacity 80%]` (40 % to 100 %) lets the slide show through
+  the drawer while the commands run (si.conf `terminal.opacity: 85%` sets
+  the default).
 
 **`Points:` is the Speaker Notes tab.** It holds the main points of the
 topic, as short bullets the speaker glances at to talk freely instead of
@@ -414,7 +417,8 @@ Not everything is a slide deck. Pick the type by what the reader does:
   them, not both), then `embed-terminal
   "Lab 1"` + `run "…"` / `expect output "…"`, `embed-browser "Console" · at
   700,60 · size 640x420`, `click "Queues" in embed-browser "Console"`, `slide
-  3`, `next`, `prev`, `embed-terminal close`. Never drive the drawer with
+  3`, `next`, `prev`, `embed-terminal close`; `embed-terminal "Lab 1" ·
+  opacity 80%` keeps the slide visible through the drawer. Never drive the drawer with
   si's CSS classes (`.si-term`, `[data-act=…]`): they are not a contract;
   `window.siPlay` (RULES.md §14) is.
 - **Web demo selectors** (RULES.md §27): name elements the way a person

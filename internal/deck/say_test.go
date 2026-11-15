@@ -115,6 +115,25 @@ func TestParseAct(t *testing.T) {
 			t.Errorf("BROWSER%q = %q, %v; want %q", tc.body, got, err, tc.want)
 		}
 	}
+	// the drawer's opacity sits with the name
+	for _, tc := range []struct{ body, want, err string }{
+		{" Ops · opacity 80%", "Ops||80", ""},
+		{" Ops · opacity 75%: curl -s http://x/a·b", "Ops|curl -s http://x/a·b|75", ""},
+		{" min · opacity 60%", "|min|60", ""},
+		{" Ops · opacity 20%", "", "40% to 100%"},
+		{" Ops · split right", "", "· opacity N%"},
+	} {
+		a, err := ParseAct("TERM", tc.body)
+		if tc.err != "" {
+			if err == nil || !strings.Contains(err.Error(), tc.err) {
+				t.Errorf("TERM%q: err = %v, want %q", tc.body, err, tc.err)
+			}
+			continue
+		}
+		if got := fmt.Sprintf("%s|%s%s|%d", a.Name, a.Cmd, a.State, a.Opacity); err != nil || got != tc.want {
+			t.Errorf("TERM%q = %q, %v; want %q", tc.body, got, err, tc.want)
+		}
+	}
 	if acts, errs := Acts("x [TERM a: b] [BROWSER] [TERMINAL no] [CLICK]"); len(acts) != 1 || len(errs) != 1 {
 		t.Errorf("Acts = %v, %v", acts, errs)
 	}

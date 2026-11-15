@@ -34,7 +34,9 @@ Points: What to cover, not a script
   docker compose up -d]` opens the terminal drawer on the shell tab `Lab 1`
   (created when missing, raised when it is there) and runs the command;
   `[TERM Lab 1]` only opens the tab; `[TERM min]`, `[TERM max]` and
-  `[TERM close]` set the drawer. `[BROWSER RabbitMQ]` opens the deck's
+  `[TERM close]` set the drawer; `· opacity N%` after the name (40 % to
+  100 %) sets its opacity too: `[TERM Lab 1 · opacity 80%: make up]`, the
+  slide showing through. `[BROWSER RabbitMQ]` opens the deck's
   `browser:` link named `RabbitMQ` (or a URL) in a window over the slides;
   after the name, `· at X,Y` (CSS pixels from the top left), `· size WxH`
   and `· zoom N%` (30 % to 300 %) place, size and zoom it, as a web demo's

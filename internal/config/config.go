@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -72,6 +73,10 @@ autoplay.dwell: 3
 # si play's terminal drawer: real (your own shell and prompt) or clean (si's
 # neutral prompt, no rc files: the folder and $). Filming always uses clean
 terminal.prompt: real
+# the drawer's opacity, 40% to 100%: below 100% the slide shows through its
+# background (dimmed, the text stays opaque); terminal.blur: 6px blurs it too
+terminal.opacity: 100%
+# terminal.blur: 6px
 
 # draw (a): hold this key and move to draw with the cursor, no click
 draw.hold: alt         # alt (⌥ Option), shift, ctrl, meta (⌘ Command), or off
@@ -142,6 +147,8 @@ type Config struct {
 	Budget                   Budget            // budget.page / budget.3d: si check fails on bigger pages
 	DrawHold                 string            // draw.hold: the key that draws with the cursor ("" = alt)
 	TermPrompt               string            // terminal.prompt: clean (si's neutral prompt in the drawer) or real ("" = real)
+	TermOpacity              int               // terminal.opacity: the drawer's opacity in %, 40-100 (0 = 100)
+	TermBlur                 int               // terminal.blur: px of blur on the slide behind a translucent drawer (0 = none)
 	HandoutPaper             string            // handout.paper: a4 (default) or letter
 	AudienceOff              bool              // audience.save: off: keep no poll counts or questions
 	SpeakersTurn             bool              // speakers.control: turn: only the speaker whose turn it is advances
@@ -420,6 +427,19 @@ func (c *Config) parse(r io.Reader) {
 			} else {
 				c.TermPrompt = v
 			}
+		case k == "terminal.opacity":
+			if n, ok := Percent(v); ok && n >= 40 && n <= 100 {
+				c.TermOpacity = n
+			} else {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: terminal.opacity wants 40%% to 100%%, got %q", ln, v))
+			}
+		case k == "terminal.blur":
+			n, err := strconv.Atoi(strings.TrimSuffix(strings.TrimSpace(v), "px"))
+			if err != nil || n < 0 || n > 40 {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: terminal.blur wants 0px to 40px, got %q", ln, v))
+			} else {
+				c.TermBlur = n
+			}
 		case strings.HasPrefix(k, "keys."):
 			c.setKey(strings.TrimPrefix(k, "keys."), v, ln)
 		case strings.HasPrefix(k, "feature."), strings.HasPrefix(k, "features."):
@@ -531,4 +551,18 @@ func Mask(s string) string {
 func (c *Config) Empty() bool {
 	return c == nil || (c.Theme == "" && len(c.Keys) == 0 && len(c.Features) == 0 &&
 		len(c.Timer.Times) == 0 && c.Timer.Unit == "" && c.Timer.Animation == "" && c.Timer.AnimationPath == "" && c.Timer.Face == "")
+}
+
+// Percent reads "85%", "85" or "0.85" as 85 (a whole percent).
+func Percent(v string) (int, bool) {
+	v = strings.TrimSpace(v)
+	pct := strings.HasSuffix(v, "%")
+	f, err := strconv.ParseFloat(strings.TrimSpace(strings.TrimSuffix(v, "%")), 64)
+	if err != nil {
+		return 0, false
+	}
+	if !pct && f > 0 && f <= 1 && strings.Contains(v, ".") {
+		f *= 100
+	}
+	return int(f + 0.5), true
 }

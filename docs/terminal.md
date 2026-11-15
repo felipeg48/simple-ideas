@@ -293,6 +293,10 @@ and a local fake console).
   of continuous output); `run` pastes (bracketed where the shell has it),
   `{typing: ms}` types; `type` sends keys raw; `output` reads the xterm
   buffer, wrapped lines joined.
+- `run` and `type` first fit the tab to its pane and wait for the
+  `resize` POST to come back (`sized`, `fitTab`), so the shell has been
+  told xterm's size before a key goes in. `opacity(n)` sets the drawer's
+  opacity (below).
 - `browser.open(name, {x, y, w, h, zoom})`: a link name, else anything with
   `/`, `.` or `:` is a URL (refused otherwise); resolves on the frame's load.
 - `browser.go(name, url)`: the open window's `w.go`, `url` resolved against
@@ -312,6 +316,45 @@ any program. `si build --mp4` of a deck with cues serves it in-process
 (`cmd/si/motion.go`, `playForFilm`, terminal on, loopback) and films each
 view holding cues as it plays (`filmActs`), at the time the voiced script
 reaches them.
+
+## Sizes: the shell wraps where xterm does
+
+A shell and xterm.js must agree on the width, or a long command line is
+drawn over itself: the line editor (zsh's ZLE, readline) moves the cursor
+by its own idea of the columns and the prompt. In `term.js`:
+
+- `newTab` fits the pane first and starts the shell at that size
+  (`POST new?cols=&rows=`, `termpty.Start`), so it never reads a 0×0 PTY or
+  terminfo's 80 columns before the first `resize`.
+- `fitTab` fits a shown pane only (a `display:none` or 0-sized box would
+  read a stale size) and `sendResize` posts the size when it changed
+  (`t.sent`); a `ResizeObserver` on the drawer's body refits on every box
+  change (window, height drag, maximise, side panels), `layout()` on tab,
+  split and divider changes, `applyZoom` on the text size.
+- The hidden drawer is translated off screen, not `display:none`, so a tab
+  created or run while it is minimised still has its real box.
+- The clean prompt's OSC 133 mark sits in `\[ \]` (bash, bash as `sh`,
+  busybox ash) or `%{ %}` (zsh): counted as 10 visible columns it made the
+  line editor wrap 10 columns early and overwrite its own line (v3.17-v3.22
+  films; `TestShellPromptWidth`).
+
+`web/studio/e2e/drawer.e2e.mjs` films the founder's sequence (a command,
+`min`, a browser window, back to the tab, two 200+ character curl lines)
+under `/bin/sh` with the clean prompt and checks `stty size` against the
+tab's cols and every long line read back whole.
+
+## Opacity
+
+The drawer's backgrounds use `rgba(…, var(--si-term-a))`; xterm draws on a
+transparent background (`allowTransparency`). Below 100 % the drawer gets
+`.is-glass`: `backdrop-filter: brightness(.55)` (plus `blur(--si-term-blur)`
+from si.conf `terminal.blur`) dims the slide behind, and the rows a faint
+dark text shadow, so light text stays readable over a light slide. The value
+(40-100) comes from si.conf `terminal.opacity` (`SI_CONFIG.termOpacity`),
+then the slider in the bar, `siPlay.terminal.opacity(n)`, `open(name,
+{opacity})`, a `[TERM … · opacity N%]` cue or `embed-terminal "…" · opacity
+N%`; it is kept in `localStorage` (`si-term-opacity`, with the si.conf value
+it was set under: a new si.conf value wins).
 
 ## Viewer tabs
 

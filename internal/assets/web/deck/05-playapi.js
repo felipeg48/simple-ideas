@@ -11,8 +11,8 @@
     var siPlay = window.siPlay = {
       version: 1,
       terminal: {
-        /* the drawer open on the shell tab name (created if needed); o.split 'right'|'down': beside the tab in front */
-        open: function (name, o) { return tApi().then(function (a) { return a.open(name, o && o.split); }); },
+        /* the drawer open on the shell tab name (created if needed); o.split 'right'|'down': beside the tab in front; o.opacity: as opacity() */
+        open: function (name, o) { return tApi().then(function (a) { if (o && o.opacity) a.opacity(o.opacity); return a.open(name, o && o.split); }); },
         /* a command run in tab name (pasted; o.typing: ms per character, typed) */
         run: function (name, cmd, o) { return tApi().then(function (a) { return a.run(name, cmd, o && o.typing); }); },
         /* keys sent as they are ('\r' Enter, '\x03' ctrl+c) */
@@ -21,7 +21,9 @@
         output: function (name) { return window.siTerm ? window.siTerm.api.text(name) : ''; },
         names: function () { return window.siTerm ? window.siTerm.api.names() : []; },
         /* the drawer: 'min' (hidden, shells run on), 'max' (the whole window), 'restore', 'close' */
-        state: function (s) { return tApi().then(function (a) { return a.state(s); }); }
+        state: function (s) { return tApi().then(function (a) { return a.state(s); }); },
+        /* the drawer's opacity in % (40-100, remembered; the slide shows through, the text stays opaque); no n: the current one */
+        opacity: function (n) { return tApi().then(function (a) { return a.opacity(n); }); }
       },
       browser: {
         /* a window over the slides: a browser: link's name or a URL; o {x, y, w, h} CSS pixels, zoom (1.25 = 125 %) */
@@ -44,6 +46,7 @@
         return (acts || []).reduce(function (p, a) {
           return p.then(function () {
             if (a.tool === 'term') {
+              if (a.opacity) siPlay.terminal.opacity(a.opacity);
               if (a.state) return siPlay.terminal.state(a.state);
               return siPlay.terminal.open(a.name).then(function () { if (a.cmd) return siPlay.terminal.run(a.name, a.cmd, { typing: 45 }); });
             }

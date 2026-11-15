@@ -109,6 +109,22 @@ func TestDrawHold(t *testing.T) {
 		t.Errorf("draw.hold: space should warn and keep the default: %q %v", c.DrawHold, c.Warnings)
 	}
 }
+func TestTerminalOpacity(t *testing.T) {
+	for v, want := range map[string]int{"85%": 85, "85": 85, "0.85": 85, "100 %": 100, "40%": 40} {
+		if c := Parse(strings.NewReader("terminal.opacity: " + v + "\n")); c.TermOpacity != want || len(c.Warnings) > 0 {
+			t.Errorf("terminal.opacity: %s → %d %v, want %d", v, c.TermOpacity, c.Warnings, want)
+		}
+	}
+	for _, v := range []string{"30%", "120%", "clear"} {
+		if c := Parse(strings.NewReader("terminal.opacity: " + v + "\n")); c.TermOpacity != 0 || len(c.Warnings) != 1 {
+			t.Errorf("terminal.opacity: %s should warn: %d %v", v, c.TermOpacity, c.Warnings)
+		}
+	}
+	if c := Parse(strings.NewReader("terminal.blur: 6px\n")); c.TermBlur != 6 || len(c.Warnings) > 0 {
+		t.Errorf("terminal.blur: 6px → %d %v", c.TermBlur, c.Warnings)
+	}
+}
+
 func TestAudienceSave(t *testing.T) {
 	if c := Parse(strings.NewReader("audience.save: off\n")); !c.AudienceOff || len(c.Warnings) > 0 {
 		t.Errorf("audience.save: off → %v %v", c.AudienceOff, c.Warnings)

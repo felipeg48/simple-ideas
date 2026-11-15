@@ -140,6 +140,52 @@ func TestTerminalEchoRoundTrip(t *testing.T) {
 	}
 }
 
+// TestTerminalStartsAtPageSize: new?cols=&rows= starts the shell at the
+// drawer's size, so it never reads a 0×0 (or terminfo's 80-column) terminal
+// before the page's first resize and wraps long lines where xterm does not.
+func TestTerminalStartsAtPageSize(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("stty: unix")
+	}
+	t.Setenv("SHELL", "/bin/sh")
+	ts := newTermServer(t, true)
+	res, err := http.Post(ts.URL+"/_si/term/api/new?cols=137&rows=41", "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	out, err := http.Get(ts.URL + "/_si/term/api/out?id=" + string(id))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer out.Body.Close()
+	got := make(chan string, 1)
+	go func() {
+		var acc []byte
+		buf := make([]byte, 4096)
+		for {
+			n, err := out.Body.Read(buf)
+			acc = append(acc, buf[:n]...)
+			if strings.Contains(string(acc), "41 137") || err != nil {
+				got <- string(acc)
+				return
+			}
+		}
+	}()
+	time.Sleep(150 * time.Millisecond)
+	in, _ := http.Post(ts.URL+"/_si/term/api/in?id="+string(id), "", strings.NewReader("stty size\r"))
+	in.Body.Close()
+	select {
+	case s := <-got:
+		if !strings.Contains(s, "41 137") {
+			t.Errorf("stty size of a shell started at 137×41: %q", s)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("no stty size: the shell did not start at 137×41")
+	}
+}
+
 // TestTerminalRefusesOtherSites: another site's page (a blind POST from any tab
 // in the browser) and a DNS-rebinding host (evil.example resolving to
 // 127.0.0.1) must never start or drive a shell.

@@ -96,7 +96,14 @@ func (h *termHub) newTab(w http.ResponseWriter, r *http.Request) {
 		}
 		cmd, rcDone = c, done
 	}
-	f, err := termpty.Start(cmd, 0, 0)
+	// the page's size (cols, rows) from the start: a shell that read 0×0 (or
+	// the 80 columns of its terminfo) before the first resize could keep it
+	cols, _ := strconv.Atoi(r.URL.Query().Get("cols"))
+	rows, _ := strconv.Atoi(r.URL.Query().Get("rows"))
+	if cols <= 0 || rows <= 0 || cols > 1000 || rows > 1000 {
+		cols, rows = 0, 0
+	}
+	f, err := termpty.Start(cmd, cols, rows)
 	if err != nil {
 		rcDone()
 		http.Error(w, err.Error(), http.StatusInternalServerError)

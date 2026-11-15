@@ -20,7 +20,7 @@ Say: The shop puts each order in a queue, and the warehouse takes them at its ow
 - wait 1s
 
 Say: Three orders go out from the terminal, right under the slide.
-- embed-terminal "Lab 1"
+- embed-terminal "Lab 1" · opacity 85%
 - run "echo sending 3 orders && sleep 1 && echo sent 3 orders to the queue"
 - wait for output "sent 3 orders to the queue"
 

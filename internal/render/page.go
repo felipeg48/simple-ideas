@@ -127,6 +127,12 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	if opt.Config != nil && opt.Config.DrawHold != "" {
 		conf["drawHold"] = opt.Config.DrawHold // si.conf draw.hold; the runtime defaults to alt
 	}
+	if opt.Terminal && opt.Config != nil && opt.Config.TermOpacity > 0 {
+		conf["termOpacity"] = opt.Config.TermOpacity // si.conf terminal.opacity / terminal.blur: the play drawer
+		if opt.Config.TermBlur > 0 {
+			conf["termBlur"] = opt.Config.TermBlur
+		}
+	}
 	if opt.VoiceServer {
 		conf["voice"] = true // si play voices the parts at /_si/voice/
 	}

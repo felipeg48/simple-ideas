@@ -19,12 +19,19 @@
   var style = document.createElement('style');
   style.textContent =
     '.si-term{position:fixed;left:0;right:0;bottom:0;height:var(--si-term-h,55vh);z-index:9000;' +
-    'display:flex;flex-direction:column;background:#0b0e14;color:#e6e6e6;' +
+    'display:flex;flex-direction:column;background:rgba(11,14,20,var(--si-term-a,1));color:#e6e6e6;' +
     'font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;' +
     'box-shadow:0 -12px 40px rgba(0,0,0,.5);transform:translateY(100%);' +
     'transition:transform .22s ease;border-top:1px solid #1d2536}' +
     '.si-term.is-open{transform:translateY(0)}' +
     '.si-term.is-max{height:100vh;transition:transform .22s ease,height .22s ease}' +
+    /* opacity below 100 %: the backgrounds go translucent (--si-term-a), the
+       slide behind is dimmed (and blurred with si.conf terminal.blur) so the
+       text, always opaque, keeps its contrast over a light slide */
+    '.si-term.is-glass{-webkit-backdrop-filter:brightness(.55) blur(var(--si-term-blur,0px));backdrop-filter:brightness(.55) blur(var(--si-term-blur,0px))}' +
+    '.si-term.is-glass .xterm-rows{text-shadow:0 0 2px #000}' +
+    '.si-term-op{display:flex;align-items:center;flex:0 0 auto;margin:0 4px;padding-right:6px;border-right:1px solid #1d2536}' +
+    '.si-term-op input{width:64px;accent-color:#7dd3fc;cursor:pointer;margin:0}' +
     /* the top edge sets the drawer height */
     '.si-term-vgrip{position:absolute;left:0;right:0;top:-3px;height:7px;cursor:ns-resize;z-index:5}' +
     '.si-term-vgrip:hover,.si-term-vgrip.is-drag{background:#7dd3fc55}.si-term.is-sizing{transition:none}.si-term.is-sizing .xterm{pointer-events:none}' +
@@ -32,13 +39,13 @@
     '.si-term-zoom{display:flex;align-items:center;gap:2px;flex:0 0 auto;margin:0 6px 0 4px;padding-right:6px;border-right:1px solid #1d2536}' +
     '.si-term-zoom .pct{min-width:3.2em;text-align:center;color:#9aa7c0;font:11px ui-monospace,Menlo,monospace;cursor:pointer;align-self:center}' +
     '.si-term-win{display:flex;gap:2px;flex:0 0 auto;margin-right:6px;padding-right:6px;border-right:1px solid #1d2536}' +
-    '.si-term-bar{display:flex;align-items:stretch;gap:2px;background:#11151f;' +
+    '.si-term-bar{display:flex;align-items:stretch;gap:2px;background:rgba(17,21,31,var(--si-term-a,1));' +
     'padding:4px 6px;border-bottom:1px solid #1d2536;flex:0 0 auto}' +
     '.si-term-tabs{display:flex;gap:2px;overflow:auto;flex:1 1 auto}' +
     '.si-term-tab{display:flex;align-items:center;gap:8px;padding:4px 10px;' +
     'border-radius:6px 6px 0 0;background:#171c28;color:#9aa6bf;cursor:pointer;' +
     'font-size:13px;white-space:nowrap;border:0}' +
-    '.si-term-tab.is-active{background:#0b0e14;color:#e6e6e6}' +
+    '.si-term-tab.is-active{background:rgba(11,14,20,var(--si-term-a,1));color:#e6e6e6}' +
     '.si-term-tab .x{opacity:.5;font-size:15px;line-height:1}' +
     '.si-term-tab .x:hover{opacity:1;color:#ff8a8a}' +
     '.si-term-btn{background:#171c28;color:#9aa6bf;border:0;border-radius:6px;' +
@@ -77,7 +84,7 @@
     '.si-sr-line .tx{overflow:hidden;text-overflow:ellipsis}.si-sr-line mark{background:#5a4a10;color:#ffd080;border-radius:2px}' +
     /* runbook drawer */
     '.si-term-btn.is-on{color:#0b0e14;background:#7dd3fc}' +
-    '.si-term-acts{flex:0 0 42px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;background:#11151f;border-left:1px solid #1d2536;order:9}' +
+    '.si-term-acts{flex:0 0 42px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;background:rgba(17,21,31,var(--si-term-a,1));border-left:1px solid #1d2536;order:9}' +
     '.si-term-act{position:relative;width:34px;height:34px;display:grid;place-items:center;background:transparent;color:#7d8aa5;border:0;border-radius:6px;cursor:pointer}' +
     '.si-term-act:hover{color:#e6e6e6;background:#1d2536}.si-term-act:focus-visible{outline:2px solid #7dd3fc}' +
     '.si-term-act.is-on{color:#e6e6e6}.si-term-act.is-on::before{content:"";position:absolute;right:-4px;top:6px;bottom:6px;width:2px;border-radius:2px;background:#7dd3fc}' +
@@ -214,6 +221,7 @@
     '<span class="si-term-win"><button class="si-term-btn" data-act="min" title="Minimise (` brings it back)">–</button>' +
     '<button class="si-term-btn" data-act="max" title="Maximise: the whole window (double-click the bar too)">□</button></span>' +
     '<div class="si-term-tabs"></div>' +
+    '<label class="si-term-op" title="Drawer opacity: the slide shows through"><input type="range" min="40" max="100" step="5" value="100" aria-label="Drawer opacity"></label>' +
     '<span class="si-term-zoom"><button class="si-term-btn" data-act="zout" title="Smaller (this tab only; ⌘-)">−</button>' +
     '<span class="pct" title="Text size of this tab; click for 100% (⌘0)">100%</span>' +
     '<button class="si-term-btn" data-act="zin" title="Larger (this tab only; ⌘=)">+</button></span>' +
@@ -233,6 +241,26 @@
   var tabsEl = root.querySelector('.si-term-tabs');
   var bodyEl = root.querySelector('.si-term-main');
 
+  /* the drawer's opacity, 40-100 %: si.conf terminal.opacity, else 100; the
+     bar's slider, siPlay.terminal.opacity and a cue's · opacity set it and it
+     is remembered (until si.conf's value changes) */
+  var cfg = window.SI_CONFIG || {}, opEl = root.querySelector('.si-term-op input');
+  function clampOp(v) { v = Math.round(+v || 100); return Math.max(40, Math.min(100, v)); }
+  var confOp = clampOp(cfg.termOpacity), opacity = confOp;
+  try { var so = JSON.parse(localStorage.getItem('si-term-opacity') || 'null'); if (so && so.conf === confOp) opacity = clampOp(so.v); } catch (e) {}
+  if (cfg.termBlur) root.style.setProperty('--si-term-blur', cfg.termBlur + 'px');
+  function setOpacity(v, keep) {
+    opacity = clampOp(v);
+    root.style.setProperty('--si-term-a', opacity / 100);
+    root.classList.toggle('is-glass', opacity < 100);
+    root.dataset.opacity = opacity; opEl.value = opacity; opEl.parentNode.title = 'Drawer opacity ' + opacity + '%: the slide shows through';
+    if (keep !== false) try { localStorage.setItem('si-term-opacity', JSON.stringify({ v: opacity, conf: confOp })); } catch (e) {}
+    return opacity;
+  }
+  setOpacity(opacity, false);
+  opEl.addEventListener('input', function () { setOpacity(opEl.value); });
+  opEl.addEventListener('keydown', function (ev) { ev.stopPropagation(); }); // arrows move the slider, not the deck
+
   var tabs = []; // { id, term, fit, pane, tabEl, zoom } or a Viewer { viewer, pane, tabEl, zoom, snap }
   var active = -1;
   var seq = 0;
@@ -251,8 +279,24 @@
   bodyEl.appendChild(divV); bodyEl.appendChild(divH);
   function shownTabs() { return split ? split.panes.filter(Boolean) : tabs[active] ? [tabs[active]] : []; }
   function paneOf(t) { return split ? split.panes.indexOf(t) : -1; }
+  /* each shown shell fitted to its pane and the shell told the size; a pane
+     with no box (display:none, 0-sized) is never fitted: it would read a
+     stale or default size. Resolves once the shells have the new sizes. */
   function refit() {
-    shownTabs().forEach(function (t) { if (!t.viewer) { try { t.fit.fit(); } catch (e) {} sendResize(t); } });
+    return Promise.all(shownTabs().map(fitTab));
+  }
+  function fitTab(t) {
+    if (t.viewer || !t.pane.clientWidth || !t.pane.clientHeight) return Promise.resolve();
+    try { t.fit.fit(); } catch (e) {}
+    return sendResize(t);
+  }
+  /* any change of the drawer's box (window, height drag, maximise, a side
+     panel, a split's divider) refits, once per frame */
+  if (window.ResizeObserver) {
+    var roRaf = 0;
+    new ResizeObserver(function () {
+      if (!roRaf) roRaf = requestAnimationFrame(function () { roRaf = 0; refit(); });
+    }).observe(bodyEl);
   }
   /* each pane's box as insets in % [top, right, bottom, left], and the
      dividers: v {x, y0, y1}, h {y, x0, x1}. A drawer too narrow for columns
@@ -413,7 +457,7 @@
   function defZoom(viewer) { try { return +localStorage.getItem(zkey(viewer)) || 1; } catch (e) { return 1; } }
   function applyZoom(t) {
     if (t.viewer) t.pane.style.setProperty('--si-z', t.zoom);
-    else { t.term.options.fontSize = Math.round(14 * t.zoom); if (tabs[active] === t) { try { t.fit.fit(); } catch (e) {} sendResize(t); } }
+    else { t.term.options.fontSize = Math.round(14 * t.zoom); fitTab(t); }
     if (tabs[active] === t) pctEl.textContent = Math.round(t.zoom * 100) + '%';
   }
   function zoomBy(k) {
@@ -447,9 +491,14 @@
       fetch(API + 'in?id=' + t.id, { method: 'POST', body: b }).catch(function () {}).then(flush);
     })();
   }
+  /* the shell's size is xterm's: sent when it changes (t.sent), the Promise
+     resolves when the server has set it */
   function sendResize(t) {
-    if (t.viewer) return;
-    if (t.term.cols && t.term.rows) post('resize?id=' + t.id + '&cols=' + t.term.cols + '&rows=' + t.term.rows);
+    if (t.viewer || !t.id || !t.term.cols || !t.term.rows) return Promise.resolve();
+    var s = t.term.cols + 'x' + t.term.rows;
+    if (t.sent === s) return t.sizing || Promise.resolve();
+    t.sent = s;
+    return (t.sizing = post('resize?id=' + t.id + '&cols=' + t.term.cols + '&rows=' + t.term.rows));
   }
 
   /* the shell's output; on a reattach the server first replays the recent
@@ -499,7 +548,8 @@
     var zoom = saved && saved.zoom || defZoom(false);
     var term = new Term({ cursorBlink: true, fontSize: Math.round(14 * zoom), scrollback: 5000,
       fontFamily: '"MesloLGS NF","MesloLGS Nerd Font","Meslo LG S Nerd Font","FiraCode Nerd Font","Hack Nerd Font","JetBrainsMono Nerd Font","SauceCodePro Nerd Font",ui-monospace,Menlo,Consolas,monospace',
-      theme: { background: '#0b0e14', foreground: '#e6e6e6', cursor: '#7dd3fc' } });
+      allowTransparency: true, // the drawer's own background shows (its opacity)
+      theme: { background: 'rgba(0,0,0,0)', foreground: '#e6e6e6', cursor: '#7dd3fc', cursorAccent: '#0b0e14' } });
     var fit = new Fit();
     term.loadAddon(fit);
     term.open(pane);
@@ -511,14 +561,18 @@
 
     function attach(id) {
       t.id = id;
-      try { fit.fit(); } catch (e) {}
-      sendResize(t);
+      fitTab(t);
       stream(t);
       term.onData(function (d) { if (t.id && !t.mute) sendIn(t, d); });
-      term.onResize(function () { sendResize(t); });
+      term.onResize(function () { if (t.pane.clientWidth) sendResize(t); });
     }
     if (saved && saved.id) { t.everBP = true; attach(saved.id); } // a shell that was ready before the reload
-    else fetch(API + 'new', { method: 'POST' }).then(function (r) { return r.text(); }).then(attach)
+    else (function () {
+      /* the shell starts at the pane's size (a hidden pane: the server's default, then a resize when shown) */
+      var q = '';
+      if (pane.clientWidth && pane.clientHeight) { try { fit.fit(); } catch (e) {} q = '?cols=' + term.cols + '&rows=' + term.rows; t.sent = term.cols + 'x' + term.rows; }
+      return fetch(API + 'new' + q, { method: 'POST' });
+    })().then(function (r) { return r.text(); }).then(attach)
       .catch(function () { term.write('\r\n\x1b[31msi: could not start a shell\x1b[0m\r\n'); });
 
   }
@@ -1535,6 +1589,9 @@
       })();
     });
   }
+  /* before keys go in: the tab fitted to its pane and its shell told that
+     size (the resize answered), so the shell wraps where xterm does */
+  function sized(t) { return fitTab(t).then(function () { return t; }); }
   function typeOut(t, text, ms) {
     if (!ms) { sendIn(t, text); return Promise.resolve(); }
     var cs = Array.from(text);
@@ -1554,9 +1611,9 @@
       else select(tabs.indexOf(t));
       return shellReady(n, true).then(function () { return n; });
     },
-    input: function (n, text, ms) { return shellReady(n).then(function (t) { return typeOut(t, String(text), ms); }); },
+    input: function (n, text, ms) { return shellReady(n).then(sized).then(function (t) { return typeOut(t, String(text), ms); }); },
     run: function (n, text, ms) {
-      return shellReady(n, true).then(function (t) {
+      return shellReady(n, true).then(sized).then(function (t) {
         text = String(text).replace(/\n+$/, '');
         var bp = !!(t.term.modes && t.term.modes.bracketedPasteMode);
         if (!ms) { sendIn(t, (bp ? '\x1b[200~' + text + '\x1b[201~' : text) + '\r'); return; }
@@ -1574,6 +1631,10 @@
       return out.join('\n').replace(/\s+$/, '');
     },
     names: function () { return tabs.filter(function (t) { return !t.viewer && !t.ended; }).map(labelOf); },
+    /* the tab's xterm size (what its shell is told), or null */
+    size: function (n) { var t = byName(n); return t ? { cols: t.term.cols, rows: t.term.rows } : null; },
+    /* the drawer's opacity in % (40-100); no n: the current one */
+    opacity: function (n) { return n == null ? opacity : setOpacity(n); },
     state: function (s) {
       if (s === 'max' || s === 'restore') { root.classList.add('is-open'); setMax(s === 'max'); }
       else if (s === 'min') hide();

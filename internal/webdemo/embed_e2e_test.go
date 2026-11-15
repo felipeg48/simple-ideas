@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -75,7 +76,7 @@ func TestPlayAPIContract(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 	}
 	shape := `(function(p){var o={version:p.version};
-		['terminal.open','terminal.run','terminal.type','terminal.output','terminal.names','terminal.state','browser.open','browser.close','browser.min','browser.frame','browser.names','slide','next','prev','at','act']
+		['terminal.open','terminal.run','terminal.type','terminal.output','terminal.names','terminal.state','terminal.opacity','browser.open','browser.close','browser.min','browser.frame','browser.names','slide','next','prev','at','act']
 		.forEach(function(k){var a=k.split('.');o[k]=typeof (a[1]?p[a[0]][a[1]]:p[a[0]])});return JSON.stringify(o)})(window.siPlay)`
 	var got map[string]any
 	var raw string
@@ -106,6 +107,32 @@ func TestPlayAPIContract(t *testing.T) {
 	if n := eval(`JSON.stringify(siPlay.terminal.names())`); n != `"[\"Lab 1\"]"` {
 		t.Errorf("terminal.names = %s", n)
 	}
+	// minimised and back, the shell's size is the tab's (a long line wraps where xterm does)
+	eval(`siPlay.terminal.state("min")`)
+	eval(`siPlay.terminal.open("Lab 1")`)
+	eval(`siPlay.terminal.run("Lab 1", "stty size")`)
+	until(`/stty size\n\d+ \d+/.test(siPlay.terminal.output("Lab 1"))`, "stty size")
+	if got := eval(`(function(m,s){return m[2]+"x"+m[1]+" "+s.cols+"x"+s.rows})(/stty size\n(\d+) (\d+)/.exec(siPlay.terminal.output("Lab 1")),siTerm.api.size("Lab 1"))`); func() bool {
+		var a, b string
+		fmt.Sscan(strings.Trim(got, `"`), &a, &b)
+		return a == "" || a != b
+	}() {
+		t.Errorf("after min and open, stty size / xterm size = %s", got)
+	}
+	long := "echo " + strings.Repeat("word ", 60) + "end"
+	eval(`siPlay.terminal.run("Lab 1", ` + strconv.Quote(long) + `)`)
+	until(`siPlay.terminal.output("Lab 1").indexOf("$ `+long+`\n")>=0`, "a long line reads back whole after the prompt")
+	// the drawer's opacity: 40-100 %, the text opaque
+	if v := eval(`siPlay.terminal.opacity(70)`); v != "70" {
+		t.Errorf("terminal.opacity(70) = %s", v)
+	}
+	if v := eval(`siPlay.terminal.opacity(5).then(function(){return getComputedStyle(document.querySelector('.si-term')).backgroundColor})`); v != `"rgba(11, 14, 20, 0.4)"` {
+		t.Errorf("terminal.opacity(5): background %s, want 40 %%", v)
+	}
+	if v := eval(`siPlay.terminal.open("Lab 1", {opacity: 60}).then(function(){return document.querySelector('.si-term').dataset.opacity})`); v != `"60"` {
+		t.Errorf("terminal.open(name, {opacity: 60}): data-opacity %s", v)
+	}
+	eval(`siPlay.terminal.opacity(100)`)
 	eval(`siPlay.terminal.open("Lab 2", {split: "right"})`)
 	if n := eval(`siPlay.terminal.names().length`); n != "2" {
 		t.Errorf("a split tab: %s tabs", n)

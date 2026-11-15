@@ -497,6 +497,7 @@ These steps drive the tools by name, through the page's public API
 |---|---|
 | `embed-terminal "Lab 1"` | opens the drawer on the shell tab `Lab 1` (created when missing, raised when it is there); the `run`, `type` (with no field), `press`, `expect output` and `wait for output` steps after it go to that tab |
 | `embed-terminal "Server" · split right` | the tab `Server` in a pane beside the tab in front (`split down`: below it); the steps after it go to `Server` |
+| `embed-terminal "Lab 1" · opacity 80%` | the drawer at 80 % opacity (40 % to 100 %): the slide shows through, the text stays opaque; with `split` too |
 | `embed-terminal min` · `max` · `restore` · `close` | the drawer: hidden (its shells run on), the whole window, back to its size, hidden and restored; after `min` or `close` the steps act on the page again |
 | `embed-browser "RabbitMQ"` | opens the deck's `browser:` link `RabbitMQ` (or a URL, `embed-browser "http://localhost:15672/#/queues"`) in a window over the slides; an open one comes to the front |
 | `embed-browser "RabbitMQ" · at 80,60 · size 1100x700 · zoom 125%` | places it (CSS pixels from the top left; zoom 30% to 300%), the same on every take |

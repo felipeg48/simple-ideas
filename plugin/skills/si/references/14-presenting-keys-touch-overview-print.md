@@ -216,6 +216,7 @@
   | `siPlay.terminal.output(name)` | the tab's screen and scrollback as text (`''` for no such tab) |
   | `siPlay.terminal.state(s)` | the drawer: `'min'` (hidden, the shells run on), `'max'`, `'restore'`, `'close'` |
   | `siPlay.terminal.names()` | the open shell tabs |
+  | `siPlay.terminal.opacity(n)` | the drawer's opacity in %, 40 to 100 (remembered; the slide shows through, the text stays opaque); no `n`: the current one. `open(name, {opacity})` sets it too |
   | `siPlay.browser.open(name, {x, y, w, h, zoom})` | a window with the `browser:` link `name` (or a URL), placed in CSS pixels, zoom `1.25` = 125 %; an open one comes to the front; resolves when its page has loaded |
   | `siPlay.browser.go(name, url)` | takes the open window `name` to `url` (relative to its page: `'#/queues'`); resolves when it has loaded (5 s at most) |
   | `siPlay.browser.close(name)` · `.min(name)` | closes (no name: every window) or minimises it; the keys go back to the deck |
@@ -234,7 +235,19 @@
   still running) and **□** maximises it to the whole window (or double-click
   the bar; **❐** restores; remembered). Drag the drawer's top edge to set its
   height (a fifth of the window up to all of it; remembered; maximise comes
-  back to it).
+  back to it). A shell always knows the size its tab shows: it starts at it,
+  and every change (the window, the drawer's height, maximise, a side panel,
+  a split, the text size) refits the tab and tells the shell before the next
+  command goes in, so a long command line wraps where you see it wrap.
+
+- **Drawer opacity**: the slider in the top bar (40 % to 100 %, remembered)
+  lets the slide show through the drawer: the backgrounds go translucent and
+  the slide behind is dimmed so the text, always fully opaque, keeps its
+  contrast over a light slide. `terminal.opacity: 85%` in si.conf (§16) sets
+  the starting value (`terminal.blur: 6px` blurs the slide behind too); a
+  cue (`[TERM Lab 1 · opacity 80%]`, §11), a web demo step
+  (`embed-terminal "Lab 1" · opacity 80%`, §27) and
+  `siPlay.terminal.opacity(80)` set it while you present.
 
 - **Text size per tab**: **−** **100%** **+** in the top bar size the active
   tab only, a shell's text or a Viewer's tree, file and editor, never the

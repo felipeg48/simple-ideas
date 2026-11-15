@@ -26,7 +26,8 @@ type Part struct {
 // [TERM min] and [TERM max] set the drawer; [BROWSER Name] opens the
 // browser: link Name (or a URL) in a window over the slides (· at X,Y ·
 // size WxH · zoom N% place it), [BROWSER Name: URL] takes the window Name to
-// URL, [BROWSER close] closes every window. Never read aloud.
+// URL, [BROWSER close] closes every window; [TERM Name · opacity 80%]
+// sets the drawer's opacity too. Never read aloud.
 type Act struct {
 	Tool  string             `json:"tool"`            // term or browser
 	Name  string             `json:"name,omitempty"`  // the tab, the browser: link name or a URL
@@ -34,6 +35,8 @@ type Act struct {
 	State string             `json:"state,omitempty"` // close, min, max
 	URL   string             `json:"url,omitempty"`   // BROWSER Name: URL: the page the window Name goes to
 	Place map[string]float64 `json:"o,omitempty"`     // BROWSER: x, y, w, h (CSS pixels), zoom (1.25 = 125 %), as siPlay.browser.open takes them
+	// TERM … · opacity N%: the drawer's opacity (40-100), as siPlay.terminal.opacity takes it
+	Opacity int `json:"opacity,omitempty"`
 }
 
 // ActCueRE finds the presenter-tool cues in a Notes: script.
@@ -103,6 +106,21 @@ func ParseAct(tool, body string) (Act, error) {
 	name, cmd, has := strings.Cut(body, ":")
 	if strings.HasPrefix(cmd, "//") { // a colon of a URL is no command
 		name, cmd, has = body, "", false
+	}
+	// [TERM Name · opacity 80%: command]: options sit with the name
+	opts := strings.Split(name, "·")
+	name = opts[0]
+	for _, c := range opts[1:] {
+		k, v, _ := strings.Cut(strings.TrimSpace(c), " ")
+		v = strings.TrimSpace(v)
+		n := 0
+		if actZoomRE.MatchString(v) {
+			fmt.Sscan(strings.TrimSuffix(v, "%"), &n)
+		}
+		if k != "opacity" || n < 40 || n > 100 {
+			return a, fmt.Errorf("[TERM %s]: %q: the drawer takes · opacity N%% (40%% to 100%%): [TERM Lab 1 · opacity 80%%]", body, strings.TrimSpace(c))
+		}
+		a.Opacity = n
 	}
 	a.Name, a.Cmd = strings.TrimSpace(name), strings.TrimSpace(cmd)
 	switch {

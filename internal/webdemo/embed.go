@@ -49,7 +49,7 @@ func embedStep(st *Step, word, rest string) (*Step, error) {
 	st.Name = name
 	if tail != "" {
 		if word == "embed-terminal" || (tail != "close" && tail != "min") || len(parts) > 1 {
-			return nil, fmt.Errorf(`%q: after the name, embed-browser takes close or min; embed-terminal takes nothing (· split right)`, st.Text)
+			return nil, fmt.Errorf(`%q: after the name, embed-browser takes close or min; embed-terminal takes nothing (· split right, · opacity 80%%)`, st.Text)
 		}
 		st.State = tail
 		return st, nil
@@ -60,6 +60,8 @@ func embedStep(st *Step, word, rest string) (*Step, error) {
 		switch {
 		case word == "embed-terminal" && k == "split" && (v == "right" || v == "down"):
 			st.Value.Text = v
+		case word == "embed-terminal" && k == "opacity" && zoomRE.MatchString(v) && atoi(strings.TrimSuffix(v, "%")) >= 40 && atoi(strings.TrimSuffix(v, "%")) <= 100:
+			st.Opts["opacity"] = strings.TrimSuffix(v, "%")
 		case word == "embed-browser" && k == "at" && atRE.MatchString(v):
 			m := atRE.FindStringSubmatch(v)
 			st.Opts["x"], st.Opts["y"] = m[1], m[2]
@@ -69,7 +71,7 @@ func embedStep(st *Step, word, rest string) (*Step, error) {
 		case word == "embed-browser" && k == "zoom" && zoomRE.MatchString(v) && atoi(strings.TrimSuffix(v, "%")) >= 30 && atoi(strings.TrimSuffix(v, "%")) <= 300:
 			st.Opts["zoom"] = strings.TrimSuffix(v, "%")
 		case word == "embed-terminal":
-			return nil, fmt.Errorf("%q: embed-terminal takes · split right or · split down", st.Text)
+			return nil, fmt.Errorf("%q: embed-terminal takes · split right|down and · opacity N%% (40%% to 100%%)", st.Text)
 		default:
 			return nil, fmt.Errorf("%q: embed-browser takes · at X,Y · size WxH · zoom N%% (30%% to 300%%)", st.Text)
 		}
@@ -182,9 +184,12 @@ func (r *runner) embedStep(st *Step) error {
 			pause()
 			return err
 		}
-		o := map[string]string{}
+		o := map[string]any{}
 		if st.Value.Text != "" {
 			o["split"] = st.Value.Text
+		}
+		if v := st.Opts["opacity"]; v != "" {
+			o["opacity"] = atoi(v) // the drawer's opacity, %
 		}
 		r.embed = st.Name
 		_, err := r.siPlay("terminal.open(%s,%s)", js(st.Name), js(o))
