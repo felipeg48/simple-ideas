@@ -53,7 +53,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/tui"
 )
 
-const version = "3.23.0"
+const version = "3.24.0"
 
 // Exit codes.
 const (

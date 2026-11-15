@@ -3,6 +3,39 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.24.0:** steadier tests, webhook and class view follow-ups.
+  **Headless Chrome:** every one-shot Chrome run (screenshots, PDFs,
+  handouts, mind map and code exports, `--dump-dom`) goes through
+  `cdp.Command`: at most max(2, CPUs/4) at once per process, a fresh
+  `--user-data-dir` each (DevTools Chromes too), a 3-minute bound that starts
+  once it has its slot (the MCP screenshot had none). The shared cause of the
+  flakes: under load headless Chrome writes the screenshot, PDF or DOM and
+  then dies in teardown ("Teardown watchdog expired", exit status 2); a run
+  whose product is written now succeeds, and a Chrome that dies before gets
+  one more try. Test harnesses poll for what they wait on instead of
+  fixed sleeps. **Webhooks:** `webhook-base: https://…` (si.conf
+  `course.base:`) puts event urls and xAPI activity ids under where the course
+  is published; without it a page opened from disk says
+  `urn:si:course:<id>[:<page>]`, never `file://`. A refused or offline send
+  is tried again on the same page (2 s doubling to a minute, and when the
+  browser is back online). Signed posts carry `X-Si-Timestamp`, and
+  `X-Si-Signature` now covers `"<timestamp>.<body>"`: receivers refuse a
+  timestamp over 5 minutes off (a change for existing receivers). The relay
+  answers on the `si play --remote` listener too, behind its key. **Class
+  view:** quiz questions are named by their titles from the quiz source; a
+  Day picker opens earlier `.si/class/<date>.jsonl` days (and their CSV). The
+  class view stays a browser page: none in the Studio or the terminal.
+- **v3.24.0:** the play terminal drawer. **Long lines never overwrite**:
+  the garbling seen in films made with si 3.17–3.22 came from the clean `sh`
+  prompt's hidden marker, counted as 10 columns by bash (fixed in v3.23.0);
+  now also a new shell starts at its tab's size, hidden or empty panes are
+  never fitted, one observer refits on every drawer size change, and `run` /
+  `type` wait until the shell knows its size (a committed e2e plays a
+  minimise → reopen → long `curl` sequence). **Opacity**: a slider in the
+  drawer bar (40–100 %, remembered) lets the slide show through while the
+  text stays solid; `terminal.opacity: 85%` and `terminal.blur: 6px` in
+  si.conf, `[TERM Ops · opacity 80%]`, `embed-terminal "Ops" · opacity 80%`,
+  `siPlay.terminal.opacity(n)`.
 - **v3.23.0:** si on Windows, and nine issues. **The terminal on Windows:**
   the play drawer and web-demo terminals run through ConPTY
   (`internal/termpty`; PowerShell, else cmd; a clean PowerShell prompt), with
