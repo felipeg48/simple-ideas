@@ -166,7 +166,7 @@ func exportDeckMotion(chrome, page, out string, d *deckInfo, dwell float64, nar 
 			if h, ok := nar.hold(i, k, move, views == 1); ok {
 				dur = h
 			}
-			if acts := d.actsAt(nar, i, k); len(acts) > 0 {
+			if acts := d.actsAt(nar, i, k, dur); len(acts) > 0 {
 				shots, err := filmActs(c, dur, tmp, fmt.Sprintf("c%03d-%02d", i, k), acts)
 				if err != nil {
 					return views, err
@@ -222,8 +222,9 @@ type viewAct struct {
 }
 
 // actsAt are view (i, k)'s cues: where a voiced narration says them, else
-// at the start of the view.
-func (d *deckInfo) actsAt(nar *narration, i, k int) []viewAct {
+// where the words before them would end, read at auto-play's own pace with
+// no voice (readSecs), the times shrunk to fit a hold of dur seconds.
+func (d *deckInfo) actsAt(nar *narration, i, k int, dur float64) []viewAct {
 	if nar != nil && nar.acts != nil {
 		return nar.acts[[2]int{i, k}]
 	}
@@ -231,16 +232,38 @@ func (d *deckInfo) actsAt(nar *narration, i, k int) []viewAct {
 		return nil
 	}
 	var out []viewAct
-	view := 0
+	view, at := 0, 0.0
 	for _, p := range d.slides[i].Parts() {
 		if p.Click {
 			view++
 		}
-		if view == k && len(p.Acts) > 0 {
-			out = append(out, viewAct{0, p.Acts})
+		if view != k {
+			continue
+		}
+		if len(p.Acts) > 0 {
+			out = append(out, viewAct{at, p.Acts})
+		}
+		at += readSecs(p.Text)
+	}
+	if at > dur && dur > 0 {
+		for j := range out {
+			out[j].at *= dur / at
 		}
 	}
 	return out
+}
+
+var sentenceEndRE = regexp.MustCompile(`[.!?…]["'”’)\]]?(\s|$)`)
+
+// readSecs is how long auto-play's browser voice holds words where no voice
+// speaks (05-autoplay.js apBrowser, muted): 2.5 words a second (150 a
+// minute), 0.2 s after each sentence.
+func readSecs(text string) float64 {
+	words := len(strings.Fields(text))
+	if words == 0 {
+		return 0
+	}
+	return float64(words)/2.5 + 0.2*float64(max(1, len(sentenceEndRE.FindAllString(text, -1))))
 }
 
 // dissolveActsNote is what si build says when a deck with [TERM …] /

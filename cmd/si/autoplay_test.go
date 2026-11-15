@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -132,8 +133,16 @@ func TestVoicedActs(t *testing.T) {
 		}
 	}
 	info := &deckInfo{slides: d.Slides}
-	if a := info.actsAt(nil, 1, 1); len(a) != 1 || a[0].acts[0].Tool != "browser" {
+	if a := info.actsAt(nil, 1, 1, 10); len(a) != 1 || a[0].acts[0].Tool != "browser" || a[0].at != 0 {
 		t.Errorf("actsAt without narration = %+v", a)
+	}
+	// no voice: a cue waits for the words before it, read at 2.5 words a
+	// second and 0.2 s a sentence ("Let us see." = 1.4 s), shrunk to fit
+	if a := info.actsAt(nil, 1, 0, 10); len(a) != 1 || math.Abs(a[0].at-1.4) > 1e-9 {
+		t.Errorf("actsAt by reading time = %+v", a)
+	}
+	if a := info.actsAt(nil, 1, 0, 1); len(a) != 1 || a[0].at >= 1 || a[0].at <= 0.5 {
+		t.Errorf("actsAt in a short hold = %+v", a)
 	}
 	if !hasActs(d) {
 		t.Error("hasActs")
