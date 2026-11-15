@@ -3,6 +3,25 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.23.0:** si on Windows, and nine issues. **The terminal on Windows:**
+  the play drawer and web-demo terminals run through ConPTY
+  (`internal/termpty`; PowerShell, else cmd; a clean PowerShell prompt), with
+  a Windows CI job; on Windows the Viewer reads `/` as the drive root and
+  never deletes the served folder. **Web demos:** CSS selectors like `form
+  .name input`; `files:` fetched beside a pinned script and `gist:ID@REV/file`
+  targets; `vertical-fill: blur|theme|color #hex`; lower thirds drawn after
+  the `--region` crop; card `theme:` takes a `.css` theme file; `shell: sh`
+  long commands wrap right; `si build --mp4 --dissolve` says cues need the
+  motion film. **Issues:** a page that reloads itself while loading no
+  longer leaves demo steps "still loading" (#14); deck posters, PDFs and
+  handouts are taken with reduced motion, so animated themes are never blank
+  (#15); a film advances through `siPlay.next()`, and closing the drawer gives
+  the keys back to the deck (#16); filming a deck with cues runs its
+  `setup:`/`start:`/`stop:`/`cleanup:` (`--no-live` skips) (#17); a demo with
+  `app:` a deck waits for the talk and runs its `prepare:` after the deck's
+  setup (#18); `[BROWSER Name · at X,Y · size WxH · zoom N%]` and `[BROWSER
+  Name: URL]` (#19); concurrent narrated builds of one deck never share a temp
+  file (#20).
 - **v3.22.0:** the live class view. `si serve course/ --class` (or `si
   play … --class`) collects the course's events at `/_si/class/event` (same
   origin, validated, no answers stored) into `.si/class/<date>.jsonl` and a

@@ -34,7 +34,7 @@ lazy-loaded on Edit; `POST /_si/term/api/save` with an mtime check; saves
 never live-reload). See `docs/terminal.md` "Viewer tabs".
 
 
-**Released and live: v3.22.0** (live class view; v3.20 improvements, v3.21 mind maps) · (result webhooks, self-checking labs, relay; class view specified) · (clean filmed prompt via `webdemo.CleanShell` + `Server.CleanPrompt`, POST forms across sites via `/__si_fwd` 307, act-cue badges in the terminal teleprompter) · v3.17.0 (#13: embed-terminal/browser, siPlay API, Notes cues, Demo lessons) · (issues #10–#12) · (the play workbench, six improvements:
+**Released and live: v3.23.0** (Windows terminal via ConPTY, web demo improvements, issues #14–#20) · (live class view; v3.20 improvements, v3.21 mind maps) · (result webhooks, self-checking labs, relay; class view specified) · (clean filmed prompt via `webdemo.CleanShell` + `Server.CleanPrompt`, POST forms across sites via `/__si_fwd` 307, act-cue badges in the terminal teleprompter) · v3.17.0 (#13: embed-terminal/browser, siPlay API, Notes cues, Demo lessons) · (issues #10–#12) · (the play workbench, six improvements:
 the Viewer tree's open folders and scroll in `t.snap()` (`open`, `treeTop`,
 `t.onShow`); ⌘= ⌘- ⌘0 caught on the whole drawer; `grep?stream=1` NDJSON with
 Stop (`grepWalk` in `internal/serve/search.go`); split view up to four panes
