@@ -1,6 +1,7 @@
 package pinned
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
@@ -43,8 +44,24 @@ func ParseFiles(v string) ([]Need, error) {
 }
 
 // filesKey finds the `files:` key of a document's front matter (Markdown
-// between --- lines) or header (AsciiDoc :files: before the first blank line).
+// between --- lines), header (AsciiDoc :files: before the first blank line)
+// or top-level "files" (a JSON script: a string or a list of entries).
 func filesKey(doc []byte) string {
+	if t := strings.TrimSpace(strings.TrimPrefix(string(doc), "\uFEFF")); strings.HasPrefix(t, "{") {
+		var j struct {
+			Files json.RawMessage `json:"files"`
+		}
+		if json.Unmarshal([]byte(t), &j) != nil || len(j.Files) == 0 {
+			return ""
+		}
+		var one string
+		if json.Unmarshal(j.Files, &one) == nil {
+			return one
+		}
+		var list []string
+		json.Unmarshal(j.Files, &list)
+		return strings.Join(list, ", ")
+	}
 	lines := strings.Split(strings.ReplaceAll(strings.TrimPrefix(string(doc), "\uFEFF"), "\r\n", "\n"), "\n")
 	md := len(lines) > 1 && strings.TrimSpace(lines[0]) == "---"
 	for i, l := range lines {

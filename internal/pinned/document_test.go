@@ -54,6 +54,12 @@ func TestDocument(t *testing.T) {
 	if got := filesKey([]byte("= Shop\n:type: demo\n:files: a.sh · sha256 x\n\nfiles: no\n")); got != "a.sh · sha256 x" {
 		t.Errorf("AsciiDoc header: %q", got)
 	}
+	if got := filesKey([]byte(`{"type":"demo","files":["a.sh · sha256 x","b/c.png · sha256 y"]}`)); got != "a.sh · sha256 x, b/c.png · sha256 y" {
+		t.Errorf("JSON list: %q", got)
+	}
+	if got := filesKey([]byte(`{"type":"demo","files":"a.sh · sha256 x"}`)); got != "a.sh · sha256 x" {
+		t.Errorf("JSON string: %q", got)
+	}
 
 	g, ok, err := ParseTarget("gist:g2@r1/demo.md")
 	if !ok || err != nil {
