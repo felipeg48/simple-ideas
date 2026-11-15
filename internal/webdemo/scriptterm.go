@@ -31,12 +31,15 @@ type Ready struct {
 	Text  string
 	Port  int
 	Delay time.Duration
+	Gate  bool // with Port: si play is past its getting-ready page (/_si/ready)
 }
 
 func (r Ready) String() string {
 	switch {
 	case r.Text != "":
 		return "wait for " + strconv.Quote(r.Text)
+	case r.Gate:
+		return fmt.Sprintf("serves the talk on port %d", r.Port)
 	case r.Port > 0:
 		return fmt.Sprintf("wait for port %d", r.Port)
 	case r.Delay > 0:

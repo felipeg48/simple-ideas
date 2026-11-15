@@ -1,13 +1,16 @@
 package webdemo
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -116,10 +119,23 @@ func (p *proc) ready(r Ready, within time.Duration) error {
 		case r.Text != "" && shows(p.out.text(0), r.Text):
 			return nil
 		case r.Port > 0 && portOpen(r.Port):
-			return nil
+			if !r.Gate {
+				return nil
+			}
+			open, failed := gateState(r.Port)
+			if failed != "" {
+				return &failure{expected: p.name + " " + r.String(), found: "getting ready failed: " + failed, output: p.out.tail(40)}
+			}
+			if open {
+				return nil
+			}
 		}
 		if p.exited() {
-			return &failure{expected: p.name + " " + r.String(), found: fmt.Sprintf("it exited with status %d first", p.code), output: p.out.tail(40)}
+			out := p.out.tail(40)
+			if _, why, ok := strings.Cut(out, "si play: getting ready failed: "); ok && r.Gate { // the deck's setup: failed
+				return &failure{expected: p.name + " " + r.String(), found: "getting ready failed: " + strings.SplitN(why, "\n", 2)[0], output: out}
+			}
+			return &failure{expected: p.name + " " + r.String(), found: fmt.Sprintf("it exited with status %d first", p.code), output: out}
 		}
 		if time.Now().After(end) {
 			if r.Delay > 0 || (r.Text == "" && r.Port == 0) {
@@ -129,6 +145,29 @@ func (p *proc) ready(r Ready, within time.Duration) error {
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
+}
+
+// gateState asks si play's getting-ready gate (cmd/si/stage.go) whether the
+// deck's setup: and start: lines are done, or what failed. A deck with none
+// has no gate: /_si/ready is not JSON there, and the talk is served at once.
+func gateState(port int) (open bool, failed string) {
+	c := http.Client{Timeout: 2 * time.Second}
+	resp, err := c.Get(fmt.Sprintf("http://127.0.0.1:%d/_si/ready", port))
+	if err != nil {
+		return false, ""
+	}
+	defer resp.Body.Close()
+	var st struct {
+		Ready  bool
+		Failed string
+	}
+	if resp.StatusCode != http.StatusOK || !strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json") {
+		return true, ""
+	}
+	if json.NewDecoder(resp.Body).Decode(&st) != nil {
+		return false, ""
+	}
+	return st.Ready, st.Failed
 }
 
 // portOpen reports whether something accepts on the loopback port.

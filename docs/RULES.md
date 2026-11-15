@@ -3609,6 +3609,32 @@ run` start `si play <deck> --addr 127.0.0.1:<free port>` themselves (with
 the `start:` programs, first; `shell:` is the drawer's shell) and stop it at
 the end; its drawer's shells start with a clean prompt (the folder's name and
 `$`, none of your rc files), so no account, host or cloud name gets filmed; `app:` may also be the URL of a deck `si play` already serves.
+
+When the deck has its own `setup:` and `start:` lines (§14), `si play` shows
+its getting-ready page while they run; the demo waits until the talk itself
+is served, then runs its own `start:`, `prepare:` and `step:` lines and the
+features. So the deck sets up, the demo only adds to it: a demo's
+`prepare:` never runs beside the deck's `setup:`, and needs no wait of its
+own for what the deck starts. When a deck's `setup:` fails, the run fails
+with its error (`getting ready failed: setup: …`). Give the stack to one of
+them, not both: the deck's `setup:` when the talk needs it live, the demo's
+`prepare:` when only the video does.
+
+```markdown
+---
+title: The broker
+setup: docker compose up -d --wait
+---
+```
+
+```markdown
+---
+type: demo
+app: talk.md
+prepare: rabbitmqadmin declare queue name=orders   # after the deck's setup:
+---
+```
+
 These steps drive the tools by name, through the page's public API
 `window.siPlay` (§14), never through si's markup:
 
