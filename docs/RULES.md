@@ -4905,8 +4905,8 @@ aspect: phone
 animate: build
 ---
 
-## The path · flow
-Producer -[publish]-> Exchange -[route]-> Queue -[deliver]-> Consumer
+## The path · flow · dir=tb
+[server] Producer -[publish]-> [api] Exchange -[route]-> [queue] Queue -[deliver]-> [function] Consumer
 Consumer -[ack]-> Queue
 
 ## 50,000 · stat · accent
@@ -4937,6 +4937,8 @@ arrows from paths, one per line:
 | `API -[SQL]-> Database` | an arrow with a label |
 | `Consumer -[ack]-> Queue` | an arrow back: the layout keeps the flow going one way, the two arrows side by side |
 | `Cache` (alone on a line) | a box without arrows |
+| `[db] Orders` | a box with an icon before its name (once is enough): `user`, `server`, `database` (`db`), `queue`, `cache`, `cloud`, `lock`, `globe` (`web`), `mobile` (`phone`), `function` (`fn`, `lambda`), `browser`, `mail`, `file`, `api` (`code`) |
+| `## The path · flow · dir=tb` | the direction: `lr` left to right, `tb` top to bottom (without it, by the frame) |
 
 Boxes meet by name across lines, so several lines make branches and merges.
 si lays them out (columns by the longest path, siblings stacked): left to
@@ -4944,7 +4946,8 @@ right, or top to bottom in a tall frame (`phone`, `story`). The arrows are
 numbered in the order written; animated, the boxes appear and the arrows draw
 in that order, then a packet travels along each arrow in turn. A flow block is
 `wide` unless it says `span=`. `si check` reports an arrow without a box on
-one side and a label without its `]->`, at its line.
+one side, a label without its `]->` and an unknown icon, at its line, and a
+`dir=` other than `lr` or `tb`.
 
 ### Sizes
 

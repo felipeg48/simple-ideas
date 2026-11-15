@@ -4,6 +4,8 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -215,6 +217,41 @@ func TestIGSchedule(t *testing.T) {
 	}
 	if _, _, tot := igSchedule(ig.Blocks, true, 12); tot != 12 {
 		t.Errorf("duration: given %v", tot)
+	}
+}
+
+// TestIGFlowIconsAndDir: every flow icon si checks has a drawing; a box with
+// one draws it beside its name; dir=tb turns a landscape flow downwards.
+func TestIGFlowIconsAndDir(t *testing.T) {
+	for _, n := range deck.IGFlowIcons {
+		if igFlowIcons[n] == "" {
+			t.Errorf("icon %s has no drawing", n)
+		}
+	}
+	if len(igFlowIcons) != len(deck.IGFlowIcons) {
+		t.Errorf("%d drawings for %d icons", len(igFlowIcons), len(deck.IGFlowIcons))
+	}
+	dir := t.TempDir()
+	p := filepath.Join(dir, "ig.md")
+	os.WriteFile(p, []byte("---\ntype: infographic\n---\n\n## Path · flow · dir=tb\n[user] Client -> [server] API -> [db] Orders\n\n## Other · flow\nA -> B -> C\n"), 0o644)
+	d, err := deck.Parse(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := string(Document(d, Options{Media: MediaInline}).HTML)
+	if strings.Count(h, `class="si-igf-ico"`) != 3 || !strings.Contains(h, igFlowIcons["database"]) {
+		t.Error("the boxes do not draw their icons")
+	}
+	vb := regexp.MustCompile(`<div class="si-igf"[^>]*><svg viewBox="0 0 (\d+) (\d+)"`).FindAllStringSubmatch(h, -1)
+	if len(vb) != 2 {
+		t.Fatalf("flows: %v", vb)
+	}
+	w0, _ := strconv.Atoi(vb[0][1])
+	h0, _ := strconv.Atoi(vb[0][2])
+	w1, _ := strconv.Atoi(vb[1][1])
+	h1, _ := strconv.Atoi(vb[1][2])
+	if h0 <= w0 || w1 <= h1 {
+		t.Errorf("dir=tb goes down (%dx%d), the other across (%dx%d)", w0, h0, w1, h1)
 	}
 }
 

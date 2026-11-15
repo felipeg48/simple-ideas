@@ -8,8 +8,8 @@ theme: studio
 sources: Typical figures for a single broker on one machine
 ---
 
-## The path · flow
-Producer -[publish]-> Exchange -[route]-> Queue -[deliver]-> Consumer
+## The path · flow · dir=tb
+[server] Producer -[publish]-> [api] Exchange -[route]-> [queue] Queue -[deliver]-> [function] Consumer
 Consumer -[ack]-> Queue
 
 ## 50,000 · stat · accent

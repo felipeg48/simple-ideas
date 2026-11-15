@@ -26,7 +26,14 @@ var (
 	IGCharts       = []string{"bar", "donut", "line", "progress"}
 	IGAnimates     = []string{"build", "loop", "off"}
 	IGEnters       = []string{"fade", "rise", "grow", "count"}
+	// IGFlowIcons are the icons a flow box takes, `[db] Orders`
+	IGFlowIcons = []string{"user", "server", "database", "queue", "cache", "cloud", "lock", "globe", "mobile", "function", "browser", "mail", "file", "api"}
 )
+
+// igIconAlias are other names the flow icons answer to.
+var igIconAlias = map[string]string{"db": "database", "fn": "function", "lambda": "function", "phone": "mobile", "web": "globe", "code": "api", "users": "user", "person": "user"}
+
+var igIconRE = regexp.MustCompile(`^\[([A-Za-z]+)\]\s*(.*)$`)
 
 // IGPresets are the named exact frames (width:height): an infographic made
 // to be shared or exported at that shape. The ratio aspects (16:9, 9:16, a4)
@@ -117,6 +124,7 @@ type IGBlock struct {
 	Enter   string  // enter=: how it comes in when the infographic animates ("" = by kind)
 	At      float64 // at=: seconds into the animation it starts (-1 = after the one before)
 	Flow    *IGFlow // Kind flow: its boxes and arrows
+	Dir     string  // dir=lr|tb: a flow's direction ("" = by the frame)
 
 	bodyLine int  // 1-based line of the first line of Body
 	spanSet  bool // span=, wide written (a flow is wide by default)
@@ -126,6 +134,7 @@ type IGBlock struct {
 // written (`Client -> API -[SQL]-> Database`, one path per line).
 type IGFlow struct {
 	Nodes []string
+	Icons []string // per box: its icon, one of IGFlowIcons ("" = none)
 	Edges []IGEdge
 }
 
@@ -222,7 +231,7 @@ func (b *IGBlock) options(head string) []IGProblem {
 func igOption(w string) bool {
 	k, _, _ := strings.Cut(w, "=")
 	switch k {
-	case "chart", "span", "wide", "tall", "accent", "kind", "enter", "at":
+	case "chart", "span", "wide", "tall", "accent", "kind", "enter", "at", "dir":
 		return true
 	}
 	return contains(IGKinds, k)
@@ -264,6 +273,11 @@ func (b *IGBlock) option(w string) string {
 			return fmt.Sprintf("infographic: at=%s: write when the block comes in, in seconds (at=3s)", v)
 		}
 		b.At = t
+	case k == "dir":
+		if v != "lr" && v != "tb" {
+			return fmt.Sprintf("infographic: dir=%s: a flow goes lr (left to right) or tb (top to bottom)", v)
+		}
+		b.Dir = v
 	case k == "tall":
 		b.Rows = 2
 	case k == "accent":
@@ -274,7 +288,7 @@ func (b *IGBlock) option(w string) string {
 			b.Chart = "bar"
 		}
 	default:
-		return fmt.Sprintf("infographic: unknown block option %q (use a kind: %s; chart=, span=, wide, tall, accent, enter=, at=)", w, strings.Join(IGKinds, ", "))
+		return fmt.Sprintf("infographic: unknown block option %q (use a kind: %s; chart=, span=, wide, tall, accent, enter=, at=, dir=)", w, strings.Join(IGKinds, ", "))
 	}
 	return ""
 }
@@ -498,25 +512,50 @@ var igArrowRE = regexp.MustCompile(`-\[([^\]]*)\]->|->`)
 // ParseIGFlow reads a flow block: one path per line, boxes joined by arrows
 // (`A -> B -> C`), an arrow's label in brackets (`A -[HTTP]-> B`); a line
 // with a name alone is a box without arrows. Boxes are named once and meet by
-// name across lines. first is the 1-based line of the body's first line.
+// name across lines; a box's icon goes before its name, once is enough
+// (`[db] Orders`, IGFlowIcons). first is the 1-based line of the body's
+// first line.
 func ParseIGFlow(body string, first int) (*IGFlow, []IGProblem) {
 	f := &IGFlow{}
 	var probs []IGProblem
 	idx := map[string]int{}
-	node := func(name string) int {
-		if i, ok := idx[name]; ok {
-			return i
+	var bad func(string, ...any)
+	node := func(raw string) int {
+		name, icon := raw, ""
+		if m := igIconRE.FindStringSubmatch(raw); m != nil {
+			name, icon = strings.TrimSpace(m[2]), strings.ToLower(m[1])
+			if a, ok := igIconAlias[icon]; ok {
+				icon = a
+			}
+			if !contains(IGFlowIcons, icon) {
+				bad("unknown icon [%s] (use %s)", m[1], strings.Join(IGFlowIcons, ", "))
+				icon = ""
+			}
 		}
-		idx[name] = len(f.Nodes)
-		f.Nodes = append(f.Nodes, name)
-		return len(f.Nodes) - 1
+		i, ok := idx[name]
+		if !ok {
+			i = len(f.Nodes)
+			idx[name] = i
+			f.Nodes = append(f.Nodes, name)
+			f.Icons = append(f.Icons, "")
+		}
+		if icon != "" {
+			f.Icons[i] = icon
+		}
+		return i
+	}
+	boxName := func(raw string) string { // the name without its icon
+		if m := igIconRE.FindStringSubmatch(raw); m != nil {
+			return strings.TrimSpace(m[2])
+		}
+		return raw
 	}
 	for i, raw := range strings.Split(body, "\n") {
 		line := strings.TrimSpace(strings.ReplaceAll(raw, "→", "->"))
 		if line == "" || strings.HasPrefix(line, "<!--") {
 			continue
 		}
-		bad := func(f string, a ...any) {
+		bad = func(f string, a ...any) {
 			probs = append(probs, IGProblem{Line: first + i, Msg: "infographic flow: " + fmt.Sprintf(f, a...)})
 		}
 		ms := igArrowRE.FindAllStringSubmatchIndex(line, -1)
@@ -542,7 +581,7 @@ func ParseIGFlow(body string, first int) (*IGFlow, []IGProblem) {
 		names = append(names, strings.TrimSpace(line[at:]))
 		ok := true
 		for _, n := range names {
-			ok = ok && n != ""
+			ok = ok && boxName(n) != ""
 		}
 		if !ok {
 			bad("an arrow needs a box on each side in %q (A -> B)", line)

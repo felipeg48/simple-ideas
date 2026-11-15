@@ -228,7 +228,7 @@ func (dr *deckRenderer) igHTML(ig *deck.Infographic, o igOpts, sc *slideCtx) str
 		fmt.Fprintf(&b, `<section class="%s" data-kind="%s"%s%s style="--r:%d;--c:%d;--h:%d;--w:%d">`,
 			cls, bl.Kind, chart, step, p[0], p[1], p[2], p[3])
 		if bl.Kind == "flow" {
-			b.WriteString(dr.igFlow(bl, dir))
+			b.WriteString(dr.igFlow(bl, map[string]string{"lr": "LR", "tb": "TB", "": dir}[bl.Dir]))
 		} else {
 			b.WriteString(dr.igBlock(bl))
 		}

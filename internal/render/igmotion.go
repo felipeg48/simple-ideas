@@ -317,13 +317,25 @@ func (dr *deckRenderer) igFlow(b *deck.IGBlock, dir string) string {
 		s.WriteString(`</g>`)
 	}
 	for i, n := range f.Nodes {
-		size := 22.0
-		if st := labelFit(n); st != "" {
-			k, _ := strconv.ParseFloat(strings.TrimSuffix(strings.TrimPrefix(st, ` style="--_lk:`), `"`), 64)
-			size *= k
+		icon := ""
+		if i < len(f.Icons) {
+			icon = igFlowIcons[f.Icons[i]]
 		}
-		fmt.Fprintf(&s, `<g class="si-igf-node" data-n="%d" data-ev="%d"><rect x="%d" y="%d" width="%d" height="%d" rx="14"/><text x="%d" y="%d" font-size="%s">%s</text></g>`,
-			i, evOf[[2]int{i, -1}], g.tlx[i], g.tly[i], sBoxW, sBoxH, g.cx[i], g.cy[i], igSec(size), html.EscapeString(n))
+		size, tx, inner := 22.0, g.cx[i], float64(sBoxW-24)
+		if icon != "" { // the icon at the left, the name centred in what is left
+			const ico, gap = 32, 10
+			inner -= ico + gap
+			tx = g.tlx[i] + 12 + ico + gap + int(inner)/2
+			fmt.Fprintf(&s, `<g class="si-igf-node" data-n="%d" data-ev="%d"><rect x="%d" y="%d" width="%d" height="%d" rx="14"/><svg class="si-igf-ico" x="%d" y="%d" width="%d" height="%d" viewBox="0 0 24 24">%s</svg>`,
+				i, evOf[[2]int{i, -1}], g.tlx[i], g.tly[i], sBoxW, sBoxH, g.tlx[i]+14, g.cy[i]-ico/2, ico, ico, icon)
+		} else {
+			fmt.Fprintf(&s, `<g class="si-igf-node" data-n="%d" data-ev="%d"><rect x="%d" y="%d" width="%d" height="%d" rx="14"/>`,
+				i, evOf[[2]int{i, -1}], g.tlx[i], g.tly[i], sBoxW, sBoxH)
+		}
+		if w := textW(n, size); w > inner {
+			size *= math.Round(inner/w*100) / 100 // as labelFit rounds it
+		}
+		fmt.Fprintf(&s, `<text x="%d" y="%d" font-size="%s">%s</text></g>`, tx, g.cy[i], igSec(size), html.EscapeString(n))
 	}
 	for k := range f.Edges {
 		fmt.Fprintf(&s, `<circle class="si-igf-pkt" data-e="%d" r="9" cx="0" cy="0"/>`, k)

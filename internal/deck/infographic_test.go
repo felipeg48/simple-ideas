@@ -142,6 +142,8 @@ func TestParseIGFlowErrors(t *testing.T) {
 		{"\nA -[HTTP-> B", 11, "not closed"},
 		{"Just a box", 10, "no arrows"},
 		{"-> B", 10, "box on each side"},
+		{"[db] -> B", 10, "box on each side"},
+		{"[disk] Orders -> B", 10, "unknown icon [disk]"},
 	} {
 		_, probs := ParseIGFlow(c.body, 10)
 		if len(probs) == 0 || probs[0].Line != c.line || !strings.Contains(probs[0].Msg, c.msg) {
@@ -150,6 +152,15 @@ func TestParseIGFlowErrors(t *testing.T) {
 	}
 	if f, probs := ParseIGFlow("A → B -[ack]-> A", 1); len(probs) != 0 || len(f.Nodes) != 2 || f.Edges[1] != (IGEdge{1, 0, "ack"}) {
 		t.Errorf("arrows: %+v %v", f, probs)
+	}
+	// icons before a name, once is enough, aliases too; boxes meet by name
+	f, probs := ParseIGFlow("[user] Client -[HTTP]-> [server] API -> [db] Orders\nAPI -> [Queue] Events\nOrders -> Events", 1)
+	if len(probs) != 0 || strings.Join(f.Nodes, ",") != "Client,API,Orders,Events" || strings.Join(f.Icons, ",") != "user,server,database,queue" || len(f.Edges) != 4 {
+		t.Errorf("icons: %+v %v", f, probs)
+	}
+	ig, probs := ParseInfographic("## Path · flow · dir=tb\nA -> B\n\n## Other · flow · dir=up\nA -> B\n")
+	if ig.Blocks[0].Dir != "tb" || len(probs) != 1 || !strings.Contains(probs[0].Msg, "dir=up") {
+		t.Errorf("dir=: %q %+v", ig.Blocks[0].Dir, probs)
 	}
 }
 
