@@ -240,8 +240,10 @@ source: demo.mp4
 - Times are the source's: an edit never moves another line; `at chapter "Install" + 5s`, `at said "management UI"` (from the `.vtt` beside it)
 - Edits: `cut`, `trim start|end`, `freeze`, `speed 2x`, `replace with`, `insert clip|image|card`, `mute`; `· fade|dissolve|wipe|slide`
 - Callouts in the theme: `title`, `text`, `bubble`, `arrow`, `box`, `circle`, `underline`, `spotlight`, `blur`, `pixelate`, `keys`, `badge`, `lower-third`; the camera: `zoom to`, `pan to`, `zoom out`
-- Sound and takes: `say "…" · duck 30%`, `music`, `captions on`, `refilm feature "Name"` (the demo script runs that feature again)
-- `si check edit.md` · `si play edit.md` (a live preview) · `si build edit.md --with captions,vertical`; full guide: RULES.md §32
+- Moving callouts: `· to 100,200 → 400,300 over 2s`, `· path A B C` (a bubble's tail, an arrow's head, a text, a rectangle)
+- Sound and takes: `say "…" · duck 30%`, `music`, `captions on` or `captions words` (the word being said marked), `refilm feature "Name"` (the demo script runs that feature again)
+- `si check edit.md` · `si play edit.md` (a live preview) · `si build edit.md --with captions,vertical,highlight` (the lines marked `· highlight`, else each chapter's first sentence); full guide: RULES.md §32
+- In the Studio: the Video view, markers that select their line, callouts dragged into place (written back in source pixels), ⌘B to build
 
 Notes: A recording gets its finishing touches from a Markdown file beside it: each line is a time and what happens there, and every time is the one you see in the original video.
 

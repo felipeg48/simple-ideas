@@ -5,6 +5,17 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-17)
 
+**v3.31.0:** the video edit phase 3 and its "not now" items: the Studio Video
+view (`internal/studio/video.go`: POST video applies a `videdit.Move` and
+returns `videdit.PreviewText` with `edit.js`/`edit.css`; POST/GET
+video/build runs `si build` in the background; `web/studio/src/video-editor.tsx`,
+e2e `videoedit.e2e.mjs`), moving callouts (`Item.Path`, overlay.js `place`),
+per-word captions (`internal/webdemo/words.go`, `captions words`, `--with
+words`, karaoke cues in `videoplayer.js`), `--with highlight` for edits
+(`internal/videdit/highlight.go`), Windows CI running a split demo
+(`TestTerminalSplitWindows`) and the workbench e2e. Next: a moving blur;
+dragging a moving callout's keyframes.
+
 **v3.28.0:** video edits (`type: video`, RULES §32, spec
 `docs/superpowers/specs/2026-11-17-video-edit.md`, phases 1–2): `internal/videdit/`
 (parse.go lines and times, plan.go source→output time map, graph.go one ffmpeg

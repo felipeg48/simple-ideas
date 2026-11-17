@@ -287,10 +287,13 @@ pass. The steps that matter:
   own HUD, captions/chapters beside the video, modal gallery, `si --export player`
   drop-in (`data-video`); `internal/render/videoplayer.go`, `web/videoplayer.js|css`,
   `cmd/si/player.go`.
-- **Video edits** (phases 1–2 DONE v3.28.0, spec
+- **Video edits** (phases 1–3 + moving callouts, `captions words`, `--with
+  highlight` DONE v3.31.0; Studio Video view `internal/studio/video.go`,
+  `web/studio/src/video-editor.tsx`, `internal/videdit/move.go` + `edit.js`)
+  (phases 1–2 DONE v3.28.0, spec
   `docs/superpowers/specs/2026-11-17-video-edit.md`): `type: video`, lines at
   source times, edits, callouts, camera, say/music/captions, refilm. Next:
-  phase 3, the Studio Video view (drag-to-place callouts writing x,y back).
+  a moving blur, dragging a moving callout's keyframes.
 - **Animated infographics** (DONE v3.15.0): `animate: build|loop`,
   `duration:`, `· enter= · at=`, `flow` blocks (`A -[label]-> B`, on the
   stage engine), exact frames (`aspect: phone|story|portrait|square|landscape|WxH`),

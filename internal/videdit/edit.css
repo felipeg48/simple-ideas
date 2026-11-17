@@ -1,0 +1,18 @@
+/* si Studio, the Video view: callouts are handles on the frame */
+.ve-edit .ve-c:not(.ve-arrow):not(.ve-fixed){pointer-events:auto;cursor:move;outline:1px dashed transparent;outline-offset:.4cqmin}
+.ve-edit .ve-c:not(.ve-arrow):not(.ve-fixed):hover,.ve-edit .ve-c.ve-sel:not(.ve-arrow),.ve-edit .ve-dragging{outline-color:color-mix(in srgb,var(--si-accent,#3b82f6) 80%,#fff)}
+.ve-edit .ve-dragging>.ve-in{opacity:1!important}
+.ve-grip,.ve-end{position:absolute;width:1.4em;height:1.4em;border-radius:50%;background:#fff;border:.2em solid var(--si-accent,#3b82f6);box-sizing:border-box;pointer-events:auto;font-size:clamp(8px,1.6cqmin,14px)}
+.ve-grip{right:0;bottom:0;transform:translate(50%,50%);cursor:nwse-resize}
+.ve-end{transform:translate(-50%,-50%);cursor:grab}
+.ve-hide.ve-sel,.ve-hide:hover{outline:1px dashed #fff}
+.vp-strip .m.ve-sel{outline:2px solid var(--si-accent,#3b82f6);outline-offset:1px;z-index:2}
+.vp-lines li.ve-sel button{background:color-mix(in srgb,var(--si-accent,#3b82f6) 18%,transparent)}
+/* the Studio frame: no page header, the player and strip fixed, the list scrolls */
+html.ve-edit,.ve-edit body{height:100%}
+.ve-edit body{box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;padding:10px 14px 0}
+.ve-edit header,.ve-edit .vp-note{display:none}
+.ve-edit .vp-problems{flex:none;max-height:22%;overflow:auto;margin-bottom:.5em}
+.ve-edit main{flex:1;min-height:0;display:flex;flex-direction:column;max-width:none}
+.ve-edit .vp-frame{flex:none;width:min(100%,var(--ve-fit))!important}
+.ve-edit .vp-lines{flex:1;min-height:0;overflow:auto;margin-bottom:0;padding-bottom:.6em}

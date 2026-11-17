@@ -30,6 +30,7 @@ type Edit struct {
 	Voice     string
 	Script    string // the demo script for refilm (as written)
 	Captions  bool
+	Words     bool // captions: words: the word being said highlighted
 	Items     []*Item
 	Problems  []Problem
 
@@ -138,6 +139,9 @@ type Item struct {
 	Color   string
 	Flags   map[string]bool // box, shadow, round, think, mute, keep-audio, linear
 	Badge   string          // speed · badge "…"
+	Path    []*Pos          // a moving callout's keyframes (· to A → B, · path A B C): its place over time
+	PathDur float64         // · over 2s: how long the move takes (0: the callout's length)
+	HL      bool            // · highlight: in the --with highlight cut
 
 	Start, End float64 // source seconds, once resolved
 }
@@ -161,7 +165,7 @@ var (
 // Actions are the line kinds, as the docs and errors name them.
 var Actions = []string{"cut", "trim start", "trim end", "freeze", "speed", "replace with", "insert clip", "insert image", "insert card", "card",
 	"mute", "title", "text", "bubble", "arrow", "box", "circle", "underline", "spotlight", "blur", "pixelate", "keys", "badge", "lower-third",
-	"zoom to", "pan to", "zoom out", "say", "music", "captions on", "refilm feature"}
+	"zoom to", "pan to", "zoom out", "say", "music", "captions on", "captions words", "refilm feature"}
 
 // ParseFile reads and parses a `type: video` file.
 func ParseFile(path string) (*Edit, error) {
@@ -261,6 +265,7 @@ func Parse(path, src string) *Edit {
 		it.Line = en.line
 		if it.Action == "captions" {
 			e.Captions = true
+			e.Words = e.Words || it.Str == "words"
 		}
 		e.Items = append(e.Items, it)
 	}
@@ -336,7 +341,8 @@ func (e *Edit) frontMatter(lines []string) int {
 		case "title":
 			e.Title = v
 		case "captions":
-			e.Captions = v == "on" || v == "true" || v == "yes"
+			e.Captions = v == "on" || v == "true" || v == "yes" || v == "words"
+			e.Words = v == "words"
 		case "join":
 			tr, err := parseTrans(v)
 			if err != nil {
@@ -658,8 +664,11 @@ func parseItem(text string) (*Item, error) {
 	parts := splitDots(text)
 	it := &Item{Text: text, Flags: map[string]bool{}}
 	head := parts[0]
-	if l := strings.ToLower(head); l == "captions on" {
+	if l := strings.ToLower(head); l == "captions on" || l == "captions words" {
 		it.NoTime, it.Action = true, "captions"
+		if l == "captions words" {
+			it.Str = "words"
+		}
 		return it, nil
 	}
 	if len(parts) < 2 {
@@ -726,6 +735,17 @@ func parseItem(text string) (*Item, error) {
 		if (it.Action == "blur" || it.Action == "pixelate") && it.Rect == nil {
 			return nil, fmt.Errorf("%s needs a rectangle (%s 120,80 400x60)", it.Action, it.Action)
 		}
+	}
+	if len(it.Path) > 0 { // the first place is where it starts
+		switch it.Action {
+		case "bubble", "arrow":
+			it.Point = it.Path[0]
+		case "box", "circle", "underline", "spotlight":
+		default:
+			it.At = it.Path[0]
+		}
+	} else if it.PathDur > 0 {
+		return nil, fmt.Errorf("over %gs: give the path (to 100,200 → 400,300 over 2s)", it.PathDur)
 	}
 	return it, nil
 }
@@ -847,10 +867,13 @@ func (it *Item) action(p string) error {
 		}
 		it.File = unquote(rest)
 	case "captions":
-		if rest != "on" {
-			return fmt.Errorf("captions on")
+		if rest != "on" && rest != "words" {
+			return fmt.Errorf("captions on or captions words")
 		}
 		it.NoTime = true
+		if rest == "words" {
+			it.Str = "words"
+		}
 	case "refilm":
 		k, r := cutWord(rest)
 		if k != "feature" || !quoted(strings.TrimSpace(r)) {
@@ -859,6 +882,35 @@ func (it *Item) action(p string) error {
 		it.Feature = unquote(r)
 	default:
 		return fmt.Errorf("unknown action %q (%s)", w, strings.Join(Actions, ", "))
+	}
+	return nil
+}
+
+// moving are the callouts a path moves: a bubble's tail, an arrow's head, a
+// text's or key caps' place, a rectangle's top-left corner.
+var moving = map[string]bool{"bubble": true, "arrow": true, "text": true, "keys": true, "badge": true, "lower-third": true,
+	"box": true, "circle": true, "underline": true, "spotlight": true}
+
+// path reads the keyframes of `to A → B → C over 2s` or `path A B C`.
+func (it *Item) path(s string) error {
+	f := strings.Fields(s)
+	if n := len(f); n >= 2 && f[n-2] == "over" {
+		d, ok := dur(f[n-1])
+		if !ok || d <= 0 {
+			return fmt.Errorf("over %q: a length (over 2s)", f[n-1])
+		}
+		it.PathDur, f = d, f[:n-2]
+	}
+	it.Path = nil
+	for _, t := range f {
+		p, err := pos(t)
+		if err != nil {
+			return err
+		}
+		it.Path = append(it.Path, p)
+	}
+	if len(it.Path) < 2 {
+		return fmt.Errorf("a path needs two places or more (to 100,200 → 400,300 over 2s)")
 	}
 	return nil
 }
@@ -873,6 +925,28 @@ func (it *Item) option(o string) error {
 		return nil
 	}
 	w, rest := cutWord(o)
+	if w == "highlight" && rest == "" {
+		it.HL = true
+		return nil
+	}
+	if moving[it.Action] {
+		switch {
+		case (w == "to" || w == "at") && (strings.Contains(rest, "→") || strings.Contains(rest, "->")):
+			return it.path(strings.NewReplacer("→", " ", "->", " ").Replace(rest))
+		case w == "path":
+			return it.path(rest)
+		case w == "over":
+			d, ok := dur(rest)
+			if !ok || d <= 0 {
+				return fmt.Errorf("over %q: a length (over 2s)", rest)
+			}
+			it.PathDur = d
+			return nil
+		case (w == "ease" || w == "linear") && rest == "":
+			it.Flags["linear"] = w == "linear"
+			return nil
+		}
+	}
 	if m := pctRE.FindStringSubmatch(o); m != nil && (it.Action == "music" || it.Action == "say") {
 		v, _ := strconv.ParseFloat(m[1], 64)
 		it.Level = v / 100

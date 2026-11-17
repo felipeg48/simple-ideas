@@ -188,7 +188,8 @@ asked for with `--with`, a comma list that may repeat (`--with captions
 | `readme` | `README.md` + `README.html`: the files made, the video in the page, the script, how it was made |
 | `vertical` | `<script>.vertical.mp4`: 1080×1920 for phones and reels, the film across the middle over a blurred copy of itself (or a colour: `vertical-fill:`), the captions large under it (see Promo kit) |
 | `highlight` | `<script>.highlight.mp4`: about 60 s, the first sentence of each feature with a breath around it, between the brand's cards (see Promo kit) |
-| `all` | all of the above |
+| `words` | per-word captions: `captions` (turned on by it) shows the word being said marked in the accent colour, a picture per word, and the `.vtt` carries a time before each word (si's player marks the word too); word times share each caption's time by letters |
+| `all` | all of the above but `words` (a look, not a file) |
 
 ```markdown
 ---
@@ -435,8 +436,10 @@ while it keeps running.
   and `$` (no profile, no PSReadLine), and each command's exit status reaches
   si through the window title, never shown. `shell: cmd` runs on pipes: no
   colours, the prompt is the starting folder's name and `$`, and si asks for
-  the exit status after each command. `run … · wait`, `terminal split` and the
-  rest work the same.
+  the exit status after each command. `run … · wait`, `terminal split right`
+  and `down`, `run … in 2`, `expect output … in 2` and the rest work the same
+  (each pane its own shell; CI runs a split demo under ConPTY and cmd, and the
+  `si play` drawer's split view, on Windows).
 
 A server in one pane and its client in the other:
 

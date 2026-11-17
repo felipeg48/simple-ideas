@@ -134,12 +134,36 @@
       cc.setAttribute('aria-pressed', String(on));
       drawCue(); say(on ? 'Captions on' : 'Captions off');
     };
+    /* a cue with word stamps (<00:00:01.500>word, si's per-word captions):
+       the words said so far are past, the one being said is marked */
+    function stampSec(h) { var p = h.split(':'); return p.length === 3 ? +p[0] * 3600 + +p[1] * 60 + +p[2] : +p[0] * 60 + +p[1]; }
+    var wordRAF = 0;
     function drawCue() {
-      var t = textTrack(), txt = '';
+      var t = textTrack(), txt = '', words = false;
+      cancelAnimationFrame(wordRAF);
       if (t && box.hasAttribute('data-cc') && t.activeCues) {
-        for (var i = 0; i < t.activeCues.length; i++) txt += (txt ? '\n' : '') + t.activeCues[i].text.replace(/<[^>]+>/g, '');
+        for (var i = 0; i < t.activeCues.length; i++) {
+          var raw = t.activeCues[i].text;
+          if (/<\d+:\d\d(:\d\d)?\.\d+>/.test(raw)) { words = true; txt += (txt ? '\n' : '') + raw.replace(/<(?!\d)[^>]+>/g, ''); }
+          else txt += (txt ? '\n' : '') + raw.replace(/<[^>]+>/g, '');
+        }
       }
-      cue.textContent = txt; cue.hidden = !txt;
+      cue.hidden = !txt;
+      if (!words) { cue.textContent = txt; return; }
+      cue.textContent = '';
+      var now = v.currentTime, at = t.activeCues[0].startTime, cur = null;
+      txt.split(/(<[\d:.]+>)/).forEach(function (part) {
+        var m = /^<([\d:.]+)>$/.exec(part);
+        if (m) { at = stampSec(m[1]); return; }
+        part.split(/(\s+)/).forEach(function (w) {
+          if (!w) return;
+          if (/^\s+$/.test(w)) { cue.appendChild(document.createTextNode(w)); return; }
+          var s = el('span', at <= now ? 'si-vp-past' : 'si-vp-future'); s.textContent = w; cue.appendChild(s);
+          if (at <= now) cur = s;
+        });
+      });
+      if (cur) cur.className = 'si-vp-now';
+      if (!v.paused) wordRAF = requestAnimationFrame(drawCue);
     }
     function wireTracks() {
       cc.hidden = !textTrack();
@@ -232,6 +256,7 @@
 
     v.addEventListener('play', state); v.addEventListener('pause', state); v.addEventListener('ended', state);
     v.addEventListener('timeupdate', render);
+    v.addEventListener('seeked', drawCue); v.addEventListener('play', drawCue); /* per-word captions follow a seek, and run while playing */
     v.addEventListener('progress', buffered);
     v.addEventListener('durationchange', function () { render(); drawMarks(); });
     v.addEventListener('loadedmetadata', function () {

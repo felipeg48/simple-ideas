@@ -71,6 +71,11 @@ export const api = {
   codewin: (path: string, text: string, line: number, op: unknown) => call<any>("POST", "codewin", { path, text, line, op }),
   /** motion reads an SVG canvas as frames, applying op first if given (internal/motion). */
   motion: (path: string, text: string, op: unknown) => call<any>("POST", "motion", { path, text, op }),
+  /** video draws a video edit's preview from text, applying a dragged callout's move first if given. */
+  video: (path: string, text: string, move: unknown) => call<any>("POST", "video", { path, text, move }),
+  /** videoBuild starts si build of the saved video edit; videoBuildState reports it. */
+  videoBuild: (path: string) => call<any>("POST", "video/build", { path }),
+  videoBuildState: (path: string) => call<any>("GET", `video/build?path=${q(path)}`),
   /** codewinExport runs si code on the saved file: png, svg or gif next to it. */
   gitStatus: () => call<{ git: boolean; repo: boolean; install?: string; more?: string; branch?: string; files?: { path: string; status: string; staged: boolean }[] }>("GET", "git/status"),
   gitDiff: (path: string) => call<{ diff: string }>("GET", `git/diff?path=${q(path)}`),

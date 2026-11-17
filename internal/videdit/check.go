@@ -140,6 +140,9 @@ func (e *Edit) checkPlace(it *Item, w, h int) {
 	pt("at", it.At)
 	pt("to", it.Point)
 	pt("from", it.Tail)
+	for _, p := range it.Path {
+		pt("path", p)
+	}
 	if r := it.Rect; r != nil {
 		x, y, rw, rh := r.Px(w, h)
 		if x < 0 || y < 0 || x+rw > float64(w)+1 || y+rh > float64(h)+1 {

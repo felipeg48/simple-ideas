@@ -350,6 +350,38 @@ or writes files.
 Not yet: paths a part follows (`data-move`), a stagger for groups, inserting
 straight into a slide (copy the lines instead), New… › Animation.
 
+## Video edits: the Video view
+
+A `type: video` file (RULES.md §32) gets a **Video | Text** bar (remembered
+per file; Video by default). The Video view puts the file's `si play`
+preview above the text, which stays open under it:
+
+- **The preview**: the source with every callout, blur and the camera drawn
+  live over it, the strip with a marker per line (lines at the same time in
+  lanes) and the list of lines. It is drawn from the editor's text, so it
+  follows typing and Undo before the file is saved.
+- **Select**: click a marker or a row under the player and the cursor goes to
+  that line in the text; move the cursor in the text and its line is marked
+  in the player (and, while paused, the player jumps to it).
+- **Drag on the frame** (pause first: the callout must be on screen): a
+  bubble by its body (its tail, `to X,Y`), a text, key caps, a badge or a
+  lower third (its centre, `at X,Y`), an arrow by either end (`from … to …`),
+  a box, circle, underline, spotlight, blur or pixelate by its middle, and
+  resized by the round handle at its corner (`X,Y WxH`, keeping `X,Y,WxH` if
+  the line had it). The place is written into that line in source pixels,
+  the rest of the line as it was; ⌘Z (outside the text) or the text's own
+  undo takes it back. A title and a moving callout (a path) are not dragged.
+- **⌘B** (or **Build video**) saves, runs `si build` on the file and shows its
+  log; when it is done the built video plays in the panel.
+
+Every drag is a move: `POST /_si/studio/api/video {path, text, move}` applies
+it with `videdit.Move.Apply` and answers with the new text and the preview
+page (`videdit.PreviewText` with `edit.js` and a `<base>` for the source);
+the text goes into CodeMirror as one change. `POST video/build` starts the
+build in the background, `GET video/build?path=` reports its log. The
+workspace check treats the file as a video edit (`si check`'s own problems).
+e2e: `web/studio/e2e/videoedit.e2e.mjs`.
+
 ## History (git)
 
 **History** in the top bar (or ⌘K → History) shows the workspace's git: the
@@ -419,7 +451,7 @@ in the workspace until **Create**, which goes through the usual starter path
 the welcome screen open it any time.
 
 After the first file the **tour** (`web/studio/src/tour.tsx`) runs once: six
-stops (files, Write with Map / Window views, preview, Rehearse and Present,
+stops (files, Write with Map / Window / Video views, preview, Rehearse and Present,
 Build, ⌘K), a ring around each part and a note beside it; Next / Back / Skip,
 ← → and Esc. Done or skipped is remembered (`localStorage`, `si-tour-done`);
 ⌘K → *Take the tour* replays it. `e2e/start.e2e.mjs` covers the empty

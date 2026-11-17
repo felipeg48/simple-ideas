@@ -77,9 +77,9 @@ func buildVideo(src string, o *options, stdout, stderr io.Writer) int {
 		case "vertical":
 			vo.Vertical = true
 		case "highlight":
-			fmt.Fprintln(stderr, "  note: --with highlight picks from a demo's per-feature clips: it does not apply to an edit")
+			vo.Highlight = true
 		default:
-			return usageErr(stderr, fmt.Sprintf("--with %q: a video edit takes captions, vertical", w))
+			return usageErr(stderr, fmt.Sprintf("--with %q: a video edit takes captions, vertical, highlight", w))
 		}
 	}
 	// fresh: the parse again (Check resolved the times without joining)

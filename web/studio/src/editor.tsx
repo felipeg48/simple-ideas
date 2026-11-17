@@ -23,6 +23,7 @@ import { MapEditor, isMindmapPage, mindmapFenceAt } from "./map-editor";
 import { WindowEditor, codeFenceAt } from "./window-editor";
 import { ThemeEditor } from "./theme-editor";
 import { MotionEditor, isMotionFile } from "./motion-editor";
+import { VideoEditor, isVideoEdit } from "./video-editor";
 import { isThemeFile } from "./theme-tokens";
 import { RunbookEditor } from "./runbook-editor";
 import { EMPTY_RB, isRunbookText, parseRunbook, serializeRunbook, type Runbook } from "./runbook";
@@ -87,6 +88,12 @@ const motionView = (path: string, text: string): "motion" | "text" => {
   return !text.trim() || text.includes("/* si motion:") ? "motion" : "text";
 };
 const setMotionView = (path: string, v: "motion" | "text") => { try { localStorage.setItem(motionKey(path), v); } catch { /* best effort */ } };
+// the Video / Text choice for a video edit (type: video), remembered per file (Video by default)
+const videoKey = (path: string) => scoped("si-studio-videoview:" + path);
+const videoView = (path: string): "video" | "text" => {
+  try { return localStorage.getItem(videoKey(path)) === "text" ? "text" : "video"; } catch { return "video"; }
+};
+const setVideoView = (path: string, v: "video" | "text") => { try { localStorage.setItem(videoKey(path), v); } catch { /* best effort */ } };
 // a file that becomes a runbook while you type (or starts empty) keeps the JSON view until you pick Visual
 const keepJson = (path: string) => { try { if (localStorage.getItem(viewKey(path)) === null) setRbView(path, "json"); } catch { /* best effort */ } };
 // the Visual toggle is offered for runbook-shaped JSON and for an empty file
@@ -202,6 +209,8 @@ export function Editor(p: Props) {
   const fenceLine = useRef(0); // the ```mindmap fence under the cursor (its opening line), 0: none
   const [fenceEdit, setFenceEdit] = useState<{ path: string; line: number } | null>(null);
   const codeLine = useRef(0); // the code block under the cursor (its opening line), 0: none
+  const videoDoc = useRef(false); // the open file is a video edit (the Video view follows the cursor line)
+  const cursorLine = useRef(1);
   const [winEdit, setWinEdit] = useState<{ path: string; line: number } | null>(null);
 
   const text = (d: Doc) => (cur.current === d.path && view.current ? view.current.state.doc.toString() : d.state.doc.toString());
@@ -269,6 +278,10 @@ export function Editor(p: Props) {
         if (f !== fenceLine.current) { fenceLine.current = f; rerender(); }
         const c = codeFenceAt(u.state.doc.toString(), u.state.doc.lineAt(u.state.selection.main.head).number);
         if (c !== codeLine.current) { codeLine.current = c; rerender(); }
+      }
+      if (u.selectionSet && cur.current === path && videoDoc.current) {
+        const n = u.state.doc.lineAt(u.state.selection.main.head).number;
+        if (n !== cursorLine.current) { cursorLine.current = n; rerender(); } // the Video view marks the line
       }
       if (u.selectionSet || u.docChanged) {
         const h = u.state.selection.main.head, l = u.state.doc.lineAt(h);
@@ -449,6 +462,17 @@ export function Editor(p: Props) {
   const svgFile = !!d && isMotionFile(d.path);
   const svgBody = svgFile ? text(d!) : "";
   const motionOn = svgFile && motionView(d!.path, svgBody) === "motion";
+  const vidFile = !!d && isMarkdownKind(p.kind) && isVideoEdit(body);
+  videoDoc.current = vidFile;
+  const vidOn = vidFile && videoView(d!.path) === "video";
+  /** selectLine puts the cursor on line n of the open file (a marker clicked in the Video view). */
+  function selectLine(n: number) {
+    const v = view.current;
+    if (!v) return;
+    const l = v.state.doc.line(Math.min(Math.max(n, 1), v.state.doc.lines));
+    cursorLine.current = l.number;
+    v.dispatch({ selection: { anchor: l.from, head: l.to }, effects: EditorView.scrollIntoView(l.from, { y: "center" }) });
+  }
   /** editMap puts the map editor's new text into the editor as one undoable change. */
   function editMap(next: string) {
     const v = view.current;
@@ -546,6 +570,20 @@ export function Editor(p: Props) {
           </div>
         </div>
       )}
+      {vidFile && (
+        <div class="rb-bar">
+          <span class="rb-kind"><Icon name="play" />Video edit</span>
+          <div class="seg rb-mode" role="group" aria-label="Video edit view">
+            <button class={vidOn ? "on" : ""} aria-pressed={vidOn} onClick={() => { setVideoView(d!.path, "video"); rerender(); }}>Video</button>
+            <button class={vidOn ? "" : "on"} aria-pressed={!vidOn} onClick={() => { setVideoView(d!.path, "text"); rerender(); requestAnimationFrame(() => view.current?.requestMeasure()); }}>Text</button>
+          </div>
+        </div>
+      )}
+      {vidOn && (
+        <VideoEditor path={d!.path} text={body} line={cursorLine.current} setText={editMap} select={selectLine}
+          flush={async () => { await d!.auto.flush(); await d!.chain; }}
+          undo={(r) => view.current && (r ? redo : undo)(view.current)} />
+      )}
       {motionOn && (
         <MotionEditor path={d!.path} text={svgBody} setText={editMap} undo={(r) => view.current && (r ? redo : undo)(view.current)} />
       )}
@@ -565,7 +603,7 @@ export function Editor(p: Props) {
         <RunbookEditor text={text(d!)} edit={editRunbook} toJson={(l, c) => showJson(d!.path, l, c)}
           undo={(r) => view.current && (r ? redo : undo)(view.current)} />
       )}
-      <div class="ed-cm" ref={host} hidden={!d || visual || mapOn || winOn || themeOn || motionOn} />
+      <div class={"ed-cm" + (vidOn ? " ed-cm-under" : "")} ref={host} hidden={!d || visual || mapOn || winOn || themeOn || motionOn} />
     </div>
   );
 }

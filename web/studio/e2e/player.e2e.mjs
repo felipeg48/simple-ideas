@@ -21,7 +21,7 @@ const ff = (...a) => execFileSync("ffmpeg", ["-loglevel", "error", "-y", ...a], 
 ff("-f", "lavfi", "-i", "testsrc2=size=640x360:rate=25:duration=20", "-f", "lavfi", "-i", "sine=frequency=330:duration=20",
   "-c:v", "libvpx", "-b:v", "300k", "-c:a", "libopus", "-shortest", join(src, "clip.webm"));
 ff("-i", join(src, "clip.webm"), "-frames:v", "1", join(src, "poster.jpg"));
-writeFileSync(join(src, "clip.vtt"), "WEBVTT\n\n00:00.000 --> 00:19.000\nThe order leaves the shop.\n");
+writeFileSync(join(src, "clip.vtt"), "WEBVTT\n\n00:00.000 --> 00:19.000\nThe <00:00:00.500>order <00:00:01.000>leaves <00:00:01.500>the <00:00:02.000>shop.\n");
 writeFileSync(join(src, "clip.chapters.txt"), "0:00 The shop\n0:06 Payments\n0:12 The courier\n");
 const modal = (t, cap) => "```video src=\"clip.webm\" poster=\"poster.jpg\" mode=modal title=\"" + t + "\"\n" + cap + "\n```\n";
 writeFileSync(join(src, "player.md"), `---
@@ -121,6 +121,8 @@ try {
   await page.waitForFunction(() => document.querySelector(".si-vp[data-vp-mode=inline] .si-vp-cue").textContent.includes("leaves the shop"), null, { timeout: 4000 }).catch(() => {});
   check(await box.getAttribute("data-cc") !== null && (await box.locator(".si-vp-cue").textContent()).includes("leaves the shop"), "C shows the captions");
   check(await box.locator(".si-vp-cc").getAttribute("aria-pressed") === "true", "CC is pressed");
+  const said = await v.evaluate((x) => new Promise((r) => { x.pause(); x.currentTime = 1.2; x.addEventListener("seeked", () => setTimeout(() => r(document.querySelector(".si-vp[data-vp-mode=inline] .si-vp-now")?.textContent), 300), { once: true }); }));
+  check(said === "leaves", "per-word captions: the word being said is marked (" + said + ")");
 
   await box.locator(".si-vp-chap").click();
   check(await box.locator(".si-vp-menu").isVisible(), "the chapter list opens");

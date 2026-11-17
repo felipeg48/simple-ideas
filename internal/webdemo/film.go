@@ -584,7 +584,12 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 		badges = append(badges, pic{drawn[x.X], outT(fs, x.From), outT(fs, x.To)})
 	}
 	var caps []pic
-	if cl.Voiced && w.Captions {
+	if cl.Voiced && w.Words { // the word being said highlighted, a picture per word
+		var err error
+		if caps, err = wordPics(cl.Caps, func(page string, i int) (string, error) { return picture(page, fmt.Sprintf("capw%04d.png", i)) }); err != nil {
+			return nil, err
+		}
+	} else if cl.Voiced && w.Captions {
 		for i, c := range cl.Caps {
 			file, err := picture(captionHTML(c.Text), fmt.Sprintf("cap%03d.png", i))
 			if err != nil {
@@ -672,7 +677,7 @@ func (r *runner) finishTake(f *Feature, d float64) (*clip, error) {
 		if err := os.WriteFile(out(".srt"), []byte(srt(cl.Caps)), 0o644); err != nil {
 			return nil, err
 		}
-		if err := os.WriteFile(out(".vtt"), []byte(vtt(cl.Caps)), 0o644); err != nil {
+		if err := os.WriteFile(out(".vtt"), []byte(vttOf(cl.Caps, w.Words)), 0o644); err != nil {
 			return nil, err
 		}
 	}
@@ -782,7 +787,7 @@ func (r *runner) joinAll(clips []*clip) error {
 		if err := os.WriteFile(at(".srt"), []byte(srt(all)), 0o644); err != nil {
 			return err
 		}
-		if err := os.WriteFile(at(".vtt"), []byte(vtt(all)), 0o644); err != nil {
+		if err := os.WriteFile(at(".vtt"), []byte(vttOf(all, w.Words)), 0o644); err != nil {
 			return err
 		}
 	}

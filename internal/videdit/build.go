@@ -27,6 +27,7 @@ type Options struct {
 	Chrome, FFmpeg, FFprobe string
 	OutDir                  string // where out: goes ("" = beside the edit)
 	Captions, Vertical      bool   // --with captions, vertical: the promo kit's variants
+	Highlight               bool   // --with highlight: <out>.highlight.mp4, the marked lines or each chapter's first sentence
 	Voice                   string // --voice, over voice: and si.conf
 	Config                  *config.Config
 	Synth                   webdemo.Voicer // nil: the voice programs, through the cache
@@ -326,12 +327,30 @@ func (e *Edit) extras(c *Ctx, pl *Plan, sh *shooter, o Options, work string, res
 	cues := e.cues(c, pl)
 	stem := strings.TrimSuffix(out, filepath.Ext(out))
 	if e.Captions && len(cues) > 0 {
-		for ext, text := range map[string]string{".vtt": webdemo.VTT(cues), ".srt": webdemo.SRT(cues)} {
+		vtt := webdemo.VTT(cues)
+		if e.Words {
+			vtt = webdemo.VTTWords(cues)
+		}
+		for ext, text := range map[string]string{".vtt": vtt, ".srt": webdemo.SRT(cues)} {
 			if err := os.WriteFile(stem+ext, []byte(text), 0o644); err != nil {
 				return err
 			}
 			res.Files = append(res.Files, stem+ext)
 		}
+	}
+	if o.Highlight {
+		cuts, err := e.highlightCuts(c, pl, cues)
+		if err != nil {
+			return err
+		}
+		for i := range cuts {
+			cuts[i].Clip = out
+		}
+		o.logf("  highlight: %d cut(s)\n", len(cuts))
+		if err := run(o.FFmpeg, webdemo.HighlightArgs(cuts, c.Info.W, c.Info.H, stem+".highlight.mp4")); err != nil {
+			return err
+		}
+		res.Files = append(res.Files, stem+".highlight.mp4")
 	}
 	if !o.Captions && !o.Vertical {
 		sort.Strings(res.Files)
@@ -346,7 +365,19 @@ func (e *Edit) extras(c *Ctx, pl *Plan, sh *shooter, o Options, work string, res
 		defer sh.close()
 	}
 	lines := webdemo.Captions(cues)
-	if o.Captions {
+	if o.Captions && e.Words { // the word being said highlighted: a picture per word
+		ps, err := webdemo.WordPics(cues, func(page string, i int) (string, error) {
+			f := filepath.Join(work, fmt.Sprintf("capw%04d.png", i))
+			return f, sh.pageAt(page, W, H, work, f)
+		})
+		if err != nil {
+			return err
+		}
+		if err := run(o.FFmpeg, webdemo.CaptionedArgs(out, W, H, ps, stem+".captions.mp4")); err != nil {
+			return err
+		}
+		res.Files = append(res.Files, stem+".captions.mp4")
+	} else if o.Captions {
 		var ps []webdemo.Pic
 		for i, q := range lines {
 			f := filepath.Join(work, fmt.Sprintf("cap%03d.png", i))

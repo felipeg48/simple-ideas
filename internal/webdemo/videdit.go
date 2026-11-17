@@ -119,3 +119,22 @@ func VerticalArgs(video string, w, h int, fill, theme string, caps []Pic, out st
 func MusicArgs(video, music string, vol, d float64, out string) []string {
 	return musicArgs(video, music, vol, d, out)
 }
+
+// Cut is one stretch of a video in a highlight reel.
+type Cut struct {
+	Clip     string
+	From, To float64
+}
+
+// HighlightArgs join the cuts (a short fade in and out each) into a w×h
+// highlight reel (the demo kit's, without the brand's cards).
+func HighlightArgs(cuts []Cut, w, h int, out string) []string {
+	cs := make([]cutOf, len(cuts))
+	for i, c := range cuts {
+		cs[i] = cutOf(c)
+	}
+	return highlightArgs(cs, nil, nil, w, h, out)
+}
+
+// FirstSentence is the share of a line its first sentence takes, by letters.
+func FirstSentence(s string) float64 { return firstSentence(s) }

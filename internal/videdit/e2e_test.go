@@ -311,3 +311,40 @@ func TestExamples(t *testing.T) {
 		t.Errorf("%s: %g s, %v", res.Out, d, res.Files)
 	}
 }
+
+// --with highlight: the lines marked · highlight joined into a reel; else
+// each chapter's first sentence. captions: words: word stamps in the .vtt
+// and the captions variant drawn a word at a time.
+func TestHighlightAndWords(t *testing.T) {
+	chrome, ff, fp := needTools(t)
+	dir := t.TempDir()
+	colours(t, ff, filepath.Join(dir, "src.mp4"), 320, 180, "red", "green", "blue", "yellow")
+	os.WriteFile(filepath.Join(dir, "src.vtt"), []byte("WEBVTT\n\n00:00:00.200 --> 00:00:01.800\nRed first. Then more.\n\n00:00:05.200 --> 00:00:06.400\nBlue now.\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "chapters.txt"), []byte("0:00 Red\n0:05 Blue\n"), 0o644)
+	md := filepath.Join(dir, "edit.md")
+	os.WriteFile(md, []byte("---\ntype: video\nsource: src.mp4\nout: hl.mp4\ncaptions: words\n---\n- 0:02–0:03 · cut\n"), 0o644)
+	e, _ := ParseFile(md)
+	res, err := Build(e, Options{Chrome: chrome, FFmpeg: ff, FFprobe: fp, Captions: true, Highlight: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Files) != 4 { // .captions.mp4 .highlight.mp4 .srt .vtt
+		t.Errorf("files: %v", res.Files)
+	}
+	// each chapter's first sentence: about 0.2–1.3 (+ a breath) and 4.2–5.4 of the output
+	if d := duration(t, fp, filepath.Join(dir, "hl.highlight.mp4")); d < 2.2 || d > 3.4 {
+		t.Errorf("chapters' first sentences: %g s", d)
+	}
+	if b, _ := os.ReadFile(filepath.Join(dir, "hl.vtt")); !strings.Contains(string(b), "Red <00:00:00.") {
+		t.Errorf("vtt without word stamps:\n%s", b)
+	}
+	// the marked lines win
+	os.WriteFile(md, []byte("---\ntype: video\nsource: src.mp4\nout: hl.mp4\n---\n- 0:06 · box 10,10 50x50 · 1.5s · highlight\n- 0:00.5–0:01.5 · mute · highlight\n"), 0o644)
+	e, _ = ParseFile(md)
+	if _, err := Build(e, Options{Chrome: chrome, FFmpeg: ff, FFprobe: fp, Highlight: true}); err != nil {
+		t.Fatal(err)
+	}
+	if d := duration(t, fp, filepath.Join(dir, "hl.highlight.mp4")); d < 2.3 || d > 2.7 {
+		t.Errorf("marked lines: %g s", d)
+	}
+}

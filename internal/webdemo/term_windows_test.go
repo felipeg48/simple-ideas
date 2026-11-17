@@ -3,12 +3,15 @@
 package webdemo
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/felipeg48/simple-ideas/internal/tools"
 )
 
 // TestTerminalWindowsShells: PowerShell runs under ConPTY and its prompt
@@ -61,6 +64,49 @@ func TestTerminalWindowsShells(t *testing.T) {
 			}
 			if s := tm.out.text(0); !strings.Contains(s, "orders $") {
 				t.Errorf("no clean prompt: %q", s)
+			}
+		})
+	}
+}
+
+// TestTerminalSplitWindows: a web demo's split terminal under ConPTY (and
+// cmd on pipes): terminal split right and down, run … in 2, expect output …
+// in 1 and in 2, focus, each pane its own shell.
+func TestTerminalSplitWindows(t *testing.T) {
+	chrome := tools.Find("chrome")
+	if chrome == "" || testing.Short() {
+		t.Skip("needs Chrome")
+	}
+	for _, sh := range []string{"pwsh", "powershell", "cmd"} {
+		if _, err := exec.LookPath(sh); err != nil {
+			continue
+		}
+		t.Run(sh, func(t *testing.T) {
+			dir := t.TempDir()
+			src := "---\ntype: demo\napp: none\nshell: " + sh + "\n---\n" +
+				"## Right\n- terminal \"T\"\n- run \"echo left-side\" · wait\n- terminal split right\n- run \"echo right-side\" · wait\n" +
+				"- expect output \"right-side\"\n- expect output \"left-side\" in 1\n- run \"echo again-left\" in 1 · wait\n" +
+				"- expect output \"again-left\" in 1\n- focus 1\n- expect output \"again-left\"\n- expect no output \"right-side\"\n\n" +
+				"## Down\n- terminal \"D\"\n- run \"echo top-pane\" · wait\n- terminal split down\n- run \"echo bottom-pane\" in 2 · wait\n" +
+				"- expect output \"bottom-pane\" in 2\n- expect output \"top-pane\" in 1\n- expect no output \"bottom-pane\" in 1\n"
+			path := filepath.Join(dir, "split.md")
+			os.WriteFile(path, []byte(src), 0o644)
+			s, err := ParseFile(path)
+			if err != nil || len(s.Problems) > 0 {
+				t.Fatal(err, s.Problems)
+			}
+			var log strings.Builder
+			rep, err := Run(s, Options{Chrome: chrome, Log: &log})
+			if err != nil || !rep.OK() {
+				msg := ""
+				if rep != nil {
+					for _, f := range rep.Features {
+						for _, st := range f.Steps {
+							msg += fmt.Sprintf("%s: %s %s %s %s\n", f.Name, st.Status, st.Expected, st.Found, st.Output)
+						}
+					}
+				}
+				t.Errorf("%v\n%s\n%s", err, msg, log.String())
 			}
 		})
 	}

@@ -3,6 +3,25 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.31.0:** web demos and videos, finished. The Studio has a **Video
+  view** for a `type: video` edit: the preview with its timeline strip above
+  the text; a marker (or a row under the player) selects its line, and the
+  cursor's line is marked in the player; pause and drag a callout on the
+  frame (a bubble's tail, a text, key caps, a badge, a lower third, an arrow
+  by either end, a box, circle, underline, spotlight, blur or pixelate, the
+  rectangles resized by their corner) and its place is written into that
+  line in source pixels, one undo away; ⌘B builds the file and plays the
+  result in the panel. Callouts can **move**: `· to 100,200 → 400,300 over
+  2s` or `· path A B C` (eased or `linear`) moves a bubble's tail, an
+  arrow's head, a text or a rectangle. **Per-word captions**: `captions
+  words` in an edit and `--with words` for `si demo run` mark the word being
+  said, in the captions variant (a picture per word) and in the `.vtt` (a
+  time before each word; si's player marks the word too). **`--with
+  highlight`** works on an edit: the lines marked `· highlight`, else each
+  chapter's first sentence, joined into `<out>.highlight.mp4`. The `si play`
+  strip puts lines at the same time in lanes. Windows CI now runs a split
+  terminal demo (`terminal split right|down`, `run … in 2`, `expect output …
+  in 2`) under ConPTY and cmd, and the `si play` drawer's split view.
 - **v3.30.0:** a playable video player. A ```` ```video ```` fence (PR #21)
   draws a player in place (`mode=inline`), as a dialog over the dimmed and
   blurred page (`mode=modal`: Esc, ✕ or the backdrop closes it, focus stays

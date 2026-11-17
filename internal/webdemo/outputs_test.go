@@ -16,10 +16,11 @@ func TestWithAdd(t *testing.T) {
 		{[]string{"captions, subtitles"}, With{Captions: true, Subtitles: true}, ""},
 		{[]string{"captions", "subtitles"}, With{Captions: true, Subtitles: true}, ""},
 		{[]string{"Clips,report", "readme"}, With{Clips: true, Report: true, Readme: true}, ""},
-		{[]string{"all"}, With{true, true, true, true, true, true, true, true, true, true, true}, ""},
+		{[]string{"all"}, With{true, true, true, true, true, true, true, true, true, true, true, false}, ""},
+		{[]string{"words"}, With{Captions: true, Words: true}, ""},
 		{[]string{"silent,audio,transcript,chapters"}, With{Silent: true, Audio: true, Transcript: true, Chapters: true}, ""},
 		{[]string{"vertical, highlight"}, With{Vertical: true, Highlight: true}, ""},
-		{[]string{"captions,subtitels"}, With{}, `with "subtitels": use captions, silent, audio, subtitles, transcript, chapters, clips, report, readme, vertical, highlight, all`},
+		{[]string{"captions,subtitels"}, With{}, `with "subtitels": use captions, silent, audio, subtitles, transcript, chapters, clips, report, readme, vertical, highlight, words, all`},
 	} {
 		var w With
 		var err error

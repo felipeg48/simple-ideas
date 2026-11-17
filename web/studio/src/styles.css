@@ -828,3 +828,15 @@ button.link { color: var(--blue); text-decoration: underline; text-underline-off
 .mox-strip .btn { min-width: 2.4em; }
 .mox-strip .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 .mox-snippet { user-select: all; color: var(--fg, inherit); }
+
+/* the Video view (type: video edits): the preview with its strip above the
+   text, the build beside it; it has its own preview, so it takes the deck
+   preview's room too */
+.panes:has(.vex) { grid-template-columns: minmax(0, 1fr) 0 0; grid-template-rows: minmax(0, 1fr); }
+.panes:has(.vex) > .split, .panes:has(.vex) > .prev-col, .panes:has(.vex) > .prev { display: none; }
+.vex { flex: 1 1 62%; min-height: 0; border-bottom: 1px solid var(--line); }
+.ed-cm.ed-cm-under { flex: 1 1 38%; min-height: 120px; }
+.vex-result { display: block; width: 100%; margin-top: 10px; border-radius: 8px; background: #000; aspect-ratio: 16 / 9; }
+.vex-log { max-height: 9em; overflow: auto; }
+.vex-fail { color: var(--red); }
+.vex .mapx-hint + .mapx-hint { margin-top: 8px; }

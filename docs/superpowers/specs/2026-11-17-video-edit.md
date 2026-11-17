@@ -1,7 +1,8 @@
 # Video editing from Markdown (`type: video`)
 
 Decided with the founder, 2026-11-17. Phases 1 and 2 ship in v3.28.0;
-phase 3 is spec only.
+phase 3 and the "Not now" items (moving callouts, per-word captions, the
+highlight cut) in v3.31.0.
 
 A finished screen recording almost always needs a few touches: a callout
 that says what to look at, a blurred password, a pause on the result, a
@@ -169,8 +170,9 @@ Phase 2 (sound and re-filming):
    lines (`adelay` + `amix`), the chapters moved by the edits. Music is a
    second pass (`webdemo.MusicArgs`).
 8. `--with captions` (the captions variant, picture over a band) and
-   `--with vertical` reuse the promo kit; `highlight` needs a demo's
-   per-feature clips and does not apply to an edit.
+   `--with vertical` reuse the promo kit; `--with highlight` (v3.31.0) joins
+   the lines marked `· highlight`, else each chapter's first sentence, with
+   the promo kit's highlight join.
 
 ### Refilm
 
@@ -226,9 +228,15 @@ re-encodes the whole video once.
   and zoom with the picture.
 - **Music at 0:00 only** (whole video, sidechain-ducked): the promo kit's
   pass, not a second mixer.
-- **Not now:** the `highlight` cut for edits; keyframed (moving) callouts;
-  per-word captions; ProRes/WebM alpha intermediates (the PNG overlay
-  sequence with hard links is smaller and simpler).
+- **Done in v3.31.0** (were "not now"): the `highlight` cut for edits
+  (`· highlight` lines, else each chapter's first sentence); keyframed
+  (moving) callouts (`· to A → B over 2s`, `· path A B C`, eased or
+  `linear`, the same speed along every stretch; overlay.js places them per
+  frame, the build shoots every frame while they move); per-word captions
+  (`captions words`: word stamps in the .vtt, the captions variant a picture
+  per word; word times share a caption's time by letters, as `at said`
+  does). **Still not now:** ProRes/WebM alpha intermediates (the PNG overlay
+  sequence with hard links is smaller and simpler); a moving blur.
 
 ## Phases
 
@@ -236,14 +244,19 @@ re-encodes the whole video once.
    callout above, `si build`, `si check`, `si play`, `--with captions,vertical`.
 2. Phase 2 (v3.28.0): `say` with ducking, `music`, `captions on`, `refilm
    feature` with the stream-copy splice.
-3. Phase 3 (spec only): the Studio's Video view: the preview with the
-   timeline strip, callouts dragged into place (writing `to X,Y` / `at X,Y`
-   / rectangles back into the line, as the Window view writes callout
-   offsets), a line selected from its marker, ⌘B to build.
+3. Phase 3 (DONE v3.31.0): the Studio's Video view: the preview with the
+   timeline strip above the text, callouts dragged into place (writing
+   `to X,Y` / `at X,Y` / `from A to B` / rectangles back into the line,
+   rectangles resized by their corner; `videdit.Move`, `edit.js`,
+   `internal/studio/video.go`, `web/studio/src/video-editor.tsx`), a line
+   selected from its marker and the cursor's line marked, ⌘B to build and
+   play the result; e2e `web/studio/e2e/videoedit.e2e.mjs`.
 
 ## Code
 
 `internal/videdit/` (`parse.go`, `plan.go`, `anchors.go`, `probe.go`,
 `graph.go`, `callout.go` + `overlay.js` / `overlay.css`, `build.go`,
-`refilm.go`, `preview.go`), `cmd/si/videoedit.go`; the promo kit's pieces
+`refilm.go`, `preview.go`, `move.go` + `edit.js` / `edit.css` (the Studio's
+Video view), `highlight.go`), `cmd/si/videoedit.go`; per-word captions in
+`internal/webdemo/words.go`; the promo kit's pieces
 exported in `internal/webdemo/videdit.go`.

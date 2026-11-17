@@ -8,7 +8,8 @@ import { spawn } from "node:child_process";
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-const si = new URL("../../../bin/si", import.meta.url).pathname;
+import { fileURLToPath } from "node:url";
+const si = process.env.SI_BIN || fileURLToPath(new URL("../../../bin/si", import.meta.url)); // SI_BIN: bin\\si.exe on Windows
 const dir = mkdtempSync(join(tmpdir(), "si-wb-"));
 const out = mkdtempSync(join(tmpdir(), "si-wb-shots-")) + "/"; // not in the deck's folder: a file there live-reloads the page
 writeFileSync(join(dir, "talk.md"), "# Talk\n\nHello.\n");

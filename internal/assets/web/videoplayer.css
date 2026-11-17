@@ -63,6 +63,7 @@ div.si-vp-box>video{position:absolute;inset:0;inline-size:100%;block-size:100%;m
 .si-vp-mt{font-variant-numeric:tabular-nums;opacity:.75}
 /* captions, the seek flash, the screen-reader line */
 .si-vp-cue{position:absolute;inset-inline:6%;inset-block-end:1.4em;z-index:2;inline-size:fit-content;max-inline-size:88%;margin-inline:auto;padding:.15em .55em;border-radius:.3em;background:rgb(0 0 0 / .62);color:#fff;text-align:center;pointer-events:none;white-space:pre-line;font-size:clamp(.85rem,3.4cqi,1.6rem);line-height:1.35;transition:inset-block-end .25s ease}
+.si-vp-cue .si-vp-future{opacity:.72}.si-vp-cue .si-vp-now{background:var(--si-accent,#2563eb);color:#fff;border-radius:.2em;box-shadow:0 0 0 .1em var(--si-accent,#2563eb)}
 .si-vp-box[data-started]:not([data-idle]) .si-vp-cue,.si-vp-box[data-started][data-state="paused"] .si-vp-cue{inset-block-end:clamp(4rem,14cqi,5.5rem)}
 .si-vp-flash{position:absolute;inset-block-start:42%;inset-inline:0;margin:auto;inline-size:max-content;padding:.4em .9em;border-radius:2em;background:var(--si-vp-tip);font-weight:600;opacity:0;pointer-events:none;z-index:2}
 .si-vp-flash.is-on{animation:si-vp-flash .7s ease}

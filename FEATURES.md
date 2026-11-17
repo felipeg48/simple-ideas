@@ -242,10 +242,20 @@ an example for every rule: [RULES.md](docs/RULES.md).
   `lower-third`; entrances `pop`, `fade`, `slide-in`, `type`; `blur` and
   `pixelate` by ffmpeg; the camera: `zoom to`, `pan to`, `zoom out`.
 - Sound and takes: `say` (the configured voice, the original ducked),
-  `music`, `captions on` (.vtt/.srt moved by the edits), `refilm feature`
-  (one demo feature filmed again; alone, the rest stream-copied).
+  `music`, `captions on` (.vtt/.srt moved by the edits) or `captions words`
+  (the word being said marked, in the .vtt and the captions variant),
+  `refilm feature` (one demo feature filmed again; alone, the rest
+  stream-copied).
+- Moving callouts: `· to A → B → C over 2s` or `· path A B C`, eased or
+  `linear` (a bubble's tail, an arrow's head, a text, a rectangle).
 - `si check` with line numbers, `si play` live preview with a timeline
-  strip, `si build --with captions,vertical`.
+  strip (overlapping lines in lanes), `si build --with
+  captions,vertical,highlight` (the highlight reel: the lines marked
+  `· highlight`, else each chapter's first sentence).
+- The Studio's Video view: the preview above the text, a marker per line
+  that selects it (and the cursor's line marked), callouts dragged and
+  rectangles resized on the frame (written back in source pixels, undoable),
+  ⌘B builds and plays the result.
 
 ## Code
 

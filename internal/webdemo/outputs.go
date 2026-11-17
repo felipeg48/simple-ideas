@@ -20,10 +20,11 @@ type With struct {
 	Readme     bool // README.md + README.html
 	Vertical   bool // <script>.vertical.mp4: 9:16, the picture over a blurred fill, captions large
 	Highlight  bool // <script>.highlight.mp4: about 60 s, the first sentence of each feature
+	Words      bool // per-word captions: the captions variant and the .vtt show the word being said (implies captions)
 }
 
 // WithNames are the names --with takes.
-var WithNames = []string{"captions", "silent", "audio", "subtitles", "transcript", "chapters", "clips", "report", "readme", "vertical", "highlight", "all"}
+var WithNames = []string{"captions", "silent", "audio", "subtitles", "transcript", "chapters", "clips", "report", "readme", "vertical", "highlight", "words", "all"}
 
 // Add turns on the names of a comma list ("" adds nothing); an unknown name
 // is an error that lists the known ones.
@@ -54,8 +55,10 @@ func (w *With) Add(list string) error {
 			w.Vertical = true
 		case "highlight":
 			w.Highlight = true
+		case "words":
+			w.Words, w.Captions = true, true
 		case "all":
-			*w = With{true, true, true, true, true, true, true, true, true, true, true}
+			*w = With{true, true, true, true, true, true, true, true, true, true, true, w.Words}
 		default:
 			return fmt.Errorf("with %q: use %s", n, strings.Join(WithNames, ", "))
 		}

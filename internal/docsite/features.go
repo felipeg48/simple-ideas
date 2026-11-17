@@ -107,7 +107,7 @@ var Features = []feature{
 		Rules:    []string{"30"}},
 	{Slug: "video", Title: "Video edits",
 		Lede: "The finishing touches of a recording, written beside it: callouts in your theme, a blurred password, a pause, a zoom, a cut, new narration, a feature filmed again.",
-		What: "A video edit is a Markdown file with `type: video`: `source:` the recording, then one line per touch, `- 1:34 · bubble \"Log in\" · to 820,410`. Every time is the source's, so editing one line never moves another. Callouts (titles, text, speech bubbles, arrows, boxes, spotlights, keys, badges, lower thirds) are drawn in the theme; blur and pixelate really remove the pixels; the camera zooms and pans; cuts, freezes, speed, replaced and inserted clips and cards change the timeline; `say`, `music` and `captions on` change the sound; `refilm feature` runs one feature of the demo script again and splices the new take in. `si play` previews it live over the source; `si build` writes the video.",
+		What: "A video edit is a Markdown file with `type: video`: `source:` the recording, then one line per touch, `- 1:34 · bubble \"Log in\" · to 820,410`. Every time is the source's, so editing one line never moves another. Callouts (titles, text, speech bubbles, arrows, boxes, spotlights, keys, badges, lower thirds) are drawn in the theme; blur and pixelate really remove the pixels; the camera zooms and pans; cuts, freezes, speed, replaced and inserted clips and cards change the timeline; `say`, `music` and `captions on` (or `captions words`, the word being said marked) change the sound; `refilm feature` runs one feature of the demo script again and splices the new take in. A callout can move along a path. `si play` previews it live over the source; in the Studio's Video view you drag callouts into place and press ⌘B; `si build` writes the video, and `--with highlight` a reel of the lines you marked.",
 		Live: func() string {
 			return "![A finished recording: a bubble points at the open order](img/video/bubble.jpg)\n\n![The same recording zoomed on the total, a thought bubble on gift wrap and the total underlined](img/video/edit.jpg)"
 		},
@@ -119,9 +119,11 @@ var Features = []feature{
 			{"`title` `text` `bubble` `arrow` `box` `spotlight` `keys` `badge` `lower-third`", "callouts in the theme; `· pop|fade|slide-in|type`, `· 3s`, `· at top-right`"},
 			{"`blur RECT` `pixelate RECT`", "hide a place: the pixels are gone"},
 			{"`zoom to RECT` `pan to` `zoom out`", "the camera, eased"},
+			{"`· to 100,200 → 400,300 over 2s` `· path A B C`", "a moving callout: a bubble's tail, an arrow's head, a text, a rectangle"},
+			{"`captions words` `· highlight`", "the word being said marked; the lines `--with highlight` joins into a reel"},
 			{"`say \"…\" · duck 30%` `music` `captions on` `refilm feature \"Name\"`", "new narration, music, captions moved by the edits, a feature filmed again"},
 		},
-		Commands: "si check edit.md\nsi play edit.md --open\nsi build edit.md --with captions,vertical",
+		Commands: "si check edit.md\nsi play edit.md --open\nsi build edit.md --with captions,vertical,highlight\nsi --web .            # the Video view: drag callouts, ⌘B",
 		Rules:    []string{"32"}},
 	{Slug: "books", Title: "Books",
 		Lede: "A reference with chapters, figures and tables numbered for you, an index, a glossary and one printable volume.",

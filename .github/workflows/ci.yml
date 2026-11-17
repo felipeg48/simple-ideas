@@ -101,3 +101,14 @@ jobs:
         run: go build ./... && go vet ./...
       - name: terminal tests
         run: go test ./internal/termpty ./internal/serve ./internal/webdemo -run "Terminal|TestStripper|TestShellPrompt" -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/studio/package-lock.json
+      - name: the play drawer's terminal and split view (workbench e2e, headless Chromium, PowerShell under ConPTY)
+        shell: bash
+        run: |
+          go build -o bin/si.exe ./cmd/si
+          cd web/studio && npm ci && npx playwright install chromium
+          SI_BIN="$GITHUB_WORKSPACE/bin/si.exe" node e2e/workbench.e2e.mjs

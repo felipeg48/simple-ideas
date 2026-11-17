@@ -65,6 +65,13 @@ func TestParseEveryAction(t *testing.T) {
 		{"at chapter \"Install\" + 5s · keys \"⌘ S\"", "keys", func(i *Item) bool { return i.From.Chapter == "Install" && i.From.Off == 5 }},
 		{"at said \"management UI\" - 1s · bubble \"Here\" · to center", "bubble", func(i *Item) bool { return i.From.Said == "management UI" && i.From.Off == -1 }},
 		{"at said \"a\" – at said \"b\" · blur 0,0 10x10", "blur", func(i *Item) bool { return i.To.Said == "b" }},
+		{"0:05 · bubble \"Follow\" · to 100,200 → 400,300 over 2s · linear", "bubble", func(i *Item) bool {
+			return len(i.Path) == 2 && i.Point == i.Path[0] && i.Path[1].X.V == 400 && i.PathDur == 2 && i.Flags["linear"]
+		}},
+		{"0:05 · text \"Here\" · at 10,10 -> 50%,50% · over 1.5s", "text", func(i *Item) bool { return i.At == i.Path[0] && i.Path[1].X.Pct && i.PathDur == 1.5 }},
+		{"0:05 · box 10,10 50x50 · path 10,10 400,300 600,250 · 4s", "box", func(i *Item) bool { return len(i.Path) == 3 && i.PathDur == 0 && i.Dur == 4 }},
+		{"0:05 · arrow from 10,10 to 50,50 · path 50,50 90,90", "arrow", func(i *Item) bool { return i.Tail.X.V == 10 && i.Point == i.Path[0] }},
+		{"0:05–0:09 · cut · highlight", "cut", func(i *Item) bool { return i.HL }},
 	}
 	for _, c := range cases {
 		e := parseLines(t, c.line)
@@ -80,8 +87,14 @@ func TestParseEveryAction(t *testing.T) {
 			t.Errorf("%s: %+v", c.line, it)
 		}
 	}
-	if e := parseLines(t, "captions on"); !e.Captions {
+	if e := parseLines(t, "captions on"); !e.Captions || e.Words {
 		t.Error("captions on sets Captions")
+	}
+	if e := parseLines(t, "captions words"); !e.Captions || !e.Words {
+		t.Error("captions words sets Captions and Words")
+	}
+	if e := Parse("/x/e.md", "---\ntype: video\nsource: a.mp4\ncaptions: words\n---\n"); !e.Captions || !e.Words || len(e.Problems) > 0 {
+		t.Errorf("captions: words: %v", e.Problems)
 	}
 }
 
@@ -287,6 +300,22 @@ func TestCalloutHTML(t *testing.T) {
 	}
 }
 
+// A moving callout carries its keyframes (percentages of the stage) and is
+// shot every frame while it moves, then once while it stands.
+func TestMovingCallout(t *testing.T) {
+	e := parseLines(t, "0:01 · bubble \"Follow\" · to 0,0 → 960,540 over 1s · 4s · out none")
+	e.Resolve(60, nil, nil)
+	spans := e.Plan(60, nil).Spans(e)
+	page, _ := e.OverlayPage(1920, 1080, spans, nil)
+	if !strings.Contains(page, `data-path="0.000,0.000;50.000,50.000" data-pdur="1.000" data-ease="ease"`) {
+		t.Errorf("no keyframes in %s", page)
+	}
+	key, _ := shots(spans, 6)
+	if key[30+15] == key[30+16] || key[30+40] != key[30+41] {
+		t.Errorf("shots: moving %q %q, standing %q %q", key[45], key[46], key[70], key[71])
+	}
+}
+
 func TestArgsGolden(t *testing.T) {
 	e := parseLines(t,
 		"0:02–0:04 · cut",
@@ -321,5 +350,42 @@ func TestArgsGolden(t *testing.T) {
 	}
 	if a := atempo(0.25); a != ",atempo=0.5,atempo=0.5" {
 		t.Errorf("atempo(0.25) %q", a)
+	}
+}
+
+// The Video view's drags write source pixels back into their line, the
+// rest of the line (and the file) as written.
+func TestMoveApply(t *testing.T) {
+	src := head + "- 0:01 · bubble \"Here\" · to 820,410 · 4s · pop\n- 0:02 · text \"Hi\" · 3s\n" +
+		"- 0:03 · arrow from 200,700 to 640,420 · \"Queue\"\n- 0:04 · box 120,80 400x60 · 2s\n- 0:05–0:06 · blur 1,2,30x40\n" +
+		"- 0:07 · title \"T\"\n- 0:08 · bubble \"Go\" · to 0,0 → 10,10\n"
+	cases := []struct {
+		m    Move
+		want string
+	}{
+		{Move{Line: 9, To: &[2]int{100, 200}}, `- 0:01 · bubble "Here" · to 100,200 · 4s · pop`},
+		{Move{Line: 10, At: &[2]int{5, 6}}, `- 0:02 · text "Hi" · 3s · at 5,6`},
+		{Move{Line: 11, To: &[2]int{9, 9}}, `- 0:03 · arrow from 200,700 to 9,9 · "Queue"`},
+		{Move{Line: 11, From: &[2]int{1, 1}}, `- 0:03 · arrow from 1,1 to 640,420 · "Queue"`},
+		{Move{Line: 12, Rect: &[4]int{10, 20, 300, 0}}, `- 0:04 · box 10,20 300x1 · 2s`},
+		{Move{Line: 13, Rect: &[4]int{3, 4, 50, 60}}, `- 0:05–0:06 · blur 3,4,50x60`},
+	}
+	for _, c := range cases {
+		got, err := c.m.Apply(src)
+		if err != nil {
+			t.Errorf("%+v: %v", c.m, err)
+			continue
+		}
+		if l := strings.Split(got, "\n")[c.m.Line-1]; l != c.want {
+			t.Errorf("line %d: %q, want %q", c.m.Line, l, c.want)
+		}
+		if e := Parse("/x/e.md", got); len(e.Problems) > 0 {
+			t.Errorf("%v", e.Problems)
+		}
+	}
+	for _, m := range []Move{{Line: 14, At: &[2]int{1, 1}}, {Line: 15, To: &[2]int{1, 1}}, {Line: 1, At: &[2]int{1, 1}}, {Line: 99}} {
+		if _, err := m.Apply(src); err == nil {
+			t.Errorf("%+v: no error", m)
+		}
 	}
 }

@@ -1,6 +1,7 @@
 package studio
 
 import (
+	"github.com/felipeg48/simple-ideas/internal/videdit"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -43,6 +44,10 @@ func (a *api) check(w http.ResponseWriter, r *http.Request) {
 	}
 	if fi, err := os.Stat(abs); err != nil || fi.IsDir() {
 		fail(w, http.StatusNotFound, "not found")
+		return
+	}
+	if videdit.Is(abs) {
+		writeJSON(w, http.StatusOK, map[string]any{"problems": a.videoProblems(abs), "slides": []slideJSON{}, "minutes": 0.0, "steps": 0, "canvases": 0, "kind": "video"})
 		return
 	}
 	// MediaLink: a check only needs problems and counts; inlining would

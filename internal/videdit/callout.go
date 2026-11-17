@@ -115,6 +115,18 @@ func calloutHTML(it *Item, w, h int, start, d float64, preview bool) string {
 	esc := html.EscapeString
 	data := fmt.Sprintf(` data-line="%d" data-start="%.3f" data-dur="%.3f" data-in="%.3f" data-out="%.3f" data-enter="%s" data-exit="%s"`,
 		it.Line, start, d, in, out, it.Enter, it.Exit)
+	if len(it.Path) > 1 { // a moving callout: its keyframes as percentages of the stage
+		var ps []string
+		for _, p := range it.Path {
+			x, y := p.Px(w, h)
+			ps = append(ps, fmt.Sprintf("%.3f,%.3f", x/float64(w)*100, y/float64(h)*100))
+		}
+		ease := "ease"
+		if it.Flags["linear"] {
+			ease = "linear"
+		}
+		data += fmt.Sprintf(` data-path="%s" data-pdur="%.3f" data-ease="%s"`, strings.Join(ps, ";"), pathLen(it, d), ease)
+	}
 	text := func() string {
 		if it.Enter == "type" {
 			return `<span class="ve-type" data-text="` + esc(it.Str) + `"></span>`
@@ -221,7 +233,7 @@ func calloutHTML(it *Item, w, h int, start, d float64, preview bool) string {
 			}
 			label = fmt.Sprintf(`<div class="ve-label" style="left:%s;top:%s;transform:translate(%g%%,%g%%)">%s</div>`, pct(x1, w), pct(y1, h), tx, ty, esc(it.Str))
 		}
-		return fmt.Sprintf(`<div class="ve-c ve-arrow"%s><div class="ve-in">%s%s</div></div>`, data, svg, label)
+		return fmt.Sprintf(`<div class="ve-c ve-arrow"%s data-tail="%.1f,%.1f" data-head="%.1f,%.1f" data-sw="%.2f"><div class="ve-in">%s%s</div></div>`, data, x1, y1, x2, y2, sw, svg, label)
 	case "box", "circle", "underline":
 		return box("ve-mark ve-" + it.Action)
 	case "spotlight":
@@ -293,7 +305,7 @@ func shots(spans []Span, total float64) (key []string, at map[string]float64) {
 				continue
 			}
 			in, out := inOut(s.It, d)
-			if l < in || (out > 0 && l > d-out) {
+			if l < in || (out > 0 && l > d-out) || len(s.It.Path) > 1 && l <= pathLen(s.It, d) {
 				moving = true
 			}
 			on = append(on, fmt.Sprint(i))
@@ -311,6 +323,15 @@ func shots(spans []Span, total float64) (key []string, at map[string]float64) {
 		}
 	}
 	return key, at
+}
+
+// pathLen is how long a moving callout of d seconds takes to move (its
+// · over, else all of d).
+func pathLen(it *Item, d float64) float64 {
+	if it.PathDur > 0 {
+		return min(it.PathDur, d)
+	}
+	return d
 }
 
 // drawn reports whether the build draws the line in Chrome.

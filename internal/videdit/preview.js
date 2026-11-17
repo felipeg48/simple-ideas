@@ -7,7 +7,7 @@
   var say = document.querySelector('.vp-say'), list = document.querySelector('.vp-lines');
   if (!v) return;
   function stamp(t) { t = Math.max(0, t); var m = Math.floor(t / 60), s = t - m * 60; return m + ':' + (s < 10 ? '0' : '') + s.toFixed(1); }
-  var full = [P.w / 2, P.h / 2, P.w], moves = [], cur = full, free = 0;
+  var full = [P.w / 2, P.h / 2, P.w], moves = [], cur = full, free = 0, lanes = [];
   P.marks.forEach(function (m, i) {
     var el = document.createElement('div');
     el.className = 'm ' + m.kind + (m.approx ? ' approx' : '');
@@ -16,7 +16,10 @@
     el.style.left = (a / P.d * 100) + '%';
     el.style.width = (Math.max(0, z - a) / P.d * 100) + '%';
     if (z - a < P.d / 200 && a > P.d * 0.98) el.style.transform = 'translateX(-100%)'; // at the end: inside the strip
-    el.title = 'line ' + m.line + ': ' + m.label;
+    var lane = 0, end = Math.max(z, a + P.d / 60); // lines at the same time: one lane each, none hidden
+    while (lanes[lane] > a) lane++;
+    lanes[lane] = end; m.lane = lane; m.el = el;
+    el.title = 'line ' + m.line + ': ' + m.label; el.dataset.line = m.line;
     strip.appendChild(el);
     var li = document.createElement('li'), b = document.createElement('button');
     b.type = 'button';
@@ -24,7 +27,7 @@
     b.firstChild.textContent = stamp(m.from) + (m.approx ? ' ∗' : '');
     b.appendChild(document.createTextNode(m.label));
     b.onclick = function () { v.currentTime = m.from; draw(); };
-    li.appendChild(b); list.appendChild(li); m.li = li;
+    li.dataset.line = m.line; li.appendChild(b); list.appendChild(li); m.li = li;
     if (m.kind === 'zoom' || m.kind === 'pan' || m.kind === 'zoom-out') {
       var t0 = Math.max(m.from, free), target = m.kind === 'zoom-out' ? full : m.Rect;
       moves.push({ t0: t0, t1: t0 + m.move, a: cur, b: target, lin: m.linear });
@@ -32,6 +35,10 @@
       if (m.hold && m.kind !== 'zoom-out') { var bk = free + m.dur; moves.push({ t0: bk, t1: bk + m.move, a: target, b: full, lin: m.linear }); cur = full; free = bk + m.move; }
     }
   });
+  if (lanes.length > 1) {
+    strip.style.height = (0.7 + lanes.length * 0.9) + 'rem';
+    P.marks.forEach(function (m) { m.el.style.top = (0.35 + m.lane * 0.9) + 'rem'; m.el.style.height = '0.75rem'; });
+  }
   function view(t) {
     var r = full;
     for (var i = 0; i < moves.length; i++) {

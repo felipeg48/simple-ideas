@@ -2,6 +2,7 @@ package studio
 
 import (
 	"bytes"
+	"github.com/felipeg48/simple-ideas/internal/videdit"
 	"net/http"
 	"path/filepath"
 
@@ -46,6 +47,9 @@ func (a *api) problemsAll() ([]problemJSON, int) {
 				checked += len(g.Pages)
 			}
 		case info.Guide != "": // checked with its guide
+		case videdit.Is(abs): // a video edit: si check's own checks, not a deck's
+			problems = append(problems, a.videoProblems(abs)...)
+			checked++
 		default:
 			d, err := deck.Parse(abs)
 			if err != nil {

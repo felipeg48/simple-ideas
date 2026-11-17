@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"os"
 	"strings"
 
 	"github.com/felipeg48/simple-ideas/internal/config"
@@ -16,15 +17,36 @@ var previewJS string
 //go:embed preview.css
 var previewCSS string
 
+//go:embed edit.js
+var editJS string
+
+//go:embed edit.css
+var editCSS string
+
 // Preview is the si play page of a video edit: the source playing with
 // every callout drawn live over it (the build's own HTML, CSS and runtime),
 // blur and the camera in CSS, cuts skipped, speeds and freezes played; a
 // strip with a marker per line. liveReload is the page's reload script.
 func Preview(path string, cfg *config.Config, liveReload string) []byte {
-	e, err := ParseFile(path)
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return []byte("<!doctype html><title>si</title><pre>" + html.EscapeString(err.Error()) + "</pre>")
 	}
+	return PreviewText(path, string(raw), cfg, PreviewOptions{Script: liveReload})
+}
+
+// PreviewOptions: Script ends the page (si play's live reload); Base is a
+// <base href> (the Studio draws the page from its text in a frame); Edit
+// adds the Studio's Video view hooks (edit.js: drag callouts, select lines).
+type PreviewOptions struct {
+	Script, Base string
+	Edit         bool
+}
+
+// PreviewText is Preview of the text src of the edit file at path.
+func PreviewText(path, src string, cfg *config.Config, o PreviewOptions) []byte {
+	liveReload := o.Script
+	e := Parse(path, src)
 	note := e.Check(FFprobe())
 	src, w, h, d := "", 16, 9, 0.0
 	if s, err := e.Source(FFmpeg(), FFprobe(), nil); err == nil {
@@ -40,6 +62,12 @@ func Preview(path string, cfg *config.Config, liveReload string) []byte {
 	}
 	esc := html.EscapeString
 	fmt.Fprintf(&b, `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s</title><style>%s%s</style>`, esc(title), head, previewCSS)
+	if o.Base != "" {
+		fmt.Fprintf(&b, `<base href="%s">`, esc(o.Base))
+	}
+	if o.Edit {
+		b.WriteString(`<style>` + editCSS + `</style>`)
+	}
 	fmt.Fprintf(&b, `<body><header><h1>%s</h1><p><code>si build %s</code> writes <code>%s</code>`, esc(title), esc(rel(e.Dir, e.Path)), esc(e.Out))
 	if d > 0 {
 		fmt.Fprintf(&b, ` · source %s, %d×%d`, Stamp(d), w, h)
@@ -63,7 +91,7 @@ func Preview(path string, cfg *config.Config, liveReload string) []byte {
 		b.WriteString(`<p class="vp-none">The source could not be read (ffmpeg and ffprobe play and build video edits).</p></body></html>`)
 		return []byte(b.String())
 	}
-	fmt.Fprintf(&b, `<main><div class="vp-frame" style="aspect-ratio:%d/%d;width:min(100%%,calc(72vh*%d/%d))"><div class="vp-cam"><video src="%s" preload="auto" playsinline></video><div class="ve-stage">`, w, h, w, h, esc(rel(e.Dir, src)))
+	fmt.Fprintf(&b, `<main><div class="vp-frame" style="aspect-ratio:%d/%d;width:min(100%%,calc(72vh*%d/%d));--ve-fit:calc(52vh*%d/%d)"><div class="vp-cam"><video src="%s" preload="auto" playsinline></video><div class="ve-stage">`, w, h, w, h, w, h, esc(rel(e.Dir, src)))
 	type mark struct {
 		Line   int     `json:"line"`
 		Kind   string  `json:"kind"`
@@ -111,6 +139,10 @@ func Preview(path string, cfg *config.Config, liveReload string) []byte {
 	b.WriteString(`<div class="vp-strip" role="slider" aria-label="Source time" tabindex="0"><div class="vp-head"></div></div><ol class="vp-lines"></ol>`)
 	b.WriteString(`<p class="vp-note">The preview plays the source: cuts are skipped, speeds and freezes played, callouts, blur and the camera drawn live; inserted, replaced and re-filmed clips, cards and sound are markers (∗). The build is exact.</p></main>`)
 	data, _ := json.Marshal(map[string]any{"d": d, "w": w, "h": h, "marks": marks})
-	fmt.Fprintf(&b, `<script>window.VP=%s</script><script>%s</script><script>%s</script>%s</body></html>`, data, overlayJS, previewJS, liveReload)
+	edit := ""
+	if o.Edit {
+		edit = "<script>" + editJS + "</script>"
+	}
+	fmt.Fprintf(&b, `<script>window.VP=%s</script><script>%s</script><script>%s</script>%s%s</body></html>`, data, overlayJS, previewJS, edit, liveReload)
 	return []byte(b.String())
 }
