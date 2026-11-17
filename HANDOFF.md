@@ -3,7 +3,18 @@
 Read this, then `FEATURE.md`, then `CLAUDE.md`. This is a Go CLI (`si`) that turns
 Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
-## Current state (2026-11-14)
+## Current state (2026-11-17)
+
+**v3.28.0:** video edits (`type: video`, RULES §32, spec
+`docs/superpowers/specs/2026-11-17-video-edit.md`, phases 1–2): `internal/videdit/`
+(parse.go lines and times, plan.go source→output time map, graph.go one ffmpeg
+graph, callout.go + overlay.css/js drawn in headless Chrome as a PNG overlay
+sequence, preview.go the `si play` page, refilm.go stream-copy splice,
+check.go), `cmd/si/videoedit.go`; promo-kit exports in
+`internal/webdemo/videdit.go`; example `examples/video/` (shop.mp4 filmed from
+shop.md). Next: phase 3, the Studio Video view (drag callouts, write x,y back).
+
+## Earlier state (2026-11-14)
 
 **v3.15.0:** animated infographics: `animate: build|loop`, `duration:`,
 `· enter= · at=` (`internal/render/igmotion.go`: igSchedule, flow blocks on

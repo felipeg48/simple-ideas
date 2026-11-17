@@ -306,7 +306,7 @@ type Deck struct {
 }
 
 // Types are the accepted values of the `type` front matter key.
-var Types = []string{"deck", "lab", "article", "guide", "book", "demo", "site", "page", "mindmap", "quiz", "course", "timeline", "infographic"}
+var Types = []string{"deck", "lab", "article", "guide", "book", "demo", "site", "page", "mindmap", "quiz", "course", "timeline", "infographic", "video"}
 
 // IsLab reports whether the file is a lab document (`type: lab`).
 func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }

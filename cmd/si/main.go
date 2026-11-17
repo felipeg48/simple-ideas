@@ -20,6 +20,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/brand"
 	"github.com/felipeg48/simple-ideas/internal/cdp"
 	"github.com/felipeg48/simple-ideas/internal/tools"
+	"github.com/felipeg48/simple-ideas/internal/videdit"
 	"github.com/felipeg48/simple-ideas/internal/webdemo"
 	"html"
 	"io"
@@ -450,6 +451,7 @@ type options struct {
 	staged                                       bool       // a structured build's inner pass (writes the flat layout to staging)
 	srcDirs                                      []string   // more folders of sources (a project structure's folders)
 	collect                                      *collected // what the inner pass copied and inlined, for the structure
+	with                                         string     // si build edit.md --with captions,vertical (a video edit's variants)
 	css                                          multi
 	args                                         []string
 }
@@ -470,6 +472,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.Var(&o.handout, "handout", "")
 	fl.Var(&o.autoplay, "autoplay", "")
 	fl.StringVar(&o.voice, "voice", "", "")
+	fl.StringVar(&o.with, "with", "", "")
 	fl.StringVar(&o.export, "export", "", "")
 	fl.StringVar(&o.kind, "type", "", "")
 	fl.StringVar(&o.siteKind, "kind", "", "")
@@ -806,6 +809,9 @@ func usageErr(stderr io.Writer, msg string) int {
 }
 
 func build(src string, o *options, stdout, stderr io.Writer) int {
+	if videdit.Is(src) { // a video edit (type: video): the edited video, not a page
+		return buildVideo(src, o, stdout, stderr)
+	}
 	render.MakePoster = ffmpegPoster // a video without a still gets its first frame
 	if st := projectStructure(src, o); st != nil {
 		return buildStructured(src, st, o, stdout, stderr)
@@ -882,6 +888,10 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	decks := make([]*deck.Deck, len(files))
 	var labs []int // labs in name order, linked prev/next
 	for i, f := range files {
+		if videdit.Is(f) {
+			fmt.Fprintf(stdout, "  %-28s skipped (a video edit: si build %s)\n", filepath.Base(f), filepath.Base(f))
+			continue
+		}
 		d, err := deck.Parse(f)
 		if err != nil {
 			fmt.Fprintf(stderr, "si: %v\n", err)
@@ -1254,6 +1264,10 @@ func check(src string, budget config.Budget, stdout, stderr io.Writer) int {
 	}
 	n := 0
 	for _, f := range files {
+		if videdit.Is(f) { // a video edit: its lines, files, times and places
+			n += checkVideo(f, stdout, stderr)
+			continue
+		}
 		d, err := deck.Parse(f)
 		if err != nil {
 			fmt.Fprintf(stderr, "si: %v\n", err)

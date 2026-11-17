@@ -1,0 +1,64 @@
+/* si video edit: the callouts, over a stage the video's shape. Lengths are
+   container units of the stage (cqmin, cqi), positions percentages, so the
+   same CSS draws the preview (any size) and the build (the source's size). */
+.ve-stage{position:relative;container-type:size;overflow:hidden;font-family:var(--si-font-body,system-ui,sans-serif);line-height:1.25}
+.ve-c{position:absolute;visibility:hidden;pointer-events:none;box-sizing:border-box;width:max-content}
+.ve-title,.ve-arrow{width:auto}
+.ve-in{will-change:opacity,transform}
+.ve-title{inset:0;display:grid;place-items:center}
+.ve-title>.ve-in{width:100%;height:100%;display:grid;place-items:center;background:radial-gradient(ellipse at center,rgb(0 0 0/.62),rgb(0 0 0/.38) 70%,rgb(0 0 0/.2))}
+.ve-title h1{margin:0;max-width:82cqi;text-align:center;color:#fff;font-family:var(--si-font-heading,system-ui,sans-serif);font-weight:var(--si-heading-weight,760);
+letter-spacing:var(--si-heading-tracking,-.02em);font-size:8cqmin;line-height:1.08;text-shadow:0 .4cqmin 2cqmin rgb(0 0 0/.45)}
+.ve-title h1::after{content:"";display:block;width:2.4em;height:.12em;margin:.35em auto 0;background:var(--si-accent,#3b82f6);border-radius:1em}
+.ve-text>.ve-in{color:#fff;font-size:4.4cqmin;font-weight:650;max-width:70cqi;text-shadow:0 .2cqmin .8cqmin rgb(0 0 0/.7),0 0 .3cqmin rgb(0 0 0/.8)}
+.ve-text.ve-boxed>.ve-in{background:var(--si-surface,#fff);color:var(--si-fg,#111);padding:.3em .65em;border-radius:.35em;text-shadow:none;border-left:.22em solid var(--si-accent,#3b82f6)}
+.ve-text.ve-shadow>.ve-in{box-shadow:0 .8cqmin 3cqmin rgb(0 0 0/.4)}
+.ve-text:not(.ve-boxed).ve-shadow>.ve-in{box-shadow:none;text-shadow:0 .3cqmin 1.6cqmin rgb(0 0 0/.95),0 0 .4cqmin rgb(0 0 0/.9)}
+.ve-bubble{--tail:2.6cqmin;--gap:1.84cqmin}
+.ve-bubble.ve-think{--gap:4.2cqmin}
+.ve-bubble.ve-up{transform:translate(var(--tx),calc(-100% - var(--gap)))}
+.ve-bubble.ve-down{transform:translate(var(--tx),var(--gap))}
+.ve-bubble.ve-r{--tx:-12%;--side:left}
+.ve-bubble.ve-l{--tx:-88%}
+.ve-bubble>.ve-in{position:relative;width:max-content;max-width:40cqi;padding:.55em .85em;background:var(--si-surface,#fff);color:var(--si-fg,#111);
+border:.4cqmin solid var(--si-accent,#3b82f6);border-radius:1.6cqmin;font-size:3.6cqmin;font-weight:600;box-shadow:0 .8cqmin 3cqmin rgb(0 0 0/.35)}
+.ve-bubble.ve-round>.ve-in{border-radius:6cqmin;padding:.6em 1.1em}
+.ve-bubble.ve-think>.ve-in{border-radius:6cqmin;padding:.7em 1.2em}
+.ve-bubble.ve-r>.ve-in{transform-origin:12% 100%}
+.ve-bubble.ve-l>.ve-in{transform-origin:88% 100%}
+.ve-bubble.ve-down.ve-r>.ve-in{transform-origin:12% 0}
+.ve-bubble.ve-down.ve-l>.ve-in{transform-origin:88% 0}
+.ve-bubble:not(.ve-think)>.ve-in::after{content:"";position:absolute;width:var(--tail);height:var(--tail);background:inherit;border:inherit;border-radius:0;box-sizing:border-box}
+.ve-bubble.ve-up:not(.ve-think)>.ve-in::after{bottom:calc(var(--tail)/-2 - .2cqmin);border-top:0;border-left:0;transform:rotate(45deg)}
+.ve-bubble.ve-down:not(.ve-think)>.ve-in::after{top:calc(var(--tail)/-2 - .2cqmin);border-bottom:0;border-right:0;transform:rotate(45deg)}
+.ve-bubble.ve-r:not(.ve-think)>.ve-in::after{left:calc(12% - var(--tail)/2)}
+.ve-bubble.ve-l:not(.ve-think)>.ve-in::after{left:calc(88% - var(--tail)/2)}
+.ve-think>.ve-in::before,.ve-think>.ve-in::after{content:"";position:absolute;border-radius:50%;background:inherit;border:inherit;box-sizing:border-box}
+.ve-think>.ve-in::after{width:2.2cqmin;height:2.2cqmin}
+.ve-think>.ve-in::before{width:1.2cqmin;height:1.2cqmin}
+.ve-think.ve-up>.ve-in::after{bottom:-2.6cqmin}.ve-think.ve-up>.ve-in::before{bottom:-4.3cqmin}
+.ve-think.ve-down>.ve-in::after{top:-2.6cqmin}.ve-think.ve-down>.ve-in::before{top:-4.3cqmin}
+.ve-think.ve-r>.ve-in::after{left:calc(12% - .2cqmin)}.ve-think.ve-r>.ve-in::before{left:calc(12% - 1.6cqmin)}
+.ve-think.ve-l>.ve-in::after{left:calc(88% - 2cqmin)}.ve-think.ve-l>.ve-in::before{left:calc(88% - .2cqmin)}
+.ve-arrow{inset:0}
+.ve-arrow>.ve-in{position:absolute;inset:0}
+.ve-arrow svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.ve-arrow .ve-path{fill:none;stroke:var(--si-accent,#3b82f6);stroke-linecap:round;stroke-dasharray:1;filter:drop-shadow(0 .3cqmin .6cqmin rgb(0 0 0/.45))}
+.ve-arrow .ve-head{fill:var(--si-accent,#3b82f6);filter:drop-shadow(0 .3cqmin .6cqmin rgb(0 0 0/.45))}
+.ve-label{position:absolute;width:max-content;max-width:36cqi;padding:.3em .65em;background:var(--si-surface,#fff);color:var(--si-fg,#111);border-radius:.4em;
+font-size:3.3cqmin;font-weight:650;box-shadow:0 .6cqmin 2cqmin rgb(0 0 0/.35);border-left:.22em solid var(--si-accent,#3b82f6)}
+.ve-mark>.ve-in{width:100%;height:100%;box-sizing:border-box;border:.55cqmin solid var(--si-accent,#3b82f6);border-radius:1.2cqmin;
+box-shadow:0 0 0 .3cqmin rgb(0 0 0/.25),0 0 2.4cqmin color-mix(in srgb,var(--si-accent,#3b82f6) 55%,transparent)}
+.ve-circle>.ve-in{border-radius:50%}
+.ve-underline>.ve-in{border:0;border-bottom:.8cqmin solid var(--si-accent,#3b82f6);border-radius:0;box-shadow:none;transform-origin:0 50%}
+.ve-spotlight>.ve-in{width:100%;height:100%;border-radius:1.2cqmin;box-shadow:0 0 0 300cqmax rgb(0 0 0/.62);outline:.3cqmin solid color-mix(in srgb,var(--si-accent,#3b82f6) 70%,transparent)}
+.ve-keys>.ve-in{display:flex;gap:1cqmin;align-items:center}
+.ve-keys kbd{min-width:1.6em;padding:.25em .55em;text-align:center;background:var(--si-surface,#fff);color:var(--si-fg,#111);border-radius:.3em;
+font:700 4.2cqmin/1.2 var(--si-font-mono,ui-monospace,SFMono-Regular,Menlo,monospace);box-shadow:inset 0 -.25em 0 rgb(0 0 0/.18),0 .5cqmin 2cqmin rgb(0 0 0/.4);border:.15cqmin solid rgb(0 0 0/.15)}
+.ve-badge>.ve-in{white-space:nowrap;padding:.3em .8em;border-radius:2em;background:rgb(17 19 24/.8);color:#fff;font-weight:700;font-size:3.2cqmin;box-shadow:0 .4cqmin 1.6cqmin rgb(0 0 0/.3)}
+.ve-third>.ve-in{display:grid;gap:.2em;padding:.65em 1.1em .7em;border-left:.32em solid var(--si-accent,#3b82f6);border-radius:.3em;
+background:color-mix(in srgb,var(--si-surface,#fff) 92%,transparent);color:var(--si-fg,#111);box-shadow:0 .4em 1.4em rgb(0 0 0/.28)}
+.ve-third b{font:700 4cqmin/1.15 var(--si-font-heading,system-ui,sans-serif)}
+.ve-third span{color:var(--si-muted,#555);font-size:2.8cqmin}
+.ve-hide{backdrop-filter:blur(1.4cqmin);-webkit-backdrop-filter:blur(1.4cqmin);background:rgb(127 127 127/.12)}
+.ve-hide.ve-pixelate{backdrop-filter:blur(.9cqmin) contrast(1.4);background:repeating-conic-gradient(rgb(0 0 0/.12) 0 25%,transparent 0 50%) 0 0/2.4cqmin 2.4cqmin}

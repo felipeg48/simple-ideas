@@ -23,6 +23,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/render"
+	"github.com/felipeg48/simple-ideas/internal/videdit"
 	"github.com/felipeg48/simple-ideas/internal/webdemo"
 )
 
@@ -217,6 +218,12 @@ func (s *Server) deck(w http.ResponseWriter, md string, term bool) { s.deckPage(
 // deckPage renders a deck; audience leaves Notes: and Points: out of the page
 // (an audience phone must not be able to read the speaker's script).
 func (s *Server) deckPage(w http.ResponseWriter, md string, term, audience bool) {
+	if videdit.Is(md) { // a video edit: the preview player
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store")
+		w.Write(videdit.Preview(md, config.Load(s.Conf, filepath.Join(s.dir, "si.conf")), render.LiveReloadJS))
+		return
+	}
 	d, err := deck.Parse(md)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

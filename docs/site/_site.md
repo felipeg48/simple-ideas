@@ -24,6 +24,7 @@ footer: simple-ideas
   - [Mind Maps](features/mindmaps.md)
   - [Timelines](features/timelines.md)
   - [Infographics](features/infographics.md)
+  - [Video edits](features/video.md)
   - [Books](features/books.md)
   - [Courses](features/courses.md)
   - [Code](features/code.md)

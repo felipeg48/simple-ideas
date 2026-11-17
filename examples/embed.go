@@ -6,9 +6,10 @@ import "embed"
 
 // FS holds the example decks, their assets and the example theme, plus the
 // example article (article/), guide (guide/, embedded with its _ files) and
-// mind maps (mindmap/).
+// mind maps (mindmap/), and the video edit (video/: a short recording and
+// the edit that finishes it).
 //
-//go:embed *.md *.json si.conf assets css night-shift demos article code all:guide all:book all:site all:course mindmap timeline infographic
+//go:embed *.md *.json si.conf assets css night-shift demos article code all:guide all:book all:site all:course mindmap timeline infographic video
 var FS embed.FS
 
 // Main is the showcase deck that includes the others.

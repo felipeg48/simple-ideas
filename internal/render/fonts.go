@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 )
 
@@ -261,4 +262,17 @@ func (dr *deckRenderer) fontFaces(sp fontSpec) (string, string, error) {
 		}
 	}
 	return family, b.String(), nil
+}
+
+// FontsCSS is the CSS of d's fonts: (si.conf's when d sets none), every font
+// file inlined, and what was wrong with it: the video editor's callouts
+// (internal/videdit) are drawn with it.
+func FontsCSS(d *deck.Deck, cfg *config.Config) (string, []string) {
+	dr := &deckRenderer{d: d, opt: Options{Config: cfg}}
+	dr.resolveFonts()
+	var bad []string
+	for _, p := range dr.problems {
+		bad = append(bad, p.Msg)
+	}
+	return dr.fontsCSS, bad
 }

@@ -221,6 +221,31 @@ messages a second, counted up as it comes in
 
 ---
 
+## Video edits
+
+```text
+---
+type: video
+source: demo.mp4
+---
+- 0:45–0:50 · blur 120,80 400x60
+- 1:34 · bubble "Log in as the admin user" · to 820,410 · 4s · pop
+- 1:52 · freeze 2s
+- 2:40 · zoom to 600,300 900x500 · 3s
+- 4:00–4:04 · cut
+- end · card "Next: clustering" · 3s
+```
+
+- Times are the source's: an edit never moves another line; `at chapter "Install" + 5s`, `at said "management UI"` (from the `.vtt` beside it)
+- Edits: `cut`, `trim start|end`, `freeze`, `speed 2x`, `replace with`, `insert clip|image|card`, `mute`; `· fade|dissolve|wipe|slide`
+- Callouts in the theme: `title`, `text`, `bubble`, `arrow`, `box`, `circle`, `underline`, `spotlight`, `blur`, `pixelate`, `keys`, `badge`, `lower-third`; the camera: `zoom to`, `pan to`, `zoom out`
+- Sound and takes: `say "…" · duck 30%`, `music`, `captions on`, `refilm feature "Name"` (the demo script runs that feature again)
+- `si check edit.md` · `si play edit.md` (a live preview) · `si build edit.md --with captions,vertical`; full guide: RULES.md §32
+
+Notes: A recording gets its finishing touches from a Markdown file beside it: each line is a time and what happens there, and every time is the one you see in the original video.
+
+---
+
 ## Code windows
 
 ```go id=send window=mac title="send.go" numbers step="Once"

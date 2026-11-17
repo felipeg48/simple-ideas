@@ -1,6 +1,6 @@
 # Video editing from Markdown (`type: video`)
 
-Decided with the founder, 2026-11-17. Phases 1 and 2 ship in v3.27.0;
+Decided with the founder, 2026-11-17. Phases 1 and 2 ship in v3.28.0;
 phase 3 is spec only.
 
 A finished screen recording almost always needs a few touches: a callout
@@ -149,8 +149,8 @@ Phase 2 (sound and re-filming):
 ## How it is built
 
 1. **Join** (several sources only): each source trimmed, scaled to the first
-   one's size, joined with `join:`; cached in `~/.si/cache/video/` by the
-   sources' paths, sizes and mtimes. Times refer to this joined source.
+   one's size, joined with `join:`; kept in `.si/video/<name>.joined.mp4` beside the
+   edit (a `.key` file holds the sources' paths, sizes and mtimes). Times refer to this joined source.
 2. **Probe** (ffprobe): length, size, frame rate, sound, chapters.
 3. **Plan**: the lines become output segments (source pieces at a speed,
    stills, clips, images, cards) and a time map (`internal/videdit/plan.go`).
@@ -183,7 +183,11 @@ When the edit is refilms only (one source, no callouts, no sound lines), the
 rest stays byte-identical: the source is stream-copied up to the last
 keyframe before the range (less the fade) and from the first keyframe after
 it; only the stretch between is re-encoded (same codec, size, rate), and the
-three parts are joined by the concat demuxer with `-c copy`. Any other edit
+three parts are joined by the concat demuxer with `-c copy` (the head ends
+at the keyframe's decode time with a `duration` directive, so no frame of
+the next group leaks in). Every packet is copied as it was; keyframes may
+gain the parameter sets in band. If the result does not decode cleanly, the
+whole video is encoded once instead. Any other edit
 re-encodes the whole video once.
 
 ## Commands
@@ -228,9 +232,9 @@ re-encodes the whole video once.
 
 ## Phases
 
-1. Phase 1 (v3.27.0): the file, times, anchors, every edit, transition and
+1. Phase 1 (v3.28.0): the file, times, anchors, every edit, transition and
    callout above, `si build`, `si check`, `si play`, `--with captions,vertical`.
-2. Phase 2 (v3.27.0): `say` with ducking, `music`, `captions on`, `refilm
+2. Phase 2 (v3.28.0): `say` with ducking, `music`, `captions on`, `refilm
    feature` with the stream-copy splice.
 3. Phase 3 (spec only): the Studio's Video view: the preview with the
    timeline strip, callouts dragged into place (writing `to X,Y` / `at X,Y`

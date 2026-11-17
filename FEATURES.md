@@ -228,6 +228,25 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - Both show in the Studio (New… lists them) and as text in the terminal
   (`si play --terminal`, `si --terminal`).
 
+## Video edits
+
+- `type: video`: a recording's finishing touches as lines at source times
+  (`1:34`, `1:36–1:46`, `end`, `at said "words"`, `at chapter "Name" + 2s`);
+  an edit never moves another line's time.
+- Edits: `cut`, `trim start|end`, `freeze`, `speed` (pitch kept, or `mute`,
+  with a badge), `replace with` (`· keep audio`), `insert clip|image|card`,
+  `mute`; transitions `fade`, `dissolve`, `wipe`, `slide`; several sources
+  joined (`· from` / `· to`, `join:`).
+- Callouts drawn in the theme: `title`, `text`, `bubble` (`round`, `think`),
+  `arrow`, `box`, `circle`, `underline`, `spotlight`, `keys`, `badge`,
+  `lower-third`; entrances `pop`, `fade`, `slide-in`, `type`; `blur` and
+  `pixelate` by ffmpeg; the camera: `zoom to`, `pan to`, `zoom out`.
+- Sound and takes: `say` (the configured voice, the original ducked),
+  `music`, `captions on` (.vtt/.srt moved by the edits), `refilm feature`
+  (one demo feature filmed again; alone, the rest stream-copied).
+- `si check` with line numbers, `si play` live preview with a timeline
+  strip, `si build --with captions,vertical`.
+
 ## Code
 
 - Code windows (macOS, Windows, terminal, none) with titles, themes,

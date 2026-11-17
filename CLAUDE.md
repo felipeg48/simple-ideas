@@ -111,6 +111,7 @@ what you chose.
 | `desktop/` | si Studio.app for macOS: its own module; `main.go` (starts/stops `si --web` per folder; `helpJS`: the Help menu and About run through `window.siStudio`), `app_darwin.m` (Cocoa + WebKit windows and menus), `build-mac.sh` (universal bundle + zip, `make desktop-mac`; signs with the self-signed "simple-ideas Self-Signed" identity when present, `make desktop-cert` creates it), `icon/gen.go` (the Stack app icon, `make desktop-icon`) |
 | `internal/cdp/` | the Chrome DevTools Protocol client over `--remote-debugging-pipe` (stdlib, with events): used by `--mp4` motion filming and web demos |
 | `internal/webdemo/` | web demos (RULES §27): promo kit in `promo.go` (cards, music, lower thirds, vertical/highlight cuts), `frame.go` (steps in iframes), `draft.go` + `draft.js` (`si demo draft <url>`); the `type: demo` + `app:` script (Markdown, AsciiDoc, JSON), the runner over `internal/cdp` (locators, steps, expects), report.html/json and JUnit; `film.go` + `overlay.js` (the take: cursor, notes, blur, screencast), `encode.go` (ffmpeg, captions, chapters, SRT), `voice.go` (engines, cache, `pronounce:`), `readme.go`; `cmd/si/demo.go` is `si demo test|run`; spec `docs/superpowers/specs/2026-11-10-web-demos.md` |
+| `internal/videdit/` | video edits (`type: video`, RULES §32): `parse.go` (front matter, timeline lines, times, anchors), `plan.go` (output pieces, `Map` source→output times), `graph.go` (the one ffmpeg graph: pieces, xfade, blur/pixelate, overlay, camera, ducks, said lines), `callout.go` + `overlay.css`/`overlay.js` (callouts as HTML drawn per frame in headless Chrome), `preview.go` (+ `.js`/`.css`: the `si play` page), `refilm.go` (a demo feature filmed again, spliced by stream copy), `check.go`; `cmd/si/videoedit.go` |
 | `internal/motion/` | animated SVG canvases as frames for the Studio's Motion view (`internal/studio/motion.go`, `web/studio/src/motion-editor.tsx`): reads/writes the `/* si motion: … */` block, keeps hand-written SVG and CSS; `transition: morph` itself lives in `deck/02-navigation.js` |
 | `internal/themefile/` | theme CSS files: the `/* si theme: Name · extends <built-in> */` header, token read/write keeping other CSS, checks (values, px, contrast), W3C Design Tokens export/import; `cmd/si/themecmd.go` (`si theme check|export|import`), `cmd/si/mcptheme.go` (MCP theme tools), `internal/studio/theme.go` + `web/studio/src/theme-editor.tsx` (the Studio Theme view) |
 | `internal/home/` | `~/.si` (`$SI_HOME`): si's own folder for the user si.conf, `publish.json`, `ca/`, `sessions/`, `kokoro/`, `cache/`; `Path` moves a pre-v2.43.0 copy from the system config/cache folders on first use |
@@ -282,6 +283,10 @@ pass. The steps that matter:
   build then routes, rewrites links and bundles (`cmd/si/structure.go`),
   `si new --structure`, `si check` warnings, `examples/structure/`. Next:
   `si play` serving the built layout, per-folder index pages.
+- **Video edits** (phases 1–2 DONE v3.28.0, spec
+  `docs/superpowers/specs/2026-11-17-video-edit.md`): `type: video`, lines at
+  source times, edits, callouts, camera, say/music/captions, refilm. Next:
+  phase 3, the Studio Video view (drag-to-place callouts writing x,y back).
 - **Animated infographics** (DONE v3.15.0): `animate: build|loop`,
   `duration:`, `· enter= · at=`, `flow` blocks (`A -[label]-> B`, on the
   stage engine), exact frames (`aspect: phone|story|portrait|square|landscape|WxH`),

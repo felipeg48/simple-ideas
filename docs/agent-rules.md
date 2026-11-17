@@ -50,6 +50,9 @@ si demo test docs/demos/        # every demo script in a folder: demo-out/<scrip
 si demo test github:owner/repo@v2/demos/ --trust   # demos from a repo at a pin (or "https://…/x.md · sha256 HEX", gist:ID@REV/x.md);
                                 # --trust only in CI: a person is shown new code and asked once per pin
 si play github:owner/repo@v2/talks/talk.md         # a talk from a repo (si build and si serve too)
+si build edit.md                # a video edit (type: video, RULES.md §32): cuts, freezes, speed, inserts, callouts
+                                # (bubble, arrow, blur, zoom …), say/music/captions, refilm feature "Name"; times
+                                # are the source's; si check edit.md reports lines; si play edit.md previews live
 ```
 
 ## A deck
@@ -189,6 +192,16 @@ slide or a page, never an `<img>`; `<!-- image: poster=still.jpg -->` before it
 gives it a still. Videos, linked local files (`[The slides (PDF)](talk.pdf)`,
 `.zip`, `.csv`) and the `src` of raw `<video>`/`<source>`/`<audio>` are copied
 beside the built page, never inlined; a missing one fails `si check`.
+
+## Video edits
+
+A `type: video` file finishes a recording: `source:` the video, then one line
+per touch under `## Timeline`, `- TIME · action · option`, at source times
+(`1:34`, `1:36–1:46`, `end`, `at said "words"`, `at chapter "Name" + 2s`).
+Positions are source pixels (`820,410`), percentages or words (`top-right`);
+rectangles `X,Y WxH`. Blur anything secret (`blur RECT`), it is removed by
+ffmpeg. Run `si check edit.md`, then `si build edit.md`, then look at frames
+(`ffmpeg -ss T -i out.mp4 -frames:v 1 f.png`) before you report it done.
 
 ## Documents: articles, guides, labs
 

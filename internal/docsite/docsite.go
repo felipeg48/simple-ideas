@@ -203,7 +203,8 @@ func Generate(dst string) (pages int, err error) {
 	// embed them and show their Markdown)
 	skip := func(p string) bool {
 		top, _, _ := strings.Cut(p, "/")
-		return p == "embed.go" || p == "order-lab.md" || top == "night-shift" || top == "site"
+		return p == "embed.go" || p == "order-lab.md" || top == "night-shift" || top == "site" ||
+			top == "video" && strings.HasSuffix(p, ".md") // a video edit and its demo script are not pages: the recording is
 	}
 	if err := copyFS(examples.FS, ".", "live", skip); err != nil {
 		return 0, err

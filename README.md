@@ -210,6 +210,20 @@ along them) in an exact frame (`aspect: phone`, `square`, `1080x1350`), and
 
 ![An animated infographic: how a message travels through a broker, building itself](docs/screenshots/readme/infographic-animated.gif)
 
+### Video edits
+
+The finishing touches of a recording, written beside it: one line per
+touch, at the source's own times (`- 1:34 · bubble "Log in" · to
+820,410`). Callouts in your theme (titles, bubbles, arrows, boxes,
+spotlights, keys, lower thirds), blur that really removes a password, a
+freeze, a zoom, cuts, speed, replaced or inserted clips and cards, new
+narration, music, captions moved by the edits, and `refilm feature` to film
+one feature of a demo again and splice it in. `si play edit.md` previews it
+live; `si build edit.md` writes the video.
+[Video edits →](https://simple-ideas.org/features/video.html)
+
+![A recording finished from Markdown: zoomed on the total, a thought bubble, the total underlined](docs/screenshots/readme/video-edit.jpg)
+
 ### Code
 
 Code in a window (macOS, Windows, terminal), on a backdrop, with numbered
