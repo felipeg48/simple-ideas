@@ -21,7 +21,11 @@ binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
   chapter's first sentence, joined into `<out>.highlight.mp4`. The `si play`
   strip puts lines at the same time in lanes. Windows CI now runs a split
   terminal demo (`terminal split right|down`, `run … in 2`, `expect output …
-  in 2`) under ConPTY and cmd, and the `si play` drawer's split view.
+  in 2`) under ConPTY and cmd, and the `si play` drawer's split view. Fixed
+  on the way: headless Chrome now starts on Windows (its DevTools pipe is
+  handed over as inherited handles, `--remote-debugging-io-pipes`), so web
+  demos, `--mp4` filming and video edits run there; a file opened by quick
+  open or search in the play Viewer gets its name on Windows.
 - **v3.30.0:** a playable video player. A ```` ```video ```` fence (PR #21)
   draws a player in place (`mode=inline`), as a dialog over the dimmed and
   blurred page (`mode=modal`: Esc, ✕ or the backdrop closes it, focus stays
