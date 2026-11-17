@@ -3,6 +3,11 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.33.1:** the terminal looks of v3.32.0 keep the words scripts wait
+  for: `si play` and `si serve` say `serving <dir>` and `live reload on`,
+  and a clean `si check` ends in `OK` (`1 deck OK · no warnings, no
+  problems`), as the plain lines do; `si demo test` scripts that wait for
+  them pass again on a terminal.
 - **v3.33.0:** video edits, improved. A **moving blur**: `blur` and
   `pixelate` take `· to A → B over 2s` and `· path A B C` (eased or
   `· linear`) like the other moving callouts, and ffmpeg hides the pixels
