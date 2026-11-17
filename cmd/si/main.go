@@ -25,6 +25,7 @@ import (
 	"html"
 	"io"
 	"io/fs"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -56,7 +57,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/ui"
 )
 
-const version = "3.33.1"
+const version = "3.34.0"
 
 // Exit codes.
 const (
@@ -1583,6 +1584,25 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		openURL = url + strings.TrimPrefix(decks[0], "/")
 	}
 	keys := pr != nil && !o.serveMode && !o.terminal && ui.Terminal(os.Stdin) // the monitor's keys: si play on a terminal
+	logs := &recent{out: log.Writer()}                                        // the reload and warning lines, for the monitors too
+	log.SetOutput(logs)
+	defer log.SetOutput(logs.out)
+	srv.Mon = serve.MonitorInfo{Target: shown(src), Open: openURL, Phone: phone, Start: time.Now(), Log: logs.snapshot,
+		Links: []render.RemoteLink{{Name: "This machine", URL: openURL}}}
+	if phone != "" {
+		if c, err := qr.Encode([]byte(phone), qr.Options{Level: qr.M}); err == nil {
+			srv.Mon.Links = append(srv.Mon.Links, render.RemoteLink{Name: "On your network", URL: phone, SVG: c.SVG(qr.Style{Quiet: 2, Label: "network link"}, "", "", "")})
+		}
+	}
+	if !o.serveMode && port > 0 { // the web monitor: this machine, the run's key
+		var raw [16]byte
+		rand.Read(raw[:])
+		srv.Mon.Key = hex.EncodeToString(raw[:])
+		srv.Mon.Web = fmt.Sprintf("http://127.0.0.1:%d/_si/monitor?k=%s", port, srv.Mon.Key)
+		if pr == nil {
+			fmt.Fprintf(stdout, "  monitor (this machine; the control room for polls and questions): %s\n", srv.Mon.Web)
+		}
+	}
 	if pr != nil {
 		playStart(pr, srv, src, cmdName, openURL, phone, port, keys, o, stdout)
 	}
@@ -1616,7 +1636,7 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	if keys { // m: the live monitor, o: open, q: quit
-		restore := monitor(srv, shown(src), openURL, phone, cancel, ctx.Done(), stdout)
+		restore := monitor(srv, logs, cancel, ctx.Done(), stdout)
 		defer func() { cancel(); restore() }()
 	}
 	var setupFailed atomic.Bool

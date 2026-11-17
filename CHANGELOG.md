@@ -3,6 +3,20 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.34.0:** the control room. `si play` prints a keyed link to a **web
+  monitor** at `/_si/monitor` (this machine only; `--remote` offers it to a
+  tablet as the `monitor` role): uptime, CPU and memory, viewers **by role**
+  (deck, teleprompter, remote teleprompter, draw pad, clicker, audience
+  phones, review and class pages, monitors), the slide with time on it and
+  the talk's time, the links with their QR codes, shells and the recent
+  reloads, live over server-sent events. Under `--audience` it moderates:
+  close, reopen or reset a poll, reveal a `· hidden` poll's results;
+  approve, show on screen, mark answered or hide a question; hide a word
+  from a cloud or clear it. Its states go into the `.si/audience/` save.
+  The terminal monitor shows the same numbers (one source) with the roles
+  and timers; `p` shows the network and audience links as QR codes, `w`
+  opens the web monitor. The page needs the run's key, a loopback peer and
+  Host, and the same origin for every change.
 - **v3.33.1:** the terminal looks of v3.32.0 keep the words scripts wait
   for: `si play` and `si serve` say `serving <dir>` and `live reload on`,
   and a clean `si check` ends in `OK` (`1 deck OK · no warnings, no

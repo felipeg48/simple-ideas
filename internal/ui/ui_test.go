@@ -84,6 +84,8 @@ func TestMonitor(t *testing.T) {
 	s := Stats{Target: "examples/", Up: 42*time.Minute + 17*time.Second, CPU: 4.1, Mem: 38 << 20,
 		CPUHist: []float64{1, 2, 4.1}, MemHist: []float64{30 << 20, 38 << 20}, Shells: 2, Pages: 3, Files: 41,
 		Open: "http://127.0.0.1:7070/", Phone: "http://192.168.1.24:7070/", Slide: 7, Slides: 24, Step: 2, Steps: 3,
+		Roles: map[string]int{"deck": 1, "audience": 2}, SlideFor: 72 * time.Second, TalkFor: 14*time.Minute + 3*time.Second,
+		Web: "http://127.0.0.1:7070/_si/monitor?k=0123456789abcdef0123456789abcdef",
 		Log: []LogLine{{at, OK, "reloaded"}, {at, Warn, "appendix.md:18: no alt text"}}, Keys: "q quit · m hide"}
 	for _, tc := range []struct {
 		v    View
@@ -95,7 +97,7 @@ func TestMonitor(t *testing.T) {
 		{Steps, []string{"╭─ si play", "SERVER", "PRESENTING", "slide  7/24", "LINKS", "LOG", "╰─ q quit"}},
 	} {
 		got := Monitor(tc.v, s, false)
-		for _, w := range tc.want {
+		for _, w := range append(tc.want, "deck 1 · audience 2", "on this slide 01:12 · talk 00:14:03", "_si/monitor") {
 			if !strings.Contains(got, w) {
 				t.Errorf("%s: no %q in\n%s", tc.v, w, got)
 			}

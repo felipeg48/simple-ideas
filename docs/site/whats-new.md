@@ -12,6 +12,19 @@ narrated video you would publish.
 
 <!-- si-video: presenting -->
 
+## The control room (3.34)
+
+`si play` prints a keyed link to a **web monitor** at `/_si/monitor`: uptime,
+CPU and memory, who is watching by role (the deck, the teleprompter, the
+remote teleprompter, draw pad and clicker, the audience's phones, review and
+class pages), the slide with its timers, the links with their QR codes, and
+the recent reloads. Under `--audience` it runs the room: close, reopen or
+reset a poll and reveal a hidden poll's results; approve the questions,
+put one on screen, mark it answered or hide it; hide a word from a cloud or
+clear it. It answers on this machine only, with the run's key; `--remote`
+offers it to a tablet as the `monitor` role. In the terminal monitor, `p`
+shows the network and audience links as QR codes and `w` opens the page.
+
 ## Terminal looks (3.32)
 
 `si play`, `si serve`, `si build` and `si check` print in colour on a
@@ -31,7 +44,7 @@ $ si play talk.md --view checklist
 
 👉  Open     http://127.0.0.1:7070/talk.html
 
-m monitor · o open · q quit
+m monitor · p codes · w web monitor · o open · q quit
 ```
 
 ## Demos edited like a video

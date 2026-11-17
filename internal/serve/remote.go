@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -32,11 +33,12 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/deck"
 )
 
-// RemoteRoles are the remote page roles, in the order they are listed.
-var RemoteRoles = []string{"tp", "draw", "clicker"}
+// RemoteRoles are the remote page roles, in the order they are listed. The
+// monitor is no deck page: its link opens the web monitor (monitor.go).
+var RemoteRoles = []string{"tp", "draw", "clicker", "monitor"}
 
 // RemoteRoleNames describes each role for the picker page and the CLI.
-var RemoteRoleNames = map[string]string{"tp": "Teleprompter", "draw": "Draw pad", "clicker": "Clicker"}
+var RemoteRoleNames = map[string]string{"tp": "Teleprompter", "draw": "Draw pad", "clicker": "Clicker", "monitor": "Monitor"}
 
 const remoteCookie = "si_remote"
 
@@ -72,7 +74,7 @@ func audienceView(raw []byte) []byte {
 		return nil
 	}
 	out := map[string]any{}
-	for _, k := range []string{"type", "name", "mid", "i", "k", "kmax", "n", "title", "id", "counts", "total", "words"} {
+	for _, k := range []string{"type", "name", "mid", "i", "k", "kmax", "n", "title", "id", "counts", "total", "words", "closed", "revealed", "round"} {
 		if v, ok := m[k]; ok {
 			out[k] = v
 		}
@@ -197,6 +199,9 @@ func (s *Server) RemoteHandler(key string, roles []string) http.Handler {
 	if s.Relay {
 		mux.HandleFunc("POST /_si/relay", s.hookRelay) // a course page's result events, as on loopback (check.go)
 	}
+	if allowed["monitor"] {
+		s.monitorRoutes(mux, monitorRemote) // the web monitor on a tablet: the presenter key, then the same origin
+	}
 	static := http.FileServer(http.Dir(s.dir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path
@@ -205,6 +210,8 @@ func (s *Server) RemoteHandler(key string, roles []string) http.Handler {
 			http.NotFound(w, r) // no dotfiles (.git, .env) on the network
 		case p == "/" || p == "/index.html":
 			s.remotePicker(w, roles)
+		case p == "/monitor" && allowed["monitor"]:
+			http.Redirect(w, r, "/_si/monitor?k="+url.QueryEscape(r.URL.Query().Get("k")), http.StatusFound)
 		case allowed[strings.TrimPrefix(p, "/")]:
 			// the short link a QR code carries (/clicker?k=…): the deck page in that
 			// role, the key kept in the URL so no cookie is needed on the way
@@ -221,7 +228,7 @@ func (s *Server) RemoteHandler(key string, roles []string) http.Handler {
 		case strings.HasSuffix(p, ".html"):
 			md := filepath.Join(s.dir, filepath.FromSlash(strings.TrimSuffix(strings.TrimPrefix(p, "/"), ".html")+".md"))
 			role := r.URL.Query().Get("role")
-			if !allowed[role] {
+			if !allowed[role] || role == "monitor" {
 				http.Error(w, fmt.Sprintf("si remote: role %q is not enabled (open a link from the remote page)", role), http.StatusForbidden)
 				return
 			}
@@ -297,7 +304,7 @@ func (s *Server) AudienceOnlyHandler() http.Handler {
 // relayed (polls and questions come with their own endpoints).
 func (s *Server) audienceHandler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/_si/events", s.events)
+	mux.HandleFunc("/_si/events", func(w http.ResponseWriter, r *http.Request) { s.eventsAs(w, r, "audience") })
 	mux.HandleFunc("GET /_si/remote/events", s.relay.audienceEvents)
 	mux.HandleFunc("GET /_si/audience/now", s.audienceNow)
 	mux.HandleFunc("POST /_si/audience/vote", s.vote)
@@ -408,9 +415,14 @@ li b{flex:1 1 12rem}a{padding:.55rem 1rem;border-radius:.5rem;background:color-m
 		}
 		fmt.Fprintf(&b, "<li><b>%s</b>", html.EscapeString(title))
 		for _, r := range roles {
-			fmt.Fprintf(&b, `<a href="%s?role=%s">%s</a>`, html.EscapeString(p), r, RemoteRoleNames[r])
+			if r != "monitor" {
+				fmt.Fprintf(&b, `<a href="%s?role=%s">%s</a>`, html.EscapeString(p), r, RemoteRoleNames[r])
+			}
 		}
 		b.WriteString("</li>")
+	}
+	if slices.Contains(roles, "monitor") {
+		b.WriteString(`<li><b>The control room: viewers, polls, questions</b><a href="/_si/monitor">Monitor</a></li>`)
 	}
 	b.WriteString("</ul></body></html>")
 	io.WriteString(w, b.String())

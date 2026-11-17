@@ -368,8 +368,16 @@ Other agents: `si --export skill`, `si --export agent-rules` (AGENTS.md), or
 `si check` print in colour, in one of four looks: `ledger` (the default),
 `badges`, `checklist` or `steps`. Pick one with `--view`, `SI_VIEW` or
 `ui.view:` in si.conf. In `si play`, `m` opens a live monitor: CPU, memory,
-shells, links, open pages, the current slide and recent reloads. Piped or with
+shells, links, the pages open by role (deck, teleprompter, remote roles,
+audience phones), the current slide with its timers and recent reloads; `p`
+shows the network and audience links as QR codes. Piped or with
 `NO_COLOR=1`, the output stays plain.
+
+**The control room.** `si play` also prints a keyed link to a web monitor
+(`http://127.0.0.1:7070/_si/monitor?k=…`, this machine only; a tablet gets it
+with `--remote`): the same numbers, live, and the room's controls under
+`--audience`: close or reset a poll, reveal its results, approve a question
+and put it on screen, hide a word from a cloud.
 
 ```text
 $ si build talks --view steps

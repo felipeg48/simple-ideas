@@ -99,7 +99,7 @@ what you chose.
 | `internal/mindmap/` | the mind map Markdown model for editors and converters: `Parse` / `String` (round trip, unknown text kept), `Apply` (the map editor's ops), `FenceAt` / `SetInfo` (fences), `Import` / `Export` (OPML, FreeMind, XMind, Mermaid). The renderer keeps its own reader for drawing |
 | `internal/deck/` | parse a deck: front matter, includes (cycle check), `---` split, headings, `Notes: (N min)`, slide directives; `media.go` validates background and image options; `guide.go` parses a guide's `_nav.md` (`ParseWith` gives pages the guide's settings). No HTML. |
 | `internal/render/` | deck → HTML. `markdown.go`: goldmark + AST transform for body directives (steps, columns, svg, image figures) and fenced code; `svg.go`: canvas inlining, id prefixing, state resolution, helper-attribute CSS; `media.go`: data URIs / link / copy modes, backgrounds, figures; `highlight.go`: tiny highlighter; `css.go`: user CSS layer; `render.go`: deck and slides; `page.go`: the page, head and the play scripts; `theme.go`: themes and timer animations; `index.go`: the index page; `chrome.go`: watermark, footer, lab slides; `document.go`: lab / article / guide page; `guide.go`: guide sidebar, breadcrumb, pager, partials, `RenderGuide` + link/anchor checks; `site.go`: site navigators and page frame; `plugins.go`: alert, badge, event, accordion, modal, carousel; `embed.go`: `slides:` and `embed:`; `mindmap.go`: mind maps (`type: mindmap` pages and the ```` ```mindmap ```` fence: list → JSON maps, linked map files inlined); `codewin.go`: code windows (window= / id= fences grouped into shows, callouts, step markers on slides) |
-| `internal/serve/` | `si play` / `si serve`: on-the-fly render (decks, articles, guide pages with their `_nav.md`), static files, SSE `/_si/events`, mtime-polling watcher (decks, assets, `--css` paths) |
+| `internal/serve/` | `si play` / `si serve`: on-the-fly render (decks, articles, guide pages with their `_nav.md`), static files, SSE `/_si/events` (pages name their role), mtime-polling watcher (decks, assets, `--css` paths); `monitor.go`: `Stats()` for both monitors and the web monitor `/_si/monitor` |
 | `internal/studio/` | `si --web`: gateway (token, Host, Origin), confined workspace, file/deck/check/rules API, assembly with the `si play` server; `mindmap.go`: the map editor's `POST mindmap` (apply an op to the editor's text, return text + maps) and `GET mmcanvas` (the canvas page, `web/mindmap-edit.js`); `codewin.go`: the Window view's `POST codewin` (an op on the editor's text, back text + show + preview page) and `POST codewin/export` (`si code`); `git.go`: the History panel's `git/*` calls |
 | `web/studio/` | Studio front-end source (Preact + TS + CodeMirror 6, esbuild, vitest, Playwright e2e); bundle committed to `internal/assets/web/studio/assets/` via `make studio-ui` |
 | `internal/config/` | optional `si.conf` (flat `key: value`, stdlib): default theme, `keys.*` command remaps, `feature.*` on/off; injected into the deck as `window.SI_CONFIG`, read by `deck.js` |
@@ -342,6 +342,11 @@ pass. The steps that matter:
   v2.17.0: polls (`render/poll.go`, `serve/poll.go`, `/_si/audience/vote`,
   `poll` relay messages). v2.18.0: Q&A (`serve/qa.go`, `/_si/audience/ask`,
   `/_si/qa`, teleprompter Q&A tab, `.si-qa-show`, results saved on exit).
+  v3.34.0: the web monitor, the control room (`serve/monitor.go`,
+  `web/monitor.html`, `/_si/monitor` keyed on loopback, `monitor` remote
+  role): viewers by role (`/_si/events?role=`), `Server.Stats()` shared with
+  the terminal monitor (`p` QR codes, `w`), poll open/close/reveal/reset,
+  question `approved`, cloud clear.
   v2.24.0: word clouds (`render/poll.go` cloudHTML, `serve/cloud.go`,
   `/_si/audience/word`, presenter `/_si/cloud` hide, Q&A tab words).
   v2.20.0: poll `· hidden` (a `.si-poll-reveal` build step; CSS hides

@@ -105,6 +105,13 @@
         var nEl = li.querySelector('.si-poll-n'); if (nEl) nEl.textContent = v;
       });
       var t = f.querySelector('[data-poll-total]'); if (t) t.textContent = total;
+      /* the monitor's buttons: closed (no more votes), revealed (a · hidden poll's results), a new round */
+      f.toggleAttribute('data-closed', !!m.closed);
+      f.toggleAttribute('data-revealed', !!m.revealed);
+      if (role === 'audience' && m.round) {
+        var seen = 0; try { seen = +(localStorage.getItem('si-round-' + m.id) || 0); localStorage.setItem('si-round-' + m.id, m.round); } catch (e) {}
+        if (m.round > seen) f.dispatchEvent(new Event('si-poll-reset'));
+      }
     });
   }
   /* word clouds: the words the room gave, each sized by its count; the deck
@@ -136,9 +143,11 @@
         each(f.querySelectorAll('.si-poll-opt'), function (li) { li.setAttribute('aria-pressed', mine.indexOf(+li.getAttribute('data-i')) >= 0 ? 'true' : 'false'); });
         if (mine.length) f.setAttribute('data-voted', ''); else f.removeAttribute('data-voted');
       };
+      f.addEventListener('si-poll-reset', function () { mine = []; try { localStorage.removeItem('si-vote-' + id); } catch (e) {} paint(); });
       each(f.querySelectorAll('.si-poll-opt'), function (li) {
         li.setAttribute('role', 'button'); li.tabIndex = 0;
         var pick = function () {
+          if (f.hasAttribute('data-closed')) return;
           var i = +li.getAttribute('data-i');
           if (multi) { var at = mine.indexOf(i); if (at >= 0) mine.splice(at, 1); else mine.push(i); } else mine = [i];
           try { localStorage.setItem('si-vote-' + id, JSON.stringify(mine)); } catch (e) {}

@@ -336,6 +336,11 @@ body{overflow:hidden;height:100%}
     }).catch(function (e) { $('rec').title = 'Could not record: ' + e.message; });
   }
   function recToggle() { if (rec) rec.stop(); else recStart(); }
+  /* si play: the teleprompter counts on the monitor (role), a remote one reloads with the deck */
+  try {
+    var stream = window.SI_STREAM || (window.opener && window.opener.SI_STREAM);
+    if (D.path && stream) stream(window, D.relay ? 'tp' : 'teleprompter').addEventListener('reload', function () { if (D.relay) location.reload(); });
+  } catch (e) {}
   if (D.path && !D.relay) fetch('/_si/record').then(function (r) { if (r.ok) $('rec').hidden = false; }).catch(function () {});
   $('rec').onclick = recToggle;
 

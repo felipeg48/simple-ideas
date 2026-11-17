@@ -143,6 +143,13 @@ var DocJS string
 //go:embed web/presenter.html
 var PresenterHTML string
 
+// MonitorHTML is si play's web monitor, the control room at /_si/monitor:
+// the server fills in {{TITLE}} and /*SI-THEME*/. Play only (a loopback page
+// behind the run's key), never in a built deck.
+//
+//go:embed web/monitor.html
+var MonitorHTML string
+
 // LayerOrder declares the cascade layers; user CSS goes in si.user.
 const LayerOrder = "@layer si.theme, si.user;\n"
 

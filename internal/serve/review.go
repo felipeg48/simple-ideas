@@ -343,7 +343,7 @@ func (s *Server) reviews() *reviews {
 func (s *Server) ReviewHandler(key string) http.Handler {
 	rv := s.reviews()
 	mux := http.NewServeMux()
-	mux.HandleFunc("/_si/events", s.events)
+	mux.HandleFunc("/_si/events", func(w http.ResponseWriter, r *http.Request) { s.eventsAs(w, r, "review") })
 	mux.HandleFunc("GET /_si/review", rv.list)
 	mux.HandleFunc("GET /_si/review/events", rv.events)
 	mux.HandleFunc("POST /_si/review", strictOrigin(rv.add))

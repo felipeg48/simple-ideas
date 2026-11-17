@@ -234,7 +234,7 @@ second listener on your network, next to the loopback one, and prints one
 keyed URL and QR code per role:
 
 ```bash
-si play talk.md --remote                    # every role
+si play talk.md --remote                    # every role (tp, draw, clicker, monitor)
 si play talk.md --remote=tp                 # teleprompter only
 si play talk.md --remote --remote-addr 0.0.0.0:9000
 ```
@@ -323,6 +323,17 @@ and the questions are saved beside the talk in
 `.si/audience/<talk>-<date-time>.json` (keep `.si/` out of git);
 `audience.save: off` in `si.conf` keeps nothing. The file holds the cloud
 words too.
+
+**The control room.** `si play` prints a keyed link to a web monitor
+(`http://127.0.0.1:7070/_si/monitor?k=…`, this machine only; `--remote`
+offers it to a tablet as the `monitor` role). It shows who is watching by
+role, the slide and its timers, the links and their QR codes, and runs the
+room: close, reopen or reset a poll and reveal a `· hidden` poll's results
+without the click (the phones and the slide show them at once); approve a
+question, put it on screen, mark it answered or hide it; hide a word from a
+cloud or clear it. A closed poll takes no more votes; a reset starts a new
+round and the phones' earlier picks are cleared. The states go into the
+`.si/audience/` file.
 
 The code appears only under `si play --audience` (in a built deck the figure
 stays hidden). It works with `--remote` (your roles and theirs, two keys) and

@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<title>Monitor · {{TITLE}}</title>
+<style>
+@layer si.theme, si.user;
+/*SI-THEME*/
+:root{--mon-gap:clamp(.6rem,1.6vw,1.3rem)}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--si-bg);color:var(--si-fg);font:clamp(.9rem,.7rem + .45vw,2.1rem)/1.45 var(--si-font-body,system-ui,sans-serif);
+  padding:var(--mon-gap) max(1rem,3.5vw) calc(var(--mon-gap) * 2)}
+header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:var(--mon-gap);margin-bottom:var(--mon-gap)}
+h1{font-family:var(--si-font-heading,inherit);font-size:clamp(1.3rem,1rem + 1.4vw,2.2rem);line-height:1.1;margin:0;overflow-wrap:anywhere}
+h1 small{display:block;font-size:.45em;letter-spacing:.14em;text-transform:uppercase;color:var(--si-muted);margin-bottom:.35em}
+h2{font-family:var(--si-font-heading,inherit);font-size:1.05em;margin:0 0 .6em;display:flex;flex-wrap:wrap;gap:.3em .6em;align-items:baseline}
+h2 small{font-family:var(--si-font-body,inherit);font-weight:400;font-size:.8em;color:var(--si-muted)}
+.mon-tools{display:flex;flex-wrap:wrap;gap:.5em;align-items:center}
+button,.mon-btn{font:inherit;font-size:.85em;color:var(--si-fg);background:var(--si-surface);border:1px solid var(--si-line);border-radius:var(--si-radius,.5em);
+  padding:.35em .7em;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.35em;touch-action:manipulation}
+button:hover,.mon-btn:hover{border-color:var(--si-accent)}
+button:focus-visible,.mon-btn:focus-visible{outline:.15em solid var(--si-accent);outline-offset:.15em}
+button[data-on]{background:var(--si-accent);color:var(--si-on-accent,#fff);border-color:var(--si-accent)}
+button[data-warn]:hover{border-color:var(--si-crit);color:var(--si-crit)}
+.mon-live{font-size:.8em;color:var(--si-muted)}
+.mon-live::before{content:"";display:inline-block;width:.6em;height:.6em;border-radius:50%;background:var(--si-muted);margin-right:.4em;vertical-align:.05em}
+.mon-live[data-on]::before{background:var(--si-ok)}
+.mon-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,8.5rem),1fr));gap:var(--mon-gap);margin-bottom:var(--mon-gap)}
+.mon-tile{background:var(--si-surface);border:1px solid var(--si-line);border-radius:var(--si-radius,.6em);padding:.6em .9em;box-shadow:var(--si-shadow);min-width:0}
+.mon-tile b{display:block;font-size:clamp(1.3rem,1rem + 1.3vw,2.1rem);line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mon-tile span{font-size:.8em;color:var(--si-muted)}
+.mon-spark{display:block;width:100%;height:1.6em;margin-top:.3em;color:var(--si-accent)}
+.mon-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,26rem),1fr));gap:var(--mon-gap);align-items:start}
+section{background:var(--si-surface);border:1px solid var(--si-line);border-radius:var(--si-radius,.6em);padding:var(--mon-gap);box-shadow:var(--si-shadow);min-width:0}
+.mon-stack{display:grid;gap:var(--mon-gap)}
+.mon-empty{color:var(--si-muted);margin:0}
+.mon-roles{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:.45em}
+.mon-roles li{padding:.25em .7em;border-radius:2em;background:var(--si-surface-2);font-size:.9em;font-variant-numeric:tabular-nums}
+.mon-roles b{margin-left:.35em}
+.mon-item{border-top:1px solid var(--si-line);padding:.7em 0}
+.mon-item:first-of-type{border-top:0;padding-top:0}
+.mon-item h3{font-size:.95em;margin:0 0 .45em;display:flex;flex-wrap:wrap;gap:.3em .6em;align-items:baseline}
+.mon-tag{font-size:.75em;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:.1em .55em;border-radius:2em;background:var(--si-surface-2);color:var(--si-muted)}
+.mon-tag[data-k="closed"],.mon-tag[data-k="hidden"]{background:color-mix(in srgb,var(--si-crit) 15%,var(--si-surface));color:var(--si-crit)}
+.mon-tag[data-k="revealed"],.mon-tag[data-k="approved"],.mon-tag[data-k="answered"]{background:color-mix(in srgb,var(--si-ok) 15%,var(--si-surface));color:var(--si-ok)}
+.mon-tag[data-k="shown"]{background:var(--si-accent);color:var(--si-on-accent,#fff)}
+.mon-opts{display:grid;grid-template-columns:minmax(0,2fr) minmax(3em,1fr) auto;gap:.3em .6em;align-items:center;margin:0 0 .6em}
+.mon-bar{height:.65em;border-radius:1em;background:var(--si-surface-2);overflow:hidden}
+.mon-bar i{display:block;height:100%;background:var(--si-accent)}
+.mon-opts span{font-size:.85em;color:var(--si-muted);font-variant-numeric:tabular-nums}
+.mon-acts{display:flex;flex-wrap:wrap;gap:.4em}
+.mon-q p{margin:0 0 .35em;overflow-wrap:anywhere}
+.mon-q small{color:var(--si-muted)}
+.mon-q[data-state="hidden"] p,.mon-q[data-state="answered"] p{color:var(--si-muted)}
+.mon-q[data-state="shown"]{border-left:.25em solid var(--si-accent);padding-left:.7em}
+.mon-words{display:flex;flex-wrap:wrap;gap:.4em;margin:0 0 .6em}
+.mon-words button[data-off]{text-decoration:line-through;color:var(--si-muted)}
+.mon-links{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr));gap:var(--mon-gap)}
+.mon-link{display:grid;gap:.3em;align-content:start;min-width:0}
+.mon-link b{font-size:.9em}
+.mon-link a{font-size:.8em;color:var(--si-accent);overflow-wrap:anywhere}
+.mon-link svg{width:100%;max-width:12em;height:auto;background:#fff;border-radius:var(--si-radius,.4em)}
+.mon-log{list-style:none;margin:0;padding:0;display:grid;gap:.3em;font-size:.9em}
+.mon-log li{display:flex;gap:.6em;align-items:baseline;min-width:0}
+.mon-log time{color:var(--si-muted);font-variant-numeric:tabular-nums;flex:none}
+.mon-log span{overflow-wrap:anywhere}
+.mon-log [data-st="warn"]{color:var(--si-warn)}
+.mon-log [data-st="fail"]{color:var(--si-crit)}
+.mon-err{color:var(--si-crit);font-size:.85em;min-height:1.2em;margin:.3em 0 0}
+footer{font-size:.8em;color:var(--si-muted);margin-top:var(--mon-gap)}
+</style>
+</head>
+<body>
+<header>
+  <h1><small>si play · monitor</small>{{TITLE}}</h1>
+  <div class="mon-tools">
+    <button id="mon-mode" type="button" aria-label="Light or dark">◐</button>
+    <span class="mon-live" id="mon-live" role="status">connecting</span>
+  </div>
+</header>
+<div class="mon-tiles" id="mon-tiles" aria-live="off"></div>
+<div class="mon-cols">
+  <div class="mon-stack">
+    <section aria-labelledby="mon-q-h"><h2 id="mon-q-h">Questions <small id="mon-q-n"></small></h2><div id="mon-q"></div></section>
+    <section aria-labelledby="mon-p-h"><h2 id="mon-p-h">Polls</h2><div id="mon-p"></div></section>
+    <section aria-labelledby="mon-c-h"><h2 id="mon-c-h">Word clouds</h2><div id="mon-c"></div></section>
+  </div>
+  <div class="mon-stack">
+    <section aria-labelledby="mon-v-h"><h2 id="mon-v-h">Viewers <small id="mon-v-n"></small></h2><ul class="mon-roles" id="mon-v"></ul></section>
+    <section aria-labelledby="mon-l-h"><h2 id="mon-l-h">Links</h2><div class="mon-links" id="mon-l"></div></section>
+    <section aria-labelledby="mon-log-h"><h2 id="mon-log-h">Recent <small id="mon-sh"></small></h2><ul class="mon-log" id="mon-log"></ul></section>
+  </div>
+</div>
+<p class="mon-err" id="mon-err" role="alert"></p>
+<footer>This page changes what the room sees: keep its link to yourself. The polls and questions are kept in .si/audience/ when si play stops.</footer>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  // the key is in the cookie now: keep it out of the address bar and the history
+  if (/[?&]k=/.test(location.search)) history.replaceState(null, '', location.pathname);
+  function h(tag, attrs, kids) { // a DOM element; text always as text
+    var e = document.createElement(tag);
+    for (var a in attrs || {}) if (attrs[a] != null && attrs[a] !== false) e.setAttribute(a, attrs[a] === true ? '' : attrs[a]);
+    [].concat(kids == null ? [] : kids).forEach(function (k) { if (k != null) e.appendChild(typeof k === 'object' ? k : document.createTextNode(String(k))); });
+    return e;
+  }
+  function btn(label, act, extra) {
+    var b = h('button', Object.assign({ type: 'button' }, extra || {}), label);
+    b.addEventListener('click', act);
+    return b;
+  }
+  function clock(s) {
+    var hh = Math.floor(s / 3600), mm = Math.floor(s / 60) % 60, ss = s % 60;
+    return (hh ? hh + ':' + String(mm).padStart(2, '0') : mm) + ':' + String(ss).padStart(2, '0');
+  }
+  function spark(vals) { // a sparkline: the recent samples, scaled to their own range
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 100 20'); svg.setAttribute('preserveAspectRatio', 'none'); svg.setAttribute('class', 'mon-spark'); svg.setAttribute('aria-hidden', 'true');
+    if (!vals || vals.length < 2) return svg;
+    var lo = Math.min.apply(null, vals) * 0.8, hi = Math.max.apply(null, vals) * 1.25 || 1;
+    var pts = vals.map(function (v, i) { return (i * 100 / (vals.length - 1)).toFixed(1) + ',' + (19 - (v - lo) / ((hi - lo) || 1) * 18).toFixed(1); });
+    var pl = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    pl.setAttribute('points', pts.join(' ')); pl.setAttribute('fill', 'none'); pl.setAttribute('stroke', 'currentColor'); pl.setAttribute('stroke-width', '2'); pl.setAttribute('vector-effect', 'non-scaling-stroke');
+    svg.appendChild(pl);
+    return svg;
+  }
+  function post(path, body) {
+    $('mon-err').textContent = '';
+    return fetch('/_si/monitor/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t || r.status); }); return load(); })
+      .catch(function (e) { $('mon-err').textContent = 'Not done: ' + e.message; });
+  }
+  var last = {};
+  function put(id, key, val, draw) { // redraw a part only when its data changed (keeps focus and hover)
+    var s = JSON.stringify(val);
+    if (last[id] === s) return;
+    last[id] = s;
+    var el = $(id); el.textContent = ''; draw(el, val);
+  }
+  var off = 'Start si play with --audience to take the room’s votes, words and questions.';
+  function render(v) {
+    put('mon-tiles', 0, [v.up, v.cpu, v.mem, v.pages, v.slide, v.slides, v.step, v.steps, v.slideFor, v.talkFor, v.cpuHist, v.memHist], function (el) {
+      function tile(label, val, extra) { var t = h('div', { class: 'mon-tile' }, [h('span', null, label), h('b', null, val)]); if (extra) t.appendChild(extra); el.appendChild(t); }
+      tile('Slide', v.slides ? v.slide + ' / ' + v.slides : '–', v.slides ? h('span', null, 'step ' + v.step + ' / ' + v.steps) : null);
+      tile('On this slide', v.slides ? clock(v.slideFor) : '–');
+      tile('Talk', v.slides ? clock(v.talkFor) : '–');
+      tile('Viewers', v.pages);
+      tile('CPU', v.cpu.toFixed(1) + '%', spark(v.cpuHist));
+      tile('Memory', v.mem + ' MB', spark(v.memHist));
+      tile('Up', clock(v.up));
+    });
+    $('mon-v-n').textContent = v.pages === 1 ? '1 page open' : v.pages + ' pages open';
+    put('mon-v', 0, v.roles, function (el, roles) {
+      if (!roles.length) el.appendChild(h('li', null, 'No page open yet'));
+      roles.forEach(function (r) { el.appendChild(h('li', { 'data-role': r.role }, [r.name, h('b', null, r.n)])); });
+    });
+    put('mon-q', 0, [v.audience, v.questions], function (el) {
+      var qs = (v.questions || []).slice().reverse(), open = 0;
+      if (!v.audience) { el.appendChild(h('p', { class: 'mon-empty' }, off)); return; }
+      if (!qs.length) el.appendChild(h('p', { class: 'mon-empty' }, 'No questions yet. The room asks from the Ask a question button on their phones.'));
+      qs.forEach(function (q) {
+        if (q.state === 'open' || q.state === 'approved' || q.state === 'shown') open++;
+        var set = function (st) { return function () { post('qa', { id: q.id, state: st }); }; };
+        var acts = h('div', { class: 'mon-acts' });
+        if (q.state === 'open' || q.state === 'hidden') acts.appendChild(btn('Approve', set('approved')));
+        acts.appendChild(q.state === 'shown' ? btn('Off screen', set('approved'), { 'data-on': true }) : btn('Show on screen', set('shown')));
+        if (q.state !== 'answered') acts.appendChild(btn('Answered', set('answered')));
+        if (q.state !== 'hidden') acts.appendChild(btn('Hide', set('hidden'), { 'data-warn': true }));
+        el.appendChild(h('div', { class: 'mon-item mon-q', 'data-state': q.state, 'data-id': q.id }, [
+          h('p', null, q.text),
+          h('small', null, [(q.name ? q.name + ' · ' : '') + new Date(q.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ', h('span', { class: 'mon-tag', 'data-k': q.state }, q.state === 'shown' ? 'on screen' : q.state)]),
+          acts]));
+      });
+      $('mon-q-n').textContent = open ? open + ' open' : '';
+    });
+    put('mon-p', 0, [v.audience, v.polls], function (el) {
+      if (!v.audience) { el.appendChild(h('p', { class: 'mon-empty' }, off)); return; }
+      if (!(v.polls || []).length) el.appendChild(h('p', { class: 'mon-empty' }, 'No poll in this talk: a poll comment in the Markdown adds one (RULES.md, polls).'));
+      (v.polls || []).forEach(function (p) {
+        var act = function (a) { return function () { post('poll', { poll: p.id, action: a }); }; };
+        var opts = h('div', { class: 'mon-opts' });
+        var labels = p.options && p.options.length ? p.options : (p.counts || []).map(function (_, i) { return 'Option ' + (i + 1); }).filter(function (_, i) { return p.counts[i]; });
+        labels.forEach(function (o, i) {
+          var n = (p.counts || [])[i] || 0, pc = p.total ? Math.round(n * 100 / p.total) : 0;
+          opts.appendChild(h('div', null, o));
+          var bar = h('div', { class: 'mon-bar' }, h('i', { style: 'width:' + pc + '%' }));
+          opts.appendChild(bar);
+          opts.appendChild(h('span', null, n + ' · ' + pc + '%'));
+        });
+        var title = [p.id, h('small', null, p.total === 1 ? '1 vote' : p.total + ' votes'), h('span', { class: 'mon-tag', 'data-k': p.closed ? 'closed' : 'open' }, p.closed ? 'closed' : 'open')];
+        if (p.hidden) title.push(h('span', { class: 'mon-tag', 'data-k': p.revealed ? 'revealed' : 'hidden' }, p.revealed ? 'results shown' : 'results hidden'));
+        el.appendChild(h('div', { class: 'mon-item', 'data-poll': p.id }, [h('h3', null, title), opts, h('div', { class: 'mon-acts' }, [
+          p.closed ? btn('Open voting', act('open')) : btn('Close voting', act('close')),
+          p.revealed ? btn('Hide results', act('conceal'), { 'data-on': true }) : btn('Reveal results', act('reveal')),
+          btn('Reset', act('reset'), { 'data-warn': true })])]));
+      });
+    });
+    put('mon-c', 0, [v.audience, v.clouds], function (el) {
+      if (!v.audience) { el.appendChild(h('p', { class: 'mon-empty' }, off)); return; }
+      if (!(v.clouds || []).length) el.appendChild(h('p', { class: 'mon-empty' }, 'No word cloud in this talk.'));
+      (v.clouds || []).forEach(function (c) {
+        var words = h('div', { class: 'mon-words' });
+        (c.words || []).forEach(function (w) { words.appendChild(btn(w.w + ' ' + w.n + ' ×', function () { post('cloud', { cloud: c.id, word: w.w, hide: true }); }, { title: 'Hide this word' })); });
+        (c.hidden || []).forEach(function (w) { words.appendChild(btn(w.w + ' ' + w.n, function () { post('cloud', { cloud: c.id, word: w.w, hide: false }); }, { title: 'Show this word again', 'data-off': true })); });
+        if (!words.childNodes.length) words.appendChild(h('span', { class: 'mon-empty' }, 'No words yet'));
+        el.appendChild(h('div', { class: 'mon-item', 'data-cloud': c.id }, [h('h3', null, [c.id, h('small', null, c.total === 1 ? '1 phone' : c.total + ' phones')]), words,
+          h('div', { class: 'mon-acts' }, btn('Clear', function () { post('cloud', { cloud: c.id, clear: true }); }, { 'data-warn': true }))]));
+      });
+    });
+    put('mon-l', 0, v.links, function (el, links) {
+      (links || []).forEach(function (l) {
+        var box = h('div', { class: 'mon-link' }, [h('b', null, l.name), h('a', { href: l.url, target: '_blank', rel: 'noopener' }, l.url)]);
+        if (l.svg) { var t = document.createElement('template'); t.innerHTML = l.svg; box.appendChild(t.content); } // si's own QR code SVG
+        el.appendChild(box);
+      });
+    });
+    $('mon-sh').textContent = (v.shells === 1 ? '1 shell' : v.shells + ' shells') + ' · ' + (v.files === 1 ? '1 file' : v.files + ' files') + ' watched';
+    put('mon-log', 0, v.log, function (el, log) {
+      if (!(log || []).length) el.appendChild(h('li', { class: 'mon-empty' }, 'Nothing yet: reloads and warnings show here.'));
+      (log || []).slice().reverse().forEach(function (l) { el.appendChild(h('li', { 'data-st': l.st }, [h('time', null, l.at), h('span', null, l.text)])); });
+    });
+  }
+  function load() { return fetch('/_si/monitor/data', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(render).catch(function () {}); }
+  $('mon-mode').addEventListener('click', function () {
+    var r = document.documentElement, dark = r.getAttribute('data-si-mode') ? r.getAttribute('data-si-mode') === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    r.setAttribute('data-si-mode', dark ? 'light' : 'dark');
+  });
+  var es = new EventSource('/_si/monitor/events');
+  es.addEventListener('open', function () { $('mon-live').setAttribute('data-on', ''); $('mon-live').textContent = 'live'; });
+  es.addEventListener('error', function () { $('mon-live').removeAttribute('data-on'); $('mon-live').textContent = 'reconnecting'; });
+  es.onmessage = function (e) { try { render(JSON.parse(e.data)); } catch (x) {} };
+})();
+</script>
+</body>
+</html>

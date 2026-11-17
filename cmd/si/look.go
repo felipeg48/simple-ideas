@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -180,8 +179,11 @@ func playStart(p *ui.Printer, srv *serve.Server, src, cmd, open, phone string, p
 		p.Item(ui.Info, "phone", fmt.Sprintf("si play %s --addr 0.0.0.0:%d", src, port), "to open it on a phone")
 	}
 	p.Item(ui.Info, "open", open, "")
+	if srv.Mon.Web != "" {
+		p.Item(ui.Info, "monitor", srv.Mon.Web, "the control room, this machine")
+	}
 	if keys {
-		p.Hint("m monitor · o open · q quit")
+		p.Hint("m monitor · p codes · w web monitor · o open · q quit")
 	} else {
 		p.Hint("Ctrl+C stops")
 	}
@@ -190,12 +192,12 @@ func playStart(p *ui.Printer, srv *serve.Server, src, cmd, open, phone string, p
 	}
 }
 
-// recent keeps the server's log lines for the monitor; while the monitor is
-// off they also go to out as before.
+// recent keeps the server's log lines for the monitors; while the terminal
+// monitor is on they do not go to out.
 type recent struct {
 	mu    sync.Mutex
 	out   io.Writer
-	quiet bool // the monitor is on: keep, do not print
+	quiet bool // the terminal monitor is on: keep, do not print
 	lines []ui.LogLine
 }
 
@@ -221,20 +223,49 @@ func (r *recent) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-func (r *recent) snapshot(quiet bool) []ui.LogLine {
+// snapshot is the recent lines (serve.MonitorInfo.Log).
+func (r *recent) snapshot() []ui.LogLine {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.quiet = quiet
 	return append([]ui.LogLine(nil), r.lines...)
 }
 
+func (r *recent) hush(quiet bool) {
+	r.mu.Lock()
+	r.quiet = quiet
+	r.mu.Unlock()
+}
+
+// codes is the p screen: the network links as terminal QR codes, the LAN
+// address and the audience's (its public one with --tunnel).
+func codes(srv *serve.Server, phone string) string {
+	var b strings.Builder
+	b.WriteString("si play · the links as QR codes\n\n")
+	n := 0
+	show := func(name, u string) {
+		fmt.Fprintf(&b, "  %s: %s\n", name, u)
+		printQR(&b, u)
+		n++
+	}
+	if phone != "" {
+		show("on your network", phone)
+	}
+	if srv.RemoteQR != nil && srv.RemoteQR.Audience != nil {
+		show("audience", srv.RemoteQR.Audience.URL)
+	}
+	if n == 0 {
+		b.WriteString("  No network links: si play talk.md --addr 0.0.0.0 (your network) or --audience (the room's phones).\n")
+	}
+	b.WriteString("\n  q / Esc back\n")
+	return b.String()
+}
+
 // monitor runs si play's keys and live monitor until done: m shows or hides
-// the monitor (the terminal's alternate screen, redrawn every second), o
-// opens the browser, q quits. It returns what restores the terminal.
-func monitor(srv *serve.Server, target, open, phone string, quit func(), done <-chan struct{}, stdout io.Writer) func() {
+// the monitor (the terminal's alternate screen, redrawn every second), p the
+// links as QR codes, w opens the web monitor, o the deck, q quits (or, on
+// the codes, goes back). It returns what restores the terminal.
+func monitor(srv *serve.Server, logs *recent, quit func(), done <-chan struct{}, stdout io.Writer) func() {
 	restore := ui.Keys(os.Stdin)
-	logs := &recent{out: log.Writer()}
-	log.SetOutput(logs)
 	keys := make(chan byte)
 	go func() {
 		b := make([]byte, 1)
@@ -246,24 +277,28 @@ func monitor(srv *serve.Server, target, open, phone string, quit func(), done <-
 			}
 		}
 	}()
-	start, on := time.Now(), false
-	var smp ui.Sampler
-	var st ui.Stats
+	view, back := "", "" // "", "mon" or "qr"; back: what Esc on the codes returns to
+	show := func(text string) {
+		fmt.Fprint(stdout, "\x1b[H\x1b[2J"+strings.ReplaceAll(text, "\n", "\r\n"))
+	}
 	draw := func() {
-		smp.Sample(&st, time.Now(), 12)
-		l := srv.Live()
-		st.Target, st.Up, st.Open, st.Phone = target, time.Since(start), open, phone
-		st.Shells, st.Pages, st.Files = l.Shells, l.Pages, l.Files
-		st.Slide, st.Slides, st.Step, st.Steps = l.Slide, l.Slides, l.Step, l.Steps
-		st.Log, st.Keys = logs.snapshot(on), "q quit · m hide · o open"
-		if on {
-			fmt.Fprint(stdout, "\x1b[H\x1b[2J"+strings.ReplaceAll(ui.Monitor(uiView, st, true), "\n", "\r\n"))
+		st := srv.Stats() // the web monitor's numbers too
+		st.Keys = "q quit · m hide · p codes · w web · o open"
+		if view == "mon" {
+			show(ui.Monitor(uiView, st, true))
 		}
 	}
+	enter := func(v string) {
+		if view == "" {
+			fmt.Fprint(stdout, "\x1b[?1049h\x1b[?25l") // the alternate screen, no cursor
+			logs.hush(true)
+		}
+		view = v
+	}
 	leave := func() {
-		if on {
-			on = false
-			logs.snapshot(false)
+		if view != "" {
+			view = ""
+			logs.hush(false)
 			fmt.Fprint(stdout, "\x1b[?25h\x1b[?1049l") // the cursor back, the main screen back
 		}
 	}
@@ -280,18 +315,30 @@ func monitor(srv *serve.Server, target, open, phone string, quit func(), done <-
 			case <-t.C:
 				draw()
 			case k := <-keys:
-				switch k {
-				case 'q', 'Q':
+				switch {
+				case view == "qr" && (k == 'q' || k == 'Q' || k == 0x1b):
+					if back == "mon" {
+						view = "mon"
+						draw()
+					} else {
+						leave()
+					}
+				case k == 'q' || k == 'Q':
 					leave()
 					quit()
-				case 'o', 'O':
-					openBrowser(open)
-				case 'm', 'M':
-					if on {
+				case k == 'o' || k == 'O':
+					openBrowser(srv.Mon.Open)
+				case k == 'w' || k == 'W':
+					openBrowser(srv.Mon.Web)
+				case k == 'p' || k == 'P':
+					back = view
+					enter("qr")
+					show(codes(srv, srv.Mon.Phone))
+				case k == 'm' || k == 'M':
+					if view == "mon" {
 						leave()
 					} else {
-						on = true
-						fmt.Fprint(stdout, "\x1b[?1049h\x1b[?25l") // the alternate screen, no cursor
+						enter("mon")
 						draw()
 					}
 				}
@@ -300,7 +347,6 @@ func monitor(srv *serve.Server, target, open, phone string, quit func(), done <-
 	}()
 	return func() {
 		<-finished
-		log.SetOutput(logs.out)
 		restore()
 	}
 }

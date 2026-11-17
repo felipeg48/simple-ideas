@@ -821,7 +821,22 @@ SI_VIEW=steps si build talks/      # or ui.view: steps in si.conf
 - Problems always show the file and line; green is done, yellow a warning, red a problem, cyan a link
 - Pick it with `--view`, `SI_VIEW`, or `ui.view:` in si.conf (the flag wins, then `SI_VIEW`, the project's si.conf, your own)
 - Piped, in CI, with `NO_COLOR=1` or `TERM=dumb`: the plain lines, unchanged
-- **`si play` monitor:** press `m` for CPU, memory, shells, links, open pages, the current slide and recent reloads, redrawn every second; `m` again goes back, `o` opens the browser, `q` quits
+- **`si play` monitor:** press `m` for CPU, memory, shells, links, the pages open by role, the current slide with its timers and recent reloads, redrawn every second; `m` again goes back, `p` shows the network and audience links as QR codes, `w` opens the web monitor, `o` the deck, `q` quits
+
+---
+
+## The control room
+
+```text
+si play talk.md --audience
+  monitor (this machine; the control room for polls and questions):
+  http://127.0.0.1:7070/_si/monitor?k=<key>
+```
+
+- `si play` prints a keyed link to the **web monitor**: the same numbers as `m` (uptime, CPU, memory, viewers by role, the slide and its timers, the links with their QR codes, shells, the recent reloads and warnings), live in the browser
+- It runs the room: **polls** (close and reopen voting, reveal a `· hidden` poll's results, reset), **questions** (approve, show on screen, mark answered, hide), **word clouds** (hide a word, clear)
+- This machine only, with the run's key; with `--remote` (or `--remote=monitor`) a tablet opens it from the `Monitor` link and code
+- What you decide is kept: the polls, words and questions, with their states, go to `.si/audience/` when `si play` stops
 
 ---
 

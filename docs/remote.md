@@ -5,10 +5,13 @@ teleprompter (`tp`), as a pen pad (`draw`) or as a clicker (`clicker`) for the
 deck you project from the laptop.
 
 ```bash
-si play talk.md --remote            # tp + draw + clicker, LAN port = play port + 1
+si play talk.md --remote            # tp + draw + clicker + monitor, LAN port = play port + 1
 si play talk.md --remote=tp         # only the teleprompter
 si play decks/ --remote --remote-addr 0.0.0.0:9000
 ```
+
+With `--remote` (or `--remote=monitor`) the tablet can also open the web
+monitor, the control room (`/monitor?k=<key>`, below).
 
 `si play` prints one URL and QR code per role (for a folder: one picker URL;
 for a deck with `speakers:`, one teleprompter URL per speaker, `&speaker=Ana`),
@@ -116,6 +119,44 @@ same computer, shows the `shown` one as `.si-qa-show`, and Esc sets it back
 to open. On exit `SaveAudience` writes the counts and questions to
 `<served dir>/.si/audience/<talk>-<date-time>.json`.
 
+## The monitor (the control room)
+
+`si play` makes a third key per run and prints
+`http://127.0.0.1:<port>/_si/monitor?k=<key>`: the web monitor (`serve/monitor.go`,
+the page `internal/assets/web/monitor.html`, inlined, the deck's theme). It
+reads the same `Server.Stats()` as the terminal monitor (`m`), so the two
+never disagree: CPU and memory are sampled at most once a second whoever
+asks. Its stream `GET /_si/monitor/events` sends the whole snapshot once a
+second (`GET /_si/monitor/data` is the same, once).
+
+Viewers by role: every live-reload stream names its role
+(`/_si/events?role=deck|tp|draw|clicker|audience`; the teleprompter window
+opens its own, `teleprompter` or `tp`). The audience listener and the review
+listener say `audience` and `review` whatever the page claims; class view
+and monitor pages count from their own streams; anything else is `page`.
+
+Controls, each published on the relay as the existing messages (the deck,
+the teleprompter and the phones get them as before):
+
+| Endpoint | Body | What |
+|---|---|---|
+| `POST /_si/monitor/poll` | `{poll, action}` | `open`, `close` (votes get 409), `reveal`, `conceal` (a `· hidden` poll's results), `reset` (a new `round`: phones drop their vote) |
+| `POST /_si/monitor/qa` | `{id, state}` | as `/_si/qa`, plus `approved` |
+| `POST /_si/monitor/cloud` | `{cloud, word, hide}` or `{cloud, clear: true}` | hide a word, clear the cloud |
+
+Poll messages now carry `closed`, `revealed` and `round` (the audience view
+keeps them); the deck sets `data-closed` and `data-revealed` on the
+`.si-poll`. The save on exit keeps the questions' states and each poll's
+`closed` and `revealed`.
+
+Access on the loopback listener: a loopback peer, a loopback `Host`, the
+same `Origin` (or none), and the key (`?k=` once, then the `si_monitor`
+cookie, `HttpOnly`, `SameSite=Strict`); the page drops the key from the
+address bar. On the `--remote` listener it is the `monitor` role: the
+presenter key, then the same `Origin`; the audience key never reaches it
+(the audience mux has no `/_si/` routes). Both send `X-Frame-Options: DENY`.
+`si serve` makes no key, so it has no monitor.
+
 ## Keeping the device awake
 
 `RelayJS` also asks for a screen wake lock (`navigator.wakeLock`) on a role
@@ -191,3 +232,7 @@ DNS).
   `--https`.
 - The deck window stays on loopback, so the terminal drawer stays available
   and is never exposed.
+- The web monitor changes what the audience sees: on loopback it needs its
+  own key and a loopback peer and Host; every control POST must come from
+  the same origin. On the network it is the `monitor` role behind the
+  presenter key.

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Where each deck open in a browser is (si play / si serve): the deck POSTs
@@ -33,6 +34,10 @@ type positions struct {
 	last   map[string][]byte // page -> its latest position
 	newest string            // the page that moved last
 	subs   map[chan posEvent]string
+	// the monitor's timers: when the talk's first position came, when the
+	// newest page reached its slide
+	began, slideAt time.Time
+	slideKey       string // page and slide of slideAt
 }
 
 func newPositions() *positions {
@@ -44,6 +49,15 @@ func (p *positions) publish(e posEvent) {
 	defer p.mu.Unlock()
 	if e.kind == "state" {
 		p.last[e.page], p.newest = e.data, e.page
+		var pos position
+		json.Unmarshal(e.data, &pos)
+		now := time.Now()
+		if p.began.IsZero() {
+			p.began = now
+		}
+		if k := fmt.Sprint(e.page, "#", pos.I); k != p.slideKey {
+			p.slideKey, p.slideAt = k, now
+		}
 	}
 	for c, page := range p.subs {
 		if page == "" || page == e.page {

@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 )
@@ -27,13 +28,63 @@ const (
 )
 
 type polls struct {
-	mu     sync.Mutex
-	ballot map[string]map[string][]int // poll -> voter -> choices
-	at     map[string]time.Time        // poll+voter -> last change
+	mu       sync.Mutex
+	ballot   map[string]map[string][]int // poll -> voter -> choices
+	at       map[string]time.Time        // poll+voter -> last change
+	closed   map[string]bool             // the monitor closed it: no more votes
+	revealed map[string]bool             // the monitor showed a · hidden poll's results
+	round    map[string]int              // the monitor's resets: a phone drops a vote from an earlier round
 }
 
 func newPolls() *polls {
-	return &polls{ballot: map[string]map[string][]int{}, at: map[string]time.Time{}}
+	return &polls{ballot: map[string]map[string][]int{}, at: map[string]time.Time{},
+		closed: map[string]bool{}, revealed: map[string]bool{}, round: map[string]int{}}
+}
+
+// message is a poll's counts and state for every page (callers hold mu).
+func (p *polls) message(poll string) []byte {
+	b := p.ballot[poll]
+	counts := make([]int, maxOptions)
+	for _, cs := range b {
+		for _, c := range cs {
+			counts[c]++
+		}
+	}
+	msg, _ := json.Marshal(map[string]any{"type": "poll", "id": poll, "counts": counts, "total": len(b),
+		"closed": p.closed[poll], "revealed": p.revealed[poll], "round": p.round[poll]})
+	return msg
+}
+
+// control is the monitor's poll buttons: open, close, reveal, conceal, reset.
+func (p *polls) control(poll, action string) ([]byte, bool) {
+	if !pollIDRE.MatchString(poll) {
+		return nil, false
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if _, ok := p.ballot[poll]; !ok && len(p.ballot) >= maxPolls {
+		return nil, false
+	}
+	switch action {
+	case "open", "close":
+		p.closed[poll] = action == "close"
+	case "reveal", "conceal":
+		p.revealed[poll] = action == "reveal"
+	case "reset":
+		p.round[poll]++
+		delete(p.ballot, poll)
+		for k := range p.at {
+			if strings.HasPrefix(k, poll+"/") {
+				delete(p.at, k)
+			}
+		}
+	default:
+		return nil, false
+	}
+	if p.ballot[poll] == nil {
+		p.ballot[poll] = map[string][]int{}
+	}
+	return p.message(poll), true
 }
 
 // vote applies one ballot and returns the poll message to send, or an HTTP
@@ -51,6 +102,9 @@ func (p *polls) vote(poll, voter string, choices []int, now time.Time) ([]byte, 
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	if p.closed[poll] {
+		return nil, http.StatusConflict
+	}
 	if t, ok := p.at[poll+"/"+voter]; ok && now.Sub(t) < voteMinBetween {
 		return nil, http.StatusTooManyRequests
 	}
@@ -71,14 +125,7 @@ func (p *polls) vote(poll, voter string, choices []int, now time.Time) ([]byte, 
 		b[voter] = append([]int(nil), choices...)
 	}
 	p.at[poll+"/"+voter] = now
-	counts := make([]int, maxOptions)
-	for _, cs := range b {
-		for _, c := range cs {
-			counts[c]++
-		}
-	}
-	msg, _ := json.Marshal(map[string]any{"type": "poll", "id": poll, "counts": counts, "total": len(b)})
-	return msg, http.StatusNoContent
+	return p.message(poll), http.StatusNoContent
 }
 
 // vote is POST /_si/audience/vote {poll, choices, voter} (audience key only).

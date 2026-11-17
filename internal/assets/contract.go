@@ -322,7 +322,7 @@ var Hooks = []Hook{
 	{`.si-handout-qr`, "handout: the QR code to handout-url: and its address"},
 	{`.si-qr-code`, "qr: the SVG code (modules in currentColor)"},
 	{`.si-qr-cap`, "qr: the caption"},
-	{`.si-poll`, "poll: the figure (data-poll: its id; data-multiple; data-hidden: results on the next click; data-voted on an audience phone)"},
+	{`.si-poll`, "poll: the figure (data-poll: its id; data-multiple; data-hidden: results on the next click; data-voted on an audience phone; data-closed, data-revealed: the monitor's buttons)"},
 	{`.si-cloud`, "word cloud: the figure (data-cloud: its id; data-hidden; data-live under si play --audience)"},
 	{`.si-cloud-words`, "word cloud: the list of words"},
 	{`.si-cloud-word`, "word cloud: one word (--_w 1-5: its weight; title: how many gave it)"},

@@ -285,7 +285,8 @@ func (dr *deckRenderer) reload(b *bytes.Buffer) {
 
 // PositionJS passes a terminal teleprompter's commands (next, prev, go) to the
 // deck: si play / si serve only, like the reload client, never in a built deck.
-const PositionJS = `<script>window.SI_LIVE=true;(function(){if(!window.EventSource||/[?&]si-view=/.test(location.search))return;var es=new EventSource('/_si/position/events?page='+encodeURIComponent(location.pathname));es.addEventListener('cmd',function(e){try{if(window.SI&&SI.cmd)SI.cmd(JSON.parse(e.data))}catch(x){}});})();</script>` + "\n"
+// SI_STREAM opens a teleprompter window's reload stream (its role on the monitor).
+const PositionJS = `<script>window.SI_LIVE=true;window.SI_STREAM=function(w,role){return new w.EventSource('/_si/events?role='+role)};(function(){if(!window.EventSource||/[?&]si-view=/.test(location.search))return;var es=new EventSource('/_si/position/events?page='+encodeURIComponent(location.pathname));es.addEventListener('cmd',function(e){try{if(window.SI&&SI.cmd)SI.cmd(JSON.parse(e.data))}catch(x){}});})();</script>` + "\n"
 
 const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <span class="si-controls">
@@ -364,9 +365,14 @@ const RelayJS = `<script id="si-relay">window.SI_RELAY=function(){var id=Math.ra
 	`navigator.wakeLock.request('screen').then(function(l){wl=l;l.addEventListener('release',function(){wl=null})}).catch(function(){wl=null})}` +
 	`lock();document.addEventListener('visibilitychange',lock);document.addEventListener('pointerdown',lock)})();</script>` + "\n"
 
+// pageRoleJS names the page's role on the reload stream, for si play's
+// monitor: a remote role (?role=draw), a deck, another page. A teleprompter
+// (?role=tp, ?si-view=tp) opens its own stream once it is one (presenter.html).
+const pageRoleJS = `var q=location.search,m=/[?&]role=(tp|draw|clicker|audience)(?:&|$)/.exec(q),role=m?m[1]:document.querySelector('.si-deck')?'deck':'page';if(role==='tp'||/[?&]si-view=tp(?:&|$)/.test(q))return;`
+
 // LiveReloadJS reloads the page when si play reports a change; the URL hash
 // keeps the slide and step.
-const LiveReloadJS = `<script>(function(){if(!window.EventSource||/[?&]si-view=thumb/.test(location.search))return;var es=new EventSource('/_si/events');es.addEventListener('reload',function(){location.reload()});})();</script>` + "\n"
+const LiveReloadJS = `<script>(function(){if(!window.EventSource||/[?&]si-view=thumb/.test(location.search))return;` + pageRoleJS + `var es=new EventSource('/_si/events?role='+role);es.addEventListener('reload',function(){location.reload()});})();</script>` + "\n"
 
 // DevReloadJS is the si play --dev hot-reload client: on a change it fetches the
 // re-rendered deck and morphs the slides in place (when the slide count is
@@ -375,7 +381,8 @@ const LiveReloadJS = `<script>(function(){if(!window.EventSource||/[?&]si-view=t
 // and shows an overlay when the deck fails to render.
 const DevReloadJS = `<script>(function(){
   if(!window.EventSource||/[?&]si-view=thumb/.test(location.search))return;
-  var es=new EventSource('/_si/events');
+  ` + pageRoleJS + `
+  var es=new EventSource('/_si/events?role='+role);
   es.addEventListener('reload',hot);
   function overlay(msg){
     var o=document.getElementById('si-dev-error');

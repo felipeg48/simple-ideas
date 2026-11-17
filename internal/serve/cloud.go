@@ -83,6 +83,22 @@ func (c *clouds) setHidden(id, word string, hidden bool) ([]byte, bool) {
 	return c.message(id), true
 }
 
+// clear drops every answer of a cloud (the monitor's Clear); hidden words stay hidden.
+func (c *clouds) clear(id string) ([]byte, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if _, ok := c.ans[id]; !ok {
+		return nil, false
+	}
+	c.ans[id] = map[string][]string{}
+	for k := range c.at {
+		if strings.HasPrefix(k, id+"/") {
+			delete(c.at, k)
+		}
+	}
+	return c.message(id), true
+}
+
 type cloudWord struct {
 	Word string `json:"w"`
 	N    int    `json:"n"`
@@ -148,18 +164,23 @@ func (s *Server) word(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(code)
 }
 
-// cloudHide is POST /_si/cloud {cloud, word, hide} from the presenter's pages.
+// cloudHide is POST /_si/cloud {cloud, word, hide} from the presenter's
+// pages; {cloud, clear: true} (the monitor) drops every answer.
 func (s *Server) cloudHide(w http.ResponseWriter, r *http.Request) {
 	var v struct {
 		Cloud string `json:"cloud"`
 		Word  string `json:"word"`
 		Hide  bool   `json:"hide"`
+		Clear bool   `json:"clear"`
 	}
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1024)).Decode(&v); err != nil {
 		http.Error(w, "want {cloud, word, hide}", http.StatusBadRequest)
 		return
 	}
 	msg, ok := s.clouds.setHidden(v.Cloud, v.Word, v.Hide)
+	if v.Clear {
+		msg, ok = s.clouds.clear(v.Cloud)
+	}
 	if !ok {
 		http.Error(w, "no such cloud", http.StatusBadRequest)
 		return

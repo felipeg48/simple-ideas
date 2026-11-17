@@ -11,14 +11,56 @@ import (
 type Stats struct {
 	Target                     string // what is served: examples/
 	Up                         time.Duration
-	CPU                        float64   // percent of one core, since the last sample
-	Mem                        uint64    // bytes: the Go runtime's memory from the OS (MemStats.Sys)
-	CPUHist, MemHist           []float64 // recent samples, oldest first (sparklines)
-	Shells, Pages, Files       int       // drawer shells running, pages open (live reload), files watched
-	Open, Phone                string    // links: this machine, the network ("" without --addr 0.0.0.0)
-	Slide, Slides, Step, Steps int       // the last position a deck sent (1-based); Slides 0: none yet
-	Log                        []LogLine // recent reloads and warnings, oldest first
-	Keys                       string    // the footer: q quit · m hide · o open
+	CPU                        float64        // percent of one core, since the last sample
+	Mem                        uint64         // bytes: the Go runtime's memory from the OS (MemStats.Sys)
+	CPUHist, MemHist           []float64      // recent samples, oldest first (sparklines)
+	Shells, Pages, Files       int            // drawer shells running, pages open (live reload), files watched
+	Roles                      map[string]int // pages open by role (RoleList)
+	Open, Phone, Web           string         // links: this machine, the network ("" without --addr 0.0.0.0), the web monitor
+	Slide, Slides, Step, Steps int            // the last position a deck sent (1-based); Slides 0: none yet
+	SlideFor, TalkFor          time.Duration  // on this slide, since the talk's first slide
+	Log                        []LogLine      // recent reloads and warnings, oldest first
+	Keys                       string         // the footer: q quit · m hide · o open
+}
+
+// Role is one kind of page open, for the monitors.
+type Role struct {
+	Role string `json:"role"`
+	Name string `json:"name"`
+	N    int    `json:"n"`
+}
+
+var roleNames = []Role{{Role: "deck", Name: "deck"}, {Role: "teleprompter", Name: "teleprompter"}, {Role: "tp", Name: "remote teleprompter"},
+	{Role: "draw", Name: "draw pad"}, {Role: "clicker", Name: "clicker"}, {Role: "audience", Name: "audience"}, {Role: "review", Name: "review"},
+	{Role: "class", Name: "class view"}, {Role: "monitor", Name: "monitor"}, {Role: "page", Name: "other"}}
+
+// RoleList is the roles with pages open, in a fixed order.
+func RoleList(m map[string]int) []Role {
+	out := []Role{}
+	for _, r := range roleNames {
+		if m[r.Role] > 0 {
+			r.N = m[r.Role]
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+// roleText is "deck 1 · audience 12", or "".
+func roleText(m map[string]int) string {
+	var parts []string
+	for _, r := range RoleList(m) {
+		parts = append(parts, fmt.Sprintf("%s %d", r.Name, r.N))
+	}
+	return strings.Join(parts, " · ")
+}
+
+// timers is "on this slide 01:12 · talk 00:14:03", or "".
+func timers(s Stats) string {
+	if s.TalkFor == 0 {
+		return ""
+	}
+	return "on this slide " + clock(s.SlideFor)[3:] + " · talk " + clock(s.TalkFor)
 }
 
 // LogLine is one recent event: a reload, a warning.
@@ -102,6 +144,14 @@ func count(n int, one string) string {
 	return fmt.Sprintf("%d %ss", n, one)
 }
 
+// cut shortens plain text to n runes with an ellipsis.
+func cut(s string, n int) string {
+	if r := []rune(s); len(r) > n {
+		return string(r[:n-1]) + "…"
+	}
+	return s
+}
+
 func pages(n int) string { return count(n, "page") + " open" }
 
 // Monitor draws the monitor screen for s in look v: a pure function of s.
@@ -130,9 +180,15 @@ func Monitor(v View, s Stats, color bool) string {
 		if s.Phone != "" {
 			add(" " + b(cyan, "PHONE") + " " + p.value(Info, s.Phone))
 		}
+		if s.Web != "" {
+			add(" " + b(cyan, " WEB ") + " " + p.value(Info, s.Web))
+		}
 		add("", " "+b(green, strings.ToUpper(count(s.Pages, "viewer")))+"  "+pages(s.Pages)+p.c(dim, " · "+count(s.Files, "file")+" watched"))
+		if rt := roleText(s.Roles); rt != "" {
+			add("         " + p.c(dim, rt))
+		}
 		if s.Slides > 0 {
-			add(" " + b(magenta, fmt.Sprintf("SLIDE %d/%d", s.Slide, s.Slides)) + "  " + p.c(dim, fmt.Sprintf("step %d/%d", s.Step, s.Steps)))
+			add(" " + b(magenta, fmt.Sprintf("SLIDE %d/%d", s.Slide, s.Slides)) + "  " + p.c(dim, fmt.Sprintf("step %d/%d", s.Step, s.Steps)+"  "+timers(s)))
 		}
 		if len(s.Log) > 0 {
 			add("")
@@ -151,9 +207,15 @@ func Monitor(v View, s Stats, color bool) string {
 		if s.Phone != "" {
 			add("📱  " + p.value(Info, s.Phone))
 		}
+		if s.Web != "" {
+			add("🎛️   " + p.value(Info, s.Web))
+		}
 		add("", fmt.Sprintf("👥  %d watching, %s watched", s.Pages, count(s.Files, "file")))
+		if rt := roleText(s.Roles); rt != "" {
+			add("    " + p.c(dim, rt))
+		}
 		if s.Slides > 0 {
-			add("🎞️   Slide " + p.c(bold, fmt.Sprintf("%d of %d", s.Slide, s.Slides)) + p.c(dim, fmt.Sprintf("  step %d of %d", s.Step, s.Steps)))
+			add("🎞️   Slide " + p.c(bold, fmt.Sprintf("%d of %d", s.Slide, s.Slides)) + p.c(dim, fmt.Sprintf("  step %d of %d  ", s.Step, s.Steps)+timers(s)))
 		}
 		if len(s.Log) > 0 {
 			add("")
@@ -191,9 +253,18 @@ func Monitor(v View, s Stats, color bool) string {
 			}
 			add(two(l, r))
 		}
+		if rt := roleText(s.Roles); rt != "" {
+			add(row(p.c(dim, cut(rt, w-4))))
+		}
+		if t := timers(s); t != "" {
+			add(row(p.c(dim, t)))
+		}
 		add(row(""), row(p.c(dim, "LINKS")), row(p.value(Info, s.Open)))
 		if s.Phone != "" {
 			add(row(p.value(Info, s.Phone) + "  " + p.c(dim, "phone")))
+		}
+		if s.Web != "" {
+			add(row(p.value(Info, cut(s.Web, w-14)) + "  " + p.c(dim, "monitor")))
 		}
 		if len(s.Log) > 0 {
 			add(row(""), row(p.c(dim, "LOG")))
@@ -213,9 +284,16 @@ func Monitor(v View, s Stats, color bool) string {
 		if s.Phone != "" {
 			add(p.c(dim, "  phone   ") + p.value(Info, s.Phone))
 		}
-		add("", p.c(dim, "  viewers ")+p.c(green, "●")+" "+pages(s.Pages))
+		if s.Web != "" {
+			add(p.c(dim, "  monitor ") + p.value(Info, s.Web))
+		}
+		viewers := p.c(dim, "  viewers ") + p.c(green, "●") + " " + pages(s.Pages)
+		if rt := roleText(s.Roles); rt != "" {
+			viewers += p.c(dim, " · "+rt)
+		}
+		add("", viewers)
 		if s.Slides > 0 {
-			add(p.c(dim, "  slide   ") + p.c(bold, fmt.Sprint(s.Slide)) + p.c(dim, fmt.Sprintf(" / %d", s.Slides)) + "   " + p.c(dim, fmt.Sprintf("step %d/%d", s.Step, s.Steps)))
+			add(p.c(dim, "  slide   ") + p.c(bold, fmt.Sprint(s.Slide)) + p.c(dim, fmt.Sprintf(" / %d", s.Slides)) + "   " + p.c(dim, fmt.Sprintf("step %d/%d   ", s.Step, s.Steps)+timers(s)))
 		}
 		if len(s.Log) > 0 {
 			add("", p.c(dim, "  recent"))

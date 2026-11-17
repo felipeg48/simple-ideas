@@ -25,6 +25,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/render"
+	"github.com/felipeg48/simple-ideas/internal/ui"
 	"github.com/felipeg48/simple-ideas/internal/videdit"
 	"github.com/felipeg48/simple-ideas/internal/webdemo"
 )
@@ -57,7 +58,7 @@ type Server struct {
 	dir     string
 	file    string // set when Root is a single deck
 	mu      sync.Mutex
-	clients map[chan struct{}]bool
+	clients map[chan struct{}]string // live-reload streams -> the page's role (monitor.go)
 	term    *termHub
 	browser browserProxies // floating browser windows (w): per-origin loopback proxies
 	relay   *relay
@@ -72,6 +73,13 @@ type Server struct {
 	voiceMu sync.Mutex   // one voicing at a time (voice.go)
 	warned  sync.Map     // auto-play warnings already logged
 	files   atomic.Int64 // files the watcher looked at last (Live)
+
+	Mon      MonitorInfo  // what the monitor shows that only the command knows (monitor.go)
+	monitors atomic.Int64 // web monitor pages open
+	monMu    sync.Mutex
+	smp      ui.Sampler // CPU and memory, sampled for both monitors (Stats)
+	sampled  time.Time
+	cpu      ui.Stats
 }
 
 // New prepares a server for root.
@@ -84,7 +92,7 @@ func New(root string, css []string, theme, conf string) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Server{Root: abs, CSSPaths: css, Theme: theme, Conf: conf, Interval: 300 * time.Millisecond, clients: map[chan struct{}]bool{}}
+	s := &Server{Root: abs, CSSPaths: css, Theme: theme, Conf: conf, Interval: 300 * time.Millisecond, clients: map[chan struct{}]string{}}
 	if st.IsDir() {
 		s.dir = abs
 	} else {
@@ -132,6 +140,9 @@ func (s *Server) Handler() http.Handler {
 	s.recordRoutes(mux)                                                 // Record your talk: loopback only (record.go)
 	mux.HandleFunc("GET /_si/qr", localOnly(s.qrPage))                  // the --remote links as codes: carries the key, loopback only
 	s.authorRoutes(mux)                                                 // review comments: read, follow, reply, resolve (loopback)
+	if s.Mon.Key != "" {
+		s.monitorRoutes(mux, s.monitorLocal) // the web monitor: loopback, the run's key, the same origin (monitor.go)
+	}
 	if s.Remote {
 		mux.HandleFunc("GET /_si/remote/events", s.relay.events)
 		mux.HandleFunc("POST /_si/remote/send", s.relay.send)
@@ -376,7 +387,14 @@ func (s *Server) index(w http.ResponseWriter) {
 }
 
 // events is the server-sent events endpoint: one `reload` event per change.
+// The page names its role (?role=deck, teleprompter, tp…) for the monitor.
 func (s *Server) events(w http.ResponseWriter, r *http.Request) {
+	s.eventsAs(w, r, pageRole(r.URL.Query().Get("role")))
+}
+
+// eventsAs is events for a page whose role the listener knows (an audience
+// phone, a review page), whatever it says.
+func (s *Server) eventsAs(w http.ResponseWriter, r *http.Request, role string) {
 	fl, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
@@ -385,7 +403,7 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 	sseHeaders(w)
 	ch := make(chan struct{}, 1)
 	s.mu.Lock()
-	s.clients[ch] = true
+	s.clients[ch] = role
 	s.mu.Unlock()
 	defer func() {
 		s.mu.Lock()
@@ -534,9 +552,11 @@ func (s *Server) signature() uint64 {
 
 // Live is what the si play monitor shows of the server.
 type Live struct {
-	Shells, Pages, Files int // terminal drawer shells, pages open (live reload), files watched
-	Slide, Slides        int // the last position a deck sent: slide (1-based) of Slides; 0 = none yet
+	Shells, Pages, Files int            // terminal drawer shells, pages open (live reload and the class and monitor pages), files watched
+	Roles                map[string]int // pages open by role: deck, teleprompter, tp, draw, clicker, audience, review, class, monitor, page
+	Slide, Slides        int            // the last position a deck sent: slide (1-based) of Slides; 0 = none yet
 	Step, Steps          int
+	SlideAt, TalkAt      time.Time // when that slide was reached, when the first position came
 }
 
 // Live reports the server's shells, open pages, watched files and the
@@ -548,9 +568,28 @@ func (s *Server) Live() Live {
 		s.watchMu.Unlock()
 	}
 	l := Live{Files: int(s.files.Load())}
+	l.Roles = map[string]int{}
 	s.mu.Lock()
-	l.Pages = len(s.clients)
+	for _, r := range s.clients {
+		l.Roles[r]++
+	}
 	s.mu.Unlock()
+	if n := s.monitors.Load(); n > 0 {
+		l.Roles["monitor"] = int(n)
+	}
+	s.classMu.Lock()
+	c := s.class
+	s.classMu.Unlock()
+	if c != nil {
+		c.mu.Lock()
+		if n := len(c.subs); n > 0 {
+			l.Roles["class"] = n
+		}
+		c.mu.Unlock()
+	}
+	for _, n := range l.Roles {
+		l.Pages += n
+	}
 	if s.term != nil {
 		s.term.mu.Lock()
 		l.Shells = len(s.term.tabs)
@@ -559,6 +598,7 @@ func (s *Server) Live() Live {
 	if s.pos != nil {
 		s.pos.mu.Lock()
 		raw := s.pos.last[s.pos.newest]
+		l.SlideAt, l.TalkAt = s.pos.slideAt, s.pos.began
 		s.pos.mu.Unlock()
 		var p position
 		if json.Unmarshal(raw, &p) == nil && p.N > 0 {

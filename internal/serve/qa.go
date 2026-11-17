@@ -17,7 +17,8 @@ import (
 // Q&A (si play --audience): an audience phone sends a question to
 // /_si/audience/ask; the presenter's pages get the list as a "questions"
 // message (the audience stream never carries it) and set a question's state
-// through /_si/qa: shown (over the projected slide), answered, hidden, open.
+// through /_si/qa: shown (over the projected slide), answered, hidden, open,
+// approved (the monitor's moderation: read, fine to take).
 
 const (
 	maxQuestion     = 500 // characters
@@ -30,7 +31,7 @@ type question struct {
 	ID    int       `json:"id"`
 	Text  string    `json:"text"`
 	Name  string    `json:"name,omitempty"`
-	State string    `json:"state"` // open, shown, answered, hidden
+	State string    `json:"state"` // open, approved, shown, answered, hidden
 	At    time.Time `json:"at"`
 }
 
@@ -72,7 +73,7 @@ func (q *qa) ask(text, name, voter string, now time.Time) ([]byte, int) {
 	}
 	open := 0
 	for _, x := range q.list {
-		if x.State == "open" || x.State == "shown" {
+		if x.State == "open" || x.State == "approved" || x.State == "shown" {
 			open++
 		}
 	}
@@ -88,7 +89,7 @@ func (q *qa) ask(text, name, voter string, now time.Time) ([]byte, int) {
 // to open (one question over the slide at a time).
 func (q *qa) set(id int, state string) ([]byte, bool) {
 	switch state {
-	case "open", "shown", "answered", "hidden":
+	case "open", "approved", "shown", "answered", "hidden":
 	default:
 		return nil, false
 	}
@@ -173,7 +174,7 @@ func (s *Server) SaveAudience(name string, now time.Time) (string, error) {
 				counts[c]++
 			}
 		}
-		results[id] = map[string]any{"counts": counts, "voters": len(b)}
+		results[id] = map[string]any{"counts": counts, "voters": len(b), "closed": s.polls.closed[id], "revealed": s.polls.revealed[id]}
 	}
 	s.polls.mu.Unlock()
 	s.qa.mu.Lock()
