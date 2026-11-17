@@ -78,6 +78,16 @@ var CodewinCSS string
 //go:embed web/codewin.js
 var CodewinJS string
 
+// VideoplayerCSS and VideoplayerJS draw the video player (a ```video fence):
+// an inline <video>, a click-to-open modal lightbox, or a lazy poster facade
+// that swaps in the <video> on click. Only pages with one carry them.
+//
+//go:embed web/videoplayer.css
+var VideoplayerCSS string
+
+//go:embed web/videoplayer.js
+var VideoplayerJS string
+
 // MindmapEditJS is the Studio map editor inside its canvas (si --web only).
 //
 //go:embed web/mindmap-edit.js
