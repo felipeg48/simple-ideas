@@ -810,6 +810,21 @@ si migrate <src>           # an AI migration prompt for an existing deck
 
 ---
 
+## Terminal looks
+
+```bash
+si play talk.md --view checklist   # ledger (default), badges, checklist or steps
+SI_VIEW=steps si build talks/      # or ui.view: steps in si.conf
+```
+
+- `si play`, `si serve`, `si build` and `si check` speak in one of four looks on a terminal: **ledger** (aligned label and value, a green ✓ per line), **badges** (a coloured block per line), **checklist** (emoji and plain words), **steps** (a tree with timings)
+- Problems always show the file and line; green is done, yellow a warning, red a problem, cyan a link
+- Pick it with `--view`, `SI_VIEW`, or `ui.view:` in si.conf (the flag wins, then `SI_VIEW`, the project's si.conf, your own)
+- Piped, in CI, with `NO_COLOR=1` or `TERM=dumb`: the plain lines, unchanged
+- **`si play` monitor:** press `m` for CPU, memory, shells, links, open pages, the current slide and recent reloads, redrawn every second; `m` again goes back, `o` opens the browser, `q` quits
+
+---
+
 ## Share it
 
 - **Post it:** `si publish talk.md --to linkedin` turns the deck into a

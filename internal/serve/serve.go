@@ -4,6 +4,7 @@
 package serve
 
 import (
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"io/fs"
@@ -17,6 +18,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/felipeg48/simple-ideas/internal/assets"
@@ -67,8 +69,9 @@ type Server struct {
 	class   *classRoom // --class: the learners' events (class.go)
 	classMu sync.Mutex
 	revOnce sync.Once
-	voiceMu sync.Mutex // one voicing at a time (voice.go)
-	warned  sync.Map   // auto-play warnings already logged
+	voiceMu sync.Mutex   // one voicing at a time (voice.go)
+	warned  sync.Map     // auto-play warnings already logged
+	files   atomic.Int64 // files the watcher looked at last (Live)
 }
 
 // New prepares a server for root.
@@ -490,9 +493,10 @@ func (s *Server) watchIncludes(files []string) {
 }
 
 func (s *Server) signature() uint64 {
-	h := fnv.New64a()
+	h, n := fnv.New64a(), 0
 	add := func(p string, info fs.FileInfo) {
 		fmt.Fprintf(h, "%s|%d|%d\n", p, info.ModTime().UnixNano(), info.Size())
+		n++
 	}
 	walk := func(root string) {
 		filepath.WalkDir(root, func(p string, e fs.DirEntry, err error) error {
@@ -524,7 +528,44 @@ func (s *Server) signature() uint64 {
 			add(f, info)
 		}
 	}
+	s.files.Store(int64(n))
 	return h.Sum64()
+}
+
+// Live is what the si play monitor shows of the server.
+type Live struct {
+	Shells, Pages, Files int // terminal drawer shells, pages open (live reload), files watched
+	Slide, Slides        int // the last position a deck sent: slide (1-based) of Slides; 0 = none yet
+	Step, Steps          int
+}
+
+// Live reports the server's shells, open pages, watched files and the
+// latest deck position.
+func (s *Server) Live() Live {
+	if s.files.Load() == 0 {
+		s.watchMu.Lock()
+		s.signature()
+		s.watchMu.Unlock()
+	}
+	l := Live{Files: int(s.files.Load())}
+	s.mu.Lock()
+	l.Pages = len(s.clients)
+	s.mu.Unlock()
+	if s.term != nil {
+		s.term.mu.Lock()
+		l.Shells = len(s.term.tabs)
+		s.term.mu.Unlock()
+	}
+	if s.pos != nil {
+		s.pos.mu.Lock()
+		raw := s.pos.last[s.pos.newest]
+		s.pos.mu.Unlock()
+		var p position
+		if json.Unmarshal(raw, &p) == nil && p.N > 0 {
+			l.Slide, l.Slides, l.Step, l.Steps = p.I+1, p.N, p.K, p.Steps
+		}
+	}
+	return l
 }
 
 func guideKind(g *deck.Guide) string {

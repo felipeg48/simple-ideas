@@ -53,9 +53,10 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/skill"
 	"github.com/felipeg48/simple-ideas/internal/studio"
 	"github.com/felipeg48/simple-ideas/internal/tui"
+	"github.com/felipeg48/simple-ideas/internal/ui"
 )
 
-const version = "3.31.0"
+const version = "3.32.0"
 
 // Exit codes.
 const (
@@ -268,6 +269,11 @@ Flags (GNU style, before or after the path):
                         per lesson, or one for the whole course with =single
       --no-film         build a course: do not film its web demo lessons (si demo run) when their video is missing or old
       --open            play: open the browser
+      --view <look>     play, serve, build, check on a terminal: ledger (default), badges, checklist or steps;
+                        also SI_VIEW or ui.view: in si.conf (the flag wins, then SI_VIEW, the project's si.conf, yours);
+                        piped output, NO_COLOR=1 or TERM=dumb print the plain lines. si play on a terminal: m shows
+                        the live monitor (CPU, memory, shells, links, open pages, the slide, recent reloads), o opens
+                        the browser, q quits
       --dev             play: hot reload — morph changed slides in place (keeps the current slide, step and overview)
       --no-inline-media build: copy images and videos next to the HTML instead of data URIs (also shares three.js, as below)
       --share-assets    build: write three.js once into _si/ beside the pages and link it, instead of inlining it into every page with a 3D mind map
@@ -454,6 +460,7 @@ type options struct {
 	srcDirs                                      []string   // more folders of sources (a project structure's folders)
 	collect                                      *collected // what the inner pass copied and inlined, for the structure
 	with                                         string     // si build edit.md --with captions,vertical (a video edit's variants)
+	view                                         string     // --view ledger|badges|checklist|steps: the terminal look (look.go)
 	css                                          multi
 	args                                         []string
 }
@@ -475,6 +482,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.Var(&o.autoplay, "autoplay", "")
 	fl.StringVar(&o.voice, "voice", "", "")
 	fl.StringVar(&o.with, "with", "", "")
+	fl.StringVar(&o.view, "view", "", "")
 	fl.StringVar(&o.export, "export", "", "")
 	fl.StringVar(&o.kind, "type", "", "")
 	fl.StringVar(&o.siteKind, "kind", "", "")
@@ -656,6 +664,9 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		return export(o, stdout, stderr)
 	}
 	cmd, rest := o.args[0], pinned.JoinTarget(o.args[1:])
+	if code, bad := setView(cmd, rest, o, stderr); bad {
+		return code
+	}
 	switch cmd {
 	case "help":
 		fmt.Fprint(stdout, usage)
@@ -833,8 +844,22 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			return exitUsage
 		}
 		cfg := config.Load(o.conf, filepath.Join(src, "si.conf"))
-		if _, ok := buildGuide(g, out, o, css, cfg, stdout, stderr); !ok {
-			fmt.Fprintln(stderr, "si: FAIL")
+		pr, t0 := printer(stdout, stderr), time.Now()
+		if pr != nil {
+			pr.Header("📦", "si build", shown(src)+" → "+shown(out))
+		}
+		_, ok := buildGuide(g, out, o, css, cfg, stdout, stderr)
+		if pr != nil {
+			size, n := treeSize(out)
+			st := map[bool]ui.Status{true: ui.OK, false: ui.Fail}[ok]
+			pr.Output(st, guideKindOf(g), fmt.Sprintf("%s/ %d pages", filepath.Base(out), n), size, time.Since(t0))
+			pr.Break()
+			summary(pr, ok, 1, size, time.Since(t0), filepath.Join(out, "index.html"))
+		}
+		if !ok {
+			if pr == nil {
+				fmt.Fprintln(stderr, "si: FAIL")
+			}
 			return exitProblems
 		}
 		return exitOK
@@ -876,6 +901,10 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "warning: %s\n", w)
 	}
 	failed, sharedDone := false, false
+	pr, began, total := printer(stdout, stderr), time.Now(), int64(0) // pr nil: the plain lines
+	if pr != nil {
+		pr.Header("📦", "si build", shown(src)+" → "+shown(out))
+	}
 	chrome := ""
 	if o.narration != "" {
 		o.mp4 = true // a narration is for the video
@@ -891,7 +920,11 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	var labs []int // labs in name order, linked prev/next
 	for i, f := range files {
 		if videdit.Is(f) {
-			fmt.Fprintf(stdout, "  %-28s skipped (a video edit: si build %s)\n", filepath.Base(f), filepath.Base(f))
+			if pr != nil {
+				pr.Item(ui.Info, "skipped", filepath.Base(f), "a video edit: si build "+filepath.Base(f))
+			} else {
+				fmt.Fprintf(stdout, "  %-28s skipped (a video edit: si build %s)\n", filepath.Base(f), filepath.Base(f))
+			}
 			continue
 		}
 		d, err := deck.Parse(f)
@@ -901,7 +934,11 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			continue
 		}
 		if o.noInstructor && d.IsDemo() {
-			fmt.Fprintf(stdout, "  %-28s skipped (instructor demo; --no-instructor)\n", d.Name+".html")
+			if pr != nil {
+				pr.Item(ui.Info, "skipped", d.Name+".html", "instructor demo; --no-instructor")
+			} else {
+				fmt.Fprintf(stdout, "  %-28s skipped (instructor demo; --no-instructor)\n", d.Name+".html")
+			}
 			continue
 		}
 		decks[i] = d
@@ -915,6 +952,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 		if d == nil {
 			continue
 		}
+		t0 := time.Now()
 		if indexTheme == "" && d.Meta.Theme != "" {
 			indexTheme = indexThemeOf(d.Meta.Theme, d.Path)
 		}
@@ -943,12 +981,17 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			}
 		}
 		res := render.Deck(d, ro)
-		for _, p := range res.Problems {
-			fmt.Fprintf(stderr, "  error: %s\n", p)
-			failed = true
-		}
-		for _, w := range res.Warnings {
-			fmt.Fprintf(stderr, "  warning: %s\n", w)
+		failed = failed || len(res.Problems) > 0
+		if pr != nil {
+			problems(pr, ui.Fail, res.Problems)
+			problems(pr, ui.Warn, res.Warnings)
+		} else {
+			for _, p := range res.Problems {
+				fmt.Fprintf(stderr, "  error: %s\n", p)
+			}
+			for _, w := range res.Warnings {
+				fmt.Fprintf(stderr, "  warning: %s\n", w)
+			}
 		}
 		for _, m := range res.Media {
 			if err := copyFile(m.Src, filepath.Join(out, filepath.FromSlash(m.Rel))); err != nil {
@@ -972,7 +1015,14 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			continue
 		}
 		entry := render.Entry(d)
-		if d.IsDoc() {
+		if pr != nil {
+			st := ui.OK
+			if len(res.Problems) > 0 {
+				st = ui.Fail
+			}
+			total += int64(len(res.HTML))
+			pr.Output(st, kindOf(d), d.Name+".html", int64(len(res.HTML)), time.Since(t0))
+		} else if d.IsDoc() {
 			fmt.Fprintf(stdout, "  %-28s %s  %s  %4d KB\n", d.Name+".html", d.Meta.Type, entry.SizeLabel(), len(res.HTML)/1024)
 		} else {
 			fmt.Fprintf(stdout, "  %-28s %3d slides  %5s min  %3d steps  %2d canvases  %4d KB\n",
@@ -1197,9 +1247,15 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	for _, g := range guides { // a guide folder becomes one tile, built into out/<folder>/
 		sub := filepath.Base(g.Dir)
+		t0 := time.Now()
 		home, ok := buildGuide(g, filepath.Join(out, sub), o, css, cfg, stdout, stderr)
 		if !ok {
 			failed = true
+		}
+		if pr != nil {
+			size, n := treeSize(filepath.Join(out, sub))
+			total += size
+			pr.Output(map[bool]ui.Status{true: ui.OK, false: ui.Fail}[ok], guideKindOf(g), fmt.Sprintf("%s/ %d pages", sub, n), size, time.Since(t0))
 		}
 		if home == "" {
 			continue
@@ -1223,6 +1279,14 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	if err := os.WriteFile(filepath.Join(out, "index.html"), render.Index(title, entries, render.Options{UserCSS: css, Theme: indexTheme}), 0o644); err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
 		return exitProblems
+	}
+	if pr != nil {
+		pr.Break()
+		summary(pr, !failed, len(entries), total, time.Since(began), filepath.Join(out, "index.html"))
+		if failed {
+			return exitProblems
+		}
+		return exitOK
 	}
 	fmt.Fprintf(stdout, "si: %d deck(s) from %s -> %s\n", len(entries), src, out)
 	if failed {
@@ -1249,8 +1313,12 @@ func overBudget(html []byte, b config.Budget) string {
 }
 
 func check(src string, budget config.Budget, stdout, stderr io.Writer) int {
+	pr := printer(stdout, stderr) // nil: the plain lines
+	if pr != nil {
+		pr.Begin("si check", shown(src))
+	}
 	if g, ok := guideAt(src); ok {
-		return checkGuides([]*deck.Guide{g}, 0, stdout, stderr)
+		return checkGuides([]*deck.Guide{g}, 0, 0, 0, stdout, stderr)
 	}
 	files, err := deck.List(src)
 	if err != nil {
@@ -1259,12 +1327,12 @@ func check(src string, budget config.Budget, stdout, stderr io.Writer) int {
 	}
 	guides := subGuides(src)
 	if len(guides) > 0 && len(files) == 0 {
-		return checkGuides(guides, 0, stdout, stderr)
+		return checkGuides(guides, 0, 0, 0, stdout, stderr)
 	}
 	if strings.EqualFold(filepath.Ext(src), ".json") { // a web demo script in its JSON form
 		return checkWebDemo(src, stdout, stderr)
 	}
-	n := 0
+	n, warned := 0, 0
 	for _, f := range files {
 		if videdit.Is(f) { // a video edit: its lines, files, times and places
 			n += checkVideo(f, stdout, stderr)
@@ -1272,7 +1340,11 @@ func check(src string, budget config.Budget, stdout, stderr io.Writer) int {
 		}
 		d, err := deck.Parse(f)
 		if err != nil {
-			fmt.Fprintf(stderr, "si: %v\n", err)
+			if pr != nil {
+				pr.Problem(ui.Fail, shown(f), 0, err.Error())
+			} else {
+				fmt.Fprintf(stderr, "si: %v\n", err)
+			}
 			n++
 			continue
 		}
@@ -1280,26 +1352,47 @@ func check(src string, budget config.Budget, stdout, stderr io.Writer) int {
 			n += webDemoProblems(f, stderr)
 		}
 		for _, p := range stageProblems(f, d) { // a deck's setup:, start:, stop:, cleanup: and their pins
-			fmt.Fprintln(stderr, p)
+			if pr != nil {
+				pr.Problem(ui.Fail, shown(p.File), p.Line, p.Msg)
+			} else {
+				fmt.Fprintln(stderr, p)
+			}
 			n++
 		}
 		res := render.Deck(d, render.Options{})
-		for _, p := range res.Problems {
-			fmt.Fprintf(stderr, "%s\n", p)
+		n += len(res.Problems)
+		timelineCheck(f, d, stdout)
+		msg := overBudget(res.HTML, budget)
+		if msg != "" {
 			n++
 		}
-		timelineCheck(f, d, stdout)
-		if msg := overBudget(res.HTML, budget); msg != "" {
+		warned += len(res.Warnings)
+		if pr != nil {
+			problems(pr, ui.Fail, res.Problems)
+			if msg != "" {
+				pr.Problem(ui.Fail, shown(f), 0, msg)
+			}
+			problems(pr, ui.Warn, res.Warnings)
+			continue
+		}
+		for _, p := range res.Problems {
+			fmt.Fprintf(stderr, "%s\n", p)
+		}
+		if msg != "" {
 			fmt.Fprintf(stderr, "%s: %s\n", f, msg)
-			n++
 		}
 		for _, w := range res.Warnings {
 			fmt.Fprintf(stderr, "warning: %s\n", w)
 		}
 	}
 	if len(guides) > 0 {
-		fmt.Fprintf(stdout, "si check: %d deck(s), %d problem(s)\n", len(files), n)
-		return checkGuides(guides, n, stdout, stderr)
+		if pr == nil {
+			fmt.Fprintf(stdout, "si check: %d deck(s), %d problem(s)\n", len(files), n)
+		}
+		return checkGuides(guides, n, warned, len(files), stdout, stderr)
+	}
+	if pr != nil {
+		return tally(pr, n, warned, plural(len(files), "deck"))
 	}
 	if n > 0 {
 		fmt.Fprintf(stderr, "si check: %d problem(s) in %d deck(s)\n", n, len(files))
@@ -1338,14 +1431,21 @@ func subGuides(dir string) []*deck.Guide {
 // checkGuides renders every page of each guide and reports problems
 // (including broken links and anchors between pages) and warnings. prior is
 // the number of problems already found (by the decks of the same check).
-func checkGuides(guides []*deck.Guide, prior int, stdout, stderr io.Writer) int {
+func checkGuides(guides []*deck.Guide, prior, warned, decks int, stdout, stderr io.Writer) int {
 	n, pages := prior, 0
+	pr := printer(stdout, stderr)      // nil: the plain lines
 	for i := 0; i < len(guides); i++ { // a site's menu may link sub-guides and books: check those too
 		guides = append(guides, subGuidesOf(guides[i].Items)...)
 	}
 	for _, g := range guides {
 		ps, probs, warns := render.RenderGuide(g, render.Options{Instructor: true}) // a course: every lesson, the instructor demos too
 		pages += len(ps)
+		if pr != nil {
+			problems(pr, ui.Fail, probs)
+			problems(pr, ui.Warn, warns)
+			n, warned = n+len(probs), warned+len(warns)
+			continue
+		}
 		for _, p := range probs {
 			fmt.Fprintf(stderr, "%s\n", p)
 		}
@@ -1353,6 +1453,13 @@ func checkGuides(guides []*deck.Guide, prior int, stdout, stderr io.Writer) int 
 			fmt.Fprintf(stderr, "warning: %s\n", w)
 		}
 		n += len(probs)
+	}
+	if pr != nil {
+		what := plural(len(guides), "guide") + ", " + plural(pages, "page")
+		if decks > 0 {
+			what = plural(decks, "deck") + ", " + what
+		}
+		return tally(pr, n, warned, what)
 	}
 	if n > 0 {
 		fmt.Fprintf(stderr, "si check: %d problem(s); %d guide(s), %d page(s)\n", n, len(guides), pages)
@@ -1446,21 +1553,38 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 	if o.serveMode {
 		cmdName = "si serve"
 	}
-	fmt.Fprintf(stdout, "%s: serving %s at %s (live reload on; Ctrl+C stops)\n", cmdName, src, url)
+	pr := printer(stdout, stderr) // nil: the plain lines (not a terminal, NO_COLOR)
+	if pr == nil {
+		fmt.Fprintf(stdout, "%s: serving %s at %s (live reload on; Ctrl+C stops)\n", cmdName, src, url)
+	}
+	phone, port := "", 0
 	srv.Relay = o.relay // course result events through /_si/relay: always on loopback, elsewhere only when asked
 	if ta, ok := ln.Addr().(*net.TCPAddr); ok {
+		port = ta.Port
 		srv.Relay = srv.Relay || ta.IP.IsLoopback()
 		if o.serveMode {
 			// readers: decks, articles, guides and labs, no terminal drawer
 		} else if ta.IP.IsLoopback() {
 			srv.Terminal = true // play terminal: loopback only, never on a reachable address
-			fmt.Fprintf(stdout, "  terminal drawer: press ` (backtick) — runs local commands, loopback only\n")
-			fmt.Fprintf(stdout, "  to open on a phone on your network: si play %s --addr 0.0.0.0:%d\n", src, ta.Port)
+			if pr == nil {
+				fmt.Fprintf(stdout, "  terminal drawer: press ` (backtick) — runs local commands, loopback only\n")
+				fmt.Fprintf(stdout, "  to open on a phone on your network: si play %s --addr 0.0.0.0:%d\n", src, ta.Port)
+			}
 		} else if ip := lanIP(); ip != "" {
-			lan := fmt.Sprintf("http://%s:%d/", ip, ta.Port)
-			fmt.Fprintf(stdout, "  on your network: %s\n", lan)
-			printQR(stdout, lan)
+			phone = fmt.Sprintf("http://%s:%d/", ip, ta.Port)
+			if pr == nil {
+				fmt.Fprintf(stdout, "  on your network: %s\n", phone)
+				printQR(stdout, phone)
+			}
 		}
+	}
+	openURL := url
+	if decks := srv.RemoteDecks(); len(decks) == 1 {
+		openURL = url + strings.TrimPrefix(decks[0], "/")
+	}
+	keys := pr != nil && !o.serveMode && !o.terminal && ui.Terminal(os.Stdin) // the monitor's keys: si play on a terminal
+	if pr != nil {
+		playStart(pr, srv, src, cmdName, openURL, phone, port, keys, o, stdout)
 	}
 	var classLinks []string
 	if o.class {
@@ -1491,6 +1615,10 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 	hs := &http.Server{Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+	if keys { // m: the live monitor, o: open, q: quit
+		restore := monitor(srv, shown(src), openURL, phone, cancel, ctx.Done(), stdout)
+		defer func() { cancel(); restore() }()
+	}
 	var setupFailed atomic.Bool
 	if len(stages) > 0 {
 		gate := newGate(srv.Handler(), stages)
@@ -2098,11 +2226,17 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 		}
 	}
 	pages, probs, warns := render.RenderGuide(g, ro)
-	for _, w := range warns {
-		fmt.Fprintf(stderr, "  warning: %s\n", w)
-	}
-	for _, p := range probs {
-		fmt.Fprintf(stderr, "  error: %s\n", p)
+	pr := printer(stdout, stderr) // nil: the plain lines
+	if pr != nil {
+		problems(pr, ui.Warn, warns)
+		problems(pr, ui.Fail, probs)
+	} else {
+		for _, w := range warns {
+			fmt.Fprintf(stderr, "  warning: %s\n", w)
+		}
+		for _, p := range probs {
+			fmt.Fprintf(stderr, "  error: %s\n", p)
+		}
 	}
 	ok := len(probs) == 0
 	for _, p := range pages {
@@ -2137,7 +2271,9 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 		} else if g.IsCourse() {
 			what = strings.TrimSuffix(p.Rel, ".html") // home, complete
 		}
-		fmt.Fprintf(stdout, "  %-40s %s  %4d KB\n", filepath.ToSlash(filepath.Join(filepath.Base(out), p.Rel)), what, len(p.Result.HTML)/1024)
+		if pr == nil { // a terminal: one line for the whole guide (build)
+			fmt.Fprintf(stdout, "  %-40s %s  %4d KB\n", filepath.ToSlash(filepath.Join(filepath.Base(out), p.Rel)), what, len(p.Result.HTML)/1024)
+		}
 	}
 	if len(pages) == 0 {
 		return "", false
@@ -2202,7 +2338,9 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 			}
 		}
 	}
-	fmt.Fprintf(stdout, "si: %s %q, %d page(s) -> %s\n", kind, g.Meta.Title, len(pages), out)
+	if pr == nil {
+		fmt.Fprintf(stdout, "si: %s %q, %d page(s) -> %s\n", kind, g.Meta.Title, len(pages), out)
+	}
 	return home, ok
 }
 

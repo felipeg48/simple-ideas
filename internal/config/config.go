@@ -54,6 +54,10 @@ keys.terminal:   ` + "`" + `          # backtick; play terminal drawer (si play 
 keys.remote:     q          # si play --remote: the phone and tablet links as QR codes
 keys.autoplay:   v          # auto-play: the deck reads its Notes: aloud and clicks at each [CLICK]
 
+# si play, si serve, si build and si check on a terminal: the look of what
+# they print: ledger, badges, checklist or steps (--view and SI_VIEW win)
+ui.view: ledger
+
 # si build --handout: the paper of handout PDFs
 handout.paper: a4      # a4 or letter
 
@@ -151,6 +155,7 @@ type Config struct {
 	TermOpacity              int               // terminal.opacity: the drawer's opacity in %, 40-100 (0 = 100)
 	TermBlur                 int               // terminal.blur: px of blur on the slide behind a translucent drawer (0 = none)
 	HandoutPaper             string            // handout.paper: a4 (default) or letter
+	UIView                   string            // ui.view: ledger, badges, checklist or steps ("" = ledger)
 	AudienceOff              bool              // audience.save: off: keep no poll counts or questions
 	SpeakersTurn             bool              // speakers.control: turn: only the speaker whose turn it is advances
 	Voice                    string            // voice: engine:name for si demo run and si voice say
@@ -361,6 +366,13 @@ func (c *Config) parse(r io.Reader) {
 				c.Budget.Page = kb
 			} else {
 				c.Budget.ThreeD = kb
+			}
+		case k == "ui.view":
+			switch v = strings.ToLower(v); v {
+			case "ledger", "badges", "checklist", "steps":
+				c.UIView = v
+			default:
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: ui.view wants ledger, badges, checklist or steps, got %q", ln, v))
 			}
 		case k == "handout.paper":
 			if p := strings.ToLower(v); p == "a4" || p == "letter" {

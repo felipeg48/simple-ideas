@@ -364,6 +364,23 @@ Other agents: `si --export skill`, `si --export agent-rules` (AGENTS.md), or
 | `si publish <file> --to linkedin\|devto\|hashnode\|ghost\|wordpress` | post it (a dry run unless `--yes`) |
 | `si code`, `si qr`, `si rehearse`, `si mcp`, `si rules`, `si manual` | code exports, QR codes, a recording's pace, the MCP server, the format, the manual |
 
+**Terminal looks.** On a terminal, `si play`, `si serve`, `si build` and
+`si check` print in colour, in one of four looks: `ledger` (the default),
+`badges`, `checklist` or `steps`. Pick one with `--view`, `SI_VIEW` or
+`ui.view:` in si.conf. In `si play`, `m` opens a live monitor: CPU, memory,
+shells, links, open pages, the current slide and recent reloads. Piped or with
+`NO_COLOR=1`, the output stays plain.
+
+```text
+$ si build talks --view steps
+◆ si build talks/ → html/
+│
+├─ ✓ showcase.html          813 KB  ▇▇▇▇     0.4s
+├─ ✓ guide/ 7 pages         876 KB  ▇▇▇      0.3s
+│
+└─ done 2 outputs · 1.7 MB · 0.7s
+```
+
 `si --help` lists every option. The full format, with an example for every
 rule: [the rules](https://simple-ideas.org/rules/) (also `si rules`), and the
 [user manual](docs/reference/user-manual.md).

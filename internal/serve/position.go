@@ -29,9 +29,10 @@ type posEvent struct {
 }
 
 type positions struct {
-	mu   sync.Mutex
-	last map[string][]byte // page -> its latest position
-	subs map[chan posEvent]string
+	mu     sync.Mutex
+	last   map[string][]byte // page -> its latest position
+	newest string            // the page that moved last
+	subs   map[chan posEvent]string
 }
 
 func newPositions() *positions {
@@ -42,7 +43,7 @@ func (p *positions) publish(e posEvent) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if e.kind == "state" {
-		p.last[e.page] = e.data
+		p.last[e.page], p.newest = e.data, e.page
 	}
 	for c, page := range p.subs {
 		if page == "" || page == e.page {

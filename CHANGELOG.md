@@ -3,6 +3,22 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.32.0:** terminal looks. `si play`, `si serve`, `si build` and `si
+  check` print in colour on a terminal, in one of four looks: **ledger** (the
+  default: a dim label column, the value, a green ✓ per line), **badges** (a
+  coloured block names each line), **checklist** (emoji and plain words) and
+  **steps** (a tree with timings and a bar per output). Pick one with `--view
+  ledger|badges|checklist|steps`, `SI_VIEW`, or `ui.view:` in si.conf (the
+  flag wins, then `SI_VIEW`, the project's si.conf, your own); a wrong name is
+  an error that lists the four. Problems always show their file and line.
+  `si play` on a terminal has a **live monitor**: `m` shows uptime, the si
+  process's CPU and memory with sparklines or bars, the drawer's shells, the
+  links (and the phone's with `--addr 0.0.0.0`), the pages open, the slide and
+  step the deck last reported, and the recent reloads and warnings, redrawn
+  every second on the alternate screen; `m` again goes back, `o` opens the
+  browser, `q` quits, and the terminal is restored on quit and on Ctrl-C.
+  Piped output, CI logs, `NO_COLOR=1` and `TERM=dumb` keep the plain lines,
+  byte for byte. Standard-library ANSI only (`internal/ui`).
 - **v3.31.0:** web demos and videos, finished. The Studio has a **Video
   view** for a `type: video` edit: the preview with its timeline strip above
   the text; a marker (or a row under the player) selects its line, and the

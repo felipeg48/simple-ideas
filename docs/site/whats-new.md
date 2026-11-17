@@ -12,6 +12,28 @@ narrated video you would publish.
 
 <!-- si-video: presenting -->
 
+## Terminal looks (3.32)
+
+`si play`, `si serve`, `si build` and `si check` print in colour on a
+terminal, in one of four looks: **ledger** (the default), **badges**,
+**checklist** or **steps**. Pick one with `--view`, `SI_VIEW` or `ui.view:` in
+si.conf. In `si play`, press `m` for a live monitor: CPU, memory, shells,
+links, open pages, the current slide and the recent reloads. Piped output and
+`NO_COLOR=1` stay plain.
+
+```text
+$ si play talk.md --view checklist
+
+🎬  si play 3.32.0  talk.md · theme studio
+
+✅  Deck     The Thursday Promise  (26 slides)
+✅  Live     163 files watched  (reload on save)
+
+👉  Open     http://127.0.0.1:7070/talk.html
+
+m monitor · o open · q quit
+```
+
 ## Demos edited like a video
 
 - **Transitions** at every scene change: `fade` by default, or `slide`,
