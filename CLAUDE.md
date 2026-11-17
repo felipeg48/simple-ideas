@@ -283,6 +283,10 @@ pass. The steps that matter:
   build then routes, rewrites links and bundles (`cmd/si/structure.go`),
   `si new --structure`, `si check` warnings, `examples/structure/`. Next:
   `si play` serving the built layout, per-folder index pages.
+- **Video player** (DONE v3.30.0, RULES §25): ```video fence (inline|modal|facade),
+  own HUD, captions/chapters beside the video, modal gallery, `si --export player`
+  drop-in (`data-video`); `internal/render/videoplayer.go`, `web/videoplayer.js|css`,
+  `cmd/si/player.go`.
 - **Video edits** (phases 1–2 DONE v3.28.0, spec
   `docs/superpowers/specs/2026-11-17-video-edit.md`): `type: video`, lines at
   source times, edits, callouts, camera, say/music/captions, refilm. Next:

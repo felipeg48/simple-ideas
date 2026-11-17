@@ -3,6 +3,23 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.30.0:** a playable video player. A ```` ```video ```` fence (PR #21)
+  draws a player in place (`mode=inline`), as a dialog over the dimmed and
+  blurred page (`mode=modal`: Esc, ✕ or the backdrop closes it, focus stays
+  inside and returns to the card) or as a poster that builds the player on
+  the first click (`mode=facade`). The player has its own HUD: a scrub bar
+  with the buffered range, hover time and chapter marks, time, volume,
+  speed (1×–2×), captions, a chapter list, picture in picture and full
+  screen; keys Space/K, ← →, J/L, M, F, C, Esc; tap and double-tap on
+  phones; the HUD hides while playing. Modal players on a page share one
+  dialog as a gallery (‹ ›, "2 / 9", `group=`). Captions and chapters come
+  from `captions=` / `chapters=` or the files beside the video
+  (`<video>.vtt`, `.chapters.txt`, si's own `chapters.txt`), so si's filmed
+  videos get them for free; `![](x.mp4)` in documents and course video
+  lessons use the same player. `si --export player` writes `si-player.css`
+  and `si-player.js` for pages si did not build: any element with
+  `data-video="clips/intro.mp4"` becomes a player, its image the poster.
+  Also: a drawer reloaded twice in quick succession keeps its shells.
 - **v3.29.0:** improvements. Chrome runs share one machine-wide limit
   (lock files in the temp folder, `flock` / `LockFileEx`), and a run that
   times out on a busy machine before writing its file gets one more try,
