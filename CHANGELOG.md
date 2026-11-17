@@ -3,6 +3,26 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.28.0:** video edits from Markdown (`type: video`, RULES §32). A file
+  beside a recording lists its finishing touches, one line each at the
+  source's own times (`1:34`, `1:36–1:46`, `end`, `at said "words"` from the
+  `.vtt` beside it, `at chapter "Name" + 2s`): an edit never moves another
+  line's time. **Edits:** `cut`, `trim start|end`, `freeze`, `speed` (pitch
+  kept; `· mute`, `· badge`), `replace with` (`· keep audio`), `insert
+  clip|image|card`, `card`, `mute`, transitions `fade`, `dissolve`, `wipe`,
+  `slide`; several sources joined (`· from`, `· to`, `join:`). **Callouts**
+  drawn in the theme by headless Chrome: `title`, `text` (font, size, colour,
+  box, shadow), `bubble` (`round`, `think`), `arrow`, `box`, `circle`,
+  `underline`, `spotlight`, `keys`, `badge`, `lower-third`; entrances `pop`,
+  `fade`, `slide-in`, `type`; `blur` and `pixelate` by ffmpeg; the camera
+  `zoom to`, `pan to`, `zoom out`, eased. **Sound and takes:** `say` (the
+  configured voice, the original ducked), `music`, `captions on` (the
+  source's captions moved by the edits, plus the said lines), `refilm feature
+  "Name"` (one feature of the demo script filmed again; alone, the rest of
+  the video is stream-copied). `si check edit.md` reports every problem with
+  its line; `si play edit.md` previews it live over the source with a
+  timeline strip; `si build edit.md [--with captions,vertical]` writes it.
+  Example: `examples/video/`.
 - **v3.27.0:** code windows from files. `<!-- include: compose.yaml
   window=mac numbers hl=3 -->` and `<!-- code: … -->` take every code-window
   option (`window=`, `theme=`, `backdrop=`, `numbers`, `id=`, `step=`,
