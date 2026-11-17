@@ -109,15 +109,11 @@ func isSourcesTitle(head string) bool {
 
 // exportTimelinePDF writes the paged PDF and the compact one; it returns the
 // paged PDF's path relative to out.
-func exportTimelinePDF(chrome, dest, out string, d *deck.Deck, scale float64, stdout io.Writer) (string, error) {
+func exportTimelinePDF(chrome, dest, out string, d *deck.Deck, stdout io.Writer) (string, error) {
 	if err := os.MkdirAll(filepath.Join(out, "pdfs"), 0o755); err != nil {
 		return "", err
 	}
-	scale = max(scale, 2)
-	compact, w, h, err := timelineShot(chrome, dest, d, scale)
-	if err != nil {
-		return "", err
-	}
+	w, h := timelineSize(d)
 	src, err := os.ReadFile(d.Path)
 	if err != nil {
 		return "", err
@@ -127,64 +123,68 @@ func exportTimelinePDF(chrome, dest, out string, d *deck.Deck, scale float64, st
 		return "", err
 	}
 	defer os.RemoveAll(tmp)
-	var pages [][]byte
-	srcs := timelinePages(string(src), tlPerPage)
-	if len(srcs) == 1 {
-		pages = [][]byte{compact}
-	}
-	for i, ps := range srcs {
-		if len(srcs) == 1 {
-			break
-		}
-		// beside the original, so its pictures resolve; removed at once
-		md := filepath.Join(filepath.Dir(d.Path), fmt.Sprintf(".si-%s-page%d.md", d.Name, i+1))
-		if err := os.WriteFile(md, []byte(ps), 0o644); err != nil {
-			return "", err
-		}
-		pd, err := deck.Parse(md)
-		os.Remove(md)
-		if err != nil {
-			return "", err
-		}
+	write := func(name string, pd *deck.Deck) (string, error) {
 		res := render.Deck(pd, render.Options{Media: render.MediaInline})
-		html := filepath.Join(tmp, fmt.Sprintf("page%d.html", i+1))
-		if err := os.WriteFile(html, res.HTML, 0o644); err != nil {
-			return "", err
+		// the page is the timeline alone: no counter, progress bar or buttons
+		page := strings.Replace(string(res.HTML), "</head>", "<style>"+tlBareCSS+"</style></head>", 1)
+		p := filepath.Join(tmp, name)
+		return p, os.WriteFile(p, []byte(page), 0o644)
+	}
+	compact, err := write("compact.html", d)
+	if err != nil {
+		return "", err
+	}
+	pages := []string{compact}
+	if srcs := timelinePages(string(src), tlPerPage); len(srcs) > 1 {
+		pages = nil
+		for i, ps := range srcs {
+			// beside the original, so its pictures resolve; removed at once
+			md := filepath.Join(filepath.Dir(d.Path), fmt.Sprintf(".si-%s-page%d.md", d.Name, i+1))
+			if err := os.WriteFile(md, []byte(ps), 0o644); err != nil {
+				return "", err
+			}
+			pd, err := deck.Parse(md)
+			os.Remove(md)
+			if err != nil {
+				return "", err
+			}
+			p, err := write(fmt.Sprintf("page%d.html", i+1), pd)
+			if err != nil {
+				return "", err
+			}
+			pages = append(pages, p)
 		}
-		png, _, _, err := timelineShot(chrome, html, pd, scale)
-		if err != nil {
-			return "", err
-		}
-		pages = append(pages, png)
 	}
 	rel := filepath.Join("pdfs", d.Name+".pdf")
-	if err := picturesPDF(chrome, tmp, pages, w, h, filepath.Join(out, rel)); err != nil {
+	if err := framesPDF(chrome, tmp, pages, w, h, filepath.Join(out, rel)); err != nil {
 		return "", err
 	}
 	crel := filepath.Join("pdfs", d.Name+"-compact.pdf")
-	if err := picturesPDF(chrome, tmp, [][]byte{compact}, w, h, filepath.Join(out, crel)); err != nil {
+	if err := framesPDF(chrome, tmp, []string{compact}, w, h, filepath.Join(out, crel)); err != nil {
 		return "", err
 	}
 	fmt.Fprintf(stdout, "  %-28s (pdf, %d pages of 16:9)\n  %-28s (pdf, the whole timeline on one page)\n", rel, len(pages), crel)
 	return filepath.ToSlash(rel), nil
 }
 
-// picturesPDF prints PNG pictures as a PDF, one w×h (CSS px) page each.
-func picturesPDF(chrome, tmp string, pngs [][]byte, w, h int, pdfPath string) error {
+// tlBareCSS hides a deck's own controls: the page shows the slide alone.
+const tlBareCSS = `.si-deck>:not(.si-slide),body:has(.si-deck)>:not(.si-deck){display:none!important}`
+
+// framesPDF prints rendered pages (HTML files) as one vector PDF (text
+// selectable and searchable), a w×h (CSS px) page each: every page in a
+// frame of that size with every build step shown (?si-view=thumb), in
+// screen media so the print looks like the screen and the PNG.
+func framesPDF(chrome, tmp string, pages []string, w, h int, pdfPath string) error {
 	var b strings.Builder
-	fmt.Fprintf(&b, "<!doctype html><style>@page{size:%dpx %dpx;margin:0}html,body{margin:0}img{display:block;width:%dpx;height:%dpx;break-after:page}img:last-child{break-after:auto}</style>", w, h, w, h)
-	for i, p := range pngs {
-		name := fmt.Sprintf("pic%d.png", i+1)
-		if err := os.WriteFile(filepath.Join(tmp, name), p, 0o644); err != nil {
-			return err
-		}
-		fmt.Fprintf(&b, `<img src="%s">`, name)
+	fmt.Fprintf(&b, "<!doctype html><style>@page{size:%dpx %dpx;margin:0}html,body{margin:0}iframe{display:block;border:0;width:%dpx;height:%dpx;break-after:page;break-inside:avoid}iframe:last-child{break-after:auto}</style>", w, h, w, h)
+	for _, p := range pages {
+		fmt.Fprintf(&b, `<iframe src="%s?si-view=thumb#1"></iframe>`, "file://"+filepath.ToSlash(p))
 	}
-	page := filepath.Join(tmp, "pictures.html")
+	page := filepath.Join(tmp, "pages.html")
 	if err := os.WriteFile(page, []byte(b.String()), 0o644); err != nil {
 		return err
 	}
-	c, err := cdp.Launch(chrome, w, h)
+	c, err := cdp.Launch(chrome, w, h, "--allow-file-access-from-files")
 	if err != nil {
 		return err
 	}
@@ -192,15 +192,21 @@ func picturesPDF(chrome, tmp string, pngs [][]byte, w, h int, pdfPath string) er
 	if _, err := c.OpenPage("", w, h); err != nil {
 		return err
 	}
+	if err := c.Call("Emulation.setEmulatedMedia", map[string]any{"media": "screen"}, nil); err != nil {
+		return err
+	}
 	if err := c.Call("Page.navigate", map[string]any{"url": "file://" + filepath.ToSlash(page)}, nil); err != nil {
 		return err
 	}
-	for i := 0; i < 200; i++ {
-		if v, _ := c.Eval(`document.readyState==="complete"&&[...document.images].every(function(i){return i.complete})`); string(v) == "true" {
+	for i := 0; i < 400; i++ {
+		v, _ := c.Eval(`document.readyState==="complete"&&[...document.querySelectorAll("iframe")].every(function(f){try{return f.contentDocument.readyState==="complete"}catch(e){return true}})`)
+		if string(v) == "true" {
 			break
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
+	c.Eval(`Promise.all([...document.querySelectorAll("iframe")].map(function(f){try{var w=f.contentWindow;w.siTimelineFit&&w.siTimelineFit();return w.document.fonts.ready}catch(e){}})).then(function(){return 1})`)
+	time.Sleep(800 * time.Millisecond)
 	var r struct{ Data string }
 	if err := c.Call("Page.printToPDF", map[string]any{"printBackground": true, "preferCSSPageSize": true}, &r); err != nil {
 		return err

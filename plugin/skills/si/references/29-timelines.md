@@ -122,8 +122,9 @@ a document it is `vertical` unless `layout=` says otherwise.
   in the same look with whole eras on each (about 12 milestones a page, so the
   text reads well; the title on every page, the closing line and sources on
   the last), and `pdfs/timeline-compact.pdf`, the whole timeline on one page
-  like the PNG. The pages are pictures of the timeline (the text is not
-  selectable). A portrait poster's `--pdf` is the printed page. `--svg`
+  like the PNG. Both are printed as vector PDF in the same look as the PNG:
+  the text is selectable and searchable, and pictures keep their own
+  resolution. A portrait poster's `--pdf` is the printed page. `--svg`
   writes `timeline.svg`: the same frame as a vector picture, its text as
   real text, its pictures inside it and the theme's colours resolved, its
   background glows as SVG gradients and its shadows as blurred SVG filters,

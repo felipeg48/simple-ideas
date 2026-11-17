@@ -32,6 +32,23 @@ func exportTimeline(chrome, dest, out string, d *deck.Deck, scale float64, stdou
 	return nil
 }
 
+// timelineSize is a timeline's frame in CSS pixels: 1600 wide at its aspect
+// (16:9 by default), or the poster's first screen.
+func timelineSize(d *deck.Deck) (int, int) {
+	if d.Meta.Orientation == "portrait" {
+		return 1100, 1400
+	}
+	w, h := 1600, 900
+	if a, b, ok := strings.Cut(d.Meta.Aspect, ":"); ok {
+		x, _ := strconv.ParseFloat(a, 64)
+		y, _ := strconv.ParseFloat(b, 64)
+		if x > 0 && y > 0 {
+			h = int(float64(w) * y / x)
+		}
+	}
+	return w, h
+}
+
 // timelineShot is a picture of the built timeline page (dest): the 16:9 frame
 // with every era shown, or the whole poster; it returns the PNG and its size
 // in CSS pixels.
@@ -40,18 +57,8 @@ func timelineShot(chrome, dest string, d *deck.Deck, scale float64) ([]byte, int
 	if err != nil {
 		return nil, 0, 0, err
 	}
-	w, h := 1600, 900
-	if a, b, ok := strings.Cut(d.Meta.Aspect, ":"); ok && d.Meta.Orientation != "portrait" {
-		x, _ := strconv.ParseFloat(a, 64)
-		y, _ := strconv.ParseFloat(b, 64)
-		if x > 0 && y > 0 {
-			h = int(float64(w) * y / x)
-		}
-	}
+	w, h := timelineSize(d)
 	poster := d.Meta.Orientation == "portrait"
-	if poster {
-		w, h = 1100, 1400
-	}
 	c, err := cdp.Launch(chrome, w, h)
 	if err != nil {
 		return nil, 0, 0, err

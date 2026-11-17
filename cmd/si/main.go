@@ -1035,7 +1035,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 				}
 			}
 			if o.pdf && !d.IsDoc() { // landscape: paged PDF + the compact one-page PDF
-				if rel, err := exportTimelinePDF(chrome, dest, out, d, o.scale, stdout); err != nil {
+				if rel, err := exportTimelinePDF(chrome, dest, out, d, stdout); err != nil {
 					fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
 					failed = true
 				} else {

@@ -180,7 +180,7 @@ The sort Python still uses.
 - `alternate:` on, off · `scale:` even, time · `closing:` a last line · `## Fuentes · sources`
 - A landscape page is one slide: each era a build step, `Notes:` for the teleprompter
 - `si check` counts milestones, pictures, eras; `require: 20 dates, 15 images` checks a rubric
-- `si build timeline.md --png --pdf --svg` (`--svg`: a vector picture, text as text); `si new history --type timeline`; full guide: RULES.md §29
+- `si build timeline.md --png --pdf --svg` (`--pdf`: 16:9 pages with selectable text; `--svg`: a vector picture, text as text); `si new history --type timeline`; full guide: RULES.md §29
 ## Infographics
 
 ```infographic steps=off
