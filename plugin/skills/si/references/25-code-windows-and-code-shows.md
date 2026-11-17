@@ -180,3 +180,42 @@ window with C# and a `.csproj`, `compose.yaml` and `start.sh` shown from
 their files, a terminal), the showcase slide "The retry
 rule" (two steps, one click), and a terminal window in
 `examples/article/retry.md`.
+
+### Video player
+
+A fenced code block whose language is `video` is a self-contained video
+player, authored like a code window: the options go on the fence line, any
+body is the caption. `mode=` chooses how it plays. Nothing external loads;
+`si build` copies the video beside the page (as it does for `![](clip.mp4)`,
+§8) and the player inlines its own CSS and JS.
+
+````markdown
+```video src="assets/demo.mp4" poster="assets/demo.jpg" mode=modal title="The walkthrough"
+Two minutes, end to end.
+```
+````
+
+- **`mode=inline`** (default) — a normal `<video controls>` with the poster.
+- **`mode=modal`** — the poster is a button with a play affordance; clicking
+  it opens an overlay lightbox (a native `<dialog>`) that plays the video.
+  Esc, the close button and a backdrop click all close it; the dialog
+  focus-traps while open and closing pauses the video.
+- **`mode=facade`** — the poster only; the video element is built on the
+  first click (nothing loads until then), good for a page with many clips.
+
+A block with only a `poster=` and no `src=` degrades: the poster shows with
+the play control disabled, rather than erroring.
+
+| Option | Values | What it does |
+|---|---|---|
+| `src=` | a video file or URL (mp4, webm, mov, m4v, ogv) | the video; omit it (with a `poster=`) for a disabled placeholder |
+| `poster=` | an image file or URL | the still shown before play, and the modal/facade thumbnail |
+| `title=` | text (quote it when it has spaces) | the accessible label and the poster's alt text |
+| `mode=` | `inline` (default), `modal`, `facade` | how it plays (above) |
+| `autoplay` | a flag | `inline` only, always muted (browsers block sound) |
+| `loop` | a flag | loops playback |
+| `width=` | a length (`40rem`, `70%`) | caps the player width |
+| `aspect=` | a ratio (`16/9` default, `4/3`, `1/1`) | the player's aspect ratio (`ratio=` works too) |
+
+An unknown `mode=` is a `si check` problem. The player uses the theme's
+`--si-*` tokens, so it reads in light and dark.

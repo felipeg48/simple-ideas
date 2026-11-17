@@ -17,7 +17,7 @@
 .si-vp-modal::backdrop{background:rgb(8 10 20 / .78)}
 .si-vp-modal-inner{position:relative}
 .si-vp-modal .si-vp-video{inline-size:100%}
-.si-vp-close{position:absolute;inset-block-start:0;inset-inline-end:0;transform:translate(35%,-35%);inline-size:2.2em;block-size:2.2em;display:grid;place-items:center;border:0;border-radius:50%;background:var(--si-vp-btn-bg);color:var(--si-vp-on);font-size:1.2em;line-height:1;cursor:pointer;box-shadow:var(--si-vp-shadow)}
+.si-vp-close{position:absolute;inset-block-start:.6em;inset-inline-end:.6em;z-index:2;inline-size:2.2em;block-size:2.2em;display:grid;place-items:center;border:0;border-radius:50%;background:var(--si-vp-btn-bg);color:var(--si-vp-on);font-size:1.2em;line-height:1;cursor:pointer;box-shadow:var(--si-vp-shadow)}
 .si-vp-close:focus-visible{outline:3px solid var(--si-vp-ring);outline-offset:2px}
 .si-vp-modal[open]{animation:si-vp-in .2s ease}
 @keyframes si-vp-in{from{opacity:0;transform:translateY(.5em)}to{opacity:1;transform:none}}

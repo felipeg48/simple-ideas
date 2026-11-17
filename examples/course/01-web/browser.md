@@ -32,6 +32,10 @@ show you where to look when the page does not look the way you expect.
 > Keep the browser and your editor side by side. Save, then reload: the
 > page you see is always the file as it was when you last saved it.
 
+```video src="page-load.mp4" poster="page-load.poster.jpg" mode=modal title="A page loads, step by step"
+From the address bar to the first paint, in under a minute.
+```
+
 ## What you will build
 
 By the end of module 2 you will have a page about a topic you choose, with a
