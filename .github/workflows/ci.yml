@@ -45,8 +45,8 @@ jobs:
           cache-dependency-path: web/studio/package-lock.json
       - name: build si
         run: make build
-      - name: zsh (the terminal-drawer test runs it, as on a Mac)
-        run: sudo apt-get update -q && sudo apt-get install -y -q zsh
+      - name: zsh (the terminal-drawer test runs it, as on a Mac), ffmpeg (the Video view builds a clip)
+        run: sudo apt-get update -q && sudo apt-get install -y -q zsh ffmpeg
       - name: install
         working-directory: web/studio
         run: npm ci && npx playwright install --with-deps chromium
