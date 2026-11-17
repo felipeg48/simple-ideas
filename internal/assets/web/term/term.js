@@ -1176,7 +1176,7 @@
     }
     function renameSel() {
       if (!sel || !sel.row) return;
-      var old = sel.path, isDir = sel.dir, base = old.split('/').pop();
+      var old = sel.path, isDir = sel.dir, base = old.split(/[\\/]/).pop();
       nameInput(sel.row, base, function (name) {
         return op('rename', { path: old, name: name }).then(function (j) {
           if (opened[old]) { opened[j.path] = true; delete opened[old]; }
@@ -1341,7 +1341,7 @@
     pane.querySelector('[data-f="copy"]').addEventListener('click', function () { if (cur && navigator.clipboard) navigator.clipboard.writeText(cur); });
     /* for quick open and search: the tree's folder, and a file (at a line) here */
     t.dir = function () { return root0; };
-    t.open = function (p, line) { openFile(p, p.split('/').pop(), false, null, line); };
+    t.open = function (p, line) { openFile(p, p.split(/[\\/]/).pop(), false, null, line); }; /* a Windows path too */
     /* what a reload needs to bring this tab back, unsaved edits included */
     t.snap = function () {
       return { k: 'v', n: n, dir: root0, file: cur || null, name: curName, edit: editing(), follow: following, zoom: t.zoom,
@@ -1351,7 +1351,7 @@
     go(start).then(function () {
       treeReady = true; t.onShow();
       if (!saved || !saved.file) return;
-      openFile(saved.file, saved.name || saved.file.split('/').pop(), saved.edit, function () {
+      openFile(saved.file, saved.name || saved.file.split(/[\\/]/).pop(), saved.edit, function () {
         if (saved.draft == null || !t.editor) return;
         t.editor.setText(saved.draft); file.mtime = saved.mtime; setDirty(true); // a save still checks the file against the version the edits began from
       }, saved.line);
