@@ -1241,7 +1241,13 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
 - **Print** (browser print, or print to PDF): one slide per page at the deck
   `aspect`, every step revealed, canvases in their final state. `si build --pdf`
   writes a `<name>.pdf` next to each deck using headless Chrome (needs Chrome or
-  Chromium installed; without it, HTML is still written).
+  Chromium installed; without it, HTML is still written). Every picture, PDF
+  and page export takes one of a few Chrome slots shared by the whole
+  machine (a quarter of the CPUs, at least two; lock files in the temp
+  folder), so two builds, or a build beside `go test`, take turns instead of
+  starving each other. A run that times out on a busy machine before its
+  file is written gets one more try, and the error says how long it waited
+  for a slot.
 - **Handouts**: `si build talk.md --handout` writes `handouts/<name>.pdf` for
   the audience: a header (title, author, date) and every slide in its final
   state, eight to a page. By default a handout carries **no speaker text**;
