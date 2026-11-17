@@ -89,12 +89,18 @@ func pics(ps []Pic) []pic {
 
 // CaptionedArgs make the captions variant of a w×h video: the picture shrunk
 // into the top of the frame, caps (drawn at w×h by CaptionHTML) in the band
-// under it, the sound copied.
+// under it, the sound copied. Captions that follow each other are one input
+// (an ffconcat list written beside them).
 func CaptionedArgs(video string, w, h int, caps []Pic, out string) []string {
 	a := ff("-i", video)
 	var g strings.Builder
 	fmt.Fprintf(&g, "[0:v]%s[b0];", band(w, h, w, h))
 	last := "b0"
+	if in, ok := slideshow(pics(caps), w, h); ok {
+		a = append(a, in...)
+		fmt.Fprintf(&g, "[b0][1:v]overlay=0:0:eof_action=pass[b1];")
+		last, caps = "b1", nil
+	}
 	for i, c := range caps {
 		a = append(a, "-i", c.PNG)
 		fmt.Fprintf(&g, "[%s][%d:v]overlay=0:0:enable='between(t,%.3f,%.3f)'[b%d];", last, i+1, c.From, c.To, i+1)

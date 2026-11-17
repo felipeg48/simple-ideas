@@ -141,6 +141,7 @@ type Item struct {
 	Badge   string          // speed · badge "…"
 	Path    []*Pos          // a moving callout's keyframes (· to A → B, · path A B C): its place over time
 	PathDur float64         // · over 2s: how long the move takes (0: the callout's length)
+	PathWH  [][2]Num        // a moving rectangle's size at each keyframe (· to X,Y WxH → X,Y WxH); nil: the rectangle's own
 	HL      bool            // · highlight: in the --with highlight cut
 
 	Start, End float64 // source seconds, once resolved
@@ -889,7 +890,9 @@ func (it *Item) action(p string) error {
 // moving are the callouts a path moves: a bubble's tail, an arrow's head, a
 // text's or key caps' place, a rectangle's top-left corner.
 var moving = map[string]bool{"bubble": true, "arrow": true, "text": true, "keys": true, "badge": true, "lower-third": true,
-	"box": true, "circle": true, "underline": true, "spotlight": true}
+	"box": true, "circle": true, "underline": true, "spotlight": true, "blur": true, "pixelate": true}
+
+var sizeRE = regexp.MustCompile(`^([\d.]+%?)[x×]([\d.]+%?)$`)
 
 // path reads the keyframes of `to A → B → C over 2s` or `path A B C`.
 func (it *Item) path(s string) error {
@@ -901,16 +904,43 @@ func (it *Item) path(s string) error {
 		}
 		it.PathDur, f = d, f[:n-2]
 	}
-	it.Path = nil
+	it.Path, it.PathWH = nil, nil
+	var wh []*[2]Num
 	for _, t := range f {
+		if m := sizeRE.FindStringSubmatch(t); m != nil { // a rectangle's size at the place before it
+			if it.Rect == nil || len(it.Path) == 0 || wh[len(wh)-1] != nil {
+				return fmt.Errorf("%q: a size follows a place, for a rectangle (to 10,10 200x80 → 400,300 300x120)", t)
+			}
+			w, _ := num(m[1])
+			h, _ := num(m[2])
+			if w.V <= 0 || h.V <= 0 {
+				return fmt.Errorf("%q: the size must be more than 0", t)
+			}
+			wh[len(wh)-1] = &[2]Num{w, h}
+			continue
+		}
 		p, err := pos(t)
 		if err != nil {
 			return err
 		}
 		it.Path = append(it.Path, p)
+		wh = append(wh, nil)
 	}
 	if len(it.Path) < 2 {
 		return fmt.Errorf("a path needs two places or more (to 100,200 → 400,300 over 2s)")
+	}
+	sized := false
+	for _, s := range wh {
+		sized = sized || s != nil
+	}
+	if sized { // a place without a size keeps the one before it (the first: the rectangle's)
+		cur := [2]Num{it.Rect.W, it.Rect.H}
+		for _, s := range wh {
+			if s != nil {
+				cur = *s
+			}
+			it.PathWH = append(it.PathWH, cur)
+		}
 	}
 	return nil
 }

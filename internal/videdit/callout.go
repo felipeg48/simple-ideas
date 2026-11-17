@@ -107,6 +107,29 @@ func edge(f float64) float64 {
 	return -50
 }
 
+// pathData are a moving callout's keyframes as percentages of a w×h stage
+// (x,y, or x,y,w,h for a rectangle whose size changes), "" for one that
+// stands.
+func pathData(it *Item, w, h int, d float64) string {
+	if len(it.Path) < 2 {
+		return ""
+	}
+	var ps []string
+	for i, p := range it.Path {
+		x, y := p.Px(w, h)
+		s := fmt.Sprintf("%.3f,%.3f", x/float64(w)*100, y/float64(h)*100)
+		if it.PathWH != nil {
+			s += fmt.Sprintf(",%.3f,%.3f", it.PathWH[i][0].Px(w)/float64(w)*100, it.PathWH[i][1].Px(h)/float64(h)*100)
+		}
+		ps = append(ps, s)
+	}
+	ease := "ease"
+	if it.Flags["linear"] {
+		ease = "linear"
+	}
+	return fmt.Sprintf(` data-path="%s" data-pdur="%.3f" data-ease="%s"`, strings.Join(ps, ";"), pathLen(it, d), ease)
+}
+
 // calloutHTML is one line's element on a w×h stage, showing from start for
 // d seconds. preview adds blur and pixelate (the build does those in
 // ffmpeg).
@@ -115,18 +138,7 @@ func calloutHTML(it *Item, w, h int, start, d float64, preview bool) string {
 	esc := html.EscapeString
 	data := fmt.Sprintf(` data-line="%d" data-start="%.3f" data-dur="%.3f" data-in="%.3f" data-out="%.3f" data-enter="%s" data-exit="%s"`,
 		it.Line, start, d, in, out, it.Enter, it.Exit)
-	if len(it.Path) > 1 { // a moving callout: its keyframes as percentages of the stage
-		var ps []string
-		for _, p := range it.Path {
-			x, y := p.Px(w, h)
-			ps = append(ps, fmt.Sprintf("%.3f,%.3f", x/float64(w)*100, y/float64(h)*100))
-		}
-		ease := "ease"
-		if it.Flags["linear"] {
-			ease = "linear"
-		}
-		data += fmt.Sprintf(` data-path="%s" data-pdur="%.3f" data-ease="%s"`, strings.Join(ps, ";"), pathLen(it, d), ease)
-	}
+	data += pathData(it, w, h, d)
 	text := func() string {
 		if it.Enter == "type" {
 			return `<span class="ve-type" data-text="` + esc(it.Str) + `"></span>`
@@ -243,8 +255,8 @@ func calloutHTML(it *Item, w, h int, start, d float64, preview bool) string {
 			return ""
 		}
 		x, y, rw, rh := it.Rect.Px(w, h)
-		return fmt.Sprintf(`<div class="ve-c ve-hide ve-%s" data-line="%d" data-start="%.3f" data-dur="%.3f" data-in="0" data-out="0" data-enter="none" data-exit="none" style="left:%s;top:%s;width:%s;height:%s"><div class="ve-in"></div></div>`,
-			it.Action, it.Line, start, d, pct(x, w), pct(y, h), pct(rw, w), pct(rh, h))
+		return fmt.Sprintf(`<div class="ve-c ve-hide ve-%s" data-line="%d" data-start="%.3f" data-dur="%.3f" data-in="0" data-out="0" data-enter="none" data-exit="none"%s style="left:%s;top:%s;width:%s;height:%s"><div class="ve-in"></div></div>`,
+			it.Action, it.Line, start, d, pathData(it, w, h, d), pct(x, w), pct(y, h), pct(rw, w), pct(rh, h))
 	case "keys":
 		var ks []string
 		for _, k := range strings.FieldsFunc(it.Str, func(r rune) bool { return r == ' ' || r == '+' }) {

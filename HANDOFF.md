@@ -5,6 +5,24 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-17)
 
+**v3.33.0:** the video edit "Improve" items. A moving blur or pixelate
+(`· to`/`· path` on `blur`/`pixelate`): `graph.go` `hideMoving` cuts a
+piece the size of the largest keyframe at `x='min(keyExpr…)'`, hides it and
+overlays it back at the same expression of t (`keyExpr`: smoothstep or
+linear progress, stretches timed by their length in percent of the frame,
+exactly as overlay.js `place`); when sizes differ a `geq` mask
+(alphamerge) cuts it to the size of the moment, the branch trimmed to the
+line's range. A size per place (`→ 400,300 300x90`, `Item.PathWH`) for any
+moving rectangle (overlay.js sets width/height too). The Video view: path
+places are handles while paused (`edit.js` `.ve-key`, `.ve-route`; a drag
+sends `{key, at}`, `Move.Key` + `movePathPoint` rewrite that place), a
+zoom's/pan's rectangle (`.ve-camrect`, from the mark's `box`) shows with
+its line and drags like a box (`Move.Apply` writes `zoom to …`). Burned
+captions: `webdemo.slideshow` writes an ffconcat list (a transparent PNG in
+the gaps) so `CaptionedArgs` and the demo `videoArgs` have one caption
+input; the bundled ffmpeg has no libass or drawtext, so the per-word
+pictures stay (same look). Numbers in the CHANGELOG.
+
 **v3.31.0:** the video edit phase 3 and its "not now" items: the Studio Video
 view (`internal/studio/video.go`: POST video applies a `videdit.Move` and
 returns `videdit.PreviewText` with `edit.js`/`edit.css`; POST/GET
@@ -13,8 +31,7 @@ e2e `videoedit.e2e.mjs`), moving callouts (`Item.Path`, overlay.js `place`),
 per-word captions (`internal/webdemo/words.go`, `captions words`, `--with
 words`, karaoke cues in `videoplayer.js`), `--with highlight` for edits
 (`internal/videdit/highlight.go`), Windows CI running a split demo
-(`TestTerminalSplitWindows`) and the workbench e2e. Next: a moving blur;
-dragging a moving callout's keyframes.
+(`TestTerminalSplitWindows`) and the workbench e2e.
 
 **v3.28.0:** video edits (`type: video`, RULES §32, spec
 `docs/superpowers/specs/2026-11-17-video-edit.md`, phases 1–2): `internal/videdit/`

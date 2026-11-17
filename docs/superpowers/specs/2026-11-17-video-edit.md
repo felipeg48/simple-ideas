@@ -235,8 +235,18 @@ re-encodes the whole video once.
   frame, the build shoots every frame while they move); per-word captions
   (`captions words`: word stamps in the .vtt, the captions variant a picture
   per word; word times share a caption's time by letters, as `at said`
-  does). **Still not now:** ProRes/WebM alpha intermediates (the PNG overlay
-  sequence with hard links is smaller and simpler); a moving blur.
+  does). **Done in v3.33.0:** a moving blur or pixelate (`· to`/`· path`,
+  in the ffmpeg graph: a piece the size of the largest keyframe cut and
+  laid back at a place that is an expression of t; when the keyframes'
+  sizes differ, a `geq` mask cuts it to the size of the moment, run only
+  over the line's range); a size per place for any moving rectangle
+  (`→ 400,300 300x90`); the Video view drags a path's places and a zoom's or
+  pan's rectangle; burned captions as one ffmpeg input (an ffconcat list of
+  the pictures, a transparent one in the gaps) instead of one per picture.
+  The bundled ffmpeg has no libass (nor drawtext), so ASS karaoke was not
+  an option; the pictures stay the same, so the look does. **Still not
+  now:** ProRes/WebM alpha intermediates (the PNG overlay sequence with
+  hard links is smaller and simpler).
 
 ## Phases
 
@@ -251,6 +261,11 @@ re-encodes the whole video once.
    `internal/studio/video.go`, `web/studio/src/video-editor.tsx`), a line
    selected from its marker and the cursor's line marked, ⌘B to build and
    play the result; e2e `web/studio/e2e/videoedit.e2e.mjs`.
+4. Improvements (DONE v3.33.0): moving blur and pixelate (`hideMoving`,
+   `rectKeys`, `keyExpr` in `graph.go`), sizes along a path (`Item.PathWH`),
+   dragging a path's places (`Move.Key`) and a zoom's or pan's rectangle in
+   the Video view, burned captions as one ffmpeg input
+   (`webdemo.slideshow`).
 
 ## Code
 

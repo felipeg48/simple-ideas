@@ -8,19 +8,23 @@
   function out3(p) { return 1 - Math.pow(1 - p, 3); }
   function back(p) { var c = 1.70158; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); }
   function smooth(p) { return p * p * (3 - 2 * p); }
-  /* a moving callout: its place along the keyframes (percentages of the
-     stage) at l seconds, the same length per unit of distance */
+  /* a moving callout: its place (and a rectangle's size, x,y,w,h) along the
+     keyframes (percentages of the stage) at l seconds, the same length per
+     unit of distance (graph.go's keyExpr moves a blur the same way) */
   function place(el, l) {
     var ps = el.dataset.path.split(';').map(function (s) { return s.split(',').map(Number); });
     var p = clamp(l / (+el.dataset.pdur || 1)); if (el.dataset.ease !== 'linear') p = smooth(p);
     var lens = [], all = 0;
-    for (var i = 1; i < ps.length; i++) { var n = Math.hypot(ps[i][0] - ps[i - 1][0], ps[i][1] - ps[i - 1][1]); lens.push(n); all += n; }
+    for (var i = 1; i < ps.length; i++) {
+      var n = Math.hypot.apply(null, ps[i].map(function (v, c) { return v - ps[i - 1][c]; })); lens.push(n); all += n;
+    }
     var want = p * all, k = 0;
     while (k < lens.length - 1 && want > lens[k]) { want -= lens[k]; k++; }
     var f = lens[k] ? clamp(want / lens[k]) : 1, a = ps[k], b = ps[k + 1];
-    var x = a[0] + (b[0] - a[0]) * f, y = a[1] + (b[1] - a[1]) * f;
-    if (el.classList.contains('ve-arrow')) { arrowTo(el, x, y); return; }
-    el.style.left = x.toFixed(3) + '%'; el.style.top = y.toFixed(3) + '%';
+    var at = function (c) { return a[c] + (b[c] - a[c]) * f; };
+    if (el.classList.contains('ve-arrow')) { arrowTo(el, at(0), at(1)); return; }
+    el.style.left = at(0).toFixed(3) + '%'; el.style.top = at(1).toFixed(3) + '%';
+    if (a.length > 2) { el.style.width = at(2).toFixed(3) + '%'; el.style.height = at(3).toFixed(3) + '%'; }
   }
   /* an arrow whose head moves: the line and head drawn again (as callout.go draws them) */
   function arrowTo(el, xp, yp) {

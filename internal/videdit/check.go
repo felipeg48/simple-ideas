@@ -140,8 +140,14 @@ func (e *Edit) checkPlace(it *Item, w, h int) {
 	pt("at", it.At)
 	pt("to", it.Point)
 	pt("from", it.Tail)
-	for _, p := range it.Path {
+	for i, p := range it.Path {
 		pt("path", p)
+		if it.PathWH != nil && p.Word == "" {
+			x, y := p.Px(w, h)
+			if rw, rh := it.PathWH[i][0].Px(w), it.PathWH[i][1].Px(h); x+rw > float64(w)+1 || y+rh > float64(h)+1 {
+				e.problem(it.Line, "path %g,%g %gx%g is outside the %d×%d frame", x, y, rw, rh, w, h)
+			}
+		}
 	}
 	if r := it.Rect; r != nil {
 		x, y, rw, rh := r.Px(w, h)

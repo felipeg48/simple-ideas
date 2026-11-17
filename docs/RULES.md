@@ -5445,16 +5445,24 @@ colours and fonts and scale with the frame, a phone-shaped recording too.
 A callout can move: `· to A → B → C` (or `->`) moves a bubble's tail, an
 arrow's head or (with `· at A → B`) a text, key caps, a badge or a lower
 third through the places in turn; `· path A B C` says the same for any of
-them and for a `box`, `circle`, `underline` or `spotlight` (its top-left
-corner moves, its size stays). The move takes the callout's whole length,
-or `· over 2s` (also written inside: `to A → B over 2s`); it is eased
-(`· linear` for a steady speed), the same speed along every stretch.
+them and for a `box`, `circle`, `underline`, `spotlight`, `blur` or
+`pixelate` (its top-left corner moves). A rectangle's place can carry a
+size (`· to 100,100 300x80 → 700,400 500x200`): the size changes along
+the way too; a place without one keeps the size before it. The move takes
+the callout's whole length, or `· over 2s` (also written inside: `to A → B
+over 2s`); it is eased (`· linear` for a steady speed), the same speed
+along every stretch.
 
 ```markdown
 - 0:12 · bubble "Follow the order" · to 200,640 → 900,420 → 1500,300 over 3s · 4s
 - 0:20 · arrow from 1700,900 to 300,200 · path 300,200 820,240 · 2s
 - 0:24 · box 100,100 300x80 · path 100,100 700,100 700,600 · linear · 3s
+- 0:30–0:36 · blur 80,600 360x60 · to 80,600 → 900,600 → 900,200 480x90 over 5s
 ```
+
+A moving `blur` or `pixelate` is done by ffmpeg like a still one: the
+pixels under the place of the moment are hidden, whatever moves beneath, so
+it can follow a token scrolling up a terminal or a window being dragged.
 
 ```markdown
 - 0:02 · lower-third "Ada Lovelace" "Platform engineer" · 4s · slide-in
@@ -5491,7 +5499,7 @@ zoom with the picture.
 | `T · say "…" · duck 30%` | new narration in the configured voice (`voice:`, `--voice`, si.conf `voice:`); the original sound drops to 30 % while it speaks |
 | `0:00 · music bed.mp3 · 15%` | music under the whole video, ducked under the speech |
 | `captions on` (or `captions: on`) | `<out>.vtt` and `<out>.srt`: the source's captions moved by the edits, plus the `say` lines |
-| `captions words` (or `captions: words`) | the same, and the word being said is marked: the `.vtt` carries a time before each word (si's player and browsers that style `::cue(:past)` follow it) and `--with captions` draws the captions a word at a time; word times share each caption's time by letters |
+| `captions words` (or `captions: words`) | the same, and the word being said is marked: the `.vtt` carries a time before each word (si's player and browsers that style `::cue(:past)` follow it) and `--with captions` draws the captions a word at a time (one ffmpeg input for all the pictures, so an hour-long video builds as easily as a minute); word times share each caption's time by letters |
 | `A–B · refilm feature "Name"` | run that feature of the demo script again and splice the new take over the range |
 
 ```markdown
@@ -5534,6 +5542,11 @@ between is encoded again.
   (`at X,Y`), an arrow by either end (`from … to …`), a rectangle (a box,
   circle, underline, spotlight, blur or pixelate) by its middle, resized by
   its corner (`X,Y WxH`); the place is written into that line in source
-  pixels, one ⌘Z away. ⌘B builds the file and plays the result beside it.
+  pixels, one ⌘Z away. A moving callout (or a moving blur) shows its path
+  while paused: a handle at each place (a dashed box at a rectangle's
+  places); drag one and that place of `· to A → B` or `· path` is rewritten,
+  its size and `over` kept. The line under the cursor that is a `zoom to` or
+  `pan to` shows its rectangle on the frame, dragged and resized the same
+  way. ⌘B builds the file and plays the result beside it.
 - A folder build skips video edits (`si build edit.md` makes one); a folder
   check checks them.

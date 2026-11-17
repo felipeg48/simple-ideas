@@ -2,11 +2,14 @@ package videdit
 
 import (
 	"flag"
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/felipeg48/simple-ideas/internal/webdemo"
 )
 
 var update = flag.Bool("update", false, "rewrite the golden files")
@@ -72,6 +75,10 @@ func TestParseEveryAction(t *testing.T) {
 		{"0:05 · box 10,10 50x50 · path 10,10 400,300 600,250 · 4s", "box", func(i *Item) bool { return len(i.Path) == 3 && i.PathDur == 0 && i.Dur == 4 }},
 		{"0:05 · arrow from 10,10 to 50,50 · path 50,50 90,90", "arrow", func(i *Item) bool { return i.Tail.X.V == 10 && i.Point == i.Path[0] }},
 		{"0:05–0:09 · cut · highlight", "cut", func(i *Item) bool { return i.HL }},
+		{"0:05–0:09 · blur 10,10 40x40 · to 10,10 → 200,100 100x60 → 250,100 over 2s · linear", "blur", func(i *Item) bool {
+			return len(i.Path) == 3 && i.PathDur == 2 && i.Flags["linear"] && i.PathWH[0][0].V == 40 && i.PathWH[1][1].V == 60 && i.PathWH[2][0].V == 100
+		}},
+		{"0:05 · pixelate 10,10 40x40 · path 10,10 90,90 · 2s", "pixelate", func(i *Item) bool { return len(i.Path) == 2 && i.PathWH == nil }},
 	}
 	for _, c := range cases {
 		e := parseLines(t, c.line)
@@ -316,6 +323,71 @@ func TestMovingCallout(t *testing.T) {
 	}
 }
 
+// A moving blur is cut and laid back at a place that is an expression of
+// t; a mask (geq) only when its size changes; a size in a path only after a
+// place of a rectangle.
+func TestMovingBlurGraph(t *testing.T) {
+	for _, l := range []string{"0:01 · text \"x\" · to 1,1 10x10 → 2,2", "0:01 · box 1,1 9x9 · path 10x10 1,1 2,2", "0:01 · box 1,1 9x9 · path 1,1 5x5 6x6 2,2"} {
+		if e := parseLines(t, l); len(e.Problems) != 1 || !strings.Contains(e.Problems[0].Msg, "a size follows a place") {
+			t.Errorf("%s: %v", l, e.Problems)
+		}
+	}
+	ks := [][4]float64{{0, 0, 40, 40}, {100, 0, 40, 40}, {100, 50, 40, 40}}
+	if e := keyExpr(ks, 200, 100, 0, 1, 2, true, "t"); e != "(st(0,clip((t-1.000)/2.000,0,1));if(lt(ld(0),0.500000),0.00+(100.00)*(ld(0)-0.000000)/0.500000,if(lt(ld(0),1.000000),100.00+(0.00)*(ld(0)-0.500000)/0.500000,100.00)))" {
+		t.Errorf("x over time: %s", e) // 50% of the frame across, then 50% down: half the time each
+	}
+	if e := keyExpr(ks[:1], 200, 100, 1, 0, 1, false, "t"); !strings.Contains(e, "3-2*ld(0)") {
+		t.Errorf("eased: %s", e)
+	}
+	graph := func(line string) string {
+		e := parseLines(t, line)
+		e.Resolve(10, nil, nil)
+		pl := e.Plan(10, nil)
+		j := &Job{Src: "s.mp4", W: 640, H: 360, Plan: pl, Spans: pl.Spans(e), Out: "o.mp4"}
+		a := j.Args()
+		for i, s := range a {
+			if s == "-filter_complex" {
+				return a[i+1]
+			}
+		}
+		return ""
+	}
+	g := graph("0:01–0:03 · blur 0,0 40x40 · to 0,0 → 100,50 over 1s")
+	if !strings.Contains(g, "trim=start=1.000:end=3.050,crop=40:40:x='min((st(0") || !strings.Contains(g, "overlay=x='min(") || strings.Contains(g, "geq") {
+		t.Errorf("moving blur: %s", g)
+	}
+	g = graph("0:01–0:03 · pixelate 0,0 40x40 · to 0,0 → 100,50 80x60 over 1s")
+	if !strings.Contains(g, "crop=80:60:") || !strings.Contains(g, "alphamerge") || !strings.Contains(g, "geq=lum='255*gte(X,") || !strings.Contains(g, "flags=neighbor") {
+		t.Errorf("moving pixelate that grows: %s", g)
+	}
+}
+
+// Burned captions (a picture per word with captions words) are one ffmpeg
+// input, an ffconcat list with a transparent picture in the gaps; pictures
+// that overlap fall back to an overlay each.
+func TestCaptionsOneInput(t *testing.T) {
+	dir := t.TempDir()
+	var ps []webdemo.Pic
+	for i := range 300 {
+		ps = append(ps, webdemo.Pic{PNG: filepath.Join(dir, fmt.Sprintf("capw%04d.png", i)), From: 1 + float64(i)*0.4, To: 1.4 + float64(i)*0.4})
+	}
+	ps[100].To -= .2 // a gap
+	inputs := func(a []string) int { return strings.Count(strings.Join(a, " "), " -i ") }
+	a := webdemo.CaptionedArgs("v.mp4", 640, 360, ps, "o.mp4")
+	if n := inputs(a); n != 2 || !strings.Contains(strings.Join(a, " "), "-f concat -safe 0 -i ") {
+		t.Errorf("%d inputs: %v", n, a)
+	}
+	list, _ := os.ReadFile(filepath.Join(dir, "pictures.ffconcat"))
+	if s := string(list); !strings.HasPrefix(s, "ffconcat version 1.0\nfile '"+filepath.ToSlash(filepath.Join(dir, "blank-640x360.png"))+"'\nduration 1.000\nfile '") ||
+		strings.Count(s, "blank-640x360.png") != 3 || strings.Count(s, "\nfile ") != 303 {
+		t.Errorf("list:\n%.400s", s)
+	}
+	ps[5].From = ps[4].From // overlapping
+	if n := inputs(webdemo.CaptionedArgs("v.mp4", 640, 360, ps, "o.mp4")); n != 301 {
+		t.Errorf("overlapping pictures: %d inputs", n)
+	}
+}
+
 func TestArgsGolden(t *testing.T) {
 	e := parseLines(t,
 		"0:02–0:04 · cut",
@@ -358,7 +430,9 @@ func TestArgsGolden(t *testing.T) {
 func TestMoveApply(t *testing.T) {
 	src := head + "- 0:01 · bubble \"Here\" · to 820,410 · 4s · pop\n- 0:02 · text \"Hi\" · 3s\n" +
 		"- 0:03 · arrow from 200,700 to 640,420 · \"Queue\"\n- 0:04 · box 120,80 400x60 · 2s\n- 0:05–0:06 · blur 1,2,30x40\n" +
-		"- 0:07 · title \"T\"\n- 0:08 · bubble \"Go\" · to 0,0 → 10,10\n"
+		"- 0:07 · title \"T\"\n- 0:08 · bubble \"Go\" · to 0,0 → 10,10\n" +
+		"- 0:09–0:10 · blur 1,1 9x9 · to 1,1 → 20,20 30x30→40,40 over 1s\n- 0:11 · box 1,1 9x9 · path center 5,5 · 2s\n- 0:12 · zoom to 0,0 320x180 · 1s\n"
+	k1, k0 := 1, 0
 	cases := []struct {
 		m    Move
 		want string
@@ -369,6 +443,10 @@ func TestMoveApply(t *testing.T) {
 		{Move{Line: 11, From: &[2]int{1, 1}}, `- 0:03 · arrow from 1,1 to 640,420 · "Queue"`},
 		{Move{Line: 12, Rect: &[4]int{10, 20, 300, 0}}, `- 0:04 · box 10,20 300x1 · 2s`},
 		{Move{Line: 13, Rect: &[4]int{3, 4, 50, 60}}, `- 0:05–0:06 · blur 3,4,50x60`},
+		{Move{Line: 15, Key: &k1, At: &[2]int{7, 8}}, `- 0:08 · bubble "Go" · to 0,0 → 7,8`},
+		{Move{Line: 16, Key: &k1, At: &[2]int{50, 60}}, `- 0:09–0:10 · blur 1,1 9x9 · to 1,1 → 50,60 30x30 → 40,40 over 1s`},
+		{Move{Line: 17, Key: &k0, At: &[2]int{2, 3}}, `- 0:11 · box 1,1 9x9 · path 2,3 5,5 · 2s`},
+		{Move{Line: 18, Rect: &[4]int{10, 20, 160, 90}}, `- 0:12 · zoom to 10,20 160x90 · 1s`},
 	}
 	for _, c := range cases {
 		got, err := c.m.Apply(src)
@@ -383,7 +461,8 @@ func TestMoveApply(t *testing.T) {
 			t.Errorf("%v", e.Problems)
 		}
 	}
-	for _, m := range []Move{{Line: 14, At: &[2]int{1, 1}}, {Line: 15, To: &[2]int{1, 1}}, {Line: 1, At: &[2]int{1, 1}}, {Line: 99}} {
+	k5 := 5
+	for _, m := range []Move{{Line: 14, At: &[2]int{1, 1}}, {Line: 15, To: &[2]int{1, 1}}, {Line: 16, Key: &k5, At: &[2]int{1, 1}}, {Line: 9, Key: &k0, At: &[2]int{1, 1}}, {Line: 1, At: &[2]int{1, 1}}, {Line: 99}} {
 		if _, err := m.Apply(src); err == nil {
 			t.Errorf("%+v: no error", m)
 		}

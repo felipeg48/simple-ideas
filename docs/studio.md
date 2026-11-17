@@ -370,7 +370,15 @@ preview above the text, which stays open under it:
   resized by the round handle at its corner (`X,Y WxH`, keeping `X,Y,WxH` if
   the line had it). The place is written into that line in source pixels,
   the rest of the line as it was; ⌘Z (outside the text) or the text's own
-  undo takes it back. A title and a moving callout (a path) are not dragged.
+  undo takes it back. A title is not dragged.
+- **A moving callout's path** (and a moving blur's): while paused, each
+  place of `· to A → B` or `· path` is a handle on the frame (a dashed box
+  at a rectangle's places, a dotted line between them); drag one and that
+  place is rewritten in source pixels, its size and `over` kept, one undo
+  away.
+- **A zoom's or pan's rectangle**: put the cursor on a `zoom to` or `pan to`
+  line and its rectangle shows on the frame (dashed); drag it by its middle
+  or resize it by its corner, as a box.
 - **⌘B** (or **Build video**) saves, runs `si build` on the file and shows its
   log; when it is done the built video plays in the panel.
 

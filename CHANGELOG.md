@@ -3,6 +3,28 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.33.0:** video edits, improved. A **moving blur**: `blur` and
+  `pixelate` take `· to A → B over 2s` and `· path A B C` (eased or
+  `· linear`) like the other moving callouts, and ffmpeg hides the pixels
+  under the place of each moment (the place is an expression of time in
+  the graph, the same curve the preview draws). A rectangle's place can
+  carry a **size** (`· to 100,100 300x80 → 700,400 500x200`) and the size
+  changes along the way, for a blur and for a box, circle, underline or
+  spotlight. In the Studio's **Video view**, a moving callout's (or blur's)
+  places are handles while paused, with its path drawn between them: drag
+  one and that place is rewritten in the line, one undo away; the line
+  under the cursor that is a `zoom to` or `pan to` shows its rectangle,
+  which drags and resizes like a box. **Burned per-word captions scale**:
+  the captions variant (`captions words`, `--with words`, and plain
+  captions too) plays all its pictures as one ffmpeg input (an ffconcat
+  list, a transparent picture in the gaps) instead of one input and one
+  overlay per picture. On a 3-minute 1280×720 clip with 600 words, the
+  ffmpeg pass went from 601 inputs and 33.2 s to 2 inputs and 10.1 s (the
+  600 pictures, drawn by headless Chrome in 45.8 s, are unchanged). The
+  look is the same pictures: in frames compared at seven times, the
+  caption band matches pixel for pixel; only encoding noise in the moving
+  picture differs. The ffmpeg si finds here has no libass (nor drawtext),
+  so ASS karaoke was not an option.
 - **v3.32.0:** terminal looks. `si play`, `si serve`, `si build` and `si
   check` print in colour on a terminal, in one of four looks: **ledger** (the
   default: a dim label column, the value, a green ✓ per line), **badges** (a

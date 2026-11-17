@@ -4,8 +4,11 @@
    place in source pixels ({type:'si-ve-move', line, to|at|from|rect}) and
    the Studio writes it into that line. A marker, a list row or a callout
    clicked selects its line ('si-ve-select'); the Studio's cursor line comes
-   back as 'si-ve-line' and is marked here. Moving callouts (a path) and
-   titles stay where the text puts them. */
+   back as 'si-ve-line' and is marked here. A moving callout (a path) is
+   moved by its places: handles shown while paused, one dragged sends
+   {key, at} (a rectangle's place is its top-left corner). A zoom's or pan's
+   rectangle shows while its line is the cursor's and drags like a box.
+   Titles stay where the text puts them. */
 (function () {
   var P = window.VP, v = document.querySelector('video'), stage = document.querySelector('.ve-stage');
   if (!P || !v || !stage) return;
@@ -15,7 +18,43 @@
   function box() { return stage.getBoundingClientRect(); }
   function src(ev) { var r = box(); return [(ev.clientX - r.left) / r.width * P.w, (ev.clientY - r.top) / r.height * P.h]; }
   function pc(el, k) { return parseFloat(el.style[k]) || 0; }
-  var RECT = /\bve-(mark|spotlight|hide)\b/;
+  var RECT = /\bve-(mark|spotlight|hide|camrect)\b/;
+  var pcs = function (n) { return n + '%'; };
+  // a zoom's or pan's rectangle: shown while its line is the cursor's
+  P.marks.forEach(function (m) {
+    if (!m.box) return;
+    var r = document.createElement('div');
+    r.className = 've-c ve-camrect'; r.dataset.line = m.line; r.title = 'line ' + m.line + ': ' + m.label;
+    r.style.left = pcs(m.box[0] / P.w * 100); r.style.top = pcs(m.box[1] / P.h * 100);
+    r.style.width = pcs(m.box[2] / P.w * 100); r.style.height = pcs(m.box[3] / P.h * 100);
+    stage.appendChild(r);
+  });
+  // a moving callout's places (a rectangle's at its size): handles while paused
+  var keyed = [];
+  [].forEach.call(stage.querySelectorAll('.ve-c[data-path]'), function (el) {
+    var ps = el.dataset.path.split(';').map(function (s) { return s.split(',').map(Number); }), rect = RECT.test(el.className);
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'), line = document.createElementNS(svg.namespaceURI, 'polyline');
+    svg.setAttribute('class', 've-route'); svg.setAttribute('viewBox', '0 0 100 100'); svg.setAttribute('preserveAspectRatio', 'none');
+    line.setAttribute('points', ps.map(function (p) { return p[0] + ',' + p[1]; }).join(' '));
+    svg.appendChild(line); stage.appendChild(svg);
+    var hs = ps.map(function (p, k) {
+      var g = document.createElement('i');
+      g.className = 've-key' + (rect ? ' ve-key-rect' : ''); g.dataset.grip = 'key'; g.dataset.key = k; g.dataset.line = el.dataset.line;
+      g.title = 'line ' + el.dataset.line + ', place ' + (k + 1);
+      g.style.left = pcs(p[0]); g.style.top = pcs(p[1]);
+      if (rect) { g.style.width = p.length > 2 ? pcs(p[2]) : el.style.width; g.style.height = p.length > 2 ? pcs(p[3]) : el.style.height; }
+      stage.appendChild(g);
+      return g;
+    });
+    keyed.push({ el: el, svg: svg, hs: hs });
+  });
+  (function show() {
+    keyed.forEach(function (k) {
+      var on = v.paused && (k.el.style.visibility === 'visible' || k.el.classList.contains('ve-sel')) || (drag && drag.key && k.hs.indexOf(drag.target) >= 0);
+      k.svg.style.display = on ? '' : 'none'; k.hs.forEach(function (h) { h.hidden = !on; });
+    });
+    requestAnimationFrame(show);
+  })();
   // the handles: a rectangle's corner, an arrow's two ends
   [].forEach.call(stage.querySelectorAll('.ve-c'), function (el) {
     if (el.dataset.path || el.classList.contains('ve-title')) { el.classList.add('ve-fixed'); return; }
@@ -31,6 +70,15 @@
   });
   var drag = null;
   stage.addEventListener('pointerdown', function (ev) {
+    if (ev.target.classList && ev.target.classList.contains('ve-key')) { // a place on a path
+      var kh = ev.target;
+      send({ type: 'si-ve-select', line: +kh.dataset.line });
+      ev.preventDefault(); ev.stopPropagation();
+      v.pause();
+      stage.setPointerCapture(ev.pointerId);
+      drag = { el: kh, key: true, grip: 'key', target: kh, at: src(ev), left: pc(kh, 'left'), top: pc(kh, 'top'), moved: false };
+      return;
+    }
     var el = ev.target.closest && ev.target.closest('.ve-c');
     if (!el) return;
     send({ type: 'si-ve-select', line: +el.dataset.line });
@@ -61,7 +109,9 @@
     el.classList.remove('ve-dragging');
     if (!d.moved) return;
     var px = function (pctX, pctY) { return [round(pctX / 100 * P.w), round(pctY / 100 * P.h)]; };
-    if (d.grip === 'tail' || d.grip === 'head') {
+    if (d.key) {
+      m.key = +el.dataset.key; m.at = px(pc(el, 'left'), pc(el, 'top'));
+    } else if (d.grip === 'tail' || d.grip === 'head') {
       m[d.grip === 'tail' ? 'from' : 'to'] = px(pc(d.target, 'left'), pc(d.target, 'top'));
     } else if (RECT.test(el.className)) {
       var a = px(pc(el, 'left'), pc(el, 'top')), z = px(pc(el, 'width'), pc(el, 'height'));

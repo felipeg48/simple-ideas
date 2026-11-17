@@ -4,7 +4,9 @@
 // arrow → the Video view shows the preview and its strip → a marker clicked
 // selects its line in the text, the cursor's line is marked in the preview →
 // the box dragged and resized, the bubble dragged (real pointer): their lines
-// change on disk in source pixels → ⌘Z puts the box back → ⌘B builds and
+// change on disk in source pixels → ⌘Z puts the box back → a moving blur's
+// places are handles while paused, one dragged rewrites that place (⌘Z
+// back) → a zoom's rectangle shows with its line and drags → ⌘B builds and
 // the built video plays in the view. Screenshots in e2e/out/.
 import { chromium } from "playwright";
 import { spawn, execFileSync } from "node:child_process";
@@ -26,7 +28,9 @@ execFileSync("ffmpeg", ["-v", "error", "-f", "lavfi", "-i", "testsrc2=s=640x360:
 const EDIT = "---\ntype: video\nsource: clip.webm\nout: clip.final.mp4\n---\n# Clip\n\n## Timeline\n\n" +
   "- 0:00.2 · bubble \"Look here\" · to 320,180 · 1.6s · out none\n" + // line 10
   "- 0:00.2 · box 40,40 160x90 · 1.6s · out none\n" + // line 11
-  "- 0:00.5 · arrow from 600,320 to 420,220 · 1.2s\n"; // line 12
+  "- 0:00.5 · arrow from 600,320 to 420,220 · 1.2s\n" + // line 12
+  "- 0:00.2–0:01.9 · blur 40,250 80x60 · to 40,250 → 300,250 120x80 over 1.6s\n" + // line 13: a moving blur that grows
+  "- 0:01.5 · zoom to 320,0 320x180 · 0.3s\n"; // line 14
 writeFileSync(join(root, "clip.md"), EDIT);
 
 const srv = spawn(si, ["--web", root, "--addr", "127.0.0.1:0", "--no-open"], { stdio: ["ignore", "pipe", "pipe"] });
@@ -69,7 +73,7 @@ try {
   await f.locator(".vp-strip .m").first().waitFor();
   const frame = () => page.frames().find((x) => x !== page.mainFrame());
   await until(() => frame()?.evaluate(() => !!window.siVideoEdit && document.querySelector("video").readyState >= 1), 10000, "preview ready");
-  check(await f.locator(".vp-strip .m").count() === 3, "a marker per line on the strip");
+  check(await f.locator(".vp-strip .m").count() === 5, "a marker per line on the strip");
 
   // marker → line; cursor line → marked
   await f.locator('.vp-lines li[data-line="12"] button').click();
@@ -127,6 +131,39 @@ try {
   await until(() => line(10).includes("to 320,180"), 6000, "undo: " + line(10));
   check(true, "⌘Z undoes the drag through the editor");
 
+  // a moving blur: its places are handles while paused; the second dragged by (-100, -60) source px
+  await until(() => frame()?.evaluate(() => !!window.siVideoEdit), 6000, "preview redrawn");
+  await frame().evaluate(() => { const v = document.querySelector("video"); v.pause(); v.currentTime = 1; });
+  await until(() => frame().evaluate(() => [...document.querySelectorAll('.ve-key[data-line="13"]')].filter((k) => !k.hidden).length === 2), 4000, "path handles shown");
+  check(true, "a moving blur's two places are handles while paused");
+  const kf = await rectOf('.ve-key[data-line="13"][data-key="1"]');
+  await page.mouse.move(kf.x + kf.w / 2, kf.y + kf.h / 2);
+  await page.mouse.down();
+  await page.mouse.move(kf.x + kf.w / 2 - 50 / k, kf.y + kf.h / 2 - 30 / k, { steps: 6 });
+  await page.mouse.move(kf.x + kf.w / 2 - 100 / k, kf.y + kf.h / 2 - 60 / k, { steps: 6 });
+  await page.mouse.up();
+  await until(() => /to 40,250 → (19\d|20\d|21\d),(18\d|19\d) 120x80 over 1\.6s/.test(line(13)), 6000, "path place moved: " + line(13));
+  check(true, "a place of a path dragged: " + line(13));
+  await page.screenshot({ path: join(out, "videoedit-path.png") });
+  await page.locator(".vex .insp-head").first().click();
+  await page.keyboard.press("ControlOrMeta+z");
+  await until(() => line(13).includes("→ 300,250 120x80"), 6000, "undo: " + line(13));
+  check(true, "⌘Z puts the place back");
+
+  // the zoom's rectangle: shown with its line, dragged by (-100, +40)
+  await page.locator(".cm-content .cm-line", { hasText: "zoom to 320,0" }).click();
+  await until(() => frame()?.evaluate(() => { const r = document.querySelector(".ve-camrect.ve-sel"); return r && r.getBoundingClientRect().width > 0; }), 6000, "zoom rectangle shown");
+  await frame().evaluate(() => document.querySelector("video").pause());
+  await sleep(200);
+  const cr = await rectOf(".ve-camrect");
+  await page.mouse.move(cr.x + cr.w / 2, cr.y + cr.h / 2);
+  await page.mouse.down();
+  await page.mouse.move(cr.x + cr.w / 2 - 50 / k, cr.y + cr.h / 2 + 20 / k, { steps: 6 });
+  await page.mouse.move(cr.x + cr.w / 2 - 100 / k, cr.y + cr.h / 2 + 40 / k, { steps: 6 });
+  await page.mouse.up();
+  await until(() => /zoom to (2[01]\d|22\d),(3\d|4\d|5\d) 320x180 · 0\.3s/.test(line(14)), 6000, "zoom moved: " + line(14));
+  check(true, "a zoom's rectangle dragged: " + line(14));
+
   // ⌘B: build, then the result plays in the view
   await page.keyboard.press("ControlOrMeta+b");
   await until(() => page.locator(".vex-result").isVisible(), 120000, "build done: " + (await page.locator(".vex-log").textContent().catch(() => "")));
@@ -142,6 +179,7 @@ try {
 } catch (e) {
   console.log("FAIL " + e.message);
   failed++;
+  try { await browser.contexts()[0]?.pages()[0]?.screenshot({ path: join(out, "videoedit-fail.png") }); } catch { /* closed */ }
 } finally {
   await browser.close();
 }

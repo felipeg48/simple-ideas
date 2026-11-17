@@ -247,7 +247,9 @@ an example for every rule: [RULES.md](docs/RULES.md).
   `refilm feature` (one demo feature filmed again; alone, the rest
   stream-copied).
 - Moving callouts: `· to A → B → C over 2s` or `· path A B C`, eased or
-  `linear` (a bubble's tail, an arrow's head, a text, a rectangle).
+  `linear` (a bubble's tail, an arrow's head, a text, a rectangle, a `blur`
+  or `pixelate` done by ffmpeg); a rectangle's place may carry a size
+  (`→ 400,300 300x90`), which changes along the way.
 - `si check` with line numbers, `si play` live preview with a timeline
   strip (overlapping lines in lanes), `si build --with
   captions,vertical,highlight` (the highlight reel: the lines marked
@@ -255,7 +257,8 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - The Studio's Video view: the preview above the text, a marker per line
   that selects it (and the cursor's line marked), callouts dragged and
   rectangles resized on the frame (written back in source pixels, undoable),
-  ⌘B builds and plays the result.
+  a moving callout's places and a zoom's or pan's rectangle dragged too, ⌘B
+  builds and plays the result.
 
 ## Code
 

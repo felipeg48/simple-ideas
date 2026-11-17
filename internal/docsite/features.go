@@ -119,7 +119,7 @@ var Features = []feature{
 			{"`title` `text` `bubble` `arrow` `box` `spotlight` `keys` `badge` `lower-third`", "callouts in the theme; `· pop|fade|slide-in|type`, `· 3s`, `· at top-right`"},
 			{"`blur RECT` `pixelate RECT`", "hide a place: the pixels are gone"},
 			{"`zoom to RECT` `pan to` `zoom out`", "the camera, eased"},
-			{"`· to 100,200 → 400,300 over 2s` `· path A B C`", "a moving callout: a bubble's tail, an arrow's head, a text, a rectangle"},
+			{"`· to 100,200 → 400,300 over 2s` `· path A B C`", "a moving callout or blur: a bubble's tail, an arrow's head, a text, a rectangle (its size too: `→ 400,300 300x90`)"},
 			{"`captions words` `· highlight`", "the word being said marked; the lines `--with highlight` joins into a reel"},
 			{"`say \"…\" · duck 30%` `music` `captions on` `refilm feature \"Name\"`", "new narration, music, captions moved by the edits, a feature filmed again"},
 		},

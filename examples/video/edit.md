@@ -7,12 +7,14 @@ captions: words
 ---
 # Northwind Shop, next-day delivery
 
-The recording of `shop.md`, finished: the password hidden, the second
-sign-in cut, a pause on the order list, the total brought up close.
+The recording of `shop.md`, finished: the account name hidden as it is
+typed, the password hidden, the second sign-in cut, a pause on the order
+list, the total brought up close.
 
 ## Timeline
 
 - 0:03 · lower-third "Northwind Shop" "Coffee, tea and the things around them" · 3s · slide-in
+- 0:03.8–0:07.5 · blur 180,242 20x40 · to 180,242 → 180,242 70x40 over 0.6s · linear
 - 0:04.5–0:07.5 · blur 174,334 612x50
 - 0:07 · bubble "Your open orders, newest first" · to 230,411 · 3s · pop · highlight
 - 0:07.5 · freeze 2s

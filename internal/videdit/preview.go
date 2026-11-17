@@ -103,9 +103,10 @@ func PreviewText(path, src string, cfg *config.Config, o PreviewOptions) []byte 
 		Speed  float64 `json:"speed,omitempty"`
 		Approx bool    `json:"approx,omitempty"`
 		Rect   []float64
-		Move   float64 `json:"move,omitempty"`
-		Hold   bool    `json:"hold,omitempty"`
-		Linear bool    `json:"linear,omitempty"`
+		Box    []float64 `json:"box,omitempty"` // a zoom's or pan's rectangle as written: x, y, w, h source px
+		Move   float64   `json:"move,omitempty"`
+		Hold   bool      `json:"hold,omitempty"`
+		Linear bool      `json:"linear,omitempty"`
 	}
 	var marks []mark
 	var spans []Span
@@ -125,6 +126,8 @@ func PreviewText(path, src string, cfg *config.Config, o PreviewOptions) []byte 
 		if it.Action == "zoom" || it.Action == "pan" {
 			v := view(it.Rect, w, h)
 			m.Rect = v[:]
+			x, y, rw, rh := it.Rect.Px(w, h)
+			m.Box = []float64{x, y, rw, rh}
 		}
 		marks = append(marks, m)
 		if drawn(it) || it.Action == "blur" || it.Action == "pixelate" {

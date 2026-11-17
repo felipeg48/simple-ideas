@@ -230,6 +230,43 @@ func TestBuildZoomBlurAndJoin(t *testing.T) {
 	}
 }
 
+// A moving blur over black and white stripes: grey where the piece is at
+// that moment, stripes where it was; its size grows along the path.
+func TestMovingBlur(t *testing.T) {
+	chrome, ff, fp := needTools(t)
+	dir := t.TempDir()
+	if out, err := exec.Command(ff, "-nostdin", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=black:s=320x180:r=30:d=3",
+		"-vf", "geq=lum='255*mod(floor(X/8),2)':cb=128:cr=128,format=yuv420p", "-an", "-c:v", "libx264", "-crf", "12", filepath.Join(dir, "stripes.mp4")).CombinedOutput(); err != nil {
+		t.Fatal(err, string(out))
+	}
+	md := filepath.Join(dir, "edit.md")
+	os.WriteFile(md, []byte("---\ntype: video\nsource: stripes.mp4\nout: m.mp4\n---\n- 0:00–0:02.5 · blur 10,10 40x40 · to 10,10 → 200,100 100x60 over 2s · linear\n"), 0o644)
+	e, _ := ParseFile(md)
+	if note := e.Check(fp); note != "" || len(e.Problems) > 0 {
+		t.Fatal(note, e.Problems)
+	}
+	if _, err := Build(e, Options{Chrome: chrome, FFmpeg: ff, FFprobe: fp}); err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(dir, "m.mp4")
+	grey := func(at float64, x, y int) bool {
+		r, _, _ := pixel(t, ff, out, at, x, y)
+		return r > 60 && r < 200
+	}
+	if !grey(0.1, 30, 30) || grey(0.1, 120, 30) {
+		t.Error("at the start: the blur at 10,10 40x40 only")
+	}
+	if grey(2.2, 30, 30) || !grey(2.2, 210, 110) || !grey(2.2, 290, 150) {
+		t.Error("at the end: the blur at 200,100, grown to 100x60")
+	}
+	if grey(2.2, 200+104, 110) || grey(1.0, 290, 150) {
+		t.Error("the piece is cut to the size of the moment")
+	}
+	if grey(2.8, 210, 110) {
+		t.Error("after its range: no blur")
+	}
+}
+
 // refilm: a tiny demo against the example app, its feature spliced over a
 // range of a "film" whose head stays byte for byte.
 func TestRefilm(t *testing.T) {

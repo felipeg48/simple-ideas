@@ -373,9 +373,11 @@ func (e *Edit) extras(c *Ctx, pl *Plan, sh *shooter, o Options, work string, res
 		if err != nil {
 			return err
 		}
+		o.logf("  captions: %d word picture(s)\n", len(ps))
 		if err := run(o.FFmpeg, webdemo.CaptionedArgs(out, W, H, ps, stem+".captions.mp4")); err != nil {
 			return err
 		}
+		o.logf("  captions: done\n")
 		res.Files = append(res.Files, stem+".captions.mp4")
 	} else if o.Captions {
 		var ps []webdemo.Pic

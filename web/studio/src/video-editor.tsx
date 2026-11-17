@@ -2,7 +2,8 @@
 // text, with the timeline strip and a marker per line, above the text. A
 // marker (or a callout) clicked selects its line in the editor; the editor's
 // cursor line is marked in the preview. A callout dragged on the frame comes
-// back from the page as a move; Go writes it into its line (POST video) and
+// back from the page as a move (a place of a moving callout's path, a zoom's
+// rectangle too); Go writes it into its line (POST video) and
 // the new text goes into the editor as one undoable change. ⌘B builds the
 // saved file (si build) and plays the result here.
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -62,7 +63,7 @@ export function VideoEditor(p: { path: string; text: string; line: number; setTe
       if (e.source !== frame.current?.contentWindow) return;
       const m = e.data || {};
       if (m.type === "si-ve-select" && m.line) props.current.select(m.line);
-      if (m.type === "si-ve-move") void draw({ line: m.line, to: m.to, at: m.at, from: m.from, rect: m.rect });
+      if (m.type === "si-ve-move") void draw({ line: m.line, to: m.to, at: m.at, from: m.from, rect: m.rect, key: m.key });
     };
     addEventListener("message", onMsg);
     return () => removeEventListener("message", onMsg);

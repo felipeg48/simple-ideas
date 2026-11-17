@@ -217,7 +217,8 @@ per touch under `## Timeline`, `- TIME · action · option`, at source times
 (`1:34`, `1:36–1:46`, `end`, `at said "words"`, `at chapter "Name" + 2s`).
 Positions are source pixels (`820,410`), percentages or words (`top-right`);
 rectangles `X,Y WxH`. Blur anything secret (`blur RECT`), it is removed by
-ffmpeg. A callout can move (`· to 100,200 → 400,300 over 2s`, `· path A B C`);
+ffmpeg. A callout or a blur can move (`· to 100,200 → 400,300 over 2s`,
+`· path A B C`; a rectangle's place may carry a size, `→ 400,300 300x90`);
 `captions words` marks the word being said; `--with highlight` cuts a reel
 of the lines marked `· highlight` (else each chapter's first sentence).
 Run `si check edit.md`, then `si build edit.md`, then look at frames

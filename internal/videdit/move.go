@@ -14,6 +14,7 @@ type Move struct {
 	At   *[2]int `json:"at,omitempty"`
 	From *[2]int `json:"from,omitempty"`
 	Rect *[4]int `json:"rect,omitempty"`
+	Key  *int    `json:"key,omitempty"` // with At: keyframe Key of a moving callout's path (from 0)
 }
 
 // Apply writes m into its line of src (a `type: video` file) and returns the
@@ -36,10 +37,17 @@ func (m Move) Apply(src string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("line %d: %v", m.Line, err)
 	}
-	if len(it.Path) > 0 {
-		return "", fmt.Errorf("line %d moves along a path: edit its places in the text", m.Line)
-	}
 	parts := splitDots(text)
+	if m.Key != nil {
+		if m.At == nil || !movePathPoint(parts, *m.Key, fmt.Sprintf("%d,%d", m.At[0], m.At[1])) {
+			return "", fmt.Errorf("line %d: no place %d on its path", m.Line, *m.Key+1)
+		}
+		lines[m.Line-1] = indent + body[:2] + strings.Join(parts, " · ")
+		return strings.Join(lines, "\n"), nil
+	}
+	if len(it.Path) > 0 {
+		return "", fmt.Errorf("line %d moves along a path: drag its places", m.Line)
+	}
 	xy := func(p [2]int) string { return fmt.Sprintf("%d,%d", p[0], p[1]) }
 	opt := func(name, val string) {
 		for i := 2; i < len(parts); i++ {
@@ -60,13 +68,17 @@ func (m Move) Apply(src string) (string, error) {
 			head = xy(*m.To)
 		}
 		parts[1] = "arrow from " + tail + " to " + head
-	case m.Rect != nil && it.Rect != nil && it.Action != "zoom" && it.Action != "pan":
+	case m.Rect != nil && it.Rect != nil:
 		r := *m.Rect
 		sep := " " // X,Y WxH, or X,Y,WxH as the line had it
 		if strings.Count(parts[1], ",") >= 2 {
 			sep = ","
 		}
-		parts[1] = fmt.Sprintf("%s %d,%d%s%dx%d", strings.Fields(parts[1])[0], r[0], r[1], sep, max(1, r[2]), max(1, r[3]))
+		verb := strings.Fields(parts[1])[0]
+		if it.Action == "zoom" || it.Action == "pan" { // the camera's rectangle
+			verb += " to"
+		}
+		parts[1] = fmt.Sprintf("%s %d,%d%s%dx%d", verb, r[0], r[1], sep, max(1, r[2]), max(1, r[3]))
 	case m.To != nil && it.Action == "bubble":
 		if it.Point == nil && it.At != nil { // a bubble placed with at: keeps the word it was written with
 			opt("at", xy(*m.To))
@@ -80,6 +92,35 @@ func (m Move) Apply(src string) (string, error) {
 	}
 	lines[m.Line-1] = indent + body[:2] + strings.Join(parts, " · ")
 	return strings.Join(lines, "\n"), nil
+}
+
+// movePathPoint writes xy as place k of the line's path (the · to A → B or
+// · path A B part); sizes, arrows and · over stay as written.
+func movePathPoint(parts []string, k int, xy string) bool {
+	for i := 2; i < len(parts); i++ {
+		w, rest := cutWord(parts[i])
+		if w != "path" && !((w == "to" || w == "at") && (strings.Contains(rest, "→") || strings.Contains(rest, "->"))) {
+			continue
+		}
+		f := strings.Fields(strings.NewReplacer("→", " → ", "->", " -> ").Replace(rest))
+		n := 0
+		for j, t := range f {
+			if t == "over" {
+				break
+			}
+			if _, err := pos(t); err != nil {
+				continue
+			}
+			if n == k {
+				f[j] = xy
+				parts[i] = w + " " + strings.Join(f, " ")
+				return true
+			}
+			n++
+		}
+		return false
+	}
+	return false
 }
 
 // posText is a place as written (X,Y, a percentage or a word).

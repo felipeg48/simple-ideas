@@ -122,17 +122,19 @@ func (j *Job) Args() []string {
 		if it.Action != "blur" && it.Action != "pixelate" {
 			continue
 		}
+		if len(it.Path) > 1 {
+			if hideMoving(&g, last, n, s, W, H) {
+				last = fmt.Sprintf("h%d", n)
+				n++
+			}
+			continue
+		}
 		x, y, w, h := clampRect(it.Rect, W, H)
 		if w < 2 || h < 2 {
 			continue
 		}
-		f := fmt.Sprintf("gblur=sigma=%g", math.Max(8, math.Round(float64(min(w, h))/5)))
-		if it.Action == "pixelate" {
-			c := max(2, min(w, h)/8, 8)
-			f = fmt.Sprintf("scale=%d:%d:flags=area,scale=%d:%d:flags=neighbor", max(1, w/c), max(1, h/c), w, h)
-		}
 		fmt.Fprintf(&g, "[%s]split[h%dm][h%dc];[h%dc]crop=%d:%d:%d:%d,%s[h%db];[h%dm][h%db]overlay=%d:%d:enable='between(t,%s,%s)'[h%d];",
-			last, n, n, n, w, h, x, y, f, n, n, n, x, y, f3(s.From), f3(s.To), n)
+			last, n, n, n, w, h, x, y, hideFilter(it.Action, w, h), n, n, n, x, y, f3(s.From), f3(s.To), n)
 		last = fmt.Sprintf("h%d", n)
 		n++
 	}
@@ -214,6 +216,107 @@ func clampRect(r *Rect, W, H int) (x, y, w, h int) {
 	x1, y1 := min(W, int(math.Ceil(fx+fw))), min(H, int(math.Ceil(fy+fh)))
 	return x0, y0, (x1 - x0) &^ 1, (y1 - y0) &^ 1
 }
+
+// hideFilter blurs or pixelates a w×h piece.
+func hideFilter(action string, w, h int) string {
+	if action == "pixelate" {
+		c := max(2, min(w, h)/8, 8)
+		return fmt.Sprintf("scale=%d:%d:flags=area,scale=%d:%d:flags=neighbor", max(1, w/c), max(1, h/c), w, h)
+	}
+	return fmt.Sprintf("gblur=sigma=%g", math.Max(8, math.Round(float64(min(w, h))/5)))
+}
+
+// hideMoving is a blur or pixelate that moves (· to A → B, · path): a piece
+// the size of its largest keyframe is cut at the moving place, hidden, and
+// laid back at that place; when the keyframes' sizes differ a mask the
+// size of the moment keeps only that part. Places and sizes are ffmpeg
+// expressions of t, as the preview moves them (eased, the same speed per
+// unit of distance). It reports false when the piece is too small to draw.
+func hideMoving(g *strings.Builder, last string, n int, s Span, W, H int) bool {
+	it := s.It
+	ks := rectKeys(it, W, H)
+	pw, ph := 0, 0
+	for _, k := range ks {
+		pw, ph = max(pw, int(math.Ceil(k[2]))), max(ph, int(math.Ceil(k[3])))
+	}
+	pw, ph = min(pw, W)&^1, min(ph, H)&^1
+	if pw < 2 || ph < 2 {
+		return false
+	}
+	pd := pathLen(it, s.To-s.From)
+	at := func(c int, tv string) string { return keyExpr(ks, W, H, c, s.From, pd, it.Flags["linear"], tv) }
+	// the piece's corner: the place, moved in where the largest piece would leave the frame
+	cx := func(tv string) string { return fmt.Sprintf("min(%s,%d)", at(0, tv), W-pw) }
+	cy := func(tv string) string { return fmt.Sprintf("min(%s,%d)", at(1, tv), H-ph) }
+	fmt.Fprintf(g, "[%s]split[h%dm][h%dc];[h%dc]trim=start=%s:end=%s,crop=%d:%d:x='%s':y='%s',%s",
+		last, n, n, n, f3(s.From), f3(s.To+0.05), pw, ph, cx("t"), cy("t"), hideFilter(it.Action, pw, ph))
+	sized := false
+	for _, k := range ks {
+		sized = sized || math.Abs(k[2]-ks[0][2]) > .5 || math.Abs(k[3]-ks[0][3]) > .5
+	}
+	if sized {
+		// ponytail: geq draws the mask pixel by pixel (only while the line is on); a drawn mask if long ones get slow
+		dx, dy := fmt.Sprintf("(%s-%s)", at(0, "T"), cx("T")), fmt.Sprintf("(%s-%s)", at(1, "T"), cy("T"))
+		fmt.Fprintf(g, ",format=yuva420p,split[h%dp][h%dq];[h%dq]format=gray,geq=lum='255*gte(X,%s)*lt(X,%s+%s)*gte(Y,%s)*lt(Y,%s+%s)'[h%dk];[h%dp][h%dk]alphamerge",
+			n, n, n, dx, dx, at(2, "T"), dy, dy, at(3, "T"), n, n, n)
+	}
+	fmt.Fprintf(g, "[h%db];[h%dm][h%db]overlay=x='%s':y='%s':enable='between(t,%s,%s)'[h%d];", n, n, n, cx("t"), cy("t"), f3(s.From), f3(s.To), n)
+	return true
+}
+
+// rectKeys are a moving rectangle's keyframes in source pixels (x, y, w, h),
+// each kept inside the W×H frame.
+func rectKeys(it *Item, W, H int) [][4]float64 {
+	_, _, rw, rh := it.Rect.Px(W, H)
+	var ks [][4]float64
+	for i, p := range it.Path {
+		x, y := p.Px(W, H)
+		w, h := rw, rh
+		if it.PathWH != nil {
+			w, h = it.PathWH[i][0].Px(W), it.PathWH[i][1].Px(H)
+		}
+		x0, y0 := math.Min(math.Max(x, 0), float64(W)), math.Min(math.Max(y, 0), float64(H))
+		ks = append(ks, [4]float64{x0, y0, math.Max(0, math.Min(float64(W), x+w)-x0), math.Max(0, math.Min(float64(H), y+h)-y0)})
+	}
+	return ks
+}
+
+// keyExpr is component c (0 x, 1 y, 2 w, 3 h) of keyframes ks over time tv
+// as an ffmpeg expression: the move starts at t0 and takes d seconds, eased
+// (smoothstep) unless linear, each stretch given time by its length in
+// percent of the frame (overlay.js's place does the same).
+func keyExpr(ks [][4]float64, W, H, c int, t0, d float64, linear bool, tv string) string {
+	if len(ks) == 0 {
+		return "0"
+	}
+	// the stretches' ends along the path, in percent of the frame
+	cum := []float64{0}
+	for i := 1; i < len(ks); i++ {
+		a, b := ks[i-1], ks[i]
+		sx, sy := 100/float64(W), 100/float64(H)
+		n := math.Sqrt(sq((b[0]-a[0])*sx) + sq((b[1]-a[1])*sy) + sq((b[2]-a[2])*sx) + sq((b[3]-a[3])*sy))
+		cum = append(cum, cum[i-1]+n)
+	}
+	all := cum[len(cum)-1]
+	e := fmt.Sprintf("%.2f", ks[len(ks)-1][c])
+	if all > 0 {
+		for i := len(ks) - 1; i >= 1; i-- {
+			u0, u1 := cum[i-1]/all, cum[i]/all
+			if u1-u0 < 1e-9 {
+				continue
+			}
+			lerp := fmt.Sprintf("%.2f+(%.2f)*(ld(0)-%.6f)/%.6f", ks[i-1][c], ks[i][c]-ks[i-1][c], u0, u1-u0)
+			e = fmt.Sprintf("if(lt(ld(0),%.6f),%s,%s)", u1, lerp, e)
+		}
+	}
+	p := fmt.Sprintf("st(0,clip((%s-%s)/%s,0,1))", tv, f3(t0), f3(math.Max(d, 0.001)))
+	if !linear {
+		p += ";st(0,ld(0)*ld(0)*(3-2*ld(0)))"
+	}
+	return "(" + p + ";" + e + ")"
+}
+
+func sq(v float64) float64 { return v * v }
 
 // move is the camera going from one view to another: views are
 // [centre x, centre y, width] in source pixels (the height follows the

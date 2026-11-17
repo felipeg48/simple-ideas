@@ -1,8 +1,14 @@
 package webdemo
 
 import (
+	"bytes"
 	"fmt"
 	"html"
+	"image"
+	"image/png"
+	"math"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -102,8 +108,7 @@ func wordPics(cs []caption, draw func(page string, i int) (string, error)) ([]pi
 			if k+1 < len(ws) {
 				to = ws[k+1].At
 			}
-			// ponytail: one picture and one ffmpeg input per word; a long film
-			// gets many inputs (fine for demo-length takes)
+			// a picture per word; ffmpeg plays them as one input (slideshow)
 			f, err := draw(captionWordHTML(c.Text, k), n)
 			if err != nil {
 				return nil, err
@@ -113,6 +118,54 @@ func wordPics(cs []caption, draw func(page string, i int) (string, error)) ([]pi
 		}
 	}
 	return out, nil
+}
+
+// slideshow is ffmpeg input arguments that play ps (w×h pictures, in time
+// order, none overlapping) as one stream: an ffconcat list beside the
+// pictures, each shown from its From until the next starts, a transparent
+// picture in the gaps. One input and one overlay however many pictures (an
+// overlay per picture made ffmpeg slow on long films, see the CHANGELOG
+// for v3.33.0). ok is false when the pictures overlap or the files cannot
+// be written: lay them one by one then.
+func slideshow(ps []pic, w, h int) (args []string, ok bool) {
+	if len(ps) < 2 {
+		return nil, false
+	}
+	for i := 1; i < len(ps); i++ {
+		if ps[i].From < ps[i-1].To-1e-3 || ps[i].From < ps[i-1].From {
+			return nil, false
+		}
+	}
+	dir := filepath.Dir(ps[0].PNG)
+	blank := filepath.Join(dir, fmt.Sprintf("blank-%dx%d.png", w, h))
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, image.NewNRGBA(image.Rect(0, 0, w, h))); err != nil {
+		return nil, false
+	}
+	if err := os.WriteFile(blank, buf.Bytes(), 0o644); err != nil {
+		return nil, false
+	}
+	var b strings.Builder
+	b.WriteString("ffconcat version 1.0\n")
+	ms := func(t float64) int64 { return int64(math.Round(t * 1000)) }
+	at := int64(0) // where the list is, in ms: durations add up to the pictures' own times, no drift
+	entry := func(file string, to int64) {
+		q := strings.ReplaceAll(filepath.ToSlash(file), "'", `'\''`)
+		fmt.Fprintf(&b, "file '%s'\nduration %.3f\n", q, float64(to-at)/1000)
+		at = to
+	}
+	for _, p := range ps {
+		if ms(p.From) > at {
+			entry(blank, ms(p.From))
+		}
+		entry(p.PNG, max(ms(p.To), at+1))
+	}
+	entry(blank, at+1000)
+	list := filepath.Join(dir, "pictures.ffconcat")
+	if err := os.WriteFile(list, []byte(b.String()), 0o644); err != nil {
+		return nil, false
+	}
+	return []string{"-f", "concat", "-safe", "0", "-i", list}, true
 }
 
 // VTTWords is VTT with word stamps (per-word captions).

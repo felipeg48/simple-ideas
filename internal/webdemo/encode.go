@@ -239,7 +239,15 @@ func videoArgs(pattern string, w, h, k int, cr *rect, badges, thirds, caps []pic
 	if len(caps) > 0 {
 		fmt.Fprintf(&g, "[%s]%s[band];", last, band(cw, ch, w, h))
 		last = "band"
-		lay(caps, false) // the captions are drawn at frame size, over the w×h band
+		// the captions are drawn at frame size, over the w×h band; one input when they follow each other
+		if s, ok := slideshow(caps, w, h); ok {
+			a = append(a, s...)
+			fmt.Fprintf(&g, "[band][%d:v]overlay=0:0:eof_action=pass[o%d];", in, in)
+			last = fmt.Sprintf("o%d", in)
+			in++
+		} else {
+			lay(caps, false)
+		}
 	}
 	fmt.Fprintf(&g, "[%s]%s[v]", last, evenSize)
 	if wav != "" {

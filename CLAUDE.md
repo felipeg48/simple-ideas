@@ -289,7 +289,9 @@ pass. The steps that matter:
   drop-in (`data-video`); `internal/render/videoplayer.go`, `web/videoplayer.js|css`,
   `cmd/si/player.go`.
 - **Video edits** (phases 1–3 + moving callouts, `captions words`, `--with
-  highlight` DONE v3.31.0; Studio Video view `internal/studio/video.go`,
+  highlight` DONE v3.31.0; moving blur/pixelate, sizes along a path,
+  dragging path places and zoom rectangles, captions as one ffmpeg input
+  DONE v3.33.0; Studio Video view `internal/studio/video.go`,
   `web/studio/src/video-editor.tsx`, `internal/videdit/move.go` + `edit.js`)
   (phases 1–2 DONE v3.28.0, spec
   `docs/superpowers/specs/2026-11-17-video-edit.md`): `type: video`, lines at
