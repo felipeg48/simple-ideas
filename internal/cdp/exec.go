@@ -3,26 +3,27 @@ package cdp
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 	"time"
 )
 
-// slots limits how many one-shot headless Chrome runs (a screenshot, a PDF,
-// a --dump-dom) this process has at once. On a busy machine (a full
-// go test ./..., a site built while a deck films) every Chrome started
-// together starves the others of CPU, and their waits run out. A run waits
-// for a slot before its timeout starts.
-var slots = make(chan struct{}, max(2, runtime.NumCPU()/4))
-
 // Command is headless Chrome with args, in a fresh profile folder of its own
-// (two runs never share one), bounded by timeout from when it gets a slot.
-// The caller runs it (Output, CombinedOutput) and then calls done, which
-// frees the slot and removes the profile.
+// (two runs never share one), bounded by timeout from when it gets one of
+// the machine-wide Slots (slots.go): on a busy machine (a full
+// go test ./..., a site built while a deck films) every Chrome started
+// together starves the others of CPU, and their waits run out. The caller
+// runs it (Output, CombinedOutput) and then calls done, which frees the slot
+// and removes the profile.
 func Command(timeout time.Duration, chrome string, args ...string) (cmd *exec.Cmd, done func()) {
-	slots <- struct{}{}
+	cmd, done, _ = command(timeout, chrome, args...)
+	return cmd, done
+}
+
+func command(timeout time.Duration, chrome string, args ...string) (cmd *exec.Cmd, done func(), wait time.Duration) {
+	s, wait := acquire()
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	profile, err := os.MkdirTemp("", "si-chrome-")
 	if err == nil && !hasFlag(args, "--user-data-dir") {
@@ -35,23 +36,24 @@ func Command(timeout time.Duration, chrome string, args ...string) (cmd *exec.Cm
 		if profile != "" {
 			os.RemoveAll(profile)
 		}
-		<-slots
-	}
+		s.release()
+	}, wait
 }
 
 // Run runs Command and returns its combined output. A Chrome that dies on
 // start (an exit status, not the timeout: a busy machine makes it crash now
-// and then) gets one more try, in a fresh profile.
+// and then) gets one more try, in a fresh profile; so does a run stopped by
+// its timeout before it wrote its file, when the machine is loaded.
 func Run(timeout time.Duration, chrome string, args ...string) ([]byte, error) {
-	return twice(func() ([]byte, error, bool) {
-		cmd, done := Command(timeout, chrome, args...)
+	return twice(timeout, func() try {
+		cmd, done, wait := command(timeout, chrome, args...)
 		defer done()
 		start := time.Now()
 		out, err := cmd.CombinedOutput()
 		if err != nil && !timedOut(cmd) && wrote(args, start) {
 			err = nil // the picture or PDF is written: Chrome crashed only on its way out
 		}
-		return out, err, cmd.ProcessState != nil && !timedOut(cmd)
+		return try{out, err, cmd.ProcessState != nil && !timedOut(cmd), timedOut(cmd), wait}
 	})
 }
 
@@ -70,12 +72,34 @@ func wrote(args []string, start time.Time) bool {
 	return false
 }
 
-func twice(run func() ([]byte, error, bool)) ([]byte, error) {
-	out, err, again := run()
-	if err != nil && again {
-		out, err, _ = run()
+// try is one Chrome run: its output and error, whether it crashed (an exit
+// status) or was stopped by its timeout, and how long it waited for a slot.
+type try struct {
+	out               []byte
+	err               error
+	crashed, timedOut bool
+	wait              time.Duration
+}
+
+// loaded reports whether the machine is busy with other Chromes: this run
+// waited for its slot, or other runs hold slots now. A timeout then is the
+// load, not the page, and earns one more try.
+var loaded = func(wait time.Duration) bool { return wait > time.Second || busySlots() > 0 }
+
+func twice(timeout time.Duration, run func() try) ([]byte, error) {
+	t := run()
+	tries, wait := 1, t.wait
+	if t.err != nil && (t.crashed || t.timedOut && loaded(t.wait)) {
+		t = run()
+		tries, wait = 2, wait+t.wait
 	}
-	return out, err
+	if t.err != nil && t.timedOut {
+		return t.out, fmt.Errorf("headless Chrome took longer than %s (%d tries, %s waited for one of the %d Chrome slots on this machine): %w", timeout, tries, wait.Round(time.Millisecond), Slots, t.err)
+	}
+	if t.err != nil && wait > time.Second {
+		return t.out, fmt.Errorf("%w (after %s waiting for a Chrome slot)", t.err, wait.Round(time.Millisecond))
+	}
+	return t.out, t.err
 }
 
 // timedOut: the run was stopped by its timeout.
@@ -107,13 +131,13 @@ func profileDir(args []string) string {
 
 // Output runs Command and returns its standard output (a --dump-dom).
 func Output(timeout time.Duration, chrome string, args ...string) ([]byte, error) {
-	return twice(func() ([]byte, error, bool) {
-		cmd, done := Command(timeout, chrome, args...)
+	return twice(timeout, func() try {
+		cmd, done, wait := command(timeout, chrome, args...)
 		defer done()
 		out, err := cmd.Output()
 		if err != nil && !timedOut(cmd) && hasFlag(args, "--dump-dom") && bytes.Contains(out, []byte("</html>")) {
 			err = nil // the whole DOM is out: Chrome crashed only on its way out
 		}
-		return out, err, cmd.ProcessState != nil && !timedOut(cmd)
+		return try{out, err, cmd.ProcessState != nil && !timedOut(cmd), timedOut(cmd), wait}
 	})
 }
