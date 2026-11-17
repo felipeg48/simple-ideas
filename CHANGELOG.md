@@ -3,6 +3,16 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.27.0:** code windows from files. `<!-- include: compose.yaml
+  window=mac numbers hl=3 -->` and `<!-- code: … -->` take every code-window
+  option (`window=`, `theme=`, `backdrop=`, `numbers`, `id=`, `step=`,
+  `transition=`, the title defaulting to the file name) and draw exactly as
+  the same fence would: shows of several files morph step to step, callouts
+  follow, and Studio's Window view, `si code` exports and the terminal view
+  know them. The language comes from the file name (`rabbitmq.conf`, `.env`,
+  `Makefile`, `Containerfile`, …). `as=cat` shows a script in a terminal
+  window under `$ cat <name>`. `si play` reloads when an included file
+  changes, also outside the served folder.
 - **v3.26.0:** eighteen improvements. **Courses and build:** posters are
   remade when their video's content changes (a fingerprint inside the JPEG);
   `nav: … numbered` numbers lessons 1.1, 1.2; the example course has a deck
