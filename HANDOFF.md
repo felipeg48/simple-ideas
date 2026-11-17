@@ -3,7 +3,69 @@
 Read this, then `FEATURE.md`, then `CLAUDE.md`. This is a Go CLI (`si`) that turns
 Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
-## Current state (2026-11-17)
+## Current state (2026-11-17, end of session)
+
+main `854c431`, tag **v3.34.0**, CI green (test, studio, demos, windows),
+installed (`si --version` 3.34.0). Working tree clean except the untracked
+`.serena/` and `si-docs-site/` (not ours; leave them).
+
+**Resume here:**
+- **Status board:** the founder's private artifact
+  https://claude.ai/code/artifact/1dc6fd53-0b3f-4a86-a379-59db56d274da
+  (Version 40, 97% done: 139 done, 4 missing, 4 improve). Update it in
+  place after every release; see the memory note `status-board.md` and run
+  `python3 ~/.claude/projects/-Users-felipeg-Progs-AI-simple-ideas/memory/board-progress.py <board>`.
+  If the scratchpad copy is gone, `Artifact read` the URL, save it, edit,
+  republish with `url`.
+- **Open Improve items:**
+  - Decks: the control room cannot reveal a hidden word cloud (only polls); the
+    terminal monitor's `p`/`w` keys were never tried on a real terminal.
+  - Terminal looks: the monitor's memory is Go `MemStats.Sys`, not RSS.
+  - Video edits: Chrome still draws one caption picture per word (≈46 s for
+    600 words); ffmpeg here has no libass/drawtext.
+- **Missing, all gated on the founder:**
+  - a real SkillJar account check;
+  - Apple Developer ID signing + notarisation;
+  - listing the skill/MCP server in the public directories;
+  - the desktop app on Windows/Linux.
+- **Housekeeping:** many old agent worktrees under `.claude/worktrees/` are
+  still registered (`git worktree list`); they are merged and can be pruned
+  (`git worktree remove`, then `git worktree prune`). Agents in worktrees cannot
+  run git in the main checkout: after they push, `git pull --ff-only` and
+  `make install </dev/null` here.
+
+**v3.34.0, the control room:**
+- **Page and access:** `/_si/monitor?k=<key>` on `si play`'s loopback
+  listener (`internal/serve/monitor.go`, page `internal/assets/web/monitor.html`).
+  It requires a loopback client and Host, an Origin match, and the run key
+  (cookie after the first visit, HttpOnly, SameSite=Strict); no framing.
+- **Remote role:** `monitor` on `--remote` behind the presenter key.
+- **What it shows:** viewers by role (`/_si/events?role=…`), slide/step timers,
+  links and QR codes, CPU/memory sparklines, the log.
+- **Controls:**
+  - polls: close/reopen (votes 409 when closed), reveal/hide, reset (a new round);
+  - Q&A: approve, show/off screen, answered, hide;
+  - cloud: hide/restore a word, clear.
+
+  They are sent as the existing relay messages through `/_si/monitor/{poll,qa,cloud}`
+  and saved in `.si/audience/`.
+- **Shared stats and keys:** `Server.Stats()` feeds both monitors. Terminal
+  monitor keys: `p` QR codes, `w` opens the web monitor.
+- **Tests:** `monitor_test.go`, e2e `web/studio/e2e/monitor.e2e.mjs`;
+  docs/remote.md.
+
+**v3.32.0 / v3.33.1, terminal looks:**
+- **Choosing a look:** `--view ledger|badges|checklist|steps` (default
+  ledger) on play/serve/build/check; `SI_VIEW`; `ui.view:` in si.conf.
+- **Code:** `internal/ui/`, `cmd/si/look.go`. Colour only when stdout and
+  stderr are terminals, no `NO_COLOR`, `TERM` not dumb; otherwise today's
+  plain lines byte for byte (goldens).
+- **Monitor:** key `m`.
+- **Demo-script words:** v3.33.1 restored "serving", "live reload on" and
+  "OK" in every look: `docs/demos` scripts wait for them. Keep them.
+- **Design board:** the four looks came from the founder's design board
+  (artifact https://claude.ai/code/artifact/47f1f5ae-1bbe-4339-ae4a-927475f56fa6);
+  they loved all four, hence the flag.
 
 **v3.33.0:** the video edit "Improve" items. A moving blur or pixelate
 (`· to`/`· path` on `blur`/`pixelate`): `graph.go` `hideMoving` cuts a
