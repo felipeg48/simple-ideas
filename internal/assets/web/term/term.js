@@ -1532,7 +1532,12 @@
   /* ---------- a live reload rebuilds the page: the shells live on in si play,
      and this brings the drawer back as it was (sessionStorage, this browser tab) ---------- */
   var SKEY = 'si-term-state';
+  // until this page has brought the saved drawer back, it must not save its own
+  // (still empty) one over it: a second reload landing during the restore would
+  // otherwise lose every shell and Viewer
+  var restored = false;
   function saveState() {
+    if (!restored) return;
     var st = { open: root.classList.contains('is-open'), active: active,
       split: split && split.panes.every(Boolean) ? { dir: split.dir, rx: split.rx, ry: split.ry, panes: split.panes.map(function (t) { return tabs.indexOf(t); }), focus: split.focus } : null,
       tabs: tabs.map(function (t) {
@@ -1545,7 +1550,7 @@
   window.addEventListener('beforeunload', saveState);
   (function restore() {
     var st = null; try { st = JSON.parse(sessionStorage.getItem(SKEY) || 'null'); } catch (e) {}
-    if (!st || !st.tabs || !st.tabs.length) return;
+    if (!st || !st.tabs || !st.tabs.length) { restored = true; return; }
     fetch(API + 'list').then(function (r) { return r.json(); }).catch(function () { return []; }).then(function (live) {
       var alive = {}; (live || []).forEach(function (x) { alive[x.id] = true; });
       var at = -1, map = {};
@@ -1558,6 +1563,7 @@
         if (i === st.active) at = tabs.length - 1;
       });
       restoring = false;
+      restored = true;
       if (!tabs.length) return;
       var sp = st.split;
       if (sp && !sp.panes && sp.a != null) sp = { dir: sp.dir, rx: sp.ratio, ry: sp.ratio, panes: [sp.a, sp.b], focus: sp.focus === 'a' ? 0 : 1 }; // saved before v3.14.0

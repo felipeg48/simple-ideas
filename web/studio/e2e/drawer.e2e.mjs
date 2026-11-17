@@ -91,7 +91,9 @@ try {
   await ev(() => window.siPlay.terminal.opacity(70));
   await page.screenshot({ path: join(process.env.SI_SHOTS || dir, "drawer-opacity.png") });
   // a live reload (si.conf changed above) may land at the same moment and abort this one: then reload again
-  await page.reload().catch(() => page.reload()); await page.waitForFunction(() => window.siTerm);
+  // si play's own live reload can land at the same moment and abort ours (more than once on a busy runner): try until one sticks
+  for (let i = 0; ; i++) { try { await page.reload(); break; } catch (e) { if (i >= 5) throw e; await sleep(500); } }
+  await page.waitForFunction(() => window.siTerm, null, { timeout: 30000 });
   check(await until(async () => (await look()).pct === "70"), "the opacity is remembered");
   check(errors.length === 0, "no page errors" + (errors.length ? ": " + errors.join("; ") : ""));
 } catch (e) {
