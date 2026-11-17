@@ -217,7 +217,9 @@ try {
 finally {
   check(errors.length === 0, "no page errors " + errors.join("; "));
   await browser.close(); srv.kill();
-  if (!failed && !process.env.KEEP) { rmSync(dir, { recursive: true, force: true }); rmSync(out, { recursive: true, force: true }); }
+  if (!failed && !process.env.KEEP) { // best effort: on Windows a shell that is still closing keeps its folder busy a moment
+    for (const d of [dir, out]) try { rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 }); } catch { /* the temp folder is cleaned later */ }
+  }
   else console.log("files in " + dir + ", pictures in " + out);
 }
 process.exit(failed ? 1 : 0);
