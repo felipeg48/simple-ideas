@@ -1,6 +1,7 @@
 package deck
 
 import (
+	"errors"
 	"fmt"
 	"github.com/felipeg48/simple-ideas/internal/codeshow"
 	"maps"
@@ -96,6 +97,38 @@ var (
 	jsonStartRE = regexp.MustCompile(`^[\[{]\s*(?:"|\{|\[|\]|\}|-?\d|true|false|null)`)
 )
 
+// windowOpts are the code window options an include or <!-- code: --> passes
+// to its fence (title=, hl= and numbers are handled with the others).
+var windowOpts = []string{"window", "theme", "backdrop", "id", "step", "transition", "as"}
+
+const includeOptsHelp = "lines, tag, lang, title, hl, linenos, numbers, indent=keep, window, theme, backdrop, id, step, transition, as=cat"
+
+// IncludeCode is the code an include or <!-- code: --> line written in file
+// shows, as its fence would hold it (the Studio's Window view).
+func IncludeCode(file, line string) (string, error) {
+	d := &Deck{}
+	out := d.expandIncludes(file, []srcLine{{file, 1, line}}, nil)
+	if len(d.Problems) > 0 {
+		return "", errors.New(d.Problems[0].Msg)
+	}
+	var body []string
+	for i, l := range out {
+		if strings.HasPrefix(l.text, "```") { // the opening fence; the closing one is the last non-blank line
+			for _, b := range out[i+1:] {
+				body = append(body, b.text)
+			}
+			break
+		}
+	}
+	for len(body) > 0 && !strings.HasPrefix(body[len(body)-1], "```") {
+		body = body[:len(body)-1]
+	}
+	if len(body) == 0 {
+		return "", errors.New("not a code include")
+	}
+	return strings.Join(body[:len(body)-1], "\n"), nil
+}
+
 // codeInclude reads file and returns the fence lines of a code block, after
 // applying the options. Options it does not know are errors, so a typo is
 // caught by si check.
@@ -112,9 +145,11 @@ func codeInclude(file string, opts map[string]string) ([]string, error) {
 func codeBlock(raw []byte, file string, opts map[string]string, src string) ([]string, error) {
 	for _, k := range slices.Sorted(maps.Keys(opts)) { // sorted: the same problem every run
 		switch k {
-		case "lines", "tag", "lang", "title", "hl", "linenos", "indent":
+		case "lines", "tag", "lang", "title", "hl", "linenos", "numbers", "indent":
 		default:
-			return nil, fmt.Errorf("unknown option %q (lines, tag, lang, title, hl, linenos, indent=keep)", k)
+			if !slices.Contains(windowOpts, k) {
+				return nil, fmt.Errorf("unknown option %q (%s)", k, includeOptsHelp)
+			}
 		}
 	}
 	all := strings.Split(strings.TrimRight(strings.ReplaceAll(string(raw), "\r\n", "\n"), "\n"), "\n")
@@ -227,9 +262,21 @@ func codeBlock(raw []byte, file string, opts map[string]string, src string) ([]s
 		info += fmt.Sprintf(" hl=%q", opts["hl"])
 	}
 	_, ranged := opts["linenos"]
+	if _, n := opts["numbers"]; n {
+		ranged = true
+	}
 	if opts["lines"] != "" || opts["tag"] != "" || ranged {
 		// numbered as in the file; ponytail: lines=5-10,20-24 numbers on from 5, add per-line numbers if mixed ranges matter
 		info += fmt.Sprintf(" linenos start=%d", keep[0].no)
+	}
+	for _, k := range windowOpts { // a code window, as the same fence would be (RULES §25)
+		if v, ok := opts[k]; ok {
+			if v == "" {
+				info += " " + k
+			} else {
+				info += fmt.Sprintf(" %s=%q", k, v)
+			}
+		}
 	}
 	if src != "" {
 		info += fmt.Sprintf(" src=%q", src)

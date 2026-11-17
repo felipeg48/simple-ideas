@@ -8,11 +8,13 @@ import (
 	"hash/fnv"
 	"io/fs"
 	"log"
+	"maps"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -38,6 +40,7 @@ type Server struct {
 	ClassKey    string     // --class: the key of the dashboard link for other devices (the loopback needs none)
 	watchMu     sync.Mutex // Watch's baseline, also moved by quietly
 	watchSig    uint64
+	outside     map[string]bool  // files a page includes from outside dir (../code/x.yaml): watched too; under watchMu
 	Dev         bool             // --dev: in-place hot reload instead of full-page reload
 	Remote      bool             // --remote: decks join the relay (see remote.go)
 	RemoteQR    *render.RemoteQR // --remote: the role links and QR codes the q key shows (loopback pages)
@@ -219,6 +222,7 @@ func (s *Server) deckPage(w http.ResponseWriter, md string, term, audience bool)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	s.watchIncludes(d.Includes)
 	cfg := config.Load(s.Conf, filepath.Join(s.dir, "si.conf"))
 	for _, w := range cfg.Warnings {
 		log.Printf("%s", w)
@@ -449,6 +453,35 @@ func (s *Server) quietly(write func()) {
 	s.watchSig = s.signature()
 }
 
+// watchIncludes adds the included files outside the served folder to what
+// Watch looks at, quietly: a new one is the baseline, not a change.
+func (s *Server) watchIncludes(files []string) {
+	var add []string
+	for _, f := range files {
+		if r, err := filepath.Rel(s.dir, f); err == nil && !strings.HasPrefix(r, "..") {
+			continue // the folder walk sees it
+		}
+		add = append(add, f)
+	}
+	if len(add) == 0 {
+		return
+	}
+	s.watchMu.Lock()
+	defer s.watchMu.Unlock()
+	fresh := false
+	for _, f := range add {
+		if !s.outside[f] {
+			if s.outside == nil {
+				s.outside = map[string]bool{}
+			}
+			s.outside[f], fresh = true, true
+		}
+	}
+	if fresh {
+		s.watchSig = s.signature()
+	}
+}
+
 func (s *Server) signature() uint64 {
 	h := fnv.New64a()
 	add := func(p string, info fs.FileInfo) {
@@ -478,6 +511,11 @@ func (s *Server) signature() uint64 {
 	walk(s.dir)
 	for _, c := range s.CSSPaths {
 		walk(c)
+	}
+	for _, f := range slices.Sorted(maps.Keys(s.outside)) {
+		if info, err := os.Stat(f); err == nil {
+			add(f, info)
+		}
 	}
 	return h.Sum64()
 }

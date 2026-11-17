@@ -164,6 +164,18 @@ func send() error {
 
 ---
 
+## Code from files
+
+<!-- include: code/compose.yaml window=mac numbers hl=3 theme=night -->
+<!-- callout: 4 the port the browser opens -->
+
+<!-- include: code/start-v1.sh id=start window=terminal as=cat step="Up" -->
+
+<!-- include: code/start-v2.sh id=start window=terminal as=cat step="Pull first" hl=3 -->
+<!-- callout: 4 waits for the health checks -->
+
+---
+
 <!-- transition: morph -->
 ## One promise
 

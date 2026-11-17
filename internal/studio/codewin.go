@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"github.com/felipeg48/simple-ideas/internal/codeshow"
 	"github.com/felipeg48/simple-ideas/internal/deck"
@@ -46,6 +47,12 @@ func (a *api) codewin(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		fail(w, http.StatusUnprocessableEntity, "no code block at that line")
 		return
+	}
+	lines := strings.Split(text, "\n")
+	for i, st := range sh.Steps { // a step from a file: its code, for the line numbers of callouts (read only)
+		if st.File != "" {
+			sh.Steps[i].Code, _ = deck.IncludeCode(abs, lines[st.Start])
+		}
 	}
 	look := map[string]string{}
 	if d, err := deck.ParseSource(abs, text, deck.Meta{Type: "deck"}); err == nil {

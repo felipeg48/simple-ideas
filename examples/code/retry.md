@@ -105,6 +105,22 @@ public sealed class PaymentClient
 </Project>
 ```
 
+## A bad provider on every laptop
+
+The retry is only as good as the failures it has met. Every developer runs
+checkout against a fake provider that drops one call in seven and declines
+one test card, so the rule meets both kinds of error before a customer does.
+
+<!-- include: compose.yaml window=mac theme=night numbers hl=6,13-14 -->
+<!-- callout: 6 The same five tries as production. -->
+<!-- callout: 13 One dropped call in seven. -->
+<!-- callout: 14 One test card always declined. -->
+
+One script brings it up and sends a real order through it.
+
+<!-- include: start.sh window=terminal as=cat numbers hl=4-5 backdrop=graphite -->
+<!-- callout: 5 This order must arrive, however many calls are dropped. -->
+
 ## Proving it before Thursday
 
 The test that guards the rule runs a hundred times before every release.

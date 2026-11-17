@@ -280,6 +280,24 @@ func TestCodeShowStepsAreBuilds(t *testing.T) {
 	}
 }
 
+// TestCodeWindowFromFiles: includes in a window are a show like fences; a
+// script with as=cat reads "$ cat start.sh".
+func TestCodeWindowFromFiles(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "v1.sh"), []byte("docker compose up -d\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "v2.sh"), []byte("docker compose pull\ndocker compose up -d --wait\n"), 0o644)
+	p := filepath.Join(dir, "talk.md")
+	os.WriteFile(p, []byte("# T\n\n---\n\n## Start\n\n<!-- include: v1.sh id=s window=terminal as=cat title=start.sh -->\n\n<!-- include: v2.sh id=s window=terminal as=cat title=start.sh numbers -->\n<!-- callout: 2 waits -->\n"), 0o644)
+	d, err := deck.Parse(p)
+	if err != nil || len(d.Problems) > 0 {
+		t.Fatal(err, d.Problems)
+	}
+	s, steps := Slide(d, 1, 1, 80, 30, Palette{})
+	if p := plain(s); steps != 1 || !strings.Contains(p, "$ cat start.sh · 2/2") || !strings.Contains(p, "2 docker compose up -d --wait") || !strings.Contains(p, "waits") {
+		t.Errorf("steps=%d:\n%s", steps, p)
+	}
+}
+
 // TestTeleprompterActCues: [TERM …] and [BROWSER …] cues show as badges, not
 // as raw text, in the terminal teleprompter and the Studio's rehearse view.
 func TestTeleprompterActCues(t *testing.T) {

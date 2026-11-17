@@ -110,8 +110,12 @@ becomes a code block, highlighted by the file's extension:
   YAML), then from its first characters (`<?xml` or a tag → XML, `{` or `[` →
   JSON, a `#!` line → bash or Python). `lang=` overrides both, here and on
   `<!-- code: -->`: `<!-- include: ../code/NuGet.config title=NuGet.config lang=xml -->`.
+- Every code window option works on an include too (`window=`, `theme=`,
+  `backdrop=`, `numbers`, `id=`, `step=`, `transition=`, `as=cat`): see
+  "Code from a file" in §25. `numbers` is `linenos`. An include of a `.md`
+  file with `window=` or `id=` shows the Markdown as code.
 - `si check` reports a missing file, a range past the end, a tag that is not
-  found or not closed, and an unknown option.
+  found or not closed, and an unknown option (listing every option).
 - A title with spaces is quoted: `title="Retry (part one)"`. Unquoted, its
   words read as options, and `si check` says so: `title with spaces must be
   quoted: title="Retry (part one)"`.
@@ -181,7 +185,8 @@ file, then **Copy permalink**), or name the repo, path and commit:
 ```
 
 - `code:` takes every option of a code include (`lines=`, `tag=`, `hl=`,
-  `title=`, `lang=`, `linenos`); a `#L5-L10` in the permalink is `lines=5-10`.
+  `title=`, `lang=`, `linenos`, and the code window options: `window=mac`,
+  `id=`, `numbers`… of §25); a `#L5-L10` in the permalink is `lines=5-10`.
   The code block's header links to the source.
 - `diff:` shows a commit's changes, or the changes from A to B, filtered to
   `path=` (a file, or a folder: everything under it): file headers, hunk

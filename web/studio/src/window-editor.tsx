@@ -45,14 +45,16 @@ function StepCode(p: { code: string; label: string; onCommit(code: string): void
 }
 
 interface Callout { line: number; text: string; at?: [number, number] }
-interface Step { start: number; lang: string; info: string; attrs: Record<string, string>; code: string; callouts: Callout[] | null }
+interface Step { start: number; lang: string; info: string; attrs: Record<string, string>; code: string; file?: string; callouts: Callout[] | null }
 interface Resp { text: string; line: number; show: { id: string; steps: Step[] }; html: string; problems: Problem[] }
 export interface CodeOp { kind: string; step?: number; index?: number; field?: string; value?: string; line?: number; text?: string; at?: number[]; to?: number }
 
-/** codeFenceAt is the opening line (1-based) of the fenced code block holding line (not a mind map), or 0. */
+/** codeFenceAt is the opening line (1-based) of the fenced code block holding line (not a mind map), or 0;
+ * an include (or <!-- code: -->) shown in a window is a block of its own line. */
 export function codeFenceAt(text: string, line: number): number {
   const ls = text.split("\n");
   for (let i = 0; i < ls.length; i++) {
+    if (line - 1 === i && /^\s*<!--\s*(include|code):.*\s(window|id)=/.test(ls[i])) return i + 1;
     const m = /^\s*(```+|~~~+)\s*([\w#+.-]*)/.exec(ls[i]);
     if (!m) continue;
     let end = ls.length;
@@ -196,7 +198,8 @@ export function WindowEditor(p: { path: string; text: string; line: number; setT
             <button class="btn" onClick={() => { op({ kind: "add-step", step: sel }); go(sel + 1); }}>Add a step</button>
             <span class="mute">a copy of step {sel + 1}</span>
           </div>
-          {step && <StepCode key={sel + ":" + (resp?.line ?? 0)} code={step.code} label={"Code of step " + (sel + 1)} onCommit={(code) => op({ kind: "set-code", step: sel, text: code })} />}
+          {step?.file ? <p class="mapx-hint">The code is {step.file}: edit that file.</p>
+            : step && <StepCode key={sel + ":" + (resp?.line ?? 0)} code={step.code} label={"Code of step " + (sel + 1)} onCommit={(code) => op({ kind: "set-code", step: sel, text: code })} />}
         </section>
         <section class="insp">
           <div class="insp-head"><b>Callouts</b><span class="mute">step {sel + 1}</span></div>

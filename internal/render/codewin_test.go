@@ -31,6 +31,28 @@ func TestCodeWindows(t *testing.T) {
 	if h := string(res.HTML); strings.Count(h, `class="si-cw-prompt"`) != 1 || !strings.Contains(h, "cat app.yaml") || strings.Contains(h, "cat checkout") {
 		t.Error("terminal prompt: only a file gets $ cat")
 	}
+	// as=cat: a script shown as a file; another value is a problem
+	res, _ = renderFiles(t, map[string]string{"c.md": "---\ntype: article\n---\n# C\n\n```sh window=terminal title=\"start.sh\" as=cat\ndocker compose up\n```\n\n```sh window=terminal as=dog\nls\n```\n"}, "c.md")
+	if h := string(res.HTML); strings.Count(h, `class="si-cw-prompt"`) != 1 || !strings.Contains(h, "cat start.sh") || !strings.Contains(problemsText(res), `unknown code window as "dog"`) {
+		t.Errorf("as=cat: %s", problemsText(res))
+	}
+	// an include draws the window the same fence draws, a show across files included
+	fence := "```bash title=\"start.sh\" window=terminal as=cat id=s step=One\ndocker compose up\n```\n<!-- callout: 1 up -->\n\n```bash title=\"start.sh\" hl=2 window=terminal as=cat id=s\ndocker compose pull\ndocker compose up\n```\n"
+	inc := "<!-- include: v1.sh window=terminal as=cat id=s step=One title=start.sh -->\n<!-- callout: 1 up -->\n\n<!-- include: v2.sh title=start.sh hl=2 window=terminal as=cat id=s -->\n"
+	files := map[string]string{"v1.sh": "docker compose up\n", "v2.sh": "docker compose pull\ndocker compose up\n"}
+	var figs []string
+	for _, body := range []string{fence, inc} {
+		files["s.md"] = "---\ntype: article\n---\n# S\n\n" + body
+		res, _ = renderFiles(t, files, "s.md")
+		h := string(res.HTML)
+		if len(res.Problems) > 0 || strings.Count(h, `<figure class="si-cw"`) != 1 {
+			t.Fatalf("include show: %s", problemsText(res))
+		}
+		figs = append(figs, regexp.MustCompile(`(?s)<figure class="si-cw".*?</figure>`).FindString(h))
+	}
+	if figs[0] != figs[1] {
+		t.Errorf("an include must draw what its fence draws:\n%s\n---\n%s", figs[0], figs[1])
+	}
 	// plain fences stay plain; no scripts
 	res, _ = renderFiles(t, map[string]string{"p.md": "# P\n\n---\n\n## Code\n\n```go\na()\n```\n"}, "p.md")
 	if h := string(res.HTML); strings.Contains(h, `class="si-cw`) || strings.Contains(h, "si code windows:") {

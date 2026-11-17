@@ -29,6 +29,9 @@ var (
 	atRE      = regexp.MustCompile(`\s+at=(-?\d+),(-?\d+)$`)
 	fenceRE   = regexp.MustCompile("^(\\s*)(`{3,}|~{3,})(.*)$")
 	attrRE    = regexp.MustCompile(`([\w-]+)(?:="([^"]*)"|=(\S+))?`)
+	// a code file shown in a window: <!-- include: compose.yaml window=mac -->,
+	// <!-- code: https://github.com/… window=mac --> (the head keeps the path or URL)
+	incRE = regexp.MustCompile(`^(\s*<!--\s*(?:include:\s*\S+|code:(?:\s*https?://\S+)?)\s*)(.*?)(\s*-->\s*)$`)
 )
 
 // ParseCallout reads a callout directive line. ok is false for any other
@@ -117,8 +120,14 @@ func LangOf(name string) string {
 	if base == "dockerfile" || strings.HasPrefix(base, "dockerfile.") || base == "containerfile" {
 		return "dockerfile"
 	}
-	if base == "makefile" {
+	if base == "makefile" || base == "gnumakefile" {
 		return "make"
+	}
+	if base == "nginx.conf" {
+		return "nginx"
+	}
+	if base == ".env" || strings.HasPrefix(base, ".env.") {
+		return "ini"
 	}
 	i := strings.LastIndex(base, ".")
 	if i < 0 {
@@ -132,7 +141,8 @@ func LangOf(name string) string {
 		"html": "html", "htm": "html", "xml": "xml", "csproj": "xml", "fsproj": "xml", "vbproj": "xml", "props": "xml",
 		"targets": "xml", "nuspec": "xml", "resx": "xml", "xaml": "xml", "svg": "xml", "plist": "xml", "config": "xml",
 		"tf": "hcl", "hcl": "hcl", "proto": "protobuf", "graphql": "graphql", "gql": "graphql", "fs": "fsharp", "fsx": "fsharp",
-		"ex": "elixir", "exs": "elixir",
+		"ex": "elixir", "exs": "elixir", "ini": "ini", "conf": "ini", "cfg": "ini", "cnf": "ini", "properties": "ini",
+		"env": "ini", "md": "markdown", "markdown": "markdown", "mk": "make", "nginx": "nginx", "tfvars": "hcl",
 	}[base[i+1:]]
 }
 
@@ -166,12 +176,23 @@ func SetAttr(info, key, val string) string {
 	return strings.Join(parts, " ")
 }
 
+// set is the step's info with key set (SetAttr); an include's options have
+// no language in front.
+func (s Step) set(key, val string) string {
+	if s.File == "" {
+		return SetAttr(s.Info, key, val)
+	}
+	return strings.TrimSpace(strings.TrimPrefix(SetAttr("- "+s.Info, key, val), "-"))
+}
+
 // Step is one fence of a show, with the callouts written right after it.
 type Step struct {
-	Start    int               `json:"start"` // 0-based line of the opening fence
-	End      int               `json:"end"`   // 0-based line of the closing fence
-	Last     int               `json:"last"`  // last line of its callouts (End when none)
-	Marker   string            `json:"-"`     // indent + ``` of the fence
+	Start    int               `json:"start"`          // 0-based line of the opening fence
+	End      int               `json:"end"`            // 0-based line of the closing fence
+	Last     int               `json:"last"`           // last line of its callouts (End when none)
+	Marker   string            `json:"-"`              // indent + ``` of the fence; for an include, its head (<!-- include: path )
+	Close    string            `json:"-"`              // an include's " -->"
+	File     string            `json:"file,omitempty"` // an include's file (or <!-- code: --> source): its code is there, not in the text
 	Info     string            `json:"info"`
 	Lang     string            `json:"lang"`
 	Attrs    map[string]string `json:"attrs"`
@@ -229,7 +250,7 @@ func onlyBlank(lines []string, from, to int) bool {
 func fenceAt(lines []string, i int) (Step, bool) {
 	m := fenceRE.FindStringSubmatch(lines[i])
 	if m == nil {
-		return Step{}, false
+		return includeAt(lines, i)
 	}
 	st := Step{Start: i, Marker: m[1] + m[2], Info: strings.TrimSpace(m[3])}
 	st.Lang, _, st.Attrs = Attrs(st.Info)
@@ -245,7 +266,41 @@ func fenceAt(lines []string, i int) (Step, bool) {
 	}
 	st.End, st.Last = end, end
 	st.Code = strings.Join(lines[i+1:end], "\n")
-	for j := end + 1; j < len(lines); j++ {
+	return withCallouts(lines, st), true
+}
+
+// includeAt reads a code include (or <!-- code: -->) with window= or id= at
+// line i: a step whose code is in a file, the one line its fence and its end.
+func includeAt(lines []string, i int) (Step, bool) {
+	m := incRE.FindStringSubmatch(lines[i])
+	if m == nil {
+		return Step{}, false
+	}
+	st := Step{Start: i, End: i, Last: i, Marker: m[1], Close: m[3], Info: strings.TrimSpace(m[2])}
+	_, _, st.Attrs = Attrs("- " + st.Info) // "-": a first bare option (numbers) is no language
+	if _, w := st.Attrs["window"]; !w && st.Attrs["id"] == "" {
+		return Step{}, false
+	}
+	head := strings.Fields(strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(m[1]), "<!--")))
+	if len(head) > 1 {
+		st.File = head[1]
+	} else {
+		st.File = st.Attrs["path"]
+	}
+	st.Lang = firstLang(st.Attrs["lang"], LangOf(st.File))
+	return withCallouts(lines, st), true
+}
+
+func firstLang(a, b string) string {
+	if a != "" {
+		return a
+	}
+	return b
+}
+
+// withCallouts adds the callout lines right after a step.
+func withCallouts(lines []string, st Step) Step {
+	for j := st.End + 1; j < len(lines); j++ {
 		t := strings.TrimSpace(lines[j])
 		if t == "" {
 			continue
@@ -258,7 +313,7 @@ func fenceAt(lines []string, i int) (Step, bool) {
 		st.Callouts = append(st.Callouts, c)
 		st.Last = j
 	}
-	return st, true
+	return st
 }
 
 // Op is one edit from the Window view. Step indexes the show's steps; Index
@@ -288,17 +343,20 @@ func Apply(text string, line int, op Op) (string, int, error) {
 	}
 	st := &sh.Steps[op.Step]
 	setInfo := func(s *Step, info string) {
-		lines[s.Start] = s.Marker + info
+		lines[s.Start] = s.Marker + info + s.Close
 		s.Info = info
 	}
 	switch op.Kind {
 	case "set": // a show option: every step carries it, like the renderer reads it
 		for i := range sh.Steps {
-			setInfo(&sh.Steps[i], SetAttr(sh.Steps[i].Info, op.Field, op.Value))
+			setInfo(&sh.Steps[i], sh.Steps[i].set(op.Field, op.Value))
 		}
 	case "set-step": // one step's own option: title, hl, step (its name)
-		setInfo(st, SetAttr(st.Info, op.Field, op.Value))
+		setInfo(st, st.set(op.Field, op.Value))
 	case "set-code": // one step's code, typed in the Window view
+		if st.File != "" {
+			return text, line, fmt.Errorf("this step shows %s: edit the file itself", st.File)
+		}
 		body := strings.Split(strings.TrimRight(op.Text, "\n"), "\n")
 		lines = append(lines[:st.Start+1], append(body, lines[st.End:]...)...)
 	case "add-callout", "edit-callout", "move-callout", "del-callout":
@@ -339,7 +397,7 @@ func Apply(text string, line int, op Op) (string, int, error) {
 				id = slug(t)
 			}
 			for i := range sh.Steps {
-				setInfo(&sh.Steps[i], SetAttr(sh.Steps[i].Info, "id", id))
+				setInfo(&sh.Steps[i], sh.Steps[i].set("id", id))
 			}
 			sh.ID = id
 		}
@@ -350,8 +408,8 @@ func Apply(text string, line int, op Op) (string, int, error) {
 		switch op.Kind {
 		case "add-step": // a copy of the step's code after it, without its callouts or name
 			s := sh.Steps[op.Step]
-			info := SetAttr(SetAttr(s.Info, "step", ""), "hl", "")
-			dup := append([]string{s.Marker + info}, lines[s.Start+1:s.End+1]...)
+			s.Info = s.set("step", "")
+			dup := append([]string{s.Marker + s.set("hl", "") + s.Close}, lines[s.Start+1:s.End+1]...)
 			blocks = append(blocks[:op.Step+1], append([][]string{dup}, blocks[op.Step+1:]...)...)
 		case "del-step":
 			if len(blocks) == 1 {

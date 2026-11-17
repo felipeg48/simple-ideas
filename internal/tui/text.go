@@ -482,6 +482,8 @@ func (r *textRenderer) code(code, lang string, attrs map[string]string) []string
 	r.stepTag = ""
 	if win := attrs["window"]; win == "mac" { // a code window: its title bar in the box's top line
 		title = "● ● ●  " + title
+	} else if win == "terminal" && attrs["as"] == "cat" { // a script shown as a file
+		title = "$ cat " + firstNonEmpty(title, "file")
 	} else if win == "terminal" {
 		title = "$ " + firstNonEmpty(title, "terminal")
 	}

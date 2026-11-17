@@ -359,6 +359,10 @@ Not everything is a slide deck. Pick the type by what the reader does:
   on a slide each extra step is a click (one `[CLICK]` each), and the same id on
   consecutive slides morphs between them. Keep each step small (what changed is
   the point) and use callouts for the why, not to repeat the code.
+  A file on disk takes the same options on its include, so the window shows
+  the real file: `<!-- include: compose.yaml window=mac numbers hl=3 -->`
+  (also `<!-- code: -->`, `id=` shows across files or versions, callouts after
+  it; the title is the file name; `as=cat` shows a script under `$ cat`).
   `si code file.md --png --svg --gif` exports them. Leave `at=` out unless the
   author placed the note: dragging it in `si play` or the Studio writes it.
 - **Publishing** (RULES.md §26): `linkedin:` (the post text), `tags:`,

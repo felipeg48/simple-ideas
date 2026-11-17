@@ -151,6 +151,7 @@ var Features = []feature{
 			{"`numbers` `hl=4,9`", "line numbers, highlighted lines"},
 			{"`id=retry` `transition=`", "a show: morph, fade, slide"},
 			{"`<!-- callout: 9 text at=60,30 -->`", "a numbered note placed by hand"},
+			{"`<!-- include: compose.yaml window=mac -->`", "a real file in the window, every option; `as=cat` for a script"},
 		},
 		Commands: "si --web .                       # the Studio's Window view\nsi code retry.md --png --scale 2\nsi code retry.md --gif --mp4",
 		Rules:    []string{"25", "13"}},

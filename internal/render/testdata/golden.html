@@ -191,7 +191,25 @@
 </div>
 <div class="si-footer" data-pos="bottom-left">Internal</div>
 </section>
-<section class="si-slide si-content" id="s15" data-title="One promise" data-layout="default" data-topic="1" data-transition="morph" data-src="deck.md:167">
+<section class="si-slide si-content" id="s15" data-title="Code from files" data-layout="default" data-topic="1" data-src="deck.md:167">
+<div class="si-watermark si-wm-text" aria-hidden="true">Draft</div>
+<div class="si-inner">
+<header class="si-head"><h2 class="si-heading">Code from files</h2></header>
+<div class="si-body"><figure class="si-cw" data-window="mac" data-cw-theme="night" data-backdrop="none" data-transition="morph" data-numbers aria-label="compose.yaml"><div class="si-cw-stage"><div class="si-cw-win"><div class="si-cw-bar"><span class="si-cw-lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="si-cw-title">compose.yaml</span><span class="si-cw-pad"></span></div><div class="si-cw-body" tabindex="0" role="region" aria-label="Code"><div class="si-cw-code"></div></div></div></div><script type="application/json" class="si-cw-data">{"steps":[{"title":"compose.yaml","hl":[3],"lines":["\u003cspan class=\"si-tk-y\"\u003eservices:\u003c/span\u003e","\u003cspan class=\"si-tk-y\"\u003e  web:\u003c/span\u003e","\u003cspan class=\"si-tk-y\"\u003e    image:\u003c/span\u003e nginx:\u003cspan class=\"si-tk-n\"\u003e1.27\u003c/span\u003e","\u003cspan class=\"si-tk-y\"\u003e    ports:\u003c/span\u003e [\u003cspan class=\"si-tk-s\"\u003e\u0026#34;8080:80\u0026#34;\u003c/span\u003e]"],"text":["services:","  web:","    image: nginx:1.27","    ports: [\"8080:80\"]"],"notes":[{"line":4,"html":"the port the browser opens","src":"the port the browser opens"}]}]}</script><div class="si-cw-steps"><div class="si-cw-plain" data-i="0"><pre class="si-code"><code><span class="si-tk-y">services:</span>
+<span class="si-tk-y">  web:</span>
+<span class="si-tk-y">    image:</span> nginx:<span class="si-tk-n">1.27</span>
+<span class="si-tk-y">    ports:</span> [<span class="si-tk-s">&#34;8080:80&#34;</span>]</code></pre><ol class="si-cw-notes"><li data-line="4">the port the browser opens</li></ol></div></div></figure>
+<figure class="si-cw" data-window="terminal" data-cw-theme="auto" data-backdrop="none" data-transition="morph" data-cw-id="start" aria-label="start-v1.sh"><div class="si-cw-stage"><div class="si-cw-win"><div class="si-cw-tabs"><span class="si-cw-tab">start-v1.sh</span></div><div class="si-cw-prompt" aria-hidden="true">$ <b>cat start-v1.sh</b></div><div class="si-cw-body" tabindex="0" role="region" aria-label="Code"><div class="si-cw-code"></div></div></div></div><script type="application/json" class="si-cw-data">{"steps":[{"name":"Up","title":"start-v1.sh","lines":["\u003cspan class=\"si-tk-c\"\u003e#!/bin/sh\u003c/span\u003e","\u003cspan class=\"si-tk-m\"\u003eset\u003c/span\u003e\u003cspan class=\"si-tk-f\"\u003e -e\u003c/span\u003e","\u003cspan class=\"si-tk-m\"\u003edocker\u003c/span\u003e compose up\u003cspan class=\"si-tk-f\"\u003e -d\u003c/span\u003e"],"text":["#!/bin/sh","set -e","docker compose up -d"]},{"name":"Pull first","title":"start-v2.sh","hl":[3],"lines":["\u003cspan class=\"si-tk-c\"\u003e#!/bin/sh\u003c/span\u003e","\u003cspan class=\"si-tk-m\"\u003eset\u003c/span\u003e\u003cspan class=\"si-tk-f\"\u003e -e\u003c/span\u003e","\u003cspan class=\"si-tk-m\"\u003edocker\u003c/span\u003e compose pull","\u003cspan class=\"si-tk-m\"\u003edocker\u003c/span\u003e compose up\u003cspan class=\"si-tk-f\"\u003e -d\u003c/span\u003e\u003cspan class=\"si-tk-f\"\u003e --wait\u003c/span\u003e"],"text":["#!/bin/sh","set -e","docker compose pull","docker compose up -d --wait"],"notes":[{"line":4,"html":"waits for the health checks","src":"waits for the health checks"}]}]}</script><div class="si-cw-steps"><div class="si-cw-plain" data-i="0"><p class="si-cw-name">Up</p><pre class="si-code"><code><span class="si-tk-c">#!/bin/sh</span>
+<span class="si-tk-m">set</span><span class="si-tk-f"> -e</span>
+<span class="si-tk-m">docker</span> compose up<span class="si-tk-f"> -d</span></code></pre></div><div class="si-cw-plain" data-i="1"><p class="si-cw-name">Pull first</p><pre class="si-code"><code><span class="si-tk-c">#!/bin/sh</span>
+<span class="si-tk-m">set</span><span class="si-tk-f"> -e</span>
+<span class="si-tk-m">docker</span> compose pull
+<span class="si-tk-m">docker</span> compose up<span class="si-tk-f"> -d</span><span class="si-tk-f"> --wait</span></code></pre><ol class="si-cw-notes"><li data-line="4">waits for the health checks</li></ol></div></div><span class="si-step si-cw-mark" data-step="1" hidden></span></figure>
+</div>
+</div>
+<div class="si-footer" data-pos="bottom-left">Internal</div>
+</section>
+<section class="si-slide si-content" id="s16" data-title="One promise" data-layout="default" data-topic="1" data-transition="morph" data-src="deck.md:179">
 <div class="si-watermark si-wm-text" aria-hidden="true">Draft</div>
 <div class="si-inner">
 <header class="si-head"><h2 class="si-heading">One promise</h2></header>
@@ -203,7 +221,7 @@
 </div>
 <div class="si-footer" data-pos="bottom-left">Internal</div>
 </section>
-<section class="si-slide si-content" id="s16" data-title="One promise" data-layout="default" data-topic="1" data-transition="morph" style="--si-morph-duration:0.9s" data-src="deck.md:180">
+<section class="si-slide si-content" id="s17" data-title="One promise" data-layout="default" data-topic="1" data-transition="morph" style="--si-morph-duration:0.9s" data-src="deck.md:192">
 <div class="si-watermark si-wm-text" aria-hidden="true">Draft</div>
 <div class="si-inner">
 <header class="si-head"><h2 class="si-heading">One promise</h2></header>
@@ -212,7 +230,7 @@
 </div>
 <div class="si-footer" data-pos="bottom-left">Internal</div>
 </section>
-<section class="si-slide si-closing" id="s17" data-title="The end" data-layout="default" data-topic="1" data-src="deck.md:188">
+<section class="si-slide si-closing" id="s18" data-title="The end" data-layout="default" data-topic="1" data-src="deck.md:200">
 <div class="si-watermark si-wm-text" aria-hidden="true">Draft</div>
 <div class="si-inner">
 <h1 class="si-heading">The end</h1>

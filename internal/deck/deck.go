@@ -780,8 +780,8 @@ func (d *Deck) expandIncludes(file string, lines []srcLine, stack []string) []sr
 			out = append(out, srcLine{l.file, l.no, ""})
 			continue
 		}
-		if path, opts := splitIncludeValue(val); !isDeckFile(filepath.Base(path)) {
-			// a code file: a fenced code block (lines=, tag=, lang=, title=, hl=, linenos, indent=keep)
+		if path, opts := splitIncludeValue(val); !isDeckFile(filepath.Base(path)) || opts["window"] != "" || opts["id"] != "" {
+			// a code file (or Markdown shown in a code window): a fenced code block (lines=, tag=, lang=, title=, hl=, linenos, indent=keep, window options)
 			block, err := codeInclude(filepath.Join(filepath.Dir(l.file), path), opts)
 			d.Includes = append(d.Includes, filepath.Join(filepath.Dir(l.file), path))
 			if err != nil {

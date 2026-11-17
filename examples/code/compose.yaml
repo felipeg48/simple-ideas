@@ -1,0 +1,17 @@
+services:
+  checkout:
+    build: .
+    environment:
+      PAYMENTS_URL: http://payments-fake:8090
+      RETRY_MAX_TRIES: "5"
+    depends_on:
+      payments-fake:
+        condition: service_healthy
+  payments-fake:
+    image: northwind/payments-fake:2.3
+    environment:
+      DROP_EVERY: "7"
+      DECLINE_CARD: "4000000000000002"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "localhost:8090/health"]
+      interval: 2s

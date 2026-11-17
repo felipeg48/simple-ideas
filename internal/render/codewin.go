@@ -28,6 +28,7 @@ var (
 	cwThemes      = []string{"auto", "night", "paper", "dusk"}
 	cwBackdrops   = []string{"dusk", "ocean", "mint", "graphite", "none"}
 	cwTransitions = []string{"morph", "fade", "slide"}
+	cwAs          = []string{"cat"}
 )
 
 type cwNote struct {
@@ -151,7 +152,7 @@ func (dr *deckRenderer) cwValidate(attrs map[string]string, sc *slideCtx) {
 	for _, o := range []struct {
 		key  string
 		vals []string
-	}{{"window", cwWindows}, {"theme", cwThemes}, {"backdrop", cwBackdrops}, {"transition", cwTransitions}} {
+	}{{"window", cwWindows}, {"theme", cwThemes}, {"backdrop", cwBackdrops}, {"transition", cwTransitions}, {"as", cwAs}} {
 		if v, ok := attrs[o.key]; ok && v != "" {
 			if msg := oneOfMsg("code window "+o.key, v, o.vals); msg != "" {
 				dr.problem(sc, "%s", msg)
@@ -189,8 +190,8 @@ func (dr *deckRenderer) cwFence(sh *cwShow) string {
 	fmt.Fprintf(&b, ` aria-label="%s">`, html.EscapeString(firstNonEmpty(title, "Code")))
 	b.WriteString(`<div class="si-cw-stage"><div class="si-cw-win">`)
 	chrome := cwChrome(win, title)
-	if win == "terminal" && shellLang[strings.ToLower(sh.lang)] {
-		// a shell block is what was typed, not a file: no "$ cat title" line
+	if win == "terminal" && shellLang[strings.ToLower(sh.lang)] && o["as"] != "cat" {
+		// a shell block is what was typed, not a file: no "$ cat title" line (as=cat shows a script as a file)
 		chrome = cwPromptRE.ReplaceAllString(chrome, "")
 	}
 	b.WriteString(chrome)

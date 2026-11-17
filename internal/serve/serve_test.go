@@ -150,3 +150,39 @@ func TestIndexMdIsTheHomePage(t *testing.T) {
 		t.Errorf("/ should open index.md, got %s %.200s", resp.Request.URL.Path, b)
 	}
 }
+
+// A file a deck includes from outside the served folder is watched too, and
+// taking it in is no change of its own.
+func TestWatchOutsideInclude(t *testing.T) {
+	root := t.TempDir()
+	talk, code := filepath.Join(root, "talk"), filepath.Join(root, "code")
+	os.MkdirAll(talk, 0o755)
+	os.MkdirAll(code, 0o755)
+	yaml := filepath.Join(code, "compose.yaml")
+	os.WriteFile(yaml, []byte("services: {}\n"), 0o644)
+	os.WriteFile(filepath.Join(talk, "talk.md"), []byte("# Talk\n\n<!-- include: ../code/compose.yaml window=mac -->\n"), 0o644)
+	s, err := New(talk, nil, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ts := httptest.NewServer(s.Handler())
+	defer ts.Close()
+	res, err := http.Get(ts.URL + "/talk.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	s.watchMu.Lock()
+	before, now := s.watchSig, s.signature()
+	s.watchMu.Unlock()
+	if before != now || len(s.outside) != 1 {
+		t.Fatalf("rendering the deck should take in the outside file quietly (%d files)", len(s.outside))
+	}
+	os.WriteFile(yaml, []byte("services:\n  web: {}\n"), 0o644)
+	s.watchMu.Lock()
+	after := s.signature()
+	s.watchMu.Unlock()
+	if after == now {
+		t.Fatal("an edit of the included file outside the folder is not seen")
+	}
+}

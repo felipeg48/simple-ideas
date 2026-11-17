@@ -88,6 +88,33 @@ func TestApply(t *testing.T) {
 	}
 }
 
+// TestIncludeSteps: includes (and <!-- code: -->) in a window are steps
+// whose code is a file; options edit in place, the code does not.
+func TestIncludeSteps(t *testing.T) {
+	text := "# T\n\n<!-- include: v1.sh numbers id=up window=terminal -->\n<!-- callout: 1 once -->\n\n<!-- include: ../v2.sh id=up window=terminal -->\n\n<!-- include: plain.go -->\n\n<!-- code: https://github.com/a/b/blob/0123abc/x.yaml window=mac -->\n"
+	shows := Shows(text)
+	if len(shows) != 2 || len(shows[0].Steps) != 2 || shows[0].Steps[0].File != "v1.sh" || shows[0].Steps[0].Lang != "bash" || len(shows[0].Steps[0].Callouts) != 1 {
+		t.Fatalf("shows: %+v", shows)
+	}
+	if _, n := shows[0].Steps[0].Attrs["numbers"]; !n || shows[1].Steps[0].File != "https://github.com/a/b/blob/0123abc/x.yaml" {
+		t.Errorf("a first bare option, the code source: %+v", shows)
+	}
+	out, _, err := Apply(text, 3, Op{Kind: "set", Field: "theme", Value: "night"})
+	if err != nil || !strings.Contains(out, "<!-- include: v1.sh numbers id=up window=terminal theme=night -->") || !strings.Contains(out, "<!-- include: ../v2.sh id=up window=terminal theme=night -->") {
+		t.Fatalf("set: %v\n%s", err, out)
+	}
+	out, _, err = Apply(text, 3, Op{Kind: "add-step", Step: 1})
+	if err != nil || strings.Count(out, "../v2.sh") != 2 {
+		t.Errorf("add-step: %v\n%s", err, out)
+	}
+	if _, _, err := Apply(text, 3, Op{Kind: "set-code", Text: "x"}); err == nil {
+		t.Error("an include's code is edited in its file")
+	}
+	if src, n := Source(text, nil, ""); n != 2 || !strings.Contains(src, "<!-- include: ../v2.sh") || strings.Contains(src, "plain.go") {
+		t.Errorf("source: %d\n%s", n, src)
+	}
+}
+
 func TestSource(t *testing.T) {
 	text := "# T\n\n---\n\n## A\n\n```go id=r window=mac\na()\n```\n<!-- callout: 1 one -->\n\n---\n\n## B\n\n```go id=r window=mac\na()\nb()\n```\n\n```sh window=terminal\nls\n```\n\n```go\nplain()\n```\n"
 	src, n := Source(text, map[string]string{"theme": "paper"}, "")

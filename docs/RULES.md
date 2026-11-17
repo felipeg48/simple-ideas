@@ -1051,8 +1051,12 @@ becomes a code block, highlighted by the file's extension:
   YAML), then from its first characters (`<?xml` or a tag → XML, `{` or `[` →
   JSON, a `#!` line → bash or Python). `lang=` overrides both, here and on
   `<!-- code: -->`: `<!-- include: ../code/NuGet.config title=NuGet.config lang=xml -->`.
+- Every code window option works on an include too (`window=`, `theme=`,
+  `backdrop=`, `numbers`, `id=`, `step=`, `transition=`, `as=cat`): see
+  "Code from a file" in §25. `numbers` is `linenos`. An include of a `.md`
+  file with `window=` or `id=` shows the Markdown as code.
 - `si check` reports a missing file, a range past the end, a tag that is not
-  found or not closed, and an unknown option.
+  found or not closed, and an unknown option (listing every option).
 - A title with spaces is quoted: `title="Retry (part one)"`. Unquoted, its
   words read as options, and `si check` says so: `title with spaces must be
   quoted: title="Retry (part one)"`.
@@ -1122,7 +1126,8 @@ file, then **Copy permalink**), or name the repo, path and commit:
 ```
 
 - `code:` takes every option of a code include (`lines=`, `tag=`, `hl=`,
-  `title=`, `lang=`, `linenos`); a `#L5-L10` in the permalink is `lines=5-10`.
+  `title=`, `lang=`, `linenos`, and the code window options: `window=mac`,
+  `id=`, `numbers`… of §25); a `#L5-L10` in the permalink is `lines=5-10`.
   The code block's header links to the source.
 - `diff:` shows a commit's changes, or the changes from A to B, filtered to
   `path=` (a file, or a folder: everything under it): file headers, hunk
@@ -3061,6 +3066,7 @@ func send(order Order) error {
 | `id=` | a name | blocks with the same id in a row are one show; on slides, the same id on consecutive slides morphs |
 | `step=` | text | the step's name, shown under the window (`2 / 4 · Back off`) and in the Studio |
 | `transition=` | `morph` (default), `fade`, `slide` | how a show goes from step to step |
+| `as=` | `cat` | a shell script in a `terminal` window shows as a file, under `$ cat <title>` |
 
 ```xml window=windows title="Gateway.csproj" theme=paper
 <Project Sdk="Microsoft.NET.Sdk">
@@ -3075,8 +3081,39 @@ $ go test ./payments -count=100
 ok  	payments	2.41s
 ```
 
-An unknown value of `window=`, `theme=`, `backdrop=` or `transition=` is a
-`si check` problem.
+An unknown value of `window=`, `theme=`, `backdrop=`, `transition=` or `as=`
+is a `si check` problem.
+
+### Code from a file
+
+A window can show a real file: give the include (or a `<!-- code: -->`
+permalink, §13) the same options as the fence. It draws exactly the window
+the fence would, with the file's text, highlighted by its name (`.yaml`
+`.yml`, `.sh` `.bash` `.zsh`, `.json`, `.toml`, `.ini` `.conf` `.properties`
+`.env` (also `rabbitmq.conf`), `Dockerfile` `Containerfile`, `Makefile`,
+`.sql`, `.xml`, `.md`, `nginx.conf`, `.tf`…; `lang=` overrides). The title is
+the file name unless `title=` says otherwise, and `lines=` / `tag=` keep their
+meaning.
+
+```markdown
+<!-- include: compose.yaml window=mac theme=night numbers hl=6 -->
+<!-- callout: 6 The same five tries as production. -->
+
+<!-- include: start.sh window=terminal as=cat numbers hl=4-5 -->
+```
+
+Includes with the same `id=` are a show like fences: two versions of a
+file (`start-v1.sh`, `start-v2.sh`, both `title=start.sh`), or one file's
+`tag=` regions, morph step to step, on slides (one click each) and in
+documents (← → Play). Callouts go after the include line. In `si play` an
+edit to the included file reloads the page, also for a file outside the
+served folder (`../code/compose.yaml`). The Studio's Window view edits the
+include's options and callouts (its code is the file: edit that), and
+`si code` exports it.
+
+A shell script in a `terminal` window shows only its lines, like a command
+typed at the prompt; `as=cat` shows it as a file instead, under
+`$ cat start.sh`. It works on a fence too.
 
 ### Callouts
 
@@ -3151,7 +3188,8 @@ box title (`retry.go · 2/4 Back off`) and that step's callouts, and the
 and title, written into the fence line the same way.
 
 Examples: `examples/code/retry.md` (a four-step show on a backdrop, a Windows
-window with C# and a `.csproj`, a terminal), the showcase slide "The retry
+window with C# and a `.csproj`, `compose.yaml` and `start.sh` shown from
+their files, a terminal), the showcase slide "The retry
 rule" (two steps, one click), and a terminal window in
 `examples/article/retry.md`.
 

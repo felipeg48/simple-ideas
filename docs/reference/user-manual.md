@@ -241,6 +241,7 @@ func send(o Order) error {
 
 - `window=` mac, windows, terminal, none · `theme=` night, paper, dusk · `backdrop=` dusk, ocean, mint, graphite
 - Same `id=` in a row: a show that morphs; on a slide, one click per step
+- A real file: `<!-- include: compose.yaml window=mac numbers hl=3 -->` (every option; `as=cat` puts a script under `$ cat start.sh`)
 - `si code file.md --png --svg --gif`; in the Studio, put the cursor in a block and choose Window
 
 Notes: A code block can be a window. [CLICK] Blocks with the same id become one window whose lines glide into the next step.
