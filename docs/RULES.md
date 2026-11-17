@@ -3063,6 +3063,7 @@ func send(order Order) error {
 | `theme=` | `auto` (default), `night`, `paper`, `dusk` | `auto` uses the deck or page colours (light and dark); the others are code-window looks |
 | `backdrop=` | `none` (default), `dusk`, `ocean`, `mint`, `graphite` | a gradient behind the window, with room around it |
 | `numbers` | (a flag; `linenos` works too) | line numbers in a gutter |
+| `start=` | a number (default 1) | the gutter's first number: `numbers start=120` for a block cut from line 120 of a file |
 | `hl=` | `3`, `3,5-7` | highlighted lines of this step |
 | `id=` | a name | blocks with the same id in a row are one show; on slides, the same id on consecutive slides morphs |
 | `step=` | text | the step's name, shown under the window (`2 / 4 · Back off`) and in the Studio |
@@ -3094,7 +3095,8 @@ the fence would, with the file's text, highlighted by its name (`.yaml`
 `.env` (also `rabbitmq.conf`), `Dockerfile` `Containerfile`, `Makefile`,
 `.sql`, `.xml`, `.md`, `nginx.conf`, `.tf`…; `lang=` overrides). The title is
 the file name unless `title=` says otherwise, and `lines=` / `tag=` keep their
-meaning.
+meaning: with `numbers`, the gutter counts from the first line shown
+(`lines=40-52` numbers 40 to 52), as the file does.
 
 ```markdown
 <!-- include: compose.yaml window=mac theme=night numbers hl=6 -->

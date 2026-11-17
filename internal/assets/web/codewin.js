@@ -122,7 +122,7 @@
     });
     this.live = keep;
     this.code.style.height = st.text.length * lh + 'px';
-    if (this.gutter) this.gutter.innerHTML = st.text.map(function (_, i) { return '<div style="height:' + lh + 'px">' + (i + 1) + '</div>'; }).join('');
+    if (this.gutter) this.gutter.innerHTML = st.text.map(function (_, i) { return '<div style="height:' + lh + 'px">' + ((st.start || 1) + i) + '</div>'; }).join(''); /* start: the file's first line (lines=, start=N) */
     this.cur = st;
     this.notes(animate ? 620 : 0);
   };
@@ -246,7 +246,7 @@
     var rows = Math.max(from.text.length + (to.text.length - from.text.length) * e, 1);
     this.code.style.height = rows * lh + 'px';
     var cur = t < 1 ? from : to;
-    if (this.gutter) this.gutter.innerHTML = to.text.map(function (_, i) { return '<div style="height:' + lh + 'px">' + (i + 1) + '</div>'; }).join('');
+    if (this.gutter) this.gutter.innerHTML = to.text.map(function (_, i) { return '<div style="height:' + lh + 'px">' + ((to.start || 1) + i) + '</div>'; }).join('');
     this.cur = t >= 1 ? to : { text: cur.text, notes: [] };
     this.live = {};
     this.place();

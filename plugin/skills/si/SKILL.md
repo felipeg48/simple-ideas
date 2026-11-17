@@ -391,7 +391,8 @@ Not everything is a slide deck. Pick the type by what the reader does:
   with `si build x.md --png --pdf --svg`; credit every picture's licence.
 - **Code windows** (RULES.md §25): `window=mac|windows|terminal|none` on a
   code fence draws it as a window (`title="file.go"`, `theme=night|paper|dusk`,
-  `backdrop=dusk|ocean|mint|graphite`, `numbers`, `hl=`); callouts go right
+  `backdrop=dusk|ocean|mint|graphite`, `numbers`, `start=N` for the gutter's
+  first number, `hl=`); callouts go right
   after the fence, one per line: `<!-- callout: LINE text at=dx,dy -->`. Fences
   in a row with the same `id=` (and `step="name"`) are a show whose steps morph;
   on a slide each extra step is a click (one `[CLICK]` each), and the same id on
@@ -400,7 +401,8 @@ Not everything is a slide deck. Pick the type by what the reader does:
   A file on disk takes the same options on its include, so the window shows
   the real file: `<!-- include: compose.yaml window=mac numbers hl=3 -->`
   (also `<!-- code: -->`, `id=` shows across files or versions, callouts after
-  it; the title is the file name; `as=cat` shows a script under `$ cat`).
+  it; the title is the file name; `as=cat` shows a script under `$ cat`;
+  `lines=40-52` numbers the gutter 40 to 52).
   `si code file.md --png --svg --gif` exports them. Leave `at=` out unless the
   author placed the note: dragging it in `si play` or the Studio writes it.
 - **Publishing** (RULES.md §26): `linkedin:` (the post text), `tags:`,

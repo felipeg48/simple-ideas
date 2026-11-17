@@ -9,6 +9,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/assets"
 	"html"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/felipeg48/simple-ideas/internal/codeshow"
@@ -42,8 +43,9 @@ type cwStep struct {
 	Name  string   `json:"name,omitempty"`
 	Title string   `json:"title,omitempty"`
 	HL    []int    `json:"hl,omitempty"`
-	Lines []string `json:"lines"` // highlighted HTML, one per line
-	Text  []string `json:"text"`  // the same lines as text: the morph matches them
+	Lines []string `json:"lines"`           // highlighted HTML, one per line
+	Text  []string `json:"text"`            // the same lines as text: the morph matches them
+	Start int      `json:"start,omitempty"` // the gutter's first number (start=N; an include's first line)
 	Notes []cwNote `json:"notes,omitempty"`
 }
 
@@ -141,6 +143,9 @@ func (dr *deckRenderer) cwStep(n *ast.FencedCodeBlock, src []byte, lang string, 
 	}
 	body := strings.TrimRight(code.String(), "\n")
 	st := cwStep{Name: attrs["step"], Title: attrs["title"], Text: strings.Split(body, "\n"), Lines: splitHTMLLines(highlight(body, lang))}
+	if n, err := strconv.Atoi(attrs["start"]); err == nil && n > 1 {
+		st.Start = n
+	}
 	for k := range lineSet(attrs["hl"]) {
 		st.HL = append(st.HL, k)
 	}

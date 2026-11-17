@@ -53,6 +53,11 @@ func TestCodeWindows(t *testing.T) {
 	if figs[0] != figs[1] {
 		t.Errorf("an include must draw what its fence draws:\n%s\n---\n%s", figs[0], figs[1])
 	}
+	// the gutter starts at the file's line: start=N on a fence, lines= on an include
+	res, _ = renderFiles(t, map[string]string{"g.md": "---\ntype: article\n---\n# G\n\n```go window=mac numbers start=12\na()\n```\n\n<!-- include: f.go lines=3-4 window=mac numbers -->\n", "f.go": "package f\n\nfunc a() {}\nfunc b() {}\n"}, "g.md")
+	if h := string(res.HTML); len(res.Problems) > 0 || !strings.Contains(h, `"start":12`) || !strings.Contains(h, `"start":3`) {
+		t.Errorf("gutter start: %s", problemsText(res))
+	}
 	// plain fences stay plain; no scripts
 	res, _ = renderFiles(t, map[string]string{"p.md": "# P\n\n---\n\n## Code\n\n```go\na()\n```\n"}, "p.md")
 	if h := string(res.HTML); strings.Contains(h, `class="si-cw`) || strings.Contains(h, "si code windows:") {

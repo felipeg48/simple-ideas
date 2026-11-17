@@ -296,6 +296,12 @@ func TestCodeWindowFromFiles(t *testing.T) {
 	if p := plain(s); steps != 1 || !strings.Contains(p, "$ cat start.sh · 2/2") || !strings.Contains(p, "2 docker compose up -d --wait") || !strings.Contains(p, "waits") {
 		t.Errorf("steps=%d:\n%s", steps, p)
 	}
+	// lines= numbers the gutter from the file's first included line
+	os.WriteFile(p, []byte("# T\n\n---\n\n## Start\n\n<!-- include: v2.sh lines=2 window=mac numbers -->\n"), 0o644)
+	d, _ = deck.Parse(p)
+	if s, _ := Slide(d, 1, 0, 80, 30, Palette{}); !strings.Contains(plain(s), "2 docker compose up -d --wait") || strings.Contains(plain(s), "1 docker") {
+		t.Errorf("gutter from line 2:\n%s", plain(s))
+	}
 }
 
 // TestTeleprompterActCues: [TERM …] and [BROWSER …] cues show as badges, not
