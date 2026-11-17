@@ -24,10 +24,10 @@ links, open pages, the current slide and the recent reloads. Piped output and
 ```text
 $ si play talk.md --view checklist
 
-🎬  si play 3.32.0  talk.md · theme studio
+🎬  si play 3.32.0  serving talk.md · theme studio
 
 ✅  Deck     The Thursday Promise  (26 slides)
-✅  Live     163 files watched  (reload on save)
+✅  Live     live reload on  (163 files watched)
 
 👉  Open     http://127.0.0.1:7070/talk.html
 

@@ -156,7 +156,7 @@ func playStart(p *ui.Printer, srv *serve.Server, src, cmd, open, phone string, p
 	if theme == "" {
 		theme = config.Load(o.conf, filepath.Join(dir, "si.conf")).Theme
 	}
-	meta := shown(src)
+	meta := "serving " + shown(src) // "serving": the word scripts and demos wait for
 	if theme != "" {
 		meta += " · theme " + filepath.Base(theme)
 	}
@@ -169,7 +169,7 @@ func playStart(p *ui.Printer, srv *serve.Server, src, cmd, open, phone string, p
 	default:
 		p.Item(ui.OK, "pages", plural(len(srv.RemoteDecks()), "page"), "and the guides beside them")
 	}
-	p.Item(ui.OK, "live", plural(srv.Live().Files, "file")+" watched", "reload on save")
+	p.Item(ui.OK, "live", "live reload on", plural(srv.Live().Files, "file")+" watched")
 	if srv.Terminal {
 		p.Item(ui.OK, "drawer", "press ` on the deck", "local commands, loopback only")
 	}
@@ -324,7 +324,11 @@ func tally(p *ui.Printer, problems, warnings int, what string) int {
 	if problems > 0 {
 		st = ui.Fail
 	}
-	p.Summary(st, "", plural(warnings, "warning")+" · "+plural(problems, "problem")+" · "+what, "")
+	text := plural(warnings, "warning") + " · " + plural(problems, "problem") + " · " + what
+	if st == ui.OK {
+		text = what + " OK · no warnings, no problems" // "OK": as the plain line says it
+	}
+	p.Summary(st, "", text, "")
 	if problems > 0 {
 		return exitProblems
 	}
