@@ -64,8 +64,9 @@ func Launch(chrome string, w, h int, extra ...string) (*Client, error) {
 	if profile != "" {
 		args = append(args, "--user-data-dir="+profile)
 	}
-	cmd := exec.Command(chrome, append(args, "about:blank")...)
-	cmd.ExtraFiles = []*os.File{toChrome, fromChrome}
+	cmd := exec.Command(chrome)
+	args = append(args, pipes(cmd, toChrome, fromChrome)...)
+	cmd.Args = append(append([]string{chrome}, args...), "about:blank")
 	if err := cmd.Start(); err != nil {
 		os.RemoveAll(profile)
 		return nil, err
