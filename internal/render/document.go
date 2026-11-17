@@ -332,6 +332,7 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	}
 	b.WriteString(`<style id="si-css">` + "\n" + assets.LayerOrder + assets.DocCSS + dr.themeCSS + dr.accentCSS() + mmCSS + "</style>\n")
 	dr.codewinCSS(&b)
+	dr.videoplayerCSS(&b)
 	dr.timelineCSS(&b)
 	dr.userAndMode(&b, modeAttr)
 	bodyAttrs := fmt.Sprintf(` data-si-doc="%s"`, html.EscapeString(kind))
@@ -521,6 +522,7 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 		b.WriteString(dr.mindmapScripts())
 	}
 	dr.codewinJS(&b)
+	dr.videoplayerJS(&b)
 	dr.timelineJS(&b)
 	dr.reload(&b)
 	b.WriteString("</body>\n</html>\n")

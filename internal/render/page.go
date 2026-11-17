@@ -40,6 +40,7 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	}
 	b.WriteString("</style>\n")
 	dr.codewinCSS(&b)
+	dr.videoplayerCSS(&b)
 	dr.timelineCSS(&b)
 	if dr.wmImg != "" || d.Meta.WatermarkOpacity != "" {
 		var decls []string
@@ -189,6 +190,7 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 		b.WriteString(dr.mindmapScripts())
 	}
 	dr.codewinJS(&b)
+	dr.videoplayerJS(&b)
 	dr.timelineJS(&b)
 	dr.reload(&b)
 	b.WriteString("</body>\n</html>\n")
