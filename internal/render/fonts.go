@@ -276,3 +276,37 @@ func FontsCSS(d *deck.Deck, cfg *config.Config) (string, []string) {
 	}
 	return dr.fontsCSS, bad
 }
+
+// GoogleFamilies are the families a fonts: value takes from Google Fonts
+// (lower case): the ones si build --svg may fetch again as TrueType.
+func GoogleFamilies(val string) map[string]bool {
+	out := map[string]bool{}
+	specs, _ := parseFonts(val)
+	for _, sp := range specs {
+		if sp.provider == "google" && sp.file == "" {
+			out[strings.ToLower(sp.family)] = true
+		}
+	}
+	return out
+}
+
+// GoogleTTF fetches one weight and style of a Google Fonts family as a
+// TrueType file (what Google serves an agent that is not a browser), cached
+// like every font: for SVG exports, which embed fonts cut to their text.
+func GoogleTTF(family, weight, style string) ([]byte, error) {
+	axis, val := "wght", weight
+	if style == "italic" {
+		axis, val = "ital,wght", "1,"+weight
+	}
+	sheet := "https://fonts.googleapis.com/css2?family=" + strings.ReplaceAll(url.QueryEscape(family), "%20", "+") + ":" + axis + "@" + val
+	css, err := deck.FetchAsset(sheet, nil)
+	if err != nil {
+		return nil, err
+	}
+	for _, m := range fontURLRE.FindAllStringSubmatch(string(css), -1) {
+		if m[2] == "truetype" {
+			return deck.FetchAsset(m[1], nil)
+		}
+	}
+	return nil, fmt.Errorf("no TrueType file for %s %s", family, weight)
+}

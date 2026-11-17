@@ -225,9 +225,10 @@ page; a wide or square one a slide.
   900, or the whole poster at 1080 wide; `--scale 2`, the default, doubles
   the pixels; `--scale 3` for print) and `pdfs/talk.pdf` (one page, vector
   text). **`--svg`** writes `talk.svg`, the frame as a vector picture (text
-  as text, pictures inside, theme colours resolved; gradients and shadows
-  as SVG gradients and filters, used web fonts embedded, the animation
-  finished). `si play` presents a landscape one. Printed from the
+  as text, pictures inside, theme colours resolved; gradients (conic too)
+  and shadows (inset and text shadows too) as SVG gradients and filters,
+  used web fonts embedded and cut to the characters shown, the animation
+  finished; see §29). `si play` presents a landscape one. Printed from the
   browser, a portrait poster that runs over several pages keeps its glows
   and padding on every page, and no block is cut between two pages.
 - **Text fits its block.** A block whose text does not fit its cell gets a

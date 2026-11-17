@@ -102,6 +102,60 @@ body{margin:0}
 	}
 }
 
+// TestFrameSVGEffects: a conic gradient becomes wedges clipped to its box, an
+// inset shadow a blurred frame cut out by the box (inside it), a text shadow
+// a blurred copy of the text under it.
+func TestFrameSVGEffects(t *testing.T) {
+	chrome := findChrome()
+	if chrome == "" || testing.Short() {
+		t.Skip("needs Chrome")
+	}
+	page := filepath.Join(t.TempDir(), "p.html")
+	os.WriteFile(page, []byte(`<!doctype html><style>body{margin:0}
+.f{width:600px;height:400px;background:#fff}
+.d{width:200px;height:200px;border-radius:50%;background:conic-gradient(from 90deg,#ff0000 0 25%,#0000ff 25% 75%,#00ff00 75%)}
+.i{width:200px;height:80px;box-shadow:inset 0 4px 10px rgba(0,0,0,.5)}
+.t{font:700 40px sans-serif;text-shadow:2px 3px 6px rgba(255,0,0,.8)}
+</style><div class="f"><div class="d"></div><div class="i"></div><div class="t">Glow</div></div>`), 0o644)
+	svg, err := frameSVG(chrome, "file://"+filepath.ToSlash(page), ".f", 800, 600, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := strings.Count(svg, `<path d="M100 100L`); n < 170 {
+		t.Errorf("conic: %d wedges from the centre", n)
+	}
+	for _, want := range []string{`fill="rgb(255,0,0)"`, `fill="rgb(0,0,255)"`, `fill="rgb(0,255,0)"`, `fill-rule="evenodd"`, `fill-opacity="0.5" filter="url(#si-s`, `fill-opacity="0.8" filter="url(#si-t`, `<feGaussianBlur stdDeviation="3"/>`} {
+		if !strings.Contains(svg, want) {
+			t.Errorf("svg lacks %q", want)
+		}
+	}
+	if strings.Count(svg, `>Glow</text>`) != 2 || strings.Index(svg, `filter="url(#si-t`) > strings.LastIndex(svg, `>Glow</text>`) {
+		t.Error("text shadow: a copy under the text")
+	}
+	if err := xml.NewDecoder(strings.NewReader(svg)).Decode(new(struct{})); err != nil {
+		t.Errorf("not well-formed: %v", err)
+	}
+}
+
+// TestSVGFonts: an embedded TrueType font is cut to the SVG's text; a WOFF2
+// font si may not fetch again stays whole, with a note.
+func TestSVGFonts(t *testing.T) {
+	ttf, err := os.ReadFile("/System/Library/Fonts/Supplemental/Arial.ttf")
+	if err != nil {
+		t.Skip("no TrueType font here")
+	}
+	woff2 := "d09GMgABAAAAAAAA"
+	svg := `<svg xmlns="http://www.w3.org/2000/svg"><defs><style>@font-face{font-family:"Body";src:url("data:font/ttf;base64,` + base64.StdEncoding.EncodeToString(ttf) + `") format("truetype");font-weight:400}
+@font-face{font-family:"Brand";src:url("data:font/woff2;base64,` + woff2 + `") format("woff2");font-weight:700}</style></defs><text>Hitos 1936</text></svg>`
+	out, notes := svgFonts(svg, map[string]bool{})
+	if len(out) > len(svg)/3 || !strings.Contains(out, `format("truetype");font-weight:400`) || !strings.Contains(out, woff2) {
+		t.Errorf("%d of %d bytes", len(out), len(svg))
+	}
+	if len(notes) != 1 || !strings.Contains(notes[0], "Brand 700: WOFF2 only") {
+		t.Errorf("notes: %q", notes)
+	}
+}
+
 func buildSVG(t *testing.T, chrome, md, dir string) string {
 	t.Helper()
 	d, err := deck.Parse(md)

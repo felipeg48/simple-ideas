@@ -4800,9 +4800,13 @@ a document it is `vertical` unless `layout=` says otherwise.
   resolution. A portrait poster's `--pdf` is the printed page. `--svg`
   writes `timeline.svg`: the same frame as a vector picture, its text as
   real text, its pictures inside it and the theme's colours resolved, its
-  background glows as SVG gradients and its shadows as blurred SVG filters,
-  and the web fonts its text uses embedded (whole files, as data URIs; an
-  animated infographic is taken finished). All need Chrome.
+  background glows as SVG gradients (a conic gradient as thin wedges of its
+  colours), its shadows as blurred SVG filters (inset shadows and text
+  shadows too), and the web fonts its text uses embedded, cut to the
+  characters the picture shows (a font from Google Fonts in `fonts:` is
+  fetched again as TrueType for that; a WOFF2 font from elsewhere, or one
+  for text that needs shaping such as Arabic, goes in whole, and the build
+  says so; an animated infographic is taken finished). All need Chrome.
 - `si new history --type timeline` writes an example timeline with its
   pictures; `si --export example --type timeline` the same.
 
@@ -5033,9 +5037,10 @@ page; a wide or square one a slide.
   900, or the whole poster at 1080 wide; `--scale 2`, the default, doubles
   the pixels; `--scale 3` for print) and `pdfs/talk.pdf` (one page, vector
   text). **`--svg`** writes `talk.svg`, the frame as a vector picture (text
-  as text, pictures inside, theme colours resolved; gradients and shadows
-  as SVG gradients and filters, used web fonts embedded, the animation
-  finished). `si play` presents a landscape one. Printed from the
+  as text, pictures inside, theme colours resolved; gradients (conic too)
+  and shadows (inset and text shadows too) as SVG gradients and filters,
+  used web fonts embedded and cut to the characters shown, the animation
+  finished; see §29). `si play` presents a landscape one. Printed from the
   browser, a portrait poster that runs over several pages keeps its glows
   and padding on every page, and no block is cut between two pages.
 - **Text fits its block.** A block whose text does not fit its cell gets a

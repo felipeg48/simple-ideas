@@ -12,6 +12,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/assets"
 	"github.com/felipeg48/simple-ideas/internal/cdp"
 	"github.com/felipeg48/simple-ideas/internal/deck"
+	"github.com/felipeg48/simple-ideas/internal/render"
 )
 
 // si build --svg for timelines and infographics: <name>.svg, a vector picture
@@ -50,11 +51,15 @@ func exportFrameSVG(chrome, dest, out string, d *deck.Deck, stdout io.Writer) er
 	if err != nil {
 		return err
 	}
+	svg, notes := svgFonts(svg, render.GoogleFamilies(d.Meta.Fonts))
 	p := filepath.Join(out, d.Name+".svg")
 	if err := os.WriteFile(p, []byte(svg), 0o644); err != nil {
 		return err
 	}
 	fmt.Fprintf(stdout, "  %-28s (svg, %d KB)\n", d.Name+".svg", (len(svg)+1023)/1024)
+	for _, n := range notes {
+		fmt.Fprintf(stdout, "    font %s\n", n)
+	}
 	return nil
 }
 

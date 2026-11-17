@@ -127,8 +127,12 @@ a document it is `vertical` unless `layout=` says otherwise.
   resolution. A portrait poster's `--pdf` is the printed page. `--svg`
   writes `timeline.svg`: the same frame as a vector picture, its text as
   real text, its pictures inside it and the theme's colours resolved, its
-  background glows as SVG gradients and its shadows as blurred SVG filters,
-  and the web fonts its text uses embedded (whole files, as data URIs; an
-  animated infographic is taken finished). All need Chrome.
+  background glows as SVG gradients (a conic gradient as thin wedges of its
+  colours), its shadows as blurred SVG filters (inset shadows and text
+  shadows too), and the web fonts its text uses embedded, cut to the
+  characters the picture shows (a font from Google Fonts in `fonts:` is
+  fetched again as TrueType for that; a WOFF2 font from elsewhere, or one
+  for text that needs shaping such as Arabic, goes in whole, and the build
+  says so; an animated infographic is taken finished). All need Chrome.
 - `si new history --type timeline` writes an example timeline with its
   pictures; `si --export example --type timeline` the same.
