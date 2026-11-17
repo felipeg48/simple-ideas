@@ -3,6 +3,16 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.29.0:** improvements. Chrome runs share one machine-wide limit
+  (lock files in the temp folder, `flock` / `LockFileEx`), and a run that
+  times out on a busy machine before writing its file gets one more try,
+  with the wait in the error. Code-window gutters start at the right line
+  (`start=N` on a fence, the first included line for `lines=`). The class
+  view is in the Studio (a Class mode with the share link and QR) and in
+  the terminal (`si play --terminal --class`). Paged timeline PDFs are
+  vector PDFs with selectable text. `--svg` cuts embedded fonts to the
+  characters shown and draws conic gradients, inset shadows and text
+  shadows.
 - **v3.28.0:** video edits from Markdown (`type: video`, RULES §32). A file
   beside a recording lists its finishing touches, one line each at the
   source's own times (`1:34`, `1:36–1:46`, `end`, `at said "words"` from the
