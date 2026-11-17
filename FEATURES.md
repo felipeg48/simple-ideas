@@ -254,6 +254,21 @@ an example for every rule: [RULES.md](docs/RULES.md).
 - **Code shows:** steps that morph into each other, on slides and in
   documents; `si code` exports PNG, SVG, GIF and MP4.
 
+## Video player
+
+- **A player from one fence:** ```` ```video src="clip.mp4" ```` with si's own
+  controls: scrub bar with buffered range, hover time and chapter marks, time,
+  volume, speed, captions, a chapter list, picture in picture, fullscreen;
+  keys (Space/K, ← →, J/L, M, F, C) and touch (tap, double tap to seek).
+- `mode=inline|modal|facade`: in place, or large in a dialog over the dimmed,
+  blurred page; every modal player on a page (or `group=`) is one gallery
+  with ‹ › and "2 / 9".
+- Captions and chapters found beside the video (`clip.vtt`,
+  `clip.chapters.txt`, si demo run's `chapters.txt`), carried in the page;
+  `![](clip.mp4)` in documents and course video lessons use the same player.
+- `si --export player`: the same CSS and JS for pages si did not build; any
+  `data-video="clip.mp4"` card becomes a player.
+
 ## Web demos
 
 - **A test from a demo script:** `type: demo` with `app:` (a URL, or the app's

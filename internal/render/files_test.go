@@ -75,10 +75,10 @@ func TestVideoImage(t *testing.T) {
 		res := Deck(d, Options{Media: mode})
 		h := string(res.HTML)
 		for _, want := range []string{
-			`<figure class="si-image" data-video><video controls preload="metadata" playsinline src="v.mp4" poster="`,
+			`<figure class="si-image" data-video><video data-si-player controls preload="metadata" playsinline src="v.mp4" poster="`,
 			`<figcaption class="si-caption">`,
 			`The cluster, narrated</figcaption>`,
-			`<video controls preload="metadata" playsinline src="clip.webm"></video>`,
+			`<video data-si-player controls preload="metadata" playsinline src="clip.webm"></video>`,
 		} {
 			if !strings.Contains(h, want) {
 				t.Errorf("mode %d: article lacks %q", mode, want)
@@ -189,7 +189,7 @@ func TestCourseDeckVideoLesson(t *testing.T) {
 	}
 	h := string(lesson.Result.HTML)
 	for _, want := range []string{
-		`<figure class="si-course-video"><video controls preload="metadata" playsinline src="ex.mp4"><track kind="captions" src="ex.vtt" srclang="en" label="Captions" default></video></figure>`,
+		`<figure class="si-course-video"><video data-si-player controls preload="metadata" playsinline src="ex.mp4"><track kind="captions" src="data:text/vtt;base64,`,
 		`<a class="si-course-download" href="ex.pdf" download>Download the slides (PDF)</a>`,
 		`<a class="si-course-download" href="ex.handout.pdf" download>Download the handout (PDF)</a>`,
 		`<a class="si-course-slides-link" href="ex.slides.html">Open the interactive slides</a>`,

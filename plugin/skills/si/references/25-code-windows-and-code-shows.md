@@ -183,11 +183,17 @@ rule" (two steps, one click), and a terminal window in
 
 ### Video player
 
-A fenced code block whose language is `video` is a self-contained video
-player, authored like a code window: the options go on the fence line, any
-body is the caption. `mode=` chooses how it plays. Nothing external loads;
-`si build` copies the video beside the page (as it does for `![](clip.mp4)`,
-§8) and the player inlines its own CSS and JS.
+A fenced code block whose language is `video` is a video player, authored
+like a code window: the options go on the fence line, any body is the
+caption. The player has its own controls (the HUD), themed with the page's
+`--si-*` tokens: play and pause, a scrub bar with the buffered part, the time
+under the pointer and chapter marks, the time, volume and mute, speed (1×,
+1.25×, 1.5×, 2×), captions, a chapter list, picture in picture where the
+browser has it, and fullscreen. Before the first play it shows the poster
+with a big play button; while it plays the HUD hides itself until the
+pointer moves. `si build` copies the video beside the page (as it does for
+`![](clip.mp4)`, §8) and inlines the player's CSS and JS; nothing external
+loads.
 
 ````markdown
 ```video src="assets/demo.mp4" poster="assets/demo.jpg" mode=modal title="The walkthrough"
@@ -195,13 +201,16 @@ Two minutes, end to end.
 ```
 ````
 
-- **`mode=inline`** (default) — a normal `<video controls>` with the poster.
-- **`mode=modal`** — the poster is a button with a play affordance; clicking
-  it opens an overlay lightbox (a native `<dialog>`) that plays the video.
-  Esc, the close button and a backdrop click all close it; the dialog
-  focus-traps while open and closing pauses the video.
-- **`mode=facade`** — the poster only; the video element is built on the
-  first click (nothing loads until then), good for a page with many clips.
+- **`mode=inline`** (default) — the player in place.
+- **`mode=modal`** — the poster is a button; it opens the player large in a
+  dialog over the page, which is dimmed and blurred behind it. Esc, the ✕
+  button or a click on the dimmed page closes it (and pauses); focus stays in
+  the dialog while it is open and goes back to the poster after. Every modal
+  player on the page is one gallery: the dialog shows "2 / 9", the title and
+  caption under the video, and ‹ › to step through them. `group=` makes
+  separate galleries.
+- **`mode=facade`** — like inline, but nothing loads until the first play;
+  good for a page with many clips.
 
 A block with only a `poster=` and no `src=` degrades: the poster shows with
 the play control disabled, rather than erroring.
@@ -209,13 +218,79 @@ the play control disabled, rather than erroring.
 | Option | Values | What it does |
 |---|---|---|
 | `src=` | a video file or URL (mp4, webm, mov, m4v, ogv) | the video; omit it (with a `poster=`) for a disabled placeholder |
-| `poster=` | an image file or URL | the still shown before play, and the modal/facade thumbnail |
-| `title=` | text (quote it when it has spaces) | the accessible label and the poster's alt text |
+| `poster=` | an image file or URL | the still before play and the modal thumbnail; default `<video>.poster.jpg`, made from the first frame when ffmpeg is there |
+| `title=` | text (quote it when it has spaces) | the accessible label, the poster's alt text, the title under the video in the dialog |
 | `mode=` | `inline` (default), `modal`, `facade` | how it plays (above) |
+| `captions=` | a `.vtt` or `.srt` file | the captions; default: `<video>.vtt` (or `.srt`) beside the video |
+| `chapters=` | a `.txt` (`0:00 Title` lines) or `.vtt` file | marks on the scrub bar, the chapter list, the chapter's name in the HUD; default: `<video>.chapters.txt` (or `.chapters.vtt`) beside the video, or a `chapters.txt` beside a video alone in its folder (as `si demo run --with chapters` writes it) |
+| `group=` | a name | `modal` only: players with the same group share the dialog's ‹ › (default: every modal player on the page) |
+| `start=` | a time (`12`, `1:05`, `1:02:03`) | starts there |
+| `hud=` | `on` (default), `native`, `off` | si's controls, the browser's own, or none (a click plays and pauses) |
 | `autoplay` | a flag | `inline` only, always muted (browsers block sound) |
-| `loop` | a flag | loops playback |
+| `muted`, `loop` | flags | starts muted; loops |
+| `lang=` | a language code | the captions' language (default: the page's `lang:`) |
 | `width=` | a length (`40rem`, `70%`) | caps the player width |
 | `aspect=` | a ratio (`16/9` default, `4/3`, `1/1`) | the player's aspect ratio (`ratio=` works too) |
 
-An unknown `mode=` is a `si check` problem. The player uses the theme's
-`--si-*` tokens, so it reads in light and dark.
+Captions and chapters are read at build time and carried in the page (the
+captions as a `data:` track), so a built page shows them from `file://` too.
+`![caption](clip.mp4)` in an article, guide, book or lab (§8) and a course's
+video lessons (§28) play in the same player and find the same files beside
+the video, so the videos si films (`si demo run`, `si build --mp4 --voice`)
+get their captions and chapters with nothing to write. On slides,
+`![](clip.mp4)` keeps the browser's own player; use the fence for the HUD.
+
+**Keys** while a player has focus (click it or Tab to it):
+
+| Key | What |
+|---|---|
+| Space, K | play / pause |
+| ← → | back / forward 5 s |
+| J L | back / forward 10 s |
+| Home End | start / end |
+| M | mute |
+| F | fullscreen |
+| C | captions on / off |
+| Esc | close the chapter list, leave fullscreen, close the dialog; on a slide, give the arrow keys back to the deck |
+| ← → in the dialog | the previous / next video while paused; Shift+← → while playing |
+
+On a touch screen a tap shows or hides the HUD and a double tap on the left
+or right third seeks 10 s. Buttons carry labels for screen readers, focus is
+always visible, and `prefers-reduced-motion` turns the HUD's animations off.
+
+An unknown option, `mode=` or `hud=`, a `start=` that is not a time and a
+missing captions or chapters file are `si check` problems. The player's look
+is in `--si-vp-*` tokens (`si --export css-rules` lists them).
+
+**On pages si did not build.** `si --export player [dir]` writes
+`si-player.css` and `si-player.js` (the same two files si inlines), a README
+and `demo.html`. Load the two files on any page and every element with
+`data-video` becomes a player: a card with an `<img>` uses it as the poster,
+its first heading as the title and its first paragraph as the caption, and a
+click (or Enter) opens the dialog, with ‹ › through every card on the page.
+
+```html
+<link rel="stylesheet" href="si-player.css">
+<script src="si-player.js" defer></script>
+
+<figure class="video-card" data-video="clips/01-intro.mp4" data-captions="clips/01-intro.vtt"
+        data-chapters="clips/01-intro.chapters.txt">
+  <img src="shots/01-intro.png" alt="The complete film">
+  <figcaption><h3>The complete film</h3><p>The whole story, end to end.</p></figcaption>
+</figure>
+```
+
+| Attribute | What |
+|---|---|
+| `data-video` | the video file |
+| `data-poster` | the still (default: the `<img>` inside) |
+| `data-title`, `data-caption` | the title and text under the video (default: the heading and paragraph inside) |
+| `data-captions` | a WebVTT file |
+| `data-chapters` | `0:00 Title` lines or a WebVTT chapters file |
+| `data-mode` | `modal` (default) or `inline` (plays in place of the picture) |
+| `data-group` | separate galleries |
+| `data-start` | a start time |
+
+The drop-in fetches captions and chapters, so serve the page over http. Its
+colours follow `--si-accent` when the page sets it; `window.siPlayer.init(el)`
+wires players added after the page loaded.

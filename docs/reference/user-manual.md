@@ -68,6 +68,7 @@ Points: Talking points
 | `Notes[Ana]:` / `Points[Ana]:` | one speaker's script and points, with `speakers: Ana, Felipe` in the front matter |
 | `<!-- layout: two-col -->` | a layout directive (see next) |
 | `![Caption](clip.mp4)` | a video player (`<!-- image: poster=still.jpg -->` for its still, else `clip.poster.jpg`, its first frame), copied beside the page |
+| ` ```video src="clip.mp4" mode=modal title="…" ` | si's video player: its own controls, captions and chapters from `clip.vtt` and `clip.chapters.txt` beside the video, `mode=modal` for a dialog over the dimmed page (every modal player on the page is one gallery) |
 | `[The slides (PDF)](talk.pdf)` | a link to a local file, copied beside the built page (missing: `si check` says so) |
 
 Everything is in **`si rules`** (or RULES.md) with an example for each.
@@ -797,6 +798,7 @@ si code show.md --mp4      # a code show as video (si build map.md --mp4: a mind
 si fix <dir> [--write]     # raw-HTML components (hl, pill, lockup, cards) into si syntax
 si qr https://… --png --svg --pdf  # a QR code file (--logo, --style dots, --wifi, --vcard)
 si --export skill          # the si skill for your AI agent (Claude Code: /plugin install si@simple-ideas)
+si --export player site/   # si's video player for a page si did not build (data-video="clip.mp4" cards)
 si mcp                     # MCP tools for agents: check, rules, new, build, qr, screenshot
 si new-canvas <name>       # scaffold an animated canvas
 si manual --slides         # this manual

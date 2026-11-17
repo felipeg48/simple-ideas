@@ -397,6 +397,15 @@ func (dr *deckRenderer) postprocess(h, dir string, sc *slideCtx) string {
 		return m[1] + html.EscapeString(uri) + `"`
 	})
 	h = mediaTagRE.ReplaceAllStringFunc(h, func(tag string) string {
+		extra := "" // a document's ![](x.mp4) plays in the si player, with the captions and chapters beside it
+		if m := videoSrcRE.FindStringSubmatch(tag); m != nil && dr.doc && strings.HasPrefix(tag, docVideoTag) && !isExternal(m[1]) {
+			video := filepath.Join(dir, filepath.FromSlash(cleanSrc(html.UnescapeString(m[1]))))
+			capFile, chapFile := vpSidecars(video, "", "")
+			tracks, chapters := vpTrack(capFile, dr.d.Meta.Lang, false), vpChapters(chapFile)
+			tag = strings.Replace(tag, `<video `, `<video data-si-player`+chapters+` `, 1)
+			extra = tracks
+			dr.videoplayer = true
+		}
 		if m := videoSrcRE.FindStringSubmatch(tag); m != nil && !strings.Contains(tag, ` poster="`) && !strings.Contains(tag, "si-bg-media") && !isExternal(m[1]) {
 			// a video without a still gets its first frame (<video>.poster.jpg)
 			if still := autoPoster(filepath.Join(dir, filepath.FromSlash(cleanSrc(html.UnescapeString(m[1]))))); still != "" {
@@ -405,7 +414,7 @@ func (dr *deckRenderer) postprocess(h, dir string, sc *slideCtx) string {
 				}
 			}
 		}
-		return mediaSrcRE.ReplaceAllStringFunc(tag, func(attr string) string {
+		tag = mediaSrcRE.ReplaceAllStringFunc(tag, func(attr string) string {
 			m := mediaSrcRE.FindStringSubmatch(attr)
 			src := html.UnescapeString(m[3])
 			if isExternal(src) || src == "" {
@@ -424,6 +433,7 @@ func (dr *deckRenderer) postprocess(h, dir string, sc *slideCtx) string {
 			}
 			return m[1] + m[2] + `="` + html.EscapeString(uri) + `"`
 		})
+		return tag + extra
 	})
 	h = hrefRE.ReplaceAllStringFunc(h, func(s string) string {
 		m := hrefRE.FindStringSubmatch(s)

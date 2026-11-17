@@ -193,6 +193,23 @@ gives it a still. Videos, linked local files (`[The slides (PDF)](talk.pdf)`,
 `.zip`, `.csv`) and the `src` of raw `<video>`/`<source>`/`<audio>` are copied
 beside the built page, never inlined; a missing one fails `si check`.
 
+For a real player (si's own controls, captions, chapters, a dialog over the
+dimmed page) use the `video` fence; the body is the caption:
+
+````markdown
+```video src="clips/intro.mp4" mode=modal title="The complete film"
+The whole story, end to end.
+```
+````
+
+`mode=inline|modal|facade`, `captions=x.vtt`, `chapters=x.txt` (`0:00 Title`
+lines; default: `<video>.vtt` and `<video>.chapters.txt` beside the video),
+`group=` (modal players with the same group share ‹ ›), `start=1:05`,
+`hud=on|native|off`, `poster=`, `width=`, `aspect=`, `autoplay`, `loop`,
+`muted`. `![](x.mp4)` in a document and a course's video lessons use the same
+player. For a page si did not build: `si --export player` (two files; any
+element with `data-video="clip.mp4"` becomes a player).
+
 ## Video edits
 
 A `type: video` file finishes a recording: `source:` the video, then one line

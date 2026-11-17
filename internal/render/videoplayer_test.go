@@ -1,6 +1,7 @@
 package render
 
 import (
+	"encoding/base64"
 	"strings"
 	"testing"
 )
@@ -30,17 +31,14 @@ func TestVideoPlayer(t *testing.T) {
 		t.Errorf("inline: the script should be inlined")
 	}
 
-	// modal: a poster button that opens a <dialog> lightbox, a close control, the script
+	// modal: a poster button and a hidden <video> the shared dialog plays from
 	res, _ = renderFiles(t, map[string]string{"m.md": page("```video src=\"https://x/clip.mp4\" poster=\"https://x/p.jpg\" mode=modal title=\"Demo\"\n```\n")}, "m.md")
 	h = string(res.HTML)
 	if len(res.Problems) > 0 {
 		t.Fatalf("modal: %s", problemsText(res))
 	}
-	if !strings.Contains(h, `data-vp-mode="modal"`) || !strings.Contains(h, `<dialog class="si-vp-modal"`) {
-		t.Errorf("modal: a <dialog> lightbox is expected")
-	}
-	if !strings.Contains(h, `class="si-vp-close"`) {
-		t.Errorf("modal: a close control is expected")
+	if !strings.Contains(h, `data-vp-mode="modal"`) || !strings.Contains(h, `<video class="si-vp-video" hidden preload="none" playsinline poster="" src="https://x/clip.mp4" data-vp-title="Demo"`) {
+		t.Errorf("modal: a hidden <video> is expected")
 	}
 	if !strings.Contains(h, `class="si-vp-open"`) || !strings.Contains(h, `<img class="si-vp-poster"`) {
 		t.Errorf("modal: a clickable poster is expected")
@@ -59,11 +57,11 @@ func TestVideoPlayer(t *testing.T) {
 	if len(res.Problems) > 0 {
 		t.Fatalf("facade: %s", problemsText(res))
 	}
-	if !strings.Contains(h, `data-vp-mode="facade"`) || !strings.Contains(h, `data-si-vp-src="clip.mp4"`) {
-		t.Errorf("facade: the src should be on a data attribute, resolved: %s", h)
+	if !strings.Contains(h, `data-vp-mode="facade"`) || !strings.Contains(h, `data-vp-src="clip.mp4"`) {
+		t.Errorf("facade: the src should be on a data attribute, resolved")
 	}
-	if strings.Contains(h, "<video") {
-		t.Errorf("facade: no eager <video> should be emitted")
+	if strings.Contains(h, `playsinline poster="p.jpg" src=`) || !strings.Contains(h, `preload="none"`) {
+		t.Errorf("facade: nothing loads before the first play")
 	}
 
 	// degrade: only a poster, no src — poster shown, play affordance disabled, no error
@@ -72,7 +70,7 @@ func TestVideoPlayer(t *testing.T) {
 	if len(res.Problems) > 0 {
 		t.Fatalf("degrade: %s", problemsText(res))
 	}
-	if !strings.Contains(h, `data-vp-disabled`) || strings.Contains(h, "<video") {
+	if !strings.Contains(h, `data-vp-disabled`) || strings.Contains(h, `<video class="si-vp-video"`) {
 		t.Errorf("degrade: a poster-only block must not emit a <video>")
 	}
 	if !strings.Contains(h, `<img class="si-vp-poster"`) {
@@ -89,5 +87,100 @@ func TestVideoPlayer(t *testing.T) {
 	res, _ = renderFiles(t, map[string]string{"p.md": page("```go\na()\n```\n")}, "p.md")
 	if h := string(res.HTML); strings.Contains(h, `class="si-vp`) || strings.Contains(h, "si video player:") {
 		t.Errorf("a plain fence must not become a video player")
+	}
+}
+
+func TestVideoPlayerOptions(t *testing.T) {
+	page := func(body string) string { return "---\ntype: article\nlang: es\n---\n# V\n\n" + body }
+	vtt := "WEBVTT\n\n00:00.000 --> 00:02.000\nHola\n"
+	srt := "1\n00:00:00,000 --> 00:00:02,000\nHola\n"
+	chapters := "0:00 Intro\n0:12 - The cluster\n1:05 The end\n"
+
+	// sidecars found beside the video: <video>.vtt and <video>.chapters.txt
+	res, _ := renderFiles(t, map[string]string{
+		"a.md":              page("```video src=\"clip.mp4\" group=tour start=0:05 hud=on\n```\n"),
+		"clip.mp4":          "x",
+		"clip.vtt":          vtt,
+		"clip.chapters.txt": chapters,
+	}, "a.md")
+	h := string(res.HTML)
+	if len(res.Problems) > 0 {
+		t.Fatalf("sidecars: %s", problemsText(res))
+	}
+	for _, want := range []string{
+		`<track kind="captions" src="data:text/vtt;base64,`,
+		`srclang="es" label="Captions">`,
+		`data-vp-chapters="[[0,&#34;Intro&#34;],[12,&#34;The cluster&#34;],[65,&#34;The end&#34;]]"`,
+		`data-vp-start="5"`,
+		`<video class="si-vp-video" controls preload="metadata"`,
+	} {
+		if !strings.Contains(h, want) {
+			t.Errorf("sidecars: page lacks %s", want)
+		}
+	}
+	if strings.Contains(h, `data-vp-group`) {
+		t.Error("group= is for modal players only")
+	}
+
+	// named files win; a .srt becomes WebVTT; WebVTT chapters; group and hud on the figure
+	res, _ = renderFiles(t, map[string]string{
+		"b.md":        page("```video src=\"clip.mp4\" mode=modal group=tour hud=native captions=subs/es.srt chapters=ch.vtt\n```\n"),
+		"clip.mp4":    "x",
+		"subs/es.srt": srt,
+		"ch.vtt":      "WEBVTT\n\n00:00:00.000 --> 00:00:30.000\nOne\n\n00:00:30.000 --> 00:01:00.000\nTwo\n",
+	}, "b.md")
+	h = string(res.HTML)
+	if len(res.Problems) > 0 {
+		t.Fatalf("named: %s", problemsText(res))
+	}
+	if !strings.Contains(h, `data-vp-group="tour"`) || !strings.Contains(h, `data-vp-hud="native"`) {
+		t.Error("named: group= and hud= go on the figure")
+	}
+	if !strings.Contains(h, `data-vp-chapters="[[0,&#34;One&#34;],[30,&#34;Two&#34;]]"`) {
+		t.Error("named: WebVTT chapters")
+	}
+	if !strings.Contains(h, "data:text/vtt;base64,"+base64.StdEncoding.EncodeToString([]byte("WEBVTT\n\n1\n00:00:00.000 --> 00:00:02.000\nHola\n"))) {
+		t.Error("named: a .srt is carried as WebVTT")
+	}
+
+	// si demo run's chapters.txt beside a lone video; hud=off has no controls
+	res, _ = renderFiles(t, map[string]string{
+		"c.md":              page("```video src=\"film/tour.mp4\" hud=off loop autoplay\n```\n"),
+		"film/tour.mp4":     "x",
+		"film/chapters.txt": chapters,
+	}, "c.md")
+	h = string(res.HTML)
+	if !strings.Contains(h, `data-vp-chapters="[[0,`) || !strings.Contains(h, `data-vp-hud="off"`) || strings.Contains(h, `<video class="si-vp-video" controls`) {
+		t.Error("chapters.txt beside a lone video, hud=off")
+	}
+
+	// problems: an unknown option, a bad hud, a bad start, a missing sidecar
+	res, _ = renderFiles(t, map[string]string{
+		"d.md":     page("```video src=\"clip.mp4\" colour=red hud=fancy start=soon captions=nope.vtt\n```\n"),
+		"clip.mp4": "x",
+	}, "d.md")
+	p := problemsText(res)
+	for _, want := range []string{`video option "colour"`, `video hud "fancy"`, `video start "soon"`, `missing file: nope.vtt`} {
+		if !strings.Contains(p, want) {
+			t.Errorf("problems lack %s: %s", want, p)
+		}
+	}
+
+	// ![](x.mp4) in a document plays in the same player, with its sidecars
+	res, _ = renderFiles(t, map[string]string{
+		"e.md":     page("![The tour](clip.mp4)\n"),
+		"clip.mp4": "x",
+		"clip.vtt": vtt,
+	}, "e.md")
+	h = string(res.HTML)
+	if !strings.Contains(h, `<video data-si-player controls preload="metadata" playsinline src="clip.mp4"`) || !strings.Contains(h, `<track kind="captions" src="data:text/vtt;base64,`) || !strings.Contains(h, "si video player:") {
+		t.Error("a document video is an si player with its captions")
+	}
+}
+
+func TestParseChapters(t *testing.T) {
+	got := parseChapters("(0:00) Intro\n1:02:03 Long — part\nnot a line\n12.5 Half\n")
+	if len(got) != 3 || got[1][0] != 3723.0 || got[1][1] != "Long — part" || got[2][0] != 12.5 {
+		t.Errorf("chapters: %v", got)
 	}
 }

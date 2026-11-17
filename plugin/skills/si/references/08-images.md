@@ -38,6 +38,11 @@ alt text) is the caption, `poster=` in the `image` directive its still.
 
 It renders `<figure class="si-image" data-video><video controls
 preload="metadata" playsinline src="assets/cluster.mp4" …></video><figcaption>`.
+In a document (an article, guide, book, lab or course page) the video plays
+in si's own player, with the captions (`cluster.vtt`) and chapters
+(`cluster.chapters.txt`) beside it; on a slide it keeps the browser's
+controls. The ```` ```video ```` fence (§25, Video player) has every option:
+a dialog over the dimmed page, galleries, a start time.
 
 A video without a `poster=` still opens on its first frame rather than on
 black: `si build` uses `cluster.poster.jpg` beside the video, and when there is

@@ -28,6 +28,7 @@ footer: simple-ideas
   - [Books](features/books.md)
   - [Courses](features/courses.md)
   - [Code](features/code.md)
+  - [Video player](features/player.md)
   - [Web Demos](features/webdemos.md)
   - [Website](features/website.md)
   - [Terminal](features/terminal.md)

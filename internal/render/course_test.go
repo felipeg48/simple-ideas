@@ -255,7 +255,7 @@ func TestVideoPoster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if h := string(Deck(d, Options{Media: MediaLink}).HTML); !strings.Contains(h, `<video poster="clip.poster.jpg" controls`) {
+	if h := string(Deck(d, Options{Media: MediaLink}).HTML); !strings.Contains(h, `<video poster="clip.poster.jpg" data-si-player controls`) {
 		t.Errorf("a document video gets its still:\n%s", h[strings.Index(h, "<video"):][:200])
 	}
 }
@@ -375,7 +375,7 @@ func TestDemoLessons(t *testing.T) {
 		got[p.Rel] = string(p.Result.HTML)
 	}
 	d := got["m/d.html"]
-	for _, want := range []string{`<span class="si-course-crumb-kind">Demo</span>`, `<video controls preload="metadata" playsinline src="d.mp4"><track kind="captions" src="d.vtt"`} {
+	for _, want := range []string{`<span class="si-course-crumb-kind">Demo</span>`, `<video data-si-player controls preload="metadata" playsinline src="d.mp4"><track kind="captions" src="data:text/vtt;base64,`} {
 		if !strings.Contains(d, want) {
 			t.Errorf("the filmed demo lacks %s", want)
 		}

@@ -221,7 +221,7 @@ Usage:
         check a theme and copy it into themes/ (or <dir>); --use also writes theme: into si.conf
   si theme from <logo.png|jpg|gif|svg> [-o <dir|file.css>] [--name N] [--accent '#hex'] [--use]
         a theme from a logo's colours, light and dark, every pair WCAG AA; themes/<name>.css
-  si --export css-rules|rules|conf|example|themes|agent-rules|docs-site [--output <path>]
+  si --export css-rules|rules|conf|example|themes|agent-rules|docs-site|player [--output <path>]
         css-rules: starter stylesheet with every --si-* token and .si-* hook
         rules:     RULES.md
         conf:      a starter si.conf with the default keys and features
@@ -230,6 +230,8 @@ Usage:
         themes:    one sample deck per built-in theme (default: ./si-themes)
         docs-site: the si docs site source (rules pages generated from RULES.md, the manual,
                    live examples; default: ./si-docs-site); then si build it
+        player:    the video player for pages si did not build: si-player.css, si-player.js, a README and
+                   demo.html (default: ./si-player, or si --export player <dir>); data-video="clip.mp4" elements become players
         agent-rules: CLAUDE.md + AGENTS.md telling a coding agent how to write si decks
         skill:     the si Agent Skill (SKILL.md + references/, default .claude/skills/si/); in Claude Code:
                    /plugin marketplace add felipeg48/simple-ideas, then /plugin install si@simple-ideas
@@ -273,7 +275,7 @@ Flags (GNU style, before or after the path):
       --review-addr <host:port> the --review address (default 0.0.0.0, the port + 2)
       --pdf             build: also render each deck to pdfs/<name>.pdf and link it from the index tiles (needs headless Chrome);
                         a course: <course>-workbook.pdf (with --instructor, <course>-instructor-guide.pdf)
-      --export <what>   css-rules, rules, conf, example, themes, agent-rules or skill
+      --export <what>   css-rules, rules, conf, example, themes, agent-rules, skill or player
   -h, --help            this help
       --version         print the version (--version --verbose: build, links, credits)
 
@@ -2009,6 +2011,21 @@ func export(o *options, stdout, stderr io.Writer) int {
 		}
 		fmt.Fprintf(stdout, "si: wrote the si skill to %s (SKILL.md and references/; run it again after updating si)\n", dir)
 		return exitOK
+	case "player":
+		dir := o.output
+		if dir == "" && len(o.args) > 0 {
+			dir = o.args[0]
+		}
+		if dir == "" {
+			dir = "si-player"
+		}
+		wrote, err := writePlayer(dir)
+		if err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitProblems
+		}
+		fmt.Fprintf(stdout, "si: wrote the video player to %s (%d files); on any page, elements with data-video=\"clip.mp4\" become players\n", dir, len(wrote))
+		return exitOK
 	case "themes":
 		out := o.output
 		if out == "" {
@@ -2021,7 +2038,7 @@ func export(o *options, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "si: wrote %d theme sample decks to %s; try: si play %s\n", len(assets.ThemeNames()), out, out)
 		return exitOK
 	}
-	return usageErr(stderr, fmt.Sprintf("unknown --export %q (css-rules, rules, conf, example, themes, agent-rules, skill)", o.export))
+	return usageErr(stderr, fmt.Sprintf("unknown --export %q (css-rules, rules, conf, example, themes, agent-rules, skill, player)", o.export))
 }
 
 // agentRules is the agent guide, stamped with the si version that wrote it.

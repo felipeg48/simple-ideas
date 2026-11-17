@@ -539,6 +539,7 @@ func renderCourse(full *deck.Guide, opt Options) (pages []GuidePage, problems, w
 		dr.resolveTheme()
 		res := Result{}
 		dr.finish(&res)
+		dr.videoplayer = strings.Contains(body, "data-si-player")
 		res.HTML, res.body, res.Media = dr.docPage(body, nil, nil), body, append(res.Media, media...)
 		return GuidePage{File: file, Rel: guideRel(g, file), Deck: d, Result: res}
 	}
@@ -633,8 +634,9 @@ func besidePage(page, file string) string {
 }
 
 // videoBody is the player of a video lesson: the file beside the page
-// (copied there by si build, never inlined), with <video>.vtt as its
-// captions when there is one (si build --mp4 --voice writes it).
+// (copied there by si build, never inlined), in the si player, with
+// <video>.vtt as its captions (si build --mp4 --voice writes it) and the
+// chapters beside it (vpSidecars), both carried in the page.
 func videoBody(page string, it *deck.NavItem) (string, []MediaFile) {
 	if !fileExists(it.Video) {
 		from := "its script"
@@ -645,17 +647,16 @@ func videoBody(page string, it *deck.NavItem) (string, []MediaFile) {
 	}
 	r := besidePage(page, it.Video)
 	media := []MediaFile{{Src: it.Video, Rel: r}}
-	track := ""
-	if vtt := strings.TrimSuffix(it.Video, filepath.Ext(it.Video)) + ".vtt"; fileExists(vtt) {
-		lang := "en"
-		if src := firstNonEmpty(it.Deck, it.Script); src != "" {
-			if d, err := deck.Parse(src); err == nil && d.Meta.Lang != "" {
-				lang = d.Meta.Lang
-			}
+	lang := "en"
+	if src := firstNonEmpty(it.Deck, it.Script); src != "" {
+		if d, err := deck.Parse(src); err == nil && d.Meta.Lang != "" {
+			lang = d.Meta.Lang
 		}
-		vr := besidePage(page, vtt)
-		track = fmt.Sprintf(`<track kind="captions" src="%s" srclang="%s" label="Captions" default>`, html.EscapeString(vr), html.EscapeString(lang))
-		media = append(media, MediaFile{Src: vtt, Rel: vr})
+	}
+	capFile, chapFile := vpSidecars(it.Video, "", "")
+	track, chapters := vpTrack(capFile, lang, true), vpChapters(chapFile)
+	if capFile != "" { // carried in the page, and beside it for download
+		media = append(media, MediaFile{Src: capFile, Rel: besidePage(page, capFile)})
 	}
 	poster := ""
 	still := it.Poster // · poster= or the page's poster:, else <video>.poster.jpg
@@ -667,7 +668,7 @@ func videoBody(page string, it *deck.NavItem) (string, []MediaFile) {
 		poster = ` poster="` + html.EscapeString(pr) + `"`
 		media = append(media, MediaFile{Src: still, Rel: pr})
 	}
-	return fmt.Sprintf("<figure class=\"si-course-video\"><video controls preload=\"metadata\" playsinline src=\"%s\"%s>%s</video></figure>\n", html.EscapeString(r), poster, track), media
+	return fmt.Sprintf("<figure class=\"si-course-video\"><video data-si-player%s controls preload=\"metadata\" playsinline src=\"%s\"%s>%s</video></figure>\n", chapters, html.EscapeString(r), poster, track), media
 }
 
 // DeckCompanions are the files beside a deck lesson's video (<deck>.mp4)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"github.com/felipeg48/simple-ideas/internal/assets"
 	"github.com/felipeg48/simple-ideas/internal/config"
 	"image/png"
 	"io"
@@ -235,6 +236,32 @@ func TestExportAgentRules(t *testing.T) {
 		t.Error("-o - prints the guide")
 	}
 }
+
+func TestExportPlayer(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "player")
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"--export", "player", dir}, &stdout, &stderr); code != 0 {
+		t.Fatalf("export: %d %s", code, stderr.String())
+	}
+	want := map[string]string{
+		"si-player.css":     assets.VideoplayerCSS,
+		"si-player.js":      assets.VideoplayerJS,
+		"README.md":         `data-video="clips/01-intro.mp4"`,
+		"demo.html":         `<script src="si-player.js" defer></script>`,
+		"demo.chapters.txt": "0:00 ",
+	}
+	for n, w := range want {
+		b, err := os.ReadFile(filepath.Join(dir, n))
+		if err != nil || !strings.Contains(string(b), w) {
+			t.Errorf("%s: missing or without %.40q (%v)", n, w, err)
+		}
+	}
+	if !strings.Contains(string(must(os.ReadFile(filepath.Join(dir, "demo.html")))), `data-video="demo.mp4"`) {
+		t.Error("the demo page has data-video cards")
+	}
+}
+
+func must(b []byte, _ error) []byte { return b }
 
 func TestSiteTitleFlag(t *testing.T) {
 	o, err := parseArgs([]string{"build", "--site-title", "Harbor", "d"}, io.Discard)

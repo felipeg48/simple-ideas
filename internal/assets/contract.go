@@ -149,6 +149,24 @@ var Tokens = []Token{
 	{"--si-cw-note", "code windows: callout notes", "#fffdf5"},
 	{"--si-cw-note-fg", "code windows: callout text", "#24221c"},
 	{"--si-cw-wire", "code windows: the dashed wire from a dot to its note", "var(--si-fg) (on a backdrop: white)"},
+	{"--si-vp-width", "video player: the player's width (width=)", "100%"},
+	{"--si-vp-ratio", "video player: the frame's aspect ratio (aspect=)", "16/9"},
+	{"--si-vp-radius", "video player: corner radius of the frame", "var(--si-radius)"},
+	{"--si-vp-on", "video player: icons and text over the video", "#fff"},
+	{"--si-vp-off", "video player: the disabled play button", "#8a8f98"},
+	{"--si-vp-btn", "video player: size of the big play button", "clamp(3em,8vw,4.5em)"},
+	{"--si-vp-btn-bg", "video player: the big play button", "the accent, darkened"},
+	{"--si-vp-ring", "video player: the focus ring", "var(--si-accent)"},
+	{"--si-vp-shadow", "video player: the play button's and the dialog player's shadow", "a soft drop shadow"},
+	{"--si-vp-fill", "video player: the played part of the scrub bar, the volume, CC on, the current chapter", "the accent, lightened"},
+	{"--si-vp-bar", "video player: the scrub bar's track", "white at 28%"},
+	{"--si-vp-buffer", "video player: the buffered part of the scrub bar", "white at 45%"},
+	{"--si-vp-mark", "video player: chapter marks on the scrub bar", "near black"},
+	{"--si-vp-hud", "video player: the HUD's background (a gradient up from the bottom)", "transparent to dark"},
+	{"--si-vp-tip", "video player: the hover time, the chapter list, the seek flash, the dialog's buttons", "dark at 90%"},
+	{"--si-vp-hover", "video player: a hovered HUD button", "white at 14%"},
+	{"--si-vp-backdrop", "video player: the page dimmed behind the dialog", "dark at 72%"},
+	{"--si-vp-blur", "video player: how much the page behind the dialog is blurred", ".5em"},
 }
 
 // Hook is a stable selector user CSS may target.
@@ -559,6 +577,12 @@ var Hooks = []Hook{
 	{`.si-cw-body, .si-cw-code, .si-cw-gutter, .si-cw-l, .si-cw-hl`, "the code area, the lines (one .si-cw-l each, moved by the morph), line numbers, a highlighted line"},
 	{`.si-cw-notes-layer, .si-cw-wires, .si-cw-dot, .si-cw-bubble, .si-cw-list`, "callouts: their layer, the dashed wires, the numbered dots, the notes, and the list used on narrow screens"},
 	{`.si-cw-steps, .si-cw-name, .si-cw-nav, .si-cw-on, .si-cw-listmode`, "every step as a plain code block (without JavaScript), a step's name, ← → Play under a show in a document"},
+	{`.si-vp[data-vp-mode][data-vp-hud][data-vp-group][data-vp-disabled], .si-vp-video, .si-vp-cap, .si-vp-inline`, "a video player (a ```video fence; mode=, hud=, group=; a poster without src), its <video>, its caption; a drop-in card played in place"},
+	{`.si-vp-open, .si-vp-poster, .si-vp-play, .si-vp-frame, .si-vp-card`, "the poster button of a modal player, its picture and play badge, a poster with no video, a drop-in element (data-video=)"},
+	{`.si-vp-box[data-state][data-started][data-ended][data-idle][data-cc][data-full], .si-vp-big, .si-vp-cue, .si-vp-flash, .si-vp-live`, "the player (playing or paused, started, ended, HUD hidden, captions on, fullscreen), the big play button, the caption line, the ±10 s flash, the screen-reader line"},
+	{`.si-vp-hud, .si-vp-row, .si-vp-b, .si-vp-pp, .si-vp-mute, .si-vp-vol, .si-vp-time, .si-vp-chname, .si-vp-gap, .si-vp-chap, .si-vp-cc, .si-vp-speed, .si-vp-pip, .si-vp-full`, "the HUD: its row of buttons (play, mute, volume, time, chapter name, chapters, captions, speed, picture in picture, fullscreen)"},
+	{`.si-vp-bar, .si-vp-track, .si-vp-buf, .si-vp-fill, .si-vp-marks, .si-vp-mark, .si-vp-tip, .si-vp-menu, .si-vp-mi, .si-vp-mt, .si-vp-mn`, "the scrub bar (track, buffered, played, chapter marks, hover time) and the chapter list"},
+	{`.si-vp-dialog, .si-vp-dtop, .si-vp-count, .si-vp-close, .si-vp-dstage, .si-vp-dplayer, .si-vp-prev, .si-vp-next, .si-vp-dcap, .si-vp-dtitle, .si-vp-dtext`, "the shared dialog of modal players: the counter (2 / 9), close, the player, ‹ ›, the title and caption under it"},
 }
 
 // Theme holds the token values of one theme. Base values apply in both modes.
