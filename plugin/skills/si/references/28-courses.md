@@ -415,9 +415,36 @@ as it arrives; a restarted server starts again from today's file. Kept: the
 event, the lesson, the score, the step and the random learner id, and the
 name the learner typed: no address, no browser, no answers, no lab output.
 Delete the files when the class is over. `si play course/ --class` does the
-same for the instructor's build (its events say `instructor`). The class
-view is a browser page of `si serve` / `si play` only: the Studio (`si
---web`) and the terminal (`si --terminal`, `si play --terminal`) have none.
+same for the instructor's build (its events say `instructor`).
+
+**In the Studio** (`si --web`), the **Class** mode does it from the editor:
+pick the course, tick **Learners on my network** (or not: this machine
+only), **Start the class**. The course is served on a port of its own with
+the class on (as `si serve course/ --class`; only the course's folder,
+read-only), the dashboard shows inside the Studio, and beside it the link
+and QR code learners open and, on your network, the keyed link for a
+tablet. Leaving the mode keeps the class running; **Stop the class** (or
+quitting the Studio) ends it. The events go to the same
+`.si/class/<date>.jsonl`.
+
+**In the terminal**, `si play course/ --terminal --class` (or `si serve
+course/ --terminal --class --addr 0.0.0.0:8000`) serves the course with the
+class on and shows the class as text, refreshed every two seconds: the
+links to share, the counts, learners by lessons (✓ done, a quiz's best
+score in green or red, ✗ a failing lab check, · started), the lessons
+numbered under the grid, and who is stuck. `r` refreshes, `q` quits and
+stops the server.
+
+```text
+Class · A first web page
+Learners: http://192.168.1.20:8000/
+
+2 learners · 0 completed · 1 stuck · 9 events
+
+Learner       1   2   3   4   5   6   7  done
+Ana           ✓   ✓   ✓   ✓       ✗  85   5/11
+Bruno         ✓   ·                       1/11
+```
 
 ### Build, serve, check
 

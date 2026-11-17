@@ -7,6 +7,8 @@ export interface Node { name: string; path: string; kind: Kind; guide?: "guide" 
 export interface FileData { path: string; content: string; etag: string }
 /** A deck, document page, or a guide / book / site (its _nav.md or _site.md); url is its live page. */
 export interface DeckInfo { path: string; title: string; files: string[]; runbook?: string; kind: Kind; url: string; guide?: string }
+/** The live class of a course (Class mode): running or not, its links. */
+export interface ClassState { course: string; running: boolean; lan?: boolean; dashboard?: string; learners?: string; teacher?: string; qr?: string; note?: string }
 export interface Problem { file: string; line: number; msg: string }
 export interface Slide {
   index: number; file: string; line: number; title: string; topic: number; minutes: number;
@@ -57,6 +59,8 @@ export const api = {
   rename: (from: string, to: string) => call<unknown>("POST", "rename", { from, to }),
   remove: (path: string) => call<unknown>("DELETE", `file?path=${q(path)}`),
   decks: () => call<DeckInfo[]>("GET", "decks"),
+  class: (course: string) => call<ClassState>("GET", `class?course=${q(course)}`),
+  classStart: (course: string, lan: boolean, stop = false) => call<ClassState>("POST", "class", { course, lan, stop }),
   check: (deck: string) => call<Check>("GET", `check?deck=${q(deck)}`),
   rules: () => call<Rules>("GET", "rules"),
   checkAll: () => call<{ problems: Problem[]; checked: number }>("GET", "checkall"),

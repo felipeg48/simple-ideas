@@ -24,7 +24,7 @@ func newFx(t *testing.T) *fx {
 		t.Fatal(err)
 	}
 	mux := http.NewServeMux()
-	a := &api{ws: w}
+	a := &api{ws: w, cls: &classes{runs: map[string]*classRun{}}}
 	a.routes(mux)
 	return &fx{t, w.Root, mux, a}
 }

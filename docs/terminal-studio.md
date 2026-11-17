@@ -125,6 +125,16 @@ The shell pane runs your login shell: if your shell takes long to start (a heavy
 It reuses the web Studio's backend (`studio.Workspace`: tree, kinds, titles,
 check, starters) and the CLI's own entry point for Build.
 
+## Class: `si play course/ --terminal --class`
+
+A course served with the class on, and the class shown as text instead of
+the browser dashboard (RULES.md §28): the links to share, the counts,
+learners by lessons (✓ done, a quiz's best score, ✗ a failing check, ·
+started; the lessons that fit the width, numbered and listed under the
+grid), and who is stuck, fetched from the server's `/_si/class/data` every
+two seconds. `r` refreshes, `q` quits and stops the server
+(`internal/tui/class.go`).
+
 ## Testing it without a window
 
 `go test ./internal/tui` renders slides, the teleprompter and the Studio at

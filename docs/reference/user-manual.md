@@ -747,7 +747,9 @@ Points:
 - `/_si/class` on the loopback, or the keyed link + QR si prints for a tablet
 - Names only when learners type one (`webhook-learner: ask`, the default with `--class`); No thanks keeps them out
 - Kept in `.si/class/<date>.jsonl`; a restart picks up today's class; the Day picker opens earlier days
-- Quiz questions named by their titles; no class view in the Studio or the terminal
+- Quiz questions named by their titles
+- The Studio's Class mode: Start the class, the dashboard, link and QR beside it
+- `si play course/ --terminal --class`: the same class as text in the terminal
 - Works beside a `webhook:`; no webhook needed
 - RULES.md §28 (The live class view)
 

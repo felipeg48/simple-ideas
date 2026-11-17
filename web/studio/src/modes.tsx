@@ -5,7 +5,7 @@ import { useRef, useState } from "preact/hooks";
 import { type DeckInfo, isSlides, pageURL } from "./api";
 import { Icon } from "./navigator";
 
-export type Mode = "write" | "rehearse" | "present" | "lab";
+export type Mode = "write" | "rehearse" | "present" | "lab" | "class";
 
 export function ModeView(p: { mode: Mode; deck: DeckInfo | null; decks: DeckInfo[]; slide: number | null; onPick(path: string): void }) {
   const deckFrame = useRef<HTMLIFrameElement>(null);

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks"
 import { setCompletionFiles } from "./si-lang";
 import { BuildDialog } from "./build-dialog";
 import { type Mode, ModeView } from "./modes";
+import { ClassView } from "./class";
 import { type Command, Palette } from "./palette";
 import { NewDialog } from "./new-dialog";
 import { NewThemeDialog } from "./theme-editor";
@@ -73,6 +74,7 @@ const modes: { id: Mode; label: string; icon: IconName }[] = [
   { id: "rehearse", label: "Rehearse", icon: "mic" },
   { id: "present", label: "Present", icon: "play" },
   { id: "lab", label: "Lab", icon: "flask" },
+  { id: "class", label: "Class", icon: "guide" },
 ];
 const nextTheme: Record<ThemeMode, ThemeMode> = { system: "light", light: "dark", dark: "system" };
 const themeLabel: Record<ThemeMode, string> = { system: "System", light: "Light", dark: "Dark" };
@@ -456,7 +458,8 @@ export function App() {
         </div>
       </header>
 
-      {mode !== "write" && <ModeView mode={mode} deck={deck} decks={decks} slide={slide} onPick={(d) => setDeckPath(d)} />}
+      {mode === "class" && <ClassView decks={decks} />}
+      {mode !== "write" && mode !== "class" && <ModeView mode={mode} deck={deck} decks={decks} slide={slide} onPick={(d) => setDeckPath(d)} />}
       {/* Write stays mounted while another mode shows, so open files keep their state */}
       <div class={"body" + (view === "focus" ? " focus" : "") + (navOpen ? " nav-open" : "")} style={{ "--cols": cols }} hidden={mode !== "write"}>
         <Navigator tree={tree} decks={decks} active={active} dirty={dirty} onOpen={(n) => open(n.path)}

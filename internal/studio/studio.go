@@ -28,6 +28,7 @@ type Options struct {
 type Studio struct {
 	srv *serve.Server
 	h   http.Handler
+	cls *classes
 }
 
 // New opens dir as a workspace and builds the gated handler.
@@ -43,7 +44,8 @@ func New(dir string, opt Options) (*Studio, error) {
 	srv.Dev, srv.Terminal, srv.Title = true, true, opt.Title
 
 	mux := http.NewServeMux()
-	(&api{ws: ws, run: opt.Run, css: opt.CSS, theme: opt.Theme, title: opt.Title}).routes(mux)
+	cls := &classes{runs: map[string]*classRun{}}
+	(&api{ws: ws, run: opt.Run, css: opt.CSS, theme: opt.Theme, title: opt.Title, cls: cls}).routes(mux)
 	mux.Handle(assetsPrefix, http.StripPrefix("/_si/studio/", http.FileServerFS(assets.StudioFS)))
 	index, err := fs.ReadFile(assets.StudioFS, "index.html")
 	if err != nil {
@@ -69,15 +71,18 @@ func New(dir string, opt Options) (*Studio, error) {
 		// the listen address itself too, so --addr [::1]:PORT works
 		hosts = []string{"127.0.0.1:" + port, "localhost:" + port, opt.Addr}
 	}
-	return &Studio{srv: srv, h: NewGateway(opt.Token, hosts).Wrap(mux)}, nil
+	return &Studio{srv: srv, h: NewGateway(opt.Token, hosts).Wrap(mux), cls: cls}, nil
 }
 
 func (s *Studio) Handler() http.Handler { return s.h }
 
 func (s *Studio) Watch(stop <-chan struct{}) { s.srv.Watch(stop) }
 
-// Close ends any running terminal sessions.
-func (s *Studio) Close() { s.srv.CloseTerminals() }
+// Close ends any running terminal sessions and classes.
+func (s *Studio) Close() {
+	s.srv.CloseTerminals()
+	s.cls.closeAll()
+}
 
 // aboutJSON is what the Studio's Help menu and About dialog show, from
 // internal/brand (the desktop app reaches the same through window.siStudio).

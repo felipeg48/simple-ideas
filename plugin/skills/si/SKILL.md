@@ -304,7 +304,9 @@ Not everything is a slide deck. Pick the type by what the reader does:
   trainer learners by lessons, who's stuck, quiz questions most got wrong
   (by title) and a CSV at `/_si/class` (loopback, or the keyed link si
   prints); events are kept in `.si/class/<date>.jsonl` and earlier days
-  open from its Day picker. No class view in the Studio or the terminal.
+  open from its Day picker. The Studio's Class mode starts it from the editor
+  (dashboard, link and QR inside); `si play course/ --terminal --class`
+  shows it as text in the terminal.
 - **Project structure** (RULES.md §31): when a project has many kinds of
   output (decks, labs, a site, videos, zips), a `structure:` block in the
   project's si.conf maps each to a folder: one folder per line, nested by

@@ -162,6 +162,16 @@ other file offers a list of decks):
   **Open the teleprompter** opens the notes in another window.
 - **Lab** — the deck with the `si play` terminal drawer opened (shells, the
   runbook and the ▶ Demos panel) beside the teleprompter.
+- **Class** — the live class view of a course (a folder with `_course.md`;
+  RULES.md §28). **Start the class** serves the course on a port of its own
+  with the class on, as `si serve course/ --class` does (only the course's
+  folder, read-only; **Learners on my network** listens on every interface,
+  else this machine only), and shows its dashboard here, with the link and
+  QR code learners open and, on the network, the keyed link for a tablet.
+  The class keeps running when you leave the mode (coming back attaches to
+  it); **Stop the class** or quitting the Studio ends it
+  (`internal/studio/class.go`, `web/studio/src/class.tsx`; e2e
+  `e2e/class.e2e.mjs`).
 
 Write stays mounted while another mode shows, so open files keep their state;
 the Write preview is unmounted so only one copy of the deck answers the

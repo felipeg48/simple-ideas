@@ -256,7 +256,7 @@ Flags (GNU style, before or after the path):
                         with webhook-secret and forwarded to its webhook:, on any address (always on loopback)
       --class           serve, play: the live class view of a course: learners' pages send their events here too (kept in
                         .si/class/<date>.jsonl); /_si/class shows learners by lessons, who is stuck, quiz questions, CSV
-                        (loopback, or the keyed link si prints)
+                        (loopback, or the keyed link si prints); with --terminal the class shows as text in the terminal
       --offline         code: / diff: use the cache only (CI, a plane); fails on what was never fetched
       --no-instructor   build: leave the instructor demo scripts (type: demo) out of a participant build
       --instructor      build a course (_course.md) for the instructor: the demos' runbooks, the decks' teleprompter,
@@ -619,7 +619,7 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		}
 	}
 	// si --terminal [dir]: the Studio in the terminal (si play x --terminal is the presenter)
-	if o.terminal && !o.help && (len(o.args) == 0 || len(o.args) == 1 && isDir(o.args[0])) {
+	if o.terminal && !o.class && !o.help && (len(o.args) == 0 || len(o.args) == 1 && isDir(o.args[0])) {
 		dir := "."
 		if len(o.args) == 1 {
 			dir = o.args[0]
@@ -1361,7 +1361,7 @@ func checkGuides(guides []*deck.Guide, prior int, stdout, stderr io.Writer) int 
 }
 
 func play(src string, o *options, stdout, stderr io.Writer) int {
-	if o.terminal {
+	if o.terminal && !o.class { // --terminal --class: the server, and the class view in the terminal
 		return playTerminal(src, o, stdout, stderr)
 	}
 	if _, err := render.LoadCSS(o.css); err != nil {
@@ -1460,8 +1460,9 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 			printQR(stdout, lan)
 		}
 	}
+	var classLinks []string
 	if o.class {
-		if err := startClass(srv, ln.Addr(), stdout); err != nil {
+		if classLinks, err = startClass(srv, ln.Addr(), stdout); err != nil {
 			ln.Close()
 			fmt.Fprintf(stderr, "si: --class: %v\n", err)
 			return exitProblems
@@ -1529,6 +1530,30 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 			}
 		}()
 	}
+	if o.terminal && o.class { // the class view in the terminal; quitting it stops the server
+		served := make(chan error, 1)
+		go func() { served <- hs.Serve(ln) }()
+		port := ln.Addr().(*net.TCPAddr).Port
+		data := fmt.Sprintf("http://127.0.0.1:%d/_si/class/data", port)
+		err := tui.Class(func() ([]byte, error) {
+			res, err := http.Get(data)
+			if err != nil {
+				return nil, err
+			}
+			defer res.Body.Close()
+			if res.StatusCode != http.StatusOK {
+				return nil, fmt.Errorf("%s", res.Status)
+			}
+			return io.ReadAll(res.Body)
+		}, append([]string{"Course: " + url}, classLinks...), o.theme)
+		cancel()
+		<-served
+		if err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitProblems
+		}
+		return exitOK
+	}
 	if err := hs.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		fmt.Fprintf(stderr, "si: %v\n", err)
 		return exitProblems
@@ -1542,21 +1567,21 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 // startClass turns the live class view on: course pages send their events
 // to this server, and the dashboard opens on the loopback, or anywhere with
 // the run's key (printed with its QR code when the server is reachable).
-func startClass(srv *serve.Server, addr net.Addr, stdout io.Writer) error {
+func startClass(srv *serve.Server, addr net.Addr, stdout io.Writer) ([]string, error) {
 	var raw [16]byte
 	if _, err := rand.Read(raw[:]); err != nil {
-		return err
+		return nil, err
 	}
 	srv.Class, srv.ClassKey = true, hex.EncodeToString(raw[:])
 	ta, ok := addr.(*net.TCPAddr)
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	port := strconv.Itoa(ta.Port)
 	fmt.Fprintf(stdout, "  class view (this machine): http://%s/_si/class\n", net.JoinHostPort("127.0.0.1", port))
 	if ta.IP.IsLoopback() {
 		fmt.Fprintf(stdout, "  learners on your network and the class view on a tablet need --addr 0.0.0.0:%s\n", port)
-		return nil
+		return []string{"This machine only: --addr 0.0.0.0:" + port + " for learners on your network"}, nil
 	}
 	host := ta.IP.String()
 	if ta.IP.IsUnspecified() {
@@ -1567,7 +1592,7 @@ func startClass(srv *serve.Server, addr net.Addr, stdout io.Writer) error {
 	u := fmt.Sprintf("http://%s/_si/class?k=%s", net.JoinHostPort(host, port), srv.ClassKey)
 	fmt.Fprintf(stdout, "  class view on another device (keyed link, keep it to yourself):\n  %s\n", u)
 	printQR(stdout, u)
-	return nil
+	return []string{"Learners: http://" + net.JoinHostPort(host, port) + "/", "Class view on a tablet (keyed, keep it private): " + u}, nil
 }
 
 // startRemote opens the --remote listener (default: every interface, the play
@@ -1863,32 +1888,7 @@ func lanIP() string {
 // lanIPs are this machine's IPv4 addresses a phone could reach, in interface
 // order (Wi-Fi or Ethernet first on a Mac): private ranges, then the shared
 // 100.64/10 range Tailscale and carrier networks use.
-func lanIPs() []string {
-	ifs, err := net.Interfaces()
-	if err != nil {
-		return nil
-	}
-	cgnat := &net.IPNet{IP: net.IPv4(100, 64, 0, 0), Mask: net.CIDRMask(10, 32)}
-	var private, shared []string
-	for _, i := range ifs {
-		if i.Flags&net.FlagUp == 0 || i.Flags&net.FlagLoopback != 0 {
-			continue
-		}
-		addrs, _ := i.Addrs()
-		for _, a := range addrs {
-			ipn, ok := a.(*net.IPNet)
-			if !ok {
-				continue
-			}
-			if ip := ipn.IP.To4(); ip != nil && ip.IsPrivate() {
-				private = append(private, ip.String())
-			} else if ip != nil && cgnat.Contains(ip) {
-				shared = append(shared, ip.String())
-			}
-		}
-	}
-	return append(private, shared...)
-}
+func lanIPs() []string { return serve.LANIPs() }
 
 // findChrome returns a path to a headless-capable Chromium browser, or "".
 func findChrome() string { return tools.Find("chrome") }

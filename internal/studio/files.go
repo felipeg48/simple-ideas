@@ -29,6 +29,7 @@ type api struct {
 	css   []string
 	theme string
 	title string
+	cls   *classes // classes started from the Class view (class.go)
 }
 
 func (a *api) routes(mux *http.ServeMux) {
@@ -43,6 +44,8 @@ func (a *api) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET "+apiPrefix+"checkall", a.checkAll)
 	mux.HandleFunc("POST "+apiPrefix+"build", a.build)
 	mux.HandleFunc("GET "+apiPrefix+"decks", a.decks)
+	mux.HandleFunc("GET "+apiPrefix+"class", a.class)
+	mux.HandleFunc("POST "+apiPrefix+"class", a.classStart)
 	mux.HandleFunc("GET "+apiPrefix+"check", a.check)
 	mux.HandleFunc("GET "+apiPrefix+"rules", a.rules)
 	mux.HandleFunc("POST "+apiPrefix+"mindmap", a.mindmap)

@@ -2,6 +2,7 @@ package tui
 
 import (
 	"bufio"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/serve"
 )
@@ -315,5 +317,48 @@ func TestTeleprompterActCues(t *testing.T) {
 	}
 	if !strings.Contains(p, "CLICK") {
 		t.Errorf("the [CLICK] after them:\n%s", p)
+	}
+}
+
+// TestClassText: the terminal class view draws learners by lessons (✓ done,
+// a quiz's best score, ✗ a failing check, · started), the lesson key, who is
+// stuck, and the links above.
+func TestClassText(t *testing.T) {
+	var v ClassData
+	err := json.Unmarshal([]byte(`{"course":{"title":"Web 101","lessons":[
+		{"id":"01/a.html","title":"What a browser does","kind":"reading","module":"How the web works"},
+		{"id":"01/q.html","title":"Check yourself","kind":"quiz","module":"How the web works"},
+		{"id":"02/lab.html","title":"Build a page","kind":"lab","module":"Writing HTML"},
+		{"id":"02/b.html","title":"Tags","kind":"reading","module":"Writing HTML"}]},
+		"learners":[{"label":"Ana","done":2,"cells":{"01/a.html":{"done":true},"01/q.html":{"quiz":{"best":85,"pass":true}},"02/lab.html":{"checks":[{"pass":false}]}}},
+		{"label":"Learner 3f9a","done":0,"cells":{"01/a.html":{}}}],
+		"stuck":[{"label":"Ana","title":"Build a page","reason":"check 2 failing","since":"2026-11-17T10:00:00Z"}],
+		"stuckAfter":10,"events":7,"now":"2026-11-17T10:12:00Z"}`), &v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := ansi.Strip(ClassText(v, []string{"Learners: http://192.168.1.4:7070/"}, 100, PaletteFor("studio", "")))
+	for _, want := range []string{"Class · Web 101", "Learners: http://192.168.1.4:7070/", "2 learners · 0 completed · 1 stuck · 7 events",
+		"Ana", "✓", "85", "✗", "2/4", "Learner 3f9a", "·", "1  What a browser does (reading) · How the web works",
+		"Ana · Build a page · check 2 failing · 12m0s"} {
+		if !strings.Contains(s, want) {
+			t.Errorf("missing %q in\n%s", want, s)
+		}
+	}
+	// columns line up: every learner row is as wide as the header
+	lines := strings.Split(s, "\n")
+	for i, l := range lines {
+		if strings.HasPrefix(l, "Learner ") && !strings.HasPrefix(l, "Learner 3f9a") {
+			if w := ansi.StringWidth(strings.Fields(lines[i+1])[0]); w == 0 || !strings.HasPrefix(lines[i+1], "Ana") {
+				t.Errorf("rows under the header:\n%s", s)
+			}
+			if strings.Index(lines[i+1], "✓") < 0 || ansi.StringWidth(lines[i+1][:strings.Index(lines[i+1], "✓")]) != ansi.StringWidth(l[:strings.Index(l, "1")]) {
+				t.Errorf("the ✓ sits under lesson 1:\n%s\n%s", l, lines[i+1])
+			}
+		}
+	}
+	// a narrow terminal: the lessons that fit, and how many more
+	if n := ansi.Strip(ClassText(v, nil, 30, PaletteFor("studio", ""))); !strings.Contains(n, "more lessons") {
+		t.Errorf("narrow:\n%s", n)
 	}
 }
