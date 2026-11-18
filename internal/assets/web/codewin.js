@@ -27,6 +27,9 @@
     this.cols = 1;
     this.steps.forEach(function (s) { s.text.forEach(function (t) { self.cols = Math.max(self.cols, t.replace(/\t/g, '    ').length); }); });
     this.code.style.width = this.cols + 'ch';
+    /* on a slide the window keeps the tallest step's height: a step that adds lines
+       moves only the code, never the centred title and text around it */
+    this.rows = fig.closest('.si-slide') ? Math.max.apply(null, this.steps.map(function (s) { return s.text.length; })) : 0;
     if (fig.hasAttribute('data-numbers')) { this.gutter = document.createElement('div'); this.gutter.className = 'si-cw-gutter'; this.code.appendChild(this.gutter); }
     this.layer = document.createElement('div'); this.layer.className = 'si-cw-notes-layer';
     this.layer.innerHTML = '<svg class="si-cw-wires" aria-hidden="true"></svg>';
@@ -121,7 +124,7 @@
       setTimeout(function () { el.remove(); }, tx === 'none' ? 0 : 360);
     });
     this.live = keep;
-    this.code.style.height = st.text.length * lh + 'px';
+    this.code.style.height = Math.max(st.text.length, this.rows) * lh + 'px';
     if (this.gutter) this.gutter.innerHTML = st.text.map(function (_, i) { return '<div style="height:' + lh + 'px">' + ((st.start || 1) + i) + '</div>'; }).join(''); /* start: the file's first line (lines=, start=N) */
     this.cur = st;
     this.notes(animate ? 620 : 0);
@@ -182,6 +185,16 @@
       b.addEventListener('click', function (e) { e.stopPropagation(); });
     });
     this.fig.classList.toggle('si-cw-listmode', listMode);
+    if (this.rows) { /* a slide keeps room for the longest list of notes under the window, too */
+      var list = this.list, cur = list.innerHTML, mh = 0;
+      list.style.minHeight = '';
+      if (listMode) this.steps.forEach(function (s) {
+        list.innerHTML = (s.notes || []).map(function (n) { return '<li>' + n.html + '</li>'; }).join('');
+        mh = Math.max(mh, list.offsetHeight);
+      });
+      list.innerHTML = cur;
+      list.style.minHeight = mh ? mh + 'px' : '';
+    }
   };
 
   /* ---------- ← → and Play in a document ---------- */

@@ -3,6 +3,11 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.34.1:** a code show on a slide keeps its window at the tallest step's
+  height (and, on a phone, room for the longest list of notes under it). A
+  step that adds lines used to grow the window, and the centred slide moved
+  its title and text with it; now a step moves only the code.
+
 - **v3.34.0:** the control room. `si play` prints a keyed link to a **web
   monitor** at `/_si/monitor` (this machine only; `--remote` offers it to a
   tablet as the `monitor` role): uptime, CPU and memory, viewers **by role**

@@ -3089,7 +3089,7 @@ func send(order Order) error {
 | `hl=` | `3`, `3,5-7` | highlighted lines of this step |
 | `id=` | a name | blocks with the same id in a row are one show; on slides, the same id on consecutive slides morphs |
 | `step=` | text | the step's name, shown under the window (`2 / 4 · Back off`) and in the Studio |
-| `transition=` | `morph` (default), `fade`, `slide` | how a show goes from step to step |
+| `transition=` | `morph` (default), `fade`, `slide` | how a show goes from step to step; on a slide the window keeps the tallest step's height (and room for the longest list of notes on a phone), so a step moves only the code, never the title or text around it |
 | `as=` | `cat` | a shell script in a `terminal` window shows as a file, under `$ cat <title>` |
 
 ```xml window=windows title="Gateway.csproj" theme=paper
