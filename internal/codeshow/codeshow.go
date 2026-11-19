@@ -126,6 +126,12 @@ func LangOf(name string) string {
 	if base == "nginx.conf" {
 		return "nginx"
 	}
+	if base == "jenkinsfile" || strings.HasPrefix(base, "jenkinsfile.") {
+		return "groovy"
+	}
+	if base == "advanced.config" || base == "rabbitmq.config" || base == "enabled_plugins" || base == "sys.config" || base == "rebar.config" {
+		return "erlang" // Erlang terms, not .NET XML like app.config
+	}
 	if base == ".env" || strings.HasPrefix(base, ".env.") {
 		return "ini"
 	}
@@ -143,6 +149,8 @@ func LangOf(name string) string {
 		"tf": "hcl", "hcl": "hcl", "proto": "protobuf", "graphql": "graphql", "gql": "graphql", "fs": "fsharp", "fsx": "fsharp",
 		"ex": "elixir", "exs": "elixir", "ini": "ini", "conf": "ini", "cfg": "ini", "cnf": "ini", "properties": "ini",
 		"env": "ini", "md": "markdown", "markdown": "markdown", "mk": "make", "nginx": "nginx", "tfvars": "hcl",
+		"gradle": "groovy", "groovy": "groovy", "gvy": "groovy", "kts": "kotlin", "erl": "erlang", "hrl": "erlang",
+		"bat": "batch", "cmd": "batch",
 	}[base[i+1:]]
 }
 

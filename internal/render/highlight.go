@@ -20,19 +20,28 @@ var keywords = map[string]string{
 	"javascript": "const let var function return if else for while new class import export from async await true " +
 		"false null undefined this of typeof",
 	"java": "class public private protected static final void int long boolean new return if else for while try catch throw throws import package extends implements interface record var true false null",
-	"rust": "fn let mut pub struct enum impl trait use mod match if else for while loop return self Self true false",
+	"rust": "fn let mut pub struct enum impl trait use mod match if else for while loop return self Self true false " +
+		"as async await break const continue crate dyn extern in move ref static super type unsafe where yield " +
+		"i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f32 f64 bool char str String Vec Option Result Box Some None Ok Err",
 	"sql": "select distinct from where and or not in like between is null insert into values update set delete " +
 		"join inner left right outer full cross on using group by having order limit offset as create table alter " +
 		"drop truncate add column constraint primary key foreign references unique default check cascade index view " +
 		"database schema sequence show explain analyze begin commit rollback savepoint release cluster setting role " +
 		"user grant revoke to with recursive union all exists case when then else end asc desc returning upsert",
-	"yaml":   "true false null yes no on off",
-	"json":   "true false null",
-	"bash":   "if then else fi for do done while case esac function in export local return",
-	"css":    "",
-	"html":   "",
-	"toml":   "true false",
-	"kotlin": "fun val var class object interface if else when for while return import package true false null",
+	"yaml": "true false null yes no on off",
+	"json": "true false null",
+	"bash": "if then else fi for do done while case esac function in export local return",
+	"css":  "",
+	"html": "",
+	"toml": "true false",
+	"kotlin": "fun val var class object interface if else when for while return import package true false null " +
+		"data sealed enum open abstract override private protected public internal companion inline suspend lateinit " +
+		"by is in as as? out vararg typealias constructor init this super throw try catch finally do break continue " +
+		"operator infix tailrec const annotation inner reified crossinline noinline expect actual value",
+	"typescript": "const let var function return if else for while do switch case default break continue new class " +
+		"extends implements interface type enum namespace module declare abstract public private protected readonly " +
+		"static import export from as async await true false null undefined this super of in instanceof typeof keyof " +
+		"infer is satisfies never unknown any void string number boolean bigint symbol object try catch finally throw yield get set",
 	"csharp": "abstract as async await base bool break byte case catch char checked class const continue decimal default " +
 		"delegate do double else enum event explicit extern false finally fixed float for foreach get goto if implicit in init " +
 		"int interface internal is lock long namespace new null object operator out override params partial private protected " +
@@ -67,10 +76,25 @@ var keywords = map[string]string{
 		"null use when as begin end struct val static private public internal",
 	"elixir": "def defp defmodule defstruct defmacro defprotocol defimpl do end fn if else unless case cond with when in " +
 		"import alias require use quote unquote receive after try catch rescue raise true false nil and or not",
+	"groovy": "def class interface trait enum import package return if else for while in new true false null this super " +
+		"static final void as try catch finally throw throws switch case default break continue extends implements assert",
+	"erlang": "fun end case of if when receive after try catch throw begin true false andalso orelse not and or div rem",
+	"batch":  "echo set setlocal endlocal if else for in do goto call exit not exist defined errorlevel off on pause shift",
+	"nginx":  "on off",
+	"make":   "ifeq ifneq ifdef ifndef else endif include define endef export override",
 }
 
+// gradleWords are the Gradle build-script words a groovy block colours as calls
+// (dependencies { implementation '…' } has no parentheses to find them by).
+const gradleWords = "plugins id apply dependencies repositories implementation api compileOnly runtimeOnly " +
+	"testImplementation testRuntimeOnly testCompileOnly annotationProcessor developmentOnly mavenCentral mavenLocal google " +
+	"maven gradlePluginPortal buildscript allprojects subprojects ext java toolchain languageVersion sourceCompatibility " +
+	"targetCompatibility tasks register named withType test useJUnitPlatform jar bootJar manifest application mainClass " +
+	"sourceSets main resources srcDirs group version description configurations pipeline agent stages stage steps sh " +
+	"environment post always success failure options parameters"
+
 var aliases = map[string]string{
-	"js": "javascript", "ts": "javascript", "typescript": "javascript", "jsx": "javascript", "tsx": "javascript",
+	"js": "javascript", "ts": "typescript", "jsx": "javascript", "tsx": "typescript", "mts": "typescript", "cts": "typescript",
 	"py": "python", "sh": "bash", "shell": "bash", "zsh": "bash", "console": "bash", "yml": "yaml", "golang": "go",
 	"rs": "rust", "kt": "kotlin", "json5": "json",
 	"cs": "csharp", "c#": "csharp", "dotnet": "csharp", "h": "c", "c++": "cpp", "cc": "cpp", "hpp": "cpp", "rb": "ruby",
@@ -81,17 +105,22 @@ var aliases = map[string]string{
 	"tf": "hcl", "terraform": "hcl", "tfvars": "hcl", "proto": "protobuf", "proto3": "protobuf", "gql": "graphql",
 	"fs": "fsharp", "f#": "fsharp", "fsx": "fsharp", "ex": "elixir", "exs": "elixir",
 	"conf": "ini", "cfg": "ini", "cnf": "ini", "properties": "ini", "gitconfig": "ini", "editorconfig": "ini", "npmrc": "ini",
+	"gradle": "groovy", "jenkinsfile": "groovy", "gvy": "groovy", "kts": "kotlin", "erl": "erlang", "hrl": "erlang",
+	"bat": "batch", "cmd": "batch", "mk": "make", "makefile": "make", "md": "markdown",
 }
 
 var (
-	hashComment  = map[string]bool{"bash": true, "python": true, "yaml": true, "toml": true, "ruby": true, "powershell": true, "dockerfile": true, "graphql": true, "elixir": true}
+	hashComment = map[string]bool{"bash": true, "python": true, "yaml": true, "toml": true, "ruby": true, "powershell": true, "dockerfile": true, "graphql": true, "elixir": true,
+		"nginx": true, "make": true}
 	slashComment = map[string]bool{"go": true, "javascript": true, "java": true, "rust": true, "kotlin": true, "css": true, "json": true,
-		"csharp": true, "c": true, "cpp": true, "php": true, "swift": true, "scala": true, "protobuf": true}
+		"csharp": true, "c": true, "cpp": true, "php": true, "swift": true, "scala": true, "protobuf": true, "groovy": true, "typescript": true}
 	markup  = map[string]bool{"html": true, "xml": true} // tags as keywords, attribute names as keys
-	noCalls = map[string]bool{"fsharp": true, "bash": true, "yaml": true, "toml": true, "json": true, "css": true, "dockerfile": true, "powershell": true}
-	typed   = map[string]bool{"csharp": true, "java": true, "go": true, "kotlin": true, "swift": true, "scala": true,
-		"javascript": true, "cpp": true, "rust": true, "php": true, "protobuf": true, "graphql": true, "fsharp": true, "elixir": true}
-	hlCache sync.Map
+	noCalls = map[string]bool{"fsharp": true, "bash": true, "yaml": true, "toml": true, "json": true, "css": true, "dockerfile": true, "powershell": true,
+		"batch": true, "nginx": true, "make": true, "markdown": true}
+	typed = map[string]bool{"csharp": true, "java": true, "go": true, "kotlin": true, "swift": true, "scala": true,
+		"javascript": true, "cpp": true, "rust": true, "php": true, "protobuf": true, "graphql": true, "fsharp": true, "elixir": true, "groovy": true, "typescript": true}
+	annotated = map[string]bool{"java": true, "kotlin": true, "typescript": true, "groovy": true, "scala": true}
+	hlCache   sync.Map
 )
 
 // iniRE colours key = value files (rabbitmq.conf, sysctl, INI, .properties):
@@ -126,8 +155,17 @@ func langRE(lang string) *regexp.Regexp {
 		parts = append(parts, `(?P<c>#.*|//.*|/\*[\s\S]*?\*/)`)
 	case lang == "fsharp":
 		parts = append(parts, `(?P<c>//.*|\(\*[\s\S]*?\*\))`)
+	case lang == "erlang":
+		parts = append(parts, `(?P<c>%.*)`)
+	case lang == "batch":
+		parts = append(parts, `(?P<c>(?im:^[ \t]*(?:rem\b|::).*))`)
+	case lang == "markdown": // headings, list and quote marks, code spans
+		parts = append(parts, `(?P<k>(?m:^#{1,6}[ \t].*))`, `(?P<m>(?m:^[ \t]*(?:[-*+>]|\d+\.)[ \t]))`)
 	case markup[lang]:
 		parts = append(parts, `(?P<c><!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>)`, `(?P<m><\?[\s\S]*?\?>|<![A-Za-z][^>]*>)`)
+	}
+	if lang == "rust" { // 'a lifetimes, not char literals
+		parts = append(parts, `(?P<v>'[a-z_]\w*)[^'\w]`)
 	}
 	parts = append(parts, "(?P<s>\"(?:\\\\.|[^\"\\\\\\n])*\"|'(?:\\\\.|[^'\\\\\\n])*'|`[^`\\n]*`)")
 	if lang == "bash" {
@@ -144,6 +182,27 @@ func langRE(lang string) *regexp.Regexp {
 	}
 	if lang == "elixir" { // atoms
 		parts = append(parts, `(?P<v>:[a-z_]\w*[?!]?)`)
+	}
+	if lang == "erlang" { // Variables start upper case
+		parts = append(parts, `(?P<v>\b[A-Z_]\w*)`)
+	}
+	if lang == "batch" {
+		parts = append(parts, `(?P<v>%~?\w+%?|![A-Za-z_]\w*!)`, `(?P<f>(?:^|[ \t])/[A-Za-z?]+\b)`)
+	}
+	if lang == "make" { // target:, $(VAR), VAR =
+		parts = append(parts, `(?P<v>\$[({][^)}\n]*[)}]|\$[@<^*?%])`, `(?P<y>(?m:^[\w.%/\-$() ]+:{1,2}(?:[ \t]|$)))`, `(?P<t>(?m:^[\w.]+[ \t]*[:?+]?=))`)
+	}
+	if lang == "nginx" { // directive at the start of a line, $variables
+		parts = append(parts, `(?P<v>\$\w+)`, `(?P<y>(?m:^[ \t]*[a-z_][\w]*))`)
+	}
+	if lang == "rust" { // println!, vec!
+		parts = append(parts, `(?P<f>\b[a-z_]\w*!)`)
+	}
+	if annotated[lang] { // @Override, @Component, @Input()
+		parts = append(parts, `(?P<m>@[A-Za-z_][\w.]*)`)
+	}
+	if lang == "groovy" {
+		parts = append(parts, `(?P<f>\b(?:`+strings.Join(strings.Fields(gradleWords), "|")+`)\b)`)
 	}
 	if lang == "yaml" || lang == "toml" {
 		parts = append(parts, `(?P<y>(?m:^[ \t]*-?[ \t]*[\w.\-/]+[ \t]*[:=]))`)

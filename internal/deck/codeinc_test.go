@@ -60,7 +60,7 @@ func TestCodeIncludeWindow(t *testing.T) {
 		t.Errorf("Markdown in a window is code:\n%s", d.Slides[0].Body)
 	}
 	b, _ := Parse(filepath.Join(dir, "bad.md"))
-	if len(b.Problems) != 1 || !strings.Contains(b.Problems[0].Msg, `unknown option "colour" (lines, tag, lang, title, hl, linenos, numbers, indent=keep, window, theme, backdrop, id, step, transition, as=cat)`) {
+	if len(b.Problems) != 1 || !strings.Contains(b.Problems[0].Msg, `unknown option "colour" (lines, tag, lang, title, hl, linenos, numbers, indent=keep, window, theme, backdrop, shadow, id, step, transition, as=cat)`) {
 		t.Errorf("problems: %v", b.Problems)
 	}
 	code, err := IncludeCode(filepath.Join(dir, "d.md"), "<!-- include: start.sh window=mac lines=2 -->")

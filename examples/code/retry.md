@@ -105,6 +105,22 @@ public sealed class PaymentClient
 </Project>
 ```
 
+The courier app on the drivers' phones builds with Gradle and takes its
+retries from a library too, so all three keep the same five tries.
+
+```groovy window=mac title="build.gradle - Courier app" shadow=deep numbers
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+dependencies {
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'io.github.resilience4j:resilience4j-retry:2.2.0' // five tries
+    testImplementation 'junit:junit:4.13.2'
+}
+```
+
 ## A bad provider on every laptop
 
 The retry is only as good as the failures it has met. Every developer runs

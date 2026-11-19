@@ -63,10 +63,14 @@ func TestCodeWindows(t *testing.T) {
 	if h := string(res.HTML); strings.Contains(h, `class="si-cw`) || strings.Contains(h, "si code windows:") {
 		t.Error("a plain fence must not become a window")
 	}
+	res, _ = renderFiles(t, map[string]string{"s.md": "---\ntype: article\n---\n# S\n\n```go window=mac shadow=deep\na()\n```\n"}, "s.md")
+	if !strings.Contains(string(res.HTML), `data-shadow="deep"`) {
+		t.Error("shadow=deep must reach the window as data-shadow")
+	}
 	// problems: bad values, a callout off the code, a callout with nothing above it
-	res, _ = renderFiles(t, map[string]string{"b.md": "---\ntype: article\n---\n# B\n\n```go window=linux backdrop=sunset\na()\n```\n<!-- callout: 7 far -->\n\nText.\n\n<!-- callout: 1 alone -->\n"}, "b.md")
+	res, _ = renderFiles(t, map[string]string{"b.md": "---\ntype: article\n---\n# B\n\n```go window=linux backdrop=sunset shadow=huge\na()\n```\n<!-- callout: 7 far -->\n\nText.\n\n<!-- callout: 1 alone -->\n"}, "b.md")
 	got := problemsText(res)
-	for _, want := range []string{`unknown code window window "linux"`, `unknown code window backdrop "sunset"`, "callout on line 7: the code block has 1 lines", "a callout goes right after a code block"} {
+	for _, want := range []string{`unknown code window window "linux"`, `unknown code window backdrop "sunset"`, `unknown code window shadow "huge"`, "callout on line 7: the code block has 1 lines", "a callout goes right after a code block"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing problem %q in %s", want, got)
 		}

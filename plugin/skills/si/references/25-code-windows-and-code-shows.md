@@ -47,6 +47,7 @@ func send(order Order) error {
 | `title=` | text (quote it when it has spaces) | the title bar: `title="PaymentClient.cs - Gateway"` |
 | `theme=` | `auto` (default), `night`, `paper`, `dusk` | `auto` uses the deck or page colours (light and dark); the others are code-window looks |
 | `backdrop=` | `none` (default), `dusk`, `ocean`, `mint`, `graphite` | a gradient behind the window, with room around it |
+| `shadow=` | `lifted` (default), `soft`, `deep`, `none` | how far the window floats off the page: a drop shadow and a faint edge that show in light and dark (a backdrop gives a deeper one unless `shadow=` is set) |
 | `numbers` | (a flag; `linenos` works too) | line numbers in a gutter |
 | `start=` | a number (default 1) | the gutter's first number: `numbers start=120` for a block cut from line 120 of a file |
 | `hl=` | `3`, `3,5-7` | highlighted lines of this step |

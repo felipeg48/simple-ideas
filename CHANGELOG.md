@@ -3,6 +3,18 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.35.0:** more languages coloured, and a shadow for code windows.
+  Groovy and Gradle (`groovy`, `gradle`, `jenkinsfile`; `build.gradle` and
+  `Jenkinsfile` by file name, with Gradle and Jenkins words such as
+  `implementation` and `stage` coloured), Kotlin scripts (`.kts`), Erlang
+  (RabbitMQ's `advanced.config`, `enabled_plugins`), Makefile, nginx,
+  Markdown and Windows batch. TypeScript has its own words now (`interface`,
+  `readonly`, `keyof`…), Kotlin and Rust have their full sets (Rust lifetimes
+  and `println!` macros), and annotations (`@Override`, `@Bean`,
+  `@Component`) are coloured in Java, Kotlin, TypeScript, Groovy and Scala. A
+  code window takes `shadow=lifted|soft|deep|none` (RULES §25); the default is
+  now `lifted`, a clear drop shadow with a faint edge that shows in dark too.
+
 - **v3.34.1:** a code show on a slide keeps its window at the tallest step's
   height (and, on a phone, room for the longest list of notes under it). A
   step that adds lines used to grow the window, and the centred slide moved

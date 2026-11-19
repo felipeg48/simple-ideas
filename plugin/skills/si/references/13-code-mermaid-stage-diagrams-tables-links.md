@@ -1,15 +1,24 @@
 # 13. Code, Mermaid, stage diagrams, tables, links
 
 - Fenced code with a language gets a small built-in highlighter (Go, Python,
-  JavaScript/TypeScript, Java, Kotlin, C# (`csharp`, `cs`, `c#`), C, C++,
-  PHP, Ruby, Swift, Scala, Rust, SQL, YAML, TOML, JSON, Bash, PowerShell,
+  JavaScript, TypeScript (`ts`, `tsx`: types, `interface`, `readonly`,
+  `keyof`), Java, Kotlin (`kt`, `kts`: `data`, `suspend`, `companion`…), C# (`csharp`, `cs`, `c#`), C, C++,
+  PHP, Ruby, Swift, Scala, Rust (`rs`: lifetimes `'a`, macros `println!`,
+  the number types), SQL, YAML, TOML, JSON, Bash, PowerShell,
   Dockerfile, Terraform/HCL (`hcl`, `tf`), Protobuf (`proto`), GraphQL (`gql`),
-  F# (`fsharp`, `fs`), Elixir (`ex`, `exs`), CSS, HTML, XML (also `csproj`, `props`, `xaml`, `svg`, `pom`,
+  F# (`fsharp`, `fs`), Elixir (`ex`, `exs`), Groovy and Gradle (`groovy`,
+  `gradle`, `jenkinsfile`: Gradle words like `implementation` and Jenkins
+  words like `stage` coloured as calls), Kotlin scripts (`kts`), Erlang
+  (`erlang`, `erl`: RabbitMQ's `advanced.config` and `enabled_plugins`),
+  Makefile (`make`), nginx, Markdown (`md`), Windows batch (`bat`, `cmd`),
+  INI and `.properties`, CSS, HTML, XML (also `csproj`, `props`, `xaml`, `svg`, `pom`,
   `nuspec`: tags, attributes, comments)) and a language label written as a
   reader expects it (C#, JavaScript, Shell, XML…). Keywords, strings,
   comments and numbers are coloured, and so are calls (the name before a `(`)
-  and, in C#, Java, Go, Kotlin, Swift, Scala, JavaScript, C++, Rust and PHP,
-  types (PascalCase names); other languages get strings, calls and numbers.
+  and, in C#, Java, Go, Kotlin, Swift, Scala, JavaScript, TypeScript, Groovy,
+  C++, Rust and PHP, types (PascalCase names); annotations and decorators
+  (`@Override`, `@Bean`, `@Component`) in Java, Kotlin, TypeScript, Groovy and
+  Scala; other languages get strings, calls and numbers.
 - ```` ```mermaid ```` fences render with Mermaid, themed from the deck tokens
   and re-rendered on light/dark switch. **This is the only network
   resource:** the pinned Mermaid script from jsDelivr is added only to decks

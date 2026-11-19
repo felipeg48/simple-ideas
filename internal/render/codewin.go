@@ -28,6 +28,7 @@ var (
 	cwWindows     = []string{"mac", "windows", "terminal", "none"}
 	cwThemes      = []string{"auto", "night", "paper", "dusk"}
 	cwBackdrops   = []string{"dusk", "ocean", "mint", "graphite", "none"}
+	cwShadows     = []string{"lifted", "soft", "deep", "none"}
 	cwTransitions = []string{"morph", "fade", "slide"}
 	cwAs          = []string{"cat"}
 )
@@ -157,7 +158,7 @@ func (dr *deckRenderer) cwValidate(attrs map[string]string, sc *slideCtx) {
 	for _, o := range []struct {
 		key  string
 		vals []string
-	}{{"window", cwWindows}, {"theme", cwThemes}, {"backdrop", cwBackdrops}, {"transition", cwTransitions}, {"as", cwAs}} {
+	}{{"window", cwWindows}, {"theme", cwThemes}, {"backdrop", cwBackdrops}, {"shadow", cwShadows}, {"transition", cwTransitions}, {"as", cwAs}} {
 		if v, ok := attrs[o.key]; ok && v != "" {
 			if msg := oneOfMsg("code window "+o.key, v, o.vals); msg != "" {
 				dr.problem(sc, "%s", msg)
@@ -180,6 +181,9 @@ func (dr *deckRenderer) cwFence(sh *cwShow) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, `<figure class="si-cw" data-window="%s" data-cw-theme="%s" data-backdrop="%s" data-transition="%s"`,
 		html.EscapeString(win), html.EscapeString(theme), html.EscapeString(backdrop), html.EscapeString(firstNonEmpty(o["transition"], "morph")))
+	if sh := o["shadow"]; sh != "" {
+		fmt.Fprintf(&b, ` data-shadow="%s"`, html.EscapeString(sh))
+	}
 	if id := o["id"]; id != "" {
 		fmt.Fprintf(&b, ` data-cw-id="%s"`, html.EscapeString(id))
 	}

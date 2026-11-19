@@ -99,9 +99,9 @@ var (
 
 // windowOpts are the code window options an include or <!-- code: --> passes
 // to its fence (title=, hl= and numbers are handled with the others).
-var windowOpts = []string{"window", "theme", "backdrop", "id", "step", "transition", "as"}
+var windowOpts = []string{"window", "theme", "backdrop", "shadow", "id", "step", "transition", "as"}
 
-const includeOptsHelp = "lines, tag, lang, title, hl, linenos, numbers, indent=keep, window, theme, backdrop, id, step, transition, as=cat"
+const includeOptsHelp = "lines, tag, lang, title, hl, linenos, numbers, indent=keep, window, theme, backdrop, shadow, id, step, transition, as=cat"
 
 // IncludeCode is the code an include or <!-- code: --> line written in file
 // shows, as its fence would hold it (the Studio's Window view).
