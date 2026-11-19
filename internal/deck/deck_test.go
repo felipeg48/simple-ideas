@@ -88,7 +88,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:     "motion transitions, animations and step modes",
-			files:    map[string]string{"d.md": "# Deck\n\n---\n\n<!-- transition: cube -->\n## A\n\n<!-- animate: words -->\nx\n\n---\n\n<!-- transition: portal 1.2s -->\n## B\n\n<!-- steps: reorder 2 1 -->\n- a 1\n- b 2\n\n<!-- steps: focus -->\n- c\n\n---\n\n<!-- transition: flip 1 -->\n## C\n\n<!-- animate: spin -->\ny\n\n<!-- steps: reorder 0 x -->\n- d\n"},
+			files:    map[string]string{"d.md": "# Deck\n\n---\n\n<!-- transition: cube -->\n## A\n\n<!-- animate: words -->\nx\n\n---\n\n<!-- transition: portal 1.2s -->\n## B\n\n<!-- steps: reorder 2 1 -->\n- a 1\n- b 2\n\n<!-- steps: focus -->\n- c\n\n---\n\n<!-- transition: flip 1 -->\n## C\n\n<!-- animate: spin -->\ny\n\n<!-- animate: orbit -->\n- o\n\n<!-- steps: carousel -->\n- p\n\n<!-- steps: reorder 0 x -->\n- d\n"},
 			kinds:    "tccc",
 			titles:   "Deck|A|B|C",
 			problems: []string{`only morph and cube`, `unknown animate "spin"`, `steps: reorder takes the new order`},

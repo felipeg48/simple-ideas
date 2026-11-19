@@ -39,9 +39,9 @@ var (
 	// Animations), forward and mirrored back; they and morph take a length.
 	MotionTransitions = []string{"cube", "flip", "iris", "wipe", "shatter", "depth", "blinds", "portal", "glitch", "stack"}
 	// Animates are the `<!-- animate: -->` build animations (the next block).
-	Animates = []string{"type", "words", "highlight", "count", "draw", "decode", "confetti"}
+	Animates = []string{"type", "words", "highlight", "count", "draw", "decode", "confetti", "tilt", "explode", "flap", "flyin", "orbit"}
 	// StepModes lead a `<!-- steps: -->` value on a list: how its items arrive.
-	StepModes = []string{"focus", "deal", "reorder"}
+	StepModes = []string{"focus", "deal", "reorder", "carousel"}
 	// FooterPositions are the accepted footer-position values (long form plus short aliases).
 	FooterPositions = []string{"bottom-right", "bottom-left", "bottom-center", "top-right", "top-left", "top-center", "br", "bl", "bc", "tr", "tl", "tc"}
 	Modes           = []string{"auto", "light", "dark"}
@@ -97,7 +97,7 @@ var Directives = map[string]string{
 	"column":     "body",  // start the next column
 	"image":      "body",  // size and place the next image
 	"id":         "body",  // name the next block, so transition: morph matches it on the next slide
-	"animate":    "body",  // a build animation for the next block: type, words, highlight, count, draw, decode, confetti
+	"animate":    "body",  // a build animation for the next block: type, words, highlight, count, draw, decode, confetti, tilt, explode, flap, flyin, orbit
 }
 
 // Meta is the deck-level front matter.

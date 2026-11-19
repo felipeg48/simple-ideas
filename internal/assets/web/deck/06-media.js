@@ -77,7 +77,7 @@
   }
 
   /* ---------- print: every slide in its final state ---------- */
-  function printAll() { buildStop(); txStop(); slides.forEach(function (s) { apply(s, maxStep(s)); }); }
+  function printAll() { buildStop(); slideStop(); txStop(); slides.forEach(function (s) { apply(s, maxStep(s)); }); }
   window.addEventListener('beforeprint', printAll);
   window.addEventListener('afterprint', function () { go(cur, step, true); });
   /* si build --pdf loads the deck at #print; headless Chrome's --print-to-pdf

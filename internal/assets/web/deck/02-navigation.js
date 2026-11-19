@@ -98,6 +98,7 @@
     if (i !== cur || k !== step) apTouch(); /* a move auto-play did not make pauses it */
     var near = !instant && Math.abs(i - cur) === 1, fwd = i > cur, live = !instant && motionLive();
     if (i !== cur || k !== step) buildStop();
+    if (i !== cur) slideStop();
     if (i !== cur) {
       clearStrokes();
       var tx = next.getAttribute('data-transition') || data.transition || 'fade';
@@ -242,7 +243,7 @@
     if (on === undefined) on = !deck.classList.contains('si-overview');
     deck.classList.toggle('si-overview', on);
     if (on) {
-      buildStop(); txStop();
+      buildStop(); slideStop(); txStop();
       slides.forEach(function (s, j) { if (j !== cur) apply(s, maxStep(s)); });
       buildOverview();
       ovSel = cur; slides[ovSel].classList.add('si-sel');

@@ -318,6 +318,8 @@ the rest fades. `morph 0.9s` sets the length.
 Ten more transitions are played by the page itself: `cube`, `flip`, `iris`,
 `wipe`, `shatter`, `depth`, `blinds`, `portal`, `glitch` and `stack`
 (`<!-- transition: cube 1.2s -->`); going back plays each one in reverse.
+Six build animations add depth: `tilt`, `steps: carousel`, `explode`,
+`flap`, `flyin` and `orbit` (RULES.md §9).
 
 ---
 

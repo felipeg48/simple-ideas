@@ -110,6 +110,11 @@ Points: Talking points
   `<!-- steps: reorder -->` (one step that re-sorts by each item's last
   number, highest first, or `reorder 2 3 1`). Each is one more `[CLICK]` only
   when it has a step.
+- In 3D, sparingly: `<!-- animate: tilt -->` (layers that follow the pointer),
+  `<!-- steps: carousel -->` (a ring of cards, one turn per step),
+  `<!-- animate: explode -->` and `<!-- animate: orbit -->` on a list (plates
+  pulling apart; the first item orbited by the rest), `<!-- animate: flap -->`
+  (split-flap letters), `<!-- animate: flyin -->` (words from far behind).
 - A long talk is a thin main deck plus one file per section under
   `sections/`, pulled in with `<!-- include: -->`.
 

@@ -83,8 +83,9 @@ AsciiDoc tab.
 `stack`), mirrored when you go back, and build animations that run as a step
 arrives: `<!-- animate: type|words|highlight|count|draw|decode|confetti -->`
 and lists that arrive in focus, dealt like cards or re-sorted
-(`<!-- steps: focus|deal|reorder -->`). No library; reduced motion, print and
-PDF show the final state.
+(`<!-- steps: focus|deal|reorder -->`), and six in 3D: `tilt`, a `carousel`
+of cards, `explode`, `flap`, `flyin` and `orbit`. No library; reduced motion,
+print and PDF show the final state.
 
 **Decks that present themselves, demos that film themselves.** One Markdown
 script drives a web app, a terminal or a deck, checks every step as a test,

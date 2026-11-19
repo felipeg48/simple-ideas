@@ -192,6 +192,7 @@
   }
   function buildRun(el) {
     var kind = el.getAttribute('data-si-anim');
+    if (run3d[kind]) { run3d[kind](el); return; }
     var ns, orig, anims = [], halt = null, fin;
     var waapi = function (e, kf, t) { t.fill = 'both'; anims.push(e.animate(kf, t)); };
     var finishAll = function () { Promise.all(anims.map(function (x) { return x.finished; })).then(function () { fin(); }, function () {}); };
@@ -340,4 +341,136 @@
       if (Math.abs(dy) > 0.5) p[0].animate([{ transform: 'translateY(' + dy.toFixed(1) + 'px)' }, { transform: 'none' }], { duration: 800, delay: (n++) * 40, easing: 'cubic-bezier(.3,1.3,.4,1)', fill: 'backwards' });
     });
   }
+
+  /* ---------- 3D build animations (CSS 3D, no library): perspective sits on
+   * each scene's direct parent. tilt and orbit last while the slide is shown;
+   * carousel, explode, flap and orbit have a 3D look at rest too ---------- */
+  var slideRuns = [];
+  function slideStop() { var r = slideRuns; slideRuns = []; r.forEach(function (x) { x(); }); }
+  function slideBegin(stop) {
+    var done = false, fin = function () { if (done) return; done = true; stop(); var i = slideRuns.indexOf(fin); if (i >= 0) slideRuns.splice(i, 1); };
+    slideRuns.push(fin);
+    return fin;
+  }
+  /* steps: carousel: the cards stand in a ring; the last revealed one is at the front */
+  function carouselSet(l) {
+    var items = l.children, n = items.length, f = 0, any = false;
+    each(items, function (e, i) { e.style.setProperty('--_i', i); if (e.classList.contains('is-visible')) { f = i; any = true; } });
+    each(items, function (e, i) { e.classList.toggle('si-front', any && i === f); });
+    l.style.setProperty('--_n', Math.max(n, 1));
+    l.style.setProperty('--_f', f);
+    l.style.setProperty('--_r', (n > 2 ? 4.9 / Math.tan(Math.PI / n) : 6).toFixed(2) + 'em');
+  }
+  var explodeT = function (k) { return 'rotateX(58deg) rotateZ(-36deg) translateZ(' + (k * 2).toFixed(2) + 'em)'; };
+  var orbitT = function (a) { return 'rotateX(68deg) rotateZ(' + a + 'deg) translateX(var(--_R)) rotateZ(' + (-a) + 'deg) rotateX(-68deg)'; };
+  /* the rest look: plates stacked apart, the orbit's ring, the split-flap tiles */
+  function motion3dInit() {
+    each(deck.querySelectorAll('.si-steps-carousel'), carouselSet);
+    each(deck.querySelectorAll('.si-explode'), function (l) { each(l.children, function (e, k) { e.style.transform = explodeT(k); }); });
+    each(deck.querySelectorAll('.si-orbit'), function (l) {
+      var n = l.children.length - 1;
+      each(l.children, function (e, k) { if (k) { var a = Math.round((k - 1) * 360 / n); e.setAttribute('data-si-a', a); e.style.transform = orbitT(a); } });
+    });
+    each(deck.querySelectorAll('[data-si-anim=flap]'), function (el) {
+      el.classList.add('si-flap');
+      textNodes(el).forEach(function (n) {
+        var f = document.createDocumentFragment();
+        n.data.split('').forEach(function (ch) {
+          var t = document.createElement('span'), sp = /\s/.test(ch);
+          t.className = sp ? 'si-flap-s' : 'si-flap-c';
+          t.textContent = sp ? ' ' : ch;
+          f.appendChild(t);
+        });
+        n.parentNode.replaceChild(f, n);
+      });
+    });
+  }
+  motion3dInit();
+  var run3d = {
+    /* the slide's blocks become layers at different depths; the camera tilts
+       once, then follows the pointer while the slide is shown */
+    tilt: function (el) {
+      var s = el.closest('.si-slide'), inner = s && s.querySelector('.si-inner');
+      if (!inner) return;
+      s.classList.add('si-tilt');
+      el.classList.add('si-tilt-hero');
+      s.style.perspective = (s.clientWidth * 1.2).toFixed(0) + 'px';
+      var a = inner.animate([{ transform: 'rotateY(-12deg) rotateX(6deg)' }, { transform: 'rotateY(12deg) rotateX(-5deg)' }, { transform: 'rotateY(0) rotateX(0)' }], { duration: 2600, easing: IN_OUT });
+      var move = function (e) {
+        var r = s.getBoundingClientRect();
+        inner.style.transform = 'rotateY(' + (((e.clientX - r.left) / r.width - 0.5) * 16).toFixed(2) + 'deg) rotateX(' + ((0.5 - (e.clientY - r.top) / r.height) * 10).toFixed(2) + 'deg)';
+      };
+      deck.addEventListener('pointermove', move);
+      slideBegin(function () {
+        a.cancel(); deck.removeEventListener('pointermove', move);
+        s.classList.remove('si-tilt'); el.classList.remove('si-tilt-hero');
+        s.style.removeProperty('perspective'); inner.style.removeProperty('transform');
+      });
+    },
+    /* one plate per item, stacked close, pulling apart */
+    explode: function (el) {
+      var anims = [];
+      each(el.children, function (e, k) {
+        anims.push(e.animate([{ transform: explodeT(k * 0.15) }, { transform: explodeT(k * 0.15), offset: 0.15 }, { transform: explodeT(k) }], { duration: 1800, easing: 'cubic-bezier(.3,1.2,.4,1)', fill: 'backwards' }));
+      });
+      var fin = buildBegin(el, function () { anims.forEach(function (x) { x.cancel(); }); });
+      Promise.all(anims.map(function (x) { return x.finished; })).then(function () { fin(); }, function () {});
+    },
+    /* split-flap tiles flip through the alphabet until the word lands */
+    flap: function (el) {
+      var cells = Array.prototype.slice.call(el.querySelectorAll('.si-flap-c')), want = cells.map(function (c) { return c.textContent; });
+      if (!cells.length) return;
+      var AB = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', D = '0123456789', last = -1, halt = null;
+      var fin = buildBegin(el, function () { if (halt) halt(); cells.forEach(function (c, i) { c.textContent = want[i]; }); });
+      var flip = function (c, ms) { c.animate([{ transform: 'rotateX(-80deg)' }, { transform: 'none' }], { duration: ms }); };
+      halt = frames(function (t) {
+        var f = Math.floor(t / 85);
+        if (f === last) return false;
+        last = f;
+        var busy = false;
+        cells.forEach(function (c, i) {
+          var at = 4 + Math.min(i, 24) * 2;
+          if (f < at) { busy = true; var set = /\d/.test(want[i]) ? D : AB; c.textContent = set.charAt(Math.floor(Math.random() * set.length)); flip(c, 80); }
+          else if (c.textContent !== want[i]) { c.textContent = want[i]; flip(c, 160); }
+        });
+        if (!busy) { halt = null; fin(); return true; }
+      });
+    },
+    /* words fly in from far behind the slide, out of a blur */
+    flyin: function (el) {
+      var swaps = [], parts = [], anims = [];
+      var fin = buildBegin(el, function () {
+        anims.forEach(function (x) { try { x.cancel(); } catch (e) {} });
+        swaps.forEach(function (sw) { sw.made[0].parentNode.insertBefore(sw.node, sw.made[0]); sw.made.forEach(function (m) { m.remove(); }); });
+      });
+      textNodes(el).forEach(function (n) {
+        if (!n.data.trim()) return;
+        var made = [];
+        n.data.split(/(\s+)/).forEach(function (w) {
+          if (!w) return;
+          var m = /^\s+$/.test(w) ? document.createTextNode(w) : document.createElement('span');
+          if (m.nodeType === 1) { m.className = 'si-word'; m.textContent = w; parts.push(m); }
+          n.parentNode.insertBefore(m, n); made.push(m);
+        });
+        n.remove(); swaps.push({ node: n, made: made });
+      });
+      var gap = Math.min(160, 2400 / Math.max(parts.length, 1));
+      parts.forEach(function (m, i) {
+        anims.push(m.animate([{ transform: 'perspective(18em) translateZ(-40em) rotateX(30deg)', opacity: 0, filter: 'blur(.5em)' },
+          { transform: 'perspective(18em) translateZ(1em)', opacity: 1, filter: 'blur(0)', offset: 0.85 },
+          { transform: 'perspective(18em) translateZ(0)', opacity: 1, filter: 'blur(0)' }], { duration: 1000, delay: i * gap, easing: 'cubic-bezier(.2,.8,.3,1)', fill: 'both' }));
+      });
+      Promise.all(anims.map(function (x) { return x.finished; })).then(function () { fin(); }, function () {});
+    },
+    /* the items circle the first one in a tilted ring while the slide is shown */
+    orbit: function (el) {
+      var anims = [];
+      each(el.children, function (e, k) {
+        if (!k) return;
+        var a = +e.getAttribute('data-si-a');
+        anims.push(e.animate([{ transform: orbitT(a) }, { transform: orbitT(a + 360) }], { duration: 5200, easing: IN_OUT, iterations: Infinity }));
+      });
+      slideBegin(function () { anims.forEach(function (x) { x.cancel(); }); });
+    }
+  };
 

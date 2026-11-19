@@ -357,6 +357,13 @@ func (dr *deckRenderer) transform(doc ast.Node, src []byte, sc *slideCtx) {
 			morphID = ""
 		}
 		if anim != "" {
+			if anim == "explode" || anim == "orbit" {
+				if l, ok := c.(*ast.List); ok {
+					l.SetAttributeString("class", "si-"+anim)
+				} else {
+					dr.problem(sc, "animate: %s works on a list (one item per plate or orbit)", anim)
+				}
+			}
 			c = markBlock(c, "data-si-anim", anim, "si-animate")
 			anim = ""
 		}
@@ -431,7 +438,7 @@ func (dr *deckRenderer) applyStep(c ast.Node, name, val string, src []byte, sc *
 	if list, ok := c.(*ast.List); ok && name == "steps" {
 		tokens := strings.Fields(val)
 		mode := ""
-		if len(tokens) > 0 && (tokens[0] == "focus" || tokens[0] == "deal" || tokens[0] == "reorder") {
+		if len(tokens) > 0 && (tokens[0] == "focus" || tokens[0] == "deal" || tokens[0] == "reorder" || tokens[0] == "carousel") {
 			mode, tokens = tokens[0], tokens[1:]
 			list.SetAttributeString("class", "si-steps-"+mode)
 		}

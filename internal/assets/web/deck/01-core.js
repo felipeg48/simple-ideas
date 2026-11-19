@@ -70,6 +70,7 @@
       e.classList.toggle('is-latest', st === k);
     });
     each(s.querySelectorAll('[data-si-order]'), function (l) { reorderSet(l, +l.getAttribute('data-step') <= k); });
+    each(s.querySelectorAll('.si-steps-carousel'), carouselSet);
   }
   function applyCanvas(s, k) { each(s.querySelectorAll('svg.si-canvas'), function (svg) { svg.setAttribute('data-state', stateAt(s, svg, k)); }); }
   /* data-count="word:number ..." ticks the element's text to the number of the

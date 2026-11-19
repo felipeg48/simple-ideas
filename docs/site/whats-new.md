@@ -30,6 +30,13 @@ Build animations run as their step arrives: `type`, `words`, `highlight`
 canvas or stage diagram draws itself on), `decode` and `confetti`. A list
 can arrive in focus (`steps: focus`), dealt like cards (`steps: deal`), or
 shown as written and then re-sorted by its numbers (`steps: reorder`).
+
+Since 3.36.1, six more give a slide depth with CSS 3D: `tilt` turns the slide into layers
+that follow the pointer, `steps: carousel` stands a list's items in a ring
+and turns one to the front per click, `explode` pulls a list apart into
+plates, `orbit` circles the first item with the rest, `flap` shows a word
+on split-flap tiles, and `flyin` brings words from far behind the slide.
+
 Reduced motion, print, PDF, the overview and the teleprompter previews show
 the final state.
 

@@ -3,6 +3,20 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.36.1:** six build animations in 3D, CSS 3D only (no library):
+  `<!-- animate: tilt -->` (the heading, the marked block and the rest as
+  layers at different depths; the camera tilts once as the slide arrives,
+  then follows the pointer while it is shown), `<!-- steps: carousel -->`
+  (a list's items as cards in a ring, one turn to the front per step),
+  `<!-- animate: explode -->` on a list (one tilted plate per item, pulling
+  apart), `<!-- animate: flap -->` (split-flap tiles that flip through the
+  alphabet until the word lands), `<!-- animate: flyin -->` (words from far
+  behind the slide, out of a blur) and `<!-- animate: orbit -->` on a list
+  (the first item in the middle, the rest on a turning tilted ring that
+  always faces you, while the slide is shown). The ring, plates and tiles
+  keep their look at rest, so print, PDF and the overview show them as they
+  end; reduced motion, thumbnails and jumps never play the motion.
+
 - **v3.36.0:** motion. Ten slide transitions the page plays itself with the
   Web Animations API, no library: `cube`, `flip`, `iris` (from the click),
   `wipe`, `shatter`, `depth`, `blinds`, `portal` (into the block named with

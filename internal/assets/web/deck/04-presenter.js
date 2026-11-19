@@ -15,6 +15,8 @@
     each(c.querySelectorAll('.si-fx'), function (e) { e.remove(); });
     c.classList.remove('si-past', 'si-future', 'si-tx-on', 'si-tx-a', 'si-tx-b');
     c.style.removeProperty('visibility');
+    c.classList.remove('si-tilt'); c.style.removeProperty('perspective');
+    each(c.querySelectorAll('.si-tilt-hero'), function (e) { e.classList.remove('si-tilt-hero'); });
     c.classList.add('si-current');
     c.removeAttribute('id');
     c.removeAttribute('aria-hidden');

@@ -42,8 +42,8 @@ var help = map[string]string{
 	"eyebrow":    "a small label above the slide heading",
 	"svg":        "an animated SVG canvas: path and state words",
 	"step":       "reveal the next block as one build step",
-	"steps":      "reveal the next list item by item (steps: focus, deal, reorder)",
-	"animate":    "a build animation for the next block: type, words, highlight, count, draw, decode, confetti",
+	"steps":      "reveal the next list item by item (steps: focus, deal, reorder, carousel)",
+	"animate":    "a build animation for the next block: type, words, highlight, count, draw, decode, confetti; 3D: tilt, explode, flap, flyin, orbit",
 	"column":     "start the next column",
 	"image":      "size and place the next image (width=40% right …)",
 	// front matter

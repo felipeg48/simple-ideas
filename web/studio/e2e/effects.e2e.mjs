@@ -91,6 +91,59 @@ Stock count drifted at night.
 <!-- step -->
 <!-- animate: confetti -->
 **Delivered**
+
+---
+
+## Order placed
+
+<!-- animate: tilt -->
+**€84** · two pairs of shoes
+
+---
+
+## Five teams, one order
+
+<!-- steps: carousel -->
+- Shop
+- Payments
+- Warehouse
+- Courier
+- Customer
+
+---
+
+## One order, four layers
+
+<!-- animate: explode -->
+- Database
+- Queue
+- API
+- Browser
+
+---
+
+## Route 7 · 18:02
+
+<!-- animate: flap -->
+DELIVERED
+
+---
+
+## The promise
+
+<!-- animate: flyin -->
+Two days, door to door.
+
+---
+
+## Who touches an order
+
+<!-- animate: orbit -->
+- Order
+- Shop
+- Payments
+- Warehouse
+- Courier
 `;
 writeFileSync(join(dir, "talk.md"), md);
 writeFileSync(join(dir, "receipt.svg"), `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 160 90"><rect x="4" y="4" width="152" height="82" rx="8" fill="#eef0ff" stroke="#4b5ff0" stroke-width="3"/><text x="80" y="54" text-anchor="middle" font-size="22" fill="#4b5ff0">PAY</text></svg>`);
@@ -211,6 +264,44 @@ try {
     if (shots) await page.screenshot({ path: join(shots, `confetti-${w}x${h}.png`) });
     await page.waitForTimeout(2300);
     check((await state(page)).tiles === 0, `${w}x${h}: the confetti canvas is gone after`);
+    // 3D
+    await page.keyboard.press("ArrowRight"); // tilt
+    await page.waitForTimeout(600);
+    check(await page.evaluate(() => document.querySelector(".si-current").classList.contains("si-tilt") && document.querySelector(".si-current .si-inner").getAnimations().length === 1), `${w}x${h}: tilt tilts the layers`);
+    if (shots) await page.screenshot({ path: join(shots, `tilt-${w}x${h}.png`) });
+    await page.mouse.move(w * 0.9, h * 0.2);
+    await page.waitForTimeout(50);
+    check(/rotateY\(/.test(await page.evaluate(() => document.querySelector(".si-current .si-inner").style.transform)), `${w}x${h}: tilt follows the pointer`);
+    await page.keyboard.press("ArrowRight"); // carousel
+    check(await page.evaluate(() => document.querySelectorAll(".si-tilt").length) === 0, `${w}x${h}: tilt rests when the slide is left`);
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("ArrowRight");
+    await page.waitForTimeout(400);
+    const car = await page.evaluate(() => { const l = document.querySelector(".si-current .si-steps-carousel"); return [l.style.getPropertyValue("--_f"), [...l.children].findIndex((e) => e.classList.contains("si-front"))]; });
+    check(car[0] === "1" && car[1] === 1, `${w}x${h}: the carousel turns the second card to the front (${car})`);
+    if (shots) await page.screenshot({ path: join(shots, `carousel-${w}x${h}.png`) });
+    for (let i = 0; i < 4; i++) await page.keyboard.press("ArrowRight"); // explode
+    await page.waitForTimeout(300);
+    check(await page.evaluate(() => [...document.querySelectorAll(".si-current .si-explode>li")].every((e) => e.getAnimations().length === 1)), `${w}x${h}: explode pulls the plates apart`);
+    if (shots) { await page.waitForTimeout(900); await page.screenshot({ path: join(shots, `explode-${w}x${h}.png`) }); }
+    await page.keyboard.press("ArrowRight"); // flap
+    await page.waitForTimeout(200);
+    check(await page.evaluate(() => document.querySelectorAll(".si-current .si-flap-c").length) === 9 && await text(page, ".si-flap") !== "DELIVERED", `${w}x${h}: flap flips the letters`);
+    if (shots) await page.screenshot({ path: join(shots, `flap-${w}x${h}.png`) });
+    await page.waitForTimeout(2200);
+    check((await text(page, ".si-flap")).replace(/ /g, "") === "DELIVERED", `${w}x${h}: flap lands on the word`);
+    await page.keyboard.press("ArrowRight"); // flyin
+    await page.waitForTimeout(300);
+    check(await page.evaluate(() => document.querySelectorAll(".si-current .si-word").length) === 5, `${w}x${h}: words fly in`);
+    if (shots) await page.screenshot({ path: join(shots, `flyin-${w}x${h}.png`) });
+    await settle(page);
+    check(await text(page, "[data-si-anim=flyin]") === "Two days, door to door." && (await state(page)).live === 0, `${w}x${h}: fly-in ends as written`);
+    await page.keyboard.press("ArrowRight"); // orbit
+    await page.waitForTimeout(800);
+    check(await page.evaluate(() => [...document.querySelectorAll(".si-current .si-orbit>li")].slice(1).every((e) => e.getAnimations().length === 1)), `${w}x${h}: the ring orbits`);
+    if (shots) await page.screenshot({ path: join(shots, `orbit-${w}x${h}.png`) });
+    await page.keyboard.press("ArrowLeft");
+    check(await page.evaluate(() => document.querySelectorAll(".si-orbit>li")[1].getAnimations().length) === 0, `${w}x${h}: the orbit rests when the slide is left`);
     check(errors.length === 0, `${w}x${h}: no page or console errors ${errors.join("; ")}`);
     await ctx.close();
   }
@@ -231,6 +322,15 @@ try {
   check(await text(page, "blockquote") === "Delivered. Two days, door to door." && (await state(page)).live === 0, "reduced motion: type shows the words at once");
   await page.keyboard.press("ArrowRight");
   check(await page.evaluate(() => document.querySelectorAll(".si-current .si-word").length) === 0, "reduced motion: words do not split");
+  await page.goto(url + "#19");
+  await page.waitForTimeout(200);
+  check(await page.evaluate(() => document.querySelectorAll(".si-tilt").length) === 0, "reduced motion: no tilt");
+  await page.goto(url + "#22");
+  await page.waitForTimeout(200);
+  check((await text(page, ".si-flap")).replace(/ /g, "") === "DELIVERED", "reduced motion: the flap tiles show the word");
+  await page.goto(url + "#24");
+  await page.waitForTimeout(200);
+  check(await page.evaluate(() => document.querySelectorAll(".si-orbit>li")[1].getAnimations().length) === 0, "reduced motion: the orbit rests");
   // a jump shows the final state
   const jp = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
   await jp.goto(url + "#13.1");

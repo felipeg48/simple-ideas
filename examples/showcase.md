@@ -72,6 +72,7 @@ Points:
 
 ## The five hand-offs, start to finish
 
+<!-- animate: draw -->
 ```stage
 dir: LR
 Order --> Payment --> Warehouse --> Courier --> Delivered
@@ -82,6 +83,20 @@ dot Order..Delivered 3s
 
 Notes: (0.5 min)
 The same five stations the canvas uses next, drawn flat. The dot is the order moving Thursday-ward across every hand-off.
+
+---
+
+## Who touches order #4711
+
+<!-- animate: orbit -->
+- Order #4711
+- Payments
+- Warehouse
+- Courier
+- Customer care
+
+Notes: (0.5 min)
+Four teams touch order 4711 on its way to Thursday, and each of them sees only its own part of it.
 
 ---
 

@@ -184,8 +184,8 @@ that is not a directive (`<!-- wobble -->`) is an error.
 | `class: dense dark-code` | slide | adds classes to the slide for your CSS |
 | `eyebrow: Order #4711 · the promise` | slide | a small context label above the slide heading (`.si-kicker`); it is not part of the slide title, so find, the overview and the teleprompter show the heading alone. On a section slide it replaces the "Part N" kicker. |
 | `image: width=40% align=right` | next image | [Images](#8-images) |
-| `steps`, `step`, `steps: a b`, `step: a`, `steps: focus\|deal\|reorder` | next block | [Build steps](#9-build-steps) |
-| `animate: type\|words\|highlight\|count\|draw\|decode\|confetti` | next block | a build animation ([Build steps](#9-build-steps)) |
+| `steps`, `step`, `steps: a b`, `step: a`, `steps: focus\|deal\|reorder\|carousel` | next block | [Build steps](#9-build-steps) |
+| `animate: type\|words\|highlight\|count\|draw\|decode\|confetti\|tilt\|explode\|flap\|flyin\|orbit` | next block | a build animation ([Build steps](#9-build-steps)) |
 | `svg: assets/canvas.svg state words` | body | [SVG canvases](#10-animated-svg-canvases) |
 | `include: other.md` | deck | [Includes](#12-includes) |
 
@@ -529,6 +529,46 @@ Shoes at the door in ==two days==.
 | `draw` | an `svg:` canvas or a stage diagram draws its lines on like a pen, then fills |
 | `decode` | the text arrives scrambled and decodes letter by letter |
 | `confetti` | the block pops in and a burst of confetti falls away (then it is removed) |
+
+**In 3D.** Six more give a slide depth, with CSS 3D only (no library), for
+the moments that deserve it:
+
+```markdown
+<!-- steps: carousel -->
+- Shop
+- Payments
+- Warehouse
+- Courier
+- Customer
+
+<!-- animate: explode -->
+- Database
+- Queue
+- API
+- Browser
+
+<!-- animate: orbit -->
+- Order
+- Shop
+- Payments
+- Courier
+
+<!-- animate: flap -->
+DELIVERED
+```
+
+| Name | What it does |
+|---|---|
+| `animate: tilt` | the slide's heading, the marked block and the rest become layers at different depths; the camera tilts once as the slide arrives, then follows the pointer while it is shown |
+| `steps: carousel` | the list's items stand as cards in a ring; each step turns the next card to the front and highlights it |
+| `animate: explode` | on a list: one plate per item, stacked and tilted, pulling apart so each name can be read (the first item is the bottom plate) |
+| `animate: flap` | the text is shown as split-flap tiles; the letters flip through the alphabet until the word lands |
+| `animate: flyin` | the words fly in from far behind the slide, out of a blur, one after another |
+| `animate: orbit` | on a list: the first item in the middle, the rest on a tilted ring that turns, always facing you; it turns while the slide is shown and rests when you leave |
+
+`carousel`, `explode`, `orbit` and `flap` keep their 3D look at rest, so
+print, PDF, the overview and thumbnails show the ring, the plates or the
+tiles as they end; `tilt` and the motion of the others never run there.
 
 Every animation ends with the block exactly as written. Going back does
 not replay it; reduced motion, print, PDF, the overview, thumbnails,

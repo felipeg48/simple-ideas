@@ -211,6 +211,10 @@ Nobody owns the promise.
 - Shop
 - Payments
 
+<!-- animate: orbit -->
+- Order
+- Shop
+
 <!-- step -->
 <!-- animate: count -->
 **12,480** orders

@@ -184,6 +184,37 @@ img,svg,video{max-width:100%}
 .si-steps-deal>.si-step{transform:rotateX(-95deg) translateY(-.4em);transform-origin:50% 0;
   transition:opacity .7s cubic-bezier(.2,.9,.25,1.25),transform .7s cubic-bezier(.2,.9,.25,1.25)}
 .si-steps-deal>.si-step.is-visible{transform:none}
+/* 3D (CSS 3D only): perspective sits on each scene's direct parent.
+   steps: carousel: the items as cards standing in a ring, the latest at the front */
+.si-steps-carousel{list-style:none;padding:0;margin:.6em auto;display:grid;place-items:center;height:7em;perspective:32em;transform-style:preserve-3d}
+.si-steps-carousel>li.si-step{grid-area:1/1;width:9em;min-height:5.4em;margin:0;padding:.4em .6em;display:grid;place-items:center;text-align:center;border-radius:.4em;
+  background:var(--si-surface);color:var(--si-fg);box-shadow:var(--si-shadow),inset 0 0 0 1px var(--si-line);backface-visibility:hidden;opacity:1;
+  transform:translateZ(calc(-1 * var(--_r,8em))) rotateY(calc((var(--_i,0) - var(--_f,0)) * 360deg / var(--_n,1))) translateZ(var(--_r,8em));
+  transition:transform .9s cubic-bezier(.3,1.15,.4,1),background-color .4s ease,color .4s ease}
+.si-steps-carousel>li.si-front{background:var(--si-accent);color:var(--si-on-accent)}
+/* animate: explode: one plate per item, stacked apart and tilted, each with its name */
+.si-explode{list-style:none;padding:0;margin:0 auto;display:grid;place-items:center;height:13em;perspective:30em;transform-style:preserve-3d}
+.si-explode>li{grid-area:1/1;width:11em;height:6.5em;margin:0;display:grid;place-items:center;text-align:center;border-radius:.5em;font-weight:800;
+  color:var(--si-on-accent);background:var(--si-accent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--si-on-accent) 25%,transparent);transform-origin:50% 50%}
+.si-explode>li:nth-child(4n+2){background:var(--si-accent-2)}
+.si-explode>li:nth-child(4n+3){background:var(--si-ok)}
+.si-explode>li:nth-child(4n+4){background:var(--si-warn)}
+/* animate: orbit: the first item in the middle, the rest on a tilted ring, facing you */
+.si-orbit{--_R:9em;list-style:none;padding:0;margin:0 auto;display:grid;place-items:center;height:11em;perspective:26em;transform-style:preserve-3d}
+.si-orbit>li{grid-area:1/1;margin:0;padding:.3em 1em;border-radius:999px;font-weight:700;white-space:nowrap;background:var(--si-surface);color:var(--si-fg);box-shadow:var(--si-shadow),inset 0 0 0 1px var(--si-line)}
+.si-orbit>li:first-child{width:6em;height:6em;padding:.4em;display:grid;place-items:center;text-align:center;border-radius:50%;white-space:normal;color:var(--si-on-accent);
+  background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--si-accent) 60%,#fff),var(--si-accent) 60%,color-mix(in srgb,var(--si-accent) 60%,#000))}
+/* animate: flap: split-flap tiles */
+.si-flap{perspective:20em;font-size:1.4em}
+.si-flap-c{position:relative;display:inline-grid;place-items:center;min-width:1.15em;height:1.5em;margin:.08em .05em;padding:0 .08em;vertical-align:middle;border-radius:.18em;
+  font-family:var(--si-font-mono);font-weight:700;line-height:1;background:var(--si-fg);color:var(--si-bg);box-shadow:0 .1em .3em rgb(0 0 0 / .3)}
+.si-flap-c::after{content:"";position:absolute;left:0;right:0;top:50%;height:.06em;background:color-mix(in srgb,var(--si-bg) 45%,transparent)}
+.si-flap-s{display:inline-block;width:.5em}
+/* animate: tilt: while it plays, the slide's blocks are layers at different depths */
+.si-tilt .si-inner{overflow:visible;transform-style:preserve-3d;transition:transform .3s ease-out}
+.si-tilt :is(.si-body,.si-col){transform-style:preserve-3d}
+.si-tilt .si-head{transform:translateZ(3em)}
+.si-tilt .si-tilt-hero{transform:translateZ(1.6em)}
 
 /* SVG canvas helpers: data-show, data-hide, data-alert, data-ok, data-flow,
  * data-packets, data-grow, data-move, data-count (word rules generated per deck) */
@@ -335,6 +366,7 @@ body.si-ui .si-autoplay .si-autoplay-bar,.si-autoplay-bar:hover,.si-autoplay-bar
   .si-inner{overflow:hidden;font-size:calc(var(--_u) * 1.7 * var(--si-scale))}
   .si-step,:is(.si-steps-focus,.si-steps-deal)>.si-step{opacity:1;transform:none;filter:none}
   .si-caret,.si-fx,.si-tx-tile,.si-tx-bar{display:none!important}
+  .si-steps-carousel>li.si-step{opacity:1}
   .si-bar,.si-progress,.si-help,.si-hud,.si-find,.si-anim,.si-draw,.si-draw-bar,.si-autoplay,.si-problems{display:none!important}
 }
 /* handout (si build --handout): paper sizes (mm, pt) are print-only; on screen
