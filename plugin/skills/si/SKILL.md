@@ -124,6 +124,17 @@ Points: Talking points
   heading, picture or words, or a block named with `<!-- id: name -->` on
   both) from its old place to its new one; use it to show one idea growing or
   moving, not on every slide.
+- Ten motion transitions: `<!-- transition: cube|flip|iris|wipe|shatter|depth|blinds|portal|glitch|stack -->`
+  (a length may follow: `cube 1.2s`); going back plays the mirror. `portal`
+  flies into the block named `<!-- id: x -->` (or the first picture) on the
+  slide before. Pick one or two for a talk, for the moments that earn them.
+- Build animations on the next block: `<!-- animate: type|words|highlight|count|draw|decode|confetti -->`
+  (with its `<!-- step -->`, else when the slide arrives; `highlight` paints
+  `==marks==`, `count` rolls the digits, `draw` strokes an `svg:` canvas or
+  stage diagram). Lists: `<!-- steps: focus -->`, `<!-- steps: deal -->`,
+  `<!-- steps: reorder -->` (one step that re-sorts by each item's last
+  number, highest first, or `reorder 2 3 1`). Each is one more `[CLICK]` only
+  when it has a step.
 - A long talk is a thin main deck plus one file per section under
   `sections/`, pulled in with `<!-- include: -->`.
 

@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"html"
+	"math"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -285,7 +288,7 @@ func (dr *deckRenderer) transform(doc ast.Node, src []byte, sc *slideCtx) {
 	type pend struct{ name, val string }
 	var pending *pend
 	var img *deck.ImageAttrs
-	morphID := ""
+	morphID, anim := "", ""
 	col, explicit := 0, false
 	var out []placed
 	stateOnly := func() {
@@ -320,6 +323,9 @@ func (dr *deckRenderer) transform(doc ast.Node, src []byte, sc *slideCtx) {
 				case "id":
 					morphID = val // the parser reports a bad name
 					continue
+				case "animate":
+					anim = val // the parser reports a bad name
+					continue
 				case "svg":
 					c = dr.canvas(val, sc)
 				case "badge":
@@ -347,11 +353,15 @@ func (dr *deckRenderer) transform(doc ast.Node, src []byte, sc *slideCtx) {
 		}
 		img = nil
 		if morphID != "" {
-			c = morphMark(c, morphID)
+			c = markBlock(c, "data-si-morph", morphID, "si-morph")
 			morphID = ""
 		}
+		if anim != "" {
+			c = markBlock(c, "data-si-anim", anim, "si-animate")
+			anim = ""
+		}
 		if pending != nil {
-			c = dr.applyStep(c, pending.name, pending.val, sc)
+			c = dr.applyStep(c, pending.name, pending.val, src, sc)
 			pending = nil
 		}
 		out = append(out, placed{c, col})
@@ -397,28 +407,37 @@ func (dr *deckRenderer) transform(doc ast.Node, src []byte, sc *slideCtx) {
 	}
 }
 
-// morphMark names a block for transition: morph (data-si-morph): on the
-// block's own tag when it has one, else on a wrapper.
-func morphMark(c ast.Node, id string) ast.Node {
+// markBlock sets attr on a block (data-si-morph for transition: morph,
+// data-si-anim for animate:): on the block's own tag when it has one, else on
+// a wrapper of class wrap.
+func markBlock(c ast.Node, attr, val, wrap string) ast.Node {
 	switch v := c.(type) {
 	case *rawNode:
 		if i := strings.IndexAny(v.html, " >"); strings.HasPrefix(v.html, "<") && i > 0 {
-			v.html = v.html[:i] + ` data-si-morph="` + html.EscapeString(id) + `"` + v.html[i:]
+			v.html = v.html[:i] + ` ` + attr + `="` + html.EscapeString(val) + `"` + v.html[i:]
 			return v
 		}
 	case *ast.FencedCodeBlock, *ast.HTMLBlock, *divNode:
 	default:
-		c.SetAttributeString("data-si-morph", []byte(id))
+		c.SetAttributeString(attr, []byte(val))
 		return c
 	}
-	d := &divNode{class: "si-morph", attrs: [][2]string{{"data-si-morph", id}}}
+	d := &divNode{class: wrap, attrs: [][2]string{{attr, val}}}
 	d.AppendChild(d, c)
 	return d
 }
 
-func (dr *deckRenderer) applyStep(c ast.Node, name, val string, sc *slideCtx) ast.Node {
+func (dr *deckRenderer) applyStep(c ast.Node, name, val string, src []byte, sc *slideCtx) ast.Node {
 	if list, ok := c.(*ast.List); ok && name == "steps" {
 		tokens := strings.Fields(val)
+		mode := ""
+		if len(tokens) > 0 && (tokens[0] == "focus" || tokens[0] == "deal" || tokens[0] == "reorder") {
+			mode, tokens = tokens[0], tokens[1:]
+			list.SetAttributeString("class", "si-steps-"+mode)
+		}
+		if mode == "reorder" {
+			return dr.reorder(list, tokens, src, sc)
+		}
 		items := 0
 		for it := list.FirstChild(); it != nil; it = it.NextSibling() {
 			sc.steps++
@@ -444,6 +463,59 @@ func (dr *deckRenderer) applyStep(c ast.Node, name, val string, sc *slideCtx) as
 	d.AppendChild(d, c)
 	return d
 }
+
+// reorder makes a list one build step that re-sorts it (steps: reorder):
+// to the order given as item numbers, else by each item's last number,
+// highest first. The list carries the new order as source indexes.
+func (dr *deckRenderer) reorder(list *ast.List, nums []string, src []byte, sc *slideCtx) ast.Node {
+	var items []ast.Node
+	for it := list.FirstChild(); it != nil; it = it.NextSibling() {
+		it.SetAttributeString("data-si-i", strconv.Itoa(len(items)))
+		items = append(items, it)
+	}
+	order := make([]int, len(items))
+	for i := range order {
+		order[i] = i
+	}
+	if len(nums) > 0 {
+		seen := map[int]bool{}
+		ok := len(nums) == len(items)
+		for i := 0; ok && i < len(nums); i++ {
+			n, err := strconv.Atoi(nums[i])
+			if err != nil || n < 1 || n > len(items) || seen[n] {
+				ok = false
+				break
+			}
+			seen[n] = true
+			order[i] = n - 1
+		}
+		if !ok {
+			dr.problem(sc, "steps: reorder needs each of the %d items once, as in <!-- steps: reorder 2 3 1 -->", len(items))
+			for i := range order {
+				order[i] = i
+			}
+		}
+	} else {
+		keys := make([]float64, len(items))
+		for i, it := range items {
+			keys[i] = math.Inf(-1)
+			if m := lastNumRE.FindAllString(strings.ReplaceAll(textOf(it, src), ",", ""), -1); len(m) > 0 {
+				keys[i], _ = strconv.ParseFloat(m[len(m)-1], 64)
+			}
+		}
+		sort.SliceStable(order, func(a, b int) bool { return keys[order[a]] > keys[order[b]] })
+	}
+	idx := make([]string, len(order))
+	for i, o := range order {
+		idx[i] = strconv.Itoa(o)
+	}
+	sc.steps++
+	list.SetAttributeString("data-step", strconv.Itoa(sc.steps))
+	list.SetAttributeString("data-si-order", strings.Join(idx, " "))
+	return list
+}
+
+var lastNumRE = regexp.MustCompile(`-?\d+(?:\.\d+)?`)
 
 func isMedia(n ast.Node) bool {
 	if d, ok := n.(*divNode); ok && d.ChildCount() == 1 {

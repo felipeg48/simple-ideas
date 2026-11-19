@@ -117,6 +117,24 @@ Notes: Steps also drive canvas and stage state (next slides).
 
 ---
 
+## Things that arrive
+
+<!-- animate: count -->
+**12,480** orders on time
+
+<!-- step -->
+<!-- animate: highlight -->
+Shoes at the door in ==two days==.
+
+```markdown
+<!-- animate: count -->
+**12,480** orders on time
+```
+
+Notes: Seven build animations: type, words, highlight, count, draw, decode and confetti. Each one runs as its block arrives and ends with the block exactly as written. [CLICK] Lists can arrive in focus, dealt like cards, or re-sorted by their numbers.
+
+---
+
 ## Stage diagrams
 
 A ` ```stage ` fence generates a themed, animated flow — no external tool:
@@ -296,6 +314,10 @@ Or let si move the slide itself: with `<!-- transition: morph -->` what two
 slides in a row share (the same heading, picture or words, or a block named
 `<!-- id: name -->` on both) glides from its old place and size to the new;
 the rest fades. `morph 0.9s` sets the length.
+
+Ten more transitions are played by the page itself: `cube`, `flip`, `iris`,
+`wipe`, `shatter`, `depth`, `blinds`, `portal`, `glitch` and `stack`
+(`<!-- transition: cube 1.2s -->`); going back plays each one in reverse.
 
 ---
 

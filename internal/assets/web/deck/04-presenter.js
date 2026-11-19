@@ -9,7 +9,12 @@
   function post(m) { m.name = data.name; m.mid = Math.random().toString(36).slice(2); chans.forEach(function (c) { try { c.postMessage(m); } catch (e) {} }); }
   function snapshot(s, k) {
     var c = s.cloneNode(true);
-    c.classList.remove('si-past', 'si-future');
+    /* a build animation running on the slide: the copy shows it as it ends */
+    var live = s.querySelectorAll('[data-si-live]');
+    each(c.querySelectorAll('[data-si-live]'), function (e, i) { if (live[i]) e.innerHTML = live[i]._siOrig; e.removeAttribute('data-si-live'); });
+    each(c.querySelectorAll('.si-fx'), function (e) { e.remove(); });
+    c.classList.remove('si-past', 'si-future', 'si-tx-on', 'si-tx-a', 'si-tx-b');
+    c.style.removeProperty('visibility');
     c.classList.add('si-current');
     c.removeAttribute('id');
     c.removeAttribute('aria-hidden');

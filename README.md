@@ -78,6 +78,14 @@ AsciiDoc tab.
 
 ## What's new in si 3
 
+**Motion (3.36).** Ten slide transitions the page plays itself (`cube`,
+`flip`, `iris`, `wipe`, `shatter`, `depth`, `blinds`, `portal`, `glitch`,
+`stack`), mirrored when you go back, and build animations that run as a step
+arrives: `<!-- animate: type|words|highlight|count|draw|decode|confetti -->`
+and lists that arrive in focus, dealt like cards or re-sorted
+(`<!-- steps: focus|deal|reorder -->`). No library; reduced motion, print and
+PDF show the final state.
+
 **Decks that present themselves, demos that film themselves.** One Markdown
 script drives a web app, a terminal or a deck, checks every step as a test,
 and comes out as a narrated video: transitions between scenes, camera moves

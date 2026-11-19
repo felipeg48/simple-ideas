@@ -176,7 +176,7 @@ that is not a directive (`<!-- wobble -->`) is an error.
 |---|---|---|
 | `layout: center` | slide | [Layouts](#5-layouts-and-columns) |
 | `column` | body | [Layouts](#5-layouts-and-columns) |
-| `transition: zoom`, `transition: morph 0.9s` | slide | [Transitions](#6-transitions) |
+| `transition: zoom`, `transition: morph 0.9s`, `transition: cube 1.2s` | slide | [Transitions](#6-transitions) |
 | `id: promise` | next block | names the block so `transition: morph` matches it on the next slide ([Transitions](#6-transitions)) |
 | `background: assets/city.jpg opacity=0.4` | slide | [Backgrounds](#7-backgrounds) |
 | `footer: off` | slide | overrides the deck `footer` on this slide (`off` hides it, e.g. the title) |
@@ -184,11 +184,12 @@ that is not a directive (`<!-- wobble -->`) is an error.
 | `class: dense dark-code` | slide | adds classes to the slide for your CSS |
 | `eyebrow: Order #4711 · the promise` | slide | a small context label above the slide heading (`.si-kicker`); it is not part of the slide title, so find, the overview and the teleprompter show the heading alone. On a section slide it replaces the "Part N" kicker. |
 | `image: width=40% align=right` | next image | [Images](#8-images) |
-| `steps`, `step`, `steps: a b`, `step: a` | next block | [Build steps](#9-build-steps) |
+| `steps`, `step`, `steps: a b`, `step: a`, `steps: focus\|deal\|reorder` | next block | [Build steps](#9-build-steps) |
+| `animate: type\|words\|highlight\|count\|draw\|decode\|confetti` | next block | a build animation ([Build steps](#9-build-steps)) |
 | `svg: assets/canvas.svg state words` | body | [SVG canvases](#10-animated-svg-canvases) |
 | `include: other.md` | deck | [Includes](#12-includes) |
 
-Body directives (`column`, `id`, `image`, `step`, `steps`, `svg`) work on the
+Body directives (`animate`, `column`, `id`, `image`, `step`, `steps`, `svg`) work on the
 top-level blocks of a slide, not inside lists or quotes.
 
 ## 5. Layouts and columns
@@ -244,8 +245,44 @@ Route 7 courier log
 
 ## 6. Transitions
 
-`<!-- transition: fade|slide|zoom|none|morph -->` sets how a slide arrives; the
-front matter `transition:` sets the default (`fade`).
+`<!-- transition: NAME -->` sets how a slide arrives; the front matter
+`transition:` sets the default (`fade`). `fade`, `slide`, `zoom` and `none`
+are CSS; `morph` is below; the ten motion transitions are played by the
+page itself:
+
+| Name | What the room sees | Length |
+|---|---|---|
+| `cube` | the slide turns on the edge of a cube; the next face swings into view | 1s |
+| `flip` | the slide flips over like a card; the next slide is on its back | 0.9s |
+| `iris` | a circle opens from where you clicked (else the centre) and grows into the next slide | 0.9s |
+| `wipe` | a soft band of light sweeps across and leaves the next slide behind it | 0.9s |
+| `shatter` | the slide breaks into tiles that fall away, nearest the click first | 1.3s |
+| `depth` | the slide sinks back and blurs; the next one arrives from in front of the camera | 1.1s |
+| `blinds` | vertical strips turn one after another, each showing a strip of the next slide | 1.1s |
+| `portal` | the camera flies into a picture on the slide, and that picture becomes the next slide | 1.1s |
+| `glitch` | a short digital tear: colour channels split, slices jump, the next slide settles | 0.55s |
+| `stack` | the next slide slides over this one like a card on a pile; this one sinks under it | 0.9s |
+
+```markdown
+<!-- transition: cube -->
+## Payment authorised
+
+---
+
+<!-- transition: portal 1.4s -->
+## The receipt
+```
+
+A length after the name (`cube 1.2s`, `iris 600ms`) sets it for that slide;
+only `morph` and the motion transitions take one. A motion transition
+belongs to the slide it arrives at: going back from that slide plays the
+same motion in reverse (the mirror), going back to it fades. `portal` flies
+into the block named with `<!-- id: name -->` on the slide before, else that
+slide's first picture or diagram. They run between neighbours only; a jump
+(`#7`, the overview, find) fades, and reduced motion, print, PDF, the
+overview, thumbnails and handouts show each slide as it ends. Two slides
+that show the same SVG keep the canvas transition, and `morph` keeps its
+own rules.
 
 **Morph.** With `transition: morph`, what the slide shares with the slide
 before it glides from its old place and size to its new one (colour and
@@ -437,6 +474,67 @@ A paragraph (or any block) revealed as one step.
     by another directive) is an invisible step that only changes the canvas.
 - Going back undoes the state change. Overview and print show every step.
 - The URL hash keeps the step: `#5.2` is slide 5 at step 2.
+
+**How a list arrives.** A first word after `steps:` changes how the items
+come in; canvas tokens may follow it as above.
+
+```markdown
+<!-- steps: focus -->
+- Shop
+- Payments
+- Warehouse
+- Courier
+
+<!-- steps: deal -->
+- Shop
+- Payments
+
+<!-- steps: reorder -->
+- Address wrong 12%
+- Stock drift 61%
+- Courier no-show 23%
+```
+
+- `steps: focus`: every item is shown; each step brings the next one into
+  focus and blurs and dims the rest, like a camera changing focus.
+- `steps: deal`: each item flips in from its top edge like a dealt card.
+- `steps: reorder`: the list is shown as written; one build step re-sorts
+  it and each item glides to its new place. The new order is by the last
+  number in each item, highest first (`61%`, `23%`, `12%`), or the order you
+  give as item numbers counted from 1: `<!-- steps: reorder 2 3 1 -->` puts
+  item 2 first, then 3, then 1. Going back puts it as written again.
+
+**Build animations.** `<!-- animate: NAME -->` animates the next block as it
+arrives: with its build step when it has one (`<!-- step -->` before or
+after it), else when the slide arrives.
+
+```markdown
+<!-- animate: type -->
+> Delivered. Two days, door to door.
+
+<!-- step -->
+<!-- animate: count -->
+**12,480** orders on time
+
+<!-- animate: highlight -->
+Shoes at the door in ==two days==.
+```
+
+| Name | What it does |
+|---|---|
+| `type` | the text types itself out with a blinking caret |
+| `words` | words rise one by one out of a soft blur |
+| `highlight` | the marker of each `==mark==` in the block paints in, left to right |
+| `count` | the digits roll into place like an odometer, each column at its own speed |
+| `draw` | an `svg:` canvas or a stage diagram draws its lines on like a pen, then fills |
+| `decode` | the text arrives scrambled and decodes letter by letter |
+| `confetti` | the block pops in and a burst of confetti falls away (then it is removed) |
+
+Every animation ends with the block exactly as written. Going back does
+not replay it; reduced motion, print, PDF, the overview, thumbnails,
+handouts, the teleprompter previews and a jump (`#5.2`) show the final
+state. In an article, guide or book `animate:` has no effect (`si check`
+warns): documents show the final state.
 
 ## 10. Animated SVG canvases
 

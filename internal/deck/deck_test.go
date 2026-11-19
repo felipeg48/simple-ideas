@@ -84,7 +84,14 @@ func TestParse(t *testing.T) {
 			files:    map[string]string{"d.md": "# Deck\n\n---\n\n<!-- transition: morph 0.8s -->\n## A\n\n<!-- id: wh -->\nx\n\n---\n\n<!-- transition: fade 1s -->\n## B\n\n<!-- id: 9 bad -->\ny\n"},
 			kinds:    "tcc",
 			titles:   "Deck|A|B",
-			problems: []string{`only morph takes a length`, `id needs one name`},
+			problems: []string{`only morph and cube`, `id needs one name`},
+		},
+		{
+			name:     "motion transitions, animations and step modes",
+			files:    map[string]string{"d.md": "# Deck\n\n---\n\n<!-- transition: cube -->\n## A\n\n<!-- animate: words -->\nx\n\n---\n\n<!-- transition: portal 1.2s -->\n## B\n\n<!-- steps: reorder 2 1 -->\n- a 1\n- b 2\n\n<!-- steps: focus -->\n- c\n\n---\n\n<!-- transition: flip 1 -->\n## C\n\n<!-- animate: spin -->\ny\n\n<!-- steps: reorder 0 x -->\n- d\n"},
+			kinds:    "tccc",
+			titles:   "Deck|A|B|C",
+			problems: []string{`only morph and cube`, `unknown animate "spin"`, `steps: reorder takes the new order`},
 		},
 		{
 			name: "include splices a module as a section",
@@ -606,7 +613,7 @@ func TestWebDemoTransition(t *testing.T) {
 	if len(d.Problems) > 0 || len(d.Warnings) > 0 {
 		t.Errorf("web demo transition flagged: %v %v", d.Problems, d.Warnings)
 	}
-	d, _ = ParseSource("e.md", "---\ntransition: wipe\n---\n\n# D\n", Meta{Type: "deck"})
+	d, _ = ParseSource("e.md", "---\ntransition: spin\n---\n\n# D\n", Meta{Type: "deck"})
 	if len(d.Problems) == 0 {
 		t.Error("a deck's unknown transition must still be a problem")
 	}

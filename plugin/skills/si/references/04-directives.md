@@ -16,7 +16,7 @@ that is not a directive (`<!-- wobble -->`) is an error.
 |---|---|---|
 | `layout: center` | slide | [Layouts](#5-layouts-and-columns) |
 | `column` | body | [Layouts](#5-layouts-and-columns) |
-| `transition: zoom`, `transition: morph 0.9s` | slide | [Transitions](#6-transitions) |
+| `transition: zoom`, `transition: morph 0.9s`, `transition: cube 1.2s` | slide | [Transitions](#6-transitions) |
 | `id: promise` | next block | names the block so `transition: morph` matches it on the next slide ([Transitions](#6-transitions)) |
 | `background: assets/city.jpg opacity=0.4` | slide | [Backgrounds](#7-backgrounds) |
 | `footer: off` | slide | overrides the deck `footer` on this slide (`off` hides it, e.g. the title) |
@@ -24,9 +24,10 @@ that is not a directive (`<!-- wobble -->`) is an error.
 | `class: dense dark-code` | slide | adds classes to the slide for your CSS |
 | `eyebrow: Order #4711 · the promise` | slide | a small context label above the slide heading (`.si-kicker`); it is not part of the slide title, so find, the overview and the teleprompter show the heading alone. On a section slide it replaces the "Part N" kicker. |
 | `image: width=40% align=right` | next image | [Images](#8-images) |
-| `steps`, `step`, `steps: a b`, `step: a` | next block | [Build steps](#9-build-steps) |
+| `steps`, `step`, `steps: a b`, `step: a`, `steps: focus\|deal\|reorder` | next block | [Build steps](#9-build-steps) |
+| `animate: type\|words\|highlight\|count\|draw\|decode\|confetti` | next block | a build animation ([Build steps](#9-build-steps)) |
 | `svg: assets/canvas.svg state words` | body | [SVG canvases](#10-animated-svg-canvases) |
 | `include: other.md` | deck | [Includes](#12-includes) |
 
-Body directives (`column`, `id`, `image`, `step`, `steps`, `svg`) work on the
+Body directives (`animate`, `column`, `id`, `image`, `step`, `steps`, `svg`) work on the
 top-level blocks of a slide, not inside lists or quotes.

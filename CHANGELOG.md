@@ -3,6 +3,21 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.36.0:** motion. Ten slide transitions the page plays itself with the
+  Web Animations API, no library: `cube`, `flip`, `iris` (from the click),
+  `wipe`, `shatter`, `depth`, `blinds`, `portal` (into the block named with
+  `<!-- id: -->` or the first picture), `glitch` and `stack`; going back
+  plays the mirror, and `<!-- transition: cube 1.2s -->` sets a length.
+  Build animations on the next block, run as its step arrives (or with the
+  slide): `<!-- animate: type|words|highlight|count|draw|decode|confetti -->`;
+  lists: `<!-- steps: focus -->`, `deal`, and `reorder` (one step that
+  re-sorts by each item's last number, or `reorder 2 3 1`, with FLIP). Every
+  block ends exactly as written; reduced motion, print, PDF, the overview,
+  thumbnails, handouts, `#N.k` jumps and the teleprompter previews show the
+  final state; real-motion `--mp4` films them. Documents show the final
+  state (`si check` warns that `animate:` has no effect there). The Studio
+  completes the new names.
+
 - **v3.35.1:** Windows fixes found by running si on a Windows 11 machine.
   Every export through headless Chrome (`--pdf`, `--png`, `--svg`, `--mp4`,
   mind maps, timelines, infographics, `si code`) opened `file://C:/…`,

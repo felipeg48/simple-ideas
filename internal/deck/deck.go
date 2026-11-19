@@ -34,7 +34,14 @@ const (
 // Layouts and transitions accepted by the per-slide directives.
 var (
 	Layouts     = []string{"default", "center", "two-col", "split", "quote", "big-number", "image"}
-	Transitions = []string{"fade", "slide", "zoom", "none", "morph"}
+	Transitions = []string{"fade", "slide", "zoom", "none", "morph", "cube", "flip", "iris", "wipe", "shatter", "depth", "blinds", "portal", "glitch", "stack"}
+	// MotionTransitions are the transitions the runtime plays itself (Web
+	// Animations), forward and mirrored back; they and morph take a length.
+	MotionTransitions = []string{"cube", "flip", "iris", "wipe", "shatter", "depth", "blinds", "portal", "glitch", "stack"}
+	// Animates are the `<!-- animate: -->` build animations (the next block).
+	Animates = []string{"type", "words", "highlight", "count", "draw", "decode", "confetti"}
+	// StepModes lead a `<!-- steps: -->` value on a list: how its items arrive.
+	StepModes = []string{"focus", "deal", "reorder"}
 	// FooterPositions are the accepted footer-position values (long form plus short aliases).
 	FooterPositions = []string{"bottom-right", "bottom-left", "bottom-center", "top-right", "top-left", "top-center", "br", "bl", "bc", "tr", "tl", "tc"}
 	Modes           = []string{"auto", "light", "dark"}
@@ -90,6 +97,7 @@ var Directives = map[string]string{
 	"column":     "body",  // start the next column
 	"image":      "body",  // size and place the next image
 	"id":         "body",  // name the next block, so transition: morph matches it on the next slide
+	"animate":    "body",  // a build animation for the next block: type, words, highlight, count, draw, decode, confetti
 }
 
 // Meta is the deck-level front matter.
@@ -245,7 +253,8 @@ type Slide struct {
 	HasMinutes bool
 	Layout     string
 	Transition string
-	// MorphDuration is the length of a morph transition (`transition: morph 0.8s`).
+	// MorphDuration is the length of a morph or motion transition
+	// (`transition: morph 0.8s`, `transition: cube 1.2s`).
 	MorphDuration string
 	Background    string
 	Footer        string // per-slide footer override: text, or "off" to hide; empty inherits the deck footer
@@ -734,6 +743,17 @@ func validateMeta(key, val string) string {
 	return ""
 }
 
+// IsMotionTransition reports whether name is one of the transitions the
+// runtime plays with the Web Animations API (cube, flip, iris …).
+func IsMotionTransition(name string) bool {
+	for _, t := range MotionTransitions {
+		if t == name {
+			return true
+		}
+	}
+	return false
+}
+
 func oneOf(what, val string, allowed []string) string {
 	for _, a := range allowed {
 		if val == a {
@@ -1111,8 +1131,8 @@ func (d *Deck) slideDirective(s *Slide, l srcLine, name, val string) bool {
 		}
 		s.Transition = f[0]
 		if len(f) > 1 {
-			if f[0] != "morph" || len(f) > 2 || !morphDurRE.MatchString(f[1]) {
-				d.problem(l.file, l.no, "transition: only morph takes a length, as in <!-- transition: morph 0.8s --> (s or ms)")
+			if (f[0] != "morph" && !IsMotionTransition(f[0])) || len(f) > 2 || !morphDurRE.MatchString(f[1]) {
+				d.problem(l.file, l.no, "transition: only morph and %s take a length, as in <!-- transition: cube 1.2s --> (s or ms)", strings.Join(MotionTransitions, ", "))
 			} else {
 				s.MorphDuration = f[1]
 			}
@@ -1161,6 +1181,19 @@ func (d *Deck) slideDirective(s *Slide, l srcLine, name, val string) bool {
 	case "column":
 		if val != "" {
 			d.problem(l.file, l.no, "column takes no value")
+		}
+	case "animate":
+		if msg := oneOf("animate", val, Animates); msg != "" {
+			d.problem(l.file, l.no, "%s", msg)
+		}
+	case "steps":
+		if f := strings.Fields(val); len(f) > 0 && f[0] == "reorder" {
+			for _, n := range f[1:] {
+				if !reorderNumRE.MatchString(n) {
+					d.problem(l.file, l.no, "steps: reorder takes the new order as item numbers, as in <!-- steps: reorder 2 4 1 3 -->")
+					break
+				}
+			}
 		}
 	case "id":
 		if !morphIDRE.MatchString(val) {
@@ -1272,8 +1305,9 @@ func (d *Deck) checkDemoMinutes(lines []srcLine) {
 // morphDurRE is the length a morph transition takes (0.8s, 600ms);
 // morphIDRE a name the id directive gives a block.
 var (
-	morphDurRE = regexp.MustCompile(`^\d+(\.\d+)?m?s$`)
-	morphIDRE  = regexp.MustCompile(`^[A-Za-z][\w-]*$`)
+	morphDurRE   = regexp.MustCompile(`^\d+(\.\d+)?m?s$`)
+	morphIDRE    = regexp.MustCompile(`^[A-Za-z][\w-]*$`)
+	reorderNumRE = regexp.MustCompile(`^[1-9]\d*$`)
 )
 
 var durationRE = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*min`)

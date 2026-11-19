@@ -197,4 +197,23 @@ si play
 
 ---
 
+<!-- transition: cube 1.2s -->
+## Late orders
+
+<!-- animate: words -->
+Nobody owns the promise.
+
+<!-- steps: reorder -->
+- Address wrong **12%**
+- Stock drift **61%**
+
+<!-- steps: focus -->
+- Shop
+- Payments
+
+<!-- step -->
+<!-- animate: count -->
+**12,480** orders
+---
+
 # The end

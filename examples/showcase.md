@@ -144,6 +144,7 @@ Points: Delivery
 
 ---
 
+<!-- transition: cube -->
 ## What changed after #4711
 
 <!-- layout: two-col -->
@@ -204,8 +205,9 @@ Before the change, checkout called the bank once, and a timeout became a failed-
 
 <!-- layout: big-number -->
 <!-- background: linear-gradient(135deg, #1d2b64 0%, #3657d6 55%, #0b8a7a 100%) -->
-<!-- transition: zoom -->
+<!-- transition: iris -->
 
+<!-- animate: count -->
 **98.7%**
 
 of Thursday promises kept in the first month, up from 91%.
@@ -219,6 +221,7 @@ Points: The number
 ---
 
 <!-- layout: quote -->
+<!-- transition: depth -->
 
 > The customer never saw the declined card or the queue. She saw Thursday.
 
@@ -247,6 +250,7 @@ The floor plan explains why the second picker drains the queue so fast: two pick
 ---
 
 <!-- layout: image -->
+<!-- transition: wipe -->
 
 ## Wednesday, 05:40
 
@@ -266,12 +270,13 @@ Points: Breather
 
 <!-- background: assets/dusk-pan.mp4 poster=assets/dusk.jpg opacity=0.85 overlay=dark -->
 
+<!-- steps: focus -->
 - 42 routes leave between 05:30 and 07:00
 - Each van carries about 120 parcels
 - Thursday promises ride on Wednesday's first wave
 
 Notes: (0.5 min)
-Forty-two routes leave between half past five and seven, each van with about a hundred and twenty parcels. Every Thursday promise rides on Wednesday's first wave.
+[CLICK] Forty-two routes leave between half past five and seven, [CLICK] each van with about a hundred and twenty parcels. [CLICK] Every Thursday promise rides on Wednesday's first wave.
 
 ---
 

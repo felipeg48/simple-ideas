@@ -12,6 +12,27 @@ narrated video you would publish.
 
 <!-- si-video: presenting -->
 
+## Motion (3.36)
+
+Ten new slide transitions, played by the page itself with no library:
+`cube`, `flip`, `iris` (it opens from where you clicked), `wipe`, `shatter`,
+`depth`, `blinds`, `portal` (the camera flies into a picture on the slide,
+and the picture becomes the next slide), `glitch` and `stack`. Each one
+plays in reverse when you go back, and a length sets it per slide:
+
+```markdown
+<!-- transition: portal 1.4s -->
+## The receipt
+```
+
+Build animations run as their step arrives: `type`, `words`, `highlight`
+(the marker of a `==mark==` paints in), `count` (an odometer), `draw` (an SVG
+canvas or stage diagram draws itself on), `decode` and `confetti`. A list
+can arrive in focus (`steps: focus`), dealt like cards (`steps: deal`), or
+shown as written and then re-sorted by its numbers (`steps: reorder`).
+Reduced motion, print, PDF, the overview and the teleprompter previews show
+the final state.
+
 ## The control room (3.34)
 
 `si play` prints a keyed link to a **web monitor** at `/_si/monitor`: uptime,

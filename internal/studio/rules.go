@@ -33,7 +33,7 @@ var help = map[string]string{
 	"event":      "a countdown toast: YYYY-MM-DDTHH:MM text · Label → link",
 	"embed":      "a document as a card, #section, full; a deck's slides; a guide folder",
 	"layout":     "slide layout",
-	"transition": "slide transition (morph glides what two slides share; morph 0.9s)",
+	"transition": "slide transition (morph glides what two slides share; cube, flip, iris, wipe, shatter, depth, blinds, portal, glitch, stack; a length: cube 1.2s)",
 	"id":         "name the next block so transition: morph matches it",
 	"background": "slide background: a colour, gradient, image or video",
 	"footer":     "this slide's footer (off hides it)",
@@ -42,7 +42,8 @@ var help = map[string]string{
 	"eyebrow":    "a small label above the slide heading",
 	"svg":        "an animated SVG canvas: path and state words",
 	"step":       "reveal the next block as one build step",
-	"steps":      "reveal the next list item by item",
+	"steps":      "reveal the next list item by item (steps: focus, deal, reorder)",
+	"animate":    "a build animation for the next block: type, words, highlight, count, draw, decode, confetti",
 	"column":     "start the next column",
 	"image":      "size and place the next image (width=40% right …)",
 	// front matter
@@ -122,6 +123,8 @@ var values = map[string][]string{
 	"camera":             deck.MapCameras,
 	"kind":               deck.MapKinds,
 	"floors":             deck.OnOff,
+	"steps":              deck.StepModes,
+	"animate":            deck.Animates,
 }
 
 // paths are the directives and keys whose value is a workspace path.

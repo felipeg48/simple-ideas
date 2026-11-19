@@ -96,13 +96,21 @@
     if (k === 'end') k = max;
     k = Math.max(0, Math.min(max, k || 0));
     if (i !== cur || k !== step) apTouch(); /* a move auto-play did not make pauses it */
+    var near = !instant && Math.abs(i - cur) === 1, fwd = i > cur, live = !instant && motionLive();
+    if (i !== cur || k !== step) buildStop();
     if (i !== cur) {
       clearStrokes();
       var tx = next.getAttribute('data-transition') || data.transition || 'fade';
       var key = canvasKey(next);
-      var carry = !instant && prev && Math.abs(i - cur) === 1 && key !== '' && key === canvasKey(prev);
+      var carry = !instant && prev && near && key !== '' && key === canvasKey(prev);
       /* morph: arriving at a morph slide, or going back from one, between neighbours */
       if (prev && i < cur && prev.getAttribute('data-transition') === 'morph') tx = 'morph';
+      /* a motion transition belongs to the slide it arrives at: going back plays
+         the mirror of the slide being left, else a fade */
+      if (prev && i < cur) { var ptx = prev.getAttribute('data-transition') || data.transition; if (motionTx[ptx]) tx = ptx; else if (motionTx[tx]) tx = 'fade'; }
+      txStop();
+      var motion = motionTx[tx] && prev && !carry && near && live ? tx : '';
+      if (motionTx[tx] && !motion) tx = 'fade';
       morphStop();
       var first = tx === 'morph' && prev && !carry && !instant && Math.abs(i - cur) === 1 && !reduceMotion() &&
         !deck.classList.contains('si-overview') && !(window.matchMedia && window.matchMedia('print').matches) ? morphList(prev) : null;
@@ -127,8 +135,13 @@
       applyCounts(next);
       fit(next);
       if (first) morphPlay(first, prev, next);
+      var run = motion ? txPlay(motion, prev, next, !fwd) : null;
+      if (live && near && fwd) buildAt(next, k, run && run.done);
     } else {
+      var flip = live && Math.abs(k - step) === 1 ? reorderFirst(next) : null;
       apply(next, k);
+      if (flip) reorderPlay(flip);
+      if (live && k === step + 1) buildAt(next, k);
     }
     step = k;
     update();
@@ -229,6 +242,7 @@
     if (on === undefined) on = !deck.classList.contains('si-overview');
     deck.classList.toggle('si-overview', on);
     if (on) {
+      buildStop(); txStop();
       slides.forEach(function (s, j) { if (j !== cur) apply(s, maxStep(s)); });
       buildOverview();
       ovSel = cur; slides[ovSel].classList.add('si-sel');

@@ -255,7 +255,11 @@ func (dr *deckRenderer) slide(s *deck.Slide, n, topic int) (string, *slideCtx) {
 		if style != "" {
 			style += ";"
 		}
-		style += "--si-morph-duration:" + s.MorphDuration
+		if s.Transition == "morph" {
+			style += "--si-morph-duration:" + s.MorphDuration
+		} else {
+			style += "--si-tx-duration:" + s.MorphDuration
+		}
 	}
 	classes = append(classes, bgClasses...)
 	classes = append(classes, s.Classes...)
