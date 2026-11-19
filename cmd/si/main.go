@@ -57,7 +57,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/ui"
 )
 
-const version = "3.35.0"
+const version = "3.35.1"
 
 // Exit codes.
 const (
@@ -2060,7 +2060,10 @@ func pagePDF(chrome, htmlPath, pdfPath, query string) error {
 	if err != nil {
 		return err
 	}
-	url := "file://" + filepath.ToSlash(abs) + query + "#print"
+	url := fileURL(abs) + query + "#print"
+	if p, err := filepath.Abs(pdfPath); err == nil { // Chrome writes a relative path from its own folder (Windows)
+		pdfPath = p
+	}
 	if out, err := cdp.Run(chromeWait, chrome,
 		"--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--no-pdf-header-footer", atRest,
 		"--virtual-time-budget=2000",
@@ -2811,4 +2814,14 @@ func handoutMode(v string) string {
 		return v
 	}
 	return ""
+}
+
+// fileURL is a file:// URL for a local path: file:///Users/… on a Mac and
+// file:///C:/… on Windows (file://C:/… names a host "C:", and Chrome loads nothing).
+func fileURL(path string) string {
+	p := filepath.ToSlash(path)
+	if !strings.HasPrefix(p, "/") {
+		p = "/" + p
+	}
+	return "file://" + p
 }

@@ -26,6 +26,11 @@ func TestParseFonts(t *testing.T) {
 	if s := specs[3]; s.file != "fonts/Brand.woff2" || s.weights[0] != "600" {
 		t.Errorf("file entry: %+v", s)
 	}
+	// a Windows path keeps its drive letter: the weight is after the last colon
+	specs, bad = parseFonts(`heading=C:\talk\fonts\Brand.woff2:600, body=D:\f\Body.ttf`)
+	if len(bad) != 0 || len(specs) != 2 || specs[0].file != `C:\talk\fonts\Brand.woff2` || specs[0].weights[0] != "600" || specs[1].file != `D:\f\Body.ttf` {
+		t.Errorf("windows paths: %+v %v", specs, bad)
+	}
 }
 
 func TestFontsInlined(t *testing.T) {

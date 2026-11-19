@@ -139,7 +139,7 @@ func filmInfographic(chrome string, v igVariant, out string, o *options, stdout 
 		return err
 	}
 	abs, _ := filepath.Abs(v.html)
-	url := "file://" + filepath.ToSlash(abs) + "?si-ig-film"
+	url := fileURL(abs) + "?si-ig-film"
 	if !v.d.IsDoc() {
 		url += "#1.999" // the slide, every build step shown
 	}

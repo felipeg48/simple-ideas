@@ -141,7 +141,7 @@ func exportDeckMotion(chrome, page, out string, d *deckInfo, dwell float64, nar 
 	defer c.Close()
 	if !strings.Contains(page, "://") {
 		abs, _ := filepath.Abs(page)
-		page = "file://" + filepath.ToSlash(abs)
+		page = fileURL(abs)
 	}
 	if err := slowOpen(c, page+"#1", 1.5); err != nil {
 		return 0, err
@@ -403,7 +403,7 @@ func exportMindmap3DMotion(chrome, htmlPath, out, name string) (views int, err e
 	}
 	defer c.Close()
 	abs, _ := filepath.Abs(htmlPath)
-	if err := slowOpen(c, "file://"+filepath.ToSlash(abs)+"#si-film3d", 2.5); err != nil {
+	if err := slowOpen(c, fileURL(abs)+"#si-film3d", 2.5); err != nil {
 		return 0, err
 	}
 	const ready = `(function(){var el=document.querySelector('.si-mindmap[data-full]'),m=el&&el.siMindmap,d=m&&m.is3d&&m.d3;if(!d)return -1;

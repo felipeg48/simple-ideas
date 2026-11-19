@@ -269,7 +269,7 @@ func chromeShot(page, slide string, w, h int, dark bool) ([]byte, error) {
 	if _, err := os.Stat(page); err != nil {
 		return nil, fmt.Errorf("built no %s", filepath.Base(page))
 	}
-	url := "file://" + filepath.ToSlash(page)
+	url := fileURL(page)
 	if slide != "" {
 		url += "#" + slide
 	}

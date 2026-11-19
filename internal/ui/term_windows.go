@@ -9,6 +9,14 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// si writes UTF-8 (— ✓ … in its plain lines too); a console left on an OEM
+// code page would show them as garbage, so the console is told to read UTF-8.
+func init() {
+	if isTerminal(os.Stdout) || isTerminal(os.Stderr) {
+		windows.SetConsoleOutputCP(65001) // CP_UTF8
+	}
+}
+
 func isTerminal(f *os.File) bool {
 	var mode uint32
 	return windows.GetConsoleMode(windows.Handle(f.Fd()), &mode) == nil

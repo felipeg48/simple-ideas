@@ -50,7 +50,7 @@ func exportInfographic(chrome, htmlPath, out string, d *deck.Deck, png, pdf bool
 			return "", err
 		}
 	}
-	if err := shot.take(chrome, "file://"+filepath.ToSlash(abs)+hash); err != nil {
+	if err := shot.take(chrome, fileURL(abs)+hash); err != nil {
 		return "", err
 	}
 	if png {

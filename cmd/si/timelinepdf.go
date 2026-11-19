@@ -178,7 +178,7 @@ func framesPDF(chrome, tmp string, pages []string, w, h int, pdfPath string) err
 	var b strings.Builder
 	fmt.Fprintf(&b, "<!doctype html><style>@page{size:%dpx %dpx;margin:0}html,body{margin:0}iframe{display:block;border:0;width:%dpx;height:%dpx;break-after:page;break-inside:avoid}iframe:last-child{break-after:auto}</style>", w, h, w, h)
 	for _, p := range pages {
-		fmt.Fprintf(&b, `<iframe src="%s?si-view=thumb#1"></iframe>`, "file://"+filepath.ToSlash(p))
+		fmt.Fprintf(&b, `<iframe src="%s?si-view=thumb#1"></iframe>`, fileURL(p))
 	}
 	page := filepath.Join(tmp, "pages.html")
 	if err := os.WriteFile(page, []byte(b.String()), 0o644); err != nil {
@@ -195,7 +195,7 @@ func framesPDF(chrome, tmp string, pages []string, w, h int, pdfPath string) err
 	if err := c.Call("Emulation.setEmulatedMedia", map[string]any{"media": "screen"}, nil); err != nil {
 		return err
 	}
-	if err := c.Call("Page.navigate", map[string]any{"url": "file://" + filepath.ToSlash(page)}, nil); err != nil {
+	if err := c.Call("Page.navigate", map[string]any{"url": fileURL(page)}, nil); err != nil {
 		return err
 	}
 	for i := 0; i < 400; i++ {

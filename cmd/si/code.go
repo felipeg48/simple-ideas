@@ -179,7 +179,7 @@ func runCode(path string, o *options, stdout, stderr io.Writer) int {
 // codeFrames has headless Chrome load the windows page at #si-code-export.
 func codeFrames(chrome, page string) ([]codeExport, error) {
 	out, err := cdp.Output(chromeWait, chrome, "--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--virtual-time-budget=5000",
-		"--window-size=1800,1200", "--dump-dom", "file://"+filepath.ToSlash(page)+"#si-code-export")
+		"--window-size=1800,1200", "--dump-dom", fileURL(page)+"#si-code-export")
 	if err != nil {
 		return nil, fmt.Errorf("chrome: %v", err)
 	}
@@ -199,7 +199,7 @@ func svgToPNG(chrome, tmp string, f codeFrame, scale float64, dest string) error
 		return err
 	}
 	return chromeRun(chrome, "--screenshot="+dest, fmt.Sprintf("--window-size=%d,%d", f.W, f.H),
-		fmt.Sprintf("--force-device-scale-factor=%g", scale), "--hide-scrollbars", "--default-background-color=00000000", "file://"+filepath.ToSlash(page))
+		fmt.Sprintf("--force-device-scale-factor=%g", scale), "--hide-scrollbars", "--default-background-color=00000000", fileURL(page))
 }
 
 func readPNG(p string) (image.Image, error) {

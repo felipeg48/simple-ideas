@@ -3,6 +3,15 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.35.1:** Windows fixes found by running si on a Windows 11 machine.
+  Every export through headless Chrome (`--pdf`, `--png`, `--svg`, `--mp4`,
+  mind maps, timelines, infographics, `si code`) opened `file://C:/…`,
+  which Chrome reads as a host named `C:` and loads nothing; they now open
+  `file:///C:/…`. A deck's PDF path is absolute, so Chrome writes it where
+  si looks for it. A local font in `fonts:` given as an absolute Windows path
+  (`heading=C:\talk\fonts\Brand.woff2:600`) keeps its drive letter. si
+  sets the console to UTF-8, so `—`, `✓` and the emoji look show as written.
+
 - **v3.35.0:** more languages coloured, and a shadow for code windows.
   Groovy and Gradle (`groovy`, `gradle`, `jenkinsfile`; `build.gradle` and
   `Jenkinsfile` by file name, with Gradle and Jenkins words such as

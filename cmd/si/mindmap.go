@@ -35,7 +35,7 @@ func mapSVGs(chrome, htmlPath string) ([]mapSVG, error) {
 		return nil, err
 	}
 	out, err := cdp.Output(chromeWait, chrome, "--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--virtual-time-budget=4000",
-		"--window-size=1600,1000", "--dump-dom", "file://"+filepath.ToSlash(abs)+"#si-export")
+		"--window-size=1600,1000", "--dump-dom", fileURL(abs)+"#si-export")
 	if err != nil {
 		return nil, fmt.Errorf("chrome: %v", err)
 	}
@@ -82,7 +82,7 @@ func exportMindmap(chrome, htmlPath, out, name string, svg, png, pdf bool, scale
 			}
 			p, _ := filepath.Abs(filepath.Join(out, base+".png"))
 			if err := chromeRun(chrome, "--screenshot="+p, fmt.Sprintf("--window-size=%d,%d", m.W, m.H),
-				fmt.Sprintf("--force-device-scale-factor=%g", scale), "--hide-scrollbars", "--default-background-color=00000000", "file://"+filepath.ToSlash(page)); err != nil {
+				fmt.Sprintf("--force-device-scale-factor=%g", scale), "--hide-scrollbars", "--default-background-color=00000000", fileURL(page)); err != nil {
 				return "", fmt.Errorf("png %s: %v", base, err)
 			}
 			fmt.Fprintf(stdout, "  %-28s (png, %d × %d)\n", base+".png", int(float64(m.W)*scale), int(float64(m.H)*scale))
@@ -110,7 +110,7 @@ func exportMindmap(chrome, htmlPath, out, name string, svg, png, pdf bool, scale
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		return "", err
 	}
-	if err := chromeRun(chrome, "--no-pdf-header-footer", "--print-to-pdf="+p, "file://"+filepath.ToSlash(page)); err != nil {
+	if err := chromeRun(chrome, "--no-pdf-header-footer", "--print-to-pdf="+p, fileURL(page)); err != nil {
 		return "", fmt.Errorf("pdf: %v", err)
 	}
 	fmt.Fprintf(stdout, "  %-28s (pdf, %d page%s)\n", rel, len(maps), map[bool]string{true: "", false: "s"}[len(maps) == 1])
@@ -142,7 +142,7 @@ func exportMindmap3D(chrome, htmlPath, out, name string, png, pdf bool, scale fl
 	if err != nil {
 		return "", err
 	}
-	url := "file://" + filepath.ToSlash(abs) + "#si-shot3d"
+	url := fileURL(abs) + "#si-shot3d"
 	run := func(args ...string) ([]byte, error) {
 		all := append(append([]string{}, chromeGL...), fmt.Sprintf("--window-size=%d,%d", w, h), "--virtual-time-budget=8000")
 		return cdp.Run(chromeWait, chrome, append(all, args...)...)
@@ -188,7 +188,7 @@ func exportMindmap3D(chrome, htmlPath, out, name string, png, pdf bool, scale fl
 	}
 	page := filepath.Join(tmp, name+"-3d.html")
 	doc := fmt.Sprintf(`<!doctype html><meta charset="utf-8"><style>@page{size:%dpx %dpx;margin:0}html,body{margin:0}img{display:block;width:%dpx;height:%dpx}</style><img src="%s" alt="">`,
-		w, h, w, h, "file://"+filepath.ToSlash(shot))
+		w, h, w, h, fileURL(shot))
 	if err := os.WriteFile(page, []byte(doc), 0o644); err != nil {
 		return "", err
 	}
@@ -197,7 +197,7 @@ func exportMindmap3D(chrome, htmlPath, out, name string, png, pdf bool, scale fl
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		return "", err
 	}
-	if err := chromeRun(chrome, "--no-pdf-header-footer", "--print-to-pdf="+p, "file://"+filepath.ToSlash(page)); err != nil {
+	if err := chromeRun(chrome, "--no-pdf-header-footer", "--print-to-pdf="+p, fileURL(page)); err != nil {
 		return "", fmt.Errorf("pdf: %v", err)
 	}
 	fmt.Fprintf(stdout, "  %-28s (pdf, 3D view, 1 page)\n", rel)

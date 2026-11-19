@@ -68,7 +68,7 @@ func timelineShot(chrome, dest string, d *deck.Deck, scale float64) ([]byte, int
 	if _, err := c.OpenPage("", w, h); err != nil {
 		return nil, 0, 0, err
 	}
-	url := "file://" + filepath.ToSlash(abs)
+	url := fileURL(abs)
 	if !poster {
 		url += "?si-view=thumb#1" // every build step shown, no sync
 	}

@@ -121,7 +121,7 @@ func exportMindmapMP4(chrome, htmlPath, out, name string, scale float64, stdout 
 		return err
 	}
 	dom, err := cdp.Output(chromeWait, chrome, "--headless=new", "--use-mock-keychain", "--password-store=basic", "--disable-gpu", "--virtual-time-budget=6000",
-		"--window-size=1600,1000", "--dump-dom", "file://"+filepath.ToSlash(abs)+"#si-export-play")
+		"--window-size=1600,1000", "--dump-dom", fileURL(abs)+"#si-export-play")
 	if err != nil {
 		return fmt.Errorf("chrome: %v", err)
 	}
@@ -147,7 +147,7 @@ func exportMindmapMP4(chrome, htmlPath, out, name string, scale float64, stdout 
 		}
 		p := filepath.Join(tmp, fmt.Sprintf("f%03d.png", i))
 		if err := chromeRun(chrome, "--screenshot="+p, fmt.Sprintf("--window-size=%d,%d", f.W, f.H),
-			fmt.Sprintf("--force-device-scale-factor=%g", scale), "--hide-scrollbars", "file://"+filepath.ToSlash(page)); err != nil {
+			fmt.Sprintf("--force-device-scale-factor=%g", scale), "--hide-scrollbars", fileURL(page)); err != nil {
 			return fmt.Errorf("frame %d: %v", i, err)
 		}
 		dur := 1.0 / 30 * 2
@@ -280,7 +280,7 @@ func exportDeckMP4(chrome, htmlPath, out string, d *deck.Deck, dwell float64, na
 		for k := 0; k <= n; k++ {
 			p := filepath.Join(tmp, fmt.Sprintf("shot%03d-%02d.png", i, k))
 			if err := chromeRun(chrome, atRest, "--screenshot="+p, "--window-size=1920,1080", "--hide-scrollbars", "--virtual-time-budget=2500",
-				fmt.Sprintf("file://%s#%d.%d", filepath.ToSlash(abs), i+1, k)); err != nil {
+				fmt.Sprintf("%s#%d.%d", fileURL(abs), i+1, k)); err != nil {
 				return fmt.Errorf("slide %d.%d: %v", i+1, k, err)
 			}
 			dur := stepHold(minutes, n+1, dwell)
@@ -320,7 +320,7 @@ func deckPoster(chrome, htmlPath, video, still string) error {
 	defer os.RemoveAll(tmp)
 	p := filepath.Join(tmp, "first.png")
 	if err := chromeRun(chrome, atRest, "--screenshot="+p, "--window-size=1920,1080", "--hide-scrollbars", "--virtual-time-budget=2500",
-		"file://"+filepath.ToSlash(abs)+"#1.0"); err != nil {
+		fileURL(abs)+"#1.0"); err != nil {
 		return err
 	}
 	if img, err := readPNG(p); err == nil && nearlyUniform(img) && ffmpegPoster(video, still) {
@@ -433,7 +433,7 @@ func exportMindmap3DMP4(chrome, htmlPath, out, name string, stdout io.Writer) er
 	}
 	abs, _ := filepath.Abs(htmlPath)
 	gl := append(append([]string{}, chromeGL...), "--window-size=1600,1000")
-	url := func(k int) string { return fmt.Sprintf("file://%s#si-play3d-%d", filepath.ToSlash(abs), k) }
+	url := func(k int) string { return fmt.Sprintf("%s#si-play3d-%d", fileURL(abs), k) }
 	run := func(args ...string) ([]byte, error) {
 		return cdp.Run(chromeWait, chrome, append(append([]string{}, gl...), args...)...)
 	}

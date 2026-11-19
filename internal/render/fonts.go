@@ -109,7 +109,14 @@ func parseFonts(val string) ([]fontSpec, []string) {
 			continue
 		}
 		sp := fontSpec{role: role, provider: "google"}
-		file, w, _ := strings.Cut(rest, ":") // fonts/Brand.woff2 or fonts/Brand.woff2:600
+		// fonts/Brand.woff2 or fonts/Brand.woff2:600; the weight is after the last
+		// colon, so a Windows path (C:\talk\fonts\Brand.woff2:600) keeps its drive
+		file, w := rest, ""
+		if i := strings.LastIndex(rest, ":"); i >= 0 {
+			if _, err := strconv.Atoi(strings.TrimSpace(rest[i+1:])); err == nil {
+				file, w = rest[:i], rest[i+1:]
+			}
+		}
 		if fontFileExt[strings.ToLower(filepath.Ext(file))] != "" {
 			sp.file = file
 			if w != "" {

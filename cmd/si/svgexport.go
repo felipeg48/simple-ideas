@@ -27,7 +27,7 @@ func exportFrameSVG(chrome, dest, out string, d *deck.Deck, stdout io.Writer) er
 	if err != nil {
 		return err
 	}
-	w, h, url, sel := 1600, 900, "file://"+filepath.ToSlash(abs), ".si-tl"
+	w, h, url, sel := 1600, 900, fileURL(abs), ".si-tl"
 	poster := d.Meta.Orientation == "portrait"
 	if d.IsInfographic() {
 		sel, poster = ".si-ig-frame", d.Meta.IGPortrait()
