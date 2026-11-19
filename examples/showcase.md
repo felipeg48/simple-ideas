@@ -86,20 +86,6 @@ The same five stations the canvas uses next, drawn flat. The dot is the order mo
 
 ---
 
-## Who touches order #4711
-
-<!-- animate: orbit -->
-- Order #4711
-- Payments
-- Warehouse
-- Courier
-- Customer care
-
-Notes: (0.5 min)
-Four teams touch order 4711 on its way to Thursday, and each of them sees only its own part of it.
-
----
-
 ## The journey on one screen
 
 <!-- svg: assets/journey.svg placed -->
@@ -156,6 +142,20 @@ Route seven, Wednesday morning. Packets flow from the warehouse to the courier, 
 
 Points: Delivery
 - One more step reveals the delivery; let the green tile land
+
+---
+
+## Who touches order #4711
+
+<!-- animate: orbit -->
+- Order #4711
+- Payments
+- Warehouse
+- Courier
+- Customer care
+
+Notes: (0.5 min)
+Four teams touch order 4711 on its way to Thursday, and each of them sees only its own part of it.
 
 ---
 
