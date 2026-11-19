@@ -33,9 +33,11 @@ only `morph` and the motion transitions take one. A motion transition
 belongs to the slide it arrives at: going back from that slide plays the
 same motion in reverse (the mirror), going back to it fades. `portal` flies
 into the block named with `<!-- id: name -->` on the slide before, else that
-slide's first picture or diagram. They run between neighbours only; a jump
-(`#7`, the overview, find) fades, and reduced motion, print, PDF, the
-overview, thumbnails and handouts show each slide as it ends. Two slides
+slide's first picture or diagram. A jump to a slide that is not the next
+one (a `#7` link, picking a slide in the overview, find, Home and End)
+plays the transition of the slide it lands on, as that slide arrives; going
+back one slide plays the mirror. Reduced motion, print, PDF, the overview,
+thumbnails and handouts show each slide as it ends. Two slides
 that show the same SVG keep the canvas transition, and `morph` keeps its
 own rules.
 

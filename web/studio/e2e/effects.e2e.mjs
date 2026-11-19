@@ -148,8 +148,34 @@ Two days, door to door.
 writeFileSync(join(dir, "talk.md"), md);
 writeFileSync(join(dir, "receipt.svg"), `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 160 90"><rect x="4" y="4" width="152" height="82" rx="8" fill="#eef0ff" stroke="#4b5ff0" stroke-width="3"/><text x="80" y="54" text-anchor="middle" font-size="22" fill="#4b5ff0">PAY</text></svg>`);
 writeFileSync(join(dir, "handoff.svg"), `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 90"><rect x="6" y="20" width="80" height="44" rx="8" fill="none" stroke="currentColor" stroke-width="2.2"/><text x="22" y="47" fill="currentColor">Shop</text><path d="M90 42 H150 M140 34 L150 42 L140 50" fill="none" stroke="currentColor" stroke-width="2.2"/><rect x="154" y="20" width="96" height="44" rx="8" fill="none" stroke="currentColor" stroke-width="2.2"/><text x="166" y="47" fill="currentColor">Payments</text></svg>`);
+writeFileSync(join(dir, "page.md"), `---
+type: article
+---
+
+# One order
+
+${"Words before the animations.\n\n".repeat(30)}
+
+<!-- animate: words -->
+Nobody owns the promise from end to end.
+
+<!-- animate: count -->
+**12,480** orders on time
+
+<!-- steps: deal -->
+- Shop
+- Payments
+- Courier
+
+<!-- steps: reorder -->
+- Shop 3
+- Courier 9
+- Payments 5
+`);
 execFileSync(si, ["build", join(dir, "talk.md"), "-o", join(dir, "out")], { stdio: "ignore" });
+execFileSync(si, ["build", join(dir, "page.md"), "-o", join(dir, "out")], { stdio: "ignore" });
 const url = pathToFileURL(join(dir, "out", "talk.html")).href;
+const pageURL = pathToFileURL(join(dir, "out", "page.html")).href;
 const shots = process.env.SI_FX_SHOTS || "";
 if (shots) mkdirSync(shots, { recursive: true });
 
@@ -336,6 +362,45 @@ try {
   await jp.goto(url + "#13.1");
   await jp.waitForTimeout(100);
   check(await jp.evaluate(() => document.querySelectorAll(".si-current .si-odo,[data-si-live]").length) === 0, "a #N.k jump shows the final state");
+  // a jump to a slide that is not the next one plays that slide's own transition
+  await jp.goto(url + "#1");
+  await jp.waitForTimeout(400);
+  await jp.evaluate(() => { location.hash = "#6"; });
+  await jp.waitForTimeout(60);
+  let js = await state(jp);
+  check(js.on > 0 && js.hash === "#6", `a #6 jump plays slide 6's transition (shatter: ${js.on} running)`);
+  await jp.waitForTimeout(1600);
+  js = await state(jp);
+  check(js.on === 0 && js.tiles === 0 && js.visible, "and lands on slide 6 with its copies gone");
+  await jp.keyboard.press("o");
+  await jp.waitForTimeout(300);
+  await jp.evaluate(() => document.querySelectorAll(".si-slide")[2].click());
+  await jp.waitForTimeout(60);
+  js = await state(jp);
+  check(js.on > 0 && js.hash === "#3", `the overview's jump plays the target's transition (flip: ${js.on} running)`);
+  await jp.waitForTimeout(1300);
+  // a document: each animation plays once when it is scrolled into view
+  const dp = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+  dp.on("pageerror", (e) => errors.push(e.message));
+  await dp.goto(pageURL);
+  await dp.waitForTimeout(300);
+  const d0 = await dp.evaluate(() => ({ words: document.querySelectorAll(".si-word").length, dealt: document.querySelectorAll(".si-steps-deal>.is-visible").length,
+    order: [...document.querySelectorAll(".si-steps-reorder>li")].map((l) => l.textContent.trim()) }));
+  check(d0.words === 0 && d0.dealt === 0 && d0.order[0] === "Shop 3", `a page waits: nothing played above the fold, the list in its first order (${d0.order})`);
+  await dp.evaluate(() => document.querySelector("[data-si-anim=words]").scrollIntoView({ block: "center" }));
+  await dp.waitForTimeout(150);
+  check(await dp.evaluate(() => document.querySelectorAll(".si-word").length) > 3, "scrolled into view, the words rise one by one");
+  await dp.evaluate(() => document.querySelector(".si-steps-reorder").scrollIntoView({ block: "center" }));
+  await dp.waitForTimeout(2800);
+  const d1 = await dp.evaluate(() => ({ words: document.querySelectorAll(".si-word,.si-odo,[data-si-live]").length, dealt: document.querySelectorAll(".si-steps-deal>.is-visible").length,
+    order: [...document.querySelectorAll(".si-steps-reorder>li")].map((l) => l.textContent.trim()), text: document.querySelector("[data-si-anim=count]").textContent.trim() }));
+  check(d1.words === 0 && d1.dealt === 3 && d1.order[0] === "Courier 9" && d1.text === "12,480 orders on time", `and every one ends as written (dealt ${d1.dealt}, order ${d1.order}, "${d1.text}")`);
+  const rp = await (await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" })).newPage();
+  await rp.goto(pageURL);
+  await rp.evaluate(() => document.querySelector(".si-steps-reorder").scrollIntoView({ block: "center" }));
+  await rp.waitForTimeout(400);
+  const r1 = await rp.evaluate(() => ({ live: document.querySelectorAll(".si-word,.si-odo,[data-si-live]").length, order: [...document.querySelectorAll(".si-steps-reorder>li")].map((l) => l.textContent.trim()) }));
+  check(r1.live === 0 && r1.order[0] === "Courier 9", "reduced motion: a page shows the final state");
   check(errors.length === 0, `reduced motion: no page errors ${errors.join("; ")}`);
 } finally {
   await browser.close();

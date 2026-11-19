@@ -66,7 +66,8 @@
     if (t === 'circle') return ['@stroke-dasharray', '@stroke-dashoffset', '@transform'];
     if (e.classList.contains('si-c3-cub')) return ['--h', '--w', '--d', 'transform'];
     if (e.classList.contains('si-c3-world') || e.classList.contains('si-c3-pie')) return ['transform'];
-    if (t === 'polyline' || t === 'polygon') return ['@points'];
+    if (t === 'polygon') return ['@points', 'fill']; /* a line's area turns into an area chart's */
+    if (t === 'polyline') return ['@points'];
     if (e.classList.contains('si-ig-end')) return ['top'];
     if (e.classList.contains('si-ig-last')) return ['top', '#'];
     return ['#'];
@@ -152,6 +153,109 @@
     return out;
   }
 
+  /* kinds that tween part for part: a line and an area are the same polyline */
+  function family(k) { return k === 'area' ? 'line' : k; }
+  /* bars and columns fold into a donut's or a pie's arcs, and back */
+  var LONG = { bar: 1, column: 1 }, ROUND = { donut: 1, pie: 1 };
+  function foldable(a, b) { return !!((LONG[a] && ROUND[b]) || (ROUND[a] && LONG[b])); }
+  var RAIL = 32; /* points along a folding shape */
+  /* a row's shape as a ribbon: its middle line from where the row starts to
+     where it ends, in px of the stage at (its top left), and its thickness:
+     a bar left to right, a column bottom to top, an arc clockwise */
+  function ribbon(e, at) {
+    var line = [], i, t;
+    if (e.tagName.toLowerCase() === 'rect') {
+      var r = e.getBoundingClientRect(), col = !!e.closest('.si-ig-col');
+      for (i = 0; i <= RAIL; i++) {
+        t = i / RAIL;
+        line.push(col ? [(r.left + r.right) / 2 - at.left, r.bottom - t * r.height - at.top] : [r.left + t * r.width - at.left, (r.top + r.bottom) / 2 - at.top]);
+      }
+      return { line: line, w: col ? r.width : r.height };
+    }
+    /* a circle's stroke: dashes in percent of the round, clockwise from the top */
+    var m = e.getScreenCTM(), p = e.ownerSVGElement.createSVGPoint();
+    var R = +e.getAttribute('r'), cx = +e.getAttribute('cx'), cy = +e.getAttribute('cy');
+    var share = parseFloat(e.getAttribute('stroke-dasharray')) || 0, from = 25 - (parseFloat(e.getAttribute('stroke-dashoffset')) || 0);
+    for (i = 0; i <= RAIL; i++) {
+      var th = (from + i / RAIL * share) / 100 * 2 * Math.PI;
+      p.x = cx + R * Math.sin(th); p.y = cy - R * Math.cos(th);
+      var q = p.matrixTransform(m);
+      line.push([q.x - at.left, q.y - at.top]);
+    }
+    return { line: line, w: +e.getAttribute('stroke-width') * Math.hypot(m.a, m.b) };
+  }
+  /* a ribbon's middle line as angle and distance around c (the donut's
+     centre), unwrapped so it turns smoothly; near: a line to start within
+     half a round of (a bar sweeps to its arc the short way) */
+  function polar(rb, c, near) {
+    var TAU = 2 * Math.PI, prev = null;
+    var out = rb.line.map(function (p) {
+      var th = Math.atan2(p[1] - c[1], p[0] - c[0]);
+      if (prev !== null) th += Math.round((prev - th) / TAU) * TAU;
+      prev = th;
+      return [th, Math.hypot(p[0] - c[0], p[1] - c[1])];
+    });
+    if (near) {
+      var turn = Math.round((near.line[0][0] - out[0][0]) / TAU) * TAU;
+      out = out.map(function (p) { return [p[0] + turn, p[1]]; });
+    }
+    return { line: out, w: rb.w };
+  }
+  /* part way (k) from ribbon A to ribbon B (polar about c): its middle line
+     as a path and its thickness, drawn as the path's stroke */
+  function ribbonAt(A, B, c, k) {
+    return { d: 'M' + A.line.map(function (p, i) {
+      var q = B.line[i], th = p[0] + (q[0] - p[0]) * k, r = p[1] + (q[1] - p[1]) * k;
+      return (c[0] + r * Math.cos(th)).toFixed(2) + ' ' + (c[1] + r * Math.sin(th)).toFixed(2);
+    }).join('L'), w: (A.w + (B.w - A.w) * k).toFixed(2) };
+  }
+  /* the row's shapes of a frame, by key: a bar's or column's first rect, an arc */
+  function shapes(frame) {
+    var out = {};
+    each(frame, '.si-ig-bar[data-key],.si-ig-col[data-key]', function (r) { var e = r.querySelector('rect:not(.si-ig-track)'); if (e) out[r.getAttribute('data-key')] = e; });
+    each(frame, 'circle[data-key]', function (c) { out[c.getAttribute('data-key')] = c; });
+    return out;
+  }
+  function paintOf(e) { var cs = getComputedStyle(e); return e.tagName.toLowerCase() === 'circle' ? cs.stroke : cs.fill; }
+  /* frame A folds into frame B: each row's bar bends into its arc (or its
+     arc unrolls into its bar) on a layer over the stage, while the rest of
+     A fades out and the rest of B fades in */
+  function fold(stage, A, B, done) {
+    var at = stage.getBoundingClientRect(), sa = shapes(A), sb = shapes(B), hid = [], paths = [];
+    var ring = (A.querySelector('circle[data-key]') || B.querySelector('circle[data-key]')), ctm = ring.ownerSVGElement.getScreenCTM();
+    var mid = ring.ownerSVGElement.createSVGPoint();
+    mid.x = +ring.getAttribute('cx'); mid.y = +ring.getAttribute('cy');
+    mid = mid.matrixTransform(ctm);
+    var c = [mid.x - at.left, mid.y - at.top]; /* everything turns about the donut's centre */
+    var NS = 'http://www.w3.org/2000/svg', layer = document.createElementNS(NS, 'svg');
+    layer.setAttribute('class', 'si-chart-fold');
+    layer.setAttribute('aria-hidden', 'true');
+    layer.setAttribute('viewBox', '0 0 ' + at.width.toFixed(2) + ' ' + at.height.toFixed(2));
+    for (var key in sb) {
+      if (!sa[key]) continue;
+      var pa = document.createElementNS(NS, 'path');
+      var ra = polar(ribbon(sa[key], at), c);
+      paths.push({ e: pa, a: ra, b: polar(ribbon(sb[key], at), c, ra), ca: paintOf(sa[key]), cb: paintOf(sb[key]) });
+      layer.appendChild(pa);
+      [sa[key], sb[key]].forEach(function (x) { hid.push([x, x.style.visibility]); x.style.visibility = 'hidden'; });
+    }
+    stage.appendChild(layer);
+    var fb = B.animate([{ opacity: 0 }, { opacity: 1 }], { duration: MORPH, easing: 'ease' });
+    return run([{ run: function (k) {
+      paths.forEach(function (p) {
+        var r = ribbonAt(p.a, p.b, c, k);
+        p.e.setAttribute('d', r.d);
+        p.e.setAttribute('stroke-width', r.w);
+        p.e.style.stroke = /^rgba?\(/.test(p.ca) && /^rgba?\(/.test(p.cb) ? mixNums(p.ca, p.cb, k) : k < 0.5 ? p.ca : p.cb;
+      });
+    } }], MORPH * 1.3, inout, function () {
+      layer.remove();
+      fb.cancel();
+      hid.forEach(function (h) { h[0].style.visibility = h[1]; });
+      if (done) done();
+    });
+  }
+
   function run(list, dur, ease, done) {
     var t0 = 0, raf = 0, over = false;
     var h = { end: function () {
@@ -216,17 +320,18 @@
     k = Math.max(0, Math.min(this.frames.length - 1, k));
     this.stop();
     var A = this.frames[this.k], B = this.frames[k];
+    var folds = animate && S === undefined && A !== B && foldable(A.getAttribute('data-kind'), B.getAttribute('data-kind'));
     if (animate && S === undefined && A !== B) S = snap(A);
     this.on(k);
     if (!animate) return;
-    var same = S && S.kind === B.getAttribute('data-kind');
-    if (S && !same && A !== B) { /* another kind: the old frame fades out over the new one growing */
+    var same = S && family(S.kind) === family(B.getAttribute('data-kind'));
+    if (S && !same && A !== B) { /* another kind: the old frame fades out over the new one growing (or folding) */
       A.classList.add('is-out');
       this.fade = A.animate([{ opacity: 1 }, { opacity: 0 }], { duration: GROW * 0.5, easing: 'ease' });
       var self = this, fa = this.fade;
       fa.onfinish = function () { A.classList.remove('is-out'); if (self.fade === fa) self.fade = null; };
     }
-    this.anim = same ? run(tracks(B, S), MORPH, inout) : run(tracks(B, null), GROW, out3);
+    this.anim = folds ? fold(A.parentElement, A, B) : same ? run(tracks(B, S), MORPH, inout) : run(tracks(B, null), GROW, out3);
   };
 
   C.markK = function () { var k = 0; this.marks.forEach(function (m) { if (m.classList.contains('is-visible')) k++; }); return k; };

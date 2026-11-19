@@ -279,9 +279,11 @@ only `morph` and the motion transitions take one. A motion transition
 belongs to the slide it arrives at: going back from that slide plays the
 same motion in reverse (the mirror), going back to it fades. `portal` flies
 into the block named with `<!-- id: name -->` on the slide before, else that
-slide's first picture or diagram. They run between neighbours only; a jump
-(`#7`, the overview, find) fades, and reduced motion, print, PDF, the
-overview, thumbnails and handouts show each slide as it ends. Two slides
+slide's first picture or diagram. A jump to a slide that is not the next
+one (a `#7` link, picking a slide in the overview, find, Home and End)
+plays the transition of the slide it lands on, as that slide arrives; going
+back one slide plays the mirror. Reduced motion, print, PDF, the overview,
+thumbnails and handouts show each slide as it ends. Two slides
 that show the same SVG keep the canvas transition, and `morph` keeps its
 own rules.
 
@@ -574,8 +576,26 @@ tiles as they end; `tilt` and the motion of the others never run there.
 Every animation ends with the block exactly as written. Going back does
 not replay it; reduced motion, print, PDF, the overview, thumbnails,
 handouts, the teleprompter previews and a jump (`#5.2`) show the final
-state. In an article, guide or book `animate:` has no effect (`si check`
-warns): documents show the final state.
+state.
+
+**In documents.** In an article, guide or book each `animate:` block plays
+once, when it is scrolled into view, and the lists `steps: focus`, `deal`,
+`reorder` and `carousel` play through their items the same way (focus moves
+down the list, deal turns each item over, reorder re-sorts after a moment,
+carousel turns to each card). A `reorder` list is written in its new order,
+so the page without its script ends there too. `tilt` belongs to a slide
+and does nothing on a page; plain `<!-- steps -->` stays deck-only. Print,
+reduced motion and a page without its script show every block as written.
+
+```markdown
+<!-- animate: count -->
+**1,842** declines between 21:00 and 06:00
+
+<!-- steps: deal -->
+- Split every failure by its real cause
+- Make the retry idempotent first
+- Measure the window, then wait a little longer
+```
 
 ## 10. Animated SVG canvases
 
@@ -5189,6 +5209,7 @@ Notes: Our checkout took two point four seconds; six weeks later, zero point six
 | `chart=line` | a table: x labels, one or more columns of numbers | a line (area under the first) from zero, the last value at its end; when every x label is a number (a year) or a date (`2024-03-01`, `2024-03`, `Mar 2024`), points sit at their real value on a linear scale (numbers get ticks at round values, dates their own labels), else evenly spaced |
 | `chart=progress` | a table: labels, a value (of 100, or of a third column: the target) | progress bars |
 | `chart=column`, `chart=area`, `chart=pie` | a table, as above | vertical bars; a line with every series filled; a full pie (the charts of the ```` ```chart ```` fence, §33, which also animates them step by step) |
+| `chart=bar3d`, `chart=donut3d`, `chart=funnel3d` | a table, as above | solid 3D bars on a floor, a donut tipped back, a funnel of stacked layers, in CSS 3D at rest (§33); `--png` and `--pdf` draw them, `--svg` leaves them out (CSS 3D is raster only) |
 | `quote` | a `>` quote; a line starting `—` is the attribution | a large quote |
 | `icons` | a list; each item may start with `![](icon.svg)` | an icon row |
 | `list`, `text` | a list, any Markdown | as written |
@@ -5772,8 +5793,11 @@ steps once, with ← → and Play under it.
 
 **Switch type.** Charts with the same `id=` written one after another are one
 show: each one after the first is a build step, and the chart turns from
-one kind into the next (the old one fades out while the new one grows), or
-just moves its numbers when the kind stays. The same `id=` on the next slide
+one kind into the next. Bars and columns fold into a donut's or a pie's
+arcs (each bar bends round the ring into its own slice, and unrolls back
+the other way); a line becomes an area with its points in place; other
+pairs fade the old one out while the new one grows. When the kind stays,
+only the numbers move. The same `id=` on the next slide
 carries on from what this slide showed, without the slide fade.
 
 ````markdown
@@ -5824,8 +5848,21 @@ carries on from what this slide showed, without the slide fade.
 Colours come from the theme (`--si-accent`, `--si-accent-2`, `--si-ok`,
 `--si-warn`, or `--si-ig-1` to `--si-ig-4` when a theme sets them), in light
 and dark. Reduced motion, print and PDF, the overview, thumbnails, handouts
-and a `#5.2` link show the final values of the step at once. The same types
-are the `chart=` of an infographic block (§30), without the 3D ones.
+and a `#5.2` link show the final values of the step at once. The same types,
+the 3D ones too, are the `chart=` of an infographic block (§30).
+
+**Pictures of a chart.** `si build talk.md --png` writes every chart of a
+deck or document as a picture, numbered in page order: `talk-chart-1.png`
+of its final step and, for a chart with more than one step (`steps`, a
+show), one per step, `talk-chart-1-step-1.png`, `talk-chart-1-step-2.png`
+and so on. `--svg` writes the same as SVG with real text (fonts embedded,
+cut to the glyphs used). A 3D chart is PNG only: CSS 3D has no SVG, and
+`--svg` says so and leaves its steps out. `--scale 3` sets the PNG's pixels
+per CSS pixel (2 by default).
+
+```sh
+si build talk.md --png --svg
+```
 `si play --terminal` draws the last column as text bars.
 
 `si check` reports a cell that is not a number, an unknown type or option, a

@@ -131,7 +131,7 @@ Shoes at the door in ==two days==.
 **12,480** orders on time
 ```
 
-Notes: Seven build animations: type, words, highlight, count, draw, decode and confetti. Each one runs as its block arrives and ends with the block exactly as written. [CLICK] Lists can arrive in focus, dealt like cards, or re-sorted by their numbers.
+Notes: Seven build animations: type, words, highlight, count, draw, decode and confetti. Each one runs as its block arrives and ends with the block exactly as written. In an article, a guide or a book, each one plays once when you scroll to it. [CLICK] Lists can arrive in focus, dealt like cards, or re-sorted by their numbers.
 
 ---
 
@@ -208,7 +208,7 @@ The sort Python still uses.
 
 ## Block kinds · list
 - stat, compare, steps, quote, icons, image
-- chart=bar, donut, line, progress from a table
+- chart=bar, donut, line, progress from a table; bar3d, donut3d, funnel3d in 3D
 
 ## Bento grid · text
 `span=2` or `wide`, `tall`, `accent` after the kind
@@ -252,7 +252,8 @@ messages a second, counted up as it comes in
 
 - ```` ```chart bar|column|line|area|donut|pie|progress|bar3d|donut3d|funnel3d ````, then a table: labels, number columns
 - `steps`: a column per click, the header big in the corner · `sort` · `race` (both, rescaled each step) · `stacked` · `unit=%` · `title=` · `explode="Late"`
-- Bars grow and glide to their new rank, arcs sweep, lines morph, numbers count; same `id=` in a row: one show that turns bars into a donut; same `id=` on the next slide carries on
+- Bars grow and glide to their new rank, arcs sweep, lines morph, numbers count; same `id=` in a row: one show whose bars fold into a donut's arcs (a line turns into an area); same `id=` on the next slide carries on
+- `si build talk.md --png --svg`: `talk-chart-1.png` / `.svg` per chart (its final step) and `talk-chart-1-step-2.png` per step; a 3D chart is PNG only
 - In a document: plays once scrolled into view, ← → Play under it; full guide: RULES.md §33
 
 ---
@@ -334,7 +335,9 @@ the rest fades. `morph 0.9s` sets the length.
 
 Ten more transitions are played by the page itself: `cube`, `flip`, `iris`,
 `wipe`, `shatter`, `depth`, `blinds`, `portal`, `glitch` and `stack`
-(`<!-- transition: cube 1.2s -->`); going back plays each one in reverse.
+(`<!-- transition: cube 1.2s -->`); going back plays each one in reverse,
+and a jump (a link, the overview, find) plays the transition of the slide
+it lands on.
 Six build animations add depth: `tilt`, `steps: carousel`, `explode`,
 `flap`, `flyin` and `orbit` (RULES.md §9).
 

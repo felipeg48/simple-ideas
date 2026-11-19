@@ -11,10 +11,22 @@ import (
 )
 
 // LayoutCSS is the unlayered layout mechanics (fluid sizing, slides,
-// transitions, steps, overview, print, reduced motion).
-//
+// transitions, steps, overview, print, reduced motion), after BuildCSS so
+// its print and overview rules win.
+var LayoutCSS = BuildCSS + layoutCSS
+
 //go:embed web/layout.css
-var LayoutCSS string
+var layoutCSS string
+
+// BuildCSS and BuildJS are the build animations (animate:, steps:
+// focus|deal|reorder|carousel), shared by decks and documents; a document
+// page carries them only when it has one (render/document.go).
+//
+//go:embed web/build.css
+var BuildCSS string
+
+//go:embed web/build.js
+var BuildJS string
 
 // ThemeLooksCSS is the built-in look in the si.theme layer.
 //
@@ -27,7 +39,7 @@ var ThemeLooksCSS string
 // and overview, modes and find, presenter and code tabs, annotate, the
 // terminal hook and keys, media and print), joined in name order into one script: the parts are pieces of one
 // function, so the joined text is exactly the runtime the page gets.
-var DeckJS = joinParts(deckFS, "web/deck")
+var DeckJS = BuildJS + joinParts(deckFS, "web/deck")
 
 //go:embed web/deck/*.js
 var deckFS embed.FS

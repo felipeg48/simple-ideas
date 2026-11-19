@@ -6,6 +6,8 @@ import (
 	"html"
 	"path/filepath"
 	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -87,8 +89,13 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 	dr.codeFeatures(doc, src, sc)
 	dr.plugins(doc, src, s, sc)
 	var img *deck.ImageAttrs
+	anim, list := "", []string(nil) // animate: and steps: focus|deal|reorder|carousel, for the next block
 	for c := doc.FirstChild(); c != nil; {
 		next := c.NextSibling()
+		if _, isHTML := c.(*ast.HTMLBlock); !isHTML && (anim != "" || list != nil) {
+			c = dr.docMotion(doc, c, anim, list, src, sc)
+			anim, list = "", nil
+		}
 		switch n := c.(type) {
 		case *ast.Heading:
 			if *title != "" && n.Level == 1 && strings.TrimSpace(textOf(n, src)) == strings.TrimSpace(*title) {
@@ -113,6 +120,10 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 		case *ast.HTMLBlock:
 			if name, val, ok := deck.ParseDirective(blockText(n, src)); ok && name == "slides" {
 				doc.ReplaceChild(doc, n, &rawNode{html: dr.embedSlides(val, s, sc)})
+			} else if ok && name == "animate" { // played once when scrolled into view (web/build.js)
+				anim = val
+			} else if f := strings.Fields(val); ok && name == "steps" && len(f) > 0 && slices.Contains(deck.StepModes, f[0]) {
+				list = f
 			} else if ok && name == "image" { // sizes, places (and gives a video its poster=) the next image
 				a, _ := deck.ParseImageAttrs(val) // the parser reports bad options
 				img = &a
@@ -179,6 +190,52 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 		return fmt.Sprintf(`<h%s id="%s">%s<a class="si-anchor" href="#%s" aria-label="Link to this section">#</a></h%s>`, g[1], id, inner, id, g[1])
 	})
 	return h, toc
+}
+
+// docMotion marks block c of a document page for web/build.js: animate:
+// on the block (explode and orbit on a list), a steps: list mode on a list
+// (reorder: written in its new order, so the page without its script ends
+// there too). It returns the node now in c's place.
+func (dr *deckRenderer) docMotion(doc, c ast.Node, anim string, mode []string, src []byte, sc *slideCtx) ast.Node {
+	l, isList := c.(*ast.List)
+	if mode != nil {
+		if !isList {
+			dr.problem(sc, "steps: %s works on a list", mode[0])
+		} else {
+			dr.motion = true
+			l.SetAttributeString("class", "si-steps-"+mode[0])
+			if mode[0] == "reorder" {
+				dr.reorder(l, mode[1:], src, &slideCtx{s: sc.s})
+				var items []ast.Node
+				for it := l.FirstChild(); it != nil; it = it.NextSibling() {
+					items = append(items, it)
+				}
+				if v, ok := l.AttributeString("data-si-order"); ok {
+					for _, o := range strings.Fields(fmt.Sprint(v)) {
+						if i, err := strconv.Atoi(o); err == nil && i < len(items) {
+							l.AppendChild(l, items[i]) // moves it to the end: the new order
+						}
+					}
+				}
+			}
+		}
+	}
+	if anim == "" {
+		return c
+	}
+	if anim == "explode" || anim == "orbit" {
+		if !isList {
+			dr.problem(sc, "animate: %s works on a list (one item per plate or orbit)", anim)
+			return c
+		}
+		l.SetAttributeString("class", "si-"+anim)
+	}
+	dr.motion = true
+	m := markBlock(c, "data-si-anim", anim, "si-animate")
+	if m != c {
+		doc.ReplaceChild(doc, c, m)
+	}
+	return m
 }
 
 // emptyRow reports whether every cell of a table row is empty.
@@ -329,6 +386,9 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	}
 	if dr.infographic || dr.chart {
 		mmCSS += assets.InfographicCSS
+	}
+	if dr.motion {
+		mmCSS += assets.BuildCSS
 	}
 	b.WriteString(`<style id="si-css">` + "\n" + assets.LayerOrder + assets.DocCSS + dr.themeCSS + dr.accentCSS() + mmCSS + "</style>\n")
 	dr.codewinCSS(&b)
@@ -512,6 +572,9 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	dr.problemsBanner(&b, problems)
 	dr.mermaidScript(&b)
 	b.WriteString("<script>\n" + assets.DocJS + "</script>\n")
+	if dr.motion {
+		b.WriteString("<script>\n" + assets.BuildJS + "</script>\n")
+	}
 	if g != nil && g.IsCourse() {
 		if w := dr.webhookConfig(g); w != "" { // before course.js, which reports to it
 			b.WriteString("<script>\nwindow.SI_WEBHOOK = " + w + ";\n" + assets.WebhookJS + "</script>\n")

@@ -703,6 +703,13 @@ func (dr *deckRenderer) igChart(b *deck.IGBlock) string {
 	if !ok {
 		return ""
 	}
+	if strings.HasSuffix(b.Chart, "3d") { // the 3D charts of a ```chart fence, at rest
+		co := chartOpts{ownHue: true}
+		for i := range s.labels {
+			co.keys = append(co.keys, i)
+		}
+		return dr.draw3D(&deck.Chart{Type: b.Chart}, b.Title, s, co)
+	}
 	return dr.drawChart(b.Chart, b.Title, s, chartOpts{})
 }
 

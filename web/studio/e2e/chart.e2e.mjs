@@ -140,7 +140,14 @@ try {
     s = await state(page, 2);
     const kind = await page.evaluate(() => document.querySelector("#s2 .si-chart-frame[data-on]").getAttribute("data-kind"));
     check(s.on === 1 && kind === "donut" && s.out, `${w}x${h}: a step turns the bars into a donut, the bars fading out`);
+    // the fold: each bar bends into its arc on a layer over the stage
+    const fold = () => page.evaluate(() => [...document.querySelectorAll("#s2 .si-chart-fold path")].map((p) => p.getAttribute("d")));
+    const f1 = await fold();
+    await page.waitForTimeout(250);
+    const f2 = await fold();
+    check(f1.length === 3 && f2.length === 3 && !eq(f1, f2), `${w}x${h}: each of the 3 bars folds into its arc (${f1.length} paths, moving)`);
     await page.waitForTimeout(1600);
+    check((await fold()).length === 0, `${w}x${h}: the fold layer is gone once the donut is drawn`);
     const arcs = await page.evaluate(() => [...document.querySelectorAll("#s2 .si-chart-frame[data-on] circle[data-key]")].map((c) => parseFloat(c.getAttribute("stroke-dasharray"))));
     s = await state(page, 2);
     check(!s.out && Math.abs(arcs.reduce((a, b) => a + b, 0) - 100) < 0.1, `${w}x${h}: the donut ends whole (${arcs})`);

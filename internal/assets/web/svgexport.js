@@ -43,6 +43,7 @@ window.siSVGExport = function (sel) {
   var added = [], marks = [];
   var hide = document.createElement('style');
   hide.textContent = '[data-si-pb]::before{content:none!important}[data-si-pa]::after{content:none!important}';
+  document.head.appendChild(hide); // a copied pseudo-element replaces its original at once
   Array.prototype.forEach.call(root.querySelectorAll('*'), function (el) {
     if (el.closest('svg')) return;
     ['before', 'after'].forEach(function (w) {
@@ -54,18 +55,17 @@ window.siSVGExport = function (sel) {
       s.textContent = m ? m[1].replace(/\\(.)/g, '$1') : '';
       var was = el.getBoundingClientRect();
       if (w === 'before') el.insertBefore(s, el.firstChild); else el.appendChild(s);
+      el.setAttribute(w === 'before' ? 'data-si-pb' : 'data-si-pa', '');
       // a stretched pseudo-element reports its used size: copied, it can push
       // its parent bigger; then let it size itself again
       [['height', 'block-size'], ['width', 'inline-size']].forEach(function (ps) {
         var now = el.getBoundingClientRect();
         if (Math.abs(now.height - was.height) > 0.5 || Math.abs(now.width - was.width) > 0.5) ps.forEach(function (p) { s.style.removeProperty(p); });
       });
-      el.setAttribute(w === 'before' ? 'data-si-pb' : 'data-si-pa', '');
       added.push(s);
       marks.push(el);
     });
   });
-  document.head.appendChild(hide);
 
   var R = root.getBoundingClientRect(), ox = R.left, oy = R.top, defs = [], id = 0;
   function radius(cs, w, h) {
@@ -473,7 +473,7 @@ window.siSVGExport = function (sel) {
     if (op < 0.01) return '';
     var tag = el.tagName.toLowerCase();
     if (tag === 'svg') return cs.visibility === 'hidden' ? '' : svgClone(el, op);
-    if (tag === 'script' || tag === 'style' || tag === 'template') return '';
+    if (tag === 'script' || tag === 'style' || tag === 'template' || el.classList.contains('si-c3')) return ''; // CSS 3D: raster only (--png)
     var out = '', r = el.getBoundingClientRect(), rx = r.width ? radius(cs, r.width, r.height) : 0;
     if (cs.visibility !== 'hidden' && cs.display !== 'contents' && r.width && r.height) {
       out += shadows(cs, r, rx, op);

@@ -59,7 +59,7 @@ func (dr *deckRenderer) draw3D(c *deck.Chart, title string, s igSeries, co chart
 		for _, v := range s.vals {
 			total += v[0]
 		}
-		scene("donut3d", 12, 10, 50)
+		scene("donut3d", 12, 7, 50) // tipped back, it stands about half its width tall
 		o.WriteString(`<div class="si-c3-pie" style="transform:rotateX(58deg) rotateZ(-20deg)" data-from="rotateX(0deg) rotateZ(-90deg)">`)
 		for layer := 9; layer >= 0; layer-- {
 			shade := ""

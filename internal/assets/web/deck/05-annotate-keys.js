@@ -220,7 +220,7 @@
     if (rqBox && !rqBox.hidden && (e.key === 'Escape' || e.key === cmd.remote)) { e.preventDefault(); toggleRemoteQR(false); return; }
     if (deck.classList.contains('si-overview')) {
       if (e.key === 'Escape' || e.key === cmd.overview) { e.preventDefault(); overview(false); return; }
-      if (e.key === 'Enter') { e.preventDefault(); var t = ovSel; overview(false); go(t, 0, true); return; }
+      if (e.key === 'Enter') { e.preventDefault(); var t = ovSel; overview(false); go(t, 0); return; }
       if (e.key === 'ArrowLeft') { e.preventDefault(); moveSel(-1, 0); return; }
       if (e.key === 'ArrowRight') { e.preventDefault(); moveSel(1, 0); return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); moveSel(0, -1); return; }

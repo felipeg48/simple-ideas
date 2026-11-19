@@ -57,7 +57,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/ui"
 )
 
-const version = "3.37.0"
+const version = "3.38.0"
 
 // Exit codes.
 const (
@@ -115,6 +115,9 @@ Usage:
         map when it has several) and --pdf a one-page
         pdfs/<name>.pdf of the 3D view (software WebGL, default camera, --scale up to 4);
         no SVG of the 3D view (raster only): --svg writes the 2D maps
+  si [build] <deck.md|article.md> [--png [--scale 2]] [--svg]
+        every chart fence as a picture: <name>-chart-<n>.png / .svg of its final step and,
+        with more than one step, <name>-chart-<n>-step-<k>.png / .svg; a 3D chart is PNG only
   si [build] <timeline.md|infographic.md> [--png [--scale 2]] [--pdf] [--svg]
         timelines and infographics: <name>.png, pdfs/<name>.pdf (a timeline: paged and
         -compact) and <name>.svg, the frame as a vector picture with real text,
@@ -1072,6 +1075,12 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 					fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
 					failed = true
 				}
+			}
+		}
+		if chrome != "" && (o.png || o.svg) && !d.IsMindmap() && !d.IsTimeline() && !d.IsInfographic() && hasCharts(res.HTML) { // every ```chart as pictures
+			if err := exportCharts(chrome, dest, out, d.Name, d.Meta.Fonts, o.png, o.svg, d.IsDoc(), o.scale, stdout); err != nil {
+				fmt.Fprintf(stderr, "si: %s: charts: %v\n", d.Name, err)
+				failed = true
 			}
 		}
 		if chrome != "" && o.svg && (d.IsTimeline() || d.IsInfographic()) { // the frame as a vector picture

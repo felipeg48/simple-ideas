@@ -3,6 +3,27 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.38.0:** charts and motion, finished. `si build talk.md --png --svg`
+  writes every ```` ```chart ```` fence of a deck or document as a picture,
+  numbered in page order: `talk-chart-1.png` / `.svg` of its final step and,
+  for a chart with more than one step, `talk-chart-1-step-2.png` / `.svg` per
+  step (the SVG keeps real text; a 3D chart is PNG only). In a same-`id=`
+  show, bars and columns now fold into a donut's or a pie's arcs, each bar
+  bending round the ring into its own slice and unrolling back the other
+  way, and a line turns into an area with its points in place; other pairs
+  still cross-fade. Infographic blocks take `chart=bar3d|donut3d|funnel3d`,
+  drawn by `--png` and `--pdf` (`--svg` leaves them out). Articles, guides
+  and books play `animate:` blocks and `steps: focus|deal|reorder|carousel`
+  lists once when scrolled into view (a reorder list is written in its new
+  order; `tilt` stays slide-only); `si check` no longer warns about them;
+  print, reduced motion and no script show the final state. A jump to a
+  slide that is not the next one (a `#N` link, the overview, find, Home and
+  End) plays the transition of the slide it lands on instead of a fade;
+  morph and canvas transitions stay neighbour-only. The build animations
+  live in one script shared by decks and documents (`web/build.js`). Fixed:
+  `--svg` of an infographic or timeline lost the swatch of the widest legend
+  item; a tipped-back 3D donut is drawn larger.
+
 - **v3.37.0:** animated charts. A ```` ```chart ```` fence in any slide or
   document page draws a Markdown table (labels, then number columns) as
   `bar`, `column`, `line`, `area`, `donut`, `pie`, `progress`, or in CSS

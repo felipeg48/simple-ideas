@@ -28,7 +28,7 @@ more checkouts completed in the six weeks after the fix
 | Fonts | 280 |
 | Other | 250 |
 
-## Traffic by device · chart=pie
+## Traffic by device · chart=donut3d
 | Device | % |
 |---|---|
 | Phones | 64 |

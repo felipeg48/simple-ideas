@@ -78,6 +78,11 @@ AsciiDoc tab.
 
 ## What's new in si 3
 
+**Charts and motion, finished (3.38).** `--png` / `--svg` pictures of
+every chart and each of its steps, bars that fold into a donut's arcs,
+3D charts in infographics, build animations that play as you scroll an
+article, and jumps that play the slide's own transition.
+
 **Motion (3.36).** Ten slide transitions the page plays itself (`cube`,
 `flip`, `iris`, `wipe`, `shatter`, `depth`, `blinds`, `portal`, `glitch`,
 `stack`), mirrored when you go back, and build animations that run as a step

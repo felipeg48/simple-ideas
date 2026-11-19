@@ -12,6 +12,34 @@ narrated video you would publish.
 
 <!-- si-video: presenting -->
 
+## Charts and motion, finished (3.38)
+
+A chart show whose kind changes now folds: each bar bends round the ring
+into its own slice of the donut, and unrolls back into a bar the other
+way. `si build talk.md --png --svg` writes every chart as a picture,
+`talk-chart-1.png` for its last step and `talk-chart-1-step-2.png` for each
+step, the SVG with real text. Infographic blocks take the 3D charts
+(`chart=donut3d`). In an article, guide or book, `animate:` blocks and the
+`steps: deal`, `focus`, `reorder` and `carousel` lists play once as you
+scroll to them. A jump to another slide, from a link or the overview, plays
+the transition of the slide it lands on.
+
+```chart bar id=region title="Orders by region"
+| Region | Orders |
+|--------|--------|
+| North  | 1,200  |
+| South  | 860    |
+| East   | 1,540  |
+```
+
+```chart donut id=region
+| Region | Orders |
+|--------|--------|
+| North  | 1,200  |
+| South  | 860    |
+| East   | 1,540  |
+```
+
 ## Charts that move (3.37)
 
 A ```` ```chart ```` fence draws a Markdown table as bars, columns, a line,

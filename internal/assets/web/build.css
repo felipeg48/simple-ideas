@@ -1,0 +1,56 @@
+/* simple-ideas build animations (web/build.js): the pieces the runtime adds
+ * while one runs, the list modes (steps: focus, deal, carousel) and the 3D
+ * looks at rest. Unlayered mechanics like layout.css; a deck carries it just
+ * before layout.css (whose print and overview rules win), a document page
+ * only when it has an animation. */
+/* build animations (animate: …): pieces the runtime adds while one runs */
+.si-caret{display:inline-block;width:.08em;height:1em;margin-left:.04em;vertical-align:-.12em;background:var(--si-accent);animation:si-blink 1s steps(1) infinite}
+@keyframes si-blink{50%{opacity:0}}
+.si-word{display:inline-block;white-space:pre}
+.si-odo{position:relative;display:inline-block;clip-path:inset(0 -.2em);font-variant-numeric:tabular-nums}
+.si-odo>span:first-child{visibility:hidden}
+.si-odo>span+span{position:absolute;inset:0 0 auto;display:flex;flex-direction:column;align-items:center}
+.si-fx{position:absolute;inset:0;width:100%;height:100%;z-index:5;pointer-events:none}
+/* steps: focus: every item shown, the latest in focus, the rest blurred and dimmed */
+.si-steps-focus>.si-step{opacity:1;transform:none;transform-origin:0 50%;
+  transition:filter .6s cubic-bezier(.22,.8,.2,1),opacity .6s cubic-bezier(.22,.8,.2,1),transform .6s cubic-bezier(.22,.8,.2,1)}
+.si-steps-focus:has(>.is-latest)>.si-step:not(.is-latest){filter:blur(.12em);opacity:.35;transform:scale(.98)}
+.si-steps-focus>.si-step.is-latest{transform:scale(1.04)}
+/* steps: deal: each item flips down from its top edge like a dealt card */
+.si-steps-deal{perspective:40em}
+.si-steps-deal>.si-step{transform:rotateX(-95deg) translateY(-.4em);transform-origin:50% 0;
+  transition:opacity .7s cubic-bezier(.2,.9,.25,1.25),transform .7s cubic-bezier(.2,.9,.25,1.25)}
+.si-steps-deal>.si-step.is-visible{transform:none}
+/* 3D (CSS 3D only): perspective sits on each scene's direct parent.
+   steps: carousel: the items as cards standing in a ring, the latest at the front */
+.si-steps-carousel{list-style:none;padding:0;margin:.6em auto;display:grid;place-items:center;height:7em;perspective:32em;transform-style:preserve-3d}
+.si-steps-carousel>li.si-step{grid-area:1/1;width:9em;min-height:5.4em;margin:0;padding:.4em .6em;display:grid;place-items:center;text-align:center;border-radius:.4em;
+  background:var(--si-surface);color:var(--si-fg);box-shadow:var(--si-shadow),inset 0 0 0 1px var(--si-line);backface-visibility:hidden;opacity:1;
+  transform:translateZ(calc(-1 * var(--_r,8em))) rotateY(calc((var(--_i,0) - var(--_f,0)) * 360deg / var(--_n,1))) translateZ(var(--_r,8em));
+  transition:transform .9s cubic-bezier(.3,1.15,.4,1),background-color .4s ease,color .4s ease}
+.si-steps-carousel>li.si-front{background:var(--si-accent);color:var(--si-on-accent)}
+/* animate: explode: one plate per item, stacked apart and tilted, each with its name */
+.si-explode{list-style:none;padding:0;margin:0 auto;display:grid;place-items:center;height:13em;perspective:30em;transform-style:preserve-3d}
+.si-explode>li{grid-area:1/1;width:11em;height:6.5em;margin:0;display:grid;place-items:center;text-align:center;border-radius:.5em;font-weight:800;
+  color:var(--si-on-accent);background:var(--si-accent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--si-on-accent) 25%,transparent);transform-origin:50% 50%}
+.si-explode>li:nth-child(4n+2){background:var(--si-accent-2)}
+.si-explode>li:nth-child(4n+3){background:var(--si-ok)}
+.si-explode>li:nth-child(4n+4){background:var(--si-warn)}
+/* animate: orbit: the first item in the middle, the rest on a tilted ring, facing you */
+.si-orbit{--_R:9em;list-style:none;padding:0;margin:0 auto;display:grid;place-items:center;height:11em;perspective:26em;transform-style:preserve-3d}
+.si-orbit>li{grid-area:1/1;margin:0;padding:.3em 1em;border-radius:999px;font-weight:700;white-space:nowrap;background:var(--si-surface);color:var(--si-fg);box-shadow:var(--si-shadow),inset 0 0 0 1px var(--si-line)}
+.si-orbit>li:first-child{width:6em;height:6em;padding:.4em;display:grid;place-items:center;text-align:center;border-radius:50%;white-space:normal;color:var(--si-on-accent);
+  background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--si-accent) 60%,#fff),var(--si-accent) 60%,color-mix(in srgb,var(--si-accent) 60%,#000))}
+/* animate: flap: split-flap tiles */
+.si-flap{perspective:20em;font-size:1.4em}
+.si-flap-c{position:relative;display:inline-grid;place-items:center;min-width:1.15em;height:1.5em;margin:.08em .05em;padding:0 .08em;vertical-align:middle;border-radius:.18em;
+  font-family:var(--si-font-mono);font-weight:700;line-height:1;background:var(--si-fg);color:var(--si-bg);box-shadow:0 .1em .3em rgb(0 0 0 / .3)}
+.si-flap-c::after{content:"";position:absolute;left:0;right:0;top:50%;height:.06em;background:color-mix(in srgb,var(--si-bg) 45%,transparent)}
+.si-flap-s{display:inline-block;width:.5em}
+/* animate: tilt: while it plays, the slide's blocks are layers at different depths */
+.si-tilt .si-inner{overflow:visible;transform-style:preserve-3d;transition:transform .3s ease-out}
+.si-tilt :is(.si-body,.si-col){transform-style:preserve-3d}
+.si-tilt .si-head{transform:translateZ(3em)}
+.si-tilt .si-tilt-hero{transform:translateZ(1.6em)}
+/* a document starts a dealt list face down (a deck: .si-step does it) */
+[data-si-doc] .si-steps-deal>.si-step:not(.is-visible){opacity:0}

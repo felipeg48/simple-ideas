@@ -246,13 +246,13 @@ func (b *IGBlock) option(w string) string {
 		}
 		b.Kind = "chart"
 		b.Chart = v
-		if !contains(IGCharts, v) {
-			return fmt.Sprintf("infographic: unknown chart %q (use %s)", v, strings.Join(IGCharts, ", "))
+		if !contains(ChartTypes, v) { // the 3D ones too
+			return fmt.Sprintf("infographic: unknown chart %q (use %s)", v, strings.Join(ChartTypes, ", "))
 		}
 	case k == "kind":
 		b.Kind = v
 		if !contains(IGKinds, v) {
-			return fmt.Sprintf("infographic: unknown block kind %q (use %s, chart=bar|column|line|area|donut|pie|progress)", v, strings.Join(IGKinds, ", "))
+			return fmt.Sprintf("infographic: unknown block kind %q (use %s, chart=bar|column|line|area|donut|pie|progress|bar3d|donut3d|funnel3d)", v, strings.Join(IGKinds, ", "))
 		}
 	case k == "span":
 		n, err := strconv.Atoi(v)
@@ -317,7 +317,7 @@ func (ig *Infographic) add(b *IGBlock) []IGProblem {
 			for j := 1; j < len(r) && j < len(head); j++ {
 				if _, ok := IGNumber(r[j]); !ok {
 					at(false, "%q is not a number (chart=%s draws the numbers after the first column)", r[j], b.Chart)
-				} else if v, _ := IGNumber(r[j]); v < 0 && (b.Chart == "donut" || b.Chart == "progress") {
+				} else if v, _ := IGNumber(r[j]); v < 0 && (b.Chart == "donut" || b.Chart == "pie" || b.Chart == "progress" || strings.HasSuffix(b.Chart, "3d")) {
 					at(false, "%q: a %s takes no negative numbers", r[j], b.Chart)
 				}
 			}

@@ -105,12 +105,13 @@
       var key = canvasKey(next);
       var carry = !instant && prev && near && key !== '' && key === canvasKey(prev);
       /* morph: arriving at a morph slide, or going back from one, between neighbours */
-      if (prev && i < cur && prev.getAttribute('data-transition') === 'morph') tx = 'morph';
+      if (prev && near && i < cur && prev.getAttribute('data-transition') === 'morph') tx = 'morph';
       /* a motion transition belongs to the slide it arrives at: going back plays
-         the mirror of the slide being left, else a fade */
-      if (prev && i < cur) { var ptx = prev.getAttribute('data-transition') || data.transition; if (motionTx[ptx]) tx = ptx; else if (motionTx[tx]) tx = 'fade'; }
+         the mirror of the slide being left, else a fade; a jump (overview,
+         find, a link, #N) plays the target's own transition as it arrives */
+      if (prev && near && i < cur) { var ptx = prev.getAttribute('data-transition') || data.transition; if (motionTx[ptx]) tx = ptx; else if (motionTx[tx]) tx = 'fade'; }
       txStop();
-      var motion = motionTx[tx] && prev && !carry && near && live ? tx : '';
+      var motion = motionTx[tx] && prev && !carry && live ? tx : '';
       if (motionTx[tx] && !motion) tx = 'fade';
       morphStop();
       var first = tx === 'morph' && prev && !carry && !instant && Math.abs(i - cur) === 1 && !reduceMotion() &&
@@ -136,7 +137,7 @@
       applyCounts(next);
       fit(next);
       if (first) morphPlay(first, prev, next);
-      var run = motion ? txPlay(motion, prev, next, !fwd) : null;
+      var run = motion ? txPlay(motion, prev, next, near && !fwd) : null;
       if (live && near && fwd) buildAt(next, k, run && run.done);
     } else {
       var flip = live && Math.abs(k - step) === 1 ? reorderFirst(next) : null;
@@ -260,6 +261,6 @@
     if (!s) return;
     var i = slides.indexOf(s);
     overview(false);
-    go(i, 0, true);
+    go(i, 0); /* a jump: the target slide's transition */
   });
 

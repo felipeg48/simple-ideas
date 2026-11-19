@@ -125,5 +125,23 @@ tiles as they end; `tilt` and the motion of the others never run there.
 Every animation ends with the block exactly as written. Going back does
 not replay it; reduced motion, print, PDF, the overview, thumbnails,
 handouts, the teleprompter previews and a jump (`#5.2`) show the final
-state. In an article, guide or book `animate:` has no effect (`si check`
-warns): documents show the final state.
+state.
+
+**In documents.** In an article, guide or book each `animate:` block plays
+once, when it is scrolled into view, and the lists `steps: focus`, `deal`,
+`reorder` and `carousel` play through their items the same way (focus moves
+down the list, deal turns each item over, reorder re-sorts after a moment,
+carousel turns to each card). A `reorder` list is written in its new order,
+so the page without its script ends there too. `tilt` belongs to a slide
+and does nothing on a page; plain `<!-- steps -->` stays deck-only. Print,
+reduced motion and a page without its script show every block as written.
+
+```markdown
+<!-- animate: count -->
+**1,842** declines between 21:00 and 06:00
+
+<!-- steps: deal -->
+- Split every failure by its real cause
+- Make the retry idempotent first
+- Measure the window, then wait a little longer
+```

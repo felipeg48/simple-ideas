@@ -468,6 +468,8 @@ func TestLabType(t *testing.T) {
 		{name: "slide directives warn", lab: true, typ: "lab", title: "Lab",
 			files:    map[string]string{"d.md": "---\ntype: lab\n---\n<!-- layout: two-col -->\n# Lab\n\n<!-- steps -->\n- a\n\n```\n<!-- class: x -->\n```\n"},
 			warnings: []string{`"layout" has no effect in a lab document`, `"steps" has no effect in a lab document`}},
+		{name: "animate and list modes play in a document", typ: "article", title: "Page", noWarn: []string{"no effect"},
+			files: map[string]string{"d.md": "---\ntype: article\n---\n# Page\n\n<!-- animate: words -->\ntext\n\n<!-- steps: deal -->\n- a\n- b\n"}},
 		{name: "unknown directive warns in a lab", lab: true, typ: "lab", title: "Lab",
 			files:    map[string]string{"d.md": "---\ntype: lab\n---\n# Lab\n\n<!-- columns -->\ntext\n"},
 			warnings: []string{`unknown directive "columns"`}},

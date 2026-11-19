@@ -55,8 +55,11 @@ steps once, with ← → and Play under it.
 
 **Switch type.** Charts with the same `id=` written one after another are one
 show: each one after the first is a build step, and the chart turns from
-one kind into the next (the old one fades out while the new one grows), or
-just moves its numbers when the kind stays. The same `id=` on the next slide
+one kind into the next. Bars and columns fold into a donut's or a pie's
+arcs (each bar bends round the ring into its own slice, and unrolls back
+the other way); a line becomes an area with its points in place; other
+pairs fade the old one out while the new one grows. When the kind stays,
+only the numbers move. The same `id=` on the next slide
 carries on from what this slide showed, without the slide fade.
 
 ````markdown
@@ -107,8 +110,21 @@ carries on from what this slide showed, without the slide fade.
 Colours come from the theme (`--si-accent`, `--si-accent-2`, `--si-ok`,
 `--si-warn`, or `--si-ig-1` to `--si-ig-4` when a theme sets them), in light
 and dark. Reduced motion, print and PDF, the overview, thumbnails, handouts
-and a `#5.2` link show the final values of the step at once. The same types
-are the `chart=` of an infographic block (§30), without the 3D ones.
+and a `#5.2` link show the final values of the step at once. The same types,
+the 3D ones too, are the `chart=` of an infographic block (§30).
+
+**Pictures of a chart.** `si build talk.md --png` writes every chart of a
+deck or document as a picture, numbered in page order: `talk-chart-1.png`
+of its final step and, for a chart with more than one step (`steps`, a
+show), one per step, `talk-chart-1-step-1.png`, `talk-chart-1-step-2.png`
+and so on. `--svg` writes the same as SVG with real text (fonts embedded,
+cut to the glyphs used). A 3D chart is PNG only: CSS 3D has no SVG, and
+`--svg` says so and leaves its steps out. `--scale 3` sets the PNG's pixels
+per CSS pixel (2 by default).
+
+```sh
+si build talk.md --png --svg
+```
 `si play --terminal` draws the last column as text bars.
 
 `si check` reports a cell that is not a number, an unknown type or option, a

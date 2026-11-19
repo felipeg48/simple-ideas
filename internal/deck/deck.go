@@ -371,7 +371,14 @@ func (d *Deck) buildLab(lines []srcLine) {
 				d.problem(l.file, l.no, "%v", err)
 			}
 		}
-		if ok && !docDirectives[name] { // tabs, slides and the plugins work in documents
+		if ok && name == "animate" { // played once when scrolled into view
+			if msg := oneOf("animate", val, Animates); msg != "" {
+				d.problem(l.file, l.no, "%s", msg)
+			}
+		}
+		if f := strings.Fields(val); ok && name == "steps" && len(f) > 0 && contains(StepModes, f[0]) {
+			// a list mode plays when scrolled into view; plain steps stay deck-only
+		} else if ok && !docDirectives[name] { // tabs, slides and the plugins work in documents
 			msg := fmt.Sprintf("%q has no effect in a %s document", name, d.Meta.Type)
 			if _, known := Directives[name]; !known {
 				msg = fmt.Sprintf("unknown directive %q", name)
@@ -1314,4 +1321,4 @@ var durationRE = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*min`)
 
 // docDirectives are the directives a document uses (the rest are deck-only).
 var docDirectives = map[string]bool{"tabs": true, "callout": true, "slides": true, "alert": true, "badge": true, "logo": true, "qr": true, "poll": true, "cloud": true, "cards": true, "accordion": true,
-	"modal": true, "solution": true, "check": true, "end": true, "carousel": true, "event": true, "embed": true, "image": true}
+	"modal": true, "solution": true, "check": true, "end": true, "carousel": true, "event": true, "embed": true, "image": true, "animate": true}
