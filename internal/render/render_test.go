@@ -58,15 +58,15 @@ func TestGolden(t *testing.T) {
 
 func TestPage(t *testing.T) {
 	res, page := renderGolden(t, Options{UserCSS: []Stylesheet{{Path: "testdata/my.css", Text: ".si-slide{color:red} a{background:url(assets/pic.svg)}"}}})
-	if res.Steps != 16 || res.Canvases != 2 { // 16: the hidden poll is a step, the infographic 4, the included show 1, the motion slide 4
-		t.Errorf("steps = %d, canvases = %d; want 16 and 2", res.Steps, res.Canvases)
+	if res.Steps != 18 || res.Canvases != 2 { // 18: the hidden poll is a step, the infographic 4, the included show 1, the motion slide 4, the chart race 1, the exploded slice 1
+		t.Errorf("steps = %d, canvases = %d; want 18 and 2", res.Steps, res.Canvases)
 	}
 	for _, want := range []string{
 		`<html lang="en" data-si-theme="paper">`,
 		"@layer si.theme, si.user;",
 		`--si-accent:#e4572e`,
 		`<style id="si-user">`, "@layer si.user{", `url("data:image/svg+xml;base64,`,
-		`"transition":"slide"`, `"plan":[0.5,0,1.5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]`, `data-si-anim="words"`, `data-si-order="1 0"`, `class="si-steps-focus"`, `style="--si-tx-duration:1.2s"`, `data-si-morph="promise"`, `style="--si-morph-duration:0.9s"`, `"speakers":["Ana","Felipe"]`,
+		`"transition":"slide"`, `"plan":[0.5,0,1.5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]`, `data-si-anim="words"`, `data-si-order="1 0"`, `class="si-steps-focus"`, `style="--si-tx-duration:1.2s"`, `data-si-morph="promise"`, `style="--si-morph-duration:0.9s"`, `"speakers":["Ana","Felipe"]`,
 		`.si-canvas[data-state~="on"] [data-show~="on"]{opacity:1}`,
 		`.si-canvas[data-state~="busy"] [data-flow~="busy"]`,
 		`.si-canvas[data-state~="on"] .si-packets[data-for~="on"]`,

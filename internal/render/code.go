@@ -236,6 +236,7 @@ func (dr *deckRenderer) codeFeatures(doc ast.Node, src []byte, sc *slideCtx) {
 	defer dr.cardsPass(doc, src, sc) // cards group blocks too, on slides and in documents
 	dr.videoPlayers(doc, src, sc)
 	dr.codeWindows(doc, src, sc)
+	dr.chartShows(doc, src)
 	if dr.callouts == nil {
 		dr.callouts = map[ast.Node]bool{}
 	}

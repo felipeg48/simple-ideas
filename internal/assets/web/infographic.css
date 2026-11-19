@@ -3,8 +3,8 @@
  * infographic is a 16:9 slide at any size and a portrait one a poster; under
  * ~48rem a landscape frame stacks its blocks and scrolls. Colours come from the
  * theme tokens (the si-ig tokens of the contract override them). No px sizes: em, %, cqi, cqb. */
-.si-ig{container:si-ig/inline-size;margin:0 auto;inline-size:100%;
-  --_c1:var(--si-ig-1,var(--si-accent));--_c2:var(--si-ig-2,var(--si-accent-2));
+.si-ig{container:si-ig/inline-size;margin:0 auto;inline-size:100%}
+.si-ig,.si-chart{--_c1:var(--si-ig-1,var(--si-accent));--_c2:var(--si-ig-2,var(--si-accent-2));
   --_s1:var(--_c1);--_s2:var(--_c2);--_s3:var(--si-ig-3,var(--si-ok));--_s4:var(--si-ig-4,var(--si-warn));
   --_s5:color-mix(in srgb,var(--_c1) 50%,var(--si-crit));--_s6:color-mix(in srgb,var(--si-fg) 45%,var(--si-bg));
   --_bg:var(--si-ig-bg,var(--si-bg));--_card:var(--si-ig-card,var(--si-surface));--_ink:var(--si-fg)}
@@ -142,7 +142,7 @@
 .si-ig-legend li{display:flex;align-items:center;gap:.5em}
 .si-ig-legend li::before{content:"";flex:none;inline-size:.75em;block-size:.75em;border-radius:.2em;background:var(--_s)}
 .si-ig-legend b{margin-inline-start:auto;font-variant-numeric:tabular-nums}
-.si-ig-bars+.si-ig-legend,.si-ig-line+.si-ig-legend{flex:none;flex-direction:row;flex-wrap:wrap;gap:.3em 1em}
+.si-ig-bars+.si-ig-legend,.si-ig-line+.si-ig-legend,.si-ig-cols+.si-ig-legend{flex:none;flex-direction:row;flex-wrap:wrap;gap:.3em 1em}
 .si-ig-line{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:minmax(4em,1fr) auto;gap:.35em .5em;padding-block-start:1.6em}
 .si-ig-y{display:flex;flex-direction:column;justify-content:space-between;font-size:.72em;color:var(--si-muted);text-align:end;margin-block:-.6em}
 .si-ig-plot{position:relative;min-block-size:0}
@@ -227,3 +227,66 @@ html:has(.si-ig-page),.si-ig-page{block-size:auto;overflow:visible}
 .si-igf text.si-igf-elbl{fill:var(--si-muted);font-weight:650;paint-order:stroke;stroke:var(--_card);stroke-width:5;stroke-linejoin:round}
 .si-igf-pkt{fill:var(--_c);stroke:var(--_card);stroke-width:3;opacity:0}
 @media print{.si-ig-play{display:none}}
+
+/* ```chart fences (render/chart.go, web/chart.js): the same charts on their
+ * own in a slide or a page. Every frame (a step) sits in one grid cell, so
+ * the figure keeps the tallest one's height; the one on screen has data-on. */
+.si-body:has(>.si-chart){inline-size:100%;align-self:stretch}
+.si-figure.si-chart{display:flex;flex-direction:column;align-items:stretch;align-self:stretch;gap:.4em;inline-size:100%;max-inline-size:60em;margin-inline:auto;
+  --_card:var(--si-bg);--_c:var(--_c1);--_cm:color-mix(in srgb,var(--_c) 38%,var(--_card));color:var(--si-fg);line-height:1.3;text-align:start}
+.si-chart .si-ig-chart{flex:none}
+.si-chart-title{font-family:var(--si-font-heading);font-weight:700;font-size:.95em;color:var(--si-muted)}
+.si-chart-stage{display:grid;min-inline-size:0}
+.si-chart-frame{grid-area:1/1;container:si-igb/inline-size;position:relative;display:flex;flex-direction:column;gap:.5em;min-inline-size:0;visibility:hidden}
+.si-chart-frame[data-on]{visibility:visible}
+.si-chart-frame.is-out{visibility:visible;pointer-events:none}
+.si-chart-at{align-self:flex-end;margin:0;font-family:var(--si-font-heading);font-weight:850;font-size:clamp(1.4em,5cqi,3em);line-height:1;letter-spacing:-.03em;
+  color:var(--si-accent);font-variant-numeric:tabular-nums}
+.si-chart[data-race] .si-chart-at{font-size:clamp(1.8em,8cqi,4.2em);color:color-mix(in srgb,var(--si-fg) 22%,transparent)}
+.si-chart .si-ig-bars{gap:.4em .7em}
+.si-chart .si-ig-bar svg{block-size:calc(.95em * var(--_k,1))}
+.si-chart .si-ig-progress .si-ig-bar svg{block-size:.8em}
+@container si-igb (min-width: 24em){.si-chart .si-ig-bars .si-ig-bl{text-align:end}}
+.si-chart-frame:is([data-kind="line"],[data-kind="area"]) .si-chart-at{align-self:flex-start}
+.si-chart .si-ig-bar rect,.si-chart .si-ig-col rect{transition:fill .6s ease}
+.si-chart .si-ig-donut circle{transition:none}
+.si-chart .si-ig-line{block-size:min(calc(var(--si-figure-max,60cqb) - 4em),24em);min-block-size:9em}
+.si-chart .si-ig-donut{block-size:min(calc(var(--si-figure-max,60cqb) - 3em),17em);min-block-size:8em;justify-content:center}
+.si-chart .si-ig-donut .si-ig-legend{flex:0 1 auto}
+.si-ig-cols{display:grid;grid-template-columns:repeat(var(--_n),minmax(0,1fr));gap:.3em .7em;block-size:min(calc(var(--si-figure-max,60cqb) - 4em),22em);min-block-size:8em}
+.si-ig-block .si-ig-cols{block-size:auto;flex:1}
+.si-ig-col{display:flex;flex-direction:column;align-items:center;gap:.25em;min-inline-size:0;min-block-size:0}
+.si-ig-col svg{flex:1;min-block-size:0;inline-size:min(100%,4.5em);display:block}
+.si-ig-col .si-ig-bv{font-variant-numeric:tabular-nums;font-size:.9em}
+.si-ig-col .si-ig-bl{font-size:.8em;color:var(--si-muted);text-align:center;overflow-wrap:anywhere;line-height:1.15}
+.si-chart-nav{display:flex;flex-wrap:wrap;gap:.5em;align-items:center;justify-content:center;font-size:.85em}
+.si-chart-nav button{font:inherit;cursor:pointer;border-radius:.5em;padding:.3em .8em;color:var(--si-fg);background:var(--si-surface);border:.06em solid var(--si-line)}
+.si-chart-nav button[aria-pressed="true"]{border-color:var(--si-accent);color:var(--si-accent)}
+.si-chart-nav output{min-inline-size:6em;text-align:center;color:var(--si-muted);font-variant-numeric:tabular-nums}
+@media print{.si-chart-nav{display:none}}
+
+/* 3D charts (render/chart3d.go): CSS 3D, sized in em of the world, whose
+ * font follows the stage. A cuboid's five faces: back, left, right, top, front */
+.si-c3{position:relative;container-type:size;inline-size:100%;block-size:min(calc(var(--si-figure-max,60cqb) - 5em),26em);min-block-size:10em}
+.si-c3[data-c3="funnel3d"]{overflow:hidden}
+.si-c3-world,.si-c3-pie{position:absolute;inset-inline-start:50%;inset-block-start:var(--_y,60%);transform-style:preserve-3d;
+  font-size:min(calc(100cqi / var(--_span,12)),calc(100cqb / var(--_tall,10)))}
+.si-c3-world{inline-size:0;block-size:0}
+.si-c3-pie{inline-size:9em;block-size:9em;margin:-4.5em}
+.si-c3-pie svg{position:absolute;inset:0;inline-size:100%;block-size:100%;overflow:visible}
+.si-c3-pie circle{fill:none;stroke-width:16}
+.si-c3-cub{position:absolute;left:0;bottom:0;width:0;height:0;transform-style:preserve-3d}
+.si-c3-cub>i{position:absolute;display:block;bottom:0;font-style:normal}
+.si-c3-cub>i:is(:nth-child(1),:nth-child(5)){left:calc(var(--w) / -2);width:var(--w);height:var(--h);background:var(--c)}
+.si-c3-cub>i:nth-child(1){transform:rotateY(180deg) translateZ(calc(var(--d) / 2))}
+.si-c3-cub>i:is(:nth-child(2),:nth-child(3)){left:calc(var(--d) / -2);width:var(--d);height:var(--h);background:color-mix(in srgb,var(--c) 70%,#000)}
+.si-c3-cub>i:nth-child(2){transform:rotateY(-90deg) translateZ(calc(var(--w) / 2))}
+.si-c3-cub>i:nth-child(3){transform:rotateY(90deg) translateZ(calc(var(--w) / 2))}
+.si-c3-cub>i:nth-child(4){left:calc(var(--w) / -2);bottom:calc(var(--h) - var(--d) / 2);width:var(--w);height:var(--d);background:color-mix(in srgb,var(--c) 72%,#fff);transform:rotateX(90deg)}
+.si-c3-cub>i:nth-child(5){transform:translateZ(calc(var(--d) / 2));display:flex;justify-content:center;overflow:hidden}
+.si-c3-cub b{font:700 .42em/1.2 var(--si-font-body);color:var(--si-on-accent);padding-block-start:.3em;white-space:nowrap;font-variant-numeric:tabular-nums}
+.si-c3[data-c3="funnel3d"] .si-c3-cub b{padding-block-start:.55em}
+.si-c3-floor{position:absolute;transform:rotateX(90deg);
+  background-image:linear-gradient(color-mix(in srgb,var(--si-fg) 14%,transparent) .05em,transparent .05em),linear-gradient(90deg,color-mix(in srgb,var(--si-fg) 14%,transparent) .05em,transparent .05em);background-size:1.2em 1.2em}
+.si-c3+.si-ig-legend,.si-c3-depth+.si-ig-legend{flex:none;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:.3em 1.1em}
+.si-c3-depth{margin:0;text-align:center;font-size:.8em;color:var(--si-muted)}

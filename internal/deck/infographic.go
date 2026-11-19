@@ -23,7 +23,7 @@ var (
 	IGAspects      = []string{"16:9", "4:3", "9:16", "a4", "phone", "story", "portrait", "square", "landscape"}
 	IGLayouts      = []string{"grid", "columns", "flow"}
 	IGKinds        = []string{"stat", "compare", "steps", "chart", "quote", "icons", "list", "text", "image", "flow", "sources"}
-	IGCharts       = []string{"bar", "donut", "line", "progress"}
+	IGCharts       = []string{"bar", "column", "line", "area", "donut", "pie", "progress"}
 	IGAnimates     = []string{"build", "loop", "off"}
 	IGEnters       = []string{"fade", "rise", "grow", "count"}
 	// IGFlowIcons are the icons a flow box takes, `[db] Orders`
@@ -252,7 +252,7 @@ func (b *IGBlock) option(w string) string {
 	case k == "kind":
 		b.Kind = v
 		if !contains(IGKinds, v) {
-			return fmt.Sprintf("infographic: unknown block kind %q (use %s, chart=bar|donut|line|progress)", v, strings.Join(IGKinds, ", "))
+			return fmt.Sprintf("infographic: unknown block kind %q (use %s, chart=bar|column|line|area|donut|pie|progress)", v, strings.Join(IGKinds, ", "))
 		}
 	case k == "span":
 		n, err := strconv.Atoi(v)

@@ -318,6 +318,44 @@ Points: Three causes, one per click
 
 ---
 
+## Late orders by cause, quarter by quarter
+
+```chart bar race unit=%
+| Cause          | Q1 | Q2 | Q3 |
+|----------------|----|----|----|
+| Payment        | 41 | 14 | 9  |
+| Warehouse      | 33 | 30 | 6  |
+| Road cut-off   | 18 | 19 | 17 |
+| Wrong address  | 8  | 7  | 5  |
+```
+
+Notes: (1 min)
+In the first quarter, payment caused four in ten late orders, and the warehouse a third. [CLICK] In the second quarter the retry rule took payment from forty-one to fourteen percent, and the warehouse moved to the top. [CLICK] In the third, the second picker brought the warehouse down to six. Now the road cut-off leads, at seventeen percent, and that is the one still open.
+
+Points: The race
+- Let the bars move before speaking; the order change is the point
+- Road cut-off barely moved: it is next quarter's work
+
+---
+
+## Thursday promises kept
+
+```chart donut3d steps explode="Late" title="Orders delivered by Thursday"
+| Status  | Q1 | Q2 | Q3 |
+|---------|----|----|----|
+| On time | 81 | 90 | 96 |
+| Late    | 19 | 10 | 4  |
+```
+
+Notes: (1 min)
+Eighty-one percent of Thursday promises were kept in the first quarter. [CLICK] Ninety in the second. [CLICK] Ninety-six in the third. [CLICK] And the four percent still late are the slice we are chasing now.
+
+Points:
+- 96% is the headline; the lifted slice is the open work
+- Likely question: what counts as late? Delivered after Thursday 20:00
+
+---
+
 ## In one word, what makes a delivery late?
 
 <!-- cloud: late -->

@@ -66,6 +66,12 @@ var InfographicCSS string
 //go:embed web/infographic.js
 var InfographicJS string
 
+// ChartJS animates ```chart fences: steps, rows that re-sort, a show's
+// frames (render/chart.go); their looks are in infographic.css.
+//
+//go:embed web/chart.js
+var ChartJS string
+
 //go:embed web/mindmap.js
 var MindmapJS string
 

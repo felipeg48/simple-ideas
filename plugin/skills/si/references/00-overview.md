@@ -49,3 +49,4 @@ this file; `examples/showcase.md` uses every rule in a real talk.
 30. [Infographics](#30-infographics)
 31. [Project structure](#31-project-structure)
 32. [Video edits](#32-video-edits)
+33. [Animated charts](#33-animated-charts)

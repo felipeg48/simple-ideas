@@ -58,6 +58,7 @@ Notes: Our checkout took two point four seconds; six weeks later, zero point six
 | `chart=donut` | a table: labels, numbers | a donut of the shares, the first share in the middle, a legend |
 | `chart=line` | a table: x labels, one or more columns of numbers | a line (area under the first) from zero, the last value at its end; when every x label is a number (a year) or a date (`2024-03-01`, `2024-03`, `Mar 2024`), points sit at their real value on a linear scale (numbers get ticks at round values, dates their own labels), else evenly spaced |
 | `chart=progress` | a table: labels, a value (of 100, or of a third column: the target) | progress bars |
+| `chart=column`, `chart=area`, `chart=pie` | a table, as above | vertical bars; a line with every series filled; a full pie (the charts of the ```` ```chart ```` fence, §33, which also animates them step by step) |
 | `quote` | a `>` quote; a line starting `—` is the attribution | a large quote |
 | `icons` | a list; each item may start with `![](icon.svg)` | an icon row |
 | `list`, `text` | a list, any Markdown | as written |

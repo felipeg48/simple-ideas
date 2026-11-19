@@ -3,6 +3,31 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.37.0:** animated charts. A ```` ```chart ```` fence in any slide or
+  document page draws a Markdown table (labels, then number columns) as
+  `bar`, `column`, `line`, `area`, `donut`, `pie`, `progress`, or in CSS
+  3D as `bar3d` (one row of solid bars, or a bar city with a row per
+  column), `donut3d` (tipped back, ten layers deep) and `funnel3d`
+  (stacked layers narrowing by value), on the theme's colours in light and
+  dark. `steps` makes every number column a build step, its header shown
+  big in the corner: bars grow and shrink, columns rise, arcs sweep, lines
+  morph and the numbers count; `sort` keeps rows in order of value and
+  they glide to their new rank; `race` is both, each step rescaled;
+  `stacked`, `title=`, `unit=`, `explode="Label"` (a donut, pie or 3D
+  donut slice lifts out on its own step). Charts with the same `id=` in a
+  row are one show whose steps turn one kind into another (a cross-fade
+  while the new one grows), and the same `id=` on the next slide carries on
+  without the slide fade. A chart grows in when its slide or build step
+  arrives (3D bars rise as the camera turns, funnel layers drop in), and in
+  a document when scrolled into view, then plays its steps with ← → Play.
+  Reduced motion, print, the overview, thumbnails, handouts and `#N.k`
+  links show the step's final values. Infographic blocks take
+  `chart=column|area|pie` too. `si check` reports non-numbers, unknown
+  types and options, `steps` with one column, a bad `explode=`.
+  `si play --terminal` draws the last column as text bars. RULES.md §33.
+  Fixed: a slide's build-step count no longer resets after inline
+  Markdown is rendered inside a fence.
+
 - **v3.36.1:** six build animations in 3D, CSS 3D only (no library):
   `<!-- animate: tilt -->` (the heading, the marked block and the rest as
   layers at different depths; the camera tilts once as the slide arrives,

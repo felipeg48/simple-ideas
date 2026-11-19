@@ -240,6 +240,23 @@ messages a second, counted up as it comes in
 
 ---
 
+## Animated charts
+
+```chart bar race
+| Type     | One | Two | Three |
+|----------|-----|-----|-------|
+| bar      | 3   | 5   | 9     |
+| donut    | 6   | 4   | 7     |
+| bar3d    | 1   | 6   | 8     |
+```
+
+- ```` ```chart bar|column|line|area|donut|pie|progress|bar3d|donut3d|funnel3d ````, then a table: labels, number columns
+- `steps`: a column per click, the header big in the corner · `sort` · `race` (both, rescaled each step) · `stacked` · `unit=%` · `title=` · `explode="Late"`
+- Bars grow and glide to their new rank, arcs sweep, lines morph, numbers count; same `id=` in a row: one show that turns bars into a donut; same `id=` on the next slide carries on
+- In a document: plays once scrolled into view, ← → Play under it; full guide: RULES.md §33
+
+---
+
 ## Video edits
 
 ```text

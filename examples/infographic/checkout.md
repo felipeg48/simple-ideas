@@ -28,7 +28,7 @@ more checkouts completed in the six weeks after the fix
 | Fonts | 280 |
 | Other | 250 |
 
-## Traffic by device · chart=donut
+## Traffic by device · chart=pie
 | Device | % |
 |---|---|
 | Phones | 64 |
@@ -41,7 +41,7 @@ more checkouts completed in the six weeks after the fix
 3. **Split the JavaScript**: checkout loads only what checkout needs
 4. **Cache at the edge** and preload the two fonts
 
-## Load time, week by week · chart=line
+## Load time, week by week · chart=area
 | Week | Seconds |
 |---|---|
 | 1 | 2.4 |

@@ -224,6 +224,10 @@ func Shows(text string) []Show {
 		if !ok {
 			continue
 		}
+		if strings.EqualFold(st.Lang, "chart") { // a chart's id= makes a chart show, not a code window
+			i = st.Last
+			continue
+		}
 		id := st.Attrs["id"]
 		if n := len(out); n > 0 && id != "" && out[n-1].ID == id && onlyBlank(lines, out[n-1].Steps[len(out[n-1].Steps)-1].Last+1, st.Start) {
 			out[n-1].Steps = append(out[n-1].Steps, st)

@@ -149,6 +149,24 @@ Median load before the fix.
 
 ---
 
+## A chart race
+
+```chart bar race unit=%
+| Cause | Q1 | Q2 |
+|---|---|---|
+| Carrier | 34 | 12 |
+| Payment | 9 | 21 |
+```
+
+```chart donut3d explode=Late title="Orders"
+| Status | Share |
+|---|---|
+| On time | 85 |
+| Late | 15 |
+```
+
+---
+
 ## A code show
 
 ```go id=send window=mac title="send.go" numbers backdrop=ocean step="Once"

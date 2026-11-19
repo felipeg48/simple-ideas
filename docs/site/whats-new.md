@@ -12,6 +12,27 @@ narrated video you would publish.
 
 <!-- si-video: presenting -->
 
+## Charts that move (3.37)
+
+A ```` ```chart ```` fence draws a Markdown table as bars, columns, a line,
+an area, a donut, a pie, progress bars, or solid 3D bars, a 3D donut and a
+3D funnel, on the theme's colours. With `steps` each number column is one
+click: bars grow and shrink, arcs sweep, lines bend and the numbers count.
+`race` keeps the bars in order of value, so they glide past each other.
+Charts with the same `id=` in a row are one show: a click turns the bars
+into a donut, and the same `id=` on the next slide carries on.
+
+```chart bar race unit=% title="Late orders by cause"
+| Cause     | Q1 | Q2 | Q3 |
+|-----------|----|----|----|
+| Carrier   | 34 | 22 | 12 |
+| Warehouse | 18 | 25 | 9  |
+| Payment   | 9  | 14 | 21 |
+| Address   | 25 | 11 | 6  |
+```
+
+[The rules for charts →](rules/33-animated-charts.md)
+
 ## Motion (3.36)
 
 Ten new slide transitions, played by the page itself with no library:

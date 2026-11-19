@@ -110,6 +110,18 @@ func (r *nodeRenderer) fence(
 		fmt.Fprintf(w, "<pre class=\"si-mermaid\">%s</pre>\n", html.EscapeString(body))
 		return ast.WalkSkipChildren, nil
 	}
+	if lang == "chart" {
+		group := r.dr.charts[n]
+		if group == nil { // a fence the grouping pass did not see (in a list, a quote)
+			attrs := map[string]string{}
+			if n.Info != nil {
+				attrs = fenceAttrs(string(n.Info.Segment.Value(src)))
+			}
+			group = []chartSrc{{attrs: attrs, body: body}}
+		}
+		w.WriteString(r.dr.chartFence(group))
+		return ast.WalkSkipChildren, nil
+	}
 	if sh := r.dr.cw[n]; sh != nil {
 		w.WriteString(r.dr.cwFence(sh))
 		return ast.WalkSkipChildren, nil
@@ -239,8 +251,8 @@ func (dr *deckRenderer) toHTML(md string, sc *slideCtx) string {
 	if sc != nil {
 		dr.transform(doc, src, sc)
 	}
-	dr.cur = sc // the stage fence reads/updates this slide's step count
-	defer func() { dr.cur = nil }()
+	defer func(prev *slideCtx) { dr.cur = prev }(dr.cur) // a nested inline() leaves the slide being rendered as it was
+	dr.cur = sc                                          // the stage fence reads/updates this slide's step count
 	if sc != nil && sc.s != nil {
 		dr.curDir = sc.s.Dir
 	}

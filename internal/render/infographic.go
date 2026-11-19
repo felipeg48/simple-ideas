@@ -586,7 +586,7 @@ type igSeries struct {
 	labels, names []string
 	vals          [][]float64 // [row][series]
 	text          [][]string  // the cells as written
-	max           float64
+	max, min      float64     // min: 0 or below
 }
 
 func igData(body string) (igSeries, bool) {
@@ -602,6 +602,7 @@ func igData(body string) (igSeries, bool) {
 			n, _ := deck.IGNumber(c)
 			v = append(v, n)
 			s.max = math.Max(s.max, n)
+			s.min = math.Min(s.min, n)
 		}
 		s.vals = append(s.vals, v)
 		s.text = append(s.text, r[1:])
@@ -702,6 +703,44 @@ func (dr *deckRenderer) igChart(b *deck.IGBlock) string {
 	if !ok {
 		return ""
 	}
+	return dr.drawChart(b.Chart, b.Title, s, chartOpts{})
+}
+
+// chartOpts are what a ```chart fence adds to an infographic chart: rows
+// named by data-key (the animation matches them across steps), a colour per
+// row that stays with it when the rows re-sort, stacked series.
+type chartOpts struct {
+	keys    []int // the table row each drawn row is (nil: none written)
+	ownHue  bool  // each row keeps its own colour (sorted rows)
+	stacked bool
+	explode *int // a donut's slice that can lift out: nil none, -1 not now, else the table row lifted
+}
+
+// lift is a donut slice's transform when explode= is set: moved off the
+// centre along the slice's middle (by d, in the drawing's units) when it is
+// the slice lifted out, else in place (written, so the step can tween it).
+func (o chartOpts) lift(row int, at, share, d float64) string {
+	if o.explode == nil {
+		return ""
+	}
+	x, y := 0.0, 0.0
+	if *o.explode == row {
+		a := (at + share/2) / 100 * 2 * math.Pi // clockwise from the top
+		x, y = math.Sin(a)*d, -math.Cos(a)*d
+	}
+	return ` transform="translate(` + pct(x) + ` ` + pct(y) + `)"`
+}
+
+func (o chartOpts) key(i int) string {
+	if o.keys == nil {
+		return ""
+	}
+	return ` data-key="` + strconv.Itoa(o.keys[i]) + `"`
+}
+
+// drawChart draws a chart (bar, column, line, area, donut, pie, progress)
+// of a table: infographic blocks and ```chart fences.
+func (dr *deckRenderer) drawChart(kind, title string, s igSeries, co chartOpts) string {
 	series := len(s.names)
 	var o strings.Builder
 	legend := func(names []string) {
@@ -711,37 +750,46 @@ func (dr *deckRenderer) igChart(b *deck.IGBlock) string {
 		}
 		o.WriteString(`</ul>`)
 	}
-	switch b.Chart {
-	case "donut":
+	hue := func(i int) string { // a row's own colour
+		if co.keys != nil {
+			i = co.keys[i]
+		}
+		return "var(--_s" + strconv.Itoa(i%6+1) + ")"
+	}
+	switch kind {
+	case "donut", "pie":
 		total := 0.0
 		for _, v := range s.vals {
 			total += v[0]
 		}
+		r, w, extra := "15.9155", "6", ""
+		if kind == "pie" { // a circle its stroke fills: pathLength keeps the dashes in percent
+			r, w, extra = "10.5", "21", ` pathLength="100"`
+		}
 		o.WriteString(`<div class="si-ig-chart si-ig-donut">`)
-		o.WriteString(`<svg viewBox="0 0 42 42" role="img" aria-label="` + html.EscapeString(plain(b.Title)) + `"><circle class="si-ig-track" cx="21" cy="21" r="15.9155" fill="none" stroke-width="6"/>`)
+		o.WriteString(`<svg viewBox="0 0 42 42" role="img" aria-label="` + html.EscapeString(plain(title)) + `"><circle class="si-ig-track" cx="21" cy="21" r="` + r + `" fill="none" stroke-width="` + w + `"` + extra + `/>`)
 		at := 0.0
 		for i, v := range s.vals {
 			share := IGScale(v[0], total)
-			fmt.Fprintf(&o, `<circle cx="21" cy="21" r="15.9155" fill="none" stroke-width="6" style="stroke:var(--_s%d)" stroke-dasharray="%s %s" stroke-dashoffset="%s"/>`,
-				i%6+1, pct(share), pct(100-share), pct(25-at))
+			row := i
+			if co.keys != nil {
+				row = co.keys[i]
+			}
+			fmt.Fprintf(&o, `<circle%s cx="21" cy="21" r="%s" fill="none" stroke-width="%s"%s style="stroke:%s" stroke-dasharray="%s %s" stroke-dashoffset="%s"%s/>`,
+				co.key(i), r, w, extra, hue(i), pct(share), pct(100-share), pct(25-at), co.lift(row, at, share, 2.5))
 			at += share
 		}
-		if total > 0 {
+		if total > 0 && kind == "donut" {
 			fmt.Fprintf(&o, `<text x="21" y="22.5" font-size="8.5" text-anchor="middle" class="si-ig-dv">%s</text><text x="21" y="28.5" font-size="3.4" text-anchor="middle" class="si-ig-dl">%s</text>`,
 				igPercent(IGScale(s.vals[0][0], total))[1:], html.EscapeString(plain(dr.inline(s.labels[0]))))
 		}
 		o.WriteString(`</svg><ul class="si-ig-legend">`)
 		for i, l := range s.labels {
-			fmt.Fprintf(&o, `<li style="--_s:var(--_s%d)">%s <b>%s</b></li>`, i%6+1, dr.inline(l), html.EscapeString(s.text[i][0]))
+			fmt.Fprintf(&o, `<li%s style="--_s:%s">%s <b>%s</b></li>`, co.key(i), hue(i), dr.inline(l), html.EscapeString(s.text[i][0]))
 		}
 		o.WriteString(`</ul></div>`)
-	case "line":
-		top, lo := s.max, 0.0
-		for _, v := range s.vals {
-			for _, x := range v {
-				lo = math.Min(lo, x)
-			}
-		}
+	case "line", "area":
+		top, lo := s.max, s.min
 		if top == lo {
 			top = lo + 1
 		}
@@ -760,7 +808,7 @@ func (dr *deckRenderer) igChart(b *deck.IGBlock) string {
 		num := func(f float64) string { return html.EscapeString(strconv.FormatFloat(f, 'f', -1, 64)) }
 		o.WriteString(`<div class="si-ig-chart si-ig-line">`)
 		fmt.Fprintf(&o, `<div class="si-ig-y" aria-hidden="true"><span>%s</span><span>%s</span></div><div class="si-ig-plot">`, num(top), num(lo))
-		o.WriteString(`<svg viewBox="0 0 100 50" preserveAspectRatio="none" role="img" aria-label="` + html.EscapeString(plain(b.Title)) + `">`)
+		o.WriteString(`<svg viewBox="0 0 100 50" preserveAspectRatio="none" role="img" aria-label="` + html.EscapeString(plain(title)) + `">`)
 		o.WriteString(`<line class="si-ig-axis" vector-effect="non-scaling-stroke" x1="0" y1="50" x2="100" y2="50"/>`)
 		colour := func(k int) string {
 			if series == 1 {
@@ -773,8 +821,12 @@ func (dr *deckRenderer) igChart(b *deck.IGBlock) string {
 			for i, v := range s.vals {
 				pts = append(pts, pct(x(i))+","+pct(y(v[k])))
 			}
-			if k == 0 {
-				fmt.Fprintf(&o, `<polygon class="si-ig-area" style="fill:color-mix(in srgb,%s 16%%,transparent)" points="0,50 %s 100,50"/>`, colour(0), strings.Join(pts, " "))
+			if k == 0 || kind == "area" {
+				share := 16
+				if kind == "area" {
+					share = 30
+				}
+				fmt.Fprintf(&o, `<polygon class="si-ig-area" style="fill:color-mix(in srgb,%s %d%%,transparent)" points="0,50 %s 100,50"/>`, colour(k), share, strings.Join(pts, " "))
 			}
 			fmt.Fprintf(&o, `<polyline style="stroke:%s" vector-effect="non-scaling-stroke" points="%s"/>`, colour(k), strings.Join(pts, " "))
 		}
@@ -820,27 +872,76 @@ func (dr *deckRenderer) igChart(b *deck.IGBlock) string {
 			} else if s.max > 100 {
 				top = s.max
 			}
-			fmt.Fprintf(&o, `<div class="si-ig-bar"><span class="si-ig-bl">%s</span><svg viewBox="0 0 100 4" preserveAspectRatio="none" aria-hidden="true"><rect class="si-ig-track" width="100" height="4" rx="2"/><rect width="%s" height="4" rx="2" style="fill:var(--_c)"/></svg><b class="si-ig-bv">%s</b></div>`,
-				dr.inline(s.labels[i]), pct(IGScale(v[0], top)), html.EscapeString(s.text[i][0]))
+			fmt.Fprintf(&o, `<div class="si-ig-bar"%s><span class="si-ig-bl">%s</span><svg viewBox="0 0 100 4" preserveAspectRatio="none" aria-hidden="true"><rect class="si-ig-track" width="100" height="4" rx="2"/><rect width="%s" height="4" rx="2" style="fill:var(--_c)"/></svg><b class="si-ig-bv">%s</b></div>`,
+				co.key(i), dr.inline(s.labels[i]), pct(IGScale(v[0], top)), html.EscapeString(s.text[i][0]))
 		}
 		o.WriteString(`</div>`)
-	default: // bar
-		o.WriteString(`<div class="si-ig-chart si-ig-bars">`)
-		h := 4 * series
-		for i, v := range s.vals {
-			fmt.Fprintf(&o, `<div class="si-ig-bar" style="--_k:%d"><span class="si-ig-bl">%s</span><svg viewBox="0 0 100 %d" preserveAspectRatio="none" aria-hidden="true">`,
-				series, dr.inline(s.labels[i]), h)
-			for k, x := range v {
-				fill := "var(--_s" + strconv.Itoa(k%6+1) + ")"
-				if series == 1 {
-					fill = "var(--_cm)" // one series: the top bar stands out
-					if x == s.max {
-						fill = "var(--_c)"
-					}
+	default: // bar, column
+		top := s.max
+		if co.stacked {
+			top = 0
+			for _, v := range s.vals {
+				sum := 0.0
+				for _, x := range v {
+					sum += math.Max(0, x)
 				}
-				fmt.Fprintf(&o, `<rect y="%d" width="%s" height="3.2" rx="1" style="fill:%s"/>`, k*4, pct(IGScale(x, s.max)), fill)
+				top = math.Max(top, sum)
 			}
-			o.WriteString(`</svg><b class="si-ig-bv">` + html.EscapeString(strings.Join(s.text[i], " · ")) + `</b></div>`)
+		}
+		fill := func(i, k int, x float64) string {
+			switch {
+			case series > 1:
+				return "var(--_s" + strconv.Itoa(k%6+1) + ")"
+			case co.ownHue:
+				return hue(i)
+			case x == s.max:
+				return "var(--_c)" // one series: the top bar stands out
+			}
+			return "var(--_cm)"
+		}
+		lanes := series // grouped: a lane per series; stacked: one
+		if co.stacked {
+			lanes = 1
+		}
+		col := kind == "column"
+		if col {
+			fmt.Fprintf(&o, `<div class="si-ig-chart si-ig-cols" style="--_n:%d">`, len(s.vals))
+		} else {
+			o.WriteString(`<div class="si-ig-chart si-ig-bars">`)
+		}
+		for i, v := range s.vals {
+			value := `<b class="si-ig-bv">` + html.EscapeString(strings.Join(s.text[i], " · ")) + `</b>`
+			label := `<span class="si-ig-bl">` + dr.inline(s.labels[i]) + `</span>`
+			if col {
+				fmt.Fprintf(&o, `<div class="si-ig-col"%s>%s<svg viewBox="0 0 %d 100" preserveAspectRatio="none" aria-hidden="true">`, co.key(i), value, 4*lanes)
+			} else {
+				fmt.Fprintf(&o, `<div class="si-ig-bar" style="--_k:%d"%s>%s<svg viewBox="0 0 100 %d" preserveAspectRatio="none" aria-hidden="true">`,
+					lanes, co.key(i), label, 4*lanes)
+			}
+			at := 0.0
+			for k, x := range v {
+				size := IGScale(x, top)
+				lane := k
+				if co.stacked {
+					lane = 0
+				}
+				if col {
+					fmt.Fprintf(&o, `<rect x="%d" y="%s" width="3.2" height="%s" rx="1" style="fill:%s"/>`, lane*4, pct(100-at-size), pct(size), fill(i, k, x))
+				} else if co.stacked {
+					fmt.Fprintf(&o, `<rect x="%s" y="0" width="%s" height="3.2" rx="1" style="fill:%s"/>`, pct(at), pct(size), fill(i, k, x))
+				} else {
+					fmt.Fprintf(&o, `<rect y="%d" width="%s" height="3.2" rx="1" style="fill:%s"/>`, lane*4, pct(size), fill(i, k, x))
+				}
+				if co.stacked {
+					at += size
+				}
+			}
+			o.WriteString(`</svg>`)
+			if col {
+				o.WriteString(label + `</div>`)
+			} else {
+				o.WriteString(value + `</div>`)
+			}
 		}
 		o.WriteString(`</div>`)
 		if series > 1 {

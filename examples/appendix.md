@@ -46,6 +46,43 @@ The big win is paid to picked: the lent picker. Packed to van barely moves becau
 
 ---
 
+## Where the waiting went
+
+```chart column stacked id=wait unit=" h"
+| Hand-off        | Before | After |
+|-----------------|--------|-------|
+| Paid to picked  | 9.7    | 3.1   |
+| Picked to van   | 14.6   | 13.9  |
+```
+
+```chart bar3d id=wait unit=" h"
+| Hand-off        | Before | After |
+|-----------------|--------|-------|
+| Paid to picked  | 9.7    | 3.1   |
+| Picked to van   | 14.6   | 13.9  |
+```
+
+Notes: (1 min)
+Stacked up, an order used to wait about twenty-four hours between payment and the van. [CLICK] Seen as solid bars, before at the back and after in front, the picture is clear: paid to picked fell from nearly ten hours to three, while picked to van stayed near fourteen, because the vans leave at fixed times.
+
+---
+
+## From basket to Thursday
+
+```chart funnel3d title="Orders in one week"
+| Step              | Orders |
+|-------------------|--------|
+| Baskets           | 2,400  |
+| Checkouts         | 1,300  |
+| Paid              | 1,180  |
+| Delivered Thursday| 1,130  |
+```
+
+Notes: (1 min)
+Of two thousand four hundred baskets in a week, thirteen hundred reach checkout and eleven hundred and eighty are paid. Eleven hundred and thirty arrive by Thursday: almost every paid order keeps its promise.
+
+---
+
 ## Three changes that ==held==
 
 <!-- cards: 3 -->

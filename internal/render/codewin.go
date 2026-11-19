@@ -81,7 +81,7 @@ func (dr *deckRenderer) codeWindows(doc ast.Node, src []byte, sc *slideCtx) {
 			if n.Info != nil {
 				attrs = fenceAttrs(string(n.Info.Segment.Value(src)))
 			}
-			if !isWindow(attrs) {
+			if !isWindow(attrs) || fenceLang(n, src) == "chart" { // a chart's id= makes a chart show
 				cur, curID = nil, ""
 				break
 			}

@@ -146,20 +146,22 @@ type deckRenderer struct {
 	labels        map[string]string // book: id -> label of numbered sections, figures, tables
 	cur           *slideCtx         // the slide being rendered, for the stage fence's steps
 	mermaid       bool
-	mindmap       bool                 // a ```mindmap fence: the page loads mindmap.css and mindmap.js
-	infographic   bool                 // an infographic: the page loads infographic.css
-	codewin       bool                 // a code window: the page loads codewin.css and codewin.js
-	videoplayer   bool                 // a ```video fence: the page loads videoplayer.css and videoplayer.js
-	timeline      bool                 // a timeline: the page loads timeline.css and timeline.js
-	cw            map[ast.Node]*cwShow // the first fence of each code window and its steps
-	mindmap3d     bool                 // a map starts in 3D: three.js and mindmap3d.js are inlined too
-	mmN           int                  // ```mindmap fences so far (ids of their fallback lists, their build steps)
-	curDir        string               // directory of the part being rendered (fences resolve paths against it)
-	themeName     string               // resolved theme name (or "custom" for a CSS-file theme)
-	themeCSS      string               // the si.theme layer CSS for this deck
-	fontsCSS      string               // fonts: inlined @font-face rules and font tokens (fonts.go)
-	fontSubsets   []string             // fonts-subset: the subsets kept from a split family
-	anims         []animEntry          // resolved break-timer animations (empty if none)
+	mindmap       bool                    // a ```mindmap fence: the page loads mindmap.css and mindmap.js
+	infographic   bool                    // an infographic: the page loads infographic.css
+	codewin       bool                    // a code window: the page loads codewin.css and codewin.js
+	videoplayer   bool                    // a ```video fence: the page loads videoplayer.css and videoplayer.js
+	timeline      bool                    // a timeline: the page loads timeline.css and timeline.js
+	chart         bool                    // a ```chart fence: the page loads infographic.css and chart.js
+	charts        map[ast.Node][]chartSrc // the first fence of each chart show and its fences
+	cw            map[ast.Node]*cwShow    // the first fence of each code window and its steps
+	mindmap3d     bool                    // a map starts in 3D: three.js and mindmap3d.js are inlined too
+	mmN           int                     // ```mindmap fences so far (ids of their fallback lists, their build steps)
+	curDir        string                  // directory of the part being rendered (fences resolve paths against it)
+	themeName     string                  // resolved theme name (or "custom" for a CSS-file theme)
+	themeCSS      string                  // the si.theme layer CSS for this deck
+	fontsCSS      string                  // fonts: inlined @font-face rules and font tokens (fonts.go)
+	fontSubsets   []string                // fonts-subset: the subsets kept from a split family
+	anims         []animEntry             // resolved break-timer animations (empty if none)
 	problems      []deck.Problem
 	warnings      []deck.Problem
 	wmDone        bool   // watermark resolved once (deck-level)

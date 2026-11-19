@@ -66,13 +66,13 @@ func TestIGNumber(t *testing.T) {
 }
 
 func TestInfographicProblems(t *testing.T) {
-	_, probs := ParseInfographic("## A · chart=pie\n| a | b |\n|---|---|\n| x | 1 |\n\n## B · chart=bar\n| a | b |\n|---|---|\n| x | lots |\n\n## C · text\n\n## D · shiny\nx\n\n## E · compare\nno table\n")
+	_, probs := ParseInfographic("## A · chart=scatter\n| a | b |\n|---|---|\n| x | 1 |\n\n## B · chart=bar\n| a | b |\n|---|---|\n| x | lots |\n\n## C · text\n\n## D · shiny\nx\n\n## E · compare\nno table\n")
 	var msgs []string
 	for _, p := range probs {
 		msgs = append(msgs, p.Msg)
 	}
 	all := strings.Join(msgs, "\n")
-	for _, want := range []string{`unknown chart "pie"`, `"lots" is not a number`, `block "C": empty block`, `compare needs a Markdown table`} {
+	for _, want := range []string{`unknown chart "scatter"`, `"lots" is not a number`, `block "C": empty block`, `compare needs a Markdown table`} {
 		if !strings.Contains(all, want) {
 			t.Errorf("no problem %q in:\n%s", want, all)
 		}

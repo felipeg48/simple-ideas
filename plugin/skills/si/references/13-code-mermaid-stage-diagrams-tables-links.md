@@ -1,5 +1,8 @@
 # 13. Code, Mermaid, stage diagrams, tables, links
 
+A table of numbers can also be a chart that moves step by step: a
+```` ```chart ```` fence (§33).
+
 - Fenced code with a language gets a small built-in highlighter (Go, Python,
   JavaScript, TypeScript (`ts`, `tsx`: types, `interface`, `readonly`,
   `keyof`), Java, Kotlin (`kt`, `kts`: `data`, `suspend`, `companion`…), C# (`csharp`, `cs`, `c#`), C, C++,

@@ -105,7 +105,9 @@
     var f = s.querySelectorAll('.si-figure[data-src]');
     if (f.length === 1) return f[0].getAttribute('data-src');
     var cw = s.querySelectorAll('.si-cw[data-cw-id]'); /* a code show across slides morphs like a canvas */
-    return !f.length && cw.length === 1 ? 'cw:' + cw[0].getAttribute('data-cw-id') : '';
+    if (!f.length && cw.length === 1) return 'cw:' + cw[0].getAttribute('data-cw-id');
+    var ch = s.querySelectorAll('.si-chart[data-chart-id]'); /* so does a chart show */
+    return !f.length && !cw.length && ch.length === 1 ? 'ch:' + ch[0].getAttribute('data-chart-id') : '';
   }
 
   /* ---------- fit: when a slide overflows, shrink its figures (canvas, image,

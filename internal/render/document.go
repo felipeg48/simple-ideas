@@ -327,7 +327,7 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	if g != nil && g.IsCourse() {
 		mmCSS += assets.CourseCSS
 	}
-	if dr.infographic {
+	if dr.infographic || dr.chart {
 		mmCSS += assets.InfographicCSS
 	}
 	b.WriteString(`<style id="si-css">` + "\n" + assets.LayerOrder + assets.DocCSS + dr.themeCSS + dr.accentCSS() + mmCSS + "</style>\n")

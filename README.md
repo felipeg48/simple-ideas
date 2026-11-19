@@ -219,6 +219,19 @@ along them) in an exact frame (`aspect: phone`, `square`, `1080x1350`), and
 
 ![An animated infographic: how a message travels through a broker, building itself](docs/screenshots/readme/infographic-animated.gif)
 
+### Animated charts
+
+A ```` ```chart ```` fence turns a Markdown table into a chart that moves:
+bars, columns, a line, an area, a donut, a pie, progress bars, or solid 3D
+bars, a 3D donut and a 3D funnel, all on the theme's colours. With `steps`
+every number column is one click: bars grow and shrink, arcs sweep, lines
+bend and the numbers count. `race` keeps the bars in order of value, so
+they glide past each other quarter by quarter; charts with the same `id=`
+turn bars into a donut on a click.
+[Animated charts →](https://simple-ideas.org/rules/33-animated-charts.html)
+
+![A bar chart race: late orders by cause, the road cut-off now in the lead](docs/screenshots/readme/chart-race.jpg)
+
 ### Video edits
 
 The finishing touches of a recording, written beside it: one line per
