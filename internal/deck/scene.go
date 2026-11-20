@@ -528,8 +528,56 @@ func ParseScene(attrs map[string]string, body string) (*Scene, []string) {
 		sc.Steps = append(sc.Steps, st)
 		sc.States = append(sc.States, append([]SceneState(nil), s.cur...))
 	}
+	sc.round()
 	return sc, probs
 }
+
+// round keeps every coordinate to two decimals: the layout's float sums
+// differ in the last bits between amd64 and arm64 (fused multiply-add), and a
+// built page must be the same on every machine.
+func (sc *Scene) round() {
+	r := func(v float64) float64 { return math.Round(v*100) / 100 }
+	st := func(x *SceneState) {
+		x.X, x.Y, x.W, x.H, x.R, x.A, x.LY = r(x.X), r(x.Y), r(x.W), r(x.H), r(x.R), r(x.A), r(x.LY)
+	}
+	for k := range sc.States {
+		for i := range sc.States[k] {
+			st(&sc.States[k][i])
+		}
+	}
+	for k := range sc.Steps {
+		p := &sc.Steps[k]
+		for i := range p.From {
+			p.From[i] = r(p.From[i])
+		}
+		for _, pt := range p.Pts {
+			for i := range pt {
+				pt[i] = r(pt[i])
+			}
+		}
+		for i := range p.Slots {
+			p.Slots[i] = r(p.Slots[i])
+		}
+		for i := range p.Stops {
+			p.Stops[i] = math.Round(p.Stops[i]*10000) / 10000
+		}
+		for i := range p.Stages {
+			st(&p.Stages[i])
+		}
+		p.Speed = r(p.Speed)
+	}
+	for i := range sc.Objs {
+		sc.Objs[i].D = sceneNumRE.ReplaceAllStringFunc(sc.Objs[i].D, func(n string) string {
+			v, err := strconv.ParseFloat(n, 64)
+			if err != nil {
+				return n
+			}
+			return strconv.FormatFloat(r(v), 'f', -1, 64)
+		})
+	}
+}
+
+var sceneNumRE = regexp.MustCompile(`-?\d+(?:\.\d+)?(?:e[-+]?\d+)?`)
 
 func lastQueue(lines []sceneLine, upto sceneLine) string {
 	q := ""

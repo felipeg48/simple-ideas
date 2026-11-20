@@ -3,6 +3,10 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.39.1:** a scene's coordinates are rounded to two decimals, so a deck
+  with a scene builds to the same bytes on Intel and Apple silicon (the
+  layout's float sums differed in their last digits between the two).
+
 - **v3.39.0:** scenes: objects that move (RULES §34). A ```` ```scene ````
   fence in a slide or a document names blocks (`box Shop`, `row A, B, C`,
   `column …`, `grid …`, `box X at 30,60`; laid out for you when unplaced,
