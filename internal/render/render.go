@@ -154,6 +154,7 @@ type deckRenderer struct {
 	chart         bool                    // a ```chart fence: the page loads infographic.css and chart.js
 	motion        bool                    // a document with animate: or a steps: list mode: the page loads build.css and build.js
 	charts        map[ast.Node][]chartSrc // the first fence of each chart show and its fences
+	scene         bool                    // a ```scene fence: the page loads scene.css and scene.js
 	cw            map[ast.Node]*cwShow    // the first fence of each code window and its steps
 	mindmap3d     bool                    // a map starts in 3D: three.js and mindmap3d.js are inlined too
 	mmN           int                     // ```mindmap fences so far (ids of their fallback lists, their build steps)

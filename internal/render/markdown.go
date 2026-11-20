@@ -122,6 +122,14 @@ func (r *nodeRenderer) fence(
 		w.WriteString(r.dr.chartFence(group))
 		return ast.WalkSkipChildren, nil
 	}
+	if lang == "scene" {
+		attrs := map[string]string{}
+		if n.Info != nil {
+			attrs = fenceAttrs(string(n.Info.Segment.Value(src)))
+		}
+		w.WriteString(r.dr.sceneFence(attrs, body, func(p string) { r.dr.problemAt(r.dr.cur, n, src, "%s", p) }))
+		return ast.WalkSkipChildren, nil
+	}
 	if sh := r.dr.cw[n]; sh != nil {
 		w.WriteString(r.dr.cwFence(sh))
 		return ast.WalkSkipChildren, nil

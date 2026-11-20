@@ -12,6 +12,27 @@ narrated video you would publish.
 
 <!-- si-video: presenting -->
 
+## Scenes: objects that move (3.39)
+
+A `scene` fence names a few blocks and then, one line per click, moves
+things between them, in words anyone can read: a parcel flies from the
+shop to the customer, a token hops down the line, an order splits into
+parcels that merge again at the door, two blocks swap, tiles assemble or
+scatter, a queue fills and its consumer takes from the front, a message
+fans out to every subscriber, a block opens on its parts, a route draws
+itself and drops pins, a parcel drops into a locker. si lays the blocks out
+for you, draws them in the theme's colours and shows the end of a step at
+once for print, reduced motion and jumps. Every verb is in
+[§34](rules/34-scenes-objects-that-move.md).
+
+```scene title="order.placed"
+box Shop
+box Exchange
+column Email, Stock, Analytics
+message flies Shop → Exchange · straight
+Exchange fans out → Email, Stock, Analytics
+```
+
 ## Charts and motion, finished (3.38)
 
 A chart show whose kind changes now folds: each bar bends round the ring

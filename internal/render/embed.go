@@ -253,6 +253,9 @@ func (dr *deckRenderer) adopt(body string) {
 	if strings.Contains(body, `<figure class="si-figure si-chart"`) {
 		dr.chart = true
 	}
+	if strings.Contains(body, `<figure class="si-figure si-scene"`) {
+		dr.scene = true
+	}
 	if strings.Contains(body, `<figure class="si-ig"`) {
 		dr.infographic = true
 	}

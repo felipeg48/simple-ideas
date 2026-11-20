@@ -295,6 +295,74 @@ Notes: (0.5 min)
 
 ---
 
+## Monday night to Thursday afternoon
+
+```scene title="Order #4711"
+box Shop
+box Customer
+parcel flies Shop → Customer
+```
+
+Notes: (0.5 min)
+Seen from far away, the whole promise is one trip. [CLICK] A parcel leaves the shop on Monday night and lands at Mrs. Okafor's door on Thursday afternoon. Everything we fixed happens somewhere along that curve.
+
+Points: Scene
+- The simple picture first; the next three slides open it up
+
+---
+
+## One order, three parcels
+
+```scene title="Order #4712"
+box Order #4712
+column Berlin, Lyon, Milan
+Order #4712 splits → Berlin, Lyon, Milan
+parcels merge → Lyon · slow
+```
+
+Notes: (1 min)
+Order #4712 had three items in three warehouses. [CLICK] So it split into three parcels, one from Berlin, one from Lyon, one from Milan. [CLICK] Since the change, they meet in Lyon and leave as one delivery, so the customer opens the door once.
+
+Points:
+- Consolidation in Lyon is the new rule since March
+- If asked: it adds at most four hours, still inside the promise
+
+---
+
+## The orders queue
+
+```scene title="orders.new"
+queue orders 6 · Picker takes 3
+Picker takes 2
+```
+
+Notes: (1 min)
+Every new order joins one queue, and the picker always takes the oldest first. [CLICK] Six orders wait; the picker takes three and the line moves up. [CLICK] Two more go. On the Tuesday of the promotion this line was twelve hundred long.
+
+Points:
+- First in, first out: nobody jumps the line, not even a premium order
+- Tie back to the warehouse slide: the second picker joins at 500
+
+---
+
+## Who hears about order.placed
+
+```scene title="order.placed"
+box Shop
+box Exchange
+column Email, Stock, Analytics
+message flies Shop → Exchange · straight
+Exchange fans out → Email, Stock, Analytics
+```
+
+Notes: (0.5 min)
+When an order is placed, the shop says it once. [CLICK] The message goes to the exchange, [CLICK] and the exchange hands a copy to everyone who listens: the email that says thank you, the stock count, and analytics.
+
+Points:
+- The shop does not know who listens; adding a listener changes nothing in the shop
+
+---
+
 <!-- layout: center -->
 ## Where a promise breaks
 

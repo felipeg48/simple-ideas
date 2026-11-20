@@ -258,6 +258,22 @@ messages a second, counted up as it comes in
 
 ---
 
+## Scenes
+
+```scene title="order.placed"
+box Shop
+box Exchange
+column Email, Stock, Analytics
+message flies Shop → Exchange · straight
+Exchange fans out → Email, Stock, Analytics
+```
+
+- Name the blocks: `box Shop`, `row A, B, C`, `column …`, `grid …`, `box X at 30,60`; or let si lay them out
+- One line per click: `flies`, `hops`, `morphs`, `splits`, `merge`, `swap`, `assemble`, `scatter`, `queue · X takes 3`, `fans out`, `opens`, `route`, `drops into`
+- `· straight` · `· slow` / `· fast` · `· 2s`; `->` works as `→`; full guide: RULES.md §34
+
+---
+
 ## Video edits
 
 ```text

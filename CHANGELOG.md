@@ -3,6 +3,26 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.39.0:** scenes: objects that move (RULES §34). A ```` ```scene ````
+  fence in a slide or a document names blocks (`box Shop`, `row A, B, C`,
+  `column …`, `grid …`, `box X at 30,60`; laid out for you when unplaced,
+  the blocks a split or a fan-out reaches stacked in a column) and then
+  moves things between them, one build step per line: `parcel flies Shop
+  → Customer · arc|straight`, `token hops A → B → C`, `Order morphs →
+  Event circle → Message diamond`, `Order splits → Berlin, Lyon, Milan`,
+  `parcels merge → Delivery`, `swap A ↔ B`, `tiles assemble 3×3`, `tiles
+  scatter` / `Plan scatters`, `queue orders · Billing takes 3` and `Billing
+  takes 2`, `Exchange fans out → Email, Stock`, `Warehouse opens → Pick,
+  Pack, Ship`, `route Depot → Stop 1 → Stop 2`, `parcel drops into Locker
+  12`; `->` and `<->` work too; `· slow`, `· fast`, `· 2s`. One inline SVG
+  in theme tokens, played by `web/scene.js` (only on pages with a scene);
+  every step's end is worked out in Go, so reduced motion, print, the
+  overview, thumbnails, handouts, steps back and `#N.k` jumps show it at
+  once. In documents a scene plays once in view, with ← → Play. `si build
+  --png --svg` writes `talk-scene-1-step-1.png` per step and
+  `talk-scene-1.png`; `si play --terminal` lists the blocks and steps; `si
+  check` reports unknown verbs, names and options with the line in the
+  fence. The showcase's order journey uses four scenes.
 - **v3.38.1:** a new unlisted brand theme. It works by name like the other
   brand themes and stays out of the theme list, the docs and the gallery.
 

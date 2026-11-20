@@ -387,6 +387,9 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	if dr.infographic || dr.chart {
 		mmCSS += assets.InfographicCSS
 	}
+	if dr.scene {
+		mmCSS += assets.SceneCSS
+	}
 	if dr.motion {
 		mmCSS += assets.BuildCSS
 	}

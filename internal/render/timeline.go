@@ -570,4 +570,7 @@ func (dr *deckRenderer) timelineJS(b *bytes.Buffer) {
 	if dr.chart {
 		b.WriteString("<script>\n" + assets.ChartJS + "</script>\n")
 	}
+	if dr.scene {
+		b.WriteString("<script>\n" + assets.SceneJS + "</script>\n")
+	}
 }

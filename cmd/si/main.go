@@ -57,7 +57,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/ui"
 )
 
-const version = "3.38.1"
+const version = "3.39.0"
 
 // Exit codes.
 const (
@@ -1080,6 +1080,12 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 		if chrome != "" && (o.png || o.svg) && !d.IsMindmap() && !d.IsTimeline() && !d.IsInfographic() && hasCharts(res.HTML) { // every ```chart as pictures
 			if err := exportCharts(chrome, dest, out, d.Name, d.Meta.Fonts, o.png, o.svg, d.IsDoc(), o.scale, stdout); err != nil {
 				fmt.Fprintf(stderr, "si: %s: charts: %v\n", d.Name, err)
+				failed = true
+			}
+		}
+		if chrome != "" && (o.png || o.svg) && !d.IsMindmap() && !d.IsTimeline() && !d.IsInfographic() && hasScenes(res.HTML) { // every ```scene, a picture per step
+			if err := exportPictures("scene", chrome, dest, out, d.Name, d.Meta.Fonts, o.png, o.svg, d.IsDoc(), o.scale, stdout); err != nil {
+				fmt.Fprintf(stderr, "si: %s: scenes: %v\n", d.Name, err)
 				failed = true
 			}
 		}

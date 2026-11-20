@@ -84,6 +84,16 @@ var InfographicJS string
 //go:embed web/chart.js
 var ChartJS string
 
+// SceneCSS and SceneJS draw and play ```scene fences (render/scene.go):
+// blocks and small objects that fly, hop, morph, split, merge, swap, queue.
+// Only pages with one carry them.
+//
+//go:embed web/scene.css
+var SceneCSS string
+
+//go:embed web/scene.js
+var SceneJS string
+
 //go:embed web/mindmap.js
 var MindmapJS string
 

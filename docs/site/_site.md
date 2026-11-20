@@ -25,6 +25,7 @@ footer: simple-ideas
   - [Timelines](features/timelines.md)
   - [Infographics](features/infographics.md)
     - [Animated charts](rules/33-animated-charts.md)
+    - [Scenes](rules/34-scenes-objects-that-move.md)
   - [Video edits](features/video.md)
   - [Books](features/books.md)
   - [Courses](features/courses.md)

@@ -78,6 +78,14 @@ AsciiDoc tab.
 
 ## What's new in si 3
 
+**Scenes (3.39).** A ```` ```scene ```` fence moves things between blocks,
+one click per line, in plain words: `parcel flies Shop → Customer`,
+`token hops Shop → Payments → Courier`, `Order splits → Berlin, Lyon`,
+`queue orders · Billing takes 3`, `Exchange fans out → Email, Stock`,
+`Warehouse opens → Pick, Pack, Ship`, `route Depot → Stop 1 → Stop 2`,
+and morph, merge, swap, assemble, scatter, drop into. One SVG in the
+theme's colours; pictures of each step with `--png` / `--svg`.
+
 **Charts and motion, finished (3.38).** `--png` / `--svg` pictures of
 every chart and each of its steps, bars that fold into a donut's arcs,
 3D charts in infographics, build animations that play as you scroll an

@@ -167,6 +167,17 @@ Median load before the fix.
 
 ---
 
+## A parcel on its way
+
+```scene title="Tuesday"
+box Shop
+box Customer
+parcel flies Shop -> Customer
+Customer opens → Unpack, Keep
+```
+
+---
+
 ## A code show
 
 ```go id=send window=mac title="send.go" numbers backdrop=ocean step="Once"

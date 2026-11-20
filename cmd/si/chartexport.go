@@ -27,11 +27,30 @@ import (
 // chartFile is the name of chart n's picture (1-based): step k (1-based), or
 // k 0 for its final step.
 func chartFile(page string, n, k int, ext string) string {
-	if k == 0 {
-		return fmt.Sprintf("%s-chart-%d.%s", page, n, ext)
-	}
-	return fmt.Sprintf("%s-chart-%d-step-%d.%s", page, n, k, ext)
+	return pictureFile("chart", page, n, k, ext)
 }
+
+// pictureFile names chart or scene n's picture: <page>-scene-<n>.png, …
+func pictureFile(what, page string, n, k int, ext string) string {
+	if k == 0 {
+		return fmt.Sprintf("%s-%s-%d.%s", page, what, n, ext)
+	}
+	return fmt.Sprintf("%s-%s-%d-step-%d.%s", page, what, n, k, ext)
+}
+
+// hasScenes reports whether a built page has a ```scene fence.
+func hasScenes(page []byte) bool { return strings.Contains(string(page), `class="si-figure si-scene"`) }
+
+// the scenes of the page: one picture per step (after it), or one of a
+// scene that has no steps
+const sceneListJS = `(function(){var sl=[].slice.call(document.querySelectorAll('.si-slide'));
+return [].slice.call(document.querySelectorAll('.si-scene')).filter(function(f){return f.siScene}).map(function(f){var s=f.closest('.si-slide');
+var k=[];for(var i=0;i<Math.max(1,f.siScene.n);i++)k.push('scene');return {slide:s?sl.indexOf(s):-1,kinds:k}})})()`
+
+const sceneShowJS = `(function(n,k){var f=[].slice.call(document.querySelectorAll('.si-scene')).filter(function(f){return f.siScene})[n];
+[].forEach.call(document.querySelectorAll('[data-si-shot]'),function(e){e.removeAttribute('data-si-shot')});
+f.setAttribute('data-si-shot','');f.siScene.halt();f.siScene.set(f.siScene.n?k+1:0);f.scrollIntoView({block:'center'});
+var r=f.getBoundingClientRect();return [r.left+scrollX,r.top+scrollY,r.width,r.height]})(%d,%d)`
 
 // hasCharts reports whether a built page has a ```chart fence.
 func hasCharts(page []byte) bool { return strings.Contains(string(page), `class="si-figure si-chart"`) }
@@ -50,6 +69,15 @@ var r=f.getBoundingClientRect();return [r.left+scrollX,r.top+scrollY,r.width,r.h
 
 // exportCharts writes the pictures of every chart on a built page (dest).
 func exportCharts(chrome, dest, out, page, fonts string, png, svg, doc bool, scale float64, stdout io.Writer) error {
+	return exportPictures("chart", chrome, dest, out, page, fonts, png, svg, doc, scale, stdout)
+}
+
+// exportPictures is exportCharts for charts or (what "scene") scenes.
+func exportPictures(what, chrome, dest, out, page, fonts string, png, svg, doc bool, scale float64, stdout io.Writer) error {
+	listJS, showJS := chartListJS, chartShowJS
+	if what == "scene" {
+		listJS, showJS = sceneListJS, sceneShowJS
+	}
 	abs, err := filepath.Abs(dest)
 	if err != nil {
 		return err
@@ -81,10 +109,10 @@ func exportCharts(chrome, dest, out, page, fonts string, png, svg, doc bool, sca
 	if _, err := c.Eval(`document.fonts?document.fonts.ready.then(function(){return 1}):1`); err != nil {
 		return err
 	}
-	if _, err := c.Eval(hideChrome + `;(function(){var s=document.createElement('style');s.textContent='.si-chart-nav,.si-doc-find,.si-doc-head .si-mode,[data-si-shot] .si-chart-frame:not([data-on]){display:none!important}';document.head.appendChild(s)})()`); err != nil {
+	if _, err := c.Eval(hideChrome + `;(function(){var s=document.createElement('style');s.textContent='.si-chart-nav,.si-scene-nav,.si-doc-find,.si-doc-head .si-mode,[data-si-shot] .si-chart-frame:not([data-on]){display:none!important}';document.head.appendChild(s)})()`); err != nil {
 		return err
 	}
-	raw, err := c.Eval(chartListJS)
+	raw, err := c.Eval(listJS)
 	if err != nil {
 		return err
 	}
@@ -110,7 +138,7 @@ func exportCharts(chrome, dest, out, page, fonts string, png, svg, doc bool, sca
 		}
 		steps := len(ch.Kinds)
 		for k := 0; k < steps; k++ {
-			raw, err := c.Eval(fmt.Sprintf(chartShowJS, n, k))
+			raw, err := c.Eval(fmt.Sprintf(showJS, n, k))
 			if err != nil {
 				return err
 			}
@@ -133,11 +161,11 @@ func exportCharts(chrome, dest, out, page, fonts string, png, svg, doc bool, sca
 					return err
 				}
 				for _, s := range names {
-					f := chartFile(page, n+1, s, "png")
+					f := pictureFile(what, page, n+1, s, "png")
 					if err := os.WriteFile(filepath.Join(out, f), shot, 0o644); err != nil {
 						return err
 					}
-					fmt.Fprintf(stdout, "  %-28s (png, chart %d%s)\n", f, n+1, stepNote(s, steps))
+					fmt.Fprintf(stdout, "  %-28s (png, %s %d%s)\n", f, what, n+1, stepNote(s, steps))
 				}
 			}
 			if svg && strings.HasSuffix(ch.Kinds[k], "3d") {
@@ -149,15 +177,15 @@ func exportCharts(chrome, dest, out, page, fonts string, png, svg, doc bool, sca
 				}
 				var pic string
 				if err := json.Unmarshal(raw, &pic); err != nil || pic == "" {
-					return fmt.Errorf("svg: chart %d drew nothing", n+1)
+					return fmt.Errorf("svg: %s %d drew nothing", what, n+1)
 				}
 				pic, _ = svgFonts(pic, render.GoogleFamilies(fonts))
 				for _, s := range names {
-					f := chartFile(page, n+1, s, "svg")
+					f := pictureFile(what, page, n+1, s, "svg")
 					if err := os.WriteFile(filepath.Join(out, f), []byte(pic), 0o644); err != nil {
 						return err
 					}
-					fmt.Fprintf(stdout, "  %-28s (svg, chart %d%s)\n", f, n+1, stepNote(s, steps))
+					fmt.Fprintf(stdout, "  %-28s (svg, %s %d%s)\n", f, what, n+1, stepNote(s, steps))
 				}
 			}
 		}
