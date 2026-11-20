@@ -194,7 +194,7 @@ func TestThemeList(t *testing.T) {
 		}
 	}
 	// client themes work by name but are never listed (TRADEMARKS.md)
-	for _, never := range []string{"acemq", "AceMQ", "crdb", "cockroach"} {
+	for _, never := range []string{"acemq", "AceMQ", "crdb", "cockroach", "osstend", "OSStend"} {
 		if strings.Contains(stdout.String(), never) {
 			t.Errorf("theme list shows unlisted %q", never)
 		}

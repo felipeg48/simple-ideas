@@ -3,6 +3,9 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.38.1:** a new unlisted brand theme. It works by name like the other
+  brand themes and stays out of the theme list, the docs and the gallery.
+
 - **v3.38.0:** charts and motion, finished. `si build talk.md --png --svg`
   writes every ```` ```chart ```` fence of a deck or document as a picture,
   numbered in page order: `talk-chart-1.png` / `.svg` of its final step and,

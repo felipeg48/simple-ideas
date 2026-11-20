@@ -636,6 +636,9 @@ const (
 	// AceMQ brand fonts: embedded by web/themes/acemq.css (latin subsets).
 	aceBody    = `"Mona Sans", "Helvetica Neue", "Segoe UI", system-ui, sans-serif`
 	aceHeading = `"Urbanist", "Mona Sans", "Helvetica Neue", system-ui, sans-serif`
+	// OSStend brand fonts: embedded by web/themes/osstend.css (latin subsets).
+	osstSans = `"Inter Tight", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`
+	osstMono = `"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace`
 )
 
 // layoutDefaults are mode-independent defaults shared by every theme.
@@ -854,6 +857,31 @@ var Themes = map[string]Theme{
 			"--si-surface-2": "#17191d", "--si-line": "rgb(255 255 255 / .12)", "--si-accent": "#ff6600", "--si-accent-2": "#8fd5cc",
 			"--si-on-accent": "#ffffff", "--si-ok": "#8fd5cc", "--si-warn": "#f2b33d", "--si-crit": "#ff7b7f",
 			"--si-shadow": "0 .4em 1.4em rgb(0 0 0 / .35), inset 0 1px 0 rgb(255 255 255 / .05)",
+		},
+	},
+	// OSStend brand (Tide blue / ink, Inter Tight + JetBrains Mono). Green and
+	// teal only mean status (--si-ok). Tide gradient, logo, slide looks and
+	// fonts live in web/themes/osstend.css. Charts, code and maps use the
+	// Tide family, never green.
+	"osstend": {
+		Label: "OSStend", About: "Tide blue on white or ink, Inter Tight + JetBrains Mono, Tended Loop logo",
+		Base: map[string]string{"--si-font-body": osstSans, "--si-font-heading": osstSans, "--si-font-mono": osstMono,
+			"--si-heading-weight": "750", "--si-heading-tracking": "-0.038em", "--si-h2-size": "2.2em", "--si-radius": ".8em"},
+		Light: map[string]string{
+			"--si-bg": "#ffffff", "--si-fg": "#0a0b10", "--si-muted": "#5b6478", "--si-surface": "#ffffff",
+			"--si-surface-2": "#f6f7f9", "--si-line": "#dfe0e8", "--si-accent": "#1b4fd9", "--si-accent-2": "#2a2bc4",
+			"--si-on-accent": "#ffffff", "--si-ok": "#037a67", "--si-warn": "#8a5a00", "--si-crit": "#c01548",
+			"--si-shadow": "0 .75em 2em -1.1em rgb(10 11 16 / .3)",
+			"--si-ig-1":   "#3d6bff", "--si-ig-2": "#2a2bc4", "--si-ig-3": "#2e9bff", "--si-ig-4": "#5fd4ff",
+			"--si-code-hl": "rgb(61 107 255 / .1)",
+		},
+		Dark: map[string]string{
+			"--si-bg": "#0a0b10", "--si-fg": "#ffffff", "--si-muted": "#9aa4b2", "--si-surface": "#11131a",
+			"--si-surface-2": "#161a24", "--si-line": "#2e3342", "--si-accent": "#8fb0ff", "--si-accent-2": "#5fd4ff",
+			"--si-on-accent": "#0a0b10", "--si-ok": "#14f0cc", "--si-warn": "#ffc857", "--si-crit": "#ff6b8e",
+			"--si-shadow": "0 .75em 2em -1em rgb(0 0 0 / .6)",
+			"--si-ig-1":   "#5fd4ff", "--si-ig-2": "#8fb0ff", "--si-ig-3": "#2e9bff", "--si-ig-4": "#3d6bff",
+			"--si-code-hl": "rgb(143 176 255 / .12)",
 		},
 	},
 }

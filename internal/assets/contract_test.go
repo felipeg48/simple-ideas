@@ -117,6 +117,19 @@ func TestAcemqThemeEmbedsAssets(t *testing.T) {
 	}
 }
 
+func TestOsstendThemeEmbedsAssets(t *testing.T) {
+	css := ThemeCSS("OSStend")
+	if strings.Count(css, `url("data:font/woff2;base64,`) != 2 || strings.Count(css, `url("data:image/svg+xml;base64,`) != 3 {
+		t.Error("osstend embeds both fonts and the three logo files as data URIs")
+	}
+	if regexp.MustCompile(`https?://`).MatchString(css) || strings.Contains(css, `url("osstend/`) {
+		t.Error("osstend theme CSS must not reference anything outside the deck")
+	}
+	if !UnlistedThemes["osstend"] {
+		t.Error("osstend is a brand theme: unlisted")
+	}
+}
+
 func TestCanonicalTheme(t *testing.T) {
 	for in, want := range map[string]string{
 		"AceMQ Pro": "acemq-pro", "acemq_pro": "acemq-pro", "acemqpro": "acemq-pro", " ACEMQ ": "acemq",
@@ -163,7 +176,7 @@ func TestNewThemesContrast(t *testing.T) {
 		la, lb := lum(a), lum(b)
 		return (math.Max(la, lb) + 0.05) / (math.Min(la, lb) + 0.05)
 	}
-	for _, name := range []string{"twilight", "forest", "sunrise", "slate", "neon", "newsprint"} {
+	for _, name := range []string{"twilight", "forest", "sunrise", "slate", "neon", "newsprint", "osstend"} {
 		th, ok := Themes[name]
 		if !ok {
 			t.Fatalf("theme %s missing", name)

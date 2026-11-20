@@ -55,7 +55,7 @@ var elementTokens = map[string]bool{"--si-slide-bg": true, "--si-bg-fit": true, 
 
 // UnlistedThemes are built-ins kept out of the docs and the Studio's start
 // list (client themes); they still work by name.
-var UnlistedThemes = map[string]bool{"crdb": true, "acemq": true, "acemq-pro": true}
+var UnlistedThemes = map[string]bool{"crdb": true, "acemq": true, "acemq-pro": true, "osstend": true}
 
 // ThemeTokens returns a built-in theme's token values: light holds the
 // mode-independent defaults, the theme's base values and its light colours;

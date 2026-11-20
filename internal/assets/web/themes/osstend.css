@@ -1,0 +1,195 @@
+/* osstend: the OSStend brand look (built-in theme extras).
+ *
+ * ThemeCSS emits this inside @layer si.theme, after the osstend token values
+ * and only for decks with theme: osstend. Its url() references to osstend/
+ * files become data URIs at emit time (fonts, the Tended Loop lockup), so a
+ * deck stays self-contained.
+ *
+ * Brand rules kept here:
+ * - Tide (#5FD4FF → #2E9BFF → #3D6BFF → #2A2BC4, 135°) on the progress bar,
+ *   eyebrow dashes, highlights and the closing headline; never behind body text.
+ * - Green/teal only as status (--si-ok); never an accent.
+ * - Pills for badges and buttons, chips at a 6px-like radius, cards 20/28.
+ * - The logo is the brand's own SVG lockup, never retyped.
+ *
+ * Cascade notes (as acemq.css): si's own looks come after this file in the same
+ * layer, so rules that restyle si hooks are prefixed `html`; the few
+ * `!important`s move unlayered layout rules (cover alignment). Private
+ * variables are --osst-*.
+ */
+
+/* ---------- palette ---------- */
+:root {
+  --osst-tide: linear-gradient(135deg, #5fd4ff 0%, #2e9bff 36%, #3d6bff 70%, #2a2bc4 100%);
+  --osst-tide-h: linear-gradient(90deg, #5fd4ff 0%, #2e9bff 36%, #3d6bff 70%, #2a2bc4 100%);
+  --osst-blue: #3d6bff;
+  --osst-sky: #0b6e99;
+  --osst-ink: #0a0b10;
+  --osst-bg-alt: #f6f7f9;
+  --osst-border: #ecedf2;
+  --osst-blue-tint: #eaf0ff;
+  --osst-grid: rgb(10 11 16 / .05);
+  --osst-glow-sky: rgb(95 212 255 / .26);
+  --osst-glow-indigo: rgb(42 43 196 / .14);
+  --osst-hl: linear-gradient(90deg, rgb(95 212 255 / .6), rgb(61 107 255 / .36) 50%, rgb(42 43 196 / .28));
+  --osst-hl-text: linear-gradient(135deg, #5fd4ff, #2e9bff 40%, #6f8fff);
+  --osst-lockup: url("osstend/osstend-lockup-on-light.svg");
+  --osst-lockup-dark: url("osstend/osstend-lockup-on-dark.svg");
+  --osst-mark: url("osstend/osstend-mark.svg");
+  --osst-chip: .25em;
+  --osst-card: .8em;
+  --osst-feature: 1.1em;
+  /* the lockup in <!-- logo: --> (.si-lk-logo); none hides it */
+  --si-brand-logo: var(--osst-lockup);
+}
+/* dark: the whole deck in dark mode */
+:root[data-si-mode="dark"] {
+  --osst-bg-alt: #0d0f15;
+  --osst-sky: #5fd4ff;
+  --osst-border: #1e2230;
+  --osst-blue-tint: rgb(61 107 255 / .14);
+  --osst-grid: rgb(255 255 255 / .05);
+  --osst-glow-sky: rgb(95 212 255 / .14);
+  --osst-glow-indigo: rgb(61 107 255 / .3);
+  --osst-lockup: var(--osst-lockup-dark);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-si-mode]) {
+    --osst-bg-alt: #0d0f15;
+    --osst-sky: #5fd4ff;
+    --osst-border: #1e2230;
+    --osst-blue-tint: rgb(61 107 255 / .14);
+    --osst-grid: rgb(255 255 255 / .05);
+    --osst-glow-sky: rgb(95 212 255 / .14);
+    --osst-glow-indigo: rgb(61 107 255 / .3);
+    --osst-lockup: var(--osst-lockup-dark);
+  }
+}
+/* the closing slide and slides on a dark background are ink in both modes */
+.si-slide.si-closing, .si-slide.si-bg-dark {
+  --si-bg: #0a0b10; --si-fg: #ffffff; --si-muted: #9aa4b2; --si-surface: #11131a; --si-surface-2: #161a24;
+  --si-line: #2e3342; --si-accent: #8fb0ff; --si-accent-2: #5fd4ff; --si-on-accent: #0a0b10;
+  --si-ok: #14f0cc; --si-warn: #ffc857; --si-crit: #ff6b8e;
+  --osst-bg-alt: #0d0f15; --osst-sky: #5fd4ff; --osst-border: #1e2230; --osst-grid: rgb(255 255 255 / .05);
+  --osst-lockup: var(--osst-lockup-dark);
+  --si-brand-logo: var(--osst-lockup-dark);
+  color: var(--si-fg);
+}
+
+/* ---------- slide backgrounds: white and gray-050 in turn, a sky glow ---------- */
+.si-slide:nth-of-type(odd) { --si-slide-bg: radial-gradient(55% 55% at 0% 0%, var(--osst-glow-sky), transparent 62%), var(--si-bg); }
+.si-slide:nth-of-type(even) { --si-slide-bg: var(--osst-bg-alt); }
+html .si-slide:nth-of-type(even) :not(pre) > code { background: var(--si-surface); }
+/* title: the brand grid, faded out, under a sky and indigo glow */
+.si-slide.si-title {
+  --si-slide-bg: radial-gradient(60% 60% at 18% -10%, var(--osst-glow-sky), transparent 62%),
+    radial-gradient(60% 60% at 84% -8%, var(--osst-glow-indigo), transparent 62%),
+    radial-gradient(90% 85% at 50% 0%, transparent 30%, var(--si-bg) 82%),
+    linear-gradient(var(--osst-grid) 1px, transparent 1px) center top / 4.2cqi 4.2cqi,
+    linear-gradient(90deg, var(--osst-grid) 1px, transparent 1px) center top / 4.2cqi 4.2cqi, var(--si-bg);
+}
+/* section: gray-050, the Tide bar down the left edge */
+.si-slide.si-section {
+  --si-slide-bg: var(--osst-tide) left top / max(.35rem, .9cqi) 100% no-repeat,
+    radial-gradient(60% 60% at 100% 0%, var(--osst-glow-indigo), transparent 65%), var(--osst-bg-alt);
+}
+html .si-section .si-inner { box-shadow: none; }
+/* closing: ink with a blue glow and the grid, as the brand's last slide */
+.si-slide.si-closing {
+  --si-slide-bg: radial-gradient(70% 70% at 100% 0%, rgb(61 107 255 / .42), transparent 65%),
+    radial-gradient(60% 60% at 0% 100%, rgb(95 212 255 / .16), transparent 65%),
+    radial-gradient(80% 80% at 100% 0%, transparent 20%, #0a0b10 75%),
+    linear-gradient(rgb(255 255 255 / .05) 1px, transparent 1px) center top / 4.2cqi 4.2cqi,
+    linear-gradient(90deg, rgb(255 255 255 / .05) 1px, transparent 1px) center top / 4.2cqi 4.2cqi, #0a0b10;
+}
+
+/* ---------- type ---------- */
+html .si-inner { line-height: 1.5; font-weight: 400; }
+html .si-heading { line-height: 1.04; }
+html h2.si-heading { max-width: 22em; }
+html .si-content h2.si-heading::after, html .si-title h1.si-heading::after { display: none; }
+html .si-body strong, html .si-body b { color: var(--si-fg); font-weight: 650; }
+html .si-body h3 { font-weight: 700; letter-spacing: -.03em; }
+html .si-slide .lead { color: var(--si-muted); font-size: 1.1em; line-height: 1.45; text-wrap: pretty; }
+
+/* eyebrow: JetBrains Mono 500, uppercase, +0.08em, a Tide dash before it */
+html .si-kicker { display: flex; align-items: center; gap: .7em; margin: 0 0 1em; font: 500 .8em/1.2 var(--si-font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--si-accent); }
+html .si-kicker::before { content: ""; flex: none; width: 1.8em; height: .14em; border-radius: .14em; background: var(--osst-tide-h); }
+html .si-closing .si-kicker { color: #5fd4ff; }
+
+/* highlight (==text==): a Tide band under the words on light, Tide text on ink */
+html .hl { background: var(--osst-hl) 0 88% / 100% .3em no-repeat; -webkit-box-decoration-break: clone; box-decoration-break: clone; padding-inline: .04em; }
+:root[data-si-mode="dark"] .hl, .si-closing .hl, .si-bg-dark .hl {
+  background: var(--osst-hl-text); background-size: 100% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; padding-inline: 0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-si-mode]) .hl { background: var(--osst-hl-text); background-size: 100% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; padding-inline: 0; }
+}
+
+/* ---------- progress bar: Tide ---------- */
+html .si-progress { height: .22rem; background: var(--osst-tide-h); }
+
+/* ---------- logo: the lockup bottom left of every content and section slide ---------- */
+:root:not([data-si-handout]) .si-slide:is(.si-content, .si-section)::before {
+  content: ""; position: absolute; z-index: 2; pointer-events: none;
+  left: var(--si-pad-x); bottom: calc(var(--si-pad-y) * .42);
+  height: clamp(.8rem, 1.45cqi, 3.4rem); aspect-ratio: 528.8 / 120;
+  background: var(--osst-lockup) left center / contain no-repeat;
+}
+
+/* ---------- title and closing: left-aligned display type, the lockup on top ---------- */
+html :is(.si-title, .si-closing) .si-inner { justify-content: center; align-items: flex-start !important; text-align: left !important; }
+html :is(.si-title, .si-closing) .si-sub { display: contents !important; }
+html :is(.si-title, .si-closing) h1.si-heading {
+  font-size: calc(var(--si-h1-size) * 1.2); font-weight: 800; letter-spacing: -.045em; line-height: .98; max-width: 14em; margin: 0 0 .35em;
+}
+html .si-closing h1.si-heading { font-size: var(--si-h1-size); }
+html :is(.si-title, .si-closing) .si-inner::before {
+  content: ""; order: -2; flex: none; display: block; height: 2.2em; aspect-ratio: 528.8 / 120; margin-bottom: 1.6em;
+  background: var(--osst-lockup) left center / contain no-repeat;
+}
+html :is(.si-title, .si-closing):has(.si-lk-logo) .si-inner::before { content: none; }
+html :is(.si-title, .si-closing) .si-qr { margin-inline: 0 !important; }
+html .si-title .si-byline, html .si-title .si-colophon { font: 500 .72em/1.3 var(--si-font-mono); letter-spacing: .02em; color: var(--si-muted); }
+
+/* ---------- <!-- logo: × Client -->: the lockup, a slanted rule, the partner ---------- */
+html .si-lockup { order: -2; display: flex; align-items: center; gap: 1.1em; margin-bottom: 1.4em; }
+html .si-lockup .si-lk-logo { display: block; height: 2.2em; aspect-ratio: 528.8 / 120; background: var(--si-brand-logo) left center / contain no-repeat; }
+html .si-lockup .si-lk-logo + .si-lk-x { display: block; }
+html .si-lockup .si-lk-x { width: .1em; height: 2.2em; background: var(--si-line); transform: rotate(18deg); }
+html .si-lockup .si-lk-name { font-weight: 700; letter-spacing: -.03em; }
+
+/* ---------- shapes: pills, chips, cards ---------- */
+html :not(pre) > code { font-size: .86em; padding: .06em .32em; border-radius: var(--osst-chip); background: var(--si-surface-2); border: 1px solid var(--osst-border); }
+html .si-slide .si-pill { border-radius: 99em; font-family: var(--si-font-body); font-weight: 500; color: var(--si-fg); }
+html .si-pill-mark { background: var(--osst-tide); }
+html .si-pill[data-kind="ok"] .si-pill-mark { background: var(--si-ok); }
+html :is(.si-lab-link, .si-site-cta, .si-page-cta, .si-ig-play) { border-radius: 99em; }
+html .si-slide :is(blockquote, pre.si-code, table) { border-radius: var(--osst-card); }
+html .si-slide[data-layout="split"] .si-col + .si-col { border-radius: var(--osst-feature); }
+
+/* code: keywords indigo, strings and highlighted values Tide blue, never green */
+html pre.si-code .si-tk-t { color: var(--si-accent-2); }
+html pre.si-code :is(.si-tk-n, .si-tk-v) { color: color-mix(in srgb, var(--si-accent) 70%, var(--si-fg)); }
+html .si-cw[data-cw-theme="auto"] {
+  --si-cw-k: var(--si-accent-2); --si-cw-s: var(--si-accent); --si-cw-t: var(--si-accent-2);
+  --si-cw-n: color-mix(in srgb, var(--si-accent) 70%, var(--si-fg)); --si-cw-f: color-mix(in srgb, var(--si-accent) 55%, var(--si-fg));
+  --si-cw-hl: color-mix(in srgb, #3d6bff 12%, transparent); --si-cw-radius: var(--osst-card);
+  --si-cw-pin: #3d6bff; --si-cw-pin-fg: #ffffff;
+}
+/* mind maps on the deck theme: the Tide family for branches, never green */
+html .si-mindmap[data-mm-theme="auto"] { --si-mm-3: #2e9bff; --si-mm-4: var(--osst-sky); --si-mm-5: color-mix(in srgb, var(--si-accent-2) 60%, var(--si-fg)); }
+
+/* tables: gray-050 header, hairline rows */
+html .si-body table { border-collapse: separate; border-spacing: 0; overflow: hidden; border: 1px solid var(--osst-border); background: var(--si-surface); }
+html .si-body th { background: var(--osst-bg-alt); font-weight: 700; text-align: left; }
+html .si-body :is(th, td) { border-bottom: 1px solid var(--osst-border); }
+html .si-body tr:last-child td { border-bottom: 0; }
+
+/* ---------- fonts (latin subsets, OFL) ---------- */
+@font-face { font-family: "Inter Tight"; font-style: normal; font-weight: 400 800; font-display: swap;
+  src: url("osstend/inter-tight-latin-400-800.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 400 600; font-display: swap;
+  src: url("osstend/jetbrains-mono-latin-500.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }

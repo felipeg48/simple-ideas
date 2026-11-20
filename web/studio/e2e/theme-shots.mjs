@@ -21,7 +21,7 @@ writeFileSync(join(src, "showcase.md"), readFileSync(join(repo, "examples/showca
 
 const list = execFileSync(si, ["theme", "list"], { encoding: "utf8" });
 const themes = [...list.matchAll(/^\s*([a-z0-9-]+)\s{2,}(.+?)\s{2,}/gm)].map((m) => ({ name: m[1], label: m[2].trim() }));
-const unlisted = new Set(["crdb", "acemq", "acemq-pro"]); // as internal/docsite/themes.go
+const unlisted = new Set(["crdb", "acemq", "acemq-pro", "osstend"]); // as internal/docsite/themes.go
 for (let i = themes.length - 1; i >= 0; i--) if (unlisted.has(themes[i].name)) themes.splice(i, 1);
 if (!themes.length) throw new Error("si theme list gave no themes:\n" + list);
 
