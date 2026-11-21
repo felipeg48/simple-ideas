@@ -851,6 +851,7 @@ si doctor                  # the optional programs (Chrome, ffmpeg, git…): fou
 si new <name>              # scaffold a deck (the showcase, every rule)
 si new <name> --structure  # a project with a structure map: folders per kind, sources in md/
 si new <name> --type article   # a small starter: deck, article, guide, book, course, site, page, lab, demo, mindmap, mindmap3d, codeshow
+si build book/ -o out/ --pdf --docx --md --epub   # a book for a publisher: paginated PDF, Word, Markdown (+ --rtf)
 si build course/ -o html/ --zip   # a course as a website bundle (+ zip); --instructor for the instructor's edition
 si build course/ -o html/ --scorm --pdf   # + <course>-scorm12.zip for an LMS and the learner workbook PDF
 si publish course/ --to skilljar --base-url URL   # a dry run; --yes sends it (si publish login skilljar first)

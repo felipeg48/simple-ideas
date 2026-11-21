@@ -12,6 +12,24 @@ narrated video you would publish.
 
 <!-- si-video: presenting -->
 
+## Books for publishers (3.41)
+
+Publishers each want their own format: Word, Markdown, PDF. A book in si now
+builds into all of them from the same chapters. `--pdf` prints it as a
+book: a cover and title page, contents with the page of every chapter and
+section, a page for each part, the chapter's title at the top of each page
+and the number at the bottom. `--docx` writes a Word document with real
+styles (headings, code, captions, lists, quotes, tables), the pictures in
+it and a contents field Word fills when it opens. `--md` writes clean
+Markdown, the whole book and one file per chapter, with the pictures
+beside; `--rtf` and `--epub` cover the rest. Numbers, cross-references and
+index terms come out as the HTML book shows them. See
+[§21](rules/21-books-references.md).
+
+```bash
+si build book/ -o out/ --pdf --docx --md --rtf --epub
+```
+
 ## Scenes: objects that move (3.39)
 
 A `scene` fence names a few blocks and then, one line per click, moves

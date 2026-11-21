@@ -2524,7 +2524,45 @@ theme: paper
   a bar with Cover · Contents · Index (· PDF). A book has no `index.md`: name the
   first page `preface.md` or similar.
 - **PDF.** `si build <book> --pdf` also prints `book.html` to `book.pdf`
-  (each chapter starts a new page) and links it from the cover and the bar.
+  and links it from the cover and the bar: A4 pages, the cover and a title
+  page (`_cover.md` and the `copyright:` line) unnumbered, the contents with
+  the page of every chapter and section (si prints twice: once to learn the
+  pages, once to write them in), a page of its own for each part, every
+  chapter on a new page with its title at the top of each page and the page
+  number at the bottom, figures, tables and code kept whole, a PDF outline.
+  Code callouts, charts and scenes print in their final state. Needs Chrome.
+
+  ```bash
+  si build book/ -o html/ --pdf        # html/book.pdf
+  ```
+- **Export for a publisher.** The same book, read once, as Markdown, Word,
+  RTF or EPUB (any of them, together; written beside the HTML). Chapters,
+  appendices, sections, figures and tables keep their numbers, empty
+  cross-references are filled ("Table 1.1"), `((index terms))` become the
+  plain word, `<!-- … -->` directives and raw HTML are dropped, code callouts
+  become `(1)` markers and a numbered list after the block, alerts (and
+  AsciiDoc admonitions) a quote with a bold **Note:** label. Works the same
+  from `.adoc` chapters.
+
+  ```bash
+  si build book/ -o out/ --md      # out/md/book.md (the whole book, a pandoc title block first),
+                                   # out/md/<chapter>.md one per chapter, out/md/images/
+  si build book/ -o out/ --docx    # out/book.docx: Word styles (Title, Heading 1-3, Code, Caption,
+                                   # List Bullet/Number, Quote, Table Grid), a contents field Word
+                                   # fills on open, each chapter on a new page, page numbers
+  si build book/ -o out/ --rtf     # out/book.rtf: headings, lists, tables, code, pictures
+  si build book/ -o out/ --epub    # out/book.epub: EPUB 3, one file per part and chapter
+  ```
+
+  Pictures travel as files (`image::` and `![]()` alike, and the SVG of a
+  `<!-- svg: -->` canvas); Word and RTF get an SVG as a PNG Chrome draws
+  (without Chrome, a placeholder line). Figures si draws itself (`chart`,
+  `scene`, `stage`, `mindmap`, `quiz`, `video` fences) become a placeholder
+  line naming the figure; a `mermaid` fence stays a fence in Markdown. A
+  guide (`_nav.md` without `type: book`) exports the same way as `guide.*`,
+  without numbers, and an article as `<name>.md`, `<name>.docx` and so on
+  (`si build note.md --docx`). A deck, a site or a course says the flags are
+  not for it.
 - `si serve` serves a book live (the whole book is numbered on every
   request); in a folder, a book is one BOOK tile on the index.
 

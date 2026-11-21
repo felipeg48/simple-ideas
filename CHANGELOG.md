@@ -3,6 +3,16 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.41.0:** books for publishers (fixes #23). `si build <book> --pdf`
+  now prints a paginated book: cover and title page unnumbered, contents
+  with page numbers (two prints: the first measures, the second writes the
+  numbers), a page per part, each chapter on a new page with a running title
+  and page numbers, a PDF outline. New `--md` (the whole book and one file
+  per chapter, images copied beside), `--docx` (Word, written by hand:
+  styles, embedded pictures, a contents field Word updates on open, page
+  numbers), `--rtf` and `--epub` (EPUB 3). One model of the book
+  (`internal/bookexport`) feeds every format; guides and articles export too.
+
 - **v3.40.0:** a code block and its `<N>` callout list are one card
   (issues #24, #25): a `<figure class="si-codecallout">` holds both, with one
   border, one background and one dashed line between code and list (no

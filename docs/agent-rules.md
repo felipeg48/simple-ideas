@@ -375,6 +375,9 @@ Not everything is a slide deck. Pick the type by what the reader does:
   (an image with a title) and tables (a `Table: caption` line after the
   table). Refer with empty links (`[](#fig-…)`, `[](02-x.md#section-id)`) so the
   numbers stay right, and mark index terms with `((term))` / `(((term)))`.
+  For a publisher: `si build book/ --pdf` (paginated, contents with page
+  numbers), `--docx` (Word), `--md` (one file and one per chapter),
+  `--rtf`, `--epub` (RULES.md §21).
 - **Mind maps** (RULES.md §24): one list item per topic, nested lists for
   children, short topic text (a few words). Link maps with `→ other.md` (one
   file per map; they are inlined and open with a zoom) or, in one file,

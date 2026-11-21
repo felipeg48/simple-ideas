@@ -78,6 +78,13 @@ AsciiDoc tab.
 
 ## What's new in si 3
 
+**Books for publishers (3.41).** `si build book/ --pdf` prints a real book:
+cover and title page, a contents page with page numbers, part pages,
+running chapter titles and page numbers. `--docx` writes a Word document
+(styles, pictures, a contents field), `--md` clean Markdown (one file and
+one per chapter, pictures beside), `--rtf` and `--epub` the rest. From
+Markdown or AsciiDoc chapters alike.
+
 **Scenes (3.39).** A ```` ```scene ```` fence moves things between blocks,
 one click per line, in plain words: `parcel flies Shop → Customer`,
 `token hops Shop → Payments → Courier`, `Order splits → Berlin, Lyon`,

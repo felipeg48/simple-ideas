@@ -17,6 +17,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/felipeg48/simple-ideas/internal/bookexport"
 	"github.com/felipeg48/simple-ideas/internal/brand"
 	"github.com/felipeg48/simple-ideas/internal/cdp"
 	"github.com/felipeg48/simple-ideas/internal/tools"
@@ -57,7 +58,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/ui"
 )
 
-const version = "3.40.0"
+const version = "3.41.0"
 
 // Exit codes.
 const (
@@ -92,6 +93,9 @@ Usage:
   si [build] <dir|file.md> [--output html/] [--css <dir|file.css>]... [--no-inline-media] [--pdf]
         write one self-contained HTML file per deck plus index.html
         --pdf also renders each deck to pdfs/<name>.pdf and adds a PDF badge to the index tiles
+        (a book: book.pdf, paginated, contents with page numbers)
+        --md --docx --rtf --epub  a book, guide or article for a publisher: md/<book>.md and one
+        .md per chapter (images in md/images/), book.docx (Word), book.rtf, book.epub
         --handout[=slides|lines|points|notes] also prints handouts/<name>.pdf for the audience: slides
         only by default (no speaker text); lines adds space to write, points / notes the speaker's text
         --mp4 [--dwell 3] also films each deck to <name>.mp4 (1080p): every slide and build
@@ -418,6 +422,7 @@ type options struct {
 	open, help, ver, verbose, feature            bool
 	noInline, pdf, slides, dev, web, noOpen      bool
 	share                                        bool // --share-assets
+	md, docx, rtf, epub                          bool // si build <book|guide|article> --md --docx --rtf --epub
 	write                                        bool // si fix --write
 	terminal, notes                              bool // si play --terminal [--notes]; si --terminal
 	dump                                         int  // si play --terminal --dump N
@@ -504,6 +509,10 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.share, "share-assets", false, "")
 	fl.BoolVar(&o.structure, "structure", false, "")
 	fl.BoolVar(&o.pdf, "pdf", false, "")
+	fl.BoolVar(&o.md, "md", false, "")
+	fl.BoolVar(&o.docx, "docx", false, "")
+	fl.BoolVar(&o.rtf, "rtf", false, "")
+	fl.BoolVar(&o.epub, "epub", false, "")
 	fl.BoolVar(&o.svg, "svg", false, "")
 	fl.BoolVar(&o.png, "png", false, "")
 	fl.Float64Var(&o.scale, "scale", 2, "")
@@ -1205,6 +1214,16 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 						}
 					}
 				}
+			}
+		}
+		if o.wantsExport() {
+			if exportable(d) {
+				if !exportDocs(bookexport.FromDeck(d), out, d.Name, o, stdout, stderr) {
+					failed = true
+				}
+			} else if len(files) == 1 {
+				fmt.Fprintf(stderr, "si: %s: --md, --docx, --rtf and --epub export books, guides and articles (this is a %s)\n", d.Name, d.Meta.Type)
+				failed = true
 			}
 		}
 		if chrome != "" && d.IsInfographic() && (o.png || o.pdf || o.gif || o.mp4) { // the slide or the poster as a picture and a one-page PDF; animated: GIF, MP4
@@ -2317,12 +2336,21 @@ func buildGuide(g *deck.Guide, out string, o *options, css []render.Stylesheet, 
 		return "", false
 	}
 	if chrome != "" { // a book: the one-file edition printed to PDF
-		if err := deckToPDF(chrome, filepath.Join(out, "book.html"), filepath.Join(out, "book.pdf")); err != nil {
+		err := fmt.Errorf("no book")
+		if b, berr := bookexport.FromGuide(g); berr != nil {
+			err = berr
+		} else {
+			err = bookPDF(chrome, filepath.Join(out, "book.html"), filepath.Join(out, "book.pdf"), b)
+		}
+		if err != nil {
 			fmt.Fprintf(stderr, "si: book pdf: %v\n", err)
 			ok = false
 		} else {
 			fmt.Fprintf(stdout, "  %-40s (pdf)\n", filepath.ToSlash(filepath.Join(filepath.Base(out), "book.pdf")))
 		}
+	}
+	if o.wantsExport() && !exportGuide(g, out, o, stdout, stderr) {
+		ok = false
 	}
 	home := pages[0].Rel
 	if g.IsBook() {
