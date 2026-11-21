@@ -52,6 +52,31 @@ func TestCodeLinesAndCallouts(t *testing.T) {
 	}
 }
 
+// AsciiDoc books (issue #22): <.> numbers itself, /* <1> */ is a marker, and
+// a callout that wraps onto a second line is one item.
+func TestCalloutsAsciiDocForms(t *testing.T) {
+	res := renderDoc(t, "```java\nint a; // <.>\nint b; /* <.> */\n```\n<.> The first,\nwrapped.\n<.> The second.\n")
+	if len(res.Problems) > 0 {
+		t.Fatal(res.Problems)
+	}
+	h := string(res.HTML)
+	for _, want := range []string{
+		`<span class="si-co" data-co="1" role="img" aria-label="callout 1"></span>`,
+		`<span class="si-co" data-co="2" role="img" aria-label="callout 2"></span>`,
+		`<span>The first, wrapped.</span>`,
+		`<li data-co="2"><span class="si-co" data-co="2" aria-hidden="true"></span><span>The second.</span>`,
+	} {
+		if !strings.Contains(h, want) {
+			t.Errorf("lacks %q", want)
+		}
+	}
+	pre := h[strings.Index(h, "<pre"):]
+	pre = pre[:strings.Index(pre, "</pre>")]
+	if strings.Contains(pre, "&lt;.&gt;") || strings.Contains(pre, "/*") {
+		t.Error("the markers and their comment leave the code")
+	}
+}
+
 func TestCodeTabs(t *testing.T) {
 	res := renderDoc(t, "<!-- tabs -->\n```java\nA\n```\n```python title=\"Py 3\"\nB\n```\n\nAfter.\n")
 	h := string(res.HTML)

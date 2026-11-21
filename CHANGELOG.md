@@ -3,6 +3,11 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.39.2:** code callouts, as AsciiDoc books write them (issue #22): an
+  explanation that wraps onto a second line stays one item (before, the whole
+  list showed as literal `<1>` text), `<.>` numbers itself in the code and
+  in the list, and `/* <1> */` is a marker too. Markdown takes the same forms.
+
 - **v3.39.1:** a scene's coordinates are rounded to two decimals, so a deck
   with a scene builds to the same bytes on Intel and Apple silicon (the
   layout's float sums differed in their last digits between the two).

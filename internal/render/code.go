@@ -57,9 +57,25 @@ func lineSet(spec string) map[int]bool {
 }
 
 // calloutMarkRE finds <N> markers at the end of a code line, bare or as a
-// trailing comment (// <1>, # <1>, -- <1>, ; <1>, <!-- 1 -->).
-var calloutMarkRE = regexp.MustCompile(`^(.*?)\s*(?:(?://|#|--|;)\s*)?((?:<\d+>\s*)+)$|^(.*?)\s*<!--\s*(\d+)\s*-->\s*$`)
-var calloutNumRE = regexp.MustCompile(`\d+`)
+// trailing comment (// <1>, # <1>, -- <1>, ; <1>, /* <1> */, <!-- 1 -->).
+// AsciiDoc's <.> numbers itself: the first is 1, the next 2, and so on.
+var calloutMarkRE = regexp.MustCompile(`^(.*?)\s*(?:(?://|#|--|;|/\*)\s*)?((?:<(?:\d+|\.)>\s*)+)(?:\*/\s*)?$|^(.*?)\s*<!--\s*(\d+|\.)\s*-->\s*$`)
+var calloutNumRE = regexp.MustCompile(`\d+|\.`)
+
+// coNumber turns the numbers a block's markers (or list) carry into real
+// ones: a <.> is one more than the callout before it.
+func coNumber(ns []string, last *int) []string {
+	out := make([]string, len(ns))
+	for i, n := range ns {
+		if n == "." {
+			*last++
+		} else {
+			*last, _ = strconv.Atoi(n)
+		}
+		out[i] = strconv.Itoa(*last)
+	}
+	return out
+}
 
 // splitHTMLLines splits highlighted HTML at newlines, closing the spans open
 // at the end of a line and reopening them on the next, so every line is valid
@@ -101,14 +117,15 @@ func (dr *deckRenderer) codeHTML(body, lang string, attrs map[string]string, cal
 	lines := strings.Split(body, "\n")
 	marks := map[int][]string{}
 	if callouts {
+		last := 0
 		for i, l := range lines {
 			m := calloutMarkRE.FindStringSubmatch(l)
 			switch {
 			case m == nil:
 			case m[2] != "":
-				lines[i], marks[i] = m[1], calloutNumRE.FindAllString(m[2], -1)
+				lines[i], marks[i] = m[1], coNumber(calloutNumRE.FindAllString(m[2], -1), &last)
 			case m[4] != "":
-				lines[i], marks[i] = m[3], []string{m[4]}
+				lines[i], marks[i] = m[3], coNumber([]string{m[4]}, &last)
 			}
 		}
 	}
@@ -183,23 +200,30 @@ func diffHTML(body string) string {
 	return b.String()
 }
 
-var calloutLineRE = regexp.MustCompile(`^<(\d+)>\s+(.+)$`)
+var calloutLineRE = regexp.MustCompile(`^<(\d+|\.)>\s+(.+)$`)
 
-// calloutList reports whether n is a paragraph whose every line is `<N> text`
-// and returns the items.
+// calloutList reports whether n is a paragraph of `<N> text` lines (a line
+// that does not start with a marker carries on the item before it, as a
+// wrapped AsciiDoc callout does) and returns the items; `<.>` numbers itself.
 func calloutList(n ast.Node, src []byte) ([][2]string, bool) {
 	p, ok := n.(*ast.Paragraph)
 	if !ok || p.Lines().Len() == 0 {
 		return nil, false
 	}
 	var items [][2]string
+	last := 0
 	for i := 0; i < p.Lines().Len(); i++ {
 		seg := p.Lines().At(i)
-		m := calloutLineRE.FindStringSubmatch(strings.TrimSpace(string(seg.Value(src))))
-		if m == nil {
+		line := strings.TrimSpace(string(seg.Value(src)))
+		m := calloutLineRE.FindStringSubmatch(line)
+		switch {
+		case m != nil:
+			items = append(items, [2]string{coNumber([]string{m[1]}, &last)[0], m[2]})
+		case len(items) > 0 && line != "":
+			items[len(items)-1][1] += " " + line
+		default:
 			return nil, false
 		}
-		items = append(items, [2]string{m[1], m[2]})
 	}
 	return items, true
 }
@@ -251,10 +275,11 @@ func (dr *deckRenderer) codeFeatures(doc ast.Node, src []byte, sc *slideCtx) {
 		}
 		dr.callouts[fc] = true
 		marked := map[string]bool{}
+		last := 0
 		for i := 0; i < fc.Lines().Len(); i++ {
 			seg := fc.Lines().At(i)
 			if m := calloutMarkRE.FindStringSubmatch(strings.TrimRight(string(seg.Value(src)), "\n")); m != nil {
-				for _, n := range calloutNumRE.FindAllString(m[2]+m[4], -1) {
+				for _, n := range coNumber(calloutNumRE.FindAllString(m[2]+m[4], -1), &last) {
 					marked[n] = true
 				}
 			}

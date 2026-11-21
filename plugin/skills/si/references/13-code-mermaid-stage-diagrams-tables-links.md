@@ -149,8 +149,10 @@ the same: ```` ```xml title="config.csproj" ````, ```` ``` title="config.csproj"
 ```` ```xml {title="config.csproj"} ````.
 
 **Callouts.** End a code line with `<N>`, bare or as its comment (`// <1>`,
-`# <1>`, `-- <1>`, `<!-- 1 -->`), and write the explanations right after the
-block, one `<N> text` line each:
+`# <1>`, `-- <1>`, `/* <1> */`, `<!-- 1 -->`), and write the explanations
+right after the block, one `<N> text` line each. A line that does not start
+with a marker carries on the explanation before it, and AsciiDoc's
+self-numbering `<.>` counts up from 1, in the code and in the list:
 
 ````markdown
 ```java
