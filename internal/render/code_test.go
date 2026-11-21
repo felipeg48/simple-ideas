@@ -3,6 +3,7 @@ package render
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -74,6 +75,29 @@ func TestCalloutsAsciiDocForms(t *testing.T) {
 	pre = pre[:strings.Index(pre, "</pre>")]
 	if strings.Contains(pre, "&lt;.&gt;") || strings.Contains(pre, "/*") {
 		t.Error("the markers and their comment leave the code")
+	}
+}
+
+// Issues #24, #25: a code block and its callout list are one card, a
+// figure holding both, in documents, in tabs and on slides.
+func TestCalloutCard(t *testing.T) {
+	card := regexp.MustCompile(`(?s)<figure class="si-codecallout">\s*(<div class="si-codeblock">.*?</div>\s*|<pre class="si-code"[^>]*>.*?</pre>\s*)<ol class="si-callouts">.*?</ol>\s*</figure>`)
+	h := string(renderDoc(t, "```go\nx := 1 // <1>\n```\n<1> One.\n\nAfter.\n").HTML)
+	if !card.MatchString(h) {
+		t.Errorf("document: no card:\n%s", h)
+	}
+	h = string(renderDoc(t, "<!-- tabs -->\n```go\nx := 1 // <1>\n```\n<1> One.\n\n```python\ny = 2\n```\n").HTML)
+	if !regexp.MustCompile(`<div class="si-tab" data-label="Go">\s*<figure class="si-codecallout">`).MatchString(h) || !strings.Contains(h, `data-label="Python"`) {
+		t.Errorf("tabs: the card is the first tab:\n%s", h)
+	}
+	p := filepath.Join(t.TempDir(), "s.md")
+	os.WriteFile(p, []byte("# S\n\n```go\nx := 1 // <1>\n```\n<1> One.\n"), 0o644)
+	d, err := deck.Parse(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if h := string(Deck(d, Options{}).HTML); !card.MatchString(h) {
+		t.Errorf("slide: no card")
 	}
 }
 

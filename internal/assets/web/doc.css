@@ -91,12 +91,14 @@ html{font-size:clamp(100%,.85rem + .3vw,150%);-webkit-text-size-adjust:100%;scro
 .si-doc-body .si-image>:is(img,video){display:block;max-height:min(70vh,36rem);object-fit:contain}
 .si-table-wrap table{width:max-content;min-width:100%}
 .si-table-wrap td{max-width:40ch}
+/* a code + callouts card is as wide as its code: the list never widens it, it wraps */
+.si-codecallout>.si-callouts{box-sizing:border-box;width:0;min-width:100%}
 /* a key/value table (empty header) fits the page: its cells wrap instead */
 .si-table-wrap:has(>table>thead[hidden]) table{width:100%}
 .si-table-wrap:has(>table>thead[hidden]) td+td{overflow-wrap:anywhere}
 @media (width >= 56rem){
-  .si-doc-body>:not(.si-table-wrap,.si-codeblock){max-width:var(--_measure)}
-  .si-doc-body>:is(.si-table-wrap,.si-codeblock){width:max-content;min-width:min(100%,var(--_measure));max-width:100%}
+  .si-doc-body>:not(.si-table-wrap,.si-codeblock,.si-codecallout){max-width:var(--_measure)}
+  .si-doc-body>:is(.si-table-wrap,.si-codeblock,.si-codecallout){width:max-content;min-width:min(100%,var(--_measure));max-width:100%}
   .si-doc-body>.si-image{margin-inline:0}
   .si-doc-body>.si-table-wrap:has(>table>thead[hidden]){width:auto;min-width:0;max-width:var(--_measure)}
 }
@@ -121,13 +123,13 @@ html{font-size:clamp(100%,.85rem + .3vw,150%);-webkit-text-size-adjust:100%;scro
   .si-doc-body{max-width:none}
   .si-table-wrap,.si-doc-body pre{overflow:visible}
   /* paper does not scroll: a wide table fits the page width and its cells wrap */
-  .si-doc-body>:is(.si-table-wrap,.si-codeblock){width:auto;min-width:0;max-width:100%}
+  .si-doc-body>:is(.si-table-wrap,.si-codeblock,.si-codecallout){width:auto;min-width:0;max-width:100%}
   .si-table-wrap table{width:100%;min-width:0;font-size:.82em}
   .si-table-wrap td{max-width:none}
   .si-table-wrap :is(th,td){white-space:normal;overflow-wrap:break-word;hyphens:auto;padding:.45em .6em}
   .si-table-wrap :is(th,td) code{overflow-wrap:anywhere}
   .si-doc-body pre{white-space:pre-wrap;overflow-wrap:anywhere}
-  .si-codeblock,.si-callout,.si-image,tr{break-inside:avoid}
+  .si-codeblock,.si-codecallout,.si-callout,.si-image,tr{break-inside:avoid}
   /* a site page on paper: no navigator or buttons, a short table kept whole (a résumé) */
   .si-site-nav,.si-page-cta{display:none!important}
   .si-table-wrap:not(:has(tr:nth-child(13))){break-inside:avoid}
@@ -401,8 +403,10 @@ pre.si-code .si-ln::before{content:attr(data-n);display:inline-block;min-width:2
   background:var(--si-fg);color:var(--si-bg);font:700 .72em/1 var(--si-font-body);vertical-align:.12em;-webkit-user-select:none;user-select:none}
 pre.si-code .si-co{margin-left:.7em}
 .si-co.is-on::before,.si-callouts li.is-on .si-co::before{background:var(--si-accent);color:var(--si-on-accent)}
-.si-callouts{list-style:none;margin:0 0 1.4em;padding:.75em 1.1em .85em;display:grid;gap:.45em;font-size:.92em;line-height:1.5;
-  border:1px solid var(--si-line);border-top:1px dashed var(--si-line);border-radius:0 0 var(--si-radius) var(--si-radius);background:var(--si-surface)}
+/* a code block and its <N> list are one card: the figure holds both (no :has() needed) */
+.si-codecallout{margin:1.3em 0 1.6em;border:1px solid var(--si-line);border-radius:var(--si-radius);background:var(--si-surface);box-shadow:var(--si-shadow);overflow:hidden}
+.si-codecallout>.si-codeblock{margin:0;border:0;border-radius:0;box-shadow:none;background:none}
+.si-callouts{list-style:none;margin:0;padding:.75em 1.1em .85em;display:grid;gap:.45em;font-size:.92em;line-height:1.5;border-top:1px dashed var(--si-line)}
 .si-callouts li{display:flex;gap:.65em;align-items:baseline;margin:0}
 .si-callouts li>.si-co{flex:none}
 .si-tabs{margin:1.3em 0 1.6em}
@@ -418,8 +422,6 @@ pre.si-code .si-co{margin-left:.7em}
   .si-tab[hidden]{display:block!important}
   .si-tab::before{content:attr(data-label);display:block;margin:1em 0 .3em;font:600 .75em/1.2 var(--si-font-mono);color:var(--si-muted)}
 }
-/* a callout list joins the code block above it */
-.si-codeblock:has(+ .si-callouts){margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0}
 .si-code-title{font:600 .74rem/1 var(--si-font-mono);color:var(--si-fg);margin-right:auto}
 .si-code-title+.si-code-lang{margin-right:.6em}
 .si-tab .si-code-title{display:none} /* the tab label already names it */

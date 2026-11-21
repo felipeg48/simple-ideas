@@ -104,7 +104,7 @@
     n.focus(); n.click(); e.preventDefault(); e.stopPropagation();
   });
   function coToggle(el, on) {
-    var box = el.closest('.si-tab') || el.closest('.si-doc-body') || document.body;
+    var box = el.closest('.si-codecallout') || el.closest('.si-tab') || el.closest('.si-doc-body') || document.body;
     var n = el.getAttribute('data-co');
     Array.prototype.forEach.call(box.querySelectorAll('.si-co[data-co="' + n + '"], .si-callouts li[data-co="' + n + '"]'), function (x) { x.classList.toggle('is-on', on); });
   }

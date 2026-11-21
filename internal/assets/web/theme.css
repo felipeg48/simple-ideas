@@ -37,8 +37,10 @@ pre.si-code .si-ln::before{content:attr(data-n);display:inline-block;min-width:2
   background:var(--si-fg);color:var(--si-bg);font:700 .72em/1 var(--si-font-body);vertical-align:.12em;-webkit-user-select:none;user-select:none}
 pre.si-code .si-co{margin-left:.7em}
 .si-co.is-on::before,.si-callouts li.is-on .si-co::before{background:var(--si-accent);color:var(--si-on-accent)}
-.si-callouts{list-style:none;margin:0 0 1.4em;padding:.75em 1.1em .85em;display:grid;gap:.45em;font-size:.92em;line-height:1.5;
-  border:1px solid var(--si-line);border-top:1px dashed var(--si-line);border-radius:0 0 var(--si-radius) var(--si-radius);background:var(--si-surface)}
+/* a code block and its <N> list are one card: the figure holds both (no :has() needed) */
+.si-codecallout{margin:.5em 0;border:1px solid var(--si-line);border-radius:var(--si-radius);background:var(--si-surface);box-shadow:var(--si-shadow);overflow:hidden}
+.si-codecallout>pre.si-code{margin:0;border:0;border-radius:0;box-shadow:none;background:none}
+.si-callouts{list-style:none;margin:0;padding:.75em 1.1em .85em;display:grid;gap:.45em;font-size:.92em;line-height:1.5;border-top:1px dashed var(--si-line)}
 .si-callouts li{display:flex;gap:.65em;align-items:baseline;margin:0}
 .si-callouts li>.si-co{flex:none}
 .si-tabs{margin:1.3em 0 1.6em}
@@ -54,7 +56,6 @@ pre.si-code .si-co{margin-left:.7em}
   .si-tab[hidden]{display:block!important}
   .si-tab::before{content:attr(data-label);display:block;margin:1em 0 .3em;font:600 .75em/1.2 var(--si-font-mono);color:var(--si-muted)}
 }
-pre.si-code:has(+ .si-callouts){margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0}
 .si-callouts{font-size:.62em}
 .si-tab>pre.si-code{margin-top:0}
 /* diffs (diff: and ```diff): old / new line numbers, added and removed lines */

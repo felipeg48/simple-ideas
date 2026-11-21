@@ -300,8 +300,14 @@ func (dr *deckRenderer) codeFeatures(doc ast.Node, src []byte, sc *slideCtx) {
 			}
 		}
 		b.WriteString("</ol>")
-		list := &rawNode{html: b.String()}
-		doc.ReplaceChild(doc, c.NextSibling(), list)
+		// one card: the code block and its list in one wrapper, so the two
+		// halves share a width, a border and a page (no :has() needed)
+		doc.RemoveChild(doc, c.NextSibling())
+		card := &divNode{class: "si-codecallout", tag: "figure"}
+		doc.ReplaceChild(doc, c, card)
+		card.AppendChild(card, fc)
+		card.AppendChild(card, &rawNode{html: b.String()})
+		c = card
 	}
 	for c := doc.FirstChild(); c != nil; {
 		next := c.NextSibling()
@@ -322,6 +328,9 @@ func (dr *deckRenderer) codeFeatures(doc ast.Node, src []byte, sc *slideCtx) {
 		for k := next; k != nil; {
 			kn := k.NextSibling()
 			fc, ok := k.(*ast.FencedCodeBlock)
+			if d, isCard := k.(*divNode); isCard && d.class == "si-codecallout" {
+				fc, ok = d.FirstChild().(*ast.FencedCodeBlock)
+			}
 			if !ok {
 				break
 			}
@@ -345,13 +354,7 @@ func (dr *deckRenderer) codeFeatures(doc ast.Node, src []byte, sc *slideCtx) {
 			fmt.Fprintf(&bar, `<button type="button" role="tab" aria-selected="%s" data-label="%s">%s</button>`, sel, html.EscapeString(label), html.EscapeString(label))
 			tab := &divNode{class: "si-tab", attrs: hidden}
 			doc.RemoveChild(doc, k)
-			tab.AppendChild(tab, k)
-			if r, ok := kn.(*rawNode); ok && strings.HasPrefix(r.html, `<ol class="si-callouts">`) {
-				kn2 := kn.NextSibling()
-				doc.RemoveChild(doc, kn)
-				tab.AppendChild(tab, kn)
-				kn = kn2
-			}
+			tab.AppendChild(tab, k) // the code block, or its card with the callouts
 			group.AppendChild(group, tab)
 			n++
 			k = kn

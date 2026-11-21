@@ -3,6 +3,17 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.40.0:** a code block and its `<N>` callout list are one card
+  (issues #24, #25): a `<figure class="si-codecallout">` holds both, with one
+  border, one background and one dashed line between code and list (no
+  double border at the seam). The list takes the code's width, so the edges
+  always line up, even when the code is narrower than a wide book column; a
+  long explanation wraps instead of widening the card, a long code line
+  scrolls inside it, and on paper the card stays on one page. It no longer
+  needs `:has()`, so static viewers and PDFs show the same card, in slides,
+  articles, labs, guides, books and tabs. Hovering a badge lights up only
+  its own card's line.
+
 - **v3.39.2:** code callouts, as AsciiDoc books write them (issue #22): an
   explanation that wraps onto a second line stays one item (before, the whole
   list showed as literal `<1>` text), `<.>` numbers itself in the code and

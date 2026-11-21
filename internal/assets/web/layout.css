@@ -83,6 +83,8 @@ img,svg,video{max-width:100%}
 .si-lab-link:hover{filter:brightness(1.08)}
 
 /* images: a paragraph holding one image becomes a figure; the image directive sizes and places it */
+/* a code block + its callout list: one card that never outgrows its column (its code scrolls) */
+.si-codecallout{min-width:0;max-width:100%}
 .si-image{margin:.5em auto;width:var(--si-img-width,fit-content);max-width:100%;display:flex;flex-direction:column;align-items:center;gap:.35em}
 .si-image>:is(img,video){display:block;width:auto;max-width:100%;height:auto;max-height:calc((var(--si-figure-max,60cqb) - 2cqb) * var(--_figfit,1))}
 .si-image[style*="--si-img-width"]>img{width:100%;max-height:none}

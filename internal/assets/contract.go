@@ -488,6 +488,7 @@ var Hooks = []Hook{
 	{`.si-hl`, "code: a highlighted line (hl=)"},
 	{`.si-ln`, "code: a line number (linenos); drawn from data-n, never copied"},
 	{`.si-co`, "code: a callout badge, in the code and in the list (data-co); .is-on while hovered"},
+	{`.si-codecallout`, "code: the figure that holds a code block and its <N> callout list, one card"},
 	{`.si-callouts`, "code: the <N> callout list under a code block"},
 	{`.si-tabs`, "code: a <!-- tabs --> group"},
 	{`.si-tabs-bar`, "code: the tab buttons of a group (role=tablist)"},

@@ -167,6 +167,14 @@ The markers become numbered badges (and leave the code, so Copy copies clean
 code); hovering a badge or its line lights up both. `si check` reports a
 marker without a line and a line without a marker.
 
+The block and its list are one card: a `<figure class="si-codecallout">`
+holds the code and the `<ol class="si-callouts">`, with one border and one
+dashed line between them. The list takes the code's width (a long
+explanation wraps, it never widens the card), a long code line scrolls
+inside the card, and on paper the card is kept on one page. It is plain
+markup, so a static viewer or a PDF shows the same card. Style it in your
+CSS through `.si-codecallout` and `.si-callouts`.
+
 **Tabs.** `<!-- tabs -->` turns the code blocks that follow it (with their
 callouts, up to the first other block) into one group of tabs, labelled by
 `title=` or the language:
