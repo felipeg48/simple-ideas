@@ -2,6 +2,7 @@
 type: architecture
 title: Cockroach Education Platform — Architecture & Design
 subtitle: Self-hosted Docker lab platform · Go control plane, no k8s
+# CockroachDB / CU brand — build with: --css docs/proposals/reference/cu-theme.css
 ---
 
 ## The control plane is the scheduler

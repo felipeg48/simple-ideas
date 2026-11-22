@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEP Status Board</title>
+<style>
+  :root{
+    --done:#2e8540;    --done-bg:#e3f2e6;
+    --missing:#9a7400;  --missing-bg:#f7efd2;
+    --improve:#e8590c;  --improve-bg:#fdeadf;
+    --accent:#5a3df0;   --accent-bg:#ece8fe;
+    --bg:#f6f7f9; --surface:#ffffff; --surface-2:#f0f2f5;
+    --text:#1b1f24; --muted:#5b6673; --border:#e2e6eb;
+    --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.1);
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --done:#5cc97a;   --done-bg:#13281a;
+      --missing:#e3b341; --missing-bg:#2a230e;
+      --improve:#ff8a3d; --improve-bg:#2e1a0d;
+      --accent:#9b8cff;  --accent-bg:#1e1b32;
+      --bg:#0e1116; --surface:#161b22; --surface-2:#1c222b;
+      --text:#e6edf3; --muted:#9aa7b4; --border:#2a313a;
+      --shadow:0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --done:#5cc97a;   --done-bg:#13281a;
+    --missing:#e3b341; --missing-bg:#2a230e;
+    --improve:#ff8a3d; --improve-bg:#2e1a0d;
+    --accent:#9b8cff;  --accent-bg:#1e1b32;
+    --bg:#0e1116; --surface:#161b22; --surface-2:#1c222b;
+    --text:#e6edf3; --muted:#9aa7b4; --border:#2a313a;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.45;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+  a{color:var(--accent)}
+
+  header.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:38px;height:38px;border-radius:9px;background:var(--accent);color:#fff;
+    display:grid;place-items:center;font-weight:800;font-size:17px;box-shadow:var(--shadow)}
+  h1{font-size:22px;margin:0;letter-spacing:-.2px}
+  .subtitle{color:var(--muted);font-size:13.5px;margin-top:2px}
+  .themebtn{border:1px solid var(--border);background:var(--surface);color:var(--text);
+    border-radius:8px;padding:7px 12px;font-size:12.5px;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent)}
+
+  .meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin:16px 0 22px;font-size:12.5px;color:var(--muted)}
+  .meta b{color:var(--text);font-weight:600}
+  .meta .mono{font-family:var(--mono)}
+  .pill{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);
+    border:1px solid var(--border);border-radius:999px;padding:3px 10px}
+  .pill.warn{color:var(--missing);background:var(--missing-bg);border-color:transparent}
+  .pill.ok{color:var(--done);background:var(--done-bg);border-color:transparent}
+
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:16px;box-shadow:var(--shadow)}
+  .tile .num{font-size:30px;font-weight:800;letter-spacing:-.5px;line-height:1}
+  .tile .lbl{font-size:12px;color:var(--muted);margin-top:7px;text-transform:uppercase;letter-spacing:.4px}
+  .tile .sub{font-size:12px;color:var(--muted);margin-top:4px}
+  .tile.gate .num{font-size:15px;font-weight:700;line-height:1.3;color:var(--missing)}
+
+  .bar{display:flex;height:10px;border-radius:6px;overflow:hidden;background:var(--surface-2);
+    border:1px solid var(--border)}
+  .seg{height:100%}
+  .seg.done{background:var(--done)} .seg.missing{background:var(--missing)} .seg.improve{background:var(--improve)}
+  .barlabel{font-size:12px;color:var(--muted);margin-top:7px}
+  .barlabel b{color:var(--text)}
+
+  .overall{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:18px;box-shadow:var(--shadow);margin-bottom:26px}
+  .overall .head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;flex-wrap:wrap;gap:6px}
+  .overall .head h2{margin:0;font-size:15px}
+  .overall .pct{font-size:22px;font-weight:800;color:var(--accent)}
+
+  .section-h{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:0 0 10px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--done-bg);color:var(--done);
+    border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600}
+  .chip .hash{font-family:var(--mono);font-size:11px;opacity:.85;background:rgba(0,0,0,.06);
+    padding:1px 6px;border-radius:5px}
+
+  .areas{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:16px 16px 18px;box-shadow:var(--shadow)}
+  .card > h3{margin:0 0 10px;font-size:15px}
+  .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+  .col h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.4px;
+    display:flex;align-items:center;gap:6px;color:var(--muted)}
+  .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .dot.done{background:var(--done)} .dot.missing{background:var(--missing)} .dot.improve{background:var(--improve)}
+  .col ul{list-style:none;margin:0;padding:0}
+  .col li{position:relative;padding-left:15px;margin-bottom:7px;font-size:12.5px;color:var(--text)}
+  .col li::before{content:"";position:absolute;left:0;top:6px;width:6px;height:6px;border-radius:50%}
+  .col.done li::before{background:var(--done)}
+  .col.missing li::before{background:var(--missing)}
+  .col.improve li::before{background:var(--improve)}
+  .col li .tag{font-family:var(--mono);font-size:10.5px;color:var(--muted);
+    border:1px solid var(--border);border-radius:5px;padding:0 4px;margin-left:4px;white-space:nowrap}
+  .col .empty{font-size:12px;color:var(--muted);font-style:italic}
+
+  .badge{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;
+    padding:1px 5px;border-radius:4px;margin-left:4px;vertical-align:middle}
+  .badge.un{color:var(--missing);background:var(--missing-bg)}
+  .badge.part{color:var(--improve);background:var(--improve-bg)}
+
+  footer{margin-top:28px;padding:16px 18px;background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;font-size:12.5px;color:var(--muted);box-shadow:var(--shadow)}
+  footer b{color:var(--text)}
+
+  @media (max-width:720px){
+    .tiles{grid-template-columns:repeat(2,1fr)}
+    .areas{grid-template-columns:1fr}
+    .cols{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="logo">CEP</div>
+      <div>
+        <h1>Cockroach Education Platform — Status Board</h1>
+        <div class="subtitle">Self-hosted Docker lab platform (Instruqt replacement) · Go control plane, no k8s</div>
+      </div>
+    </div>
+    <button class="themebtn" onclick="cycleTheme()" id="themebtn">◐ Theme: Auto</button>
+  </header>
+
+  <div class="meta">
+    <span class="pill">Updated <b>2026-11-22</b></span>
+    <span class="pill ok">git: <b>on main · committed</b></span>
+    <span class="pill ok">cep-ops <b class="mono">go build ✓ · vet ✓</b></span>
+    <span class="pill">cep-client <b class="mono">static</b></span>
+    <span class="pill ok">e2e: <b>verified on Colima</b></span>
+  </div>
+
+  <!-- ===== Tiles ===== -->
+  <div class="tiles">
+    <div class="tile">
+      <div class="num">✓</div>
+      <div class="lbl">Shipped &amp; committed</div>
+      <div class="sub">lifecycle gate · Run/colors · terminal fix · hosting plan</div>
+    </div>
+    <div class="tile">
+      <div class="num">28</div>
+      <div class="lbl">Still open</div>
+      <div class="sub">17 missing · 11 improve</div>
+    </div>
+    <div class="tile">
+      <div class="num">1 / 1</div>
+      <div class="lbl">Repos green</div>
+      <div class="sub">cep-ops builds + vets</div>
+    </div>
+    <div class="tile gate">
+      <div class="num" style="color:var(--done)">Passed ✓ on Colima</div>
+      <div class="lbl">End-to-end gate</div>
+      <div class="sub">create → terminal → 3-node CRDB → teardown</div>
+    </div>
+  </div>
+
+  <!-- ===== Overall bar ===== -->
+  <div class="overall">
+    <div class="head">
+      <h2>Overall progress</h2>
+      <span class="pct">47% done</span>
+    </div>
+    <div class="bar" role="img" aria-label="Overall: 47% done; 15 done, 17 missing, 11 improve">
+      <span class="seg done" style="width:34.88%"></span>
+      <span class="seg missing" style="width:39.53%"></span>
+      <span class="seg improve" style="width:25.58%"></span>
+    </div>
+    <div class="barlabel"><b>15 done</b> · 17 missing · 11 improve &nbsp;·&nbsp; 43 items across 6 areas</div>
+  </div>
+
+  <!-- ===== Shipped band ===== -->
+  <h3 class="section-h">Shipped this session</h3>
+  <div class="chips">
+    <span class="chip">architecture.html <span class="hash">uncommitted</span></span>
+    <span class="chip">cep-ops skeleton + /healthz <span class="hash">uncommitted</span></span>
+    <span class="chip">session API + store <span class="hash">uncommitted</span></span>
+    <span class="chip">TTL reaper <span class="hash">uncommitted</span></span>
+    <span class="chip">gateway proxy + routing <span class="hash">uncommitted</span></span>
+    <span class="chip">provisioner (Docker API) <span class="hash">uncommitted</span></span>
+    <span class="chip">lab-box image + 3-node compose <span class="hash">uncommitted</span></span>
+    <span class="chip">lab page (cep-client) <span class="hash">uncommitted</span></span>
+    <span class="chip">host-bootstrap.sh <span class="hash">uncommitted</span></span>
+  </div>
+
+  <!-- ===== Area cards ===== -->
+  <div class="areas">
+
+    <!-- Design & Docs : d5 m2 i1 -->
+    <article class="card">
+      <h3>Design &amp; Docs</h3>
+      <div class="bar" role="img" aria-label="Design and Docs: 71% done; 5 done, 2 missing, 1 improve">
+        <span class="seg done" style="width:62.5%"></span>
+        <span class="seg missing" style="width:25%"></span>
+        <span class="seg improve" style="width:12.5%"></span>
+      </div>
+      <div class="barlabel"><b>71% done</b> · 5 done · 2 missing · 1 improve</div>
+      <div class="cols">
+        <div class="col done"><h4><span class="dot done"></span>Done</h4><ul>
+          <li>Architecture &amp; data model <span class="tag">ARCHITECTURE.md</span></li>
+          <li>Demo plan + build order <span class="tag">DEMO-PLAN.md</span></li>
+          <li>Constraints + commit policy <span class="tag">CLAUDE.md</span></li>
+          <li>Status tracking <span class="tag">STATUS.md + board</span></li>
+          <li>Architecture diagrams page <span class="tag">architecture.html</span></li>
+        </ul></div>
+        <div class="col missing"><h4><span class="dot missing"></span>Missing</h4><ul>
+          <li>roadmap/todo.md <span class="tag">P0</span></li>
+          <li>Confirm <code>si</code> output format <span class="tag">P1</span></li>
+        </ul></div>
+        <div class="col improve"><h4><span class="dot improve"></span>Improve</h4><ul>
+          <li>ADRs for the open decisions</li>
+        </ul></div>
+      </div>
+    </article>
+
+    <!-- Control Plane : d4 m4 i3 -->
+    <article class="card">
+      <h3>Control Plane <span style="color:var(--muted);font-weight:400;font-size:12px">cep-ops</span></h3>
+      <div class="bar" role="img" aria-label="Control Plane: 50% done; 4 done, 4 missing, 3 improve">
+        <span class="seg done" style="width:36.36%"></span>
+        <span class="seg missing" style="width:36.36%"></span>
+        <span class="seg improve" style="width:27.27%"></span>
+      </div>
+      <div class="barlabel"><b>50% done</b> · 4 done · 4 missing · 3 improve</div>
+      <div class="cols">
+        <div class="col done"><h4><span class="dot done"></span>Done</h4><ul>
+          <li>Skeleton + /healthz (builds, runs)</li>
+          <li>Session API + in-memory store</li>
+          <li>TTL reaper</li>
+          <li>HTTP routing (verified)</li>
+        </ul></div>
+        <div class="col missing"><h4><span class="dot missing"></span>Missing</h4><ul>
+          <li>Provisioner — built, not e2e-verified <span class="badge part">partial</span></li>
+          <li>Gateway token auth — proxy done <span class="badge part">partial</span></li>
+          <li>Step-check runner — stub only <span class="tag">P1</span></li>
+          <li>Cohort API + access codes <span class="tag">P1</span></li>
+        </ul></div>
+        <div class="col improve"><h4><span class="dot improve"></span>Improve</h4><ul>
+          <li>CockroachDB persistence via <code>--db-url</code> — <b>shipped</b> (tracks + cohorts)</li>
+          <li>exec→WS→xterm.js (drop ttyd)</li>
+          <li>Persist sessions + users in CRDB (tracks + cohorts done)</li>
+        </ul></div>
+      </div>
+    </article>
+
+    <!-- Learner Client : d1 m3 i2 -->
+    <article class="card">
+      <h3>Learner Client <span style="color:var(--muted);font-weight:400;font-size:12px">cep-client</span></h3>
+      <div class="bar" role="img" aria-label="Learner Client: 25% done; 1 done, 3 missing, 2 improve">
+        <span class="seg done" style="width:16.67%"></span>
+        <span class="seg missing" style="width:50%"></span>
+        <span class="seg improve" style="width:33.33%"></span>
+      </div>
+      <div class="barlabel"><b>25% done</b> · 1 done · 3 missing · 2 improve</div>
+      <div class="cols">
+        <div class="col done"><h4><span class="dot done"></span>Done</h4><ul>
+          <li>Lab page: instructions + terminal (served)</li>
+        </ul></div>
+        <div class="col missing"><h4><span class="dot missing"></span>Missing</h4><ul>
+          <li>DB Console pane (deferred)</li>
+          <li>Magic-link access + cookie <span class="tag">P0</span></li>
+          <li>Check UI → real checks — stub <span class="badge part">partial</span></li>
+        </ul></div>
+        <div class="col improve"><h4><span class="dot improve"></span>Improve</h4><ul>
+          <li>Embedded code-server editor <span class="tag">P2</span></li>
+          <li>VS Code extension <span class="tag">P2</span></li>
+        </ul></div>
+      </div>
+    </article>
+
+    <!-- Provisioning & Isolation : d3 m2 i2 -->
+    <article class="card">
+      <h3>Provisioning &amp; Isolation</h3>
+      <div class="bar" role="img" aria-label="Provisioning and Isolation: 60% done; 3 done, 2 missing, 2 improve">
+        <span class="seg done" style="width:42.86%"></span>
+        <span class="seg missing" style="width:28.57%"></span>
+        <span class="seg improve" style="width:28.57%"></span>
+      </div>
+      <div class="barlabel"><b>60% done</b> · 3 done · 2 missing · 2 improve</div>
+      <div class="cols">
+        <div class="col done"><h4><span class="dot done"></span>Done</h4><ul>
+          <li>Resource limits mem/cpu/pids (in spec)</li>
+          <li>Lab-box image def (Dockerfile + compose)</li>
+          <li>Per-session network + container create</li>
+        </ul></div>
+        <div class="col missing"><h4><span class="dot missing"></span>Missing</h4><ul>
+          <li>E2E verified on a Docker host <span class="badge part">gate</span></li>
+          <li>Admission control by RAM budget <span class="tag">P1</span></li>
+        </ul></div>
+        <div class="col improve"><h4><span class="dot improve"></span>Improve</h4><ul>
+          <li>Sysbox runtime path (prod) — untested</li>
+          <li>3 / 9-node topology presets <span class="tag">P1</span></li>
+        </ul></div>
+      </div>
+    </article>
+
+    <!-- Infra & Deploy : d1 m4 i2 -->
+    <article class="card">
+      <h3>Infra &amp; Deploy <span style="color:var(--muted);font-weight:400;font-size:12px">GCP · LB + IAP</span></h3>
+      <div class="bar" role="img" aria-label="Infra and Deploy: 20% done; 1 done, 4 missing, 2 improve">
+        <span class="seg done" style="width:14.29%"></span>
+        <span class="seg missing" style="width:57.14%"></span>
+        <span class="seg improve" style="width:28.57%"></span>
+      </div>
+      <div class="barlabel"><b>20% done</b> · 1 done · 4 missing · 2 improve</div>
+      <div class="cols">
+        <div class="col done"><h4><span class="dot done"></span>Done</h4><ul>
+          <li>host-bootstrap.sh</li>
+          <li>hosting plan: Phase-1 one always-on VM, 64 GB, ≤25 sessions <span class="tag">doc</span></li>
+          <li>GKE ruled out (cost + privileged DinD) <span class="tag">doc</span></li>
+        </ul></div>
+        <div class="col missing"><h4><span class="dot missing"></span>Missing</h4><ul>
+          <li>GCP Linux VM provisioned <span class="tag">P0</span></li>
+          <li>Build image + run cep-ops on VM <span class="tag">P0</span></li>
+          <li>Wildcard DNS + Cloudflare tunnel <span class="tag">P0</span></li>
+          <li>External smoke test <span class="tag">P0</span></li>
+        </ul></div>
+        <div class="col improve"><h4><span class="dot improve"></span>Improve</h4><ul>
+          <li>Spot + start/stop automation <span class="tag">P1</span></li>
+          <li>Committed-use discount eval <span class="tag">P3</span></li>
+        </ul></div>
+      </div>
+    </article>
+
+    <!-- Content Pipeline : d1 m2 i1 -->
+    <article class="card">
+      <h3>Content Pipeline <span style="color:var(--muted);font-weight:400;font-size:12px">si</span></h3>
+      <div class="bar" role="img" aria-label="Content Pipeline: 33% done; 1 done, 2 missing, 1 improve">
+        <span class="seg done" style="width:25%"></span>
+        <span class="seg missing" style="width:50%"></span>
+        <span class="seg improve" style="width:25%"></span>
+      </div>
+      <div class="barlabel"><b>33% done</b> · 1 done · 2 missing · 1 improve</div>
+      <div class="cols">
+        <div class="col done"><h4><span class="dot done"></span>Done</h4><ul>
+          <li>One hand-wired demo lab (lab.html + compose)</li>
+        </ul></div>
+        <div class="col missing"><h4><span class="dot missing"></span>Missing</h4><ul>
+          <li>workshop.yaml manifest ingest <span class="tag">P1</span></li>
+          <li>Step checks wired to content <span class="tag">P1</span></li>
+        </ul></div>
+        <div class="col improve"><h4><span class="dot improve"></span>Improve</h4><ul>
+          <li>Content / workshop versioning <span class="tag">P2</span></li>
+        </ul></div>
+      </div>
+    </article>
+
+  </div>
+
+  <footer>
+    <b>Done</b> = exists in the repo and builds/runs (verified). <b>Partial</b> = core built + a
+    named gap; it stays in Missing, annotated, and still counts as open — honesty over a nicer
+    number. <b>The one hard gate:</b> end-to-end on a Docker host (create session → in-box
+    terminal → student deploys a 3-node CockroachDB cluster). The control plane compiles, vets,
+    and serves; it has not yet been run against a real Docker daemon with the lab-box image.
+    Private artifact — only you can open this file until you share it.
+  </footer>
+
+</div>
+
+<script>
+  const order = ["", "light", "dark"];
+  const labels = {"":"◐ Theme: Auto","light":"☀ Theme: Light","dark":"☾ Theme: Dark"};
+  function apply(t){ document.documentElement.setAttribute("data-theme", t);
+    document.getElementById("themebtn").textContent = labels[t]; }
+  function cycleTheme(){ const cur = document.documentElement.getAttribute("data-theme")||"";
+    apply(order[(order.indexOf(cur)+1)%order.length]); }
+</script>
+</body>
+</html>
