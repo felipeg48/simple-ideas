@@ -30,11 +30,14 @@ way `type: article` gives a byline + contents column.
 
 ## 2. Reference artifacts (visual source of truth)
 
-The target rendering is prototyped in these files (committed in the CEP repo); the
-implementation should reproduce their layout and tokens:
+Self-contained reference layouts ship **with this proposal** under `docs/proposals/reference/`
+— open them to see the exact target rendering, tokens and CSS:
 
-- `cockroach-education-platform/docs/architecture.html` → `type: architecture`
-- `cockroach-education-platform/docs/status-board.html` → `type: status`
+- `reference/architecture.html` → `type: architecture`, on the **CockroachDB / CU theme**.
+- `reference/status-board.html` → `type: status`.
+- `reference/cu-theme.css` → the **CockroachDB / Cockroach University brand** as an si `--css`
+  theme (Data Purple `#9059FF` + taupe + Geist). The architecture reference already uses it;
+  it re-skins either type by token override alone.
 
 Both already share si-compatible chrome: a `.wrap` container, a `header.top`
 (logo · title · `subtitle` · **theme toggle** cycling auto/light/dark), a self-contained
@@ -46,11 +49,13 @@ Both types inherit the document scaffolding si already has for `article`:
 
 - **Front matter:** `title` (required), `subtitle` (the grey line under the title),
   `theme:` / `--css`, standard build flags. Self-contained HTML, inlined CSS, no network.
-- **Theme:** the existing auto/light/dark toggle and tokens. The reference palette:
-  `--accent #5a3df0`, `--bg #f6f7f9`, `--surface #fff`, `--text #1b1f24`, `--muted #5b6673`,
-  `--border #d8dee6`, `--shadow`, `--mono`, and the status triad **`--done #2e8540` ·
-  `--missing #9a7400` · `--improve #e8590c`** (each with a `-bg` tint). A user `--css` overrides
-  them, so the CU brand (Data Purple, Geist) drops in unchanged.
+- **Theme:** the existing auto/light/dark toggle and token set. Neutral defaults ship in the
+  renderer; the **intended brand skin is the CockroachDB / Cockroach University theme**
+  (Data Purple `--accent #9059FF`, taupe surfaces `#F9F8F3` / `#F2F1EE`, `#101913` ink, Geist),
+  provided as `reference/cu-theme.css` and applied with `--css` (or `theme:`) — exactly how si
+  themes any document. The status triad is **`--done` · `--missing` · `--improve`** (each with a
+  `-bg` tint). Because every component reads tokens, re-skinning is a token override, no
+  structural CSS.
 - **Numbering & IDs:** headings get stable slug ids and anchor links, as in `article`.
 
 Everything below is the *type-specific section grammar* layered on top.

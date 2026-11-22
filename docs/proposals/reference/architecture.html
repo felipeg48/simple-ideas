@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEP Architecture &amp; Design</title>
+<style>
+  :root{
+    --done:#43541F; --missing:#8A6D1F; --improve:#B8560F;
+    --accent:#9059FF; --accent-bg:#E9DEFF;
+    --bg:#F9F8F3; --surface:#FFFFFF; --surface-2:#F2F1EE; --surface-3:#E5E4DC;
+    --text:#101913; --muted:#6D6D6D; --border:#E5E4DC;
+    --shadow:0 1px 2px rgba(16,25,19,.05),0 6px 20px rgba(16,25,19,.07);
+    --mono:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    /* diagram hues (distinct from the status colours) */
+    --c-client:#3b82f6; --c-client-bg:#e8f1fe;
+    --c-edge:#f6821f;   --c-edge-bg:#fdecd9;
+    --c-ctrl:#9059FF;   --c-ctrl-bg:#E9DEFF;
+    --c-data:#1f9e8f;   --c-data-bg:#dcf3ef;
+    --c-node:#8a5cf6;   --c-node-bg:#ede6fe;
+    --line:#8a97a6;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+    --done:#5cc97a; --missing:#e3b341; --improve:#ff8a3d;
+    --accent:#9b8cff; --accent-bg:#1e1b32;
+    --bg:#0e1116; --surface:#161b22; --surface-2:#1c222b; --surface-3:#232b36;
+    --text:#e6edf3; --muted:#9aa7b4; --border:#2a313a;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+    --c-client:#5ea0ff; --c-client-bg:#16233a;
+    --c-edge:#ff9d45;   --c-edge-bg:#2e1f0d;
+    --c-ctrl:#9b8cff;   --c-ctrl-bg:#201b36;
+    --c-data:#45c7b5;   --c-data-bg:#0f2a27;
+    --c-node:#b095ff;   --c-node-bg:#211a3a;
+    --line:#5c6977;
+  }}
+  :root[data-theme="dark"]{
+    --done:#5cc97a; --missing:#e3b341; --improve:#ff8a3d;
+    --accent:#9b8cff; --accent-bg:#1e1b32;
+    --bg:#0e1116; --surface:#161b22; --surface-2:#1c222b; --surface-3:#232b36;
+    --text:#e6edf3; --muted:#9aa7b4; --border:#2a313a;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+    --c-client:#5ea0ff; --c-client-bg:#16233a;
+    --c-edge:#ff9d45;   --c-edge-bg:#2e1f0d;
+    --c-ctrl:#9b8cff;   --c-ctrl-bg:#201b36;
+    --c-data:#45c7b5;   --c-data-bg:#0f2a27;
+    --c-node:#b095ff;   --c-node-bg:#211a3a;
+    --line:#5c6977;
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.5}
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 20px 70px}
+  code{font-family:var(--mono);font-size:.9em;background:var(--surface-2);padding:1px 5px;border-radius:5px}
+
+  header.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:38px;height:38px;border-radius:9px;background:var(--accent);color:#fff;
+    display:grid;place-items:center;font-weight:800;font-size:16px;box-shadow:var(--shadow)}
+  h1{font-size:22px;margin:0;letter-spacing:-.2px}
+  .subtitle{color:var(--muted);font-size:13.5px;margin-top:2px}
+  .themebtn{border:1px solid var(--border);background:var(--surface);color:var(--text);
+    border-radius:8px;padding:7px 12px;font-size:12.5px;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent)}
+
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 26px;font-size:12px}
+  .pill{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);
+    border:1px solid var(--border);border-radius:999px;padding:4px 11px;color:var(--muted)}
+  .pill b{color:var(--text)}
+  .pill.acc{background:var(--accent-bg);color:var(--accent);border-color:transparent;font-weight:600}
+
+  section{margin:34px 0}
+  h2{font-size:16px;margin:0 0 4px;display:flex;align-items:center;gap:9px}
+  h2 .n{width:22px;height:22px;border-radius:6px;background:var(--accent);color:#fff;font-size:12px;
+    display:grid;place-items:center;font-weight:700;flex:none}
+  .lead{color:var(--muted);font-size:13px;margin:0 0 16px}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:18px;box-shadow:var(--shadow)}
+  svg{display:block;width:100%;height:auto;font-family:system-ui,sans-serif}
+
+  /* SVG shared classes */
+  .s-box{fill:var(--surface);stroke:var(--border);stroke-width:1.5}
+  .s-zone{fill:var(--surface-2);stroke:var(--border);stroke-width:1.5;stroke-dasharray:5 4}
+  .s-client{fill:var(--c-client-bg);stroke:var(--c-client);stroke-width:1.5}
+  .s-edge{fill:var(--c-edge-bg);stroke:var(--c-edge);stroke-width:1.5}
+  .s-ctrl{fill:var(--c-ctrl-bg);stroke:var(--c-ctrl);stroke-width:1.5}
+  .s-data{fill:var(--c-data-bg);stroke:var(--c-data);stroke-width:1.5}
+  .s-node{fill:var(--c-node-bg);stroke:var(--c-node);stroke-width:1.5}
+  .t{fill:var(--text);font-size:13px;font-weight:600}
+  .t-sm{fill:var(--text);font-size:11.5px;font-weight:600}
+  .mut{fill:var(--muted);font-size:10.5px;font-family:var(--mono)}
+  .mut2{fill:var(--muted);font-size:11px}
+  .flow{stroke:var(--line);stroke-width:1.8;fill:none}
+  .flow-lbl{fill:var(--muted);font-size:10px;font-family:var(--mono)}
+  .hd{fill:var(--c-ctrl);font-size:12px;font-weight:700}
+
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;font-size:11.5px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:11px;height:11px;border-radius:3px;border:1.5px solid}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .mini{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px;box-shadow:var(--shadow)}
+  .mini h3{margin:0 0 6px;font-size:13.5px}
+  .mini p{margin:0;font-size:12.5px;color:var(--muted)}
+  .mini .tag{display:inline-block;font-family:var(--mono);font-size:10px;color:var(--c-ctrl);
+    background:var(--accent-bg);border-radius:5px;padding:1px 6px;margin-bottom:8px}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+  td.n{font-family:var(--mono)}
+  tbody tr:last-child td{border-bottom:none}
+
+  .phases{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .phase{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);
+    border-radius:10px;padding:13px;box-shadow:var(--shadow)}
+  .phase .k{font-family:var(--mono);font-size:10.5px;color:var(--accent);font-weight:700}
+  .phase h4{margin:4px 0 7px;font-size:13px}
+  .phase ul{margin:0;padding-left:16px;font-size:11.5px;color:var(--muted)}
+  .phase li{margin-bottom:3px}
+  .phase.now{border-left-color:var(--improve)}
+  .phase.now .k{color:var(--improve)}
+
+  .dlist{columns:2;column-gap:28px;font-size:12.5px}
+  .dlist div{break-inside:avoid;margin-bottom:9px}
+  .dlist b{color:var(--c-ctrl);font-family:var(--mono);font-size:11.5px}
+  .dlist span{color:var(--muted)}
+
+  .note{font-size:12px;color:var(--muted);margin-top:12px;padding:12px 14px;background:var(--surface-2);
+    border-radius:10px;border:1px solid var(--border)}
+  .note b{color:var(--text)}
+
+  footer{margin-top:36px;padding:16px 18px;background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;font-size:12px;color:var(--muted);box-shadow:var(--shadow)}
+
+  @media (max-width:760px){
+    .grid2,.grid3,.phases{grid-template-columns:1fr}
+    .dlist{columns:1}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="logo">CEP</div>
+      <div>
+        <h1>Cockroach Education Platform — Architecture &amp; Design</h1>
+        <div class="subtitle">Docker-native lab platform · a Go control plane that <em>is</em> the scheduler · no Kubernetes, no per-session VMs</div>
+      </div>
+    </div>
+    <button class="themebtn" onclick="cycleTheme()" id="themebtn">◐ Theme: Auto</button>
+  </header>
+
+  <div class="meta">
+    <span class="pill">Draft <b>2026-11-19</b></span>
+    <span class="pill acc">Phase 0 — demo</span>
+    <span class="pill">Language <b>Go</b></span>
+    <span class="pill">Orchestration <b>Docker Engine API</b></span>
+    <span class="pill">Host <b>GCP VM</b></span>
+    <span class="pill">Exposure <b>Cloudflare Tunnel</b></span>
+    <span class="pill">Nesting <b>Sysbox (opt-in)</b></span>
+  </div>
+
+  <!-- 1. Principles -->
+  <section>
+    <h2><span class="n">1</span>The bet</h2>
+    <p class="lead">Three load-bearing decisions. Everything else follows from these.</p>
+    <div class="grid3">
+      <div class="mini"><span class="tag">no k8s / no VMs</span><h3>The control plane is the scheduler</h3>
+        <p>A Go service drives the Docker Engine API directly — create network, start containers, wire the cluster, reap. We trade a managed orchestrator for a small, legible scheduler we own.</p></div>
+      <div class="mini"><span class="tag">admission by RAM</span><h3>Budget memory, not containers</h3>
+        <p>RAM is the real ceiling. Each environment template declares a RAM cost; the scheduler admits against <code>0.9 × host_ram</code> and queues when full — so a cohort never OOM-kills the host.</p></div>
+      <div class="mini"><span class="tag">safe nesting</span><h3>The lab box is a nested-Docker sandbox</h3>
+        <p>The student deploys CockroachDB <em>inside</em> their own box — via <code>docker compose</code>, or on Kubernetes with <code>K3d</code>/kind. Prod runtime = <code>sysbox-runc</code> (unprivileged); demo = privileged DinD. Linux-only host.</p></div>
+    </div>
+  </section>
+
+  <!-- 2. Request & networking flow -->
+  <section>
+    <h2><span class="n">2</span>Request &amp; networking flow</h2>
+    <p class="lead">How a learner's browser reaches their private environment — through one Cloudflare tunnel and the gateway, routed by hostname.</p>
+    <div class="panel">
+      <svg viewBox="0 0 980 340" role="img" aria-label="Learner connects over HTTPS and WebSocket to a Cloudflare Tunnel on a wildcard domain, into the cep-ops gateway which authenticates tokens and reverse-proxies by hostname to the session terminal, DB console, lab app, and content service.">
+        <defs>
+          <marker id="a1" markerWidth="9" markerHeight="9" refX="7.5" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="var(--line)"/>
+          </marker>
+        </defs>
+
+        <!-- Learner -->
+        <text x="20" y="34" class="hd">LEARNER</text>
+        <rect x="20" y="46" width="170" height="52" rx="9" class="s-client"/>
+        <text x="34" y="70" class="t-sm">Browser · xterm.js</text>
+        <text x="34" y="86" class="mut2">instructions · terminal · console</text>
+        <rect x="20" y="110" width="170" height="46" rx="9" class="s-client"/>
+        <text x="34" y="131" class="t-sm">VS Code extension</text>
+        <text x="34" y="146" class="mut2">same session API (P2)</text>
+
+        <!-- Cloudflare -->
+        <text x="250" y="34" class="hd">EDGE</text>
+        <rect x="250" y="70" width="160" height="78" rx="9" class="s-edge"/>
+        <text x="266" y="104" class="t-sm">Cloudflare Tunnel</text>
+        <text x="266" y="122" class="mut2">cloudflared</text>
+        <text x="266" y="139" class="mut">*.labs.&lt;domain&gt;</text>
+
+        <!-- Gateway -->
+        <text x="470" y="34" class="hd">cep-ops GATEWAY</text>
+        <rect x="470" y="60" width="180" height="98" rx="10" class="s-ctrl"/>
+        <text x="486" y="88" class="t-sm">Gateway</text>
+        <text x="486" y="107" class="mut2">token auth</text>
+        <text x="486" y="124" class="mut2">reverse proxy</text>
+        <text x="486" y="141" class="mut2">WebSocket passthrough</text>
+
+        <!-- Targets -->
+        <text x="730" y="34" class="hd">SESSION ENDPOINTS</text>
+        <rect x="730" y="44" width="230" height="46" rx="9" class="s-node"/>
+        <text x="744" y="65" class="t-sm">Terminal (WS exec)</text>
+        <text x="744" y="81" class="mut">s-&lt;id&gt;-term</text>
+        <rect x="730" y="100" width="230" height="46" rx="9" class="s-node"/>
+        <text x="744" y="121" class="t-sm">DB Console :8080</text>
+        <text x="744" y="137" class="mut">s-&lt;id&gt;-db</text>
+        <rect x="730" y="156" width="230" height="46" rx="9" class="s-node"/>
+        <text x="744" y="177" class="t-sm">Lab app</text>
+        <text x="744" y="193" class="mut">s-&lt;id&gt;-app</text>
+        <rect x="730" y="212" width="230" height="46" rx="9" class="s-ctrl"/>
+        <text x="744" y="233" class="t-sm">Content + step checks</text>
+        <text x="744" y="249" class="mut">/</text>
+
+        <!-- flows -->
+        <path class="flow" marker-end="url(#a1)" d="M190,100 L248,106"/>
+        <text x="196" y="94" class="flow-lbl">HTTPS / WSS</text>
+        <path class="flow" marker-end="url(#a1)" d="M410,109 L468,109"/>
+        <text x="416" y="102" class="flow-lbl">tunnel</text>
+        <path class="flow" marker-end="url(#a1)" d="M650,100 C695,100 695,67 728,67"/>
+        <path class="flow" marker-end="url(#a1)" d="M650,109 C700,109 700,123 728,123"/>
+        <path class="flow" marker-end="url(#a1)" d="M650,118 C700,118 700,179 728,179"/>
+        <path class="flow" marker-end="url(#a1)" d="M650,135 C695,135 695,235 728,235"/>
+        <text x="656" y="96" class="flow-lbl">route by host</text>
+      </svg>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--c-client-bg);border-color:var(--c-client)"></span>Learner</span>
+        <span><span class="sw" style="background:var(--c-edge-bg);border-color:var(--c-edge)"></span>Edge / Cloudflare</span>
+        <span><span class="sw" style="background:var(--c-ctrl-bg);border-color:var(--c-ctrl)"></span>Control plane (cep-ops)</span>
+        <span><span class="sw" style="background:var(--c-node-bg);border-color:var(--c-node)"></span>Session container</span>
+      </div>
+      <div class="note"><b>Why one tunnel:</b> a single <code>cloudflared</code> + wildcard DNS exposes every session without opening host ports. The gateway holds the token→session map and proxies WebSocket (required for the terminal). <b>Demo shortcut:</b> terminal via <code>ttyd</code>; later replaced by control-plane <code>exec → WS → xterm.js</code>.</div>
+    </div>
+  </section>
+
+  <!-- 3. Control plane components -->
+  <section>
+    <h2><span class="n">3</span>Control-plane components <span style="font-weight:400;color:var(--muted);font-size:13px">· cep-ops</span></h2>
+    <p class="lead">One Go binary. The provisioner is the only thing that talks to the Docker Engine API.</p>
+    <div class="panel">
+      <svg viewBox="0 0 980 360" role="img" aria-label="The cep-ops Go binary contains an HTTP API, session and cohort manager, provisioner, gateway, content service, step-check runner, reaper, ops dashboard, and a SQLite store. The provisioner calls the Docker Engine API which manages the session containers.">
+        <defs>
+          <marker id="a2" markerWidth="9" markerHeight="9" refX="7.5" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="var(--line)"/>
+          </marker>
+        </defs>
+        <rect x="18" y="26" width="636" height="316" rx="14" class="s-zone"/>
+        <text x="34" y="50" class="hd">cep-ops · Go control plane (single binary)</text>
+
+        <rect x="36" y="66" width="190" height="56" rx="9" class="s-ctrl"/>
+        <text x="50" y="90" class="t-sm">HTTP API (chi)</text>
+        <text x="50" y="107" class="mut2">sessions · cohorts · checks</text>
+
+        <rect x="242" y="66" width="190" height="56" rx="9" class="s-ctrl"/>
+        <text x="256" y="90" class="t-sm">Session / Cohort mgr</text>
+        <text x="256" y="107" class="mut2">lifecycle · reservation</text>
+
+        <rect x="448" y="66" width="190" height="56" rx="9" class="s-ctrl"/>
+        <text x="462" y="90" class="t-sm">Gateway</text>
+        <text x="462" y="107" class="mut2">proxy · token · WS</text>
+
+        <rect x="36" y="138" width="190" height="56" rx="9" class="s-ctrl"/>
+        <text x="50" y="162" class="t-sm">Provisioner</text>
+        <text x="50" y="179" class="mut2">builds env via Docker API</text>
+
+        <rect x="242" y="138" width="190" height="56" rx="9" class="s-ctrl"/>
+        <text x="256" y="162" class="t-sm">Content service</text>
+        <text x="256" y="179" class="mut2">workshops · progress</text>
+
+        <rect x="448" y="138" width="190" height="56" rx="9" class="s-ctrl"/>
+        <text x="462" y="162" class="t-sm">Step-check runner</text>
+        <text x="462" y="179" class="mut2">docker exec · assert</text>
+
+        <rect x="36" y="210" width="190" height="56" rx="9" class="s-ctrl"/>
+        <text x="50" y="234" class="t-sm">Reaper</text>
+        <text x="50" y="251" class="mut2">TTL · idle teardown</text>
+
+        <rect x="242" y="210" width="190" height="56" rx="9" class="s-ctrl"/>
+        <text x="256" y="234" class="t-sm">Ops dashboard</text>
+        <text x="256" y="251" class="mut2">capacity · live sessions</text>
+
+        <rect x="448" y="210" width="190" height="56" rx="9" class="s-data"/>
+        <text x="462" y="234" class="t-sm">Store</text>
+        <text x="462" y="251" class="mut2">SQLite → dogfood CRDB</text>
+
+        <text x="36" y="300" class="mut2">All subsystems share one process and one store; the reconciler + reaper run as goroutines.</text>
+
+        <!-- external docker -->
+        <rect x="700" y="86" width="258" height="70" rx="10" class="s-edge"/>
+        <text x="716" y="114" class="t-sm">Docker Engine API</text>
+        <text x="716" y="132" class="mut2">networks · containers · exec</text>
+
+        <rect x="700" y="206" width="258" height="78" rx="10" class="s-node"/>
+        <text x="716" y="234" class="t-sm">Session containers</text>
+        <text x="716" y="252" class="mut2">workspace + CRDB nodes</text>
+        <text x="716" y="269" class="mut2">per-session Docker network</text>
+
+        <path class="flow" marker-end="url(#a2)" d="M226,166 C660,166 670,121 698,121"/>
+        <text x="470" y="134" class="flow-lbl">create / exec / stop</text>
+        <path class="flow" marker-end="url(#a2)" d="M829,156 L829,204"/>
+        <text x="836" y="184" class="flow-lbl">manages</text>
+      </svg>
+      <div class="note"><b>Prohibited:</b> bind-mounting the host Docker socket into an attendee container (that is host root). Only the control plane holds Engine-API access; attendees reach Docker — when a lab needs it — through the isolated Sysbox path below.</div>
+    </div>
+  </section>
+
+  <!-- 4. Host & session isolation -->
+  <section>
+    <h2><span class="n">4</span>Host &amp; session isolation</h2>
+    <p class="lead">One host, many sessions. Each student gets one nested lab box and deploys CockroachDB inside it. Pure-SQL labs can instead use a pre-provisioned cluster.</p>
+    <div class="panel">
+      <svg viewBox="0 0 980 360" role="img" aria-label="A single GCP VM running Docker Engine with cgroups v2 holds many isolated session networks. The default shape has a workspace plus a three-node CockroachDB cluster built by the control plane. The Sysbox shape has a workspace running its own nested docker compose. An admission budget governs how many fit.">
+        <rect x="18" y="26" width="944" height="316" rx="14" class="s-zone"/>
+        <text x="34" y="50" class="hd">GCP VM — Docker Engine · cgroups v2</text>
+        <text x="760" y="50" class="mut">admit vs 0.9 × RAM</text>
+
+        <!-- session A default -->
+        <rect x="36" y="66" width="430" height="256" rx="11" class="s-box"/>
+        <text x="52" y="90" class="t-sm">Session network · cep-s-a1</text>
+        <text x="52" y="107" class="mut">variant — pre-provisioned cluster (SQL-only labs)</text>
+        <rect x="52" y="120" width="120" height="58" rx="8" class="s-node"/>
+        <text x="64" y="144" class="t-sm">workspace</text>
+        <text x="64" y="161" class="mut2">cockroach CLI</text>
+        <rect x="190" y="120" width="80" height="58" rx="8" class="s-data"/>
+        <text x="204" y="150" class="t-sm">crdb-0</text>
+        <rect x="286" y="120" width="80" height="58" rx="8" class="s-data"/>
+        <text x="300" y="150" class="t-sm">crdb-1</text>
+        <rect x="382" y="120" width="68" height="58" rx="8" class="s-data"/>
+        <text x="392" y="150" class="t-sm">crdb-2</text>
+        <text x="52" y="210" class="mut2">limits per container: <tspan class="mut">--memory · --cpus · --pids-limit · --memory-swap</tspan></text>
+        <text x="52" y="232" class="mut2">CRDB low-footprint: <tspan class="mut">--cache=128MiB --max-sql-memory=128MiB</tspan></text>
+        <text x="52" y="254" class="mut2">single-node labs use <tspan class="mut">cockroach start-single-node</tspan> (cheapest)</text>
+        <text x="52" y="290" class="mut2">isolated bridge network · no host ports · no host socket</text>
+
+        <!-- session B sysbox -->
+        <rect x="490" y="66" width="300" height="256" rx="11" class="s-box"/>
+        <text x="506" y="90" class="t-sm">Session network · cep-s-b7</text>
+        <text x="506" y="107" class="mut">DEFAULT — student deploys CRDB in a nested lab box</text>
+        <rect x="506" y="120" width="268" height="150" rx="9" class="s-node"/>
+        <text x="520" y="143" class="t-sm">lab box · sysbox-runc (prod) / DinD (demo)</text>
+        <text x="520" y="160" class="mut2">runs compose or K3d inside</text>
+        <rect x="522" y="172" width="78" height="42" rx="7" class="s-data"/>
+        <text x="534" y="197" class="t-sm">crdb-0</text>
+        <rect x="610" y="172" width="78" height="42" rx="7" class="s-data"/>
+        <text x="622" y="197" class="t-sm">crdb-1</text>
+        <rect x="698" y="172" width="64" height="42" rx="7" class="s-data"/>
+        <text x="708" y="197" class="t-sm">crdb-2</text>
+        <text x="520" y="236" class="mut2">inner Docker daemon,</text>
+        <text x="520" y="252" class="mut2">isolated from the host</text>
+        <text x="506" y="290" class="mut2">student deploys 1 / 3 / 9 nodes inside</text>
+
+        <!-- more -->
+        <rect x="812" y="66" width="132" height="256" rx="11" class="s-zone"/>
+        <text x="828" y="92" class="mut2">cep-s-c3</text>
+        <text x="828" y="112" class="mut2">cep-s-d9</text>
+        <text x="828" y="132" class="mut2">…</text>
+        <text x="828" y="300" class="mut2">until the RAM</text>
+        <text x="828" y="316" class="mut2">budget is spent</text>
+      </svg>
+      <div class="note"><b>The right box is the default:</b> the student deploys CockroachDB themselves inside a nested lab box — that's the teaching goal. The left (pre-provisioned) shape is the variant for SQL-only labs. <b>Host note:</b> Sysbox is Linux-only; for the demo use privileged DinD on a throwaway VM (trusted testers) and switch to Sysbox before untrusted attendees.</div>
+    </div>
+  </section>
+
+  <!-- 5. Lifecycle -->
+  <section>
+    <h2><span class="n">5</span>Session lifecycle</h2>
+    <p class="lead">A small state machine the scheduler and reaper drive.</p>
+    <div class="panel">
+      <svg viewBox="0 0 980 190" role="img" aria-label="Session states: requested, queued, provisioning, ready, active, idle, expiring, reaped. Provisioning can fail. Idle and TTL lead to expiring then reaped.">
+        <defs>
+          <marker id="a3" markerWidth="9" markerHeight="9" refX="7.5" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="var(--line)"/>
+          </marker>
+        </defs>
+        <g>
+          <rect x="16"  y="40" width="104" height="44" rx="22" class="s-ctrl"/><text x="68"  y="67" class="t-sm" text-anchor="middle">REQUESTED</text>
+          <rect x="150" y="40" width="92"  height="44" rx="22" class="s-ctrl"/><text x="196" y="67" class="t-sm" text-anchor="middle">QUEUED</text>
+          <rect x="272" y="40" width="128" height="44" rx="22" class="s-edge"/><text x="336" y="67" class="t-sm" text-anchor="middle">PROVISIONING</text>
+          <rect x="430" y="40" width="84"  height="44" rx="22" class="s-data"/><text x="472" y="67" class="t-sm" text-anchor="middle">READY</text>
+          <rect x="544" y="40" width="88"  height="44" rx="22" class="s-data"/><text x="588" y="67" class="t-sm" text-anchor="middle">ACTIVE</text>
+          <rect x="662" y="40" width="78"  height="44" rx="22" class="s-box"/><text x="701" y="67" class="t-sm" text-anchor="middle">IDLE</text>
+          <rect x="770" y="40" width="100" height="44" rx="22" class="s-edge"/><text x="820" y="67" class="t-sm" text-anchor="middle">EXPIRING</text>
+          <rect x="884" y="40" width="84"  height="44" rx="22" class="s-box"/><text x="926" y="67" class="t-sm" text-anchor="middle">REAPED</text>
+          <rect x="272" y="124" width="128" height="40" rx="20" class="s-box" style="stroke:var(--improve)"/><text x="336" y="149" class="t-sm" text-anchor="middle">FAILED</text>
+        </g>
+        <g class="flow" marker-end="url(#a3)">
+          <path d="M120,62 L148,62"/>
+          <path d="M242,62 L270,62"/>
+          <path d="M400,62 L428,62"/>
+          <path d="M514,62 L542,62"/>
+          <path d="M632,62 L660,62"/>
+          <path d="M740,62 L768,62"/>
+          <path d="M870,62 L882,62"/>
+          <path d="M336,84 L336,122"/>
+          <path d="M588,84 C588,104 701,104 701,86"/>
+        </g>
+        <text x="610" y="118" class="flow-lbl">idle / TTL</text>
+        <text x="346" y="110" class="flow-lbl">error</text>
+        <text x="744" y="34" class="flow-lbl">reaper frees RAM budget</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 6. Domain model -->
+  <section>
+    <h2><span class="n">6</span>Domain model</h2>
+    <p class="lead">Content is static per workshop version; environments are dynamic per session.</p>
+    <div class="panel">
+      <div class="dlist">
+        <div><b>Workshop</b> <span>— slug, version, env_template_ref → Lessons.</span></div>
+        <div><b>Lesson</b> <span>— ordered, holds Steps.</span></div>
+        <div><b>Step</b> <span>— instructions_html, optional setup, optional check.</span></div>
+        <div><b>EnvironmentTemplate</b> <span>— workspace_image, topology (single/3/9), ports, limits, ttl, idle_timeout, runtime (default | sysbox).</span></div>
+        <div><b>Cohort</b> <span>— workshop_ref, seats, starts/ends, access_codes, reserved_capacity.</span></div>
+        <div><b>Session</b> <span>— cohort_ref, attendee_token, state, env_ref, progress.</span></div>
+        <div><b>Environment</b> <span>— session_ref, network_id, containers, expires_at.</span></div>
+        <div><b>Check</b> <span>— run, expect_exit?, expect_stdout_contains?.</span></div>
+        <div><b>Progress</b> <span>— session_ref, step_ref, status (todo/passed/failed).</span></div>
+      </div>
+      <div class="note"><b>Content pipeline:</b> authors write source → the <code>si</code> tool renders HTML/markdown + a <code>workshop.yaml</code> manifest (lessons → steps → env template → checks) → cep-ops ingests it. <b>Unconfirmed:</b> the exact <code>si</code> output format — confirm before wiring ingest.</div>
+    </div>
+  </section>
+
+  <!-- 7. Density -->
+  <section>
+    <h2><span class="n">7</span>Capacity, cost &amp; the Phase-1 plan</h2>
+    <p class="lead">RAM-bound, <strong>measured on Colima</strong>: a session is one nested-Docker box running 1–9 CRDB nodes (multi-region = more nodes in the <em>same</em> box, not more VMs). Data is tiny (~10M small rows, on disk), so RAM tracks node count: ~0.6 GB (1-node) · ~1.5 GB (3-node) · ~2.5 GB (9-node). Full write-up: <a href="hosting-and-cost.html">hosting-and-cost.html</a>.</p>
+    <div class="panel">
+      <table>
+        <thead><tr><th>Host (always-on)</th><th>approx $/mo</th><th>1-node</th><th>3-node</th><th>9-node</th></tr></thead>
+        <tbody>
+          <tr><td>e2/n2-highmem-8 · 64 GB <b>(Phase 1)</b></td><td class="n">~$250–300</td><td class="n">~50</td><td class="n">~25</td><td class="n">~16</td></tr>
+          <tr><td>n2-highmem-16 · 128 GB</td><td class="n">~$570</td><td class="n">~110</td><td class="n">~55</td><td class="n">~36</td></tr>
+          <tr><td>n2-highmem-32 · 256 GB</td><td class="n">~$1130</td><td class="n">—</td><td class="n">~115</td><td class="n">~76</td></tr>
+        </tbody>
+      </table>
+      <div class="note"><b>Phase 1:</b> one <b>always-on</b> 64 GB VM (<code>e2-highmem-8</code>), <code>--mem-budget-gb 50 --mem-mb 2048</code> → <b>25 concurrent sessions</b>, internal via LB + IAP on <code>crdb.dev</code>. Instant availability is required, so the host never stops; idle cost (~$250–300/mo) is accepted. <b>Out:</b> GKE (Autopilot can't run privileged DinD; Standard = VM cost + ~$73/mo cluster fee) and scheduled start/stop (breaks instant). Later: 1-node topology per track (~2–2.5× density), then a multi-host MIG.</div>
+    </div>
+  </section>
+
+  <!-- 8. Phases -->
+  <section>
+    <h2><span class="n">8</span>Phases</h2>
+    <div class="phases">
+      <div class="phase now"><div class="k">PHASE 0 · now</div><h4>Demo</h4>
+        <ul><li>1 host (local → GCP)</li><li>provision session → terminal + instructions + DB console</li><li>cohort of 5 + codes</li><li>Cloudflare tunnel</li></ul></div>
+      <div class="phase"><div class="k">PHASE 1</div><h4>Real content + ops</h4>
+        <ul><li><code>si</code> manifest ingest</li><li>step checks</li><li>reaper + admission control</li><li>ops dashboard</li></ul></div>
+      <div class="phase"><div class="k">PHASE 2</div><h4>Rich &amp; multi-surface</h4>
+        <ul><li>Sysbox user-run compose</li><li>code-server editor</li><li>VS Code extension</li><li>real auth</li></ul></div>
+      <div class="phase"><div class="k">PHASE 3</div><h4>Scale out</h4>
+        <ul><li>multi-host</li><li>placement layer</li><li>(still not k8s)</li></ul></div>
+    </div>
+    <div class="note"><b>Single-host is a SPOF through Phase 2</b> — acceptable for demo/early customers. Phase 3 adds a placement layer across a small fleet; the control plane stays the scheduler.</div>
+  </section>
+
+  <footer>
+    This page renders the decisions in <code>docs/ARCHITECTURE.md</code> — the prose doc is the source of truth; this is the picture.
+    Open decisions (defaults chosen): env model (managed default, Sysbox opt-in) · state store (SQLite → CRDB) · terminal (ttyd → exec/WS) · <code>si</code> output format (unconfirmed). Private artifact — only you can open it until you share it.
+  </footer>
+
+</div>
+
+<script>
+  const order=["","light","dark"];
+  const labels={"":"◐ Theme: Auto","light":"☀ Theme: Light","dark":"☾ Theme: Dark"};
+  function apply(t){document.documentElement.setAttribute("data-theme",t);
+    document.getElementById("themebtn").textContent=labels[t];}
+  function cycleTheme(){const cur=document.documentElement.getAttribute("data-theme")||"";
+    apply(order[(order.indexOf(cur)+1)%order.length]);}
+</script>
+</body>
+</html>
