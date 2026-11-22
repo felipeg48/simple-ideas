@@ -104,6 +104,20 @@ Three changes, one per team, and each one is still in place a year later. The hi
 
 ---
 
+## The way back
+
+```stage
+dir: RL
+Customer -->|parcel back| Courier
+Courier -->|still sealed| Warehouse[Back on the shelf]
+Courier -->|damaged| Refund[Refund in a day]
+```
+
+Notes: (0.5 min)
+Returns run the route backwards. The courier collects the parcel, and one look decides where it goes: a sealed parcel goes back on the shelf, a damaged one turns into a refund the next day.
+
+---
+
 ## Two views of route 7
 
 <!-- layout: two-col -->

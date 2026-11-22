@@ -260,7 +260,8 @@ func igEdgeGeom(g *stageGraph, a, b int, off float64) edgeSeg {
 	sx, sy := clip(ax+px, ay+py, bx+px, by+py)
 	ex, ey := clip(bx+px, by+py, ax+px, ay+py)
 	d := fmt.Sprintf("M%d %d L%d %d", rnd(sx), rnd(sy), rnd(ex), rnd(ey))
-	return edgeSeg{d, ex, ey, math.Atan2(ey-sy, ex-sx) * 180 / math.Pi, (sx + ex) / 2, (sy + ey) / 2}
+	t := math.Atan2(ey-sy, ex-sx) * 180 / math.Pi
+	return edgeSeg{d, ex, ey, t, (sx + ex) / 2, (sy + ey) / 2, t}
 }
 
 // igFlow draws a flow block: the label, then one SVG of boxes, arrows with
@@ -312,7 +313,19 @@ func (dr *deckRenderer) igFlow(b *deck.IGBlock, dir string) string {
 					y = rnd(seg.ly) + map[bool]int{true: -24, false: 26}[dx < 0]
 				}
 			}
-			fmt.Fprintf(&s, `<text class="si-igf-elbl" x="%d" y="%d" font-size="15" text-anchor="%s">%s</text>`, x, y, anchor, html.EscapeString(e.Label))
+			rot := ""
+			if a := labelTilt(seg.la); a != 0 { // along an angled arrow, clear of its number
+				side := 24.0  // above
+				if off != 0 { // on the arrow's own side, away from the one coming back
+					r := a * math.Pi / 180
+					if dx, dy := seg.hx-seg.lx, seg.hy-seg.ly; -dy*math.Sin(r)-dx*math.Cos(r) < 0 {
+						side = -26
+					}
+				}
+				anchor = "middle"
+				x, y, rot = tiltAt(seg.lx, seg.ly, a, side)
+			}
+			fmt.Fprintf(&s, `<text class="si-igf-elbl" x="%d" y="%d" font-size="15" text-anchor="%s"%s>%s</text>`, x, y, anchor, rot, html.EscapeString(e.Label))
 		}
 		s.WriteString(`</g>`)
 	}

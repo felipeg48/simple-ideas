@@ -146,6 +146,8 @@ dot Draft..Ship 2s
 ```
 
 - Chains, fan-out and merges; node labels `A[Label]`, edge labels `-->|x|`
+  (turned along a slanted edge, upright; `labels: flat` keeps them level)
+- `dir: LR` (default), `RL` or `TB`
 - `dot`/`flow A..B` animate a route; `step <node>` reveals on build steps
 - Full guide: `docs/stage-diagrams.md`
 

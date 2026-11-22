@@ -251,3 +251,53 @@ func TestStageTBSiblingLabelsClear(t *testing.T) {
 		t.Errorf("short labels: sibling gap %d, want %d", g.rowGap, sRowGap)
 	}
 }
+
+// An edge label follows its edge's angle, turned to stay upright; a level or
+// upright edge keeps a flat label (issue #27).
+func TestStageLabelTilt(t *testing.T) {
+	for _, c := range []struct{ theta, want float64 }{
+		{0, 0}, {1.5, 0}, {-1.5, 0}, {180, 0}, {-180, 0}, // level, either way
+		{90, 0}, {-90, 0}, {270, 0}, {89, 0}, // upright
+		{30, 30}, {-30, -30}, // down-right, up-right: as they are
+		{150, -30}, {-150, 30}, {210, 30}, {-135, 45}, // leftward: turned half round
+		{8.6612, 8.7}, // one decimal
+	} {
+		if got := labelTilt(c.theta); got != c.want {
+			t.Errorf("labelTilt(%v) = %v, want %v", c.theta, got, c.want)
+		}
+	}
+	x, y, attr := tiltAt(100, 100, 30, 12) // 12 off the line, on the letters' up side
+	if x != 106 || y != 90 || attr != ` transform="rotate(30.0 106 90)"` {
+		t.Errorf("tiltAt = %d %d %q", x, y, attr)
+	}
+}
+
+func TestStageAngledLabels(t *testing.T) {
+	fan := "dir: LR\nCP[Control plane] -->|most free RAM| VM1[VM 1]\nCP -->|place session| VM2[VM 2]"
+	svg, _, err := genStage(fan, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(svg, `transform="rotate(-8.7 `) || !strings.Contains(svg, `transform="rotate(8.7 `) {
+		t.Errorf("fan-out labels must turn with their edges (-8.7 and 8.7 degrees):\n%s", svg)
+	}
+	flat, _, _ := genStage("labels: flat\n"+fan, 1)
+	if strings.Contains(flat, `transform="rotate(`) {
+		t.Errorf("labels: flat must keep labels level:\n%s", flat)
+	}
+	// level and upright edges, and a bow's middle: no rotation at all, as before
+	for _, body := range []string{"a -->|x| b -->|y| c", "dir: TB\na -->|x| b -->|y| c", "dir: RL\na -->|x| b", "a --> b --> c\na -->|skip| c"} {
+		s, _, _ := genStage(body, 1)
+		if strings.Contains(s, `transform="rotate(`) {
+			t.Errorf("%q: a level or upright edge's label must not rotate:\n%s", body, s)
+		}
+	}
+	// right to left: the left-to-right fan mirrored, its labels still upright
+	rl, _, _ := genStage("dir: RL\n"+fan, 1)
+	if !strings.Contains(rl, `transform="rotate(-8.7 `) || !strings.Contains(rl, `transform="rotate(8.7 `) {
+		t.Errorf("RL fan-out labels must turn upright:\n%s", rl)
+	}
+	if _, _, err := genStage("labels: sideways\na --> b", 1); err == nil {
+		t.Error("labels: sideways must be an error")
+	}
+}

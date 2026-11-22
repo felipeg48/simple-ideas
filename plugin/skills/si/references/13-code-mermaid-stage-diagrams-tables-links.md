@@ -37,7 +37,7 @@ A table of numbers can also be a chart that moves step by step: a
 
   ````markdown
   ```stage
-  dir: LR                              # LR (default) or TB
+  dir: LR                              # LR (default), RL or TB
   Read --> Cache
   Cache -->|hit| Fast[Return fast]     # id[Label] renames; -->|x| labels an edge
   Cache -->|miss| Disk --> Fill --> Fast
@@ -55,7 +55,19 @@ A table of numbers can also be a chart that moves step by step: a
   gap between its two columns so it clears the boxes and the arrowhead; one
   longer than twice a box is set smaller. With `dir: TB`, labels on sibling
   edges sit side by side, so the gap between the siblings widens until they
-  clear each other (up to twice a box; past that they are set smaller). Add `step <node...>` lines to walk the flow on build steps — each
+  clear each other (up to twice a box; past that they are set smaller). A
+  label on a slanted edge (a fan-out, a merge) is turned to the edge's angle
+  and set just above it, always upright; labels on level and upright edges
+  stay level. `labels: flat` keeps every label level, and `dir: RL` flows
+  right to left:
+
+  ```stage
+  dir: LR
+  CP[Control plane] -->|most free RAM| VM1[VM 1]
+  CP -->|place session| VM2[VM 2]
+  ```
+
+  Add `step <node...>` lines to walk the flow on build steps — each
   `step` line is one click. An optional op leads the line:
   `highlight` (default, accent outline), `ok` (green), `alert` (red, pulsing),
   `show` (the node starts hidden and fades in), `hide` (fades out):

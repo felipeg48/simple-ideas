@@ -13,7 +13,8 @@ not do crossing-minimisation.
 ## The whole language on one screen
 
 ```
-dir: LR                      # flow direction: LR (default) or TB
+dir: LR                      # flow direction: LR (default), RL or TB
+labels: flat                 # keep edge labels level (default: along the edge)
 A --> B --> C                # a chain: three boxes, two arrows
 A --> B                      # one edge per line also works
 Cache -->|hit| Fast          # label an edge between pipes
@@ -37,13 +38,20 @@ Rules of the grammar:
   bottom (`dir: TB`), labels on sibling edges sit side by side between two
   rows: the gap between the siblings widens until no two labels overlap (up
   to twice a box's width; past that they are set smaller).
+- **Labels follow their edge.** On a slanted edge (a fan-out, a merge, a
+  diagonal) the label is turned to the edge's angle, centred on it and set
+  just above the line, so it reads as part of its arrow. It is always
+  upright: a label on an edge heading left is turned half round, never shown
+  upside down. Labels on level and upright edges, and at the middle of a
+  bowed skip edge, stay level. `labels: flat` keeps every label level.
+- **`dir: RL`** flows right to left: the `LR` layout, mirrored.
 - **`dot A..B [dur]`** and **`flow A..B [dur]`** animate the shortest route from
   `A` to `B`. A bare number means seconds (`2` → `2s`); default `1.6s`.
 - **`step <node...>`** adds a build step that acts on those nodes (cumulatively)
   as you click through the slide. An optional op leads the line — `highlight`
   (default), `ok`, `alert`, `show`, `hide` — see example 7.
-- A block with an unknown node, an impossible route, or a bad `dir` is reported
-  by `si check`.
+- A block with an unknown node, an impossible route, a bad `dir` or a
+  `labels:` other than `along` or `flat` is reported by `si check`.
 
 ## Examples
 
@@ -94,6 +102,18 @@ flow Ingest..Store 1.4s
 
 `dir: TB` flows downward — often the clearest shape for a decision that splits
 two ways. Here dashes trace the valid route.
+
+### 4b. Labels along slanted edges
+
+```stage
+dir: LR
+CP[Control plane] -->|most free RAM| VM1[VM 1]
+CP -->|place session| VM2[VM 2]
+```
+
+Both arrows leave `Control plane` at a slant, so each label is turned to its
+arrow and sits just above it. Add `labels: flat` to keep them level, or write
+`dir: RL` to run the same flow right to left (the labels stay upright).
 
 ### 5. Diamond: fork then re-merge
 

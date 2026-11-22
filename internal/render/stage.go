@@ -12,7 +12,8 @@ import (
 // merges — laid out left-to-right or top-to-bottom with a longest-path layering
 // (no crossing minimisation); dense graphs stay the job of the `mermaid` fence.
 //
-//	dir: LR                         # LR (default) or TB
+//	dir: LR                         # LR (default), RL or TB
+//	labels: flat                    # edge labels stay level (default: along the edge)
 //	Cart --> Pay[Payment] --> Done  # ids; A[Label] gives a different label
 //	Cache -->|hit| Fast             # edge label between pipes
 //	Cache -->|miss| Slow
@@ -41,6 +42,7 @@ var stageStepOps = map[string]bool{"highlight": true, "ok": true, "alert": true,
 
 type stageGraph struct {
 	dir   string
+	flat  bool // labels: flat keeps every edge label level
 	nodes []stageNode
 	idx   map[string]int
 	edges []stageEdge
@@ -114,10 +116,16 @@ func parseStage(body string) (*stageGraph, error) {
 		switch {
 		case strings.HasPrefix(line, "dir:"):
 			d := strings.ToUpper(strings.TrimSpace(line[len("dir:"):]))
-			if d != "LR" && d != "TB" {
-				return nil, fmt.Errorf("dir must be LR or TB, got %q", d)
+			if d != "LR" && d != "RL" && d != "TB" {
+				return nil, fmt.Errorf("dir must be LR, RL or TB, got %q", d)
 			}
 			g.dir = d
+		case strings.HasPrefix(line, "labels:"):
+			v := strings.ToLower(strings.TrimSpace(line[len("labels:"):]))
+			if v != "flat" && v != "along" {
+				return nil, fmt.Errorf("labels must be along or flat, got %q", v)
+			}
+			g.flat = v == "flat"
 		case strings.HasPrefix(line, "dot "):
 			if err := anim("dot", line[len("dot "):]); err != nil {
 				return nil, err
@@ -298,8 +306,6 @@ func (g *stageGraph) place(depth, rowOf, count, at []int, maxRows int) {
 			g.tlx[i] = sPad + d*sBoxW + at[d]
 			g.tly[i] = sPad + off + r*(sBoxH+g.rowGap)
 		}
-		g.cx[i] = g.tlx[i] + sBoxW/2
-		g.cy[i] = g.tly[i] + sBoxH/2
 	}
 	if g.dir == "TB" {
 		g.vbW = sPad*2 + maxRows*sBoxW + (maxRows-1)*g.rowGap
@@ -307,6 +313,13 @@ func (g *stageGraph) place(depth, rowOf, count, at []int, maxRows int) {
 	} else {
 		g.vbW = sPad*2 + cols*sBoxW + at[cols-1]
 		g.vbH = sPad*2 + maxRows*sBoxH + (maxRows-1)*g.rowGap
+	}
+	for i := range g.nodes {
+		if g.dir == "RL" { // right to left: the left-to-right layout, mirrored
+			g.tlx[i] = g.vbW - g.tlx[i] - sBoxW
+		}
+		g.cx[i] = g.tlx[i] + sBoxW/2
+		g.cy[i] = g.tly[i] + sBoxH/2
 	}
 }
 
@@ -581,11 +594,11 @@ func clip(cx, cy, tx, ty float64) (float64, float64) {
 }
 
 // edgeSeg is one edge's drawn geometry: the path, the arrow-head position and
-// angle, and where to anchor an edge label.
+// angle, and where to anchor an edge label and the edge's direction there.
 type edgeSeg struct {
 	d          string  // SVG path data
 	hx, hy, ha float64 // head tip x,y and angle (degrees)
-	lx, ly     float64 // label anchor
+	lx, ly, la float64 // label anchor and the edge's tangent there (degrees)
 }
 
 // edgeGeom routes an edge: a straight clipped line between adjacent boxes, or,
@@ -594,7 +607,7 @@ type edgeSeg struct {
 func (g *stageGraph) edgeGeom(a, b int) edgeSeg {
 	ax, ay := float64(g.cx[a]), float64(g.cy[a])
 	bx, by := float64(g.cx[b]), float64(g.cy[b])
-	skipLR := g.dir == "LR" && g.cy[a] == g.cy[b] && absInt(g.depth[b]-g.depth[a]) > 1
+	skipLR := g.dir != "TB" && g.cy[a] == g.cy[b] && absInt(g.depth[b]-g.depth[a]) > 1
 	skipTB := g.dir == "TB" && g.cx[a] == g.cx[b] && absInt(g.depth[b]-g.depth[a]) > 1
 	switch {
 	case skipLR:
@@ -602,19 +615,55 @@ func (g *stageGraph) edgeGeom(a, b int) edgeSeg {
 		ex, ey := bx, float64(g.tly[b]+sBoxH)
 		yb := math.Max(sy, ey) + float64(g.rowGap+20)
 		d := fmt.Sprintf("M%d %d C%d %d %d %d %d %d", rnd(sx), rnd(sy), rnd(sx), rnd(yb), rnd(ex), rnd(yb), rnd(ex), rnd(ey))
-		return edgeSeg{d, ex, ey, math.Atan2(ey-yb, 0) * 180 / math.Pi, (sx + ex) / 2, yb}
+		// a bow between two boxes on one row is symmetric: level at its middle
+		return edgeSeg{d, ex, ey, math.Atan2(ey-yb, 0) * 180 / math.Pi, (sx + ex) / 2, yb, 0}
 	case skipTB:
 		sx, sy := float64(g.tlx[a]+sBoxW), ay // right centre of a
 		ex, ey := float64(g.tlx[b]+sBoxW), by
 		xb := math.Max(sx, ex) + float64(g.rowGap+20)
 		d := fmt.Sprintf("M%d %d C%d %d %d %d %d %d", rnd(sx), rnd(sy), rnd(xb), rnd(sy), rnd(xb), rnd(ey), rnd(ex), rnd(ey))
-		return edgeSeg{d, ex, ey, math.Atan2(0, ex-xb) * 180 / math.Pi, xb, (sy + ey) / 2}
+		return edgeSeg{d, ex, ey, math.Atan2(0, ex-xb) * 180 / math.Pi, xb, (sy + ey) / 2, 90}
 	default:
 		sx, sy := clip(ax, ay, bx, by)
 		ex, ey := clip(bx, by, ax, ay)
 		d := fmt.Sprintf("M%d %d L%d %d", rnd(sx), rnd(sy), rnd(ex), rnd(ey))
-		return edgeSeg{d, ex, ey, math.Atan2(ey-sy, ex-sx) * 180 / math.Pi, (sx + ex) / 2, (sy + ey) / 2}
+		a := math.Atan2(ey-sy, ex-sx) * 180 / math.Pi
+		return edgeSeg{d, ex, ey, a, (sx + ex) / 2, (sy + ey) / 2, a}
 	}
+}
+
+// labelTilt is the angle (degrees, one decimal) to set an edge label at on
+// an edge heading theta degrees there: turned half round when it would read
+// upside down (theta in (90°, 270°]), so always in (-90°, 90°), and 0 for an
+// edge within 2° of level or of upright, whose label stays flat as before.
+func labelTilt(theta float64) float64 {
+	a := math.Mod(theta, 360) // (-360, 360)
+	switch {
+	case a > 180:
+		a -= 360
+	case a <= -180:
+		a += 360
+	}
+	switch { // now (-180, 180]
+	case a > 90:
+		a -= 180
+	case a <= -90:
+		a += 180
+	}
+	if math.Abs(a) < 2 || math.Abs(a) > 88 {
+		return 0
+	}
+	return math.Round(a*10) / 10
+}
+
+// tiltAt places a label tilted to a (from labelTilt) with its centre off
+// over the anchor (lx,ly), on the side its letters stand on: the label's
+// position and its rotate transform attribute.
+func tiltAt(lx, ly, a, off float64) (x, y int, attr string) {
+	r := a * math.Pi / 180
+	// float64(...) keeps arm64 from fusing the multiply-add: same bytes as amd64
+	x, y = rnd(lx+float64(off*math.Sin(r))), rnd(ly-float64(off*math.Cos(r)))
+	return x, y, fmt.Sprintf(` transform="rotate(%.1f %d %d)"`, a, x, y)
 }
 
 // arrow draws an edge path plus a triangular head oriented along it.
@@ -649,7 +698,11 @@ func (g *stageGraph) edgeLabel(ei int) string {
 	if k < 1 {
 		style = fmt.Sprintf(` style="font-size:%.1fpx"`, sLblSize*k)
 	}
-	return fmt.Sprintf(`<text class="elbl" x="%d" y="%d"%s>%s</text>`, rnd(s.lx), rnd(s.ly), style, html.EscapeString(label))
+	x, y, rot := rnd(s.lx), rnd(s.ly), ""
+	if a := labelTilt(s.la); a != 0 && !g.flat { // along an angled edge, just above it
+		x, y, rot = tiltAt(s.lx, s.ly, a, sLblH/2+2)
+	}
+	return fmt.Sprintf(`<text class="elbl" x="%d" y="%d"%s%s>%s</text>`, x, y, rot, style, html.EscapeString(label))
 }
 
 // pathD is the polyline through node centres along a route.

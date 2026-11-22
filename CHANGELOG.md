@@ -3,6 +3,17 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.42.0:** edge labels follow their edges (fixes #27). In a `stage`
+  diagram, a label on a slanted edge (a fan-out, a merge, a diagonal) is
+  turned to the edge's angle, centred on it and set just above the line;
+  it is always upright, so a label on an edge heading left is turned half
+  round. Level and upright edges, and the middle of a bowed skip edge, keep
+  the level label they had, byte for byte. `labels: flat` in the fence keeps
+  every label level. New `dir: RL` runs a stage diagram right to left. The
+  labels of infographic `flow` blocks turn the same way, beside the arrow's
+  number. The gap widening for long labels and the sibling spacing are
+  unchanged; still one static SVG, no script.
+
 - **v3.41.0:** books for publishers (fixes #23). `si build <book> --pdf`
   now prints a paginated book: cover and title page unnumbered, contents
   with page numbers (two prints: the first measures, the second writes the

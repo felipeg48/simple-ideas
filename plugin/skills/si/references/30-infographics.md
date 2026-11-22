@@ -185,7 +185,9 @@ Boxes meet by name across lines, so several lines make branches and merges.
 si lays them out (columns by the longest path, siblings stacked): left to
 right, or top to bottom in a tall frame (`phone`, `story`). The arrows are
 numbered in the order written; animated, the boxes appear and the arrows draw
-in that order, then a packet travels along each arrow in turn. A flow block is
+in that order, then a packet travels along each arrow in turn. The label of a
+slanted arrow (a fan-out or a merge) is turned to run along it, upright,
+beside its number; a level or upright arrow keeps a level label. A flow block is
 `wide` unless it says `span=`. `si check` reports an arrow without a box on
 one side, a label without its `]->` and an unknown icon, at its line, and a
 `dir=` other than `lr` or `tb`.

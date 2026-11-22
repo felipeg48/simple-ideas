@@ -249,4 +249,15 @@ Nobody owns the promise.
 **12,480** orders
 ---
 
+## Placing a session
+
+```stage
+dir: LR
+Req[Request] -->|route| CP[Control plane]
+CP -->|most free RAM| VM1[VM 1]
+CP -->|place session| VM2[VM 2]
+```
+
+---
+
 # The end
