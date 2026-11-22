@@ -6,8 +6,10 @@ description: Two new si document types that turn one Markdown file into a sectio
 
 # Proposal: `architecture` and `status` document types
 
-Status: **proposed** · Author-facing feature · Implements two layouts already prototyped as
-hand-written HTML (see **Reference artifacts** below).
+Status: **implemented in si v3.43.0** (RULES.md §35 Architecture pages, §36 Status boards) ·
+Author-facing feature · Implements two layouts already prototyped as hand-written HTML (see
+**Reference artifacts** below). Where the shipped syntax differs from this proposal, §10
+**Decisions** says how and why; RULES.md is the reference.
 
 ## 1. Summary
 
@@ -82,7 +84,7 @@ number: true        # auto-number top-level sections (default: true)
 | a **bulleted list** whose items read `` - `tag` **Title** — body `` | a **`.panel` of `.mini` cards**: `` `tag` `` → the `.tag` chip, `**Title**` → the card `<h3>`, the rest → the card body. The backtick tag is optional (`- **Title** — body`). 1-4 cards reflow as a responsive grid (`grid3`). |
 | a **table** | a bordered, shadowed table inside a panel (used for capacity/cost matrices). |
 | a **blockquote** (`> …`) | a **`.note`** callout (left-rule, tinted) — for "Honest read:" / caveats. |
-| a fenced **` ```flow `** block (reuse si [stage diagrams](stage-diagrams.md)) | an **SVG flow diagram** with a `.legend` of swatches. Nodes/edges use the diagram hues (`--c-client`, `--c-edge`, `--c-ctrl`, `--c-data`, `--c-node`). |
+| a fenced **` ```flow `** block (reuse si [stage diagrams](../stage-diagrams.md)) | an **SVG flow diagram** with a `.legend` of swatches. Nodes/edges use the diagram hues (`--c-client`, `--c-edge`, `--c-ctrl`, `--c-data`, `--c-node`). |
 | a section titled **Phases** with an ordered list | the **`.phases`** horizontal timeline; the item marked `(now)` gets the `.now` highlight. |
 | `**Name** — description` lines under a `### ` | a **`.dlist`** (used for the data model: Cohort / Session / Environment / Check …). |
 
@@ -178,7 +180,8 @@ Each `## Area name` becomes a **`.card`**. Inside it, three fixed sub-lists:
 - A trailing `` `P0` ``/`` `P2` `` in an item → a `.tag`; `` `partial` ``/`` `uncommitted` `` →
   a `.badge`.
 - **The per-area bar and the overall progress bar are auto-computed** from the item counts
-  (`done / (done+missing+improve)`), so the author never hand-maintains a percentage — the bug
+  (% done = `done / (done+missing)`, as the reference board computes it; the bar's segments are
+  each column over every item), so the author never hand-maintains a percentage — the bug
   that made the prototype drift. `%` and segment widths are derived at build time.
 
 A `## Shipped` section with a bulleted list renders as the **`.chips`** row; a `` `hash` `` in
@@ -237,3 +240,50 @@ with `-bg` tints.
 - Both honour `--css` (CU brand drops in), light/dark, and build fully offline.
 - `docs/RULES.md` §21/§22 and `examples/architecture`, `examples/status` ship with it.
 - An unknown-type fallback renders as `article`.
+
+## 10. Decisions (implementation, v3.43.0)
+
+The open questions and the gaps found while building it, decided:
+
+1. **Columns:** fixed **Done / Missing / Improve** (`### Done` …, any case). An unknown `###`
+   under an area is a `si check` problem naming the three. Configurable labels can come later.
+2. **Cards:** the backtick-list convention, no new fence. A list becomes cards only when
+   **every** item reads `` `tag` **Title** — body `` (tag optional; `—`, `–`, `--`, `-` or `:`
+   after the title); a list where only some items do stays a list and `si check` warns.
+3. **`tiles` / `meta` in the body:** no. They stay in the front matter, which now accepts `- …`
+   items under `meta:` and `tiles:` (only there, so a deck that starts with `---` and a list is
+   unchanged). Text before the first `##` is an introduction instead.
+4. **% done** = done ÷ (done + missing), rounded, as `status-board.html` computes it (15 done,
+   17 missing → 47%); Improve does not count against done; nothing missing is 100%. The bar's
+   three segments are done, missing and improve over every item, rounded to two decimals.
+5. **Tile numbers from the board:** a tile's `num`, `lbl` and `sub` may say `{done}`,
+   `{missing}`, `{improve}`, `{open}` (missing + improve), `{pct}`, `{items}`, `{areas}`, so the
+   "Still open" tile cannot drift either. `tone: ok|warn` colours a tile's number (a gate tile is
+   amber unless `tone: ok`).
+6. **Item marks:** trailing code spans only. `P0`–`P9` a priority tag; `partial`,
+   `in progress`, `wip` an in-progress badge; `gate`, `gated`, `blocked`, `uncommitted` a gated
+   badge; `improvement` the Improvement badge (a shipped Improve item, as the founder's board
+   marks it); anything else a mono version · hash. A code span inside the text stays code.
+7. **`## Shipped`** (any title starting with Shipped) is the chips row; every other `##` without
+   columns is a note rendered as Markdown and not counted (a "Next ideas" list).
+8. **Area layout:** one card per row with a header strip, its bar, then the three columns (the
+   founder's own board); the columns stack when the card is narrower than 38rem (a container
+   query), so phones, portrait and 4K all work.
+9. **`flow`:** an architecture page's ```` ```flow ```` is the stage fence under another name,
+   with the stage syntax (`A[Label] -->|label| B`, `dot A..B`). The proposal's
+   `client "Browser" -> edge …` syntax and the per-role hues (`--c-client` …) are not built:
+   stage boxes take the theme tokens. The example uses the stage syntax.
+10. **Phases:** a `##` whose title starts with "Phase" and has an ordered list; items are
+    labelled Phase 1, 2 … by CSS; `(now)` is removed from the text and highlights the card.
+11. **Tokens:** `--si-done`, `--si-missing`, `--si-improve` (defaults: the theme's `--si-ok`,
+    `--si-warn` and a mix of `--si-warn` and `--si-crit`), so every built-in theme and a `--css`
+    file (the CU brand) re-skin both types; looks in `@layer si.theme`, grids unlayered
+    (`web/doc.css`). The `.logo` square of the reference is not built: the page uses si's
+    document header (title, subtitle, search, light/dark).
+12. **Contents column:** neither type has one; numbered sections and area cards are the outline.
+13. **Unknown types:** an unknown `type:` stays a `si check` problem (a typo must be caught) and
+    now renders as an article instead of a deck. Older si versions cannot be changed; they report
+    `type: architecture` as unknown.
+14. **Exports:** `si build --pdf` prints both (cards kept whole, colours printed). `--md`,
+    `--docx`, `--rtf`, `--epub` accept an architecture page (as an article); a status board is
+    refused with a message, since its numbers are computed, not written.

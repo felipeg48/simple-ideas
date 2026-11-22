@@ -35,7 +35,13 @@ func Document(d *deck.Deck, opt Options) Result {
 	var body strings.Builder
 	var toc []tocEntry
 	sl, title := newSlugger(), html.UnescapeString(plain(dr.inline(d.Title())))
+	if d.IsStatus() {
+		body.WriteString(dr.statusBody(sl))
+	}
 	for _, s := range d.Slides { // one part per run of lines of one file
+		if d.IsStatus() {
+			break // statusBody drew the board from d.Status
+		}
 		if d.Meta.Type == "quiz" {
 			q := *s
 			q.Body = quizPage(s.Body, d.Meta.Pass)
@@ -136,6 +142,9 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 		}
 		c = next
 	}
+	if dr.d.IsArchitecture() {
+		dr.architecture(doc, src, sc)
+	}
 	var tables []ast.Node
 	_ = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if _, ok := n.(*east.Table); ok && entering {
@@ -184,6 +193,12 @@ func (dr *deckRenderer) docBody(s *deck.Slide, sl slugger, title *string) (strin
 			inner = `<span class="si-sec-num">` + num + `</span>` + inner
 			toc[len(toc)-1].text = num + " " + txt
 			dr.label(id, "Section "+num)
+		} else if g[1] == "2" && dr.d.IsArchitecture() {
+			if n := dr.d.Meta.Number; n != "off" && n != "false" { // a numbered section: 1, 2, 3 …
+				dr.sec++
+				inner = fmt.Sprintf(`<span class="si-arch-n">%d</span>`, dr.sec) + inner
+				toc[len(toc)-1].text = fmt.Sprintf("%d. %s", dr.sec, txt)
+			}
 		} else if g[1] == "2" && dr.d.Meta.Type != "article" && (dr.opt.Guide == nil || !dr.opt.Guide.IsBook()) {
 			inner = stepHeading(inner) // "Step 3: Pay" gets a numbered badge
 		}
@@ -450,12 +465,15 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	if kind == "article" {
 		meta = append(meta, fmt.Sprintf(`<span class="si-reading-time">%d min read</span>`, readingTime(body)))
 	}
+	if kind == "status" {
+		meta = nil // the board's meta row is its pills
+	}
 	metaHTML := ""
 	if len(meta) > 0 {
 		metaHTML = fmt.Sprintf("<p class=\"si-doc-meta\">%s</p>\n", strings.Join(meta, ""))
 	}
 	lede := ""
-	if desc := strings.TrimSpace(m.Description); desc != "" && kind != "lab" {
+	if desc := strings.TrimSpace(firstNonEmpty(m.Description, subtitleOf(kind, m.Subtitle))); desc != "" && kind != "lab" {
 		lede = "<p class=\"si-lede\">" + dr.inline(desc) + "</p>\n"
 	}
 	modeBtn := `<button type="button" class="si-doc-search" data-si-action="search" title="Search (/)" aria-label="Search">` + searchIconSVG + `<span>Search</span><kbd>/</kbd></button>` +
@@ -467,7 +485,7 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 			h2s++
 		}
 	}
-	if len(toc) > 0 && (kind != "article" || h2s >= 3) {
+	if len(toc) > 0 && kind != "status" && kind != "architecture" && (kind != "article" || h2s >= 3) {
 		var t strings.Builder
 		t.WriteString("<nav class=\"si-doc-toc\" aria-label=\"On this page\"><details open><summary>On this page</summary>\n<ol>\n")
 		for _, e := range toc {
@@ -555,7 +573,7 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 			b.WriteString(demoFacts(m))
 		}
 		b.WriteString(modeBtn + "</div></header>\n<div class=\"si-doc-layout\">\n")
-		if kind == "article" {
+		if kind == "article" || kind == "architecture" || kind == "status" {
 			b.WriteString("<main class=\"si-doc-body\">\n" + body + dr.pager() + "</main>\n" + tocHTML + "</div>\n")
 		} else {
 			b.WriteString(tocHTML + "<main class=\"si-doc-body\">\n" + body + dr.pager() + "</main>\n</div>\n")
@@ -683,4 +701,13 @@ func demoFacts(m deck.Meta) string {
 		return ""
 	}
 	return `<dl class="si-demo-facts">` + strings.Join(rows, "") + "</dl>\n"
+}
+
+// subtitleOf is the line under the title of an architecture page or a
+// status board (subtitle:); other documents show only description:.
+func subtitleOf(kind, sub string) string {
+	if kind == "architecture" || kind == "status" {
+		return sub
+	}
+	return ""
 }

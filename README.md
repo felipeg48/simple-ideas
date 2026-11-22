@@ -252,6 +252,16 @@ turn bars into a donut on a click.
 
 ![A bar chart race: late orders by cause, the road cut-off now in the lead](docs/screenshots/readme/chart-race.jpg)
 
+### Architecture pages and status boards
+
+`type: architecture` turns a design doc into numbered sections with leads,
+cards from `` `tag` **Title** — body `` lists, notes, a flow diagram and a
+row of phases. `type: status` turns a checklist into a status board: pills,
+tiles, then one card per area with Done, Missing and Improve columns, every
+percentage and bar counted from the lists so it cannot drift.
+[Architecture →](https://simple-ideas.org/features/architecture.html) ·
+[Status boards →](https://simple-ideas.org/features/status.html)
+
 ### Video edits
 
 The finishing touches of a recording, written beside it: one line per

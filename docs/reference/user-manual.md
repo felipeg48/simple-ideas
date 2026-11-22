@@ -276,6 +276,27 @@ Exchange fans out → Email, Stock, Analytics
 
 ---
 
+## Architecture pages
+
+- `type: architecture`: each `## section` numbered (`number: off` drops it), its first paragraph the lead
+- `` - `tag` **Title** — body `` items: a grid of cards (every item of the list, or it stays a list)
+- `> quote`: a note · ```` ```flow ````: the stage fence · `**Name** — what` lines: a definition list
+- A section titled `Phases` with an ordered list: phase cards, `(now)` marks the current one
+- `si new design --type architecture`; full guide: RULES.md §35
+
+---
+
+## Status boards
+
+- `type: status` (or `status-board`): `updated:`, `meta:` pills (`- git: on main | ok`), `tiles:` (`- num: "{open}"; lbl: Still open; sub: …`, `gate:` for the highlight tile)
+- `## Area` with `### Done`, `### Missing`, `### Improve` lists: a card with its bar and % done
+- % done = done ÷ (done + missing), computed at build; the bar shows done, missing, improve
+- Trailing code spans: `` `P0` `` a priority, `` `partial` `` / `` `gated` `` a badge, `` `improvement` `` a shipped improvement, anything else a version · hash
+- `## Shipped` list: the chips row; any other `##`: a note, not counted
+- `si new board --type status`; `si check` names an unknown `### column`; full guide: RULES.md §36
+
+---
+
 ## Video edits
 
 ```text

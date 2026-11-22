@@ -12,6 +12,25 @@ narrated video you would publish.
 
 <!-- si-video: presenting -->
 
+## Architecture pages and status boards (3.43)
+
+Two documents that were kept by hand as hundreds of lines of HTML are now
+one Markdown file each. `type: architecture` numbers the sections, makes
+the first paragraph of each its lead, turns a list of `` `tag` **Title** —
+body `` items into cards, a quote into a note, a ```` ```flow ```` fence
+into a diagram and the Phases list into a row of phase cards.
+`type: status` draws a status board from a checklist: pills and tiles from
+the front matter, then one card per area with Done, Missing and Improve
+columns. Every percentage and bar is counted from the lists when the page
+is built, so the board never says 80% when the lists say 60%. See
+[§35](rules/35-architecture-pages.md) and [§36](rules/36-status-boards.md).
+
+```bash
+si new design --type architecture
+si new board --type status
+si build board.md --pdf
+```
+
 ## Books for publishers (3.41)
 
 Publishers each want their own format: Word, Markdown, PDF. A book in si now

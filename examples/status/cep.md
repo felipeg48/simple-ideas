@@ -10,9 +10,9 @@ meta:
   - tests: unit 11/11               | plain
 tiles:
   - num: "25";  lbl: Sessions / VM;         sub: Phase-1 RAM budget
-  - num: "✓";   lbl: Shipped & committed;   sub: lifecycle · Run · colors · terminal fix
+  - num: "{open}"; lbl: Still open;          sub: {missing} missing · {improve} improve
   - num: 1/1;   lbl: Repos green;           sub: cep-ops builds + vets
-  - gate: "Passed ✓ on Colima"; lbl: End-to-end gate; sub: create → terminal → 3-node CRDB → teardown
+  - gate: "Passed ✓ on Colima"; tone: ok; lbl: End-to-end gate; sub: create → terminal → 3-node CRDB → teardown
 ---
 
 ## Control Plane
@@ -36,7 +36,7 @@ tiles:
 - CU-branded lab page wired to the real API
 - Provisioning HUD (title + description) while the cluster comes up
 - Run button on code blocks (types into the live terminal)
-- Readable syntax colors on dark code blocks
+- Readable syntax colors on dark code blocks `f18de4b` `improvement`
 - Editor tab (Monaco) over the file bridge
 
 ### Missing

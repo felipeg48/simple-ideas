@@ -48,7 +48,7 @@ var help = map[string]string{
 	"image":      "size and place the next image (width=40% right …)",
 	// front matter
 	"title":             "the title (else the first # heading)",
-	"type":              "deck, lab, article, guide, book, demo, site or page",
+	"type":              "deck, lab, article, guide, book, demo, site, page, architecture or status (alias status-board)",
 	"theme":             "a built-in theme, a .css file or an https:// URL",
 	"fonts":             "web fonts: heading=Fraunces:600, body=Inter:400;700, mono=…",
 	"fonts-subset":      "character sets kept from a split web font (default latin, latin-ext): greek, cyrillic, vietnamese …",

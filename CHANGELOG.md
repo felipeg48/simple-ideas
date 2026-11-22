@@ -3,6 +3,25 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.43.0:** two new document types (PR #26). `type: architecture`: a
+  design document whose `##` sections are numbered (`number: off`), each
+  with its lead; a list of `` `tag` **Title** — body `` items becomes a grid
+  of cards, a quote a note, a ```` ```flow ```` fence the stage diagram,
+  `**Name** — what` lines a definition list, and the ordered list of a
+  Phases section a row of phase cards with the `(now)` one highlighted.
+  `type: status` (alias `status-board`): a status board with `updated:`,
+  `meta:` pills and `tiles:` from the front matter (front matter now takes
+  `- …` items under `meta:` and `tiles:`), one card per `## Area` with
+  `### Done` / `### Missing` / `### Improve` columns, a `## Shipped` chips
+  row and notes. Every % and bar is computed from the lists (% done = done ÷
+  (done + missing)); tiles may say `{open}`, `{pct}`, `{done}` …; trailing
+  code spans are priorities, badges (`partial`, `gated`, `improvement`) or a
+  version · hash. `si check` names an unknown column, a stray item, a column
+  written twice. Both print with `si build --pdf`; `si new --type
+  architecture|status`, the Studio's New… and gallery, the terminal Studio.
+  A `type:` si does not know is still a `si check` problem, and now renders
+  as an article instead of a deck.
+
 - **v3.42.0:** edge labels follow their edges (fixes #27). In a `stage`
   diagram, a label on a slanted edge (a fan-out, a merge, a diagonal) is
   turned to the edge's angle, centred on it and set just above the line;

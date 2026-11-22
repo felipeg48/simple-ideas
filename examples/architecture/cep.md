@@ -24,9 +24,9 @@ API directly on one (later a few) beefy host(s) — it *is* the scheduler.
 How a learner's browser reaches their private box — one origin, path-routed by the gateway.
 
 ```flow
-client "Browser" -> edge "Gateway (cep ops)" : HTTPS + WebSocket
-edge -> ctrl "Session proxy" : /s/{id}/term
-ctrl -> node "ttyd in box" : nested docker
+dir: LR
+B[Browser] -->|HTTPS + WS| G[Gateway] -->|/s/id/term| P[Session proxy] -->|nested docker| T[ttyd in box]
+dot B..T 2.4s
 ```
 
 ## Capacity, cost & the Phase-1 plan

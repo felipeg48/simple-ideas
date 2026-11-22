@@ -178,7 +178,7 @@ func (r *nodeRenderer) fence(
 		w.WriteString(r.dr.quizHTML(body, attrs["pass"]))
 		return ast.WalkSkipChildren, nil
 	}
-	if lang == "stage" {
+	if lang == "stage" || (lang == "flow" && r.dr.d.IsArchitecture()) { // an architecture page calls the stage fence flow
 		r.dr.stageN++
 		svg, stepOps, err := genStage(body, r.dr.stageN)
 		if err != nil {

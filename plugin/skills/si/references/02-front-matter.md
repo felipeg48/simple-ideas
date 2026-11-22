@@ -43,7 +43,9 @@ lang: en
 | `runbook` | path to a `.json` file | none | a command cheat-sheet shown in the **`si play` terminal drawer only** (never in a built deck); see §14 |
 | `demos` | markdown files or folders, comma-separated | none | demo scripts shown in the **`si play` terminal drawer only**, with Copy / Run on every shell block; see §14 |
 | `browser` | `Name=URL, …` | none | pages the presenter opens with **w** in floating browser windows over the slides (**`si play` only**); see §14 |
-| `type` values | `deck`, `lab`, `article`, `guide`, `book`, `mindmap` | `deck` | `lab` §18, `article` §19, `guide` §20 (guide pages get it from `_nav.md`), `book` §21 (in `_nav.md` only), `mindmap` §24 (with `layout`, `lines`, `nodes`, `map-theme`, `watermark-position`) |
+| `type` values | `deck`, `lab`, `article`, `guide`, `book`, `mindmap`, `architecture`, `status` | `deck` | `lab` §18, `article` §19, `guide` §20 (guide pages get it from `_nav.md`), `book` §21 (in `_nav.md` only), `mindmap` §24 (with `layout`, `lines`, `nodes`, `map-theme`, `watermark-position`), `architecture` §35, `status` (alias `status-board`) §36. A type si does not know is a `si check` problem and the page renders as an article |
+| `number` | `on`, `off` | `on` | architecture pages: number the `##` sections (§35) |
+| `updated`, `meta`, `tiles` | a date; `- label: value \| tone` items; `- num: …; lbl: …; sub: …` items | none | status boards: the first pill, the pill row and the KPI tiles (§36) |
 | `subtitle`, `edition` | text | none | books: the cover's subtitle and edition (§21) |
 | `session`, `slides`, `duration` | text | none | demo scripts: the facts under the title; `duration: 14 min` is checked against the script's steps (§22) |
 | `app`, `viewport`, `timeout`, `setup`, `voice` | URL or folder; WxH or phone, tablet, desktop; seconds; a shell command; engine:voice | none; desktop; 5s | web demos: `app:` turns a demo script into a script si runs against a web app (§27) |

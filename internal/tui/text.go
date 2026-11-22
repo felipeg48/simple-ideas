@@ -408,7 +408,7 @@ func (r *textRenderer) fence(f *ast.FencedCodeBlock) []string {
 	code := blockText(f, r.src)
 	r.coN = 0
 	switch lang {
-	case "stage":
+	case "stage", "flow": // flow: an architecture page's name for it
 		return r.stage(code)
 	case "mindmap":
 		return r.mindmap(code)

@@ -51,3 +51,5 @@ this file; `examples/showcase.md` uses every rule in a real talk.
 32. [Video edits](#32-video-edits)
 33. [Animated charts](#33-animated-charts)
 34. [Scenes: objects that move](#34-scenes-objects-that-move)
+35. [Architecture pages](#35-architecture-pages)
+36. [Status boards](#36-status-boards)

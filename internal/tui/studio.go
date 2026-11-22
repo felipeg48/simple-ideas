@@ -518,6 +518,8 @@ var starterLabels = []struct{ kind, label, what string }{
 	{"mindmap", "Mind map", "topics that branch out; maps that open into maps"},
 	{"timeline", "Timeline", "eras and dated milestones on one 16:9 frame"},
 	{"infographic", "Infographic", "numbers, charts and steps in a grid of blocks"},
+	{"architecture", "Architecture", "a design doc: numbered sections, cards, a flow, the phases"},
+	{"status", "Status board", "Done, Missing and Improve per area, with bars from the lists"},
 }
 
 func (m *studioModel) openNew() {

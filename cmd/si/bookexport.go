@@ -96,7 +96,7 @@ func exportGuide(g *deck.Guide, out string, o *options, stdout, stderr io.Writer
 // exportable is a page --md / --docx / --rtf / --epub can export on its own.
 func exportable(d *deck.Deck) bool {
 	switch d.Meta.Type {
-	case "article", "guide", "lab", "page":
+	case "article", "guide", "lab", "page", "architecture":
 		return true
 	}
 	return false

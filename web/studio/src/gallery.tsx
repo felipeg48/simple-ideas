@@ -20,6 +20,8 @@ export const galleryKinds: { kind: string; icon: IconName; label: string; what: 
   { kind: "codeshow", icon: "article", label: "A code show", what: "Code in a window, step by step", name: "Code walkthrough" },
   { kind: "timeline", icon: "timeline", label: "A timeline", what: "Eras and dated milestones on one frame", name: "Our story" },
   { kind: "infographic", icon: "infographic", label: "An infographic", what: "Numbers, charts and steps in a grid", name: "In numbers" },
+  { kind: "architecture", icon: "article", label: "An architecture page", what: "Numbered sections, cards, a flow, phases", name: "Architecture" },
+  { kind: "status", icon: "infographic", label: "A status board", what: "Done, Missing, Improve per area, with bars", name: "Status board" },
 ];
 
 export function Gallery(p: { dir: string; ok(kind: string, path: string, title: string): Promise<void>; onClose(): void }) {

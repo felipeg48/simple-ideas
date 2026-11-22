@@ -51,6 +51,8 @@ this file; `examples/showcase.md` uses every rule in a real talk.
 32. [Video edits](#32-video-edits)
 33. [Animated charts](#33-animated-charts)
 34. [Scenes: objects that move](#34-scenes-objects-that-move)
+35. [Architecture pages](#35-architecture-pages)
+36. [Status boards](#36-status-boards)
 
 ## 1. Decks and files
 
@@ -106,7 +108,9 @@ lang: en
 | `runbook` | path to a `.json` file | none | a command cheat-sheet shown in the **`si play` terminal drawer only** (never in a built deck); see §14 |
 | `demos` | markdown files or folders, comma-separated | none | demo scripts shown in the **`si play` terminal drawer only**, with Copy / Run on every shell block; see §14 |
 | `browser` | `Name=URL, …` | none | pages the presenter opens with **w** in floating browser windows over the slides (**`si play` only**); see §14 |
-| `type` values | `deck`, `lab`, `article`, `guide`, `book`, `mindmap` | `deck` | `lab` §18, `article` §19, `guide` §20 (guide pages get it from `_nav.md`), `book` §21 (in `_nav.md` only), `mindmap` §24 (with `layout`, `lines`, `nodes`, `map-theme`, `watermark-position`) |
+| `type` values | `deck`, `lab`, `article`, `guide`, `book`, `mindmap`, `architecture`, `status` | `deck` | `lab` §18, `article` §19, `guide` §20 (guide pages get it from `_nav.md`), `book` §21 (in `_nav.md` only), `mindmap` §24 (with `layout`, `lines`, `nodes`, `map-theme`, `watermark-position`), `architecture` §35, `status` (alias `status-board`) §36. A type si does not know is a `si check` problem and the page renders as an article |
+| `number` | `on`, `off` | `on` | architecture pages: number the `##` sections (§35) |
+| `updated`, `meta`, `tiles` | a date; `- label: value \| tone` items; `- num: …; lbl: …; sub: …` items | none | status boards: the first pill, the pill row and the KPI tiles (§36) |
 | `subtitle`, `edition` | text | none | books: the cover's subtitle and edition (§21) |
 | `session`, `slides`, `duration` | text | none | demo scripts: the facts under the title; `duration: 14 min` is checked against the script's steps (§22) |
 | `app`, `viewport`, `timeout`, `setup`, `voice` | URL or folder; WxH or phone, tablet, desktop; seconds; a shell command; engine:voice | none; desktop; 5s | web demos: `app:` turns a demo script into a script si runs against a web app (§27) |
@@ -6054,3 +6058,173 @@ lists the steps.
 block that was never named (with the names there are), an unknown option, a
 block used where a parcel, token or message should be (`Shop flies …`), a
 `takes` with no queue, and a grid or a route that cannot be drawn.
+
+## 35. Architecture pages
+
+`type: architecture` turns one Markdown file into a design document: the
+`##` sections are numbered, the first paragraph after each is its lead, and
+the blocks under it take a design-doc look. It is an article (§19) with a
+section grammar; everything an article holds still works.
+
+````markdown
+---
+type: architecture
+title: Orders — Architecture & Design
+subtitle: One writer, events for everyone else
+---
+
+## The orders service owns the data
+
+Only one service writes an order; the others learn about it from the stream.
+
+- `invariant` **One writer** — only the orders service writes the orders table.
+- `invariant` **Events, not calls** — the warehouse hears about an order from the stream.
+- `boundary` **Public edge** — the gateway is the only thing the internet reaches.
+
+> Honest read: the stream is one broker today; it gets a replica before launch.
+
+## How a checkout flows
+
+From the browser to the warehouse, one hop at a time.
+
+```flow
+dir: LR
+B[Browser] --> G[Gateway] -->|POST /orders| O[Orders] -->|order.created| W[Warehouse]
+dot B..W 2s
+```
+
+## The data
+
+**Order** — what was bought, by whom, and its state
+**Parcel** — one box of an order, with its tracking number
+
+| Region | Orders / day | Brokers |
+|--------|--------------|---------|
+| EU | 40 000 | 1 |
+| US | 65 000 | 1 |
+
+## Phases
+
+1. One region, one broker. (now)
+2. A broker replica and a second region.
+3. Each region takes the writes of its own customers.
+````
+
+| You write | You get |
+|---|---|
+| `## Section` | a numbered section: a badge (1, 2, 3 …) and the title. `number: off` in the front matter drops the numbers. |
+| the first paragraph after a `##` | the section's lead: a quieter introductory line (unless it is a definition list, below) |
+| a list whose **every** item reads `` - `tag` **Title** — body `` | a grid of cards: the tag chip, the title, the body. The tag is optional (`- **Title** — body`); `—`, `–`, `--`, `-` or `:` separate the title from the body. A list where only some items read that way stays a list, and `si check` says so. |
+| a table | a bordered table on a card |
+| a quote (`> …`) | a note: a tinted box for caveats ("Honest read: …") |
+| a ` ```flow ` fence | the stage fence (§13) by another name, on a card |
+| a paragraph of `**Name** — what` lines | a definition list, two columns on a wide page |
+| the ordered list of a section titled `Phases` | a row of phase cards (Phase 1, Phase 2 …); the item ending in `(now)` is highlighted and the mark itself is not shown |
+
+The page has no contents column: the numbered sections are the outline.
+`subtitle:` is the line under the title (`description:` wins when both are
+set). Light and dark, the theme toggle, `--css`, `si build --pdf` (one
+printed page per sheet, cards kept whole) and `--md` / `--docx` / `--rtf` /
+`--epub` (§21) all work as for an article.
+
+## 36. Status boards
+
+`type: status` (or `status-board`) turns a checklist into a project status
+board: a row of pills, KPI tiles, the overall progress, the shipped chips,
+then one card per area with **Done**, **Missing** and **Improve** columns.
+Every percentage, count and bar is computed from the lists, so none can
+drift from them.
+
+````markdown
+---
+type: status
+title: Orders — Status Board
+subtitle: Checkout and the warehouse
+updated: 2026-11-22
+meta:
+  - build: green | ok
+  - release: next week | warn
+  - tests: 214 passing
+tiles:
+  - num: "{pct}"; lbl: Done; sub: done of done + missing
+  - num: "{open}"; lbl: Still open; sub: {missing} missing · {improve} improve
+  - gate: Load test; tone: warn; lbl: The one gate left; sub: 10k orders a minute
+---
+
+## Checkout
+
+payments · receipts
+
+### Done
+- Cart and payment `v1.2 · 3f9c2a1`
+- Receipts by email
+- Faster address lookup `8d01b77` `improvement`
+
+### Missing
+- Saved cards `P1`
+- Refunds `partial`
+
+### Improve
+- One-click reorder
+
+## Warehouse
+
+### Done
+- Pick lists
+
+### Missing
+- Returns `P0`
+- Stock alerts `gated`
+
+### Improve
+- Batch printing
+
+## Shipped
+- Receipts by email `3f9c2a1`
+- Pick lists `8d01b77`
+
+## What the words mean
+
+Done is merged with tests green. A partial or gated item stays in Missing.
+````
+
+**Front matter.** `updated:` is the first pill. Each `meta:` item is a pill,
+`label: value | tone`; the tone is `ok` (green), `warn` (amber) or `plain`
+(the default). Each `tiles:` item is a tile of `key: value` pairs separated
+by `;`: `num:` (the big value), `lbl:` (the label), `sub:` (the line under
+it), `tone:` (`ok`, `warn`), and `gate:` in place of `num:` for the wide
+highlight tile. A tile's text may use the board's own numbers: `{done}`,
+`{missing}`, `{improve}`, `{open}` (missing + improve), `{pct}` (overall %
+done), `{items}` and `{areas}`. `meta:` and `tiles:` take their items as
+`- …` lines under them.
+
+| You write | You get |
+|---|---|
+| `## Area` with `### Done`, `### Missing`, `### Improve` lists | an area card: its bar, its counts and % done, the three columns (green, amber, orange). A column may be left out or empty. |
+| a line under `## Area`, before its first `###` | the area's scope, beside its title |
+| a trailing `` `P0` `` … `` `P9` `` | a priority tag |
+| a trailing `` `partial` ``, `` `in progress` `` or `` `wip` `` | an in-progress badge (orange) |
+| a trailing `` `gated` ``, `` `gate` ``, `` `blocked` `` or `` `uncommitted` `` | a gated badge (amber) |
+| a trailing `` `improvement` `` | the Improvement badge: an Improve item that shipped and moved to Done |
+| any other trailing code span (`` `v1.2 · 3f9c2a1` ``) | a version · hash, in mono |
+| `## Shipped` (any title starting with Shipped) and a list | the chips row; a trailing code span is the chip's hash |
+| any other `##` section | a note, as Markdown; a list in it is not counted (a "Next ideas" list) |
+| text before the first `##` | an introduction above the areas |
+
+**The numbers.** Per area and overall: % done = done ÷ (done + missing),
+rounded; Improve makes a thing better and does not count against it being
+done (nothing missing is 100%). The bar's three segments are done, missing
+and improve over every item. Each bar's label carries the numbers for
+screen readers.
+
+The colours are the theme's status colours: `--si-done` (default
+`--si-ok`), `--si-missing` (`--si-warn`) and `--si-improve` (between
+`--si-warn` and `--si-crit`); a theme or `--css` may set its own.
+`si build --pdf` prints the board (cards kept whole). `--md` and the other
+publisher exports are for articles and refuse a board with a message.
+
+`si check` reports an unknown `### column` (with the three it knows), a
+list item before the first column of an area, a column written twice, a
+board without areas, a pill with an unknown tone and a tile with an unknown
+key or no `num:`; it warns about an area without items and a line in a
+column that is not a list item.

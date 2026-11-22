@@ -58,7 +58,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/ui"
 )
 
-const version = "3.42.0"
+const version = "3.43.0"
 
 // Exit codes.
 const (
@@ -190,7 +190,7 @@ Usage:
         --budget (or budget.page / budget.3d in si.conf) also fails pages over 1 MB (3D: 1.5 MB)
         a project with a structure: also checks every folder of sources and warns about the
         map: a bundle that would be empty, a kind with no folder, a source in another kind's folder
-  si new <name> [--type deck|article|guide|book|course|site|website|page|lab|demo|mindmap|mindmap3d|codeshow|timeline|infographic]
+  si new <name> [--type deck|article|guide|book|course|site|website|page|lab|demo|mindmap|mindmap3d|codeshow|timeline|infographic|architecture|status]
         [--kind resume|portfolio|landing]
         scaffold <name>/ with a deck that uses every rule; with --type, a small
         starter of that type (<name>.md, or a <name>/ folder for guide, book,
@@ -1222,7 +1222,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 					failed = true
 				}
 			} else if len(files) == 1 {
-				fmt.Fprintf(stderr, "si: %s: --md, --docx, --rtf and --epub export books, guides and articles (this is a %s)\n", d.Name, d.Meta.Type)
+				fmt.Fprintf(stderr, "si: %s: --md, --docx, --rtf and --epub export books, guides and articles, and architecture pages (this is a %s)\n", d.Name, d.Meta.Type)
 				failed = true
 			}
 		}
@@ -1234,7 +1234,7 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 				entry.PDF = rel
 			}
 		}
-		if chrome != "" && o.pdf && !d.IsDoc() && !d.IsInfographic() && !d.IsTimeline() { // the slides PDF does not apply to a document (print it from the browser)
+		if chrome != "" && o.pdf && (!d.IsDoc() || d.IsArchitecture() || d.IsStatus()) && !d.IsInfographic() && !d.IsTimeline() { // the slides PDF; of documents only an architecture page or a status board prints this way (one page each, print CSS)
 			rel := filepath.Join("pdfs", d.Name+".pdf") // a pdfs/ folder beside the decks; linked from the index tiles
 			pdf := filepath.Join(out, rel)
 			if err := os.MkdirAll(filepath.Dir(pdf), 0o755); err != nil {
@@ -2150,7 +2150,7 @@ func export(o *options, stdout, stderr io.Writer) int {
 		}
 		kind, ok := exampleKinds[strings.ToLower(o.kind)]
 		if !ok {
-			return usageErr(stderr, fmt.Sprintf("unknown --type %q (deck, article, guide, lab, book, course, demo, site, mindmap, timeline, infographic, video, all)", o.kind))
+			return usageErr(stderr, fmt.Sprintf("unknown --type %q (deck, article, guide, lab, book, course, demo, site, mindmap, timeline, infographic, video, architecture, status, all)", o.kind))
 		}
 		if err := writeExampleKind(out, kind); err != nil {
 			fmt.Fprintf(stderr, "si: %v\n", err)
@@ -2445,7 +2445,7 @@ func scaffold(name string, stdout, stderr io.Writer) int {
 // exampleKinds maps --type (and its aliases) to an example set.
 var exampleKinds = map[string]string{"": "deck", "deck": "deck", "slides": "deck", "article": "article",
 	"guide": "guide", "guides": "guide", "tutorial": "guide", "tutorials": "guide", "lab": "lab",
-	"book": "book", "reference": "book", "demo": "demo", "site": "site", "website": "site", "all": "all", "mindmap": "deck", "mindmaps": "deck", "course": "course", "courses": "course", "timeline": "timeline", "timelines": "timeline", "infographic": "infographic", "infographics": "infographic", "video": "video", "videos": "video"}
+	"book": "book", "reference": "book", "demo": "demo", "site": "site", "website": "site", "all": "all", "mindmap": "deck", "mindmaps": "deck", "course": "course", "courses": "course", "timeline": "timeline", "timelines": "timeline", "infographic": "infographic", "infographics": "infographic", "video": "video", "videos": "video", "architecture": "architecture", "status": "status", "status-board": "status"}
 
 // writeExampleKind writes one example set into dir (which must not exist or
 // be empty): deck = the showcase decks (today's export), article = the article
@@ -2459,7 +2459,7 @@ func writeExampleKind(dir, kind string) error {
 		top, _, _ := strings.Cut(p, "/")
 		switch kind {
 		case "deck":
-			return p, top != "article" && top != "guide" && top != "book" && top != "site" && top != "course" && top != "timeline" && top != "infographic" && top != "video"
+			return p, top != "article" && top != "guide" && top != "book" && top != "site" && top != "course" && top != "timeline" && top != "infographic" && top != "video" && top != "architecture" && top != "status"
 		case "book":
 			r, ok := strings.CutPrefix(p, "book/")
 			return r, ok
@@ -2486,6 +2486,9 @@ func writeExampleKind(dir, kind string) error {
 			return r, ok
 		case "video":
 			r, ok := strings.CutPrefix(p, "video/")
+			return r, ok
+		case "architecture", "status":
+			r, ok := strings.CutPrefix(p, kind+"/")
 			return r, ok
 		case "lab":
 			return p, p == "order-lab.md" || p == "assets/floor.svg"
@@ -2527,7 +2530,7 @@ func writeExamples(dir, mainName string) error {
 		if strings.HasSuffix(p, ".go") {
 			return nil
 		}
-		if top, _, _ := strings.Cut(p, "/"); top == "article" || top == "guide" || top == "book" || top == "course" || top == "timeline" || top == "infographic" || top == "video" {
+		if top, _, _ := strings.Cut(p, "/"); top == "article" || top == "guide" || top == "book" || top == "course" || top == "timeline" || top == "infographic" || top == "video" || top == "architecture" || top == "status" {
 			if e.IsDir() {
 				return fs.SkipDir // si new scaffolds a deck; the document examples are --export example --type
 			}
@@ -2691,7 +2694,7 @@ func newStarter(name, kind string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "si: created %s/ (a course: _course.md, a reading, slides, a video, a lab, an instructor demo, quizzes)\n  si serve %s --open\n  si build %s -o %s-html\n", dir, dir, dir, dir)
 		return exitOK
 	}
-	if alias, ok := map[string]string{"slides": "deck", "tutorial": "guide", "reference": "book", "mindmap-3d": "mindmap3d", "code": "codeshow", "website": "site"}[kind]; ok {
+	if alias, ok := map[string]string{"slides": "deck", "tutorial": "guide", "reference": "book", "mindmap-3d": "mindmap3d", "code": "codeshow", "website": "site", "status-board": "status"}[kind]; ok {
 		kind = alias
 	}
 	folder := studio.StarterFolder(kind)

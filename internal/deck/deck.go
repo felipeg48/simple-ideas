@@ -206,6 +206,11 @@ type Meta struct {
 	WebhookNotice  string // webhook-notice: the text of the notice bar
 	WebhookBase    string // webhook-base: https://…: where the course is published, for stable event ids (xAPI activity ids)
 
+	// architecture and status pages (status.go)
+	Number  string     // architecture: number the ## sections (on, the default, or off)
+	Updated string     // status: the date of the board, the first pill of the meta row
+	Lists   []MetaLine // status: the `- …` items under meta: and tiles: (Key is meta or tiles), in order
+
 	Timeline TimelineMeta      // timeline: alternate, scale, orientation, closing, require, steps (timeline.go)
 	Demo     map[string]string // a web demo's own keys (DemoKeys), read and checked by internal/webdemo
 
@@ -222,7 +227,7 @@ var DemoKeys = []string{"region", "header-offset", "intro", "outro", "music", "u
 func init() { MetaKeys = append(MetaKeys, DemoKeys...) }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "browser", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup", "nav", "level", "instructor-demos", "certificate", "pass", "minutes", "prerequisites", "instructor", "webhook", "webhook-format", "webhook-events", "webhook-token", "webhook-auth", "webhook-learner", "webhook-consent", "webhook-notice", "webhook-base", "orientation", "sources", "steps", "animate", "files"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "browser", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup", "nav", "level", "instructor-demos", "certificate", "pass", "minutes", "prerequisites", "instructor", "webhook", "webhook-format", "webhook-events", "webhook-token", "webhook-auth", "webhook-learner", "webhook-consent", "webhook-notice", "webhook-base", "orientation", "sources", "steps", "animate", "files", "number", "updated", "meta", "tiles"}
 
 // MetaLine is one front matter line kept as written: its key, its value and
 // its line in the file.
@@ -311,11 +316,15 @@ type Deck struct {
 	Problems []Problem
 	Warnings []Problem // non-fatal (e.g. a slide directive in a lab)
 	Timeline *Timeline // a timeline page (type: timeline), parsed
+	Status   *Status   // a status board (type: status), parsed
 	Includes []string  // the files <!-- include: --> spliced in (Markdown and code), in order
 }
 
 // Types are the accepted values of the `type` front matter key.
-var Types = []string{"deck", "lab", "article", "guide", "book", "demo", "site", "page", "mindmap", "quiz", "course", "timeline", "infographic", "video"}
+var Types = []string{"deck", "lab", "article", "guide", "book", "demo", "site", "page", "mindmap", "quiz", "course", "timeline", "infographic", "video", "architecture", "status"}
+
+// TypeAliases are other names a `type:` may be written with.
+var TypeAliases = map[string]string{"status-board": "status"}
 
 // IsLab reports whether the file is a lab document (`type: lab`).
 func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
@@ -323,7 +332,7 @@ func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
 // IsDoc reports whether the file is a document (lab, article or guide page):
 // one readable page, not slides.
 func (d *Deck) IsDoc() bool {
-	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide" || d.Meta.Type == "demo" || d.Meta.Type == "page" || d.Meta.Type == "mindmap" || d.Meta.Type == "quiz" || d.isPoster() ||
+	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide" || d.Meta.Type == "demo" || d.Meta.Type == "page" || d.Meta.Type == "mindmap" || d.Meta.Type == "quiz" || d.Meta.Type == "architecture" || d.Meta.Type == "status" || d.isPoster() ||
 		(d.Meta.Type == "infographic" && d.Meta.IGPortrait()) // a landscape infographic is a slide
 }
 
@@ -519,6 +528,9 @@ func ParseSource(path, text string, def Meta) (*Deck, error) {
 		d.buildInfographic(out)
 	} else if d.IsDoc() {
 		d.buildLab(out)
+		if d.IsStatus() {
+			d.buildStatus(out)
+		}
 		if d.IsDemo() {
 			d.checkDemoMinutes(out)
 		}
@@ -549,26 +561,45 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 		return 0
 	}
 	end := -1
+	inList := false // after `meta:` or `tiles:` with no value, `- …` lines are its items
 	for i := 1; i < len(lines); i++ {
 		t := strings.TrimSpace(lines[i])
 		if t == "---" {
 			end = i
 			break
 		}
+		if inList && strings.HasPrefix(t, "- ") {
+			continue
+		}
 		if t != "" && !strings.HasPrefix(t, "#") && !metaRE.MatchString(t) {
 			return 0 // not front matter: the deck starts with a separator
+		}
+		if m := metaRE.FindStringSubmatch(t); m != nil {
+			inList = ListKeys[m[1]] && m[2] == ""
 		}
 	}
 	if end < 0 {
 		return 0
 	}
 	keyLine := map[string]int{}
+	list := ""
 	for i := 1; i < end; i++ {
 		t := strings.TrimSpace(lines[i])
 		if t == "" || strings.HasPrefix(t, "#") {
 			continue
 		}
+		if item, ok := strings.CutPrefix(t, "- "); ok && list != "" {
+			d.Meta.Lists = append(d.Meta.Lists, MetaLine{list, strings.TrimSpace(item), i + 1})
+			continue
+		}
 		m := metaRE.FindStringSubmatch(t)
+		list = ""
+		if ListKeys[m[1]] {
+			list = m[1]
+			if m[2] != "" {
+				d.problem(file, i+1, "%s: write its items as `- …` lines under it", m[1])
+			}
+		}
 		key, val := m[1], strings.Trim(m[2], `"'`)
 		keyLine[key] = i + 1
 		if LifecycleKeys[key] {
@@ -583,12 +614,16 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 		}
 		if msg := validateMeta(key, val); msg != "" {
 			d.problem(file, i+1, "%s", msg)
+			if key == "type" {
+				d.Meta.Type = "article" // a type this si does not know (a newer one, a typo) still renders: as an article
+			}
 		}
 		if key == "background" {
 			d.checkBackground(file, i+1, filepath.Dir(file), val)
 		}
 	}
 	d.timelineMeta(file, keyLine)
+	d.statusMeta(file, keyLine)
 	d.webhookMeta(file, keyLine)
 	d.infographicMeta(file, keyLine)
 	for _, k := range []string{"layout", "aspect"} {
@@ -629,6 +664,14 @@ var LabIgnoredKeys = []string{"aspect", "transition", "background", "labs-label"
 
 func (d *Deck) setMeta(key, val string) bool {
 	m := &d.Meta
+	if ListKeys[key] {
+		return true // its items are collected into Meta.Lists
+	}
+	if key == "type" {
+		if t, ok := TypeAliases[val]; ok {
+			val = t
+		}
+	}
 	ptr := map[string]*string{
 		"title": &m.Title, "author": &m.Author, "date": &m.Date, "theme": &m.Theme, "mode": &m.Mode,
 		"accent": &m.Accent, "transition": &m.Transition, "aspect": &m.Aspect, "mermaid": &m.Mermaid, "lang": &m.Lang,
@@ -644,6 +687,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"webhook": &m.Webhook, "webhook-format": &m.WebhookFormat, "webhook-events": &m.WebhookEvents, "webhook-token": &m.WebhookToken, "webhook-auth": &m.WebhookAuth, "webhook-learner": &m.WebhookLearner, "webhook-consent": &m.WebhookConsent, "webhook-notice": &m.WebhookNotice, "webhook-base": &m.WebhookBase,
 		"view": &m.MapView, "camera": &m.MapCamera, "floors": &m.MapFloors, "kind": &m.MapKind, "flow": &m.MapFlow,
 		"orientation": &m.Orientation, "sources": &m.Sources, "steps": &m.Steps, "animate": &m.Animate,
+		"number": &m.Number, "updated": &m.Updated,
 	}[key]
 	if ptr == nil {
 		ptr = m.Timeline.field(key)
@@ -674,7 +718,12 @@ func validateMeta(key, val string) string {
 		}
 		return oneOf("theme", val, assets.ThemeNames())
 	case "type":
+		if _, ok := TypeAliases[val]; ok {
+			return ""
+		}
 		return oneOf("type", val, Types)
+	case "number":
+		return oneOf("number", val, []string{"on", "off", "true", "false"})
 	case "nav":
 		if _, err := ParseNav(val); err != nil {
 			return err.Error()

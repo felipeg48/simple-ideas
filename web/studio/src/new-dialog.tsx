@@ -21,6 +21,8 @@ export const starterKinds: { kind: string; icon?: IconName; label: string; what:
   { kind: "mindmap", label: "Mind map", what: "Topics that branch out, and maps that open into maps" },
   { kind: "timeline", icon: "timeline", label: "Timeline", what: "Eras and dated milestones with pictures, on one 16:9 frame" },
   { kind: "infographic", icon: "infographic", label: "Infographic", what: "One page of numbers, charts and steps in a grid of blocks" },
+  { kind: "architecture", icon: "article", label: "Architecture", what: "A design doc: numbered sections, cards, a flow, the phases" },
+  { kind: "status", icon: "infographic", label: "Status board", what: "Done, Missing and Improve per area, with bars counted from the lists" },
 ];
 
 /** slug turns a name into a file or folder name: "Our Q3 Plan" → "our-q3-plan". */

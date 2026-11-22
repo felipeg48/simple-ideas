@@ -423,6 +423,21 @@ Not everything is a slide deck. Pick the type by what the reader does:
   the Markdown it writes is the same you would write by hand.
   Keep one idea per branch and at most about seven branches per map; move
   detail into a linked map instead of a deep tree.
+- **Architecture pages** (RULES.md §35): `type: architecture`, `subtitle:`;
+  each `## section` is numbered and its first paragraph is the lead; a list
+  whose every item is `` - `tag` **Title** — body `` becomes cards, `> …` a
+  note, a ```` ```flow ```` fence the stage diagram, `**Name** — what` lines
+  a definition list, and the ordered list of a `## Phases` section phase
+  cards (end the current one with `(now)`). Keep the author's sections; do
+  not invent numbers or decisions.
+- **Status boards** (RULES.md §36): `type: status`; `updated:`, `meta:` items
+  `- label: value | ok|warn|plain`, `tiles:` items `- num: …; lbl: …; sub: …`
+  (`gate:` for the one gate, `{open}` `{pct}` `{done}` `{missing}`
+  `{improve}` for counted numbers, never a hand-typed percentage); one
+  `## Area` per subsystem with `### Done`, `### Missing`, `### Improve`
+  lists; trailing `` `P0` ``, `` `partial` ``, `` `gated` ``,
+  `` `improvement` `` or a `` `v1.2 · hash` ``; `## Shipped` for the chips.
+  A partial or gated item stays in Missing. Ground every item in the repo.
 - **Timelines** (RULES.md §29): `type: timeline`, then `## Era` headings
   (`· color=#hex` optional) and `### date · title` milestones, each with a
   one- or two-line description and at most one `![caption](img "credit")`
@@ -622,3 +637,5 @@ Not everything is a slide deck. Pick the type by what the reader does:
 - [32. Video edits](references/32-video-edits.md)
 - [33. Animated charts](references/33-animated-charts.md)
 - [34. Scenes: objects that move](references/34-scenes-objects-that-move.md)
+- [35. Architecture pages](references/35-architecture-pages.md)
+- [36. Status boards](references/36-status-boards.md)
