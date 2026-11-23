@@ -13,12 +13,12 @@ full screen, runs labs from the built-in terminal with runbooks, and exports
 PDFs. It must feel like a professional tool with a "wow" factor (Xcode /
 VS Code / Linear / Keynote quality), not a form over a text box.
 
-Why now: the CACI course (5 decks, 2 reference decks, 9 labs, a 249-command
+Why now: the founder's course (5 decks, 2 reference decks, 9 labs, a 249-command
 runbook, handouts, demo scripts) showed that the CLI + external editor loop is
 the bottleneck; the presenting features (teleprompter, terminal, runbook
 drawer) already exist and want one home.
 
-Success: the founder authors and delivers a full course (like CACI) without
+Success: the founder authors and delivers a full course (like the founder's) without
 leaving Studio, on the desktop app and in a browser via `si --web`.
 
 ## One app, two shells
@@ -94,7 +94,7 @@ types, Shift/⌘-click runs.
 ### Labs, runbooks and handouts *(designer's call)*
 
 No new si concepts. The navigator groups files by the folder conventions the
-CACI course already uses: `labs/` (Markdown guides plus `files/`),
+the founder's course already uses: `labs/` (Markdown guides plus `files/`),
 `handouts/`, and runbooks = any JSON a deck names in `runbook:` (plus `.json`
 files with the runbook shape). They are edited as ordinary Markdown/JSON
 files; HTML renders of guides stay the workspace's own scripts. The
@@ -129,7 +129,7 @@ deck. si renders it as one scrolling, readable page: full width, a table of
 contents sidebar, tables and code blocks that scroll horizontally instead of
 clipping, callouts (the five GitHub alerts: note, tip, important, warning,
 caution; no separate checkpoint kind), light/dark, self-contained.
-`si build` writes it as an HTML guide (replacing the CACI course's pandoc
+`si build` writes it as an HTML guide (replacing the founder's course's pandoc
 script), `si check` validates it (missing files, broken links), the index
 shows a `lab` badge, and Studio's navigator shows a lab icon and previews it
 full width (the cursor scrolls the page to the section being edited).

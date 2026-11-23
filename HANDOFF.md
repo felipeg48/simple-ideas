@@ -112,9 +112,12 @@ diff. RULES changes need `go test ./internal/skill -update`.
 gallery, v4.1.0, v4.2.0, v4.3.0 diagrams). `Artifact read` it, edit the saved file with a script, republish with
 `url`.
 
-**Awaiting the founder (asked, unanswered):** move the unlisted client themes
-and TRADEMARKS.md out of the public repo; delete the remote branch
-`feat/architecture-status-doctypes`.
+**Client names (the founder, 2026-11-23):** the four brand themes (`crdb`,
+`acemq`, `acemq-pro`, `osstend`) STAY in the public repo, unlisted;
+`TRADEMARKS.md` names their owners and says the marks, logos and looks are
+theirs and not under Apache 2.0. Nothing else in the repo may carry a client
+name (specs, tests, examples, docs were scrubbed). Remote branch
+`feat/architecture-status-doctypes` deleted (superseded by RULES §35/§36).
 
 ## Earlier state (2026-11-17, end of session)
 

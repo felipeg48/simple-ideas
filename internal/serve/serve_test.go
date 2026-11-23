@@ -124,8 +124,8 @@ func TestIndexTitle(t *testing.T) {
 	if got := title(); !strings.Contains(got, "<title>"+filepath.Base(dir)+"</title>") {
 		t.Errorf("default index title missing the directory name")
 	}
-	s.Title = "CACI Training" // si play --site
-	if got := title(); !strings.Contains(got, "<title>CACI Training</title>") || !strings.Contains(got, "CACI Training</h1>") {
+	s.Title = "Northwind Training" // si play --site
+	if got := title(); !strings.Contains(got, "<title>Northwind Training</title>") || !strings.Contains(got, "Northwind Training</h1>") {
 		t.Errorf("--site title not used on the play index")
 	}
 }

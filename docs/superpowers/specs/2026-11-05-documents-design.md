@@ -1,13 +1,13 @@
 # si documents: articles, guides, labs and demos: design
 
-Status: approved 2026-11-05 (designs: the "si Documents" mockup). Phases 1 (v0.9.4), 2 (v0.9.5) and 3 (v0.9.6) shipped; books shipped in v0.9.7; then phase 4 (demos, CACI); then sites (v1.0.0).
+Status: approved 2026-11-05 (designs: the "si Documents" mockup). Phases 1 (v0.9.4), 2 (v0.9.5) and 3 (v0.9.6) shipped; books shipped in v0.9.7; then phase 4 (demos, the course); then sites (v1.0.0).
 
 ## Intent
 
 si already writes slides (decks) and one kind of long-form page: the lab
 document (`type: lab`, RULES.md §18). Teams also need **articles** (one long
 read), **tutorials/guides** (many pages read in order, with navigation) and
-**demo scripts** (instructor-only run sheets; today the CACI demos are built by
+**demo scripts** (instructor-only run sheets; today the course's demos are built by
 pandoc). This spec turns the lab engine into one **document family** with four
 types, adds the multi-page guide, and adds the code features technical writing
 needs: code from files and from git (with line ranges and tags), diffs, tabs,
@@ -233,13 +233,13 @@ ch.basicQos(10);                          // <2>
 A demo is the presenter's run sheet for a live part of a session. It is a
 document (built like a lab) **and** the content of the ▶ Demos panel in the
 `si play` terminal (RULES.md §14, `demos:` in a deck). The structure, taken from
-the CACI demos:
+the course's demos:
 
 ````markdown
 ---
 type: demo
 title: "Session 1 demo: a first broker"
-session: 1 · Understanding CACI message flows
+session: 1 · Understanding Northwind message flows
 slides: 23, 24
 duration: 14 min
 ---
@@ -256,7 +256,7 @@ docker compose up -d --wait
 
 ## The script
 ### Slide 23, "Live: a first broker" (8 min)
-> Say: "One RabbitMQ 4.3.7 node, the same software CACI runs."
+> Say: "One RabbitMQ 4.3.7 node, the same software Northwind runs."
 ```bash
 rmq list queues
 ```
@@ -284,7 +284,7 @@ Rules:
   number the linked deck does not have (when the deck lists the demo).
 - `si build` builds demos like labs (into an "Instructor" group of the index);
   `si build --no-instructor` leaves them out of a participant build. A
-  pandoc build (`demos/build-html.sh` in CACI) keeps working: the ▶ Demos panel
+  pandoc build (`demos/build-html.sh` in the course) keeps working: the ▶ Demos panel
   reads the markdown either way.
 
 ## 6. AsciiDoc mapping
@@ -329,10 +329,10 @@ minutes ≠ `duration`, deck-only directives in a document (exists).
 
 | Phase | Ships | Acceptance |
 |---|---|---|
-| 1 | `type: article`, `type: guide`, `_nav.md` (order, sidebar, Prev / Next, breadcrumb, edit link), `_header.md` / `_footer.md`, subfolders, link and anchor checks, `.adoc` pages in a guide | a 6-page example guide under `examples/`, and one CACI lab set rebuilt as a guide, read at 400 px, 1440 px and in print |
+| 1 | `type: article`, `type: guide`, `_nav.md` (order, sidebar, Prev / Next, breadcrumb, edit link), `_header.md` / `_footer.md`, subfolders, link and anchor checks, `.adoc` pages in a guide | a 6-page example guide under `examples/`, and one the course lab set rebuilt as a guide, read at 400 px, 1440 px and in print |
 | 2 | include of code files (`lines`, `tag`, `lang`, `title`, `indent`), fence attributes, `hl` / line numbers, callouts, tabs (synced, print-expanded) | the example guide shows a tagged include, a 3-language tab group with callouts |
 | 3 | `code:` and `diff:` (GitHub / GitLab / Bitbucket permalinks, local clone), build-time cache, tokens, `--offline`, moving-ref warning | a guide page pinned to a public repo commit builds offline from cache |
-| 4 | `type: demo` + `--no-instructor`, cross-page search, side-by-side diffs, versioned guides | the CACI demos built by si match the pandoc output's content |
+| 4 | `type: demo` + `--no-instructor`, cross-page search, side-by-side diffs, versioned guides | the course's demos built by si match the pandoc output's content |
 
 Each phase is useful alone; RULES.md and the agent guide grow with it.
 
@@ -369,7 +369,7 @@ Each phase is useful alone; RULES.md and the agent guide grow with it.
    self-contained): arrow keys and buttons step through slides and build
    steps, canvases animate, a link opens the full deck. Print shows each
    slide as a static frame. `si check` reports a missing deck or range.
-4. **CACI demos move to `type: demo`** after all phases are done (not before).
+4. **the course demos move to `type: demo`** after all phases are done (not before).
 
 ## `si --export example --type`
 

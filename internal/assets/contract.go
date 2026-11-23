@@ -34,7 +34,7 @@ var Tokens = []Token{
 	{"--si-accent-2", "second accent: bold text, h3, code strings", ""},
 	{"--si-on-accent", "text drawn on an accent fill", ""},
 	{"--si-badge-fg", "index status/version badge text colour (defaults to white)", ""},
-	{"--si-badge-bg", "index status/version badge background (CockroachDB-brand defaults; override per data-status)", ""},
+	{"--si-badge-bg", "index status/version badge background (override per data-status)", ""},
 	{"--si-ok", "status colour for good states (SVG canvases: data-ok)", ""},
 	{"--si-warn", "status colour for warnings", ""},
 	{"--si-crit", "status colour for failures (SVG canvases: data-alert)", ""},
@@ -182,7 +182,7 @@ type Hook struct {
 // Hooks lists every stable `.si-*` class and attribute hook. A test fails if
 // the built-in CSS uses a `.si-*` class that is not listed here.
 var Hooks = []Hook{
-	{`:root[data-si-theme="studio"]`, "the deck theme from front matter (studio, paper, mono, crdb, acemq, acemq-pro)"},
+	{`:root[data-si-theme="studio"]`, "the deck theme from front matter (studio, paper, mono, slate, …)"},
 	{`:root[data-si-mode="dark"]`, "explicit dark mode (d toggles); without the attribute prefers-color-scheme decides"},
 	{`.si-deck`, "the full-viewport container of all slides"},
 	{`.si-deck.si-overview`, "overview grid (o): slides laid out in one column per topic"},
