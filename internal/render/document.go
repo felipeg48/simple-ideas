@@ -594,6 +594,9 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	dr.problemsBanner(&b, problems)
 	dr.mermaidScript(&b)
 	b.WriteString("<script>\n" + assets.DocJS + "</script>\n")
+	if dr.opt.Terminal && (kind == "lab" || m.Sandbox != "") { // si play / a class seat: the drawer beside the lab
+		b.WriteString("<script>\n" + docTermJS + "</script>\n")
+	}
 	if dr.motion {
 		b.WriteString("<script>\n" + assets.BuildJS + "</script>\n")
 	}

@@ -25,6 +25,12 @@ var trycloudflareRE = regexp.MustCompile(`https://[a-z0-9-]+\.trycloudflare\.com
 // quick tunnel (cloudflared, if installed) to reach it; the address is gone
 // when si play stops. It returns the public base URL and a stop func.
 func startTunnel(srv *serve.Server, stderr io.Writer) (string, func(), error) {
+	return tunnelTo(srv.AudienceOnlyHandler())
+}
+
+// tunnelTo serves h on a loopback port behind a Cloudflare quick tunnel and
+// returns the public base URL and a stop func.
+func tunnelTo(h http.Handler) (string, func(), error) {
 	bin := tools.Find("cloudflared")
 	if bin == "" {
 		return "", nil, errors.New(tools.Need("cloudflared", "--tunnel"))
@@ -33,7 +39,7 @@ func startTunnel(srv *serve.Server, stderr io.Writer) (string, func(), error) {
 	if err != nil {
 		return "", nil, err
 	}
-	hs := &http.Server{Handler: srv.AudienceOnlyHandler(), ReadHeaderTimeout: 10 * time.Second}
+	hs := &http.Server{Handler: h, ReadHeaderTimeout: 10 * time.Second}
 	go hs.Serve(ln)
 	cmd := exec.Command(bin, "tunnel", "--no-autoupdate", "--url", "http://"+ln.Addr().String())
 	out, err := cmd.StderrPipe()

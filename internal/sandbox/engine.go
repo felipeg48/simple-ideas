@@ -233,6 +233,35 @@ func (e *Engine) Inspect(ctx context.Context, id string) (Container, error) {
 	return c, err
 }
 
+// Image is one image in the engine's store.
+type Image struct {
+	ID       string `json:"Id"`
+	RepoTags []string
+	Size     int64
+	Created  int64
+}
+
+// Images lists the engine's images.
+func (e *Engine) Images(ctx context.Context) ([]Image, error) {
+	var out []Image
+	err := e.call(ctx, "GET", "/images/json", nil, &out)
+	return out, err
+}
+
+// Memory is a container's memory use now, in bytes (one stats sample).
+func (e *Engine) Memory(ctx context.Context, id string) (int64, error) {
+	var s struct {
+		MemoryStats struct {
+			Usage int64 `json:"usage"`
+			Stats struct {
+				InactiveFile int64 `json:"inactive_file"`
+			} `json:"stats"`
+		} `json:"memory_stats"`
+	}
+	err := e.call(ctx, "GET", "/containers/"+url.PathEscape(id)+"/stats?stream=0&one-shot=1", nil, &s)
+	return max(0, s.MemoryStats.Usage-s.MemoryStats.Stats.InactiveFile), err // what docker stats shows
+}
+
 // Listed is one container of List.
 type Listed struct {
 	ID     string `json:"Id"`

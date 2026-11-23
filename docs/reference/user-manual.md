@@ -304,6 +304,8 @@ Exchange fans out → Email, Stock, Analytics
 - Once: `si sandbox host init` (a Colima VM, `si-sandbox`: sysbox so boxes run unprivileged, no host folder mounted, your docker context untouched); `si sandbox host status|start|stop|rm`
 - Your own image: `si new web-lab --type sandbox`, `si sandbox build web-lab -t name:1.0`, `si sandbox try web-lab/lab.md`
 - `--trusted-sandbox` runs a box privileged on a host without sysbox: only for images you trust; full guide: RULES.md §37
+- A lab page has a **>_ Terminal** button (and `` ` ``) and a **Run** button on each ```` ```bash ```` block
+- Classes: `si class new <course> --roster people.csv --seats 5` (rows `name,email[,code]`), `si class start <id> --tunnel` (or `--https`, `--local`): a link and code per seat, a box per learner from the course's image; `si class` alone is the planner (seats, codes sheet with QR codes, live boxes, Reset, Stop); `--budget 48g` caps the boxes' memory; learners reach only their own box
 
 ---
 

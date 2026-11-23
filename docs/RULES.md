@@ -6323,3 +6323,53 @@ course one box, and every lesson's checks run in it. `si serve`
 and built pages have no box: the page shows the commands, and a
 `sandbox:` link has nowhere to go. Boxes left by a `si` that was killed are
 removed the next time one starts.
+
+**The drawer on the lab page.** A lab page served by `si play` (or to a
+class seat) has a **>_ Terminal** button (and the `` ` `` key) for the
+drawer, and every ```` ```bash ```` (`sh`, `shell`, `zsh`, `console`) block a
+**Run** button that types it into the drawer's shell, `$ ` prompts left out.
+A built page has neither.
+
+### Classes
+
+`si class` serves a course with a `sandbox:` to a class from your computer:
+each learner gets a seat code, and their own box from the course's image
+when they first open the course. Learners reach only shells in their own
+box: never a shell, a file or a page of si's on your computer.
+
+```text
+si class new docker-course --name "Docker basics" --roster people.csv --seats 5
+si class start docker-basics --tunnel     # a link per seat; Ctrl+C removes every box
+si class                                  # the planner: classes, seats, codes, live boxes
+```
+
+| Command | What it does |
+|---|---|
+| `si class` | the planner, a keyed page on this computer only: plan a class (course, image, memory and CPUs per box, how long a box lives, when it is removed idle, the last day, seats from a roster or a count), a printable sheet of codes with a QR code per seat, start and stop it, each seat's box live (starting, ready, its memory), **Reset** (a fresh box from the image), seats added or removed on the day, the images on the sandbox host and **Pull** |
+| `si class new <course>` | plan a class of a course folder (its `_course.md` or a top-level lab has `sandbox:`) or of one lab page: `--name`, `--seats N`, `--roster file.csv` (rows `name,email[,code]`, a header row skipped), `--image` (instead of the course's), `--memory 2g`, `--cpus 2`, `--ttl 3h`, `--idle 30m`, `--expires YYYY-MM-DD` |
+| `si class list` / `codes <id>` / `rm <id>` | the classes planned here, a class's seats and codes, forget a class (its codes stop working) |
+| `si class start <id>` | serve the class and open the planner: `--tunnel` (a public HTTPS address, cloudflared; the default when it is installed), `--https` (this network, si's own certificate: a learner's device trusts it once at `http://<address>/ca`), `--local` (this computer, to try it); `--budget 48g`, `--addr`, `--trusted-sandbox` |
+
+A class is a file, `.si/classes/<id>.json` (0600: it holds the codes). A
+code is 8 letters and digits, printed `ABCD-EFGH`, typed in any case;
+`<link>/go/ABCD-EFGH` (or `<link>/go` and typing it) gives the learner's
+browser the seat (an HttpOnly cookie, Secure over HTTPS) and opens the
+course. The same code comes back to the same box; a box removed for its
+`--ttl` or `--idle` comes back fresh. Wrong codes are slowed down (60 a
+minute for the whole class), and a class past its last day lets nobody in.
+
+**What a learner reaches**: the course's pages, the drawer (each tab a
+shell in their box; the Viewer and file search, which read your folder, are
+not there), **✓ Check** run in their box, their box's `sandbox-ports:`
+(proxied: the box publishes them on your computer only), and the course's
+results for the class view (**Progress** in the planner: the live class
+view of §28). The page sources, `si.conf`, `.si/` and si's own pages are not
+served. Through a quick tunnel, which holds a stream back, the drawer reads
+its shells by long poll: a key comes back in about 150 ms.
+
+**The budget.** Every box takes its memory (`sandbox-limits:` or
+`--memory`) from the budget: 80% of the sandbox host's memory unless
+`--budget` says otherwise. A seat whose box would go past it waits until a
+box goes (Reset, `--ttl`, `--idle`, Stop). `si sandbox host init` sizes the
+VM to three quarters of your memory: on a 128 GB Mac a 96 GB VM, about 77
+GB of budget, about 38 learners at 2 GB.

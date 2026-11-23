@@ -58,7 +58,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/ui"
 )
 
-const version = "3.44.1"
+const version = "4.0.0"
 
 // Exit codes.
 const (
@@ -187,6 +187,10 @@ Usage:
         si play of a lab with sandbox: <image> first makes its Docker box there: the drawer's
         tabs open in it, ✓ Check runs in it, [x](sandbox:8080) opens its ports; removed on
         quit. --trusted-sandbox lets it run privileged on a host without sysbox
+  si class [new <course> --seats N | --roster people.csv | list | codes <id> | start <id> | rm <id>]
+        classes on this machine: a seat code per learner, a Docker box per seat from the
+        course's sandbox:, shared with --tunnel or --https; learners reach only their own
+        box's shells. si class alone opens the planner (a keyed page on this machine)
   si doctor
         the optional programs si can use (Chrome, ffmpeg, git, …): found or not, and
         how to install each on this computer
@@ -633,6 +637,9 @@ func run(argv []string, stdout, stderr io.Writer) int {
 	}
 	if len(argv) > 0 && argv[0] == "sandbox" { // its own flags (sandbox.go)
 		return runSandbox(argv[1:], stdout, stderr)
+	}
+	if len(argv) > 0 && argv[0] == "class" { // its own flags (class.go)
+		return runClass(argv[1:], stdout, stderr)
 	}
 	o, err := parseArgs(argv, stderr)
 	if err != nil {

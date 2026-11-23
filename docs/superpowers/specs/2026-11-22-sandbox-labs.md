@@ -1,6 +1,14 @@
 # Sandbox labs: a Docker box per learner, the lab beside it
 
-Status: phase 1 DONE (v3.44.0, RULES §37); phase 2 (classes) is v4.0.0.
+Status: phase 1 DONE (v3.44.0, RULES §37); phase 2 DONE (v4.0.0, classes).
+As built in phase 2: classes live in `.si/classes/<id>.json` (`.si/class/`
+already holds the class view's event logs); the seat cookie carries the
+code itself (8 of 30 symbols, rate-limited joins), not an HMAC; one class
+runs per planner process; the learner listener is its own allow-list mux
+(`serve.ClassroomHandler`); a quick tunnel holds the terminal stream back,
+so off the loopback the drawer long-polls `/_si/term/api/read` (measured
+150-300 ms a round trip through trycloudflare.com); box memory is measured,
+CPU is not yet; a learner's drawer has no Viewer (the files are in the box).
 As built, the keys are flat like the rest of si's front matter
 (`sandbox:`, `sandbox-files:`, `sandbox-setup:`, `sandbox-cleanup:`,
 `sandbox-ports:`, `sandbox-limits:`), files are copied by `tar -x` over

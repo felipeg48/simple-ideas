@@ -76,6 +76,16 @@ Prefer AsciiDoc? Name the file `.adoc`: every feature works the same
 ([docs/asciidoc.md](docs/asciidoc.md)), and every example on the site has an
 AsciiDoc tab.
 
+## What's new in si 4
+
+**Classes on your computer (4.0).** Teach a course with a `sandbox:` to a
+whole class from your own machine: `si class` plans it (seats from a roster
+CSV, a code and a QR code per learner), `si class start <id> --tunnel` shares
+it, and each learner gets their own Docker box beside the lesson: a terminal
+in it, ✓ Check run in it, its ports in their browser. They reach nothing of
+your computer. The planner shows every box live; Reset gives a learner a
+fresh one. [Classes →](https://simple-ideas.org/rules/37-sandbox-labs.html)
+
 ## What's new in si 3
 
 **Books for publishers (3.41).** `si build book/ --pdf` prints a real book:
@@ -269,7 +279,9 @@ of the lab a Docker box with Docker inside it: the lab's files in `/lab`,
 the terminal drawer's shells inside the box, ✓ Check run in it, and
 `[Shop](sandbox:8080)` links to its ports. The boxes run on a Colima VM of
 their own (`si sandbox host init`), unprivileged under sysbox, with none of
-your folders in reach, and go when `si play` stops.
+your folders in reach, and go when `si play` stops. A lab page gets the
+drawer and a Run button on each shell block; `si class` gives a whole class
+a box each (see What's new in si 4).
 [Sandbox labs →](https://simple-ideas.org/rules/37-sandbox-labs.html)
 
 ### Video edits

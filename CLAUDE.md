@@ -63,6 +63,13 @@ what you chose.
    `docs/terminal.md`. Web demos (`si demo test|run`, v2.36.0) reuse the same
    pty and xterm.js for their terminal scenes, on a keyed 127.0.0.1 page that
    only that run's headless Chrome opens; still never in a built deck.
+   **Exception (v4.0.0, classes only):** `si class start` serves a course to
+   learners off the loopback (`--tunnel`, `--https`) with the drawer: on that
+   listener (`serve.ClassroomHandler`, its own allow-list mux, never
+   `Handler()`, whose loopback guards trust the Host header) every tab is a
+   shell in the learner's own sandbox box (`termHub.need`), never on the host;
+   the Viewer and file APIs are not routed. Behind a seat cookie from
+   `/go/<code>`. Never in a built page.
    **Exception (v1.13.0, 3D mind maps only):** three.js r128 (MIT) and its
    OrbitControls are vendored in `internal/assets/web/` (`three.min.js`,
    `three-orbitcontrols.js`, `THREE-LICENSE`) and inlined, with
@@ -95,7 +102,7 @@ what you chose.
 | `internal/bookexport/` | `si build <book|guide|article> --md --docx --rtf --epub`: `model.go` reads the pages in `_nav.md` order with goldmark into one block model (numbers, filled cross-references, index terms, callouts, alerts), `markdown.go`, `docx.go` (OOXML by hand), `rtf.go`, `epub.go` (EPUB 3) write it; `pdfpages.go` reads a Chrome PDF's named destinations for the book PDF's page numbers (`cmd/si/bookexport.go`: `bookPDF`, two prints, and the SVG rasterizer) |
 | `internal/skill/` | the si Agent Skill: `SKILL.md` (when to use si, the check-and-look loop, `docs/agent-rules.md`) and `references/` (one file per RULES.md section); `si --export skill`; the Claude Code plugin under `plugin/` is its output (`go test ./internal/skill -update`; `TestPluginInSync`), listed by `.claude-plugin/marketplace.json` (the `simple-ideas` marketplace) |
 | `internal/mcp/` | a small MCP server (stdio, newline-delimited JSON-RPC, standard library): `server/discover` and `_meta` versions (2026-07-28), `initialize` for earlier clients, tools/list, tools/call; si's tools are in `cmd/si/mcp.go` (`si mcp [dir]`) |
-| `internal/sandbox/` | sandbox labs (RULES §37), stdlib only: `engine.go` the Docker Engine API over its unix socket (images, networks, containers, exec: demuxed output, a hijacked TTY stream, stdin feed), `box.go` a lab's box (`Up`: sysbox runtime or `--trusted-sandbox` privileged, limits, `/lab` files by `tar -x` over exec since the archive API fails on sysbox mounts, `sandbox-setup:`, published ports; `Shell`, `Exec`, `Down`, `Sweep` of boxes a dead si left), `host.go` the `si-sandbox` Colima VM (`--activate=false` so the user's docker context stays, only `~/.si/sandbox/share` mounted and checked, pinned sysbox 0.7.1 deb); `cmd/si/sandbox.go` (`si sandbox host|build|try`, `findLabBox` for si play); `deck/sandbox.go` the keys; serve: drawer tabs in the box (`termHub.box`), checks in the box, `/_si/sandbox`, `/_si/sandbox/port/N/`; `SI_DOCKER=1 go test ./internal/sandbox` runs a real box |
+| `internal/sandbox/` | sandbox labs (RULES §37), stdlib only: `engine.go` the Docker Engine API over its unix socket (images, networks, containers, exec: demuxed output, a hijacked TTY stream, stdin feed), `box.go` a lab's box (`Up`: sysbox runtime or `--trusted-sandbox` privileged, limits, `/lab` files by `tar -x` over exec since the archive API fails on sysbox mounts, `sandbox-setup:`, published ports; `Shell`, `Exec`, `Down`, `Sweep` of boxes a dead si left), `host.go` the `si-sandbox` Colima VM (`--activate=false` so the user's docker context stays, only `~/.si/sandbox/share` mounted and checked, pinned sysbox 0.7.1 deb); `cmd/si/sandbox.go` (`si sandbox host|build|try`, `findLabBox` for si play); `deck/sandbox.go` the keys; serve: drawer tabs in the box (`termHub.box`), checks in the box, `/_si/sandbox`, `/_si/sandbox/port/N/`; `SI_DOCKER=1 go test ./internal/sandbox` runs a real box; `class.go` classes (v4.0.0): the class file `.si/classes/<id>.json` (0600), seat codes, roster CSV, `Fleet` (a box per seat on first use, memory budget, `Reap` by ttl/idle, `States`, `Measure`); `internal/serve/seats.go` the learner listener (`Classroom`, `ClassroomHandler`: `/go/<code>` → seat cookie, pages with the drawer, tabs only in the seat's box, checks in it, ports proxied); `terminal.go` `read` is the long-poll twin of `out` (quick tunnels hold streams; term.js polls off the loopback); `render/docterm.go` the drawer + Run buttons on lab pages; `cmd/si/class.go` + `classplanner.html` (`si class` planner and `new|list|codes|start|rm`) |
 | `internal/qr/` | the QR encoder (byte mode, versions 1-40, levels L/M/Q/H, `Cover`/`Hole` for a picture in the middle) and its renderers (ANSI, SVG, PNG/JPEG via `Image`, PDF); `testdata/golden.txt` pins 64 codes a real reader decoded (`QR_VISION=1 go test ./internal/qr` on macOS) |
 | `internal/codeshow/` | code windows in Markdown text, by lines: `Shows` / `ShowAt` (fences with `window=` or `id=`, same-id runs, their `<!-- callout: -->` lines), `Apply` (the Window view's ops), `Source` (an article of only the windows, for exports and the Studio preview) |
 | `internal/mindmap/` | the mind map Markdown model for editors and converters: `Parse` / `String` (round trip, unknown text kept), `Apply` (the map editor's ops), `FenceAt` / `SetInfo` (fences), `Import` / `Export` (OPML, FreeMind, XMind, Mermaid). The renderer keeps its own reader for drawing |
@@ -270,12 +277,13 @@ pass. The steps that matter:
 - **Sandbox labs** (spec `docs/superpowers/specs/2026-11-22-sandbox-labs.md`,
   decided with the founder 2026-11-22): phase 1 DONE v3.44.0 (a lab's own
   Docker box in `si play`, the `si-sandbox` Colima VM with sysbox, RULES §37).
-  Next: phase 2 = v4.0.0, classes on the presenter's machine (`si class`
-  planner web page, roster CSV, seat codes, `/go/<code>`, per-seat boxes over
-  `--tunnel`/HTTPS: learners reach only shells in their own box, never the
-  host), then the instructor's watch / take over / reset. After that: the
-  docs site's Decks submenu with showcase pages (animations, motion,
-  transitions), the founder's request.
+  Phase 2 DONE v4.0.0: classes (`si class` planner, roster CSV, seat codes,
+  `/go/<code>`, a box per seat, memory budget, ttl/idle reaper, reset,
+  `--tunnel`/`--https`/`--local`; the drawer polls through quick tunnels,
+  about 150 ms a key). Next: phase 3 (the instructor's watch / take over /
+  show on screen, idle warnings, the Viewer reading files in the box). After
+  that: the docs site's Decks submenu with showcase pages (animations,
+  motion, transitions), the founder's request.
 - **Courses** (DONE: phases 1–2 v3.2.0, phases 3–4 v3.7.0 (`internal/render/scorm.go`,
   `coursebook.go`, `internal/publish/skilljar.go`; SkillJar unverified on a real account), spec
   `docs/superpowers/specs/2026-11-12-courses.md`, mockup

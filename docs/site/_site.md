@@ -13,7 +13,7 @@ footer: simple-ideas
 ---
 
 - [Home](index.md)
-- [What's new in si 3](whats-new.md)
+- [What's new in si 4](whats-new.md)
 - Features
   - [Decks](features/decks.md)
     - [Presenting](features/remote.md)

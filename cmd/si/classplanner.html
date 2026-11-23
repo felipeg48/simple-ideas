@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>si class</title>
+<style>
+:root{--bg:#f6f6f4;--card:#fff;--fg:#1c1c1e;--mute:#6b6b70;--line:#e2e2de;--acc:#2457d6;--ok:#16794a;--warn:#a15c00;--bad:#b42318;--chip:#eef1f8;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root{--bg:#141518;--card:#1d1f23;--fg:#ececee;--mute:#9a9aa2;--line:#2e3036;--acc:#7aa2ff;--ok:#4cc38a;--warn:#e6a23c;--bad:#ff7b72;--chip:#262a33}}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--fg)}
+header{display:flex;gap:1rem;align-items:baseline;flex-wrap:wrap;padding:1rem 1.25rem;border-bottom:1px solid var(--line)}
+header h1{font-size:1.15rem;margin:0}header .root{color:var(--mute);font:12px ui-monospace,monospace;word-break:break-all;min-width:0}
+main{display:grid;grid-template-columns:minmax(15rem,20rem) 1fr;gap:1.25rem;padding:1.25rem;max-width:90rem}
+main>div{min-width:0}
+@media (max-width:800px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:.75rem;padding:1rem;margin-bottom:1rem}
+.card h2{font-size:.95rem;margin:0 0 .7rem}
+.list button.cl{display:block;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:.5rem;padding:.55rem .6rem;color:inherit;font:inherit;cursor:pointer}
+.list button.cl:hover{background:var(--chip)}.list button.cl[aria-current=true]{border-color:var(--acc);background:var(--chip)}
+.list .n{font-weight:600}.list .m{color:var(--mute);font-size:12px}
+label{display:block;font-size:12px;color:var(--mute);margin:.55rem 0 .2rem}
+input,select,textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:.45rem;padding:.45rem .55rem}
+textarea{min-height:5rem;font:12px ui-monospace,monospace}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(7rem,1fr));gap:.6rem}
+a.b{text-decoration:none;display:inline-block}
+.b{font:inherit;border:1px solid var(--line);background:var(--card);color:inherit;border-radius:.45rem;padding:.42rem .8rem;cursor:pointer}
+button.p,.b.p{background:var(--acc);border-color:var(--acc);color:#fff}button.d{color:var(--bad)}
+button:disabled{opacity:.5;cursor:default}
+.bar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-top:.8rem}
+.err{color:var(--bad);margin:.5rem 0 0;white-space:pre-wrap}
+.live{border-color:var(--ok)}.pill{display:inline-block;font-size:11px;padding:.1rem .5rem;border-radius:1rem;background:var(--chip);color:var(--mute)}
+.pill.ready{color:var(--ok)}.pill.starting{color:var(--warn)}.pill.failed{color:var(--bad)}.pill.on{background:var(--ok);color:#fff}
+.tbl{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:.45rem .5rem;border-bottom:1px solid var(--line);vertical-align:top}th{font-weight:600;color:var(--mute);font-size:12px}
+code,.code{font:12px ui-monospace,monospace}.code{letter-spacing:.06em;font-weight:600}
+.link{font:12px ui-monospace,monospace;word-break:break-all}
+.meter{height:.4rem;background:var(--chip);border-radius:1rem;overflow:hidden;margin-top:.3rem}.meter i{display:block;height:100%;background:var(--acc)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem;font-size:13px}.kv dt{color:var(--mute)}.kv dd{margin:0}
+.empty{color:var(--mute)}
+</style>
+</head>
+<body>
+<header><h1>si class</h1><span class="root" id="root"></span></header>
+<main>
+  <div>
+    <section class="card list"><h2>Classes</h2><div id="classes"><p class="empty">Loading…</p></div>
+      <div class="bar"><button class="b p" id="newBtn">New class</button></div></section>
+    <section class="card"><h2>Images on the sandbox host</h2><div id="images" class="m empty">Loading…</div>
+      <label for="pullName">Pull an image</label><input id="pullName" placeholder="docker:28-dind">
+      <div class="bar"><button class="b" id="pullBtn">Pull</button><span id="pullMsg" class="m"></span></div></section>
+  </div>
+  <div id="detail"></div>
+</main>
+<template id="newForm">
+  <section class="card"><h2>New class</h2>
+    <label for="f-name">Name</label><input id="f-name" placeholder="Docker basics, December cohort">
+    <label for="f-course">Course (a folder with _course.md, or a lab page, with sandbox:)</label><select id="f-course"></select>
+    <label for="f-image">Image (empty: the course's sandbox: image)</label><input id="f-image" list="imgList" placeholder="">
+    <datalist id="imgList"></datalist>
+    <div class="row">
+      <div><label for="f-memory">Memory per box</label><input id="f-memory" placeholder="the course's (2g)"></div>
+      <div><label for="f-cpus">CPUs per box</label><input id="f-cpus" type="number" min="0" step="0.5" placeholder="2"></div>
+      <div><label for="f-ttl">Box lives at most</label><input id="f-ttl" placeholder="3h (empty: the class)"></div>
+      <div><label for="f-idle">Remove when idle</label><input id="f-idle" placeholder="never"></div>
+      <div><label for="f-expires">Last day</label><input id="f-expires" type="date"></div>
+      <div><label for="f-seats">Extra seats</label><input id="f-seats" type="number" min="0" max="500" value="0"></div>
+    </div>
+    <label for="f-roster">Roster: CSV rows name,email[,code]</label>
+    <textarea id="f-roster" placeholder="name,email&#10;Ada Lovelace,ada@example.com&#10;Alan Turing,alan@example.com"></textarea>
+    <input type="file" id="f-file" accept=".csv,text/csv" aria-label="Roster CSV file">
+    <div class="bar"><button class="b p" id="f-save">Plan the class</button><button class="b" id="f-cancel">Cancel</button></div>
+    <p class="err" id="f-err"></p>
+  </section>
+</template>
+<script>
+(function () {
+  var st = null, pick = null, form = false, busy = false;
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+  function gb(n) { return n ? (n / (1 << 30)).toFixed(n >= 10 * (1 << 30) ? 0 : 1) + ' GB' : '—'; }
+  function ago(t) { if (!t || t.indexOf('0001') === 0) return ''; var s = (Date.now() - new Date(t)) / 1000; return s < 60 ? 'now' : s < 3600 ? Math.round(s / 60) + ' min ago' : Math.round(s / 3600) + ' h ago'; }
+  function call(path, body) {
+    return fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || r.statusText); return j; }); });
+  }
+  function load() {
+    return fetch('/api/state').then(function (r) { return r.json(); }).then(function (j) {
+      st = j; $('root').textContent = j.root;
+      if (!pick && j.run) pick = j.run.id;
+      if (!pick && j.classes.length) pick = j.classes[0].id;
+      draw();
+    });
+  }
+  function drawList() {
+    var h = '';
+    st.classes.forEach(function (c) {
+      var joined = c.seats.filter(function (s) { return s.joined && s.joined.indexOf('0001') !== 0; }).length;
+      h += '<button class="cl" data-id="' + esc(c.id) + '" aria-current="' + (c.id === pick && !form) + '"><div class="n">' + esc(c.name) +
+        (c.running ? ' <span class="pill on">live</span>' : '') + '</div><div class="m">' + esc(c.course) + ' · ' + c.seats.length + ' seats · ' + joined + ' joined' +
+        (c.expires ? ' · until ' + esc(c.expires) : '') + '</div></button>';
+    });
+    $('classes').innerHTML = h || '<p class="empty">No class yet. Plan one for a course with a sandbox:.</p>';
+    Array.prototype.forEach.call($('classes').querySelectorAll('button.cl'), function (b) {
+      b.onclick = function () { pick = b.getAttribute('data-id'); form = false; draw(); };
+    });
+  }
+  function drawForm() {
+    var d = $('detail'); d.innerHTML = ''; d.appendChild($('newForm').content.cloneNode(true));
+    var sel = $('f-course');
+    sel.innerHTML = st.courses.map(function (c) { return '<option value="' + esc(c.path) + '">' + esc(c.path === '.' ? 'this folder' : c.path) + ' (' + esc(c.image) + ')</option>'; }).join('') ||
+      '<option value="">no course here has a sandbox:</option>';
+    fetch('/api/images').then(function (r) { return r.json(); }).then(function (j) {
+      $('imgList') && ($('imgList').innerHTML = (j.images || []).map(function (i) { return '<option value="' + esc(i.tag) + '">'; }).join(''));
+    });
+    $('f-file').onchange = function () { var f = this.files[0]; if (f) f.text().then(function (t) { $('f-roster').value = t; }); };
+    $('f-cancel').onclick = function () { form = false; draw(); };
+    $('f-save').onclick = function () {
+      $('f-err').textContent = '';
+      call('/api/class', { Name: $('f-name').value, Course: sel.value, Image: $('f-image').value, Memory: $('f-memory').value, CPUs: +$('f-cpus').value || 0,
+        TTL: $('f-ttl').value, Idle: $('f-idle').value, Expires: $('f-expires').value, Seats: +$('f-seats').value || 0, Roster: $('f-roster').value })
+        .then(function (j) { pick = j.id; form = false; return load(); })
+        .catch(function (e) { $('f-err').textContent = e.message; });
+    };
+  }
+  function drawClass(c) {
+    var run = st.run && st.run.id === c.id ? st.run : null, other = st.run && !run;
+    var h = '<section class="card' + (run ? ' live' : '') + '"><h2>' + esc(c.name) + (run ? ' <span class="pill on">live</span>' : '') + '</h2>' +
+      '<dl class="kv"><dt>Course</dt><dd><code>' + esc(c.course) + '</code></dd><dt>Image</dt><dd><code>' + esc(run ? run.image : (c.image || 'the course\'s sandbox:')) + '</code></dd>' +
+      '<dt>Per box</dt><dd>' + (c.memory ? gb(c.memory) : 'the course\'s memory') + ' · ' + (c.cpus || 'the course\'s') + ' CPUs</dd>' +
+      '<dt>Box life</dt><dd>' + esc(c.ttl || 'while the class runs') + ' · ' + (c.idle ? 'removed after ' + esc(c.idle) + ' idle' : 'idle boxes kept') + '</dd>' +
+      (c.expires ? '<dt>Last day</dt><dd>' + esc(c.expires) + '</dd>' : '') + '</dl>';
+    if (run) {
+      var pct = run.budget ? Math.min(100, Math.round(100 * run.reserved / run.budget)) : 0;
+      h += '<dl class="kv" style="margin-top:.8rem"><dt>Learners open</dt><dd class="link">' + esc(run.base) + '/go/&lt;code&gt;</dd>' +
+        (run.ca ? '<dt>First time</dt><dd class="link">a device trusts si\'s certificate at ' + esc(run.ca) + '</dd>' : '') +
+        '<dt>Shared by</dt><dd>' + esc({ tunnel: 'a public HTTPS address (Cloudflare quick tunnel)', https: 'this network, HTTPS', local: 'this machine only' }[run.how]) + '</dd>' +
+        '<dt>Boxes</dt><dd>' + (run.unprivileged ? 'unprivileged (sysbox)' : 'PRIVILEGED (--trusted-sandbox)') + '</dd>' +
+        '<dt>Memory budget</dt><dd>' + gb(run.reserved) + ' of ' + gb(run.budget) + ' reserved<div class="meter"><i style="width:' + pct + '%"></i></div></dd></dl>';
+      h += '<div class="bar"><button class="b d" id="stop">Stop the class (removes every box)</button><a class="b" href="/_si/class" target="_blank" rel="noopener">Progress</a><a class="b" href="/sheet/' + esc(c.id) + '" target="_blank" rel="noopener">Codes sheet</a></div>';
+    } else {
+      h += '<div class="bar"><label for="share" style="margin:0">Share</label><select id="share" style="width:auto"><option value="tunnel">--tunnel: anywhere (public HTTPS)</option><option value="https">--https: this network</option><option value="local">--local: this machine</option></select>' +
+        '<button class="b p" id="start"' + (other ? ' disabled title="another class is running"' : '') + '>Start</button><a class="b" href="/sheet/' + esc(c.id) + '" target="_blank" rel="noopener">Codes sheet</a><button class="b d" id="del">Delete</button></div>';
+    }
+    h += '<p class="err" id="c-err"></p></section>';
+    h += '<section class="card"><h2>Seats (' + c.seats.length + ')</h2><div class="tbl"><table><thead><tr><th>Learner</th><th>Code</th><th>Joined</th>' + (run ? '<th>Box</th><th>Memory</th><th></th>' : '<th></th>') + '</tr></thead><tbody>';
+    c.seats.forEach(function (s) {
+      var b = s.box, j = ago(s.joined);
+      h += '<tr><td>' + esc(s.label) + (s.email ? '<div class="m">' + esc(s.email) + '</div>' : '') + (s.link ? '<div class="link">' + esc(s.link) + '</div>' : '') + '</td><td class="code">' + esc(s.show) + '</td><td>' + (j || '<span class="empty">not yet</span>') + '</td>';
+      if (run) {
+        h += '<td>' + (b ? '<span class="pill ' + esc(b.state) + '">' + esc(b.state) + '</span>' + (b.state === 'starting' && b.step ? '<div class="m">' + esc(b.step) + '</div>' : '') + (b.error ? '<div class="err">' + esc(b.error) + '</div>' : '') : '<span class="empty">none</span>') + '</td>' +
+          '<td>' + (b && b.memory ? gb(b.memory) : '') + '</td><td><button class="b" data-reset="' + esc(s.code) + '"' + (b ? '' : ' disabled') + '>Reset</button> <button class="b d" data-rm="' + esc(s.code) + '">Remove</button></td>';
+      } else {
+        h += '<td><button class="b d" data-rm="' + esc(s.code) + '">Remove</button></td>';
+      }
+      h += '</tr>';
+    });
+    h += '</tbody></table></div><label for="addN">Add seats on the day</label><div class="row"><input id="addN" type="number" min="1" max="500" value="1"><input id="addR" placeholder="or one roster row: name,email"></div><div class="bar"><button class="b" id="add">Add</button></div></section>';
+    $('detail').innerHTML = h;
+    function act(p, body) { busy = true; $('c-err').textContent = ''; return call(p, body).then(load).catch(function (e) { $('c-err').textContent = e.message; }).then(function () { busy = false; }); }
+    if ($('stop')) $('stop').onclick = function () { this.disabled = true; act('/api/stop'); };
+    if ($('start')) $('start').onclick = function () { this.disabled = true; this.textContent = 'Starting…'; act('/api/class/' + c.id + '/start', { Share: $('share').value }); };
+    if ($('del')) $('del').onclick = function () {
+      if (this.dataset.sure) { act('/api/class/' + c.id + '/delete').then(function () { pick = null; load(); }); return; }
+      this.dataset.sure = 1; this.textContent = 'Delete: sure? Codes stop working';
+    };
+    $('add').onclick = function () { act('/api/class/' + c.id + '/seats', { Seats: $('addR').value ? 0 : +$('addN').value || 0, Roster: $('addR').value }); };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-reset]'), function (b) { b.onclick = function () { b.disabled = true; act('/api/seat/' + b.getAttribute('data-reset') + '/reset'); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-rm]'), function (b) {
+      b.onclick = function () { if (!b.dataset.sure) { b.dataset.sure = 1; b.textContent = 'Sure?'; return; } act('/api/class/' + c.id + '/seat/' + b.getAttribute('data-rm') + '/remove'); };
+    });
+  }
+  function draw() {
+    drawList();
+    if (form) return;
+    var c = st.classes.filter(function (x) { return x.id === pick; })[0];
+    if (c) drawClass(c); else $('detail').innerHTML = '<section class="card"><p class="empty">Plan a class: a course with a sandbox:, seats from a roster or a count, then Start to share it.</p></section>';
+  }
+  function images() {
+    fetch('/api/images').then(function (r) { return r.json(); }).then(function (j) {
+      $('images').innerHTML = j.error ? '<span class="err">' + esc(j.error) + '</span>' :
+        (j.images.map(function (i) { return '<div><code>' + esc(i.tag) + '</code> <span class="m">' + gb(i.size) + '</span></div>'; }).join('') || 'none yet');
+    });
+  }
+  $('newBtn').onclick = function () { form = true; drawList(); drawForm(); };
+  $('pullBtn').onclick = function () {
+    var b = this; b.disabled = true; $('pullMsg').textContent = 'pulling…';
+    call('/api/pull', { Image: $('pullName').value }).then(function () { $('pullMsg').textContent = 'done'; images(); })
+      .catch(function (e) { $('pullMsg').textContent = e.message; }).then(function () { b.disabled = false; });
+  };
+  load(); images();
+  setInterval(function () { var a = document.activeElement; if (!form && !busy && st && st.run && document.visibilityState === 'visible' && !(a && /INPUT|SELECT|TEXTAREA/.test(a.tagName))) load(); }, 3000);
+})();
+</script>
+</body>
+</html>

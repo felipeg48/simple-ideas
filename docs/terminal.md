@@ -522,3 +522,22 @@ the shell refits on release.
 
 Minimise (`data-act="min"`) is `hide()`; maximise toggles `.si-term.is-max`
 (height 100vh), `localStorage` `si-term-max`, then refits the shell.
+
+## Lab pages and class seats (v4.0.0)
+
+A `type: lab` page (or one with `sandbox:`) served with the terminal gets
+`render/docterm.go`'s loader: a **>_ Terminal** button, the `` ` `` key, and
+a **Run** button on each `bash`/`sh`/`shell`/`zsh`/`console` block that
+calls `siTerm.api.open` + `run` on the first shell tab. Built pages never
+carry it.
+
+On a class seat (`si class start`, RULES §37) the drawer is served by
+`serve.ClassroomHandler`, off the loopback: every tab is a shell in the
+seat's box (`termHub.need`), and the file endpoints (`ls`, `cat`, `save`,
+`find`, `grep`, …) are not routed. `term.js` sees a non-loopback
+`location.hostname` and then (`POLL`) hides the Viewer, ⌘P and ⌘⇧F, and
+reads output with `GET read?id=&from=N` instead of the `out` stream: a long
+poll that answers as soon as the shell writes (or after 25 s), with
+`X-Si-Next` (the next offset), `X-Si-Replay` (a reattach) and `X-Si-Ended`.
+Cloudflare quick tunnels hold chunked streams back; through one, a key
+echoes in about 150 ms.

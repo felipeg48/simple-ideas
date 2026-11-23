@@ -3,6 +3,26 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v4.0.0:** classes on your computer (RULES §37). `si class` is a planner
+  (a keyed page on this machine): plan a class of a course with a
+  `sandbox:` (image, memory and CPUs per box, `--ttl`, `--idle`, last day),
+  seats from a roster CSV (`name,email[,code]`) or a count, a printable
+  codes sheet with a QR code per seat, start and stop it, each seat's box
+  live with its memory, Reset, seats added or removed on the day, the
+  sandbox host's images and Pull. `si class new|list|codes|start|rm` are its
+  twins. `si class start <id> --tunnel | --https | --local` serves the
+  learners on a listener of their own: `/go/<code>` gives the browser its
+  seat (an HttpOnly cookie, Secure over HTTPS; wrong codes slowed down), the
+  course's pages, the terminal drawer with every tab a shell in the seat's
+  own box (made from the image on first use, admitted against a memory
+  budget, 80% of the sandbox host's unless `--budget`), ✓ Check in that box
+  and its `sandbox-ports:` proxied; never a shell, a file, a source or a page
+  of si's on the host (rule #8's exception for classes). Through a quick
+  tunnel the drawer reads its shells by long poll (`/_si/term/api/read`):
+  about 150 ms a key. Lab pages served by si play now carry the drawer too:
+  a >_ Terminal button, the `` ` `` key, and a Run button on each shell
+  block that types it in.
+
 - **v3.44.1:** si play of a folder starts a sandbox only for its top-level
   pages (and `sandbox:` in `_course.md`, one box for the whole course: every
   lesson's checks run in it); a lab in a subfolder, like `si new`'s examples,

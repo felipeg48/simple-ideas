@@ -474,7 +474,7 @@
      Firefox let a page keep these keys; the e2e test checks the page's side) */
   var mac = /Mac|iP/.test(navigator.platform);
   root.addEventListener('keydown', function (ev) {
-    if (!(mac ? ev.metaKey : ev.ctrlKey) || ev.altKey) return;
+    if (POLL || !(mac ? ev.metaKey : ev.ctrlKey) || ev.altKey) return;
     var k = ev.key, f = k === '=' || k === '+' ? 1.1 : k === '-' || k === '_' ? 1 / 1.1 : k === '0' ? 0 : null;
     if (f === null) return;
     ev.preventDefault(); ev.stopPropagation(); zoomBy(f);
@@ -504,7 +504,33 @@
   /* the shell's output; on a reattach the server first replays the recent
      output (X-Si-Replay bytes): while xterm parses it, its answers to old
      terminal queries in it are not sent to the shell */
+  /* off this machine (a class seat through a tunnel that holds a stream back)
+     the output comes by long poll instead: read answers as soon as there is
+     some (internal/serve/terminal.go) */
+  var POLL = !/^(localhost|127\.\d+\.\d+\.\d+|\[::1\])$/.test(location.hostname);
+  function poll(t) {
+    var from = -1;
+    (function next() {
+      if (t.gone) return;
+      fetch(API + 'read?id=' + t.id + '&from=' + from).then(function (res) {
+        if (res.status === 404) { t.ended = true; t.term.write('\r\n\x1b[90m[process exited]\x1b[0m\r\n'); return; }
+        if (!res.ok) throw new Error(res.status);
+        var replay = res.headers.has('X-Si-Replay'), ended = res.headers.get('X-Si-Ended'), nxt = res.headers.get('X-Si-Next');
+        return res.arrayBuffer().then(function (buf) {
+          var b = new Uint8Array(buf);
+          if (b.length) {
+            if (replay) { t.mute = true; t.term.write(b, function () { t.mute = false; }); } else t.term.write(b);
+            t.lastOut = Date.now();
+          }
+          if (nxt !== null) from = +nxt;
+          if (ended) { t.ended = true; t.term.write('\r\n\x1b[90m[process exited]\x1b[0m\r\n'); return; }
+          next();
+        });
+      }).catch(function () { setTimeout(next, 1000); });
+    })();
+  }
   function stream(t) {
+    if (POLL) { poll(t); return; }
     fetch(API + 'out?id=' + t.id).then(function (res) {
       if (!res.body) return;
       var replay = +res.headers.get('X-Si-Replay') || 0, seen = 0;
@@ -1528,6 +1554,10 @@
   if (rbBtn) rbBtn.addEventListener('click', toggleRunbook);
   var dmBtn = root.querySelector('[data-act="demos"]');
   if (dmBtn) dmBtn.addEventListener('click', toggleDemos);
+  if (POLL) { /* a class seat: the shells are in the learner's box; the Viewer and the file tools read this machine's folder, so they are not there */
+    ['files', 'open', 'search'].forEach(function (a) { root.querySelector('[data-act="' + a + '"]').style.display = 'none'; });
+    if (!rbBtn && !dmBtn) root.querySelector('.si-term-acts').style.display = 'none';
+  }
 
   /* ---------- a live reload rebuilds the page: the shells live on in si play,
      and this brings the drawer back as it was (sessionStorage, this browser tab) ---------- */

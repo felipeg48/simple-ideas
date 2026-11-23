@@ -1,9 +1,34 @@
 ---
-title: What's new in si 3
-description: si 3 finishes web demos. Decks present themselves, and demos film themselves like edited videos, with a voice, transitions, camera moves and a spotlight.
+title: What's new in si 4
+description: si 4 teaches classes from your own computer, a Docker box per learner beside the lesson. si 3 finished web demos.
 ---
 
-# What's new in si 3
+# What's new in si 4
+
+## Classes on your computer (4.0)
+
+A course with a `sandbox:` can now be taught to a whole class from your own
+machine. `si class` opens the planner: pick the course and the image, give
+each box its memory and CPUs, add seats from a roster CSV (or a count), and
+print the codes sheet, one QR code per learner. Start it with `--tunnel` (a
+public HTTPS address) or `--https` (your network). A learner opens their
+link and gets their own Docker box beside the lesson: the terminal drawer's
+shells are in it, every ✓ Check runs in it, its ports open in their
+browser. They reach nothing of your computer: not a shell, not a file, not
+si's own pages.
+
+While it runs the planner shows every box (starting, ready, its memory),
+**Reset** gives a learner a fresh box from the image, seats can be added on
+the day, and **Progress** opens the live class view. A memory budget keeps
+the class inside what the sandbox host can hold: on a 128 GB Mac, about 38
+learners at 2 GB each. See [§37](rules/37-sandbox-labs.md).
+
+```bash
+si class new docker-course --name "Docker basics" --roster people.csv
+si class start docker-basics --tunnel
+```
+
+## si 3
 
 si 3 brings together a month of work on one idea: **decks that present
 themselves, demos that film themselves.** One Markdown script drives a web

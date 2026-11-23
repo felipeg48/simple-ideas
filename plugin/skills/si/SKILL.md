@@ -444,7 +444,11 @@ Not everything is a slide deck. Pick the type by what the reader does:
   `sandbox-ports: 8080 Shop` and `sandbox-limits:`; link a port as
   `[Shop](sandbox:8080)`; checks run in the box's `/lab`. Write the steps for
   the box (paths under `/lab`, `docker compose` there), never for the
-  author's own machine. Needs `si sandbox host init` once.
+  author's own machine. Put commands in ```` ```bash ```` fences (each gets a
+  Run button that types it into the drawer). Needs `si sandbox host init`
+  once. For a class (each learner their own box): `si class new <course>
+  --roster people.csv`, then `si class start <id> --tunnel`; never put a seat
+  code in a page or commit `.si/classes/`.
 - **Timelines** (RULES.md §29): `type: timeline`, then `## Era` headings
   (`· color=#hex` optional) and `### date · title` milestones, each with a
   one- or two-line description and at most one `![caption](img "credit")`

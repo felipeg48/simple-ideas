@@ -166,6 +166,7 @@ func (s *Server) Handler() http.Handler {
 		// drives a shell; only the drawer's fetch POSTs do. out is the stream.
 		mux.HandleFunc("POST /_si/term/api/new", localOnly(s.term.newTab))
 		mux.HandleFunc("GET /_si/term/api/out", localOnly(s.term.out))
+		mux.HandleFunc("GET /_si/term/api/read", localOnly(s.term.read))
 		mux.HandleFunc("GET /_si/term/api/list", localOnly(s.term.list))
 		mux.HandleFunc("POST /_si/term/api/in", localOnly(s.term.in))
 		mux.HandleFunc("POST /_si/term/api/resize", localOnly(s.term.resize))
@@ -192,8 +193,15 @@ func (s *Server) Handler() http.Handler {
 	if s.Class {
 		s.classRoutes(mux) // the live class view (class.go)
 	}
+	mux.HandleFunc("/", s.pageRoot(s.Terminal))
+	return mux
+}
+
+// pageRoot serves the index, the pages and the folder's files; term turns
+// the terminal drawer on in the pages.
+func (s *Server) pageRoot(term bool) http.HandlerFunc {
 	static := http.FileServer(http.Dir(s.dir))
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		p := path.Clean("/" + r.URL.Path)
 		switch {
 		case p == "/" && s.file != "":
@@ -221,12 +229,11 @@ func (s *Server) Handler() http.Handler {
 				}
 				return
 			}
-			s.deck(w, md, s.Terminal)
+			s.deck(w, md, term)
 		default:
 			static.ServeHTTP(w, r)
 		}
-	})
-	return mux
+	}
 }
 
 func (s *Server) css() []render.Stylesheet {

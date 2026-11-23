@@ -16,6 +16,7 @@ import (
 
 	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
+	"github.com/felipeg48/simple-ideas/internal/sandbox"
 	"github.com/felipeg48/simple-ideas/internal/webhook"
 )
 
@@ -87,7 +88,10 @@ func runCheck(dir string, c deck.Check, timeout time.Duration) checkResult {
 // check is POST /_si/check {page, cmd}: it runs cmd only when it is one of
 // that page's own <!-- check: --> commands (read again from the file), so
 // the page cannot ask for anything else. Loopback si play only.
-func (s *Server) check(w http.ResponseWriter, r *http.Request) {
+func (s *Server) check(w http.ResponseWriter, r *http.Request) { s.checkIn(w, r, s.pageBox) }
+
+// checkIn is check with the box a page's checks run in (nil: this machine).
+func (s *Server) checkIn(w http.ResponseWriter, r *http.Request, boxFor func(*deck.Deck) *sandbox.Box) {
 	var req struct{ Page, Cmd string }
 	if err := json.NewDecoder(io.LimitReader(r.Body, 16<<10)).Decode(&req); err != nil {
 		http.Error(w, "want {page, cmd}", http.StatusBadRequest)
@@ -106,7 +110,7 @@ func (s *Server) check(w http.ResponseWriter, r *http.Request) {
 	for _, c := range d.Checks() {
 		if c.Cmd == req.Cmd {
 			var res checkResult
-			if b := s.pageBox(d); b != nil {
+			if b := boxFor(d); b != nil {
 				res = runBoxCheck(b, c, checkTimeout)
 			} else {
 				res = runCheck(filepath.Dir(md), c, checkTimeout)

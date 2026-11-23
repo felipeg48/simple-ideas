@@ -53,10 +53,12 @@ type termSession struct {
 	ring     []byte
 	cut      bool // the ring dropped older output (replay starts at a line)
 	sub      *termSub
-	attached bool      // a page has attached at least once
-	idle     time.Time // when the last page detached (or the tab was made)
-	dir      string    // the folder the shell last reported (OSC 7, si's PowerShell title; termcwd.go)
-	oscTail  []byte    // an OSC mark a read cut, until its end arrives
+	attached bool          // a page has attached at least once
+	idle     time.Time     // when the last page detached (or the tab was made)
+	dir      string        // the folder the shell last reported (OSC 7, si's PowerShell title; termcwd.go)
+	oscTail  []byte        // an OSC mark a read cut, until its end arrives
+	total    int64         // bytes the shell has written, ever (the ring holds the last of them)
+	wake     chan struct{} // closed (and replaced) when output arrives: wakes read's long polls
 }
 
 // termSub is one attached out stream.
@@ -83,6 +85,9 @@ type termHub struct {
 	clean     func() bool                  // start shells with si's neutral prompt (Server.CleanPrompt)
 	deckShell func(r *http.Request) string // the shell: of the deck the request comes from ("" = none)
 	box       func() *sandbox.Box          // the lab's sandbox, when si play runs one: new tabs open in it
+	// need is a class seat's box (seats.go): every tab opens in it, waiting
+	// for it to start; a tab never opens on this machine.
+	need func() (*sandbox.Box, error)
 }
 
 func newTermHub(dir string) *termHub {
@@ -110,6 +115,15 @@ func (h *termHub) shellFor(r *http.Request) (shell string, clean bool) {
 
 // newTab starts a shell in a fresh PTY and returns its tab id.
 func (h *termHub) newTab(w http.ResponseWriter, r *http.Request) {
+	if h.need != nil {
+		b, err := h.need()
+		if err != nil {
+			http.Error(w, "sandbox: "+err.Error(), http.StatusServiceUnavailable)
+			return
+		}
+		h.boxTab(w, r, b)
+		return
+	}
 	if h.box != nil && r.URL.Query().Get("where") != "host" {
 		if b := h.box(); b != nil {
 			h.boxTab(w, r, b)
@@ -139,7 +153,7 @@ func (h *termHub) newTab(w http.ResponseWriter, r *http.Request) {
 	}
 	id := strconv.FormatInt(h.next.Add(1), 10)
 	now := time.Now()
-	s := &termSession{pty: f, cmd: cmd, title: filepath.Base(shell), created: now, idle: now, exited: make(chan struct{})}
+	s := &termSession{pty: f, cmd: cmd, title: filepath.Base(shell), created: now, idle: now, exited: make(chan struct{}), wake: make(chan struct{})}
 	h.mu.Lock()
 	h.tabs[id] = s
 	h.mu.Unlock()
@@ -189,7 +203,7 @@ func (h *termHub) boxTab(w http.ResponseWriter, r *http.Request, b *sandbox.Box)
 	}
 	id := strconv.FormatInt(h.next.Add(1), 10)
 	now := time.Now()
-	s := &termSession{pty: sh, resize: sh.Resize, title: "sandbox", created: now, idle: now, exited: make(chan struct{})}
+	s := &termSession{pty: sh, resize: sh.Resize, title: "sandbox", created: now, idle: now, exited: make(chan struct{}), wake: make(chan struct{})}
 	h.mu.Lock()
 	h.tabs[id] = s
 	h.mu.Unlock()
@@ -211,6 +225,11 @@ func (s *termSession) pump() {
 			s.mu.Lock()
 			s.track(b)
 			s.ring = append(s.ring, b...)
+			s.total += int64(n)
+			if s.wake != nil {
+				close(s.wake)
+				s.wake = make(chan struct{})
+			}
 			if len(s.ring) > 2*ringMax { // trim now and then, not on every read
 				s.ring = append([]byte(nil), s.ring[len(s.ring)-ringMax:]...)
 				s.cut = true
@@ -315,6 +334,84 @@ func (h *termHub) out(w http.ResponseWriter, r *http.Request) {
 		case <-r.Context().Done():
 			return
 		}
+	}
+}
+
+// readMax caps one long-poll answer.
+const readMax = 256 << 10
+
+// read is GET read?id=&from=N, the long-poll twin of out for a proxy that
+// holds a stream back (a Cloudflare quick tunnel): the output after byte N,
+// or with from=-1 the recent output to replay (X-Si-Replay on a reattach, as
+// out). It answers as soon as there is output, else after 25 s with none;
+// X-Si-Next is the from of the next call, X-Si-Ended says the shell is gone.
+func (h *termHub) read(w http.ResponseWriter, r *http.Request) {
+	s := h.get(r)
+	if s == nil {
+		http.NotFound(w, r)
+		return
+	}
+	from, err := strconv.ParseInt(r.URL.Query().Get("from"), 10, 64)
+	if err != nil {
+		from = -1
+	}
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	timeout := time.NewTimer(25 * time.Second)
+	defer timeout.Stop()
+	for {
+		s.mu.Lock()
+		s.idle = time.Now() // a polling page is attached
+		var out []byte
+		next := s.total
+		if from < 0 {
+			again := s.attached
+			s.attached = true
+			rb := s.ring
+			if len(rb) > ringMax {
+				rb = rb[len(rb)-ringMax:]
+			}
+			if s.cut || len(rb) < len(s.ring) {
+				if i := bytes.IndexByte(rb, '\n'); i >= 0 {
+					rb = rb[i+1:]
+				}
+			}
+			out = append([]byte(nil), rb...)
+			if again {
+				w.Header().Set("X-Si-Replay", strconv.Itoa(len(out)))
+			}
+		} else if from < s.total {
+			start := s.total - int64(len(s.ring))
+			from = max(from, start)
+			out = append([]byte(nil), s.ring[from-start:]...)
+			if len(out) > readMax {
+				out = out[:readMax]
+			}
+			next = from + int64(len(out))
+		}
+		wake := s.wake
+		s.mu.Unlock()
+		if from < 0 || len(out) > 0 {
+			w.Header().Set("X-Si-Next", strconv.FormatInt(next, 10))
+			w.Write(out)
+			return
+		}
+		select {
+		case <-wake:
+			continue
+		case <-s.exited:
+			w.Header().Set("X-Si-Next", strconv.FormatInt(next, 10))
+			w.Header().Set("X-Si-Ended", "1")
+			w.WriteHeader(http.StatusOK)
+			return
+		case <-timeout.C:
+		case <-r.Context().Done():
+			return
+		}
+		w.Header().Set("X-Si-Next", strconv.FormatInt(next, 10))
+		w.WriteHeader(http.StatusOK)
+		return
 	}
 }
 

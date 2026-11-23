@@ -36,6 +36,8 @@ type Options struct {
 	Trusted bool
 	// Step reports progress: a short line per stage (pull, start, setup).
 	Step func(string)
+	// Labels are added to the box's and its network's (si.class, si.seat).
+	Labels map[string]string
 }
 
 // Box is one running sandbox.
@@ -96,6 +98,9 @@ func Up(ctx context.Context, eng *Engine, spec deck.Sandbox, dir string, o Optio
 		}
 	}()
 	labels := map[string]string{"si.sandbox": "1", "si.pid": strconv.Itoa(os.Getpid())}
+	for k, v := range o.Labels {
+		labels[k] = v
+	}
 	if b.Net, err = eng.CreateNetwork(ctx, "si-s-"+id, labels); err != nil {
 		return b, err
 	}
