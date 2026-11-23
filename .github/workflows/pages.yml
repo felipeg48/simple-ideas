@@ -36,7 +36,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p dist
-          for t in $(gh release list --limit 30 --json tagName -q '.[].tagName'); do
+          for t in $(gh release list --limit 200 --json tagName -q '.[].tagName'); do
             if gh release download "$t" --pattern si-demo-videos.tar.gz --dir dist 2>/dev/null; then
               tar xzf dist/si-demo-videos.tar.gz -C dist && echo "SI_DEMO_VIDEOS=$PWD/dist/demos" >> "$GITHUB_ENV"
               echo "videos from $t"; break

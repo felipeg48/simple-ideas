@@ -235,7 +235,7 @@ pass. The steps that matter:
   **Phase 4, si's own videos** (DONE v2.39.0): six scripts in `docs/demos/`
   (decks, presenting, studio, themes, mindmaps, terminal); CI `demos` job runs
   `si demo test` on them every push; `.github/workflows/demos.yml` films them
-  on macOS with Kokoro on minor tags (`v*.*.0`) and on demand, attaches
+  on macOS with Kokoro only on demand (the founder decides when, 2026-11-23), attaches
   `si-demo-videos.tar.gz` + `si-demo-<area>.mp4` to the release and starts
   docs-site; `pages.yml` unpacks the newest release's tarball into
   `$SI_DEMO_VIDEOS`; `internal/docsite/videos.go` turns `<!-- si-video: area -->`

@@ -1,13 +1,12 @@
 name: demos
 
-# Films docs/demos (si demo run, Kokoro af_heart) on every minor release tag
-# (v2.N.0, not patch tags) and on demand, on macOS so fonts and windows match
+# Films docs/demos (si demo run, Kokoro af_heart) only on demand (Actions →
+# demos → Run workflow, or gh workflow run demos.yml): the founder decides
+# when the videos are re-recorded (2026-11-23), never a release tag. On macOS so fonts and windows match
 # the site's pictures. The videos go to the release as si-demo-videos.tar.gz
 # (plus each area's <area>.mp4), never into git; the docs-site workflow puts the
 # newest ones on the site.
 on:
-  push:
-    tags: ['v*.*.0']
   workflow_dispatch:
 
 permissions:
