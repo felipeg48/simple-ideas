@@ -283,8 +283,9 @@ pass. The steps that matter:
   `web/diagram.js` tweens states, follows build steps, plays on scroll, and
   answers `window.siIG.seek` so `filmInfographic` films GIF/MP4;
   `cmd/si/diagram.go` the page exports, `exportPictures("diagram")` per-step
-  pictures. Next: phase 2 (cfd, burndown, cycle-time, throughput on the chart
-  engine), phase 3 (state, class, flow tokens, wbs, storymap).
+  pictures. Phase 2 DONE v4.2.0 (`internal/deck/diagram_flow.go`: cfd,
+  burndown, cycle-time, throughput on the same engine: a `clip` element
+  reveals `Clip` shapes, `dot` and `shape` kinds). Next: phase 3 (state, class, flow tokens, wbs, storymap).
 - **Sandbox labs** (spec `docs/superpowers/specs/2026-11-22-sandbox-labs.md`,
   decided with the founder 2026-11-22): phase 1 DONE v3.44.0 (a lab's own
   Docker box in `si play`, the `si-sandbox` Colima VM with sysbox, RULES §37).

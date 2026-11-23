@@ -68,6 +68,7 @@
     this.E.forEach(function (e, i) {
       var g = self.g[i], s = st[i];
       if (!g || !s) return;
+      if (e.k === 'clip') { g.setAttribute('x', num(s.x)); g.setAttribute('y', num(s.y)); g.setAttribute('width', Math.max(0, num(s.w))); g.setAttribute('height', num(s.h)); return; }
       g.setAttribute('transform', 'translate(' + num(s.x) + ' ' + num(s.y) + ')');
       g.setAttribute('opacity', num(s.o));
       g.setAttribute('class', ('si-dg-e ' + (e.c || '') + ' ' + (s.c || '')).trim());
@@ -82,8 +83,12 @@
         r[0].setAttribute('width', Math.max(0, num(s.w))); r[0].setAttribute('height', num(s.h));
         r[1].setAttribute('width', Math.max(0, num(s.w) * Math.min(1, num(s.p)))); r[1].setAttribute('height', num(s.h));
       } else if (e.k === 'line') {
-        g.querySelector('path').setAttribute('stroke-dashoffset', 1 - Math.min(1, num(s.p)));
+        var pa = g.querySelector('path'), pp = Math.min(1, num(s.p));
+        if (pp >= 1) { pa.removeAttribute('pathLength'); pa.removeAttribute('stroke-dasharray'); pa.removeAttribute('stroke-dashoffset'); } /* whole: its own dash pattern */
+        else { pa.setAttribute('pathLength', '1'); pa.setAttribute('stroke-dasharray', '1 1'); pa.setAttribute('stroke-dashoffset', 1 - pp); }
         t = g.querySelector('text'); if (t) self.label(t, s);
+      } else if (e.k === 'dot') {
+        g.querySelector('circle').setAttribute('r', Math.max(0, num(s.w)));
       } else if (e.k === 'text') {
         t = g.querySelector('text'); if (t) self.label(t, s);
       }

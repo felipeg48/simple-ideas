@@ -19,9 +19,16 @@ import (
 // scrolled into view, with ← → and Play under it. What si worked out (the
 // critical path, a column over its WIP limit) is the caption.
 
-func dgElSVG(b *strings.Builder, i int, e deck.DEl, s deck.DState) {
+func dgElSVG(b *strings.Builder, i int, e deck.DEl, s deck.DState, clip string) {
+	if e.K == "clip" { // the revealed part of a metric: shapes with Clip are drawn through it
+		fmt.Fprintf(b, `<clipPath id="%s"><rect data-e="%d" x="%g" y="%g" width="%g" height="%g"/></clipPath>`, clip, i, s.X, s.Y, s.W, s.H)
+		return
+	}
 	cls := strings.TrimSpace("si-dg-e " + e.C + " " + s.C)
 	fmt.Fprintf(b, `<g class="%s" data-e="%d" transform="translate(%g %g)"`, html.EscapeString(cls), i, s.X, s.Y)
+	if e.Clip && clip != "" {
+		fmt.Fprintf(b, ` clip-path="url(#%s)"`, clip)
+	}
 	if s.O < 1 {
 		fmt.Fprintf(b, ` opacity="%g"`, s.O)
 	}
@@ -54,8 +61,16 @@ func dgElSVG(b *strings.Builder, i int, e deck.DEl, s deck.DState) {
 		fmt.Fprintf(b, `<rect class="b" width="%g" height="%g" rx="%g"/><rect class="q" width="%g" height="%g" rx="%g"/>`, s.W, s.H, e.R, s.W*s.P, s.H, e.R)
 	case "ms":
 		b.WriteString(`<path d="M0 -9L9 0L0 9L-9 0Z"/>`)
+	case "shape":
+		fmt.Fprintf(b, `<path d="%s"/>`, e.D)
+	case "dot":
+		fmt.Fprintf(b, `<circle r="%g"/>`, s.W)
 	case "line":
-		fmt.Fprintf(b, `<path d="%s" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="%g"/>`, e.D, 1-s.P)
+		if s.P >= 1 { // whole: its own dash pattern (pathLength would scale it)
+			fmt.Fprintf(b, `<path d="%s"/>`, e.D)
+		} else {
+			fmt.Fprintf(b, `<path d="%s" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="%g"/>`, e.D, 1-s.P)
+		}
 		label(e.TX, e.TY)
 	case "text":
 		label(0, 0)
@@ -93,10 +108,12 @@ func (dr *deckRenderer) diagramFence(kind string, attrs map[string]string, body 
 		b.WriteString(` data-dg-nav`)
 	}
 	fmt.Fprintf(&b, `><svg class="si-dg-svg" viewBox="0 0 %g %g" role="img" aria-label="%s">`, d.W, d.H, html.EscapeString(label))
+	dr.dgN++
+	clip := fmt.Sprintf("si-dgc-%d", dr.dgN)
 	if len(d.States) > 0 {
 		for i, e := range d.Els {
 			if i < len(d.States[on]) {
-				dgElSVG(&b, i, e, d.States[on][i])
+				dgElSVG(&b, i, e, d.States[on][i], clip)
 			}
 		}
 	}

@@ -6456,6 +6456,56 @@ Shop --> Browser: 201 Created
 `note A: text` puts a note on a lifeline. One message per step: the arrow
 draws itself and the two parties light up.
 
+**Flow metrics.** Four more fences draw a team's numbers on a plot, and
+reveal them left to right, one click per day (or per finished item, per
+week):
+
+````markdown
+```cfd
+| Day | Backlog | Doing | Review | Done |
+|-----|---------|-------|--------|------|
+| Mon | 30 | 4 | 2 | 0 |
+| Tue | 28 | 5 | 3 | 1 |
+| Wed | 27 | 5 | 3 | 3 |
+```
+
+```burndown days=10 unit=points
+| Day | Remaining |
+|-----|-----------|
+| 1 | 40 |
+| 2 | 37 |
+```
+
+```cycle-time
+LOGIN-12 · 2026-12-03 · 4d
+CART-7 · 2026-12-04 · 6d
+```
+
+```throughput
+| Week | Done |
+|------|------|
+| 48 | 11 |
+| 49 | 8 |
+```
+````
+
+- **`cfd`** (cumulative flow): a column per state, the first (the backlog)
+  first and the last (done) last; the bands stack with done at the bottom
+  (green), the state before it in the accent. Under it: the throughput (done
+  per day) and, with work in progress, the time from start to done it means
+  (Little's law). `unit=` and `per=` name the items and the day.
+- **`burndown`**: `| Day | Remaining |`, an optional third column for the
+  scope; `days=` is the plan's length (the ideal line runs to zero there).
+  Under it: what was burned, and the day the pace points to.
+- **`cycle-time`**: one finished item per line, `ID · YYYY-MM-DD · days`
+  (or a table `| Item | Finished | Days |`): a dot per item, by the day it
+  finished; the 50th, 85th and 95th percentiles drawn last; items past the
+  85th in amber. Under it: "85% of the items finished within N days".
+- **`throughput`**: `| Week | Done |`: a column per row, growing one per
+  click, then the average.
+
+More than twelve rows reveal in about eight steps.
+
 | Fence option | What it does |
 |---|---|
 | `title="…"` | a small caption over the diagram |
@@ -6463,6 +6513,8 @@ draws itself and the two parties light up.
 | `facts=off` | no caption of what si worked out (critical path, end, WIP) |
 | `wip=Doing:2;Review:2` | kanban: the WIP limits, as the `wip:` line does |
 | `start=YYYY-MM-DD` | gantt: the first day |
+| `days=10` | burndown: the plan's length in rows |
+| `unit=points`, `per=week` | metrics: what is counted, and per what |
 | `width=600` | the layout width in viewBox units (1000; a portrait page uses 600) |
 
 **A page of its own.** `type: diagram` makes one frame around the page's

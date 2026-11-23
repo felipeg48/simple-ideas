@@ -5,6 +5,15 @@ description: si 4 teaches classes from your own computer, a Docker box per learn
 
 # What's new in si 4
 
+## Flow metrics (4.2)
+
+A team's numbers, drawn and revealed day by day: a ```` ```cfd ```` whose
+bands fill as the days pass, a ```` ```burndown ```` against its ideal line,
+a ```` ```cycle-time ```` scatter with its percentiles, a ```` ```throughput ````
+column per week. Under each, what it says: the throughput, the time from
+start to done, the day the pace points to, "85% within 7 days". See
+[§38](rules/38-delivery-diagrams.md).
+
 ## Delivery diagrams (4.1)
 
 The diagrams a team draws every week, in plain lines, and moving. A

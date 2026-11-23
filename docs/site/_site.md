@@ -65,6 +65,8 @@ footer: simple-ideas
   - [The checkout board, a kanban](live/diagram/board.md)
   - [Parcel lockers, a gantt plan](live/diagram/plan.md)
   - [One order, one request, a sequence](live/diagram/request.md)
+  - [How work flowed, a cumulative flow](live/diagram/flow.md)
+  - [Sprint 31, a burndown](live/diagram/sprint.md)
 - [Themes](themes.md)
 - [AI agents](agents.md)
 - [Rules](rules/)

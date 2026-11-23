@@ -58,7 +58,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/ui"
 )
 
-const version = "4.1.0"
+const version = "4.2.0"
 
 // Exit codes.
 const (
@@ -131,7 +131,7 @@ Usage:
         loop, plays once for build) and <name>.mp4 (full size; needs ffmpeg); --size films
         each size: <name>-<size>.gif / .mp4 / .png
   si [build] <diagram.md> [--png] [--jpg] [--pdf] [--svg] [--gif] [--mp4] [--scale S]
-        delivery diagrams (kanban, gantt and sequence fences; type: diagram pages): the frame as
+        delivery diagrams (kanban, gantt, sequence, cfd, burndown, cycle-time, throughput; type: diagram): the frame as
         <name>.png / .jpg / .svg and pdfs/<name>.pdf at its last step, the animation as .gif / .mp4;
         in any page --png / --svg also writes <name>-diagram-<n>-step-<k>.png per step
   si code <file.md> [--id show] [--png [--scale 2]] [--svg] [--gif] [--mp4] [-o dir]

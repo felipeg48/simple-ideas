@@ -97,6 +97,49 @@ Payments --> Shop: ok
 note Shop: stock reserved
 ```
 
+## Flow, counted
+
+```cfd title="Checkout squad, two weeks"
+| Day   | Backlog | Doing | Review | Done |
+|-------|---------|-------|--------|------|
+| Mon   | 30 | 4 | 2 | 0  |
+| Tue   | 28 | 5 | 3 | 1  |
+| Wed   | 27 | 5 | 3 | 3  |
+| Thu   | 26 | 6 | 2 | 5  |
+| Fri   | 24 | 6 | 3 | 7  |
+| Mon 2 | 23 | 5 | 4 | 9  |
+| Tue 2 | 21 | 6 | 3 | 12 |
+| Wed 2 | 20 | 5 | 3 | 15 |
+```
+
+```cycle-time title="Finished in December"
+LOGIN-12 · 2026-12-01 · 3d
+CART-7 · 2026-12-02 · 6d
+PAY-3 · 2026-12-02 · 2d
+SHIP-9 · 2026-12-04 · 9d
+SHIP-10 · 2026-12-05 · 4d
+CART-8 · 2026-12-08 · 5d
+PAY-4 · 2026-12-09 · 3d
+LOGIN-13 · 2026-12-10 · 12d
+SHIP-11 · 2026-12-11 · 4d
+CART-9 · 2026-12-12 · 7d
+```
+
+```markdown
+| Day | Backlog | Doing | Review | Done |
+|-----|---------|-------|--------|------|
+| Mon | 30 | 4 | 2 | 0 |
+
+LOGIN-12 · 2026-12-01 · 3d
+CART-7 · 2026-12-02 · 6d
+```
+
+`cfd`, `burndown`, `cycle-time` and `throughput` take a table (cycle time,
+one line per finished item), reveal it left to right and say what it means:
+the throughput, the time from start to done, the day the pace points to,
+the percentiles. A page of its own: [the flow](../live/diagram/flow.md),
+[a sprint](../live/diagram/sprint.md).
+
 ## Anywhere, and as files
 
 - **In a deck:** each step is a click.

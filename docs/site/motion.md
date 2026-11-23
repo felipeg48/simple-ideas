@@ -248,6 +248,24 @@ Calls and replies draw themselves, the parties light up, timings ride along.
 
 **[▶ Watch it](live/diagram/request.md)** ` ```sequence `
 
+### Cumulative flow · metrics · orange
+
+The bands fill day by day; the throughput and the time to done are worked out.
+
+**[▶ Watch it](live/diagram/flow.md)** ` ```cfd `
+
+### Burndown · sprint · hi
+
+What is left, day by day, against the ideal line; where the pace points.
+
+**[▶ Watch it](live/diagram/sprint.md)** ` ```burndown `
+
+### Cycle time · percentiles · teal
+
+A dot per finished item, then the 50th, 85th and 95th percentiles.
+
+**[▶ Watch it](features/diagrams.md)** ` ```cycle-time `
+
 ## Write it
 
 ```markdown

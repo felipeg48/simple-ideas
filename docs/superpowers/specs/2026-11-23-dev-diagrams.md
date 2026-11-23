@@ -1,6 +1,9 @@
 # Delivery diagrams: the software life cycle, drawn and animated
 
-Status: proposed (2026-11-23), target v4.1.0 (phase 1) and v4.x after.
+Status: phase 1 DONE v4.1.0 (kanban, gantt, sequence, type: diagram);
+phase 2 DONE v4.2.0 (cfd, burndown, cycle-time, throughput, built on the
+diagram engine rather than the chart fence: one player, one step model, one
+export path). Next: phase 3 (state, class, flow tokens, wbs, storymap).
 
 ## The idea
 

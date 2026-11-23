@@ -284,7 +284,9 @@ the today line moves, a request that travels from party to party: written in
 plain lines (```` ```kanban ````, ```` ```gantt ````, ```` ```sequence ````),
 animated one click at a time in a deck or on scroll in a page, or a page of
 their own (`type: diagram`) exported as PNG, JPG, PDF, SVG, GIF or MP4. si
-works out the critical path and flags a column over its WIP limit.
+works out the critical path and flags a column over its WIP limit. Flow
+metrics too: cumulative flow, burndown, cycle time and throughput, revealed
+day by day with the throughput, the pace and the percentiles worked out.
 [Delivery diagrams →](https://simple-ideas.org/features/diagrams.html)
 
 ### Sandbox labs

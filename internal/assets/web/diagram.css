@@ -72,3 +72,27 @@
 /* a narrow page: a diagram keeps a readable width and scrolls sideways in its
    own box (the page itself never does) */
 @media (max-width:700px){.si-doc:not(.si-dg-page) .si-figure.si-dg{overflow-x:auto;align-items:stretch;inline-size:100%}.si-doc:not(.si-dg-page) .si-dg>svg{min-inline-size:640px}}
+/* flow metrics: axes, bands, lines, dots, columns */
+.si-dg-ylab .t{fill:var(--si-muted);font-family:var(--si-font-mono);font-size:.75em;text-anchor:end}
+.si-dg-xlab .t{fill:var(--si-muted);font-family:var(--si-font-mono);font-size:.75em;text-anchor:middle}
+.si-dg-unit .t{fill:var(--si-muted);font-size:.75em;text-anchor:end}
+.si-dg-keylab .t{font-size:.8em}
+.si-dg-band>path{stroke:var(--si-bg);stroke-width:1}
+.si-dg-band.is-c0>path,.si-dg-key.is-c0>rect{fill:var(--si-ok)}
+.si-dg-band.is-c1>path,.si-dg-key.is-c1>rect{fill:var(--si-accent)}
+.si-dg-band.is-c2>path,.si-dg-key.is-c2>rect{fill:var(--si-accent-2)}
+.si-dg-band.is-c3>path,.si-dg-key.is-c3>rect{fill:var(--si-warn)}
+.si-dg-band.is-c4>path,.si-dg-key.is-c4>rect{fill:color-mix(in srgb,var(--si-accent) 55%,var(--si-surface))}
+.si-dg-band.is-c5>path,.si-dg-key.is-c5>rect{fill:color-mix(in srgb,var(--si-accent-2) 55%,var(--si-surface))}
+.si-dg-band.is-cb>path,.si-dg-key.is-cb>rect{fill:color-mix(in srgb,var(--si-muted) 30%,var(--si-surface))}
+.si-dg-key .t,.si-dg-key .u{display:none}
+.si-dg-ideal>path{stroke:var(--si-muted);stroke-width:1.6;stroke-dasharray:6 5;fill:none}
+.si-dg-ideal .t{display:none}
+.si-dg-actual>path{stroke:var(--si-accent);stroke-width:3;fill:none;stroke-linejoin:round;stroke-linecap:round}
+.si-dg-scope>path{stroke:var(--si-accent-2);stroke-width:2;fill:none;stroke-dasharray:2 4}
+.si-dg-dot>circle{fill:var(--si-accent);fill-opacity:.85;stroke:var(--si-bg);stroke-width:1}
+.si-dg-dot.is-late>circle{fill:var(--si-warn)}
+.si-dg-pct>path,.si-dg-avg>path{stroke:var(--si-accent-2);stroke-width:1.6;stroke-dasharray:6 4;fill:none}
+.si-dg-pct .t,.si-dg-avg .t{fill:var(--si-accent-2);font-family:var(--si-font-mono);font-weight:600;font-size:.78em;text-anchor:end}
+.si-dg-col>rect{fill:var(--si-accent)}
+.si-dg-col .t,.si-dg-col .u{display:none}

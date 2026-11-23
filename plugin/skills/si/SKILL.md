@@ -456,7 +456,9 @@ Not everything is a slide deck. Pick the type by what the reader does:
   `today DATE · Task 60%` steps) and ```` ```sequence ```` (`A → B: call`,
   `A --> B: reply`, `note A: text`). One step = one `[CLICK]` in `Notes:`.
   `type: diagram` for a page of its own. Use the team's real ids and dates;
-  never invent progress.
+  never invent progress. Flow metrics: ```` ```cfd ```` / ```` ```burndown ```` /
+  ```` ```throughput ```` from a table of the team's real counts, ```` ```cycle-time ````
+  one `ID · YYYY-MM-DD · days` line per finished item; never make numbers up.
 - **Timelines** (RULES.md §29): `type: timeline`, then `## Era` headings
   (`· color=#hex` optional) and `### date · title` milestones, each with a
   one- or two-line description and at most one `![caption](img "credit")`

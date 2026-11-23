@@ -3,6 +3,18 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v4.2.0:** flow metrics (RULES §38): ```` ```cfd ```` (cumulative flow
+  from a table, a column per state, the bands stacked with done at the
+  bottom; the throughput and, by Little's law, the time from start to done),
+  ```` ```burndown ```` (remaining per day, the ideal line to `days=`, the
+  scope as a third column; the day the pace points to), ```` ```cycle-time ````
+  (a dot per finished item, the 50th, 85th and 95th percentiles drawn last,
+  items past the 85th in amber) and ```` ```throughput ```` (a column per
+  week growing one per click, then the average). They reveal left to right,
+  one step per row (about eight for long tables), and take `unit=` and
+  `per=`. The diagram engine gains a clip (the revealed part), filled shapes
+  and dots. Examples: `examples/diagram/flow.md`, `sprint.md`.
+
 - **v4.1.0:** delivery diagrams (RULES §38). Three new fences, written in
   plain lines and animated: ```` ```kanban ```` (columns, cards with ids,
   owners, tags; `day N` steps move cards, block and unblock them, add new

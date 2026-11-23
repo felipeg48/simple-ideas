@@ -14,7 +14,7 @@ import (
 // web/diagram.js, which tweens between them. No HTML here.
 
 // DiagramKinds are the fence names (and diagram: values) si draws.
-var DiagramKinds = []string{"kanban", "gantt", "sequence"}
+var DiagramKinds = []string{"kanban", "gantt", "sequence", "cfd", "burndown", "cycle-time", "throughput"}
 
 // IsDiagram reports whether the file is a diagram page (`type: diagram`):
 // one frame, landscape (16:9) or portrait (3:4), around its diagrams.
@@ -52,6 +52,9 @@ type DEl struct {
 	// TX, TY place a line's label (from where the line starts)
 	TX float64 `json:"tx,omitempty"`
 	TY float64 `json:"ty,omitempty"`
+	// Clip: drawn through the diagram's clip (a "clip" element: the part of
+	// a metric revealed so far)
+	Clip bool `json:"-"`
 }
 
 // DState is an element in one state.
@@ -77,8 +80,16 @@ func ParseDiagram(kind string, attrs map[string]string, body string) (*Diagram, 
 		return parseGantt(attrs, body)
 	case "sequence":
 		return parseSequence(attrs, body)
+	case "cfd":
+		return parseCFD(attrs, body)
+	case "burndown":
+		return parseBurndown(attrs, body)
+	case "cycle-time":
+		return parseCycleTime(attrs, body)
+	case "throughput":
+		return parseThroughput(attrs, body)
 	}
-	return &Diagram{Kind: kind, W: 400, H: 100, States: [][]DState{{}}}, []string{fmt.Sprintf("%q is not a diagram (kanban, gantt, sequence)", kind)}
+	return &Diagram{Kind: kind, W: 400, H: 100, States: [][]DState{{}}}, []string{fmt.Sprintf("%q is not a diagram (kanban, gantt, sequence, cfd, burndown, cycle-time, throughput)", kind)}
 }
 
 // dgWidth is the layout width: the fence's width= (a portrait diagram page
