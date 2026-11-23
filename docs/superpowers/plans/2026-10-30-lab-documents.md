@@ -59,5 +59,5 @@
 
 - [ ] Failing tests: `TestBuildWritesLab` (si build on a dir with a deck + a lab → both HTML files; index lists the lab with the `lab` badge), `TestTreeKindLab` (Studio tree), `TestCheckLab` (missing image in a lab → problem with file:line).
 - [ ] Implement; `go test ./...`, `make studio-ui`, `make studio-e2e` green.
-- [ ] Visual QA headless: the example lab and the CACI-shaped fixture at 1440×900, 820×1180, 400×800 (page body must not scroll horizontally), 3840×2160, light and dark, and print-to-PDF; read every screenshot and fix.
+- [ ] Visual QA headless: the example lab and the lab-shaped fixture at 1440×900, 820×1180, 400×800 (page body must not scroll horizontally), 3840×2160, light and dark, and print-to-PDF; read every screenshot and fix.
 - [ ] Commit `feat: lab documents in build, check, index and Studio`.

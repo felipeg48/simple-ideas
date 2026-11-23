@@ -42,7 +42,7 @@ func TestStatusCounts(t *testing.T) {
 
 func TestStatusParse(t *testing.T) {
 	d := parseText(t, "---\ntype: status-board\ntitle: B\nupdated: 2026-11-22\nmeta:\n  - git: on main | ok\n  - plain words\ntiles:\n  - num: \"25\"; lbl: Sessions; sub: per VM\n  - gate: Passed; tone: ok; lbl: Gate\n---\n\n"+
-		"Intro words.\n\n## Control Plane\n\ncep-ops\n\n### Done\n- API\n- Reaper `482434a`\n  continued\n\n### Missing\n- Terminal `P2`\n\n### Improve\n- Pool `partial`\n\n## Shipped\n- Gate `482434a`\n\n## Notes\n\nDone means merged.\n")
+		"Intro words.\n\n## Control Plane\n\ndockyard\n\n### Done\n- API\n- Reaper `482434a`\n  continued\n\n### Missing\n- Terminal `P2`\n\n### Improve\n- Pool `partial`\n\n## Shipped\n- Gate `482434a`\n\n## Notes\n\nDone means merged.\n")
 	if len(d.Problems) > 0 {
 		t.Fatal(d.Problems)
 	}
@@ -60,7 +60,7 @@ func TestStatusParse(t *testing.T) {
 		t.Fatalf("areas %+v", st.Areas)
 	}
 	a := st.Areas[0]
-	if a.Title != "Control Plane" || a.Scope != "cep-ops" || a.Counts() != (StatusCounts{2, 1, 1}) {
+	if a.Title != "Control Plane" || a.Scope != "dockyard" || a.Counts() != (StatusCounts{2, 1, 1}) {
 		t.Errorf("area %+v", a)
 	}
 	if it := a.Cols[0][1]; it.Text != "Reaper `482434a` continued" && it.Text != "Reaper" {

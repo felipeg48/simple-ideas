@@ -10,7 +10,7 @@ import (
 func TestAdocToMarkdown(t *testing.T) {
 	src := `= My Talk
 :author: Ada
-:theme: crdb
+:theme: paper
 
 == Intro
 
@@ -32,7 +32,7 @@ NOTE: heads up.
 	for _, want := range []string{
 		"---\ntitle: My Talk",
 		"author: Ada",
-		"theme: crdb",
+		"theme: paper",
 		"# My Talk",
 		"\n---\n",       // slide break before the section
 		"## Intro",      // == -> ##
@@ -117,7 +117,7 @@ func TestColsCount(t *testing.T) {
 func TestParseAdocDeck(t *testing.T) {
 	dir := t.TempDir()
 	p := filepath.Join(dir, "talk.adoc")
-	os.WriteFile(p, []byte("= T\n:theme: crdb\n\n== One\n\n* a\n\n== Two\n\nbody\n"), 0o644)
+	os.WriteFile(p, []byte("= T\n:theme: paper\n\n== One\n\n* a\n\n== Two\n\nbody\n"), 0o644)
 	d, err := Parse(p)
 	if err != nil {
 		t.Fatal(err)
@@ -125,7 +125,7 @@ func TestParseAdocDeck(t *testing.T) {
 	if d.Name != "talk" {
 		t.Errorf("name=%q", d.Name)
 	}
-	if d.Meta.Theme != "crdb" {
+	if d.Meta.Theme != "paper" {
 		t.Errorf("theme=%q (attrs not mapped to front matter)", d.Meta.Theme)
 	}
 	if len(d.Slides) != 3 { // title + One + Two

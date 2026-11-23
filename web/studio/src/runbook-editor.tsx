@@ -7,7 +7,7 @@ import { EMPTY_RB, type RbCategory, type RbEntry, type Runbook, jsonPos, ops, pa
 import { CommandField } from "./placeholder-input";
 import { Dialog, Icon } from "./navigator";
 
-// codicon names the CACI runbook uses (the drawer renders them)
+// codicon names the sample runbook uses (the drawer renders them)
 const ICONS = ["checklist", "cloud", "dashboard", "database", "graph", "list-tree", "mail", "pulse", "server-environment", "shield", "sync", "tools", "trash", "warning"];
 const FOLD_OVER = 40; // more entries than this: categories start collapsed
 

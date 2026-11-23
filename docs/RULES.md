@@ -4179,16 +4179,16 @@ type: demo
 app: http://127.0.0.1:8080
 start:   make demo-single-insecure · wait for port 22310   # keeps running
 prepare: ./scripts/create-queues.sh                         # must finish, exit 0
-step:    acemq-workloads run -f seed.yaml · within 5m       # step: is prepare:
+step:    workloads run -f seed.yaml · within 5m             # step: is prepare:
 start:   ./consumer · wait for "listening"                  # a second program, after the seed
-setup:   acemq queue purge orders                           # before EACH feature
+setup:   mqctl queue purge orders                           # before EACH feature
 stop:    make demo-down                                     # while the programs still run
 cleanup: rm -rf data/ tmp/                                  # always last
 ---
 
 ## Before
 - terminal "Ops"
-- run "acemq queue create audit" · wait
+- run "mqctl queue create audit" · wait
 - expect output "created"
 
 ## Orders flow through
@@ -4196,7 +4196,7 @@ cleanup: rm -rf data/ tmp/                                  # always last
 
 ## After
 - terminal "Ops"
-- run "acemq queue delete audit" · wait
+- run "mqctl queue delete audit" · wait
 ```
 
 The order of a run:

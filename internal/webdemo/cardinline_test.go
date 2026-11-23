@@ -5,8 +5,8 @@ import "testing"
 func TestCardInline(t *testing.T) {
 	cases := []struct{ in, want string }{
 		{"hello", "hello"},
-		{"run `acemq top` now", "run <code>acemq top</code> now"},
-		{"`acemq migrate assess` reads it", "<code>acemq migrate assess</code> reads it"},
+		{"run `mqctl top` now", "run <code>mqctl top</code> now"},
+		{"`mqctl migrate assess` reads it", "<code>mqctl migrate assess</code> reads it"},
 		{"join #channel", "join #channel"},               // # is not markdown
 		{"a *star* b", "a *star* b"},                     // * is not markdown
 		{"x & y < z", "x &amp; y &lt; z"},                // HTML still escaped

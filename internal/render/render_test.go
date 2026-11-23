@@ -180,8 +180,8 @@ func TestMissingFilesAreProblems(t *testing.T) {
 func TestRunbook(t *testing.T) {
 	dir := t.TempDir()
 	rb := `{"categories":[{"name":"SQL","entries":[` +
-		`{"label":"Nodes","description":"list nodes","command":"SELECT node_id FROM crdb_internal.gossip_nodes;","target":"sql"},` +
-		`{"label":"Status","sql":"cockroach node status --insecure","target":"bash"}]}]}`
+		`{"label":"Nodes","description":"list nodes","command":"SELECT pid FROM pg_stat_activity;","target":"sql"},` +
+		`{"label":"Status","sql":"pg_isready -h localhost","target":"bash"}]}]}`
 	write := func(name, s string) {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(s), 0o644); err != nil {
 			t.Fatal(err)
@@ -199,7 +199,7 @@ func TestRunbook(t *testing.T) {
 		t.Fatalf("problems: %v", res.Problems)
 	}
 	page := string(res.HTML)
-	for _, want := range []string{"window.SI_RUNBOOK=", "si-tk-k", "crdb_internal.gossip_nodes", "cockroach node status"} {
+	for _, want := range []string{"window.SI_RUNBOOK=", "si-tk-k", "pg_stat_activity", "pg_isready"} {
 		if !strings.Contains(page, want) {
 			t.Errorf("play page lacks %q", want)
 		}

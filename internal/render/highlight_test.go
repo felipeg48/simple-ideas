@@ -64,8 +64,8 @@ func TestHighlightLanguages(t *testing.T) {
 		{"tsx", `@Component({ selector: 'app' })`, `<span class="si-tk-m">@Component</span>`},
 		{"java", `@Override public void run() {}`, `<span class="si-tk-m">@Override</span>`},
 	}
-	csharp := "builder.Services.AddCockroachDB(config, pipeline =>\n{\n    pipeline.UseRetry();        // retry on 40001 with exponential backoff\n    // pipeline.UseCircuitBreaker();\n});"
-	for _, want := range []string{`<span class="si-tk-f">AddCockroachDB</span>(`, `<span class="si-tk-f">UseRetry</span>()`, `<span class="si-tk-t">Services</span>`,
+	csharp := "builder.Services.AddDatabase(config, pipeline =>\n{\n    pipeline.UseRetry();        // retry on 40001 with exponential backoff\n    // pipeline.UseCircuitBreaker();\n});"
+	for _, want := range []string{`<span class="si-tk-f">AddDatabase</span>(`, `<span class="si-tk-f">UseRetry</span>()`, `<span class="si-tk-t">Services</span>`,
 		`<span class="si-tk-c">// retry on 40001 with exponential backoff</span>`, `<span class="si-tk-c">// pipeline.UseCircuitBreaker();</span>`} {
 		if got := highlight(csharp, "csharp"); !strings.Contains(got, want) {
 			t.Errorf("csharp: missing %s in\n%s", want, got)

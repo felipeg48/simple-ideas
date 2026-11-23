@@ -21,9 +21,9 @@ scripts they need fetched safely.
 ---
 start:   make demo-single-insecure · wait for port 22310   # keeps running
 prepare: ./scripts/create-queues.sh                         # must finish, exit 0
-step:    acemq-workloads run -f seed.yaml                   # alias of prepare:
+step:    workloads run -f seed.yaml                         # alias of prepare:
 start:   ./consumer · wait for "listening"                  # a second program, after the seed
-setup:   acemq queue purge orders                           # before EACH feature
+setup:   mqctl queue purge orders                           # before EACH feature
 stop:    make demo-down                                     # while the programs still run
 cleanup: rm -rf data/ tmp/                                  # always last
 ---
@@ -49,7 +49,7 @@ cleanup: rm -rf data/ tmp/                                  # always last
 ```markdown
 ## Before
 - start "make demo-single-insecure" · wait for port 22310
-- run "acemq queue create orders" · wait
+- run "mqctl queue create orders" · wait
 - expect output "created"
 
 ## After

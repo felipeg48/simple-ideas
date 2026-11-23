@@ -5,7 +5,7 @@
 //
 // Recognised keys:
 //
-//	theme: crdb                  # default theme (a CLI --theme or a deck's
+//	theme: paper                 # default theme (a CLI --theme or a deck's
 //	                             # `theme:` front matter still wins)
 //	keys.annotate: w             # remap a command key (see Actions)
 //	feature.annotate: off        # disable a feature (see Features)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import caci from "./fixtures/caci-runbook.json?raw";
+import fixture from "./fixtures/sample-runbook.json?raw";
 import { jsonPos, ops, parseRunbook, serializeRunbook, isRunbookText, validate, type Runbook } from "../src/runbook";
 
 
@@ -27,8 +27,8 @@ describe("runbook", () => {
     expect(s).toContain('\n  "name": "R"');
     expect(serializeRunbook(ok(s))).toBe(s);
   });
-  it("caci fixture round trips byte-identical (icon after entries stays there)", () => {
-    expect(serializeRunbook(ok(caci))).toBe(caci);
+  it("sample fixture round trips byte-identical (icon after entries stays there)", () => {
+    expect(serializeRunbook(ok(fixture))).toBe(fixture);
   });
   it("a key new to an existing object goes after its canonical predecessor; new objects are canonical", () => {
     const t = '{\n  "categories": [\n    {\n      "entries": [\n        {\n          "command": "c",\n          "label": "l"\n        }\n      ],\n      "name": "A"\n    }\n  ]\n}\n';
@@ -41,8 +41,8 @@ describe("runbook", () => {
     expect(Object.keys(out.categories[0].entries[1])).toEqual(["label", "command", "target"]);
     expect(Object.keys(JSON.parse(serializeRunbook(ops.addCategory(rb, "B"))).categories[1])).toEqual(["name", "entries"]);
   });
-  it("caci fixture round trips", () => {
-    const t = caci;
+  it("sample fixture round trips", () => {
+    const t = fixture;
     const rb = ok(t);
     expect(rb.categories.length).toBe(14);
     expect(rb.categories.reduce((n, c) => n + c.entries.length, 0)).toBe(249);

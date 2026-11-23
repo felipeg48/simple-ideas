@@ -12,8 +12,8 @@ import (
 
 // A runbook is an optional command cheat-sheet shown in the `si play` terminal
 // drawer (play-only, loopback-only, like the terminal itself — a built deck
-// never loads it). The on-disk JSON shape matches the cockroach-engineering-tool
-// VS Code extension's runbook.json, so an exported runbook drops in unchanged:
+// never loads it). The on-disk JSON shape matches a VS Code runbook extension's
+// runbook.json, so an exported runbook drops in unchanged:
 //
 //	{ "categories": [ { "name": "...", "icon": "...", "entries": [
 //	    { "label": "...", "description": "...", "command": "SHOW ...;", "target": "sql" } ] } ] }

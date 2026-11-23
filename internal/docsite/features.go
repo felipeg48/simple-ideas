@@ -108,8 +108,8 @@ var Features = []feature{
 	{Slug: "architecture", Title: "Architecture pages",
 		Lede: "A design document from one Markdown file: numbered sections, cards, a flow diagram, notes, a table and the phases, in the theme, light and dark.",
 		What: "An architecture page is a Markdown file with `type: architecture`. Each `## section` is numbered and its first paragraph is its lead; a list of `` `tag` **Title** — body `` items is a grid of cards, a quote a note, a ```` ```flow ```` fence a stage diagram, `**Name** — what` lines a definition list and the ordered list of a Phases section a row of phase cards with the current one marked `(now)`.",
-		Live: func() string { return "<!-- embed: ../live/architecture/cep.md full -->" }, Open: "../live/architecture/cep.md",
-		Source: "architecture/cep.md",
+		Live: func() string { return "<!-- embed: ../live/architecture/labs.md full -->" }, Open: "../live/architecture/labs.md",
+		Source: "architecture/labs.md",
 		Options: [][2]string{
 			{"`type: architecture`", "numbered sections, leads, cards, notes, phases"},
 			{"`subtitle:`", "the line under the title"},
@@ -122,8 +122,8 @@ var Features = []feature{
 	{Slug: "status", Title: "Status boards",
 		Lede: "A project status board from a checklist: pills, KPI tiles, the overall progress and one card per area with Done, Missing and Improve, every bar counted from the lists.",
 		What: "A status board is a Markdown file with `type: status`. `meta:` and `tiles:` in the front matter give the pill row and the tiles; each `## Area` with `### Done`, `### Missing` and `### Improve` lists is a card with its own bar; `## Shipped` is the chips row. % done is done ÷ (done + missing), computed when the page is built, so it cannot drift; trailing code spans mark priorities (`P0`), badges (`partial`, `gated`, `improvement`) and a version · hash.",
-		Live: func() string { return "<!-- embed: ../live/status/cep.md full -->" }, Open: "../live/status/cep.md",
-		Source: "status/cep.md",
+		Live: func() string { return "<!-- embed: ../live/status/labs.md full -->" }, Open: "../live/status/labs.md",
+		Source: "status/labs.md",
 		Options: [][2]string{
 			{"`type: status`", "also `status-board`"},
 			{"`meta:` `- label: value | ok`", "a pill: ok, warn or plain"},

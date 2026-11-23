@@ -210,7 +210,7 @@ func langRE(lang string) *regexp.Regexp {
 	if kw := strings.Fields(keywords[lang]); len(kw) > 0 {
 		group := `\b(?:` + strings.Join(kw, "|") + `)\b`
 		if lang == "sql" || lang == "dockerfile" {
-			// SQL keywords are case-insensitive; most CockroachDB SQL is UPPERCASE.
+			// SQL keywords are case-insensitive; most SQL in decks is UPPERCASE.
 			group = `(?i:` + group + `)`
 		}
 		parts = append(parts, `(?P<k>`+group+`)`)

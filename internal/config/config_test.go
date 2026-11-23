@@ -27,7 +27,7 @@ func TestDefaultParsesClean(t *testing.T) {
 
 func TestParseFlatAndWarnings(t *testing.T) {
 	src := `
-theme: crdb
+theme: paper
 keys.draw: w
 feature.timer: off
 keys.bogus: x

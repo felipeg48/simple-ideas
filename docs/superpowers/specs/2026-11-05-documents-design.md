@@ -69,7 +69,7 @@ inherited by every page (a page's own front matter wins).
 ```markdown
 ---
 title: RabbitMQ for operators
-theme: acemq
+theme: paper
 version: 4.3
 edit-url: https://github.com/acme/rmq-guide/edit/main/
 repo: https://github.com/acme/rmq-app      # default repo for `code:` (§4)

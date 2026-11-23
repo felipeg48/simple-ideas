@@ -1,42 +1,41 @@
 <main class="si-doc-body">
 <h2 id="the-control-plane-is-the-scheduler"><span class="si-arch-n">1</span>The control plane is the scheduler<a class="si-anchor" href="#the-control-plane-is-the-scheduler" aria-label="Link to this section">#</a></h2>
-<p class="si-arch-lead">CEP runs no Kubernetes and no per-session VMs. A Go control plane drives the Docker Engine
-API directly on one (later a few) beefy host(s) — it <em>is</em> the scheduler.</p>
-<div class="si-arch-cards" data-n="3"><article class="si-arch-card"><span class="si-arch-tag">invariant</span><h3 class="si-arch-card-title">One binary</h3><p><code>cep ops</code> provisions boxes, proxies the terminal, serves the si-rendered content, and runs step checks.</p></article><article class="si-arch-card"><span class="si-arch-tag">invariant</span><h3 class="si-arch-card-title">Budget, not count</h3><p>admission is by a RAM budget, never a container cap.</p></article><article class="si-arch-card"><span class="si-arch-tag">safe nesting</span><h3 class="si-arch-card-title">Nested-Docker box</h3><p>the student deploys CockroachDB <em>inside</em> their own sandbox; the host Docker socket is never exposed.</p></article></div>
+<p class="si-arch-lead">Dockyard runs no Kubernetes and no virtual machine per learner. One Go binary drives the
+Docker Engine API on a single large host, and that binary <em>is</em> the scheduler.</p>
+<div class="si-arch-cards" data-n="3"><article class="si-arch-card"><span class="si-arch-tag">invariant</span><h3 class="si-arch-card-title">One binary</h3><p><code>dockyard serve</code> creates sandboxes, proxies the terminal, serves the lesson pages and runs the step checks.</p></article><article class="si-arch-card"><span class="si-arch-tag">invariant</span><h3 class="si-arch-card-title">Budget, not count</h3><p>a new sandbox is admitted against a memory budget, never a fixed number of containers.</p></article><article class="si-arch-card"><span class="si-arch-tag">safe nesting</span><h3 class="si-arch-card-title">Docker inside the sandbox</h3><p>each learner runs their own containers inside their own sandbox; the host's Docker socket is never shared.</p></article></div>
 
 <blockquote>
-<p>Honest read: privileged Docker-in-Docker for the demo; <code>sysbox-runc</code> (unprivileged) before
-untrusted users. Linux-only host.</p>
+<p>Honest read: privileged Docker-in-Docker is fine for a trusted class; an unprivileged
+runtime comes before strangers get a seat. The host is Linux only.</p>
 </blockquote>
 <h2 id="request--networking-flow"><span class="si-arch-n">2</span>Request &amp; networking flow<a class="si-anchor" href="#request--networking-flow" aria-label="Link to this section">#</a></h2>
-<p class="si-arch-lead">How a learner's browser reaches their private box — one origin, path-routed by the gateway.</p>
+<p class="si-arch-lead">How a learner's browser reaches their own sandbox: one origin, routed by path.</p>
 <figure class="si-figure"><svg/></figure>
-<h2 id="capacity-cost--the-phase-1-plan"><span class="si-arch-n">3</span>Capacity, cost &amp; the Phase-1 plan<a class="si-anchor" href="#capacity-cost--the-phase-1-plan" aria-label="Link to this section">#</a></h2>
-<p class="si-arch-lead">Measured per session — one DinD box running a nested compose of 1–9 CRDB nodes (multi-region
-means more nodes in the <em>same</em> box, not more VMs). Data is tiny (~10M small rows, on disk), so
-RAM tracks node count.</p>
+<h2 id="capacity--the-first-phase"><span class="si-arch-n">3</span>Capacity &amp; the first phase<a class="si-anchor" href="#capacity--the-first-phase" aria-label="Link to this section">#</a></h2>
+<p class="si-arch-lead">Measured per learner: one sandbox running a small compose project of one to five
+containers. Memory follows the number of containers, so a host is sized by RAM.</p>
 <div class="si-table-wrap">
 <table>
 <thead>
 <tr>
-<th>Host (always-on)</th>
-<th>approx $/mo</th>
-<th>1-node</th>
-<th>3-node</th>
-<th>9-node</th>
+<th>Host</th>
+<th>Memory</th>
+<th>1 container</th>
+<th>3 containers</th>
+<th>5 containers</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>e2/n2-highmem-8 · 64 GB (Phase 1)</td>
-<td>~$250–300</td>
+<td>8 vCPU</td>
+<td>64 GB</td>
 <td>~50</td>
 <td>~25</td>
 <td>~16</td>
 </tr>
 <tr>
-<td>n2-highmem-16 · 128 GB</td>
-<td>~$570</td>
+<td>16 vCPU</td>
+<td>128 GB</td>
 <td>~110</td>
 <td>~55</td>
 <td>~36</td>
@@ -45,13 +44,13 @@ RAM tracks node count.</p>
 </table>
 </div>
 <blockquote>
-<p>Phase 1: one always-on 64 GB VM, <code>--mem-budget-gb 50 --mem-mb 2048</code> → 25 sessions, internal
-via LB + IAP. GKE and scheduled start/stop are out (instant availability is required).</p>
+<p>First phase: one always-on 64 GB host, a 50 GB budget at 2 GB per sandbox: 25 learners
+at a time, behind the company's single sign-on.</p>
 </blockquote>
 <h2 id="phases"><span class="si-arch-n">4</span>Phases<a class="si-anchor" href="#phases" aria-label="Link to this section">#</a></h2>
 <ol class="si-arch-phases">
-<li class="si-arch-now">Single host · privileged DinD · internal ≤25 sessions.</li>
-<li>Sysbox runtime + bigger VM + 1-node topology per track.</li>
-<li>Multi-host placement (MIG); the control plane stays the scheduler.</li>
+<li class="si-arch-now">One host · privileged Docker-in-Docker · up to 25 learners.</li>
+<li>Unprivileged runtime · a bigger host · smaller topologies per lab.</li>
+<li>Several hosts; the control plane still places every sandbox.</li>
 </ol>
 </main>

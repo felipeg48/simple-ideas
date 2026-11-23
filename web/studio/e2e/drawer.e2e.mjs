@@ -41,8 +41,8 @@ const ev = async (fn, arg) => {
 };
 const until = async (fn, ms = 15000) => { for (let t = Date.now(); Date.now() - t < ms;) { if (await fn()) return true; await sleep(100); } return false; };
 
-const put = `curl -s -u acemq:acemq-lab -X PUT -H 'content-type: application/json' -d '{"durable":true,"arguments":{"x-queue-type":"quorum"}}' -w 'created: %{http_code}\\n' http://localhost:15801/api/queues/%2F/ops.smoke`;
-const pub = `curl -s -u acemq:acemq-lab -X POST -H 'content-type: application/json' -d '{"properties":{},"routing_key":"ops.smoke","payload":"hello from the terminal","payload_encoding":"string"}' http://localhost:15801/api/exchanges/%2F/amq.default/publish`;
+const put = `curl -s -u guest:guest -X PUT -H 'content-type: application/json' -d '{"durable":true,"arguments":{"x-queue-type":"quorum"}}' -w 'created: %{http_code}\\n' http://localhost:15801/api/queues/%2F/ops.smoke`;
+const pub = `curl -s -u guest:guest -X POST -H 'content-type: application/json' -d '{"properties":{},"routing_key":"ops.smoke","payload":"hello from the terminal","payload_encoding":"string"}' http://localhost:15801/api/exchanges/%2F/amq.default/publish`;
 // the commands echo themselves (no broker needed): the line typed is the line checked
 const line = (c, tag) => `echo ${tag} ${c.replace(/'/g, "")}`;
 try {

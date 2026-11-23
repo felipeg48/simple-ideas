@@ -465,6 +465,6 @@ si is free and open source. If it saves you time,
 
 Apache License 2.0, see [LICENSE](LICENSE). © 2026 Felipe Gutierrez.
 
-CockroachDB and Cockroach Labs are trademarks of Cockroach Labs, Inc.; AceMQ
-is a trademark of its respective owner. si is an independent project, not
-affiliated with or endorsed by them. See [TRADEMARKS.md](TRADEMARKS.md).
+Product and company names are trademarks of their respective owners. si is an
+independent project, not affiliated with or endorsed by them. See
+[TRADEMARKS.md](TRADEMARKS.md).

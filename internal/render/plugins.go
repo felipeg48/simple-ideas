@@ -32,7 +32,7 @@ var pluginKinds = map[string]bool{"info": true, "ok": true, "warn": true, "crit"
 
 // pluginKind returns the text and the kind of an alert or badge: kind= or a
 // word that is a kind (info by default); any other "· part" belongs to the
-// text, so "Prepared for CACI · Session 1 of 5" keeps its dot.
+// text, so "Prepared for Northwind · Session 1 of 5" keeps its dot.
 func (dr *deckRenderer) pluginKind(sc *slideCtx, name, text string, opts map[string]string, words []string) (string, string) {
 	kind := opts["kind"]
 	if kind != "" && !pluginKinds[kind] {
@@ -54,7 +54,7 @@ func (dr *deckRenderer) pluginKind(sc *slideCtx, name, text string, opts map[str
 
 // badgeHTML is a status pill: in a document a pill in its own paragraph; on
 // a slide the pill paragraph itself, with the mark a theme can style
-// (AceMQ Pro's .pill / .pill-mark).
+// (a brand theme's .pill / .pill-mark).
 func (dr *deckRenderer) badgeHTML(val string, sc *slideCtx, slide bool) string {
 	text, opts, words := pluginParts(val)
 	text, kind := dr.pluginKind(sc, "badge", text, opts, words)
@@ -65,7 +65,7 @@ func (dr *deckRenderer) badgeHTML(val string, sc *slideCtx, slide bool) string {
 }
 
 // logoHTML is a logo lockup: <!-- logo: [image] × Partner · alt=Brand -->.
-// Without an image the theme draws its own logo (--si-brand-logo, AceMQ Pro).
+// Without an image the theme draws its own logo (--si-brand-logo).
 func (dr *deckRenderer) logoHTML(val string, s *deck.Slide, sc *slideCtx) string {
 	text, opts, _ := pluginParts(val)
 	img, name, _ := strings.Cut(text, "×")

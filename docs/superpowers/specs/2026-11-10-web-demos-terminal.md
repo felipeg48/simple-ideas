@@ -17,7 +17,7 @@ terminal-only demo is `app: none`. The shell starts with si's own prompt
 ## Why
 
 Many apps are a terminal and a web page together: start a broker (RabbitMQ,
-CockroachDB, Kafka) in a terminal, send a message, then look at it in the web
+Postgres, Kafka) in a terminal, send a message, then look at it in the web
 console. Today a demo script can only drive the browser, and `setup:` runs a
 command that must exit (a broker never does). The demo needs to:
 

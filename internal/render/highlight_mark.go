@@ -10,7 +10,7 @@ import (
 )
 
 // ==text== marks a highlight: <span class="hl">text</span>, the phrase a
-// theme underlines or sweeps in (AceMQ Pro animates it as the slide arrives).
+// theme underlines or sweeps in (a theme may animate it as the slide arrives).
 // Exactly two = on each side, like ~~strikethrough~~, so `a = b` and `==`
 // in code are left alone.
 

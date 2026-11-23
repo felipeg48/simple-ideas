@@ -273,14 +273,6 @@ does not list courses yet; quiz answers are in the page (not an exam).
   value per key; the interactive trust prompt is unit-tested only.
 - Terminal `split` view; pop/circle are plain at feature joins (xfade).
 
-### Outside this repo
-- `~/Downloads/ACCDemo/`: the AceMQ Command Center demo for the founder
-  (client work, never in si's repo or docs): `acc.html` (the prototype
-  reworked: no banner, Spring + Node.js on every tab), `acc-demo.md`
-  (marketing narration from acemq.com wording), `acc-demo.mp4` 7:05 with 10
-  chapters, `acc-demo.captions.mp4`, `screens/`, `README.md`. Re-film:
-  `cd ~/Downloads/ACCDemo && si demo run acc-demo.md --with captions,chapters -o .`
-
 ### Crisp zooms, issue #6 (unreleased, worktree branch)
 - `si demo run` supersamples: `runner.k` (`--scale`, `scale:`,
   `webdemo.DefaultScale` = 2; always 1 in `si demo test`). Chrome is launched
@@ -476,11 +468,6 @@ waits for its option; Studio demo avoids `cmd+z` (Linux).
    keep it lowercase when the script wrote it so (film.go title card).
 3. Terminal `split` (terminal and browser side by side), phase 3 of the
    terminal spec.
-4. AceMQ demo scripts live in the AceMQ repo (`acemq-broker/demos/`), not in
-   si; the founder's top wish. Use `start:`/`stop:` with `make
-   demo-single-insecure` / `make demo-down`, workloads from
-   `acemq-broker-libraries/acemq-broker-workloads` as `start … as load`.
-   Never put AceMQ in si's docs (TRADEMARKS.md).
 5. Retake (`~/Progs/AI/retake-app`): point its CLAUDE.md at the web-demos spec
    for the shared script format (phase 5).
 6. Voice: try `si voice login` with real ElevenLabs/OpenAI keys; Kokoro
@@ -712,10 +699,6 @@ waits for its option; Studio demo avoids `cmd+z` (Linux).
   hides `.si-poll-n`/`.si-poll-bar` until it is `.is-visible` (deck and phones,
   which follow the step). `audience.save: off` (config `AudienceOff`, checked in
   `SaveAudience`). README badge, `.github/FUNDING.yml`, site footer pill.
-- **v2.19.1: client themes off the docs.** `crdb`, `acemq`, `acemq-pro` stay
-  in the code (decks keep building) but left RULES, manual, README, help text,
-  site (`internal/docsite/themes.go` `unlisted`, pictures deleted) and the
-  skill; `TRADEMARKS.md` + a README Trademarks section.
 - **v2.19.0: `si play --tunnel` for remote audiences.** `cmd/si/tunnel.go`:
   `AudienceOnlyHandler` (audience key and routes only) on a loopback port,
   `cloudflared tunnel --url` (found on PATH or Homebrew), the trycloudflare
@@ -1206,13 +1189,6 @@ waits for its option; Studio demo avoids `cmd+z` (Linux).
   last run's per-slide times (`prevSpent`), "vs last run M:SS behind/ahead/on pace".
   Tested headless: a real `si play --remote`, deck + 400×800 clicker in light and
   dark (#1 → #2.1); the teleprompter popup with a seeded last run.
-- **v1.10.2: shared media.** `render.shareMedia` (media.go): a
-  data URI of 1 KB or more used in two or more src / href / poster / xlink:href
-  attributes is written once in a small script after the slides (deck) or before
-  doc.js (documents); each use carries `data-si-m-<attr>="N"`. Showcase build
-  1495 KB → 614 KB. Checked headless: no broken images. Backlog cleaned: the
-  `data-count` tween was already bounded (650 ms) and no canvas overflows at 400 px
-  (showcase + the 7 CACI decks; only wide tables scroll, in their own box).
 - **v1.10.1: canvases animated in the terminal.** `tui/canvas.go`
   (SVG → character grid: rects as boxes or bands, wires, text runs in order, dots;
   helper attributes; CSS state rules for opacity / display / fill / transform),
@@ -1251,19 +1227,6 @@ waits for its option; Studio demo avoids `cmd+z` (Linux).
   `--dump N --size WxH`. QA: dumps converted to HTML and screenshotted; a pty driver
   ran presenter + teleprompter together. Plan: 1.8 `si --terminal` Studio, 1.9 Lab,
   1.10 real pictures (Kitty/iTerm2) and a teleprompter for a browser deck.
-- **v1.6.3.** `<!-- cards -->` (`render/cards.go`, a pass in
-  `codeFeatures` so slides and documents share it; card class `.si-cell` because
-  `.si-card` is the index tile), `si fix [--write]` (`deck.FixComponents`), `si new
-  <name> --type …` (`studio.WriteStarter`, shared with the Studio), Studio titles drop
-  `==` (`plainTitle`), editor colours `==highlight==` (`HL_RE`), `## Title {#id}` in
-  documents, `fonts-subset:`, desktop File ▸ Open Recent (own list, NSMenuDelegate),
-  CACI: cards converted, the two [CLICK] warnings fixed.
-- **v1.6.2: components without raw HTML.** `==text==` highlight
-  (`render/highlight_mark.go`, goldmark delimiter like ~~strike~~; `plain()` drops the
-  marks); `badge` and new `logo` work on slides (CACI pill / lockup markup, with
-  `si-*` hooks; generic looks under `:where()` so a theme's `.pill`/`.lockup`/`.hl` wins);
-  a `· part` that is no kind stays text. AceMQ Pro sample and CACI converted (CACI
-  backup `_backup-2026-11-06-pre-components/`).
 - **v1.6.1** (fix: the deck teleprompter `p` opened window.open(''), which the shell sent to NSWorkspace → "The application can't be opened. -50"; only http(s) pages of other sites leave the app now)
 - **v1.6.0 release:** (tagged; the release workflow publishes it, plus
   `si-Studio-<v>-macos.zip` from a macOS runner).
@@ -1363,22 +1326,6 @@ waits for its option; Studio demo avoids `cmd+z` (Linux).
   remembered in documents) — `internal/render/code.go`; AsciiDoc `include::f[lines=..|tag=..]`,
   `.Title`, `[source,lang,highlight=..]`, `%linenums`. Tokens `--si-code-hl`,
   `--si-tab-active`. RULES §13 "Code from files, highlighted lines, callouts and tabs".
-- **v0.9.4: documents phase 1** (spec `docs/superpowers/specs/2026-11-05-documents-design.md`,
-  design mockups approved by the founder): `type: article` (lede from `description:`,
-  reading time, contents on the right), **guides** = a folder with `_nav.md`
-  (`deck.LoadGuide`, pages via `deck.ParseWith` inherit the nav's front matter;
-  sidebar with read marks, breadcrumb, Prev/Next in nav order, `edit-url`,
-  `_header.md` / `_footer.md` partials, subfolders, `.adoc` pages;
-  `render.RenderGuide` checks links + anchors between pages), `## Step N:` badges
-  in labs and guides, document theme tokens (`--si-font-prose`, `--si-prose-size`,
-  `--si-prose-leading`, `--si-doc-measure`, `--si-lede-size`, `--si-nav-bg`,
-  `--si-nav-active`, `--si-step-badge`; unset by default, CSS falls back), RULES
-  §15 "Themes for documents", §19 Articles, §20 Guides; **`si serve`** (play
-  without the terminal, guide-aware); **`si --export example --type
-  deck|slides|article|guide|tutorial|lab|all`** (examples in `examples/article/`,
-  `examples/guide/`, embedded with `all:guide`). Next: phase 2 (code includes
-  with lines/tag, tabs, callouts, hl), phase 3 (GitHub permalinks, diffs), phase 4
-  (`type: demo`, CACI demos last).
 - **v0.9.3:** find (`/`) also searches the other pages of the folder, fuzzily
   (`idx` → index.html): `render.Pages` (index, decks, labs, PDFs, other `.html`
   in the output dir, si.conf `links.<label>: <url>`) → `SI_CONFIG.pages`;
@@ -1389,39 +1336,6 @@ waits for its option; Studio demo avoids `cmd+z` (Linux).
   New front matter **`demos: ../demos/`**: markdown demo scripts in a `▶ Demos`
   panel (drop-down + the whole script, Copy/Run on shell blocks),
   `internal/render/demos.go` → `window.SI_DEMOS`, play + loopback only.
-- **v0.9.2:**
-  - **`theme: acemq-pro`** ("AceMQ Pro"): the acemq tokens + `acemq.css` +
-    `internal/assets/web/themes/acemq-pro.css`, the full AceMQ deck style-guide
-    catalogue (`.heard`, `.inc`+`.verdict`, `.split2`/`.blist`/`.topo`, `.zones`,
-    `.opts`, `table.tbl`, `.facts`, `.feat`, `.bench`/`.bks`, `.flowline`/`.mnotes`,
-    `.poc`/`.term2`, `.floaters`, `.icon-chip`, `.btn`, motion `.r .f .pop .pulse
-    .grow-x`). `Theme.Extras` chains extra stylesheets; `acemq-pro.sample.md` is
-    its gallery deck (`si --export themes`). RULES.md §15.
-  - **`si theme list`**; theme names match loosely (`CanonicalTheme`: case,
-    spaces/underscores → `-`, aliases), so `--theme "AceMQ Pro"` works; an
-    unknown `--theme` is a usage error.
-  - **`si play --remote[=tp,draw]`** (`--remote-addr`, default 0.0.0.0:play+1):
-    keyed LAN listener (`?k=` → HttpOnly cookie) for a tablet: `tp` teleprompter
-    and `draw` pen pad, synced by a relay (`internal/serve/remote.go`, SSE + POST,
-    last state replayed). Transport `render.RelayJS` is injected only under
-    `--remote`; built decks contain none of it. `docs/remote.md`, RULES.md §11.
-  - **`si --export agent-rules`**: writes `CLAUDE.md` + `AGENTS.md` from
-    `docs/agent-rules.md` (never overwrites; `-o -` prints).
-  - **Teleprompter rule** (CLAUDE.md rule #5): `Notes:` = what the speaker says
-    to the audience, verbatim, no stage directions; `Points:` = main points +
-    speaker reminders. Examples, scaffolds, samples and the migrate prompt follow it.
-- **v0.9.1:** built-in **`theme: acemq`** (AceMQ brand: Urbanist/Mona Sans + logo
-  embedded from `internal/assets/web/themes/acemq/`, extra CSS in
-  `internal/assets/web/themes/acemq.css`, emitted only for that theme by `ThemeCSS`;
-  component classes `.hl .cards .card .tag .tl .steps .callout on-ink us-N` documented
-  in RULES.md §15 "acemq theme extras"; `--si-brand-logo` hides/swaps the logo);
-  **`<!-- eyebrow: … -->`** slide directive (`.si-kicker` above the heading, not in
-  the title); CSS-file themes inline relative `url()`s (`inlineURLs` in
-  `internal/render/css.go`); stage labels shrink to fit (`labelFit`); `--si-figure-max`
-  token and `fit()` shrinks figures before type; lab docs: key/value tables wrap,
-  byline `·` split, wide tables/code use the column, Previous/Next pager between labs
-  built from one folder (`.si-doc-pager`); `make install` does rm+cp (macOS kills
-  in-place binary overwrites — that is what killed `si selfupdate` once).
 - **v0.9.0:** Studio runbook generator + visual JSON editor + `{{name}}` /
   `{{name:default}}` placeholders (Go-template words `end else break continue nil
   true false` are excluded; `{{.X}}` never matches); **lab documents** (`type: lab`,
@@ -1460,15 +1374,6 @@ In CLAUDE.md ("Non-negotiable rules"); do not break one without the founder.
 
 ## The courses (separate from this repo)
 
-- Course **sources** live at `~/Desktop/simple-ideas-course/markdown/` (one thin
-  `<course>.md` + `<course>/sections/*.md` + `<course>/images/{anim,diagrams}`),
-  with a shared `si.conf` and `anim/` (globe/ranges/roaches — the CockroachDB-brand
-  timer animations that do NOT live in this repo).
-- **Built site** ("CockroachDB University") is written alongside, into
-  `~/Desktop/simple-ideas-course/`. Central build:
-  `si build ~/Desktop/simple-ideas-course/markdown/ --site "CockroachDB University" --pdf -o ~/Desktop/simple-ideas-course`
-- ILT source material (for migrations) is at
-  `~/Roach/Courses/cockroach-university-ilt-courses/courses/` — **only** look there.
 - **Migration recipe** (proven): one general-purpose agent per course, authoring
   ONLY under its own `markdown/<course>` subtree; it reads `docs/RULES.md` +
   `docs/authoring-canvases.md` + `docs/stage-diagrams.md`, matches the house style
@@ -1476,24 +1381,6 @@ In CLAUDE.md ("Non-negotiable rules"); do not break one without the founder.
   adds MORE animations than the source, runs `si check` on its own deck, and does
   NOT touch `index.html`/other courses/the repo. The lead does the central build.
 
-## Founder decks outside this repo (built with si 0.9.1)
-
-- **CACI RabbitMQ course** `~/Downloads/CACI/` (5 sessions + ref decks A/B, labs
-  0–8, handouts, instructor demos). `theme: acemq`, footer `CACI/AceMQ 2026`,
-  eyebrows + highlighter titles; labs/handouts are `type: lab`. Builds:
-  `si build decks --output slides --site "CACI Training" --pdf`,
-  `si build labs --output labs/html --site "CACI Training · Labs"`,
-  `si build handouts --output handouts --site "CACI Training · Session outputs"`.
-  Runbook source of truth: `labs/runbook.md` → `python3 labs/runbook-to-json.py`
-  → `labs/runbook.json` (founder does not use Studio for CACI). Backups:
-  `_backup-2026-10-29-pre-v0.9/`, `_backup-2026-10-30-pre-acemq-theme/`.
-- **PagoNxt pitch** `~/Downloads/PagoNxtAceMQBroker/` (original, untouched) and
-  `~/Downloads/PagoNxtAceMQBrokerV2/` (approved restyle per `STYLE-GUIDE.md`,
-  `theme: acemq`; "Trestle" never on slides → "AceMQ Enterprise Distribution for
-  RabbitMQ" / "AceMQ Distribution"). Build:
-  `si build md/ --output html/ --site "AceMQ for PagoNxt" --pdf && cp html/pdfs/pagonxt-acemq.pdf PagoNxt-AceMQ-V2.pdf`.
-  Open question to the founder: the "Free trial today" slide vs the guide's
-  no-free-offer rule.
 
 ## Known minor issues / polish backlog
 

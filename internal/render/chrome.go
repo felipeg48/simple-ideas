@@ -105,7 +105,7 @@ func (dr *deckRenderer) labSlide(s *deck.Slide) string {
 }
 
 // copyrightLine builds the title-slide colophon from the year and copyright
-// holder: "© 2026 CockroachLabs", "© 2026" or "© CockroachLabs". Empty when
+// holder: "© 2026 Acme", "© 2026" or "© Acme". Empty when
 // neither is set.
 func copyrightLine(year, holder string) string {
 	year, holder = strings.TrimSpace(year), strings.TrimSpace(holder)

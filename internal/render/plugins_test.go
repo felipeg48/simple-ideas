@@ -149,7 +149,7 @@ func TestBadgeKeepsItsDotAndWorksOnSlides(t *testing.T) {
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, "logo.svg"), []byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 4"><rect width="10" height="4"/></svg>`), 0o644)
 	p := filepath.Join(dir, "d.md")
-	os.WriteFile(p, []byte("# Cover\n\n<!-- logo: × CACI · alt=AceMQ -->\n\n<!-- badge: Prepared for CACI · Session 1 of 5 -->\n\n---\n\n## Two\n\n<!-- logo: logo.svg × CACI -->\n\n<!-- badge: Pipeline healthy · ok -->\n"), 0o644)
+	os.WriteFile(p, []byte("# Cover\n\n<!-- logo: × Northwind · alt=Acme -->\n\n<!-- badge: Prepared for Northwind · Session 1 of 5 -->\n\n---\n\n## Two\n\n<!-- logo: logo.svg × Northwind -->\n\n<!-- badge: Pipeline healthy · ok -->\n"), 0o644)
 	d, err := deck.Parse(p)
 	if err != nil {
 		t.Fatal(err)
@@ -160,9 +160,9 @@ func TestBadgeKeepsItsDotAndWorksOnSlides(t *testing.T) {
 	}
 	h := string(res.HTML)
 	for _, want := range []string{
-		`<p class="si-pill pill" data-kind="info"><span class="si-pill-mark pill-mark"></span>Prepared for CACI · Session 1 of 5</p>`,
+		`<p class="si-pill pill" data-kind="info"><span class="si-pill-mark pill-mark"></span>Prepared for Northwind · Session 1 of 5</p>`,
 		`<p class="si-pill pill" data-kind="ok"><span class="si-pill-mark pill-mark"></span>Pipeline healthy</p>`,
-		`<div class="si-lockup lockup"><span class="si-lk-logo lk-logo" role="img" aria-label="AceMQ"></span><span class="si-lk-x lk-x"></span><span class="si-lk-name lk-name">CACI</span></div>`,
+		`<div class="si-lockup lockup"><span class="si-lk-logo lk-logo" role="img" aria-label="Acme"></span><span class="si-lk-x lk-x"></span><span class="si-lk-name lk-name">Northwind</span></div>`,
 		`<img class="si-lk-img" src="data:image/svg+xml`,
 	} {
 		if !strings.Contains(h, want) {

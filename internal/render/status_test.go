@@ -20,7 +20,7 @@ var (
 // left out: the flow diagram has its own tests).
 func TestArchitectureAndStatusGolden(t *testing.T) {
 	for _, kind := range []string{"architecture", "status"} {
-		d, err := deck.Parse(filepath.Join("..", "..", "examples", kind, "cep.md"))
+		d, err := deck.Parse(filepath.Join("..", "..", "examples", kind, "labs.md"))
 		if err != nil {
 			t.Fatal(err)
 		}

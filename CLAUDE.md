@@ -355,9 +355,11 @@ pass. The steps that matter:
   v2.19.0: `--tunnel` (Cloudflare quick tunnel to `AudienceOnlyHandler`;
   polling fallback `/_si/audience/now` since quick tunnels carry no SSE). The
   founder ruled out a hosted relay on simple-ideas.org for now (cost).
-- **Unlisted themes** (v2.19.1): `crdb`, `acemq`, `acemq-pro` (client work)
-  stay in code but never in docs, site or help (`docsite.unlisted`, the
-  theme-shots skip list; `TRADEMARKS.md`). Do not document them again.
+- **Unlisted themes** (v2.19.1): the client brand themes in
+  `assets.UnlistedThemes` stay in code but never in docs, site, help, examples,
+  issues, PRs, release notes or status boards (`docsite.unlisted`, the
+  theme-shots skip list). Never write a client, employer or brand name in
+  anything public; examples use invented names (Acme, Northwind, Dockyard).
 - **Themes** (v2.15.0): six new built-ins (slate, twilight, forest, sunrise,
   neon, newsprint; `TestNewThemesContrast`: WCAG AA in light and dark); the
   docs site's Themes page is generated from `assets.Themes`
@@ -404,7 +406,7 @@ pass. The steps that matter:
   wake lock); a native iPhone clicker.
 - **`si play` terminal drawer** (DONE, v0.6.0, see `docs/terminal.md`): a
   bottom→middle HUD with multiple tabs to run local commands during demos
-  (`docker ps`, `cockroach start-single-node`, `cockroach sql`). Shipped as full
+  (`docker ps`, `docker compose up`, `psql`). Shipped as full
   xterm.js + PTY (`creack/pty`), play-only + loopback-only. Transport: chunked-GET
   output + POST input (no WebSocket dep). Toggle key: `` ` ``. Next: persist tab
   layout across reloads; per-tab running indicator. v3.9.0: split view

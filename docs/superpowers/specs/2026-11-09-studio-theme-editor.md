@@ -15,7 +15,7 @@ the same for the look of everything si renders.
 ## What the author does
 
 1. **Start**: Studio › New… › Theme (or ⌘K "New theme"), then pick a start:
-   - a built-in theme (studio, paper, mono, crdb, acemq, acemq-pro) to copy,
+   - a built-in theme (studio, paper, mono, …) to copy,
    - **From a logo…** (the algorithm of `2026-11-09-theme-from-logo.md`),
    - or blank (studio's values underneath, nothing changed yet).
    It creates `themes/<name>.css` in the workspace and opens it in the
