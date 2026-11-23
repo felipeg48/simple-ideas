@@ -3,6 +3,15 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v4.0.1:** `?play` on a deck link plays the way to a slide:
+  `talk.html?play#5` opens slide 4 at its end and moves on, so slide 5's
+  transition and build animations run (a plain `#5` shows it at rest). The
+  docs site gets a top-level **Motion** menu: *See it move*, a gallery of
+  every transition, build animation, 3D animation and moving picture, each
+  card with its one line of Markdown and a ▶ that plays it; a "See it move"
+  section with a live deck on the home page; the three showcase decks as
+  pages of their own.
+
 - **v4.0.0:** classes on your computer (RULES §37). `si class` is a planner
   (a keyed page on this machine): plan a class of a course with a
   `sandbox:` (image, memory and CPUs per box, `--ttl`, `--idle`, last day),

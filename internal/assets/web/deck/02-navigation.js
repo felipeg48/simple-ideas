@@ -171,8 +171,15 @@
     announce();
   }
   function fromHash(instant) {
-    var m = /^#(\d+)(?:\.(\d+))?$/.exec(location.hash);
-    go(m ? +m[1] - 1 : 0, m && m[2] ? +m[2] : 0, instant);
+    var m = /^#(\d+)(?:\.(\d+))?$/.exec(location.hash), i = m ? +m[1] - 1 : 0, k = m && m[2] ? +m[2] : 0;
+    /* ?play (a link that shows an effect): open one step before #N and move on,
+       so the slide's transition and its build animations play */
+    if (instant && /[?&]play(?:[=&]|$)/.test(location.search) && (i > 0 || k > 0) && i < slides.length) {
+      if (k > 0) go(i, k - 1, true); else go(i - 1, 'end', true);
+      setTimeout(function () { go(i, k); }, 700);
+      return;
+    }
+    go(i, k, instant);
   }
   window.addEventListener('hashchange', function () {
     var m = /^#(\d+)(?:\.(\d+))?$/.exec(location.hash);

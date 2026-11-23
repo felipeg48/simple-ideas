@@ -26,6 +26,7 @@ A paragraph (or any block) revealed as one step.
     by another directive) is an invisible step that only changes the canvas.
 - Going back undoes the state change. Overview and print show every step.
 - The URL hash keeps the step: `#5.2` is slide 5 at step 2.
+- `?play` before the hash plays the way there: `talk.html?play#5` opens slide 4 at its end and moves on to 5, so slide 5's transition and build animations run (`?play#5.2`: from step 1 to step 2). For a link that shows an effect.
 
 **How a list arrives.** A first word after `steps:` changes how the items
 come in; canvas tokens may follow it as above.

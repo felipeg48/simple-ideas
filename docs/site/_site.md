@@ -16,9 +16,6 @@ footer: simple-ideas
 - [What's new in si 4](whats-new.md)
 - Features
   - [Decks](features/decks.md)
-    - [Transitions](features/transitions.md)
-    - [Build animations](features/animations.md)
-    - [Motion](features/motion.md)
     - [Presenting](features/remote.md)
     - [Audience](features/audience.md)
     - [Try it, as the room does](features/audience-demo.md)
@@ -40,6 +37,14 @@ footer: simple-ideas
   - [Website](features/website.md)
   - [Terminal](features/terminal.md)
   - [QR Codes](features/qr.md)
+- Motion
+  - [See it move: every effect](motion.md)
+  - [Transitions](features/transitions.md)
+  - [Build animations](features/animations.md)
+  - [Canvases, scenes and charts](features/motion.md)
+  - [▶ One parcel, ten hand-overs](features/showcase/transitions.md)
+  - [▶ Thursday, by the numbers](features/showcase/animations.md)
+  - [▶ Where order #4711 went](features/showcase/motion.md)
 - [Studio](features/studio.md)
 - Examples
   - [All examples](examples.md)

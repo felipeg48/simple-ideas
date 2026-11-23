@@ -48,6 +48,17 @@ glide between steps. [See code](features/code.md)
 
 <!-- embed: live/showcase.md 1-3 -->
 
+## See it move
+
+Slides that turn like a cube, numbers that roll like an odometer, 3D
+carousels, split-flap boards, parcels that fly from the shop to the door.
+Each one is a single line of Markdown, played by the page itself. Click the
+deck, then →.
+
+<!-- slides: features/showcase/animations.md -->
+
+[Every transition and animation, playable →](motion.md)
+
 ## A mind map, live
 
 ```mindmap
@@ -176,6 +187,7 @@ Ask it for the talk. With the si skill it writes the Markdown, runs
 
 ## Where to go next
 
+- [See it move](motion.md): every transition, animation and moving picture, each one line of Markdown, each playable.
 - [The features](features/decks.md): each kind of document with its example running and the Markdown behind it.
 - [The rules](rules/): every directive, front matter key and fence option, each with an example.
 - [The manual](manual.md): the same, as a deck you can present.
