@@ -29,6 +29,9 @@ func Document(d *deck.Deck, opt Options) Result {
 	if d.IsInfographic() {
 		return Infographic(d, opt)
 	}
+	if d.IsDiagram() {
+		return DiagramPage(d, opt)
+	}
 	dr := &deckRenderer{d: d, opt: opt, doc: true, lastState: map[string][]string{}, words: map[string]bool{}, files: map[string]string{}}
 	dr.md = dr.markdown()
 	dr.resolveTheme()
@@ -402,6 +405,9 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	}
 	if dr.infographic || dr.chart {
 		mmCSS += assets.InfographicCSS
+	}
+	if dr.diagram {
+		mmCSS += assets.DiagramCSS
 	}
 	if dr.scene {
 		mmCSS += assets.SceneCSS

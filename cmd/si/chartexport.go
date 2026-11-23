@@ -52,6 +52,20 @@ const sceneShowJS = `(function(n,k){var f=[].slice.call(document.querySelectorAl
 f.setAttribute('data-si-shot','');f.siScene.halt();f.siScene.set(f.siScene.n?k+1:0);f.scrollIntoView({block:'center'});
 var r=f.getBoundingClientRect();return [r.left+scrollX,r.top+scrollY,r.width,r.height]})(%d,%d)`
 
+// hasDiagrams reports whether a built page has a delivery diagram.
+func hasDiagrams(page []byte) bool { return strings.Contains(string(page), `class="si-figure si-dg `) }
+
+// the diagrams of the page: one picture per step (after it), or one of a
+// diagram that has no steps
+const diagramListJS = `(function(){var sl=[].slice.call(document.querySelectorAll('.si-slide'));
+return [].slice.call(document.querySelectorAll('.si-dg[data-dg]')).filter(function(f){return f.siDiagram}).map(function(f){var s=f.closest('.si-slide');
+var k=[];for(var i=0;i<Math.max(1,f.siDiagram.n);i++)k.push('diagram');return {slide:s?sl.indexOf(s):-1,kinds:k}})})()`
+
+const diagramShowJS = `(function(n,k){var f=[].slice.call(document.querySelectorAll('.si-dg[data-dg]')).filter(function(f){return f.siDiagram})[n];
+[].forEach.call(document.querySelectorAll('[data-si-shot]'),function(e){e.removeAttribute('data-si-shot')});
+f.setAttribute('data-si-shot','');f.siDiagram.halt();f.siDiagram.set(f.siDiagram.n?k+1:0);f.scrollIntoView({block:'center'});
+var r=f.getBoundingClientRect();return [r.left+scrollX,r.top+scrollY,r.width,r.height]})(%d,%d)`
+
 // hasCharts reports whether a built page has a ```chart fence.
 func hasCharts(page []byte) bool { return strings.Contains(string(page), `class="si-figure si-chart"`) }
 
@@ -77,6 +91,9 @@ func exportPictures(what, chrome, dest, out, page, fonts string, png, svg, doc b
 	listJS, showJS := chartListJS, chartShowJS
 	if what == "scene" {
 		listJS, showJS = sceneListJS, sceneShowJS
+	}
+	if what == "diagram" {
+		listJS, showJS = diagramListJS, diagramShowJS
 	}
 	abs, err := filepath.Abs(dest)
 	if err != nil {

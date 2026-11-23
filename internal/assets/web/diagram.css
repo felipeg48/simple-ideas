@@ -1,0 +1,74 @@
+/* Delivery diagrams (render/diagram.go, web/diagram.js): one SVG that scales
+   by its viewBox, drawn in the theme's tokens. Text sizes are viewBox units. */
+.si-figure.si-dg{flex-direction:column;align-items:center;gap:.4em;max-inline-size:100%;min-inline-size:0;box-sizing:border-box;margin-inline:0}
+.si-dg>svg{inline-size:100%}
+.si-slide .si-figure.si-dg{min-inline-size:min(60em,88cqi)}
+.si-dg>svg{display:block;inline-size:100%;block-size:auto;max-block-size:calc(var(--si-figure-max,62cqb) * var(--_figfit,1));overflow:visible;font-size:13px}
+.si-dg text{fill:var(--si-fg);font-family:var(--si-font-body);dominant-baseline:central}
+.si-dg text .u,.si-dg text.u{fill:var(--si-muted);font-weight:400;font-size:.85em}
+.si-dg .si-dg-title .t{fill:var(--si-accent-2);font-family:var(--si-font-mono);font-weight:600;letter-spacing:.14em;font-size:.8em}
+/* kanban */
+.si-dg-lane>rect{fill:color-mix(in srgb,var(--si-fg) 4%,transparent);stroke:color-mix(in srgb,var(--si-fg) 10%,transparent)}
+.si-dg-lane.is-over>rect{fill:color-mix(in srgb,var(--si-warn) 12%,transparent);stroke:var(--si-warn)}
+.si-dg-lane>text{display:none}
+.si-dg-colhead>rect{fill:none}
+.si-dg-colhead .t{font-weight:700;font-size:1.05em}
+.si-dg-colhead.is-over .t{fill:var(--si-warn)}
+.si-dg-card>rect{fill:var(--si-surface);stroke:color-mix(in srgb,var(--si-fg) 18%,transparent);filter:drop-shadow(0 1px 1.5px color-mix(in srgb,var(--si-fg) 18%,transparent))}
+.si-dg-card .t{font-weight:600}
+.si-dg-card.is-on>rect{stroke:var(--si-accent);stroke-width:2}
+.si-dg-card.is-blocked>rect{stroke:var(--si-crit);stroke-width:2}
+.si-dg-card.is-blocked .u{fill:var(--si-crit)}
+.si-dg-card.is-done>rect{fill:color-mix(in srgb,var(--si-ok) 12%,var(--si-surface))}
+/* gantt */
+.si-dg-grid>path{stroke:color-mix(in srgb,var(--si-fg) 9%,transparent);stroke-width:1;fill:none}
+.si-dg-tick .t{fill:var(--si-muted);font-family:var(--si-font-mono);font-size:.78em;text-anchor:middle}
+.si-dg-section .t{fill:var(--si-accent-2);font-family:var(--si-font-mono);font-weight:600;letter-spacing:.1em;font-size:.78em}
+.si-dg-task .t{font-weight:500}
+.si-dg-bar>.b{fill:color-mix(in srgb,var(--si-accent) 28%,var(--si-surface))}
+.si-dg-bar>.q{fill:var(--si-accent)}
+.si-dg-bar.is-crit>.b{stroke:var(--si-accent-2);stroke-width:1.6}
+.si-dg-bar.is-late>.b{fill:color-mix(in srgb,var(--si-warn) 35%,var(--si-surface))}
+.si-dg-bar.is-late>.q{fill:var(--si-warn)}
+.si-dg-bar.is-done>.q{fill:var(--si-ok)}
+.si-dg-ms>path{fill:var(--si-accent-2)}
+.si-dg-today>path{stroke:var(--si-crit);stroke-width:2;fill:none}
+.si-dg-today .t{fill:var(--si-crit);font-family:var(--si-font-mono);font-weight:600;font-size:.78em;text-anchor:middle}
+/* sequence */
+.si-dg-actor>rect{fill:var(--si-surface-2);stroke:color-mix(in srgb,var(--si-fg) 22%,transparent)}
+.si-dg-actor .t{font-weight:700;text-anchor:middle}
+.si-dg-actor.is-on>rect{fill:var(--si-accent);stroke:none}
+.si-dg .si-dg-actor.is-on .t{fill:var(--si-on-accent)}
+.si-dg-life>path{stroke:color-mix(in srgb,var(--si-fg) 22%,transparent);stroke-width:1.2;stroke-dasharray:4 5;fill:none}
+.si-dg-msg>path{stroke:var(--si-fg);stroke-width:1.6;fill:none;stroke-linejoin:round;stroke-linecap:round}
+.si-dg-msg.is-on>path{stroke:var(--si-accent)}
+.si-dg-msg.is-reply>path{stroke-dasharray:5 4;stroke:var(--si-muted)}
+.si-dg-msg .t{text-anchor:middle;font-weight:500;font-size:.95em}
+.si-dg-msg.is-self .t{text-anchor:start}
+.si-dg-msg .u{fill:var(--si-accent-2);font-family:var(--si-font-mono);font-size:.8em}
+.si-dg-note>rect{fill:color-mix(in srgb,var(--si-accent-2) 14%,var(--si-surface));stroke:color-mix(in srgb,var(--si-accent-2) 45%,transparent)}
+.si-dg-note .t{font-size:.9em}
+/* the facts, the controls */
+.si-dg-facts{display:flex;flex-wrap:wrap;gap:.3em 1.2em;justify-content:center;font-size:.8em;color:var(--si-muted)}
+.si-dg-nav{display:flex;flex-wrap:wrap;gap:.5em;align-items:center;justify-content:center;font-size:.85em}
+.si-dg-nav button{font:inherit;cursor:pointer;border-radius:.5em;padding:.3em .8em;color:var(--si-fg);background:var(--si-surface);border:.06em solid var(--si-line)}
+.si-dg-nav button[aria-pressed="true"]{border-color:var(--si-accent);color:var(--si-accent)}
+.si-dg-nav output{min-inline-size:8em;text-align:center;color:var(--si-muted);font-variant-numeric:tabular-nums}
+@media print{.si-dg-nav{display:none}}
+/* a type: diagram page: one frame, landscape 16:9 or portrait 3:4, as big as
+   the window allows (si build's pictures and films cut it out) */
+.si-dg-page{margin:0;background:var(--si-bg)}
+.si-dg-page main{min-block-size:100vh;display:grid;place-items:center;padding:0}
+.si-dg-frame{--_r:16/9;inline-size:min(100vw,100vh * 16 / 9);aspect-ratio:var(--_r);box-sizing:border-box;padding:clamp(.8em,3.2cqi,3em);display:flex;flex-direction:column;gap:clamp(.4em,1.4cqi,1.2em);container-type:inline-size;background:var(--si-bg);overflow:hidden}
+.si-dg-frame[data-orient="portrait"]{--_r:3/4;inline-size:min(100vw,100vh * 3 / 4)}
+.si-dg-head h1{margin:0;font-size:clamp(1.2em,4.2cqi,3.2em);line-height:1.05}
+.si-dg-head p{margin:.3em 0 0;color:var(--si-muted);font-size:clamp(.85em,1.8cqi,1.35em)}
+.si-dg-body{flex:1;min-block-size:0;display:flex;flex-direction:column;justify-content:center}
+.si-dg-body .si-dg>svg{max-block-size:none}
+.si-dg-frame[data-orient="portrait"] .si-dg>svg{font-size:15px}
+@media print{.si-dg-page main{min-block-size:0}}
+.si-dg-frame .si-dg-facts{font-size:clamp(.8em,1.25cqi,1.3em)}
+[data-si-shot] .si-dg-nav{display:none}
+/* a narrow page: a diagram keeps a readable width and scrolls sideways in its
+   own box (the page itself never does) */
+@media (max-width:700px){.si-doc:not(.si-dg-page) .si-figure.si-dg{overflow-x:auto;align-items:stretch;inline-size:100%}.si-doc:not(.si-dg-page) .si-dg>svg{min-inline-size:640px}}

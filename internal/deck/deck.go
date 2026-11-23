@@ -329,7 +329,7 @@ type Deck struct {
 }
 
 // Types are the accepted values of the `type` front matter key.
-var Types = []string{"deck", "lab", "article", "guide", "book", "demo", "site", "page", "mindmap", "quiz", "course", "timeline", "infographic", "video", "architecture", "status"}
+var Types = []string{"deck", "lab", "article", "guide", "book", "demo", "site", "page", "mindmap", "quiz", "course", "timeline", "infographic", "video", "architecture", "status", "diagram"}
 
 // TypeAliases are other names a `type:` may be written with.
 var TypeAliases = map[string]string{"status-board": "status"}
@@ -340,7 +340,7 @@ func (d *Deck) IsLab() bool { return d.Meta.Type == "lab" }
 // IsDoc reports whether the file is a document (lab, article or guide page):
 // one readable page, not slides.
 func (d *Deck) IsDoc() bool {
-	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide" || d.Meta.Type == "demo" || d.Meta.Type == "page" || d.Meta.Type == "mindmap" || d.Meta.Type == "quiz" || d.Meta.Type == "architecture" || d.Meta.Type == "status" || d.isPoster() ||
+	return d.Meta.Type == "lab" || d.Meta.Type == "article" || d.Meta.Type == "guide" || d.Meta.Type == "demo" || d.Meta.Type == "page" || d.Meta.Type == "mindmap" || d.Meta.Type == "quiz" || d.Meta.Type == "architecture" || d.Meta.Type == "status" || d.Meta.Type == "diagram" || d.isPoster() ||
 		(d.Meta.Type == "infographic" && d.Meta.IGPortrait()) // a landscape infographic is a slide
 }
 

@@ -78,6 +78,11 @@ AsciiDoc tab.
 
 ## What's new in si 4
 
+**Delivery diagrams (4.1).** Kanban boards, gantt plans and sequence
+diagrams in plain lines, animated: cards glide between columns, bars fill as
+the today line moves, messages draw themselves. In decks, in documents, or as
+pages of their own exported as PNG, JPG, PDF, SVG, GIF and MP4.
+
 **Classes on your computer (4.0).** Teach a course with a `sandbox:` to a
 whole class from your own machine: `si class` plans it (seats from a roster
 CSV, a code and a QR code per learner), `si class start <id> --tunnel` shares
@@ -271,6 +276,16 @@ tiles, then one card per area with Done, Missing and Improve columns, every
 percentage and bar counted from the lists so it cannot drift.
 [Architecture →](https://simple-ideas.org/features/architecture.html) ·
 [Status boards →](https://simple-ideas.org/features/status.html)
+
+### Delivery diagrams
+
+A board whose cards move from column to column, a plan whose bars fill as
+the today line moves, a request that travels from party to party: written in
+plain lines (```` ```kanban ````, ```` ```gantt ````, ```` ```sequence ````),
+animated one click at a time in a deck or on scroll in a page, or a page of
+their own (`type: diagram`) exported as PNG, JPG, PDF, SVG, GIF or MP4. si
+works out the critical path and flags a column over its WIP limit.
+[Delivery diagrams →](https://simple-ideas.org/features/diagrams.html)
 
 ### Sandbox labs
 

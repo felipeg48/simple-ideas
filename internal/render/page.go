@@ -38,6 +38,9 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	if dr.infographic || dr.chart {
 		b.WriteString(assets.InfographicCSS)
 	}
+	if dr.diagram {
+		b.WriteString(assets.DiagramCSS)
+	}
 	if dr.scene {
 		b.WriteString(assets.SceneCSS)
 	}

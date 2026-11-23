@@ -58,7 +58,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/ui"
 )
 
-const version = "4.0.1"
+const version = "4.1.0"
 
 // Exit codes.
 const (
@@ -130,6 +130,10 @@ Usage:
         an animated infographic (animate: build|loop): <name>.gif (720 px wide, loops for
         loop, plays once for build) and <name>.mp4 (full size; needs ffmpeg); --size films
         each size: <name>-<size>.gif / .mp4 / .png
+  si [build] <diagram.md> [--png] [--jpg] [--pdf] [--svg] [--gif] [--mp4] [--scale S]
+        delivery diagrams (kanban, gantt and sequence fences; type: diagram pages): the frame as
+        <name>.png / .jpg / .svg and pdfs/<name>.pdf at its last step, the animation as .gif / .mp4;
+        in any page --png / --svg also writes <name>-diagram-<n>-step-<k>.png per step
   si code <file.md> [--id show] [--png [--scale 2]] [--svg] [--gif] [--mp4] [-o dir]
         code windows and shows: one <file>-<id>-<n>.png / .svg per step (window,
         backdrop and callouts) and <file>-<id>.gif / .mp4, the whole show animated
@@ -1116,6 +1120,20 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 			if err := exportPictures("scene", chrome, dest, out, d.Name, d.Meta.Fonts, o.png, o.svg, d.IsDoc(), o.scale, stdout); err != nil {
 				fmt.Fprintf(stderr, "si: %s: scenes: %v\n", d.Name, err)
 				failed = true
+			}
+		}
+		if chrome != "" && (o.png || o.svg) && !d.IsMindmap() && !d.IsTimeline() && !d.IsInfographic() && hasDiagrams(res.HTML) { // every delivery diagram, a picture per step
+			if err := exportPictures("diagram", chrome, dest, out, d.Name, d.Meta.Fonts, o.png, o.svg, d.IsDoc(), o.scale, stdout); err != nil {
+				fmt.Fprintf(stderr, "si: %s: diagrams: %v\n", d.Name, err)
+				failed = true
+			}
+		}
+		if chrome != "" && d.IsDiagram() && (o.png || o.pdf || o.qrJPG || o.svg || o.gif || o.mp4) { // the page's frame: PNG, JPG, one-page PDF, SVG, GIF, MP4
+			if rel, err := exportDiagramPage(chrome, d, dest, out, o, stdout); err != nil {
+				fmt.Fprintf(stderr, "si: %s: %v\n", d.Name, err)
+				failed = true
+			} else if rel != "" {
+				entry.PDF = rel
 			}
 		}
 		if chrome != "" && o.svg && (d.IsTimeline() || d.IsInfographic()) { // the frame as a vector picture
@@ -2482,7 +2500,7 @@ func scaffold(name string, stdout, stderr io.Writer) int {
 // exampleKinds maps --type (and its aliases) to an example set.
 var exampleKinds = map[string]string{"": "deck", "deck": "deck", "slides": "deck", "article": "article",
 	"guide": "guide", "guides": "guide", "tutorial": "guide", "tutorials": "guide", "lab": "lab",
-	"book": "book", "reference": "book", "demo": "demo", "site": "site", "website": "site", "all": "all", "mindmap": "deck", "mindmaps": "deck", "course": "course", "courses": "course", "timeline": "timeline", "timelines": "timeline", "infographic": "infographic", "infographics": "infographic", "video": "video", "videos": "video", "architecture": "architecture", "status": "status", "status-board": "status", "sandbox": "sandbox", "sandbox-lab": "sandbox"}
+	"book": "book", "reference": "book", "demo": "demo", "site": "site", "website": "site", "all": "all", "mindmap": "deck", "mindmaps": "deck", "course": "course", "courses": "course", "timeline": "timeline", "timelines": "timeline", "infographic": "infographic", "infographics": "infographic", "video": "video", "videos": "video", "architecture": "architecture", "status": "status", "status-board": "status", "sandbox": "sandbox", "sandbox-lab": "sandbox", "diagram": "diagram", "diagrams": "diagram", "kanban": "diagram", "gantt": "diagram", "sequence": "diagram"}
 
 // writeExampleKind writes one example set into dir (which must not exist or
 // be empty): deck = the showcase decks (today's export), article = the article
@@ -2496,7 +2514,7 @@ func writeExampleKind(dir, kind string) error {
 		top, _, _ := strings.Cut(p, "/")
 		switch kind {
 		case "deck":
-			return p, top != "article" && top != "guide" && top != "book" && top != "site" && top != "course" && top != "timeline" && top != "infographic" && top != "video" && top != "architecture" && top != "status" && top != "sandbox"
+			return p, top != "article" && top != "guide" && top != "book" && top != "site" && top != "course" && top != "timeline" && top != "infographic" && top != "video" && top != "architecture" && top != "status" && top != "sandbox" && top != "diagram"
 		case "book":
 			r, ok := strings.CutPrefix(p, "book/")
 			return r, ok
@@ -2524,7 +2542,7 @@ func writeExampleKind(dir, kind string) error {
 		case "video":
 			r, ok := strings.CutPrefix(p, "video/")
 			return r, ok
-		case "architecture", "status", "sandbox":
+		case "architecture", "status", "sandbox", "diagram":
 			r, ok := strings.CutPrefix(p, kind+"/")
 			return r, ok
 		case "lab":

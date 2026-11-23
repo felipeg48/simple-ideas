@@ -223,6 +223,31 @@ Bars grow, shrink and change places, one click per column of numbers.
 
 **[▶ Watch it](features/showcase/motion.html?play#7)** ` ```chart bar race `
 
+## Delivery diagrams
+
+Boards, plans and requests that move, one step per click.
+[All about delivery diagrams →](features/diagrams.md)
+
+<!-- cards: 3 -->
+
+### Kanban · board · hi
+
+Cards glide from column to column day by day; a column over its WIP limit turns amber.
+
+**[▶ Watch it](live/diagram/board.md)** ` ```kanban `
+
+### Gantt · plan · teal
+
+The today line moves, bars fill, late tasks turn amber, the critical path is outlined.
+
+**[▶ Watch it](live/diagram/plan.md)** ` ```gantt `
+
+### Sequence · request · ok
+
+Calls and replies draw themselves, the parties light up, timings ride along.
+
+**[▶ Watch it](live/diagram/request.md)** ` ```sequence `
+
 ## Write it
 
 ```markdown

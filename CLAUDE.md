@@ -274,6 +274,17 @@ pass. The steps that matter:
     bullets, tables and code, pictures for canvases (hard: fluid layouts vs
     fixed boxes); (3) `si publish --to google-slides` (Drive upload with
     conversion, a Google OAuth login like LinkedIn's).
+- **Delivery diagrams** (DONE v4.1.0, RULES §38, spec
+  `docs/superpowers/specs/2026-11-23-dev-diagrams.md` phase 1): ```kanban,
+  ```gantt, ```sequence fences and `type: diagram` pages;
+  `internal/deck/diagram*.go` parse and lay out elements (box, bar, line, ms,
+  text) with a state per step (`Diagram.States`, `In` the entrance);
+  `render/diagram.go` draws the first state and `DiagramPage`;
+  `web/diagram.js` tweens states, follows build steps, plays on scroll, and
+  answers `window.siIG.seek` so `filmInfographic` films GIF/MP4;
+  `cmd/si/diagram.go` the page exports, `exportPictures("diagram")` per-step
+  pictures. Next: phase 2 (cfd, burndown, cycle-time, throughput on the chart
+  engine), phase 3 (state, class, flow tokens, wbs, storymap).
 - **Sandbox labs** (spec `docs/superpowers/specs/2026-11-22-sandbox-labs.md`,
   decided with the founder 2026-11-22): phase 1 DONE v3.44.0 (a lab's own
   Docker box in `si play`, the `si-sandbox` Colima VM with sysbox, RULES §37).

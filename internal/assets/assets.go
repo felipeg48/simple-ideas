@@ -94,6 +94,16 @@ var SceneCSS string
 //go:embed web/scene.js
 var SceneJS string
 
+// DiagramCSS and DiagramJS draw and play the delivery diagrams (```kanban,
+// ```gantt, ```sequence; render/diagram.go): elements that glide, grow and
+// draw between steps. Only pages with one carry them.
+//
+//go:embed web/diagram.css
+var DiagramCSS string
+
+//go:embed web/diagram.js
+var DiagramJS string
+
 //go:embed web/mindmap.js
 var MindmapJS string
 

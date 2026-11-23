@@ -54,3 +54,4 @@ this file; `examples/showcase.md` uses every rule in a real talk.
 35. [Architecture pages](#35-architecture-pages)
 36. [Status boards](#36-status-boards)
 37. [Sandbox labs](#37-sandbox-labs)
+38. [Delivery diagrams](#38-delivery-diagrams)

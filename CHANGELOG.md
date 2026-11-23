@@ -3,6 +3,24 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v4.1.0:** delivery diagrams (RULES §38). Three new fences, written in
+  plain lines and animated: ```` ```kanban ```` (columns, cards with ids,
+  owners, tags; `day N` steps move cards, block and unblock them, add new
+  ones; `wip:` limits turn a column amber and are named under the board),
+  ```` ```gantt ```` (tasks with lengths, `after` waits, `from` dates,
+  milestones and sections, scheduled by si with the critical path outlined
+  and the end date worked out; `today DATE · Task 60%` steps move the today
+  line, fill the bars, and mark late and done tasks), ```` ```sequence ````
+  (calls, replies, self-calls, timing badges and notes, one message per step,
+  the parties lit). In a deck each step is a build step; in a document a
+  diagram plays when scrolled into view, with ← → and Play; `steps=off`,
+  `facts=off`, `width=`. `type: diagram` is a page of its own, one frame
+  (landscape 16:9 or portrait 3:4, laid out narrower) with its title and
+  description, exported with `--png --jpg --pdf --svg --gif --mp4`; every
+  diagram in any deck or document also gets `--png` / `--svg` pictures of
+  each step. AsciiDoc: `[source,kanban]` blocks. Examples in
+  `examples/diagram/` (`si --export example --type diagram`).
+
 - **v4.0.1:** `?play` on a deck link plays the way to a slide:
   `talk.html?play#5` opens slide 4 at its end and moves on, so slide 5's
   transition and build animations run (a plain `#5` shows it at rest). The

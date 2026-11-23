@@ -424,6 +424,14 @@ Not everything is a slide deck. Pick the type by what the reader does:
   once. For a class (each learner their own box): `si class new <course>
   --roster people.csv`, then `si class start <id> --tunnel`; never put a seat
   code in a page or commit `.si/classes/`.
+- **Delivery diagrams** (RULES.md §38): ```` ```kanban ```` (`columns:`,
+  cards `ID Title · Column · @who`, `wip: Doing 2`, then `day N` steps with
+  `ID → Column`, `ID blocked: why`, `+ ID Title · Column`), ```` ```gantt
+  start=YYYY-MM-DD ```` (`Task · 5d · after A`, `milestone`, `section`,
+  `today DATE · Task 60%` steps) and ```` ```sequence ```` (`A → B: call`,
+  `A --> B: reply`, `note A: text`). One step = one `[CLICK]` in `Notes:`.
+  `type: diagram` for a page of its own. Use the team's real ids and dates;
+  never invent progress.
 - **Timelines** (RULES.md §29): `type: timeline`, then `## Era` headings
   (`· color=#hex` optional) and `### date · title` milestones, each with a
   one- or two-line description and at most one `![caption](img "credit")`

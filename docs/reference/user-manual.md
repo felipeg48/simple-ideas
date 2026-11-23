@@ -309,6 +309,16 @@ Exchange fans out → Email, Stock, Analytics
 
 ---
 
+## Delivery diagrams
+
+- ```` ```kanban ````: `columns:`, cards `ID Title · Column · @who`, then `day 2` steps with `ID → Column`, `ID blocked: why`, `+ ID Title · Column`; `wip: Doing 2` flags a column over its limit
+- ```` ```gantt start=2026-12-01 ````: `Task · 5d · after A, B`, `milestone`, `section`; `today DATE · Task 60%` steps move the today line; the critical path and the end are worked out
+- ```` ```sequence ````: `A → B: call · 380 ms`, `A --> B: reply`, `note A: text`; one message per click
+- In a deck each step is a click; in a document it plays on scroll with ← → Play; `type: diagram` is a page of its own (`orientation: portrait` too)
+- `si build board.md --png --jpg --pdf --svg --gif --mp4`; full guide: RULES.md §38
+
+---
+
 ## Video edits
 
 ```text

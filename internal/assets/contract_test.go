@@ -13,7 +13,7 @@ import (
 // window) uses an --si-* property or a .si-* class that the exported contract
 // (Tokens, Hooks) does not list, so `si --export css-rules` cannot drift.
 func TestContractCoversBuiltinCSS(t *testing.T) {
-	css := LayoutCSS + ThemeLooksCSS + DocCSS + CourseCSS + MindmapCSS + CodewinCSS + VideoplayerCSS + TimelineCSS + InfographicCSS + SceneCSS + PresenterHTML + MonitorHTML
+	css := LayoutCSS + ThemeLooksCSS + DocCSS + CourseCSS + MindmapCSS + CodewinCSS + VideoplayerCSS + TimelineCSS + InfographicCSS + SceneCSS + DiagramCSS + PresenterHTML + MonitorHTML
 	for name := range Themes {
 		css += ThemeCSS(name)
 	}

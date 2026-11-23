@@ -5,6 +5,16 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-23, end of session)
 
+**Update, later the same day: v4.1.0 delivery diagrams** (RULES §38, spec
+`docs/superpowers/specs/2026-11-23-dev-diagrams.md` phase 1 DONE): ```kanban,
+```gantt, ```sequence fences and `type: diagram` pages, animated
+(`web/diagram.js`), exported PNG/JPG/PDF/SVG/GIF/MP4; examples in
+`examples/diagram/`; site page `features/diagrams.md` + Motion gallery cards.
+**Next for diagrams:** phase 2 (cfd, burndown, cycle-time, throughput on the
+chart engine), phase 3 (state, class, flow tokens, wbs, storymap); kanban
+lanes and card ages, gantt workdays, sequence alt/loop boxes are not built
+yet. Sandbox phase 3 is still open too (below).
+
 main `e514c1e` (+ this handoff commit), tag **v4.0.1**, CI green (ci,
 release, docs-site; demos green on v4.0.0), installed (`si --version`
 4.0.1). Working tree clean except the untracked `.serena/` and

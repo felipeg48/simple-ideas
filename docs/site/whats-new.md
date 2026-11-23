@@ -5,6 +5,18 @@ description: si 4 teaches classes from your own computer, a Docker box per learn
 
 # What's new in si 4
 
+## Delivery diagrams (4.1)
+
+The diagrams a team draws every week, in plain lines, and moving. A
+```` ```kanban ```` board whose cards glide from column to column day by day,
+with a column over its WIP limit turning amber. A ```` ```gantt ```` plan si
+schedules itself, the critical path outlined, the today line moving as the
+bars fill and late tasks turn amber. A ```` ```sequence ```` of calls and
+replies that draw themselves one click at a time. In a deck, in an article,
+or a page of their own (`type: diagram`), exported as PNG, JPG, PDF, SVG,
+GIF or MP4. See [§38](rules/38-delivery-diagrams.md) and the
+[delivery diagrams](features/diagrams.md) page.
+
 ## Classes on your computer (4.0)
 
 A course with a `sandbox:` can now be taught to a whole class from your own
