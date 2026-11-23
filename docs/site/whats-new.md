@@ -12,6 +12,23 @@ narrated video you would publish.
 
 <!-- si-video: presenting -->
 
+## Sandbox labs (3.44)
+
+A lab can bring its own machine. Name a Docker image in `sandbox:` and
+`si play` starts a box from it before the lab opens: Docker inside, the
+lab's files in `/lab`, the terminal drawer's shells in the box, and every
+✓ Check run there, so "three containers are running" is checked where they
+run. Links written `sandbox:8080` open the box's own ports. The boxes live
+in a Colima VM of their own, unprivileged under sysbox and with none of
+your folders mounted, and they are gone when si play stops. See
+[§37](rules/37-sandbox-labs.md).
+
+```bash
+si sandbox host init          # once
+si new web-lab --type sandbox
+si play web-lab/lab.md --open
+```
+
 ## Architecture pages and status boards (3.43)
 
 Two documents that were kept by hand as hundreds of lines of HTML are now

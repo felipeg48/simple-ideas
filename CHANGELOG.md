@@ -3,6 +3,24 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.44.0:** sandbox labs (RULES §37). A lab's `sandbox: image:tag`
+  makes `si play` start a Docker box for it first (one getting-ready step):
+  Docker inside it, `sandbox-files:` copied into `/lab`, `sandbox-setup:`
+  run there, `sandbox-ports:` published, `sandbox-limits:` (memory, CPUs,
+  processes; 2 GiB, 2, 2048 by default). The terminal drawer's new tabs open
+  shells in the box (an exec over the Docker Engine API, standard library
+  only), ✓ Check runs the page's checks in the box's `/lab`, and
+  `[Shop](sandbox:8080)` links reach its ports through `/_si/sandbox/port/`;
+  `sandbox-cleanup:` and the box's removal when si play stops, and boxes a
+  killed si left are removed the next time. `si sandbox host
+  init|start|stop|status|rm` keeps the boxes off your own Docker: a Colima VM,
+  `si-sandbox`, sized to 3/4 of the machine's memory, sysbox 0.7.1 (pinned,
+  checksummed) so boxes run unprivileged, only an empty share folder mounted
+  (checked), the docker context left alone. Without sysbox a box needs
+  `--trusted-sandbox`. `si sandbox build` and `try`, `si new --type sandbox`
+  (a lab, its compose files, a Dockerfile), `sandbox.host:` in si.conf,
+  `si check` for the keys (an unpinned image is a warning).
+
 - **v3.43.0:** two new document types (PR #26). `type: architecture`: a
   design document whose `##` sections are numbered (`number: off`), each
   with its lead; a list of `` `tag` **Title** — body `` items becomes a grid

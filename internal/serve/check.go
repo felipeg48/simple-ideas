@@ -105,7 +105,12 @@ func (s *Server) check(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, c := range d.Checks() {
 		if c.Cmd == req.Cmd {
-			res := runCheck(filepath.Dir(md), c, checkTimeout)
+			var res checkResult
+			if b := s.pageBox(d); b != nil {
+				res = runBoxCheck(b, c, checkTimeout)
+			} else {
+				res = runCheck(filepath.Dir(md), c, checkTimeout)
+			}
 			log.Printf("si play: check %q: pass=%v exit=%d (%d ms)", c.Cmd, res.Pass, res.Exit, res.MS)
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(res)

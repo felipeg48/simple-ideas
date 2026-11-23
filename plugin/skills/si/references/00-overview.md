@@ -53,3 +53,4 @@ this file; `examples/showcase.md` uses every rule in a real talk.
 34. [Scenes: objects that move](#34-scenes-objects-that-move)
 35. [Architecture pages](#35-architecture-pages)
 36. [Status boards](#36-status-boards)
+37. [Sandbox labs](#37-sandbox-labs)

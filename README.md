@@ -262,6 +262,16 @@ percentage and bar counted from the lists so it cannot drift.
 [Architecture →](https://simple-ideas.org/features/architecture.html) ·
 [Status boards →](https://simple-ideas.org/features/status.html)
 
+### Sandbox labs
+
+A lab can bring its own machine. `sandbox: docker:28-dind` gives each run
+of the lab a Docker box with Docker inside it: the lab's files in `/lab`,
+the terminal drawer's shells inside the box, ✓ Check run in it, and
+`[Shop](sandbox:8080)` links to its ports. The boxes run on a Colima VM of
+their own (`si sandbox host init`), unprivileged under sysbox, with none of
+your folders in reach, and go when `si play` stops.
+[Sandbox labs →](https://simple-ideas.org/rules/37-sandbox-labs.html)
+
 ### Video edits
 
 The finishing touches of a recording, written beside it: one line per

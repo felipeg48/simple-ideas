@@ -25,6 +25,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 	"github.com/felipeg48/simple-ideas/internal/render"
+	"github.com/felipeg48/simple-ideas/internal/sandbox"
 	"github.com/felipeg48/simple-ideas/internal/ui"
 	"github.com/felipeg48/simple-ideas/internal/videdit"
 	"github.com/felipeg48/simple-ideas/internal/webdemo"
@@ -51,9 +52,10 @@ type Server struct {
 	AudienceKey string           // --audience: the key of the audience pages (follow along), not the presenter's
 	Title       string           // --title / --site: the index page title; empty uses the directory name
 	Interval    time.Duration
-	Autoplay    bool           // --autoplay: decks open with the Auto-play bar ready
-	Instructor  bool           // a course renders for the instructor (si play; si serve --instructor), else the learner
-	Voicer      webdemo.Voicer // auto-play voices (voice.go); nil: the voice programs, through the cache
+	Autoplay    bool                // --autoplay: decks open with the Auto-play bar ready
+	Instructor  bool                // a course renders for the instructor (si play; si serve --instructor), else the learner
+	Voicer      webdemo.Voicer      // auto-play voices (voice.go); nil: the voice programs, through the cache
+	Sandbox     func() *sandbox.Box // the lab's Docker box (si play; nil or nil box: none yet): drawer tabs and checks run in it (sandbox.go)
 
 	dir     string
 	file    string // set when Root is a single deck
@@ -118,6 +120,12 @@ func New(root string, css []string, theme, conf string) (*Server, error) {
 		}
 		return d.Meta.Shell
 	}
+	s.term.box = func() *sandbox.Box {
+		if s.Sandbox == nil {
+			return nil
+		}
+		return s.Sandbox()
+	}
 	s.relay = newRelay()
 	s.polls = newPolls()
 	s.qa = newQA()
@@ -173,7 +181,9 @@ func (s *Server) Handler() http.Handler {
 		mux.HandleFunc("GET /_si/term/api/find", localOnly(s.term.find))
 		mux.HandleFunc("GET /_si/term/api/grep", localOnly(s.term.grep))
 		mux.HandleFunc("POST /_si/browser/open", localOnly(s.browserOpen))
-		mux.HandleFunc("POST /_si/check", localOnly(s.check)) // a lab's ✓ Check: runs only the page's own check commands
+		mux.HandleFunc("POST /_si/check", localOnly(s.check))                     // a lab's ✓ Check: runs only the page's own check commands
+		mux.HandleFunc("GET /_si/sandbox", localOnly(s.sandboxState))             // the lab's box: image, how it runs, its ports (sandbox.go)
+		mux.HandleFunc("GET /_si/sandbox/port/{port}/", localOnly(s.sandboxPort)) // a sandbox-ports: link opens the box's port
 	}
 	if s.Relay {
 		mux.HandleFunc("POST /_si/relay", s.hookRelay) // course result events, signed and forwarded (check.go)

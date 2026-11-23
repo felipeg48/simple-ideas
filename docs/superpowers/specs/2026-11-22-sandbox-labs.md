@@ -1,7 +1,13 @@
 # Sandbox labs: a Docker box per learner, the lab beside it
 
-Status: PLAN (2026-11-22), not built. Decisions taken (see below); phase 1
-is next, v4.0.0 at phase 2.
+Status: phase 1 DONE (v3.44.0, RULES §37); phase 2 (classes) is v4.0.0.
+As built, the keys are flat like the rest of si's front matter
+(`sandbox:`, `sandbox-files:`, `sandbox-setup:`, `sandbox-cleanup:`,
+`sandbox-ports:`, `sandbox-limits:`), files are copied by `tar -x` over
+exec (the Engine's archive upload fails on sysbox's mounts), the flag is
+`--trusted-sandbox`, and the VM sizes are flags of `si sandbox host init`.
+Not in phase 1: the Viewer reading files inside the box, `ports:` as
+browser windows over the slides, the class pieces.
 
 ## The idea
 

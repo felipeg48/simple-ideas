@@ -297,6 +297,16 @@ Exchange fans out → Email, Stock, Analytics
 
 ---
 
+## Sandbox labs
+
+- A lab with `sandbox: docker:28-dind` gets its own Docker box in `si play`: the drawer's tabs open in it, ✓ Check runs in it, `[Shop](sandbox:8080)` opens its ports, it goes when si play stops
+- `sandbox-files: env` (copied into `/lab`), `sandbox-setup:`, `sandbox-cleanup:`, `sandbox-ports: 8080 Shop`, `sandbox-limits: memory=2g cpus=2`
+- Once: `si sandbox host init` (a Colima VM, `si-sandbox`: sysbox so boxes run unprivileged, no host folder mounted, your docker context untouched); `si sandbox host status|start|stop|rm`
+- Your own image: `si new web-lab --type sandbox`, `si sandbox build web-lab -t name:1.0`, `si sandbox try web-lab/lab.md`
+- `--trusted-sandbox` runs a box privileged on a host without sysbox: only for images you trust; full guide: RULES.md §37
+
+---
+
 ## Video edits
 
 ```text

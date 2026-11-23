@@ -152,6 +152,7 @@ type Config struct {
 	Budget                   Budget            // budget.page / budget.3d: si check fails on bigger pages
 	DrawHold                 string            // draw.hold: the key that draws with the cursor ("" = alt)
 	TermPrompt               string            // terminal.prompt: clean (si's neutral prompt in the drawer) or real ("" = real)
+	SandboxHost              string            // sandbox.host: where lab boxes run: colima (default, the si-sandbox profile), docker, or a unix socket path
 	TermOpacity              int               // terminal.opacity: the drawer's opacity in %, 40-100 (0 = 100)
 	TermBlur                 int               // terminal.blur: px of blur on the slide behind a translucent drawer (0 = none)
 	HandoutPaper             string            // handout.paper: a4 (default) or letter
@@ -445,6 +446,12 @@ func (c *Config) parse(r io.Reader) {
 				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: terminal.prompt wants clean or real, got %q", ln, v))
 			} else {
 				c.TermPrompt = v
+			}
+		case k == "sandbox.host":
+			if v != "colima" && v != "docker" && !strings.HasPrefix(v, "/") && !strings.HasPrefix(v, "unix://") {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: sandbox.host wants colima, docker or a unix socket path, got %q", ln, v))
+			} else {
+				c.SandboxHost = v
 			}
 		case k == "terminal.opacity":
 			if n, ok := Percent(v); ok && n >= 40 && n <= 100 {

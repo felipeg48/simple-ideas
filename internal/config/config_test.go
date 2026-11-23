@@ -155,3 +155,12 @@ func TestAutoplayKeys(t *testing.T) {
 		t.Errorf("warnings = %v", c.Warnings)
 	}
 }
+
+func TestSandboxHost(t *testing.T) {
+	for v, want := range map[string]string{"colima": "colima", "docker": "docker", "/x.sock": "/x.sock", "unix:///y": "unix:///y", "vm": ""} {
+		c := Parse(strings.NewReader("sandbox.host: " + v + "\n"))
+		if c.SandboxHost != want || (want == "") != (len(c.Warnings) == 1) {
+			t.Errorf("%s: %q %v", v, c.SandboxHost, c.Warnings)
+		}
+	}
+}

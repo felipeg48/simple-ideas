@@ -310,7 +310,7 @@ func (h *termHub) raw(w http.ResponseWriter, r *http.Request) {
 // cwd: GET ?id= -> {dir}: the folder a tab's shell is in now.
 func (h *termHub) cwd(w http.ResponseWriter, r *http.Request) {
 	s := h.get(r)
-	if s == nil || s.cmd.Process == nil {
+	if s == nil || s.cmd == nil || s.cmd.Process == nil { // a sandbox shell has no local process
 		http.Error(w, "no such tab", http.StatusNotFound)
 		return
 	}

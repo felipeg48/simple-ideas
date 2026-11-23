@@ -25,6 +25,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/felipeg48/simple-ideas/internal/sandbox"
 	"github.com/felipeg48/simple-ideas/internal/termpty"
 	"github.com/felipeg48/simple-ideas/internal/webdemo"
 )
@@ -42,7 +43,8 @@ const termIdle = 10 * time.Minute
 // attached now, if any; a newer attach replaces the older stream.
 type termSession struct {
 	pty     io.ReadWriteCloser
-	cmd     *exec.Cmd
+	cmd     *exec.Cmd            // the local shell; nil for a sandbox shell
+	resize  func(cols, rows int) // a sandbox shell's resize (nil: the PTY's)
 	title   string
 	created time.Time
 	exited  chan struct{} // closed when the PTY reads end
@@ -80,6 +82,7 @@ type termHub struct {
 	lines     map[string]lineCount         // Follow's line counts, per file (files.go lineAt)
 	clean     func() bool                  // start shells with si's neutral prompt (Server.CleanPrompt)
 	deckShell func(r *http.Request) string // the shell: of the deck the request comes from ("" = none)
+	box       func() *sandbox.Box          // the lab's sandbox, when si play runs one: new tabs open in it
 }
 
 func newTermHub(dir string) *termHub {
@@ -107,6 +110,12 @@ func (h *termHub) shellFor(r *http.Request) (shell string, clean bool) {
 
 // newTab starts a shell in a fresh PTY and returns its tab id.
 func (h *termHub) newTab(w http.ResponseWriter, r *http.Request) {
+	if h.box != nil && r.URL.Query().Get("where") != "host" {
+		if b := h.box(); b != nil {
+			h.boxTab(w, r, b)
+			return
+		}
+	}
 	shell, clean := h.shellFor(r)
 	cmd, rcDone := webdemo.LiveShell(shell), func() {}
 	cmd.Dir = h.dir
@@ -121,11 +130,7 @@ func (h *termHub) newTab(w http.ResponseWriter, r *http.Request) {
 	}
 	// the page's size (cols, rows) from the start: a shell that read 0×0 (or
 	// the 80 columns of its terminfo) before the first resize could keep it
-	cols, _ := strconv.Atoi(r.URL.Query().Get("cols"))
-	rows, _ := strconv.Atoi(r.URL.Query().Get("rows"))
-	if cols <= 0 || rows <= 0 || cols > 1000 || rows > 1000 {
-		cols, rows = 0, 0
-	}
+	cols, rows := tabSize(r)
 	f, err := termpty.Start(cmd, cols, rows)
 	if err != nil {
 		rcDone()
@@ -148,6 +153,22 @@ func (h *termHub) newTab(w http.ResponseWriter, r *http.Request) {
 		}
 		h.drop(id)
 	}()
+	h.startJanitor()
+	w.Header().Set("Content-Type", "text/plain")
+	io.WriteString(w, id)
+}
+
+// tabSize is the page's terminal size from ?cols=&rows= (0×0 when absent or odd).
+func tabSize(r *http.Request) (cols, rows int) {
+	cols, _ = strconv.Atoi(r.URL.Query().Get("cols"))
+	rows, _ = strconv.Atoi(r.URL.Query().Get("rows"))
+	if cols <= 0 || rows <= 0 || cols > 1000 || rows > 1000 {
+		return 0, 0
+	}
+	return cols, rows
+}
+
+func (h *termHub) startJanitor() {
 	h.janitor.Do(func() {
 		go func() {
 			for range time.Tick(time.Minute) {
@@ -155,6 +176,26 @@ func (h *termHub) newTab(w http.ResponseWriter, r *http.Request) {
 			}
 		}()
 	})
+}
+
+// boxTab opens a tab on a shell inside the lab's sandbox (an exec in the box,
+// never a shell on this machine).
+func (h *termHub) boxTab(w http.ResponseWriter, r *http.Request, b *sandbox.Box) {
+	cols, rows := tabSize(r)
+	sh, err := b.Shell(cols, rows)
+	if err != nil {
+		http.Error(w, "sandbox: "+err.Error(), http.StatusBadGateway)
+		return
+	}
+	id := strconv.FormatInt(h.next.Add(1), 10)
+	now := time.Now()
+	s := &termSession{pty: sh, resize: sh.Resize, title: "sandbox", created: now, idle: now, exited: make(chan struct{})}
+	h.mu.Lock()
+	h.tabs[id] = s
+	h.mu.Unlock()
+	go s.pump()
+	go func() { <-s.exited; h.drop(id) }() // the shell ended (exit, the box went)
+	h.startJanitor()
 	w.Header().Set("Content-Type", "text/plain")
 	io.WriteString(w, id)
 }
@@ -338,7 +379,11 @@ func (h *termHub) resize(w http.ResponseWriter, r *http.Request) {
 	cols, _ := strconv.Atoi(r.URL.Query().Get("cols"))
 	rows, _ := strconv.Atoi(r.URL.Query().Get("rows"))
 	if cols > 0 && rows > 0 {
-		termpty.Resize(s.pty, cols, rows)
+		if s.resize != nil {
+			s.resize(cols, rows)
+		} else {
+			termpty.Resize(s.pty, cols, rows)
+		}
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -365,7 +410,7 @@ func (h *termHub) drop(id string) {
 	if s == nil {
 		return
 	}
-	if s.cmd.Process != nil {
+	if s.cmd != nil && s.cmd.Process != nil {
 		s.cmd.Process.Kill()
 	}
 	s.pty.Close()

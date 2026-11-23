@@ -58,7 +58,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/ui"
 )
 
-const version = "3.43.0"
+const version = "3.44.0"
 
 // Exit codes.
 const (
@@ -84,6 +84,10 @@ Usage:
         play and serve run a deck's own setup:, start:, stop: and cleanup: (front matter, in the
         order written): setup: and start: before the talk (a "getting ready" page meanwhile),
         start: programs kept running while serving, stop:, the programs, cleanup: on quit (Ctrl-C)
+        si play of a lab with sandbox: <image> first makes the lab's own Docker box on the sandbox
+        host (si sandbox host init): the drawer's tabs open in it, ✓ Check runs in it,
+        [x](sandbox:8080) opens its ports; removed on quit. --trusted-sandbox lets it run
+        privileged on a host without sysbox (only for an image you trust)
   si play|serve|build github:owner/repo@REF/path[.md|/] ["https://…/talk.md · sha256 HEX"] [--trust]
         a deck (or a folder of them) from a repo at a tag or commit (fetched once into
         ~/.si/cache/repos, its layout kept) or from a pinned URL; code from elsewhere is shown
@@ -179,6 +183,11 @@ Usage:
         set up Kokoro, the natural offline voice, in one command (a Python venv + model files)
   si voice login|logout elevenlabs|openai
         keep a cloud voice's API key in your own si.conf (0600), never in a project's
+  si sandbox host init|start|stop|status|rm
+        the si-sandbox Colima VM where labs' Docker boxes run: Docker, sysbox (boxes run
+        unprivileged), no host folder mounted; init sizes it to 3/4 of this machine's memory
+  si sandbox build <dir> -t name:tag | try <lab.md|image>
+        build a lab image into the sandbox host; start a box and open a shell in it
   si doctor
         the optional programs si can use (Chrome, ffmpeg, git, …): found or not, and
         how to install each on this computer
@@ -464,6 +473,7 @@ type options struct {
 	use                                          bool       // si theme import --use: write theme: into si.conf
 	accent                                       string     // si theme from --accent: keep this colour
 	trust                                        bool       // si play/build/serve github:…/a URL: run code from elsewhere without asking (CI)
+	trustedSandbox                               bool       // si play --trusted-sandbox: a lab's box may run privileged on a host without sysbox
 	structure                                    bool       // si new --structure: the project structure map and its folders
 	staged                                       bool       // a structured build's inner pass (writes the flat layout to staging)
 	srcDirs                                      []string   // more folders of sources (a project structure's folders)
@@ -580,6 +590,7 @@ func parseArgs(argv []string, stderr io.Writer) (*options, error) {
 	fl.BoolVar(&o.use, "use", false, "")
 	fl.StringVar(&o.accent, "accent", "", "")
 	fl.BoolVar(&o.trust, "trust", false, "")
+	fl.BoolVar(&o.trustedSandbox, "trusted-sandbox", false, "")
 	for {
 		if err := fl.Parse(argv); err != nil {
 			return nil, err
@@ -620,6 +631,9 @@ func run(argv []string, stdout, stderr io.Writer) int {
 	}
 	if len(argv) > 0 && argv[0] == "voice" { // its own flags
 		return runVoice(argv[1:], stdout, stderr)
+	}
+	if len(argv) > 0 && argv[0] == "sandbox" { // its own flags (sandbox.go)
+		return runSandbox(argv[1:], stdout, stderr)
 	}
 	o, err := parseArgs(argv, stderr)
 	if err != nil {
@@ -1674,11 +1688,27 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		defer func() { cancel(); restore() }()
 	}
 	var setupFailed atomic.Bool
-	if len(stages) > 0 {
+	var box *labBox
+	if srv.Terminal { // a lab's own Docker box: si play on loopback only (RULES §37)
+		if box, err = findLabBox(src); err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitProblems
+		}
+		if box != nil {
+			srv.Sandbox = box.get
+			defer box.down(stdout)
+		}
+	}
+	if len(stages) > 0 || box != nil {
 		gate := newGate(srv.Handler(), stages)
+		var pre func() error
+		if box != nil {
+			gate.first("sandbox: " + box.spec.Image)
+			pre = func() error { return box.up(o.trustedSandbox, stdout) }
+		}
 		hs.Handler = gate
 		fmt.Fprintf(stdout, "  getting ready: %d step(s) of setup before the talk (the page shows them)\n", len(gate.steps))
-		down := runStages(stages, gate, stdout, func() { setupFailed.Store(true); cancel() })
+		down := runStages(stages, gate, stdout, pre, func() { setupFailed.Store(true); cancel() })
 		defer func() {
 			fmt.Fprintln(stdout, "si play: stop:, the programs, cleanup:")
 			down()
@@ -2445,7 +2475,7 @@ func scaffold(name string, stdout, stderr io.Writer) int {
 // exampleKinds maps --type (and its aliases) to an example set.
 var exampleKinds = map[string]string{"": "deck", "deck": "deck", "slides": "deck", "article": "article",
 	"guide": "guide", "guides": "guide", "tutorial": "guide", "tutorials": "guide", "lab": "lab",
-	"book": "book", "reference": "book", "demo": "demo", "site": "site", "website": "site", "all": "all", "mindmap": "deck", "mindmaps": "deck", "course": "course", "courses": "course", "timeline": "timeline", "timelines": "timeline", "infographic": "infographic", "infographics": "infographic", "video": "video", "videos": "video", "architecture": "architecture", "status": "status", "status-board": "status"}
+	"book": "book", "reference": "book", "demo": "demo", "site": "site", "website": "site", "all": "all", "mindmap": "deck", "mindmaps": "deck", "course": "course", "courses": "course", "timeline": "timeline", "timelines": "timeline", "infographic": "infographic", "infographics": "infographic", "video": "video", "videos": "video", "architecture": "architecture", "status": "status", "status-board": "status", "sandbox": "sandbox", "sandbox-lab": "sandbox"}
 
 // writeExampleKind writes one example set into dir (which must not exist or
 // be empty): deck = the showcase decks (today's export), article = the article
@@ -2459,7 +2489,7 @@ func writeExampleKind(dir, kind string) error {
 		top, _, _ := strings.Cut(p, "/")
 		switch kind {
 		case "deck":
-			return p, top != "article" && top != "guide" && top != "book" && top != "site" && top != "course" && top != "timeline" && top != "infographic" && top != "video" && top != "architecture" && top != "status"
+			return p, top != "article" && top != "guide" && top != "book" && top != "site" && top != "course" && top != "timeline" && top != "infographic" && top != "video" && top != "architecture" && top != "status" && top != "sandbox"
 		case "book":
 			r, ok := strings.CutPrefix(p, "book/")
 			return r, ok
@@ -2487,7 +2517,7 @@ func writeExampleKind(dir, kind string) error {
 		case "video":
 			r, ok := strings.CutPrefix(p, "video/")
 			return r, ok
-		case "architecture", "status":
+		case "architecture", "status", "sandbox":
 			r, ok := strings.CutPrefix(p, kind+"/")
 			return r, ok
 		case "lab":
@@ -2692,6 +2722,19 @@ func newStarter(name, kind string, stdout, stderr io.Writer) int {
 			return exitProblems
 		}
 		fmt.Fprintf(stdout, "si: created %s/ (a course: _course.md, a reading, slides, a video, a lab, an instructor demo, quizzes)\n  si serve %s --open\n  si build %s -o %s-html\n", dir, dir, dir, dir)
+		return exitOK
+	}
+	if kind == "sandbox" || kind == "sandbox-lab" { // a lab with its own Docker box: the lab, its files, a Dockerfile
+		dir := strings.TrimSuffix(name, "/")
+		if _, err := os.Lstat(dir); err == nil {
+			fmt.Fprintf(stderr, "si: %s already exists; si new never overwrites\n", dir)
+			return exitProblems
+		}
+		if err := writeExampleKind(dir, "sandbox"); err != nil {
+			fmt.Fprintf(stderr, "si: %v\n", err)
+			return exitProblems
+		}
+		fmt.Fprintf(stdout, "si: created %s/ (lab.md with sandbox:, env/ copied into the box, a Dockerfile for your own image)\n  si sandbox host init   (once: the Colima VM the boxes run in)\n  si play %s/lab.md --open\n", dir, dir)
 		return exitOK
 	}
 	if alias, ok := map[string]string{"slides": "deck", "tutorial": "guide", "reference": "book", "mindmap-3d": "mindmap3d", "code": "codeshow", "website": "site", "status-board": "status"}[kind]; ok {

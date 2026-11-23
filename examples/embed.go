@@ -9,7 +9,7 @@ import "embed"
 // mind maps (mindmap/), and the video edit (video/: a short recording and
 // the edit that finishes it).
 //
-//go:embed *.md *.json si.conf assets css night-shift demos article code all:guide all:book all:site all:course mindmap timeline infographic video architecture status
+//go:embed *.md *.json si.conf assets css night-shift demos article code all:guide all:book all:site all:course mindmap timeline infographic video architecture status sandbox
 var FS embed.FS
 
 // Main is the showcase deck that includes the others.

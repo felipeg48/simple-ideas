@@ -438,6 +438,13 @@ Not everything is a slide deck. Pick the type by what the reader does:
   lists; trailing `` `P0` ``, `` `partial` ``, `` `gated` ``,
   `` `improvement` `` or a `` `v1.2 · hash` ``; `## Shipped` for the chips.
   A partial or gated item stays in Missing. Ground every item in the repo.
+- **Sandbox labs** (RULES.md §37): a `type: lab` with `sandbox: image:tag`
+  (pinned; `docker:28-dind` or an image built from it), `sandbox-files:` (a
+  folder copied into `/lab`), `sandbox-setup:` / `sandbox-cleanup:`,
+  `sandbox-ports: 8080 Shop` and `sandbox-limits:`; link a port as
+  `[Shop](sandbox:8080)`; checks run in the box's `/lab`. Write the steps for
+  the box (paths under `/lab`, `docker compose` there), never for the
+  author's own machine. Needs `si sandbox host init` once.
 - **Timelines** (RULES.md §29): `type: timeline`, then `## Era` headings
   (`· color=#hex` optional) and `### date · title` milestones, each with a
   one- or two-line description and at most one `![caption](img "credit")`
@@ -639,3 +646,4 @@ Not everything is a slide deck. Pick the type by what the reader does:
 - [34. Scenes: objects that move](references/34-scenes-objects-that-move.md)
 - [35. Architecture pages](references/35-architecture-pages.md)
 - [36. Status boards](references/36-status-boards.md)
+- [37. Sandbox labs](references/37-sandbox-labs.md)

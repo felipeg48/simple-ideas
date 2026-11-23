@@ -185,6 +185,14 @@ type Meta struct {
 	Prepare      string // web demo: prepare: (or step:) a command run once before the first feature (the last one; Lifecycle has them all)
 	Cleanup      string // web demo and deck: cleanup: a command run after the programs are stopped (the last one)
 
+	// a lab's own Docker box (sandbox.go; run by internal/sandbox in si play)
+	Sandbox        string // sandbox: the image
+	SandboxFiles   string // sandbox-files: a folder copied into /lab
+	SandboxSetup   string // sandbox-setup: a command run in the box once it is up
+	SandboxCleanup string // sandbox-cleanup: a command run before the box is removed
+	SandboxPorts   string // sandbox-ports: 15672 Console, 8080 App
+	SandboxLimits  string // sandbox-limits: memory=2g cpus=2 pids=2048
+
 	// courses (_course.md, and the lessons it lists)
 	Nav             string // nav: the navigator layout of a course, guide, book or site: left|right|top|bottom · sticky · accordion|tabs|collapsed · numbered
 	Level           string // course: beginner, intermediate … (shown on the course home)
@@ -227,7 +235,7 @@ var DemoKeys = []string{"region", "header-offset", "intro", "outro", "music", "u
 func init() { MetaKeys = append(MetaKeys, DemoKeys...) }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "browser", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup", "nav", "level", "instructor-demos", "certificate", "pass", "minutes", "prerequisites", "instructor", "webhook", "webhook-format", "webhook-events", "webhook-token", "webhook-auth", "webhook-learner", "webhook-consent", "webhook-notice", "webhook-base", "orientation", "sources", "steps", "animate", "files", "number", "updated", "meta", "tiles"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "browser", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup", "nav", "level", "instructor-demos", "certificate", "pass", "minutes", "prerequisites", "instructor", "webhook", "webhook-format", "webhook-events", "webhook-token", "webhook-auth", "webhook-learner", "webhook-consent", "webhook-notice", "webhook-base", "orientation", "sources", "steps", "animate", "files", "number", "updated", "meta", "tiles", "sandbox", "sandbox-files", "sandbox-setup", "sandbox-cleanup", "sandbox-ports", "sandbox-limits"}
 
 // MetaLine is one front matter line kept as written: its key, its value and
 // its line in the file.
@@ -625,6 +633,7 @@ func (d *Deck) frontMatter(file string, lines []string) int {
 	d.timelineMeta(file, keyLine)
 	d.statusMeta(file, keyLine)
 	d.webhookMeta(file, keyLine)
+	d.sandboxMeta(file, keyLine)
 	d.infographicMeta(file, keyLine)
 	for _, k := range []string{"layout", "aspect"} {
 		if ln, ok := keyLine[k]; ok {
@@ -688,6 +697,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"view": &m.MapView, "camera": &m.MapCamera, "floors": &m.MapFloors, "kind": &m.MapKind, "flow": &m.MapFlow,
 		"orientation": &m.Orientation, "sources": &m.Sources, "steps": &m.Steps, "animate": &m.Animate,
 		"number": &m.Number, "updated": &m.Updated,
+		"sandbox": &m.Sandbox, "sandbox-files": &m.SandboxFiles, "sandbox-setup": &m.SandboxSetup, "sandbox-cleanup": &m.SandboxCleanup, "sandbox-ports": &m.SandboxPorts, "sandbox-limits": &m.SandboxLimits,
 	}[key]
 	if ptr == nil {
 		ptr = m.Timeline.field(key)

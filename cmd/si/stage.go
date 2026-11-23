@@ -107,6 +107,18 @@ func (g *readyGate) done(sr webdemo.StepResult) {
 	}
 }
 
+// first puts a step before the stages' own (the lab's sandbox).
+func (g *readyGate) first(text string) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	for i := range g.steps {
+		if g.steps[i].Status == "running" {
+			g.steps[i].Status = "waiting"
+		}
+	}
+	g.steps = append([]gateStep{{Text: text, Status: "running"}}, g.steps...)
+}
+
 func (g *readyGate) ready() {
 	g.mu.Lock()
 	g.open = true
@@ -172,10 +184,11 @@ if(s.failed){clearInterval(t);document.getElementById('fail').textContent=s.fail
 }).catch(function(){clearInterval(t);document.getElementById('fail').textContent='si play has stopped.'})},500)})();
 </script></body></html>`
 
-// runStages runs every stage's setup: and start: lines (in the background:
-// the gate shows them meanwhile); on a failure it calls fail. The returned
-// func runs stop:, stops the programs and runs cleanup:, last stage first.
-func runStages(stages []*webdemo.Script, g *readyGate, stdout io.Writer, fail func()) func() {
+// runStages runs pre (the lab's sandbox, when there is one: the gate's first
+// step), then every stage's setup: and start: lines (in the background: the
+// gate shows them meanwhile); on a failure it calls fail. The returned func
+// runs stop:, stops the programs and runs cleanup:, last stage first.
+func runStages(stages []*webdemo.Script, g *readyGate, stdout io.Writer, pre func() error, fail func()) func() {
 	logs, _ := os.MkdirTemp("", "si-play-run-")
 	os.Setenv("SI_RUN_LOGS", logs) // the terminal drawer's shells see the programs' logs
 	var sts []*webdemo.Stage
@@ -184,6 +197,17 @@ func runStages(stages []*webdemo.Script, g *readyGate, stdout io.Writer, fail fu
 		sts = append(sts, webdemo.NewStage(s, logs, stdout, g.done))
 	}
 	go func() {
+		if pre != nil {
+			start := time.Now()
+			if err := pre(); err != nil {
+				g.done(webdemo.StepResult{Status: "failed", Seconds: time.Since(start).Seconds()})
+				fmt.Fprintf(stdout, "si play: getting ready failed: %v\n", err)
+				g.failed(err.Error())
+				fail()
+				return
+			}
+			g.done(webdemo.StepResult{Status: "passed", Seconds: time.Since(start).Seconds()})
+		}
 		for _, st := range sts {
 			mu.Lock()
 			err := st.Up()
@@ -226,7 +250,7 @@ func liveStage(src string, o *options, log io.Writer) (func(), error) {
 	g := newGate(nil, stages)
 	fmt.Fprintf(log, "  getting ready to film: %d step(s) of setup: / start: (--no-live skips them)\n", len(g.steps))
 	failed := make(chan struct{})
-	down := runStages(stages, g, log, func() { close(failed) })
+	down := runStages(stages, g, log, nil, func() { close(failed) })
 	for {
 		g.mu.Lock()
 		open := g.open

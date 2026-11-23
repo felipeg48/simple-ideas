@@ -256,6 +256,7 @@ type canvasRef struct {
 func (dr *deckRenderer) toHTML(md string, sc *slideCtx) string {
 	src := []byte(md)
 	doc := dr.md.Parser().Parse(text.NewReader(src))
+	sandboxLinks(doc)
 	if sc != nil {
 		dr.transform(doc, src, sc)
 	}
