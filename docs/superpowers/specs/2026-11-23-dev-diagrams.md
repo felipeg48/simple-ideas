@@ -3,7 +3,9 @@
 Status: phase 1 DONE v4.1.0 (kanban, gantt, sequence, type: diagram);
 phase 2 DONE v4.2.0 (cfd, burndown, cycle-time, throughput, built on the
 diagram engine rather than the chart fence: one player, one step model, one
-export path). Next: phase 3 (state, class, flow tokens, wbs, storymap).
+export path); phase 3 DONE v4.3.0 (state, flowchart (`flow` was taken by
+the stage fence), class, wbs, storymap). Next: phase 4 (Studio editors,
+terminal views).
 
 ## The idea
 

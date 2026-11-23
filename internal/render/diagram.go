@@ -52,7 +52,7 @@ func dgElSVG(b *strings.Builder, i int, e deck.DEl, s deck.DState, clip string) 
 			ty -= 8
 		}
 		tx := 10.0
-		if strings.Contains(e.C, "si-dg-actor") { // a name in the middle of its box
+		if strings.Contains(e.C, "si-dg-actor") || strings.Contains(e.C, "si-dg-mid") { // a name in the middle of its box
 			tx = s.W / 2
 		}
 		fmt.Fprintf(b, `<text class="t" x="%g" y="%g">%s</text>`, tx, ty, html.EscapeString(s.T))
@@ -61,6 +61,13 @@ func dgElSVG(b *strings.Builder, i int, e deck.DEl, s deck.DState, clip string) 
 		fmt.Fprintf(b, `<rect class="b" width="%g" height="%g" rx="%g"/><rect class="q" width="%g" height="%g" rx="%g"/>`, s.W, s.H, e.R, s.W*s.P, s.H, e.R)
 	case "ms":
 		b.WriteString(`<path d="M0 -9L9 0L0 9L-9 0Z"/>`)
+	case "card": // a title over a rule and fixed lines (a class: its members)
+		fmt.Fprintf(b, `<rect width="%g" height="%g" rx="%g"/><text class="t" x="%g" y="17">%s</text><path class="r" d="M0 30H%g"/>`, s.W, s.H, e.R, s.W/2, html.EscapeString(s.T), s.W)
+		for j, l := range e.Lines {
+			fmt.Fprintf(b, `<text class="m" x="10" y="%d">%s</text>`, 46+18*j, html.EscapeString(l))
+		}
+	case "dia":
+		fmt.Fprintf(b, `<path d="M%g 0L%g %gL%g %gL0 %gZ"/><text class="t" x="%g" y="%g">%s</text>`, s.W/2, s.W, s.H/2, s.W/2, s.H, s.H/2, s.W/2, s.H/2, html.EscapeString(s.T))
 	case "shape":
 		fmt.Fprintf(b, `<path d="%s"/>`, e.D)
 	case "dot":

@@ -76,7 +76,7 @@
       if (e.k === 'box') {
         r = g.querySelector('rect'); r.setAttribute('width', Math.max(0, num(s.w))); r.setAttribute('height', Math.max(0, num(s.h)));
         t = g.querySelectorAll('text');
-        if (t[0]) { t[0].textContent = s.t || ''; t[0].setAttribute('y', num(s.h) / 2 - (s.u ? 8 : 0)); if (/si-dg-actor/.test(e.c)) t[0].setAttribute('x', num(s.w) / 2); }
+        if (t[0]) { t[0].textContent = s.t || ''; t[0].setAttribute('y', num(s.h) / 2 - (s.u ? 8 : 0)); if (/si-dg-actor|si-dg-mid/.test(e.c)) t[0].setAttribute('x', num(s.w) / 2); }
         if (t[1]) { t[1].textContent = s.u || ''; t[1].setAttribute('y', num(s.h) / 2 + 10); }
       } else if (e.k === 'bar') {
         r = g.querySelectorAll('rect');

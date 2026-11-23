@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -174,8 +175,19 @@ func (r *runner) show(session string) error {
 	return err
 }
 
+// screencast starts filming the page in front. A page in the middle of a
+// navigation (a live reload the step before set off) answers "Not attached
+// to an active page" for a moment: it is asked again, for up to 3 s.
 func (r *runner) screencast() error {
-	return r.c.Call("Page.startScreencast", map[string]any{"format": "jpeg", "quality": 90, "maxWidth": r.s.W * r.k, "maxHeight": r.s.H * r.k, "everyNthFrame": 1}, nil)
+	var err error
+	for try := 0; try < 12; try++ {
+		err = r.c.Call("Page.startScreencast", map[string]any{"format": "jpeg", "quality": 90, "maxWidth": r.s.W * r.k, "maxHeight": r.s.H * r.k, "everyNthFrame": 1}, nil)
+		if err == nil || !strings.Contains(err.Error(), "Not attached to an active page") {
+			return err
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+	return err
 }
 
 var errStopping = fmt.Errorf("the run is stopping")

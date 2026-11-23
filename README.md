@@ -287,6 +287,8 @@ their own (`type: diagram`) exported as PNG, JPG, PDF, SVG, GIF or MP4. si
 works out the critical path and flags a column over its WIP limit. Flow
 metrics too: cumulative flow, burndown, cycle time and throughput, revealed
 day by day with the throughput, the pace and the percentiles worked out.
+And state machines, flowcharts with a moving token, class diagrams, work
+breakdowns and story maps.
 [Delivery diagrams →](https://simple-ideas.org/features/diagrams.html)
 
 ### Sandbox labs

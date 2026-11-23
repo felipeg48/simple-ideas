@@ -5,6 +5,14 @@ description: si 4 teaches classes from your own computer, a Docker box per learn
 
 # What's new in si 4
 
+## Graphs, trees and maps (4.3)
+
+A ```` ```state ```` machine whose current state follows each event, a
+```` ```flowchart ```` with a token moving box by box, a ```` ```class ````
+diagram that grows class by class, a ```` ```wbs ```` that unfolds level by
+level with its estimates added up, and a ```` ```storymap ```` sliced release
+by release. See [§38](rules/38-delivery-diagrams.md).
+
 ## Flow metrics (4.2)
 
 A team's numbers, drawn and revealed day by day: a ```` ```cfd ```` whose

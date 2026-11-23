@@ -285,7 +285,10 @@ pass. The steps that matter:
   `cmd/si/diagram.go` the page exports, `exportPictures("diagram")` per-step
   pictures. Phase 2 DONE v4.2.0 (`internal/deck/diagram_flow.go`: cfd,
   burndown, cycle-time, throughput on the same engine: a `clip` element
-  reveals `Clip` shapes, `dot` and `shape` kinds). Next: phase 3 (state, class, flow tokens, wbs, storymap).
+  reveals `Clip` shapes, `dot` and `shape` kinds). Phase 3 DONE v4.3.0
+  (`diagram_graph.go`: state, flowchart, class on a layered graph layout;
+  `diagram_tree.go`: wbs, storymap; `card` and `dia` element kinds). Next:
+  phase 4 (Studio editors, terminal views).
 - **Sandbox labs** (spec `docs/superpowers/specs/2026-11-22-sandbox-labs.md`,
   decided with the founder 2026-11-22): phase 1 DONE v3.44.0 (a lab's own
   Docker box in `si play`, the `si-sandbox` Colima VM with sysbox, RULES §37).

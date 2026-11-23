@@ -140,6 +140,76 @@ the throughput, the time from start to done, the day the pace points to,
 the percentiles. A page of its own: [the flow](../live/diagram/flow.md),
 [a sprint](../live/diagram/sprint.md).
 
+## States, flows, classes, work and stories
+
+```state title="An order's life"
+Placed → Paid on authorised
+Placed → Cancelled on timeout
+Paid → Shipped on picked
+Paid → Refunded on cancelled
+Shipped → Delivered on scanned
+event authorised
+event picked
+event scanned
+```
+
+```flowchart title="Checkout"
+Start → In stock?
+In stock? → Pay: yes
+In stock? → Backorder: no
+Backorder → Pay
+Pay → Paid?
+Paid? → Ship: yes
+Paid? → Pay: retry
+Ship → End
+token Start → In stock? → Pay → Paid? → Ship → End
+```
+
+```class title="The order model"
+Order: id, total(), pay()
+LineItem: sku, qty
+Customer: name, email
+Payment: amount, authorise()
+CardPayment: last4
+Order has many LineItem
+Order → Customer
+Order uses Payment
+CardPayment is a Payment
+```
+
+```wbs title="Parcel lockers"
+- Parcel lockers
+  - Design
+    - Research · 2d
+    - Screens · 3d
+  - Build
+    - Locker API · 8d
+    - Web map · 6d
+  - Ship
+    - Tests · 4d
+    - Launch · 1d
+```
+
+```storymap title="What we ship first"
+## Find a locker | Send a parcel | Pick it up | Get help
+Map · Opening hours | Label · Size check | Code by SMS · QR code | Chat · Call back
+release MVP: Map, Label, Code by SMS
+release 2: Opening hours, Size check, QR code, Chat
+```
+
+```markdown
+Placed → Paid on authorised
+event authorised
+
+In stock? → Pay: yes
+token Start → In stock? → Pay → End
+
+Order has many LineItem
+CardPayment is a Payment
+
+release MVP: Map, Label, Code by SMS
+```
+
 ## Anywhere, and as files
 
 - **In a deck:** each step is a click.

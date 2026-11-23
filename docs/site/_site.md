@@ -67,6 +67,8 @@ footer: simple-ideas
   - [One order, one request, a sequence](live/diagram/request.md)
   - [How work flowed, a cumulative flow](live/diagram/flow.md)
   - [Sprint 31, a burndown](live/diagram/sprint.md)
+  - [The life of an order, a state machine](live/diagram/order.md)
+  - [Parcel lockers, a story map](live/diagram/storymap.md)
 - [Themes](themes.md)
 - [AI agents](agents.md)
 - [Rules](rules/)

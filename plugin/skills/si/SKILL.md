@@ -459,6 +459,11 @@ Not everything is a slide deck. Pick the type by what the reader does:
   never invent progress. Flow metrics: ```` ```cfd ```` / ```` ```burndown ```` /
   ```` ```throughput ```` from a table of the team's real counts, ```` ```cycle-time ````
   one `ID · YYYY-MM-DD · days` line per finished item; never make numbers up.
+  Graphs and maps: ```` ```state ```` (`A → B on event`, `event` steps),
+  ```` ```flowchart ```` (`A → B: label`, `Ready?` decisions, `token` steps),
+  ```` ```class ```` (`Name: members`, `A has many B`, `A is a B`),
+  ```` ```wbs ```` (an indented list, `· 3d`), ```` ```storymap ````
+  (`## Activity | …`, `release MVP: …`).
 - **Timelines** (RULES.md §29): `type: timeline`, then `## Era` headings
   (`· color=#hex` optional) and `### date · title` milestones, each with a
   one- or two-line description and at most one `![caption](img "credit")`

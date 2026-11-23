@@ -3,6 +3,21 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v4.3.0:** graphs, trees and maps (RULES §38). ```` ```state ```` (a state
+  machine from `A → B on event`; `event` steps move the lit current state
+  along its transition), ```` ```flowchart ```` (`A → B: label`, decisions
+  as diamonds, start and end as pills; `token A → B → C` steps move a token
+  box by box), ```` ```class ```` (UML classes with their members, `has
+  many`, `has one`, `is a` with a hollow triangle, `uses` dashed; one class
+  per step), ```` ```wbs ```` (a work breakdown from an indented list,
+  numbered, estimates added up the tree; one level per step) and
+  ```` ```storymap ```` (a backbone of activities, the stories under them,
+  one release slice per step, the rest under *later*). Graphs are laid out
+  in layers from the first box, a step back routed under the chart or over
+  it. The demo filming waits for a page that is reloading before it starts
+  the screencast again (a live reload right before a browser step failed a
+  take). Examples: `examples/diagram/order.md`, `storymap.md`.
+
 - **v4.2.0:** flow metrics (RULES §38): ```` ```cfd ```` (cumulative flow
   from a table, a column per state, the bands stacked with done at the
   bottom; the throughput and, by Little's law, the time from start to done),

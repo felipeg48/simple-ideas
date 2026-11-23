@@ -266,6 +266,24 @@ A dot per finished item, then the 50th, 85th and 95th percentiles.
 
 **[▶ Watch it](features/diagrams.md)** ` ```cycle-time `
 
+### State machine · events · ok
+
+The current state follows each event along its transition.
+
+**[▶ Watch it](live/diagram/order.md)** ` ```state `
+
+### Flowchart · token · orange
+
+A token moves box by box, through the decisions.
+
+**[▶ Watch it](features/diagrams.md)** ` ```flowchart `
+
+### Story map · releases · hi
+
+The backbone, then one release slice per click.
+
+**[▶ Watch it](live/diagram/storymap.md)** ` ```storymap `
+
 ## Write it
 
 ```markdown

@@ -128,6 +128,75 @@ CART-7 · 2026-12-04 · 6d
 
 More than twelve rows reveal in about eight steps.
 
+**Graphs, trees and maps.** Five more, each one line per thing:
+
+````markdown
+```state
+Placed → Paid on authorised
+Paid → Shipped on picked
+Shipped → Delivered on scanned
+event authorised
+event picked
+```
+
+```flowchart
+Start → In stock?
+In stock? → Pay: yes
+In stock? → Backorder: no
+Backorder → Pay
+Pay → End
+token Start → In stock? → Pay → End
+```
+
+```class
+Order: id, total(), pay()
+LineItem: sku, qty
+Order has many LineItem
+CardPayment is a Payment
+Order uses Payment
+```
+
+```wbs
+- Parcel lockers
+  - Design
+    - Research · 2d
+    - Screens · 3d
+  - Build · 8d
+```
+
+```storymap
+## Find a locker | Send a parcel | Pick it up
+Map · Opening hours | Label · Size check | Code by SMS · QR code
+release MVP: Map, Label, Code by SMS
+release 2: Opening hours, QR code
+```
+````
+
+- **`state`**: `A → B on event` transitions (`[*] → A` names the first
+  state; else the first written). Each `event name` line is a step: the
+  current state (lit) follows its transition, which lights up. The first
+  state is a pill.
+- **`flowchart`**: `A → B` or `A → B: label` (a box can be named alone on
+  a line); a name ending in `?` is a decision (a diamond), `Start`, `End`,
+  `Done` and `Stop` are pills. `token A → B → C` lines are steps: a token
+  moves box by box, lighting the box and the edge it came along.
+- **`class`**: `Name: field, method()` for a class and its members;
+  `A has many B` (1 → *), `A has one B`, `A is a B` (inheritance, a hollow
+  triangle), `A uses B` (dashed) and `A → B`. One class per step, a
+  relation as soon as both its classes are shown.
+- **`wbs`**: an indented list, the project first: its parts in a row under
+  it, their parts stacked below, numbered 1, 1.1, 1.1.2; `· 3d` (or `2w`,
+  `5h`, `8pts`) estimates added up to every parent and the total. One level
+  per step.
+- **`storymap`**: `## Activity | Activity` is the backbone; a row of `|`
+  cells puts stories (split by `·`) under each activity; each `release
+  Name: story, story` line is a slice, one per step, and stories in no
+  release come last, under *later*.
+
+Graphs are laid out left to right from the first box, a layer per step away
+from it; a step back goes under the chart, or over it to the top box of its
+layer.
+
 | Fence option | What it does |
 |---|---|
 | `title="…"` | a small caption over the diagram |
