@@ -5,21 +5,38 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-23, end of session)
 
-**Update, later the same day: v4.1.0 delivery diagrams** (RULES §38, spec
-`docs/superpowers/specs/2026-11-23-dev-diagrams.md` phase 1 DONE): ```kanban,
-```gantt, ```sequence fences and `type: diagram` pages, animated
-(`web/diagram.js`), exported PNG/JPG/PDF/SVG/GIF/MP4; examples in
-`examples/diagram/`; site page `features/diagrams.md` + Motion gallery cards.
-**v4.2.0:** flow metrics (cfd, burndown, cycle-time, throughput) DONE.
-**v4.3.0:** state, flowchart, class, wbs, storymap DONE.
-**Next for diagrams:** phase 4 (Studio editors, terminal views); was phase 3 (state, class, flow tokens, wbs, storymap); kanban
-lanes and card ages, gantt workdays, sequence alt/loop boxes are not built
-yet. Sandbox phase 3 is still open too (below).
+**LATEST (read first): main `1054f15`, tag v4.3.0, CI green (ci, release,
+docs-site), installed (`si --version` 4.3.0).** Working tree clean except the
+untracked `.serena/` and `si-docs-site/` (not ours; leave them).
 
-main `e514c1e` (+ this handoff commit), tag **v4.0.1**, CI green (ci,
-release, docs-site; demos green on v4.0.0), installed (`si --version`
-4.0.1). Working tree clean except the untracked `.serena/` and
-`si-docs-site/` (not ours; leave them).
+**Delivery diagrams** (RULES §38, spec
+`docs/superpowers/specs/2026-11-23-dev-diagrams.md`, phases 1–3 DONE):
+- **v4.1.0** ```kanban, ```gantt, ```sequence fences and `type: diagram`
+  pages (landscape 16:9 / portrait 3:4), animated by `web/diagram.js`
+  (tweens per-step states, follows `.si-dg-mark` build steps on slides,
+  scroll autoplay, `window.siIG.seek` for filming); exports PNG/JPG/PDF/SVG/
+  GIF/MP4 (`cmd/si/diagram.go`, `exportPictures("diagram")`).
+- **v4.2.0** flow metrics: cfd, burndown, cycle-time, throughput
+  (`internal/deck/diagram_flow.go`, `clip` reveal, `dot`/`shape` kinds).
+- **v4.3.0** state, flowchart (with a moving token), class
+  (`diagram_graph.go`, layered layout), wbs, storymap (`diagram_tree.go`;
+  `card`/`dia` kinds). Element classes `si-dg-cls`/`si-dg-wb` (not
+  `-class`/`-wbs`: those clash with the figure's `si-dg-<kind>`).
+- Engine: `deck.Diagram{Kind,Title,W,H,Els,In,States,Steps,Facts}`, render
+  `internal/render/diagram.go`, examples `examples/diagram/*.md`, site page
+  `docs/site/features/diagrams.md` + Motion gallery cards.
+- **Next for diagrams:** phase 4 (Studio editors, terminal text views);
+  not built yet: kanban lanes and card ages, gantt workdays, sequence
+  alt/loop boxes.
+
+**Demo videos are on request only (the founder, 2026-11-23).** Never
+re-record `docs/demos/` on your own; `.github/workflows/demos.yml` is
+`workflow_dispatch` only (run it only when the founder asks); `pages.yml`
+finds the newest videos in the last 200 releases. The CI `demos` *test* job
+(`si demo test`) still runs on every push. v4.3.0 also made screencast start
+retry "Not attached to an active page" (`internal/webdemo/runterm.go`).
+
+**After every release: `make install`** so the founder's `si` matches the tag.
 
 **Shipped this session, in order:**
 - `73345b3` names scrubbed from everything public (docs, examples, specs,
@@ -59,7 +76,8 @@ release, docs-site; demos green on v4.0.0), installed (`si --version`
   `talk.html?play#5` opens one step before and moves on so the transition
   and build animations play (a plain `#5` shows the slide at rest); RULES §14.
 
-**Resume here (next, in order):**
+**Resume here (next, in order; nothing is in progress, wait for the
+founder's pick if they name one):**
 1. **Sandbox labs phase 3, instructor live tools** (spec "Phases" 3): watch a
    seat's terminal read-only, take over (learner sees a badge), show a seat on
    the deck screen, Reset all, idle warnings; plus the Viewer reading files
@@ -68,7 +86,9 @@ release, docs-site; demos green on v4.0.0), installed (`si --version`
    the seat's roster name.
 2. Phase 4 hardening: sysbox by default where present, a warm pool of boxes,
    Windows host check. Bump sysbox 0.7.1 → 0.7.2 once two weeks old.
-3. More Motion gallery polish if the founder asks (e.g. a small preview
+3. Diagrams phase 4 (Studio editors, terminal views) and the missing
+   kanban/gantt/sequence extras above.
+4. More Motion gallery polish if the founder asks (e.g. a small preview
    loop per card); same pattern for other showcases (3D mind maps, code shows).
 
 **The founder's machine:** a 128 GB Mac. The `si-sandbox` Colima VM is still
@@ -88,8 +108,8 @@ changes: `go test ./cmd/si -run TestBuildDefaultUnchanged -update`, read the
 diff. RULES changes need `go test ./internal/skill -update`.
 
 **Status board:** https://claude.ai/code/artifact/1dc6fd53-0b3f-4a86-a379-59db56d274da
-(version 64, updated for v4.0.0; add a chip for v4.0.1 Motion gallery next
-time). `Artifact read` it, edit the saved file with a script, republish with
+(version 64, updated for v4.0.0; still needs chips for v4.0.1 Motion
+gallery, v4.1.0, v4.2.0, v4.3.0 diagrams). `Artifact read` it, edit the saved file with a script, republish with
 `url`.
 
 **Awaiting the founder (asked, unanswered):** move the unlisted client themes
