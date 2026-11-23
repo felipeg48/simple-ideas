@@ -3,7 +3,89 @@
 Read this, then `FEATURE.md`, then `CLAUDE.md`. This is a Go CLI (`si`) that turns
 Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
-## Current state (2026-11-17, end of session)
+## Current state (2026-11-23, end of session)
+
+main `e514c1e` (+ this handoff commit), tag **v4.0.1**, CI green (ci,
+release, docs-site; demos green on v4.0.0), installed (`si --version`
+4.0.1). Working tree clean except the untracked `.serena/` and
+`si-docs-site/` (not ours; leave them).
+
+**Shipped this session, in order:**
+- `73345b3` names scrubbed from everything public (docs, examples, specs,
+  fixtures, tests, issues). **Never write a client, employer or brand name
+  in anything public** (code, docs, examples, commits, issues, PRs, status
+  boards); invented names only (Northwind, Acme, Dockyard). Private notes
+  live outside the repo in `~/Progs/AI/si-private-notes/`.
+- **v3.44.0 / v3.44.1** sandbox labs (RULES §37, spec
+  `docs/superpowers/specs/2026-11-22-sandbox-labs.md`): `sandbox:` gives a
+  lab its own Docker-in-Docker box in `si play` (drawer tabs, ✓ Check and
+  `sandbox:PORT` links in it), on the `si-sandbox` Colima VM with sysbox
+  (unprivileged, only `~/.si/sandbox/share` mounted). `internal/sandbox/`
+  (engine.go, box.go, host.go), `cmd/si/sandbox.go`.
+- **v4.0.0** classes on the presenter's machine (spec phase 2 DONE):
+  `si class` planner (keyed loopback page, `cmd/si/class.go` +
+  `classplanner.html`), `si class new|list|codes|start|rm`, class files
+  `.si/classes/<id>.json` (0600), seat codes (8 of 30 symbols), roster CSV,
+  codes sheet with QR codes, `internal/sandbox/class.go` (`Fleet`: a box per
+  seat on first use, memory budget = 80% of the VM unless `--budget`,
+  ttl/idle `Reap`, `States`, `Measure`), `internal/serve/seats.go`
+  (`Classroom`, `ClassroomHandler`: its own allow-list mux, never
+  `Handler()`; `/go/<code>` → `si_seat` cookie; tabs only in the seat's box
+  via `termHub.need`; checks in the box; ports reverse-proxied). Shared by
+  `--tunnel` (cloudflared quick tunnel), `--https` (si's CA) or `--local`.
+  Quick tunnels hold chunked streams back, so off the loopback the drawer
+  long-polls `GET /_si/term/api/read` (term.js `POLL`; ~150 ms a key,
+  measured) and hides the Viewer/⌘P/⌘⇧F. Lab pages now carry the drawer
+  (`render/docterm.go`: >_ Terminal button, `` ` ``, Run on shell blocks).
+  CLAUDE.md rule #8 has the classes exception.
+- `2dbf501` + **v4.0.1** the docs site's **Motion** top-level menu (the
+  founder: motion must be first-class marketing, not buried in reference):
+  `docs/site/motion.md` (*See it move*: 29 effect cards, each one line of
+  Markdown and a ▶ Watch it), `docs/site/features/{transitions,animations,
+  motion}.md`, showcase decks in `docs/site/features/showcase/` (also
+  menu items, so built standalone), a "See it move" section on the home
+  page. New runtime feature `?play` (`deck/02-navigation.js` `fromHash`):
+  `talk.html?play#5` opens one step before and moves on so the transition
+  and build animations play (a plain `#5` shows the slide at rest); RULES §14.
+
+**Resume here (next, in order):**
+1. **Sandbox labs phase 3, instructor live tools** (spec "Phases" 3): watch a
+   seat's terminal read-only, take over (learner sees a badge), show a seat on
+   the deck screen, Reset all, idle warnings; plus the Viewer reading files
+   inside the box (exec-based, confined to /lab), CPU per box (two stats
+   samples), several classes per planner. Learners' class events could carry
+   the seat's roster name.
+2. Phase 4 hardening: sysbox by default where present, a warm pool of boxes,
+   Windows host check. Bump sysbox 0.7.1 → 0.7.2 once two weeks old.
+3. More Motion gallery polish if the founder asks (e.g. a small preview
+   loop per card); same pattern for other showcases (3D mind maps, code shows).
+
+**The founder's machine:** a 128 GB Mac. The `si-sandbox` Colima VM is still
+at the 8 GiB test size: before a real class run `si sandbox host rm && si
+sandbox host init` (defaults: half the cores, 3/4 of RAM = 96 GiB, 100 GiB
+disk; about 38 learners at 2 GB). Colima is started with `--activate=false`
+so the founder's own docker context (`desktop-linux`) is never switched.
+
+**Testing tips from this session:** curl is blocked by a hook here: drive
+HTTP with Python (`http.client`) or Playwright scripts (import playwright via
+`createRequire('<repo>/web/studio/package.json')`), headless only. Real-box
+test: `SI_DOCKER=1 go test ./internal/sandbox`. A whole class end to end:
+copy `examples/sandbox` into a temp project as `lab/`, `si class new lab
+--seats 2`, `si class start <id> --local --no-open`, then `/go/<code>`.
+The `cmd/si` build-listing golden changes whenever the deck runtime JS
+changes: `go test ./cmd/si -run TestBuildDefaultUnchanged -update`, read the
+diff. RULES changes need `go test ./internal/skill -update`.
+
+**Status board:** https://claude.ai/code/artifact/1dc6fd53-0b3f-4a86-a379-59db56d274da
+(version 64, updated for v4.0.0; add a chip for v4.0.1 Motion gallery next
+time). `Artifact read` it, edit the saved file with a script, republish with
+`url`.
+
+**Awaiting the founder (asked, unanswered):** move the unlisted client themes
+and TRADEMARKS.md out of the public repo; delete the remote branch
+`feat/architecture-status-doctypes`.
+
+## Earlier state (2026-11-17, end of session)
 
 main `854c431`, tag **v3.34.0**, CI green (test, studio, demos, windows),
 installed (`si --version` 3.34.0). Working tree clean except the untracked
