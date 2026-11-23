@@ -216,5 +216,8 @@ and a new rule #8 exception, worth the major number.
 - Cloudflare quick tunnels buffer streams (the audience page already falls
   back to polling). The terminal stream must be tested through one; a named
   tunnel or LAN HTTPS may be required for typing to feel live.
-- One laptop's RAM bounds the class: about 2 GB per box, so a 32 GB machine
-  takes roughly 10 to 12 learners after the VM and si.
+- The host's RAM bounds the class, at about 2 GB per box. The founder's Mac
+  has 128 GB: `si sandbox host init` defaults to a 96 GB VM with an 80 GB box
+  budget, leaving 32 GB for macOS, si and the presenter's own Docker. That fits
+  about 40 learners at 2 GB each, or about 26 at 3 GB. On smaller machines the
+  default is three quarters of RAM for the VM.
