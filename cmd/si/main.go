@@ -58,7 +58,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/ui"
 )
 
-const version = "3.44.0"
+const version = "3.44.1"
 
 // Exit codes.
 const (
@@ -84,10 +84,6 @@ Usage:
         play and serve run a deck's own setup:, start:, stop: and cleanup: (front matter, in the
         order written): setup: and start: before the talk (a "getting ready" page meanwhile),
         start: programs kept running while serving, stop:, the programs, cleanup: on quit (Ctrl-C)
-        si play of a lab with sandbox: <image> first makes the lab's own Docker box on the sandbox
-        host (si sandbox host init): the drawer's tabs open in it, ✓ Check runs in it,
-        [x](sandbox:8080) opens its ports; removed on quit. --trusted-sandbox lets it run
-        privileged on a host without sysbox (only for an image you trust)
   si play|serve|build github:owner/repo@REF/path[.md|/] ["https://…/talk.md · sha256 HEX"] [--trust]
         a deck (or a folder of them) from a repo at a tag or commit (fetched once into
         ~/.si/cache/repos, its layout kept) or from a pinned URL; code from elsewhere is shown
@@ -188,6 +184,9 @@ Usage:
         unprivileged), no host folder mounted; init sizes it to 3/4 of this machine's memory
   si sandbox build <dir> -t name:tag | try <lab.md|image>
         build a lab image into the sandbox host; start a box and open a shell in it
+        si play of a lab with sandbox: <image> first makes its Docker box there: the drawer's
+        tabs open in it, ✓ Check runs in it, [x](sandbox:8080) opens its ports; removed on
+        quit. --trusted-sandbox lets it run privileged on a host without sysbox
   si doctor
         the optional programs si can use (Chrome, ffmpeg, git, …): found or not, and
         how to install each on this computer
@@ -1696,6 +1695,7 @@ func play(src string, o *options, stdout, stderr io.Writer) int {
 		}
 		if box != nil {
 			srv.Sandbox = box.get
+			srv.SandboxAll = box.course
 			defer box.down(stdout)
 		}
 	}

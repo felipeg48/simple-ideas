@@ -3,6 +3,11 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v3.44.1:** si play of a folder starts a sandbox only for its top-level
+  pages (and `sandbox:` in `_course.md`, one box for the whole course: every
+  lesson's checks run in it); a lab in a subfolder, like `si new`'s examples,
+  never starts Docker. `si --help` keeps its first screen as it was.
+
 - **v3.44.0:** sandbox labs (RULES §37). A lab's `sandbox: image:tag`
   makes `si play` start a Docker box for it first (one getting-ready step):
   Docker inside it, `sandbox-files:` copied into `/lab`, `sandbox-setup:`

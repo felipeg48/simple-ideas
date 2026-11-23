@@ -56,6 +56,7 @@ type Server struct {
 	Instructor  bool                // a course renders for the instructor (si play; si serve --instructor), else the learner
 	Voicer      webdemo.Voicer      // auto-play voices (voice.go); nil: the voice programs, through the cache
 	Sandbox     func() *sandbox.Box // the lab's Docker box (si play; nil or nil box: none yet): drawer tabs and checks run in it (sandbox.go)
+	SandboxAll  bool                // the box is a course's (_course.md): every page's checks run in it, not only the pages with sandbox:
 
 	dir     string
 	file    string // set when Root is a single deck

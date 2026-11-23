@@ -6315,8 +6315,11 @@ si sandbox build web-lab -t northwind/web-lab:1.0
 si sandbox try web-lab/lab.md        # the box as si play makes it, a shell here
 ```
 
-`si play` runs one box: pages that name the same image share it; two
-different images in what one `si play` serves is a problem. `si serve`
+`si play` runs one box, for the file it serves or a folder's top-level
+pages: pages that name the same image share it; two different images are a
+problem. Pages in subfolders never start one (serving a folder of examples
+starts no Docker). `sandbox:` in a course's `_course.md` gives the whole
+course one box, and every lesson's checks run in it. `si serve`
 and built pages have no box: the page shows the commands, and a
 `sandbox:` link has nowhere to go. Boxes left by a `si` that was killed are
 removed the next time one starts.

@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -189,33 +188,28 @@ func printBox(w io.Writer, b *sandbox.Box) {
 
 // labBox is the Docker box si play runs for the lab it serves.
 type labBox struct {
-	spec deck.Sandbox
-	dir  string // the folder of the page that asks for it
-	file string
-	mu   sync.Mutex
-	b    *sandbox.Box
+	spec   deck.Sandbox
+	course bool   // from _course.md: every page of the course uses the box
+	dir    string // the folder of the page that asks for it
+	file   string
+	mu     sync.Mutex
+	b      *sandbox.Box
 }
 
-// findLabBox is the sandbox: of the pages under src (one file, or a folder
-// and its subfolders: a course's labs). Pages may share one box; two
-// different boxes in one si play are a problem. nil: no page asks for one.
+// findLabBox is the sandbox: of what si play serves: the file, or a
+// folder's top-level pages and its _course.md (a box for the whole course).
+// Pages in subfolders never start one: serving a folder of examples must not
+// start Docker boxes. Pages may share one box; two different boxes are a
+// problem. nil: no page asks for one.
 func findLabBox(src string) (*labBox, error) {
 	var files []string
 	if st, err := os.Stat(src); err == nil && !st.IsDir() {
 		files = []string{src}
 	} else {
-		filepath.WalkDir(src, func(p string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return nil
-			}
-			if d.IsDir() && p != src && (strings.HasPrefix(d.Name(), ".") || d.Name() == "node_modules" || d.Name() == "dist") {
-				return filepath.SkipDir
-			}
-			if !d.IsDir() && strings.HasSuffix(p, ".md") {
-				files = append(files, p)
-			}
-			return nil
-		})
+		files, _ = deck.List(src)
+		if c := filepath.Join(src, "_course.md"); fileExists(c) {
+			files = append(files, c)
+		}
 	}
 	var lb *labBox
 	for _, f := range files {
@@ -236,7 +230,7 @@ func findLabBox(src string) (*labBox, error) {
 			}
 			continue
 		}
-		lb = &labBox{spec: s, dir: filepath.Dir(f), file: f}
+		lb = &labBox{spec: s, dir: filepath.Dir(f), file: f, course: filepath.Base(f) == "_course.md"}
 	}
 	return lb, nil
 }

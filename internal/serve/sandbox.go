@@ -26,9 +26,9 @@ func (s *Server) box() *sandbox.Box {
 }
 
 // pageBox is the sandbox a page's checks run in: si play's box, when the
-// page asks for a sandbox.
+// page asks for a sandbox (or the box is its course's).
 func (s *Server) pageBox(d *deck.Deck) *sandbox.Box {
-	if _, ok, _ := d.Meta.SandboxSpec(); !ok {
+	if _, ok, _ := d.Meta.SandboxSpec(); !ok && !s.SandboxAll {
 		return nil
 	}
 	return s.box()
