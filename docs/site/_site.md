@@ -16,6 +16,9 @@ footer: simple-ideas
 - [What's new in si 4](whats-new.md)
 - Features
   - [Decks](features/decks.md)
+    - [Transitions](features/transitions.md)
+    - [Build animations](features/animations.md)
+    - [Motion](features/motion.md)
     - [Presenting](features/remote.md)
     - [Audience](features/audience.md)
     - [Try it, as the room does](features/audience-demo.md)

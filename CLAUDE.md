@@ -281,9 +281,10 @@ pass. The steps that matter:
   `/go/<code>`, a box per seat, memory budget, ttl/idle reaper, reset,
   `--tunnel`/`--https`/`--local`; the drawer polls through quick tunnels,
   about 150 ms a key). Next: phase 3 (the instructor's watch / take over /
-  show on screen, idle warnings, the Viewer reading files in the box). After
-  that: the docs site's Decks submenu with showcase pages (animations,
-  motion, transitions), the founder's request.
+  show on screen, idle warnings, the Viewer reading files in the box). The
+  docs site's Decks submenu with showcase pages is DONE (the founder's
+  request): `docs/site/features/{transitions,animations,motion}.md`, each
+  embedding a live deck from `docs/site/features/showcase/` (`slides:`).
 - **Courses** (DONE: phases 1–2 v3.2.0, phases 3–4 v3.7.0 (`internal/render/scorm.go`,
   `coursebook.go`, `internal/publish/skilljar.go`; SkillJar unverified on a real account), spec
   `docs/superpowers/specs/2026-11-12-courses.md`, mockup

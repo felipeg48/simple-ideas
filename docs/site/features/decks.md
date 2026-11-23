@@ -20,6 +20,11 @@ si build talk.md -o html/     # one self-contained HTML file, ready to send
 
 <!-- embed: ../live/showcase.md 1-4 -->
 
+**See it move:** [Transitions](transitions.md) (cube, flip, iris, portal,
+morph and more), [Build animations](animations.md) (typing, counting, 3D
+carousels, split-flap) and [Motion](motion.md) (canvases that change state,
+scenes, racing charts), each with a deck you can click through.
+
 ## Write it in Markdown
 
 ```markdown
