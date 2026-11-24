@@ -79,3 +79,5 @@ footer: simple-ideas
   - [Request a feature]($SI_FEATURE_URL)
   - [GitHub](https://github.com/felipeg48/simple-ideas)
   - [Buy me a coffee](https://buymeacoffee.com/felipeg48)
+  - [Privacy and your data](privacy.md)
+  - [License and disclaimer](license.md)

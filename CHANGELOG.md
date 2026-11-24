@@ -3,6 +3,12 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v4.4.4:** The teleprompter's Now and Next previews draw code windows
+  (and anything else a script lays out in pixels) at the preview's size:
+  the code no longer falls apart into lines with gaps. The docs site has a
+  Privacy and your data page (what stays on your machine, what leaves it
+  and only when you ask) and a License and disclaimer page (Apache 2.0, as
+  is, no warranty), linked from the Help menu and the footer.
 - **v4.4.3:** The teleprompter's reading line (the dashed line where the
   eyes stay) shows only while auto-scroll runs; with manual scroll it is
   gone.

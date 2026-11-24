@@ -9,6 +9,14 @@
   function post(m) { m.name = data.name; m.mid = Math.random().toString(36).slice(2); chans.forEach(function (c) { try { c.postMessage(m); } catch (e) {} }); }
   function snapshot(s, k) {
     var c = s.cloneNode(true);
+    /* script-laid-out parts (code window lines, callouts) sit at px measured at
+       the deck's size; the previews are smaller, so they become em of each
+       element's own font size and scale with it */
+    var styled = s.querySelectorAll('[style*="px"]'), copies = c.querySelectorAll('[style*="px"]');
+    each(copies, function (e, i) {
+      var fs = styled[i] && parseFloat(getComputedStyle(styled[i]).fontSize);
+      if (fs) e.setAttribute('style', e.getAttribute('style').replace(/(-?\d*\.?\d+)px/g, function (m, v) { return (v / fs).toFixed(4) + 'em'; }));
+    });
     /* a build animation running on the slide: the copy shows it as it ends */
     var live = s.querySelectorAll('[data-si-live]');
     each(c.querySelectorAll('[data-si-live]'), function (e, i) { if (live[i]) e.innerHTML = live[i]._siOrig; e.removeAttribute('data-si-live'); });

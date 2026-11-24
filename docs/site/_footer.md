@@ -2,4 +2,4 @@
 
 <a class="si-badge" style="--si-badge-bg:#ffdd00;--si-badge-fg:#111" href="https://buymeacoffee.com/felipeg48">☕ Buy me a coffee</a>
 
-© 2026 Felipe Gutierrez · Apache License 2.0
+© 2026 Felipe Gutierrez · [Apache License 2.0, no warranty](https://simple-ideas.org/license.html) · [Privacy](https://simple-ideas.org/privacy.html)
