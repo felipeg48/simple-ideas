@@ -135,6 +135,7 @@ type runner struct {
 	down     sync.Once
 
 	kept  string            // session: keep: the one browser context of the run
+	carry string            // session: keep: the last feature's app sessionStorage, as JSON (frame.go)
 	fr    *frameCtx         // the frame the element found last is in (nil: the page)
 	oopif map[string]string // out-of-process frames (cross-origin iframes): frame id -> session
 	intro *part             // the brand's cards (promo.go)
@@ -665,6 +666,9 @@ func (r *runner) feature(f *Feature, section bool) (fr FeatureResult, cl *clip) 
 		if err := r.c.Call(m, nil, nil); err != nil {
 			return fail(StepResult{Text: m, Status: "failed", Found: err.Error()})
 		}
+	}
+	if r.carry != "" {
+		r.c.Call("Page.addScriptToEvaluateOnNewDocument", map[string]any{"source": carrySource(r.carry)}, nil)
 	}
 	// cross-origin iframes run in processes of their own: attach to them as
 	// they come, for … in frame steps

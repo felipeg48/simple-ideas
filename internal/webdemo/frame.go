@@ -139,9 +139,25 @@ func (r *runner) locateIn(l Locator, want string, scroll bool) (found, error) {
 }
 
 // closePages closes the feature's pages (session: keep, where the browser
-// context outlives the feature).
+// context outlives the feature). The app page's sessionStorage goes with its
+// tab, so it is kept first and seeded into the next feature's page
+// (carrySource): a deck's drawer tabs and windows, whose shells live on in
+// si play, come back as they do after a live reload.
 func (r *runner) closePages() {
+	// a deck saves its drawer on pagehide; the tab is closed without one first
+	v, err := r.evalIn(r.app, 0, `(function(){if(window.siPlay)dispatchEvent(new Event('pagehide'));var s={};for(var i=0;i<sessionStorage.length;i++){var k=sessionStorage.key(i);s[k]=sessionStorage.getItem(k)}return JSON.stringify({o:location.origin,s:s})})()`)
+	r.carry = ""
+	if err == nil {
+		json.Unmarshal(v, &r.carry)
+	}
 	for _, id := range append([]string{r.appTarget}, r.wins...) {
 		r.c.CallIn("", "Target.closeTarget", map[string]any{"targetId": id}, nil)
 	}
+}
+
+// carrySource is the script that gives the next feature's page the
+// sessionStorage the last one left (session: keep): on a document of the
+// same origin whose sessionStorage is still empty, before its own scripts run.
+func carrySource(carry string) string {
+	return `(function(c){try{if(location.origin!==c.o||sessionStorage.length)return;for(var k in c.s)sessionStorage.setItem(k,c.s[k])}catch(e){}})(` + carry + `)`
 }

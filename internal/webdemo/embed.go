@@ -152,11 +152,27 @@ func playProgram(bin, deckPath string, port int, shell string) *Program {
 
 // siPlay runs a window.siPlay call in the app's page and returns its value.
 func (r *runner) siPlay(call string, a ...any) (json.RawMessage, error) {
-	v, err := r.evalIn(r.app, 0, `(async function(){if(!window.siPlay)throw new Error("the page has no window.siPlay: app: is not a deck si play serves on a loopback address");return await siPlay.`+fmt.Sprintf(call, a...)+`})()`)
+	expr := `(async function(){if(!window.siPlay)throw new Error("the page has no window.siPlay: app: is not a deck si play serves on a loopback address");return await siPlay.` + fmt.Sprintf(call, a...) + `})()`
+	v, err := r.evalIn(r.app, 0, expr)
+	// si play reloads the deck when a file in its folder changes; a call the
+	// reload cut off is made again on the new page, unless it typed keys
+	if err != nil && reloaded(err) && !strings.HasPrefix(call, "terminal.run") && !strings.HasPrefix(call, "terminal.type") {
+		r.untilFor(r.timeout, func() (bool, error) {
+			v, e := r.evalIn(r.app, 0, `document.readyState==="complete"&&!!window.siPlay`)
+			return e == nil && string(v) == "true", nil
+		})
+		v, err = r.evalIn(r.app, 0, expr)
+	}
 	if err != nil {
 		return nil, &failure{expected: "siPlay." + strings.SplitN(call, "(", 2)[0] + " works", found: err.Error()}
 	}
 	return v, nil
+}
+
+// reloaded tells an evaluation the page's navigation cut off.
+func reloaded(err error) bool {
+	m := err.Error()
+	return strings.Contains(m, "navigated or closed") || strings.Contains(m, "Execution context was destroyed")
 }
 
 func js(v any) string { b, _ := json.Marshal(v); return string(b) }

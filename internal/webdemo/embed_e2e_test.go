@@ -197,3 +197,29 @@ func TestEmbedSteps(t *testing.T) {
 		t.Fatalf("the demo failed:\n%s", log.String())
 	}
 }
+
+// TestEmbedTerminalCarriesOver: under session: keep, a drawer tab and the
+// program running in it are still there in the next feature (each feature
+// opens a new browser tab, and sessionStorage, where the drawer is kept,
+// belongs to the tab).
+func TestEmbedTerminalCarriesOver(t *testing.T) {
+	page := playDeck(t)
+	dir := t.TempDir()
+	src := fmt.Sprintf("---\ntype: demo\napp: %s\nsession: keep\ntimeout: 10s\n---\n\n"+
+		"## One\n\n- embed-terminal \"Counter\"\n- run \"i=0; while true; do i=$((i+1)); echo tick-$i; sleep 1; done\"\n- wait for output \"tick-2\"\n\n"+
+		"## Two\n\n- embed-terminal \"Counter\"\n- wait for output \"tick-4\"\n", page)
+	path := filepath.Join(dir, "demo.md")
+	os.WriteFile(path, []byte(src), 0o644)
+	s, err := webdemo.ParseFile(path)
+	if err != nil || len(s.Problems) > 0 {
+		t.Fatal(err, s.Problems)
+	}
+	var log strings.Builder
+	rep, err := webdemo.Run(s, webdemo.Options{Chrome: tools.Find("chrome"), Out: t.TempDir(), Log: &log})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !rep.OK() {
+		t.Fatalf("the demo failed:\n%s", log.String())
+	}
+}

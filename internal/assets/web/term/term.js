@@ -1565,7 +1565,10 @@
   // until this page has brought the saved drawer back, it must not save its own
   // (still empty) one over it: a second reload landing during the restore would
   // otherwise lose every shell and Viewer
-  var restored = false;
+  var restored = false, markRestored;
+  // the API waits for it: a web demo's embed-terminal must find a restored
+  // tab, not open a second, empty one beside it
+  var restoredP = new Promise(function (ok) { markRestored = function () { restored = true; ok(); }; });
   function saveState() {
     if (!restored) return;
     var st = { open: root.classList.contains('is-open'), active: active,
@@ -1580,7 +1583,7 @@
   window.addEventListener('beforeunload', saveState);
   (function restore() {
     var st = null; try { st = JSON.parse(sessionStorage.getItem(SKEY) || 'null'); } catch (e) {}
-    if (!st || !st.tabs || !st.tabs.length) { restored = true; return; }
+    if (!st || !st.tabs || !st.tabs.length) { markRestored(); return; }
     fetch(API + 'list').then(function (r) { return r.json(); }).catch(function () { return []; }).then(function (live) {
       var alive = {}; (live || []).forEach(function (x) { alive[x.id] = true; });
       var at = -1, map = {};
@@ -1593,7 +1596,7 @@
         if (i === st.active) at = tabs.length - 1;
       });
       restoring = false;
-      restored = true;
+      markRestored();
       if (!tabs.length) return;
       var sp = st.split;
       if (sp && !sp.panes && sp.a != null) sp = { dir: sp.dir, rx: sp.ratio, ry: sp.ratio, panes: [sp.a, sp.b], focus: sp.focus === 'a' ? 0 : 1 }; // saved before v3.14.0
@@ -1612,7 +1615,8 @@
   function byName(n) { for (var i = 0; i < tabs.length; i++) if (!tabs[i].viewer && !tabs[i].ended && labelOf(tabs[i]) === n) return tabs[i]; return null; }
   /* resolves once the tab's shell has printed something (its prompt); quiet:
      and gone quiet too, or kept talking for 3 s (a command still running) */
-  function shellReady(n, quiet) {
+  function shellReady(n, quiet) { return restoredP.then(function () { return shellNow(n, quiet); }); }
+  function shellNow(n, quiet) {
     var t = byName(n);
     if (!t) return Promise.reject(new Error('no shell tab named ' + n + ' in the drawer'));
     return new Promise(function (ok, no) {
@@ -1638,14 +1642,16 @@
   var api = {
     open: function (n, dir) {
       if (!n) return Promise.reject(new Error('a shell tab needs a name'));
-      root.classList.add('is-open');
-      var t = byName(n), shown = tabs[active];
-      if (!t) {
-        newTab({ label: n }); t = tabs[tabs.length - 1];
-        if (dir && shown) { select(tabs.indexOf(shown), true); splitOpen(dir, t); }
-      } else if (dir && paneOf(t) < 0 && shown && shown !== t) splitOpen(dir, t);
-      else select(tabs.indexOf(t));
-      return shellReady(n, true).then(function () { return n; });
+      return restoredP.then(function () {
+        root.classList.add('is-open');
+        var t = byName(n), shown = tabs[active];
+        if (!t) {
+          newTab({ label: n }); t = tabs[tabs.length - 1];
+          if (dir && shown) { select(tabs.indexOf(shown), true); splitOpen(dir, t); }
+        } else if (dir && paneOf(t) < 0 && shown && shown !== t) splitOpen(dir, t);
+        else select(tabs.indexOf(t));
+        return shellNow(n, true);
+      }).then(function () { return n; });
     },
     input: function (n, text, ms) { return shellReady(n).then(sized).then(function (t) { return typeOut(t, String(text), ms); }); },
     run: function (n, text, ms) {
