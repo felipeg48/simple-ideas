@@ -78,6 +78,10 @@ AsciiDoc tab.
 
 ## What's new in si 4
 
+**Listen (4.4).** `feature: t2s` in a guide, book, article or site page adds
+a Listen bar under the title: the page is read aloud by the browser's own
+voice, and the sentence (or word, or paragraph) being read is lit.
+
 **Delivery diagrams (4.1).** Kanban boards, gantt plans and sequence
 diagrams in plain lines, animated: cards glide between columns, bars fill as
 the today line moves, messages draw themselves. In decks, in documents, or as

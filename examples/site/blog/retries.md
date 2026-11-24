@@ -4,6 +4,8 @@ title: Retries without the stampede
 description: Why our payment retries took the provider down at 21:40, and the three lines of backoff that stopped it.
 author: Ada Lindqvist
 date: 2026-10-14
+feature: t2s
+t2s-highlight: paragraph
 ---
 
 At 21:40 on a Friday the payment provider slowed down for eleven seconds.

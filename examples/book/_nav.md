@@ -9,6 +9,8 @@ theme: paper
 footer: Northwind Logistics
 year: 2026
 copyright: Northwind Logistics
+feature: t2s
+t2s-highlight: word
 ---
 
 - [Preface](preface.md)

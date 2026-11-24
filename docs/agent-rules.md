@@ -439,6 +439,12 @@ Not everything is a slide deck. Pick the type by what the reader does:
   ```` ```class ```` (`Name: members`, `A has many B`, `A is a B`),
   ```` ```wbs ```` (an indented list, `· 3d`), ```` ```storymap ````
   (`## Activity | …`, `release MVP: …`).
+- **Listen** (RULES.md §39): `feature: t2s` in a document's front matter (or
+  `_nav.md` / `_site.md` for every page) adds a Listen bar under the title
+  that reads the page aloud with the browser's voice; `t2s-highlight:
+  sentence|word|paragraph|off`, `t2s-rate:`, `t2s-voice:`. Code, tables and
+  figures are not read; `class="si-t2s-skip"` leaves out more. For
+  documents only (decks have auto-play).
 - **Timelines** (RULES.md §29): `type: timeline`, then `## Era` headings
   (`· color=#hex` optional) and `### date · title` milestones, each with a
   one- or two-line description and at most one `![caption](img "credit")`

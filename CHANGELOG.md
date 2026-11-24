@@ -3,6 +3,17 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v4.4.0:** listen to a page (RULES §39). `feature: t2s` in a document's
+  front matter (a guide, tutorial, book, article, lab or site page; in
+  `_nav.md` or `_site.md` for every page) puts a Listen bar under the title:
+  the browser's own voice reads the page aloud, offline, one sentence at a
+  time, and `t2s-highlight:` lights the sentence (default), the word or the
+  paragraph being read. Pause, a sentence back or on, stop, speed and voice
+  (remembered per reader), `l` to play or pause, a click on a paragraph to
+  read from there; code, tables and figures are skipped. Front matter keys
+  may now contain digits. Examples: `examples/guide`, `examples/book`
+  (word), `examples/site/blog/retries.md` (paragraph).
+
 - **v4.3.0:** graphs, trees and maps (RULES §38). ```` ```state ```` (a state
   machine from `A → B on event`; `event` steps move the lit current state
   along its transition), ```` ```flowchart ```` (`A → B: label`, decisions

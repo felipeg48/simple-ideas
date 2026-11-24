@@ -8,6 +8,7 @@ footer: Northwind Logistics engineering
 year: 2026
 copyright: Northwind Logistics
 edit-url: https://github.com/felipeg48/simple-ideas/edit/main/examples/guide
+feature: t2s
 ---
 
 - [Introduction](index.md)

@@ -47,15 +47,17 @@ var (
 	Modes           = []string{"auto", "light", "dark"}
 	Aspects         = []string{"16:9", "16:10", "4:3", "1:1", "9:16"}
 	// Mind maps (`type: mindmap` front matter and ```mindmap fence options).
-	MapLayouts   = []string{"map", "right", "org", "radial"}
-	MapLines     = []string{"curved", "straight", "orthogonal", "tapered"}
-	MapNodes     = []string{"box", "pill", "underline"}
-	MapThemes    = []string{"auto", "harbor", "blueprint", "ink", "garden"}
-	WatermarkPos = []string{"corner", "across"}
-	MapViews     = []string{"2d", "3d"}
-	MapCameras   = []string{"iso", "perspective"}
-	MapKinds     = []string{"blocks", "bricks", "toy"}
-	OnOff        = []string{"on", "off"}
+	MapLayouts    = []string{"map", "right", "org", "radial"}
+	MapLines      = []string{"curved", "straight", "orthogonal", "tapered"}
+	MapNodes      = []string{"box", "pill", "underline"}
+	MapThemes     = []string{"auto", "harbor", "blueprint", "ink", "garden"}
+	WatermarkPos  = []string{"corner", "across"}
+	MapViews      = []string{"2d", "3d"}
+	MapCameras    = []string{"iso", "perspective"}
+	MapKinds      = []string{"blocks", "bricks", "toy"}
+	OnOff         = []string{"on", "off"}
+	Features      = []string{"t2s", "none"}                          // feature: values (a list)
+	T2SHighlights = []string{"sentence", "word", "paragraph", "off"} // t2s-highlight: values
 )
 
 // Directives lists every `<!-- name: value -->` directive. Slide-level ones
@@ -177,6 +179,10 @@ type Meta struct {
 	Voice        string // web demo: engine:voice of the narration
 	Voices       string // auto-play: voices: Ada=af_heart, Ravi=kokoro:am_michael (one voice per speaker)
 	VoiceStyle   string // web demo: voice-style: (openai)
+	Feature      string // document: feature: t2s (a Listen bar under the title; none turns an inherited one off)
+	T2SHighlight string // t2s: what is lit while it reads: sentence (default), word, paragraph, off
+	T2SRate      string // t2s: the starting speed, 0.5 to 2 (default 1)
+	T2SVoice     string // t2s: the browser voice to prefer (part of its name, e.g. Samantha)
 	Pronounce    string // web demo: pronounce: (the last one; internal/webdemo reads them all)
 	Start        string // web demo: start: a background program (the last one; internal/webdemo reads them all)
 	Stop         string // web demo: stop: a tear-down command
@@ -235,7 +241,7 @@ var DemoKeys = []string{"region", "header-offset", "intro", "outro", "music", "u
 func init() { MetaKeys = append(MetaKeys, DemoKeys...) }
 
 // MetaKeys are the accepted front matter keys.
-var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "browser", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup", "nav", "level", "instructor-demos", "certificate", "pass", "minutes", "prerequisites", "instructor", "webhook", "webhook-format", "webhook-events", "webhook-token", "webhook-auth", "webhook-learner", "webhook-consent", "webhook-notice", "webhook-base", "orientation", "sources", "steps", "animate", "files", "number", "updated", "meta", "tiles", "sandbox", "sandbox-files", "sandbox-setup", "sandbox-cleanup", "sandbox-ports", "sandbox-limits"}
+var MetaKeys = []string{"title", "author", "date", "theme", "mode", "accent", "transition", "aspect", "mermaid", "lang", "background", "status", "version", "year", "copyright", "footer", "footer-position", "watermark", "watermark-opacity", "labs-label", "runbook", "demos", "browser", "type", "description", "edit-url", "header", "footer-page", "repo", "subtitle", "edition", "session", "slides", "duration", "navigator", "logo", "cta", "fonts", "fonts-subset", "layout", "lines", "nodes", "map-theme", "watermark-position", "favicon", "touch-icon", "og-image", "view", "camera", "floors", "kind", "flow", "linkedin", "tags", "canonical", "cover", "handout", "handout-url", "speakers", "app", "viewport", "timeout", "setup", "voice", "voices", "voice-style", "pronounce", "start", "stop", "shell", "with", "prepare", "step", "cleanup", "nav", "level", "instructor-demos", "certificate", "pass", "minutes", "prerequisites", "instructor", "webhook", "webhook-format", "webhook-events", "webhook-token", "webhook-auth", "webhook-learner", "webhook-consent", "webhook-notice", "webhook-base", "orientation", "sources", "steps", "animate", "files", "number", "updated", "meta", "tiles", "sandbox", "sandbox-files", "sandbox-setup", "sandbox-cleanup", "sandbox-ports", "sandbox-limits", "feature", "features", "t2s-highlight", "t2s-rate", "t2s-voice"}
 
 // MetaLine is one front matter line kept as written: its key, its value and
 // its line in the file.
@@ -445,7 +451,7 @@ var (
 	pointsRE    = regexp.MustCompile(`^Points(?:\[([^\]]*)\])?:\s*(.*)$`)
 	minutesRE   = regexp.MustCompile(`\((\d+(?:\.\d+)?)\s*min\)`)
 	directiveRE = regexp.MustCompile(`^\s*<!--\s*([a-z][a-z-]*)\s*(?::\s*(.*?))?\s*-->\s*$`)
-	metaRE      = regexp.MustCompile(`^([a-z][a-z-]*)\s*:\s*(.*?)\s*$`)
+	metaRE      = regexp.MustCompile(`^([a-z][a-z0-9-]*)\s*:\s*(.*?)\s*$`)
 	colourRE    = regexp.MustCompile(`^(#[0-9a-fA-F]{3,8}|[a-zA-Z]+|(rgb|rgba|hsl|hsla|oklch|oklab|color-mix)\(.*\))$`)
 	imageExtRE  = regexp.MustCompile(`(?i)\.(png|jpe?g|gif|webp|svg|avif)$`)
 	labLinkRE   = regexp.MustCompile(`\[([^\]]+)\]\(\s*(https?://[^)\s]+)\s*\)`)
@@ -698,6 +704,7 @@ func (d *Deck) setMeta(key, val string) bool {
 		"orientation": &m.Orientation, "sources": &m.Sources, "steps": &m.Steps, "animate": &m.Animate,
 		"number": &m.Number, "updated": &m.Updated,
 		"sandbox": &m.Sandbox, "sandbox-files": &m.SandboxFiles, "sandbox-setup": &m.SandboxSetup, "sandbox-cleanup": &m.SandboxCleanup, "sandbox-ports": &m.SandboxPorts, "sandbox-limits": &m.SandboxLimits,
+		"feature": &m.Feature, "features": &m.Feature, "t2s-highlight": &m.T2SHighlight, "t2s-rate": &m.T2SRate, "t2s-voice": &m.T2SVoice,
 	}[key]
 	if ptr == nil {
 		ptr = m.Timeline.field(key)
@@ -797,6 +804,18 @@ func validateMeta(key, val string) string {
 		return oneOf("unlisted", val, []string{"true", "false"})
 	case "floors":
 		return oneOf("mind map floors", val, OnOff)
+	case "feature", "features":
+		for _, f := range strings.Split(val, ",") {
+			if msg := oneOf("feature", strings.TrimSpace(f), Features); msg != "" {
+				return msg
+			}
+		}
+	case "t2s-highlight":
+		return oneOf("t2s-highlight", val, T2SHighlights)
+	case "t2s-rate":
+		if r, err := strconv.ParseFloat(val, 64); err != nil || r < 0.5 || r > 2 {
+			return fmt.Sprintf("t2s-rate %q is not a speed from 0.5 to 2", val)
+		}
 	case "watermark-position":
 		return oneOf("watermark-position", val, WatermarkPos)
 	case "voices":
@@ -1381,3 +1400,18 @@ var durationRE = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*min`)
 // docDirectives are the directives a document uses (the rest are deck-only).
 var docDirectives = map[string]bool{"tabs": true, "callout": true, "slides": true, "alert": true, "badge": true, "logo": true, "qr": true, "poll": true, "cloud": true, "cards": true, "accordion": true,
 	"modal": true, "solution": true, "check": true, "end": true, "carousel": true, "event": true, "embed": true, "image": true, "animate": true}
+
+// HasFeature reports whether the front matter's feature: list names f
+// (none, anywhere in the list, turns every inherited feature off).
+func (m Meta) HasFeature(f string) bool {
+	on := false
+	for _, v := range strings.Split(m.Feature, ",") {
+		switch strings.TrimSpace(v) {
+		case "none":
+			return false
+		case f:
+			on = true
+		}
+	}
+	return on
+}

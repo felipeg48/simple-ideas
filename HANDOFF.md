@@ -5,10 +5,18 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-23, end of session)
 
-**LATEST (read first, 2026-11-24): main `886d225` (after tag v4.3.0: handoff,
-trademark notice, name scrub), CI green on v4.3.0, installed (`si --version`
-4.3.0). Nothing in progress; wait for the founder's next request.** Working tree clean except the
-untracked `.serena/` and `si-docs-site/` (not ours; leave them).
+**LATEST (read first, 2026-11-24): v4.4.0 tagged: Listen (text to speech,
+RULES §39).** `feature: t2s` on document pages (guide, book, article, lab,
+site page; inherited from `_nav.md`/`_site.md`, `feature: none` turns it off)
+adds a Listen bar under the title (`web/t2s.js`, inlined only when on;
+`render/document.go` `t2sScript`; looks in `web/doc.css`). Browser
+speechSynthesis, one utterance per sentence, `t2s-highlight:
+sentence|word|paragraph|off` via CSS Custom Highlights, `t2s-rate:`,
+`t2s-voice:`. Front matter keys may now contain digits (`metaRE`, also
+`web/studio/src/runbook.ts`). Next ideas offered to the founder: Kokoro voice
+in `si play` (reuse `/_si/voice`), `si build --t2s-audio` pre-rendered
+audio, read tables, continue to the next page, mini player while scrolling.
+Untracked `.serena/` and `si-docs-site/` are not ours; leave them.
 
 **Delivery diagrams** (RULES §38, spec
 `docs/superpowers/specs/2026-11-23-dev-diagrams.md`, phases 1–3 DONE):

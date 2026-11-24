@@ -175,6 +175,12 @@ var WebhookJS string
 //go:embed web/doc.js
 var DocJS string
 
+// T2SJS is the Listen bar of feature: t2s (text to speech with the
+// browser's voice). Only in a document page that turns it on.
+//
+//go:embed web/t2s.js
+var T2SJS string
+
 // PresenterHTML is the presenter window document; __CSS__, __TITLE__ and
 // __DATA__ are filled in by DeckJS when the window opens.
 //

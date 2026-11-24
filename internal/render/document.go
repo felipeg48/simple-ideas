@@ -2,6 +2,7 @@ package render
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html"
 	"path/filepath"
@@ -600,6 +601,9 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	dr.problemsBanner(&b, problems)
 	dr.mermaidScript(&b)
 	b.WriteString("<script>\n" + assets.DocJS + "</script>\n")
+	if m.HasFeature("t2s") {
+		b.WriteString(t2sScript(m))
+	}
 	if dr.opt.Terminal && (kind == "lab" || m.Sandbox != "") { // si play / a class seat: the drawer beside the lab
 		b.WriteString("<script>\n" + docTermJS + "</script>\n")
 	}
@@ -720,4 +724,10 @@ func subtitleOf(kind, sub string) string {
 		return sub
 	}
 	return ""
+}
+
+// t2sScript is the Listen bar of feature: t2s: its settings and runtime.
+func t2sScript(m deck.Meta) string {
+	cfg, _ := json.Marshal(map[string]string{"highlight": m.T2SHighlight, "rate": m.T2SRate, "voice": m.T2SVoice})
+	return "<script>\nwindow.SI_T2S = " + string(cfg) + ";\n" + assets.T2SJS + "</script>\n"
 }

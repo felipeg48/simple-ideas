@@ -309,6 +309,15 @@ Exchange fans out → Email, Stock, Analytics
 
 ---
 
+## Listen (text to speech)
+
+- `feature: t2s` in a page's front matter, or in `_nav.md` / `_site.md` for every page; `feature: none` turns it off on one page
+- `t2s-highlight: sentence | word | paragraph | off`, `t2s-rate: 1.25`, `t2s-voice: Samantha`
+- The bar: ▶ Listen, Pause, ⏮ ⏭, ⏹, speed, voice; `l` plays and pauses; a click on a paragraph reads from there
+- Code, tables and figures are not read; `class="si-t2s-skip"` leaves out more; full guide: RULES.md §39
+
+---
+
 ## Delivery diagrams
 
 - ```` ```kanban ````: `columns:`, cards `ID Title · Column · @who`, then `day 2` steps with `ID → Column`, `ID blocked: why`, `+ ID Title · Column`; `wip: Doing 2` flags a column over its limit

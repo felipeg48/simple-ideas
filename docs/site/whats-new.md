@@ -5,6 +5,14 @@ description: si 4 teaches classes from your own computer, a Docker box per learn
 
 # What's new in si 4
 
+## Listen to a page (4.4)
+
+`feature: t2s` puts a Listen bar under a page's title: guides, tutorials,
+books, articles and site pages are read aloud by the browser's own voice,
+offline, with the sentence, the word or the paragraph lit as it goes. Pause,
+skip a sentence, change the speed and the voice; click a paragraph to read
+from there. See [§39](rules/39-listen-text-to-speech.md).
+
 ## Graphs, trees and maps (4.3)
 
 A ```` ```state ```` machine whose current state follows each event, a

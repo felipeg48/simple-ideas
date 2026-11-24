@@ -273,7 +273,7 @@ export function relPath(from: string, file: string): string {
   return [...a.slice(i).map(() => ".."), ...b.slice(i)].join("/");
 }
 
-const metaRE = /^([a-z][a-z-]*)\s*:\s*(.*?)\s*$/; // same as internal/deck metaRE
+const metaRE = /^([a-z][a-z0-9-]*)\s*:\s*(.*?)\s*$/; // same as internal/deck metaRE
 
 /** metaValue is a front-matter value; anything but a plain path is quoted (si strips the quotes). */
 export const metaValue = (v: string) => (/^[\w./-]+$/.test(v) ? v : `"${v}"`);
