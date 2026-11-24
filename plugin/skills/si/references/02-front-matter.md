@@ -65,4 +65,7 @@ An included module's own front matter is ignored; the including deck decides.
 The generated `index.html` offers a **Tiles / List** toggle (top-right, remembered
 per browser); list view is a table with Course, Status, Slides, Time and a PDF
 column. `status`/`version` badges and the PDF column come from each deck's front
-matter and `si build --pdf`.
+matter and `si build --pdf`. Building single files one after another into one
+folder (`si build a.md -o out`, then `si build b.md -o out`) lists them all:
+the index keeps the pages an earlier build listed while their HTML is still
+there.

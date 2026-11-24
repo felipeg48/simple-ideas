@@ -1,6 +1,8 @@
 /* ---------- text to speech (feature: t2s): a Listen bar under the page
- * title reads the page aloud with the browser's own voice (speechSynthesis:
- * no network, works from file://). The page is read in order (title, lede,
+ * title reads the page aloud. The voice, first found: the build's audio
+ * (window.SI_T2S.audio, one file per sentence, voiced by Kokoro or the
+ * engine in si.conf), si play's voice (/_si/t2s, the same engines, on
+ * demand), else the browser's own voice (speechSynthesis). The page is read in order (title, lede,
  * headings, paragraphs, list items, quotes, captions); code blocks, tables,
  * figures, navigation and anything marked .si-t2s-skip are left out. One
  * utterance per sentence, so pause, skip and speed changes are exact and
@@ -11,8 +13,8 @@
  * a click on a paragraph reads from there; l plays or pauses. ---------- */
 (function () {
   var cfg = window.SI_T2S || {};
-  var synth = window.speechSynthesis;
-  if (!synth || !window.SpeechSynthesisUtterance) return;
+  var synth = window.speechSynthesis && window.SpeechSynthesisUtterance ? window.speechSynthesis : null;
+  var audio = Array.isArray(cfg.audio) ? cfg.audio : null, server = !!cfg.server && !audio;
   var main = document.querySelector('.si-doc-body') || document.querySelector('main');
   if (!main) return;
   var mode = cfg.highlight || 'sentence';
@@ -78,7 +80,14 @@
   }
 
   var sents = collect();
-  if (!sents.length) return;
+  window.siT2S = { sentences: function () { return sents.map(function (s) { return s.text; }); } }; /* si build voices these */
+  if (!sents.length || (!synth && !audio && !server)) return;
+  if (audio && audio.length !== sents.length) { console.warn('si t2s: the audio is for another version of this page'); audio = null; if (!synth) return; }
+  function url(i) {
+    if (audio) return audio[i] || '';
+    if (server) return '/_si/t2s?page=' + encodeURIComponent(location.pathname) + '&t=' + encodeURIComponent(sents[i].text);
+    return '';
+  }
   var words = 0;
   sents.forEach(function (s) { words += s.text.split(' ').length; });
 
@@ -108,7 +117,9 @@
 
   var voices = [], voice = null;
   function loadVoices() {
-    var all = synth.getVoices();
+    var all = synth ? synth.getVoices() : [];
+    voiceSel.hidden = true;
+    if (audio || server) return; /* the voice is the build's (or si play's) */
     if (!all.length) return;
     var base = lang.split('-')[0].toLowerCase();
     voices = all.filter(function (v) { return !base || v.lang.toLowerCase().split(/[-_]/)[0] === base; });
@@ -122,7 +133,7 @@
     voiceSel.hidden = voices.length < 2;
   }
   loadVoices();
-  if (synth.addEventListener) synth.addEventListener('voiceschanged', loadVoices);
+  if (synth && synth.addEventListener) synth.addEventListener('voiceschanged', loadVoices);
 
   function minutes() { return Math.max(1, Math.round(words / (165 * rate))); }
   var st = { state: 'off', i: 0, gen: 0 };
@@ -161,11 +172,42 @@
     }
   }
 
+  var player = null, ahead = null;
+  function hush() {
+    if (player) { player.onended = player.onerror = player.ontimeupdate = player.onplaying = null; try { player.pause(); } catch (e) {} player = null; }
+    if (synth) synth.cancel();
+  }
+  /* the word at the playing position, by its share of the sentence's letters (an audio file says no word times) */
+  function wordAt(s, frac) {
+    var at = Math.floor(frac * s.text.length), re = /\S+/g, m, last = null;
+    while ((m = re.exec(s.text))) { last = m; if (m.index + m[0].length > at) break; }
+    return last ? [s.start + map(s, last.index), s.start + map(s, last.index + last[0].length)] : null;
+  }
   function speak() {
     var g = ++st.gen;
-    synth.cancel();
+    hush();
     if (st.i >= sents.length) { stop(); return; }
-    var s = sents[st.i], u = new SpeechSynthesisUtterance(s.text);
+    var s = sents[st.i], src = url(st.i);
+    if (src) {
+      var a = player = (ahead && ahead.si === src) ? ahead : new Audio(src);
+      a.playbackRate = rate;
+      a.onplaying = function () { if (g === st.gen) { light(s); follow(s); show(); } };
+      if (mode === 'word') a.ontimeupdate = function () { if (g === st.gen && a.duration) light(s, wordAt(s, a.currentTime / a.duration)); };
+      a.onended = function () { if (g === st.gen && st.state === 'playing') { st.i++; speak(); } };
+      a.onerror = function () {
+        if (g !== st.gen) return;
+        console.warn('si t2s: no audio for', src);
+        audio = null; server = false; /* the browser's voice from here on */
+        loadVoices();
+        if (synth) speak(); else stop();
+      };
+      a.play().catch(function (e) { if (g === st.gen && e.name !== 'AbortError') a.onerror(); });
+      var next = url(st.i + 1);
+      if (next) { ahead = new Audio(); ahead.si = next; ahead.preload = 'auto'; ahead.src = next; }
+      return;
+    }
+    if (!synth) { stop(); return; }
+    var u = new SpeechSynthesisUtterance(s.text);
     u.rate = rate;
     if (voice) { u.voice = voice; u.lang = voice.lang; } else if (lang) u.lang = lang;
     u.onstart = function () { if (g === st.gen) { light(s); follow(s); show(); } };
@@ -190,14 +232,23 @@
     return j;
   }
   function play(i) {
+    if (typeof i !== 'number' && player && st.state === 'paused') { /* a file resumes where it stopped */
+      st.state = 'playing'; show();
+      player.play().catch(function () {});
+      return;
+    }
     if (typeof i === 'number') st.i = Math.max(0, Math.min(sents.length - 1, i));
     st.state = 'playing';
     show();
     speak();
   }
   /* pause is a cancel that remembers the sentence: synth.pause() is unreliable across engines */
-  function pause() { st.state = 'paused'; st.gen++; synth.cancel(); show(); }
-  function stop() { st.state = 'off'; st.gen++; synth.cancel(); st.i = 0; light(null); show(); }
+  function pause() {
+    st.state = 'paused';
+    if (player) { player.pause(); show(); return; }
+    st.gen++; hush(); show();
+  }
+  function stop() { st.state = 'off'; st.gen++; hush(); st.i = 0; light(null); show(); }
   function toggle() { if (st.state === 'playing') pause(); else play(); }
 
   q('.si-t2s-play').addEventListener('click', toggle);
@@ -211,7 +262,9 @@
   rateSel.addEventListener('change', function () {
     rate = parseFloat(rateSel.value) || 1;
     store('rate', rate);
-    if (st.state === 'playing') speak(); else show();
+    if (player) player.playbackRate = rate; /* the file goes on at the new speed */
+    else if (st.state === 'playing') speak();
+    show();
   });
   voiceSel.addEventListener('change', function () {
     voice = voices.filter(function (v) { return v.name === voiceSel.value; })[0] || voice;
@@ -231,6 +284,6 @@
     e.preventDefault();
     toggle();
   });
-  addEventListener('pagehide', function () { synth.cancel(); }); /* some engines keep talking after the page is gone */
+  addEventListener('pagehide', hush); /* some engines keep talking after the page is gone */
   show();
 })();

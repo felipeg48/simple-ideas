@@ -3,6 +3,15 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v4.4.1:** Listen speaks with Kokoro. `si build` voices every sentence
+  of a `feature: t2s` page with the page's `voice:`, si.conf `voice:` or
+  Kokoro (`--voice` for the build) into `<page>.voice/` beside it, reusing
+  the voice cache and the files of earlier builds; `si play` voices each
+  sentence as it is read (`/_si/t2s`); the browser's voice is only the
+  fallback. Building files one at a time into one folder now keeps every
+  page in its `index.html` (the index carries its list; a page that is gone
+  drops out).
+
 - **v4.4.0:** listen to a page (RULES §39). `feature: t2s` in a document's
   front matter (a guide, tutorial, book, article, lab or site page; in
   `_nav.md` or `_site.md` for every page) puts a Listen bar under the title:

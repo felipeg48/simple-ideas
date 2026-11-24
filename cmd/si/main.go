@@ -58,7 +58,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/ui"
 )
 
-const version = "4.4.0"
+const version = "4.4.1"
 
 // Exit codes.
 const (
@@ -843,7 +843,7 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		if src == "" {
 			return code
 		}
-		return build(src, o, stdout, stderr)
+		return buildAndVoice(src, o, stdout, stderr)
 	}
 	if len(o.args) != 1 {
 		return usageErr(stderr, fmt.Sprintf("unknown command %q", cmd))
@@ -851,7 +851,7 @@ func run(argv []string, stdout, stderr io.Writer) int {
 	if _, err := os.Stat(cmd); err != nil {
 		return usageErr(stderr, fmt.Sprintf("unknown command or missing path %q", cmd))
 	}
-	return build(cmd, o, stdout, stderr)
+	return buildAndVoice(cmd, o, stdout, stderr)
 }
 
 func usageErr(stderr io.Writer, msg string) int {
@@ -1349,6 +1349,9 @@ func build(src string, o *options, stdout, stderr io.Writer) int {
 	}
 	if indexTheme == "" && cfg != nil {
 		indexTheme = cfg.Theme
+	}
+	if st, err := os.Stat(src); err == nil && !st.IsDir() { // one file: the pages an earlier build listed stay in the index
+		entries = mergeIndex(out, entries)
 	}
 	if err := os.WriteFile(filepath.Join(out, "index.html"), render.Index(title, entries, render.Options{UserCSS: css, Theme: indexTheme}), 0o644); err != nil {
 		fmt.Fprintf(stderr, "si: %v\n", err)
@@ -2939,4 +2942,28 @@ func fileURL(path string) string {
 		p = "/" + p
 	}
 	return "file://" + p
+}
+
+// mergeIndex keeps the entries of out/index.html (an earlier build) whose
+// page is still there, then this build's: building two files one after the
+// other into one folder lists both.
+func mergeIndex(out string, entries []render.IndexEntry) []render.IndexEntry {
+	old, err := os.ReadFile(filepath.Join(out, "index.html"))
+	if err != nil {
+		return entries
+	}
+	now := map[string]bool{}
+	for _, e := range entries {
+		now[e.Href] = true
+	}
+	var kept []render.IndexEntry
+	for _, e := range render.IndexEntries(old) {
+		if now[e.Href] || strings.Contains(e.Href, "://") {
+			continue
+		}
+		if _, err := os.Stat(filepath.Join(out, filepath.FromSlash(e.Href))); err == nil {
+			kept = append(kept, e)
+		}
+	}
+	return append(kept, entries...)
 }

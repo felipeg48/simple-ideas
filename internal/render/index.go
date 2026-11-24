@@ -4,6 +4,7 @@ package render
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html"
 	"strconv"
@@ -129,6 +130,9 @@ func Index(title string, entries []IndexEntry, opt Options) []byte {
 			html.EscapeString(e.Href), html.EscapeString(e.Title), badges(e), n, t, pdf)
 	}
 	b.WriteString("</tbody></table>\n</main>\n")
+	if list, err := json.Marshal(entries); err == nil { // a later one-file build adds to this list (IndexEntries)
+		b.WriteString(`<script type="application/json" id="si-index-entries">` + strings.ReplaceAll(string(list), "</", `<\/`) + "</script>\n")
+	}
 	b.WriteString(`<script>(function(){var m=document.querySelector('.si-index');if(!m)return;var btns=m.querySelectorAll('.si-view button');function set(v){m.setAttribute('data-view',v);btns.forEach(function(x){x.setAttribute('aria-pressed',x.getAttribute('data-view')===v?'true':'false')});try{localStorage.setItem('si-index-view',v)}catch(e){}}var saved;try{saved=localStorage.getItem('si-index-view')}catch(e){}set(saved==='list'?'list':'tiles');btns.forEach(function(b){b.addEventListener('click',function(){set(b.getAttribute('data-view'))})})})();</script>` + "\n")
 	if opt.LiveReload {
 		b.WriteString(LiveReloadJS)
@@ -203,4 +207,25 @@ func labSections(d *deck.Deck) int {
 		n = 1 // a list with no # Title is one map
 	}
 	return n
+}
+
+// IndexEntries reads back the entries an index.html written by Index lists
+// (none for an older index or another file).
+func IndexEntries(page []byte) []IndexEntry {
+	s := string(page)
+	const open = `<script type="application/json" id="si-index-entries">`
+	i := strings.Index(s, open)
+	if i < 0 {
+		return nil
+	}
+	s = s[i+len(open):]
+	j := strings.Index(s, "</script>")
+	if j < 0 {
+		return nil
+	}
+	var entries []IndexEntry
+	if json.Unmarshal([]byte(strings.ReplaceAll(s[:j], `<\/`, "</")), &entries) != nil {
+		return nil
+	}
+	return entries
 }

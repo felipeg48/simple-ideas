@@ -5,7 +5,11 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-23, end of session)
 
-**LATEST (read first, 2026-11-24): v4.4.0 tagged: Listen (text to speech,
+**LATEST (read first, 2026-11-24): v4.4.1 tagged: Listen speaks with Kokoro
+(`cmd/si/listen.go`: after si build, headless Chrome asks each t2s page for
+`window.siT2S.sentences()`, Synth voices them into `<page>.voice/<hash>.m4a`,
+the list goes into `SI_T2S.audio`; si play `/_si/t2s`); single-file builds
+merge into index.html (`mergeIndex`, the index's JSON list). v4.4.0: Listen (text to speech,
 RULES §39).** `feature: t2s` on document pages (guide, book, article, lab,
 site page; inherited from `_nav.md`/`_site.md`, `feature: none` turns it off)
 adds a Listen bar under the title (`web/t2s.js`, inlined only when on;

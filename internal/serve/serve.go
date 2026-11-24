@@ -145,6 +145,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /_si/position/cmd", s.pos.command)
 	mux.HandleFunc("GET /_si/position/events", s.pos.events)
 	mux.HandleFunc("GET /_si/voice/{slide}/{part}", localOnly(s.voice)) // auto-play: runs the voice programs, loopback only
+	mux.HandleFunc("GET /_si/t2s", localOnly(s.t2s))                    // listen (feature: t2s): the same voices, a sentence at a time
 	mux.HandleFunc("POST /_si/callout", localOnly(s.callout))           // writes files: never on the remote listener
 	s.recordRoutes(mux)                                                 // Record your talk: loopback only (record.go)
 	mux.HandleFunc("GET /_si/qr", localOnly(s.qrPage))                  // the --remote links as codes: carries the key, loopback only

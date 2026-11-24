@@ -65,6 +65,46 @@ func (s *Server) voice(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, lines[text].WAV)
 }
 
+// Listen (feature: t2s) in si play: GET /_si/t2s?page=/guide/a.html&t=…
+// voices one sentence of a document page with its voice (voice: on the page,
+// si.conf voice:, else Kokoro when installed), cached like auto-play's
+// parts. Loopback only; the page falls back to the browser's voice on any
+// error.
+func (s *Server) t2s(w http.ResponseWriter, r *http.Request) {
+	text := strings.TrimSpace(r.URL.Query().Get("t"))
+	md := s.source(strings.TrimSuffix(path.Clean("/"+r.URL.Query().Get("page")), ".html"))
+	if text == "" || len(text) > 4000 || md == "" {
+		http.NotFound(w, r)
+		return
+	}
+	d, err := deck.Parse(md)
+	if err != nil || !d.Meta.HasFeature("t2s") {
+		http.NotFound(w, r)
+		return
+	}
+	dv, warns, err := webdemo.ForDeck(d, config.Load(s.Conf, filepath.Join(s.dir, "si.conf")), "")
+	for _, m := range warns {
+		s.warnOnce(m)
+	}
+	if err != nil {
+		s.warnOnce(err.Error())
+		http.NotFound(w, r)
+		return
+	}
+	said := webdemo.Spoken(text, dv.Pronounce)
+	s.voiceMu.Lock()
+	lines, _, err := s.voicer().Voice(dv.Default, []string{said})
+	s.voiceMu.Unlock()
+	if err != nil {
+		s.warnOnce("listen: " + err.Error() + " (the page speaks with the browser's voice)")
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "audio/wav")
+	w.Header().Set("Cache-Control", "no-cache")
+	http.ServeFile(w, r, lines[said].WAV)
+}
+
 func (s *Server) voicer() webdemo.Voicer {
 	if s.Voicer != nil {
 		return s.Voicer

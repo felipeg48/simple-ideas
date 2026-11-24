@@ -602,7 +602,7 @@ func (dr *deckRenderer) docPage(body string, toc []tocEntry, problems []deck.Pro
 	dr.mermaidScript(&b)
 	b.WriteString("<script>\n" + assets.DocJS + "</script>\n")
 	if m.HasFeature("t2s") {
-		b.WriteString(t2sScript(m))
+		b.WriteString(t2sScript(m, dr.opt.VoiceServer))
 	}
 	if dr.opt.Terminal && (kind == "lab" || m.Sandbox != "") { // si play / a class seat: the drawer beside the lab
 		b.WriteString("<script>\n" + docTermJS + "</script>\n")
@@ -726,8 +726,13 @@ func subtitleOf(kind, sub string) string {
 	return ""
 }
 
-// t2sScript is the Listen bar of feature: t2s: its settings and runtime.
-func t2sScript(m deck.Meta) string {
-	cfg, _ := json.Marshal(map[string]string{"highlight": m.T2SHighlight, "rate": m.T2SRate, "voice": m.T2SVoice})
-	return "<script>\nwindow.SI_T2S = " + string(cfg) + ";\n" + assets.T2SJS + "</script>\n"
+// T2SMark starts a page's feature: t2s settings; si build puts the voiced
+// sentences right after it ("audio":[…],).
+const T2SMark = "window.SI_T2S = {"
+
+// t2sScript is the Listen bar of feature: t2s: its settings and runtime. In
+// si play (server) the page asks /_si/t2s for each sentence's voice.
+func t2sScript(m deck.Meta, server bool) string {
+	cfg, _ := json.Marshal(map[string]any{"highlight": m.T2SHighlight, "rate": m.T2SRate, "voice": m.T2SVoice, "engine": m.Voice, "server": server})
+	return "<script>\n" + T2SMark + string(cfg[1:]) + ";\n" + assets.T2SJS + "</script>\n"
 }

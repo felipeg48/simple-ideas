@@ -22,7 +22,7 @@ func TestT2SListenBar(t *testing.T) {
 	if len(res.Problems) > 0 {
 		t.Fatalf("problems: %v", res.Problems)
 	}
-	if !strings.Contains(page, `window.SI_T2S = {"highlight":"word","rate":"1.25","voice":""}`) || !strings.Contains(page, "si-t2s-play") {
+	if !strings.Contains(page, `window.SI_T2S = {"engine":"","highlight":"word","rate":"1.25","server":false,"voice":""}`) || !strings.Contains(page, "si-t2s-play") {
 		t.Error("feature: t2s page has no Listen runtime with its settings")
 	}
 	for _, f := range []string{"off.md", "none.md"} {

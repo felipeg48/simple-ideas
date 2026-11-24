@@ -466,7 +466,8 @@ Not everything is a slide deck. Pick the type by what the reader does:
   (`## Activity | …`, `release MVP: …`).
 - **Listen** (RULES.md §39): `feature: t2s` in a document's front matter (or
   `_nav.md` / `_site.md` for every page) adds a Listen bar under the title
-  that reads the page aloud with the browser's voice; `t2s-highlight:
+  that reads the page aloud (si build voices it with Kokoro or `voice:` into
+  `<page>.voice/`; ship that folder with the page); `t2s-highlight:
   sentence|word|paragraph|off`, `t2s-rate:`, `t2s-voice:`. Code, tables and
   figures are not read; `class="si-t2s-skip"` leaves out more. For
   documents only (decks have auto-play).
