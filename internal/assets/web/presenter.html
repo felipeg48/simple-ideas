@@ -55,7 +55,8 @@ body{overflow:hidden;height:100%}
 .pv-points ul,.pv-points ol{padding-left:1.3em;margin:0 0 .6em}.pv-points li{margin:.45em 0}
 .pv-points code{font-size:.85em}.pv-points strong{color:var(--si-accent)}
 .pv-rehearse{color:var(--si-muted);font-variant-numeric:tabular-nums;opacity:.85}
-.pv-prompt.points::after{display:none}
+/* the reading line: where the eyes stay while auto-scroll moves the script; only then */
+.pv-prompt.points::after,.pv:not(.auto) .pv-prompt::after{display:none}
 .pv-prompt::after{content:"";position:absolute;left:0;right:0;top:34%;height:0;border-top:2px dashed color-mix(in srgb,var(--si-accent) 45%,transparent);pointer-events:none}
 .pv.mirror .pv-notes{transform:scaleX(-1)}
 .pv-side{min-height:0;display:flex;flex-direction:column;gap:.5rem;overflow:auto}
@@ -224,7 +225,7 @@ body{overflow:hidden;height:100%}
     pv.style.setProperty('--pv-size', size);
     pv.classList.toggle('mirror', mirror); $('mirror').setAttribute('aria-pressed', mirror);
     pv.classList.toggle('prompter-only', only); $('only').setAttribute('aria-pressed', only);
-    $('auto').setAttribute('aria-pressed', auto);
+    pv.classList.toggle('auto', auto); $('auto').setAttribute('aria-pressed', auto);
     $('speed').textContent = 'speed ' + speed;
     $('scrollstate').textContent = auto ? 'auto-scroll ' + speed : 'manual scroll';
     save('size', size); save('speed', speed); save('mirror', mirror); save('only', only);

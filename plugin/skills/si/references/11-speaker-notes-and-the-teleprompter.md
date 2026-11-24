@@ -91,7 +91,7 @@ static HTML (`file://`), and either window drives both. It has two tabs:
 | In the teleprompter | |
 |---|---|
 | Tabs | `1` Teleprompter (script), `2` Speaker Notes (points); choice remembered per browser |
-| Notes | large type for reading at a distance; a guide line at reading height (teleprompter tab only) |
+| Notes | large type for reading at a distance; a guide line at reading height while auto-scroll runs (teleprompter tab only) |
 | Auto-scroll | `a` on/off, `+` / `-` speed 1 to 10 (lines per ten seconds, follows the text size) |
 | Manual scroll | ↑ ↓, mouse wheel, trackpad; `r` back to the top (scrolls whichever tab is showing) |
 | Text size | `[` / `]` (both tabs) |

@@ -3,6 +3,9 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v4.4.3:** The teleprompter's reading line (the dashed line where the
+  eyes stay) shows only while auto-scroll runs; with manual scroll it is
+  gone.
 - **v4.4.2:** Listen's mini player: once the Listen bar scrolls out of
   sight while it plays, it floats at the bottom of the window (play/pause,
   previous, next, stop, speed, and ⌖ back to the sentence being read; one
