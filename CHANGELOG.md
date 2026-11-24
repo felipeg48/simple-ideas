@@ -3,6 +3,14 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v4.4.2:** Listen's mini player: once the Listen bar scrolls out of
+  sight while it plays, it floats at the bottom of the window (play/pause,
+  previous, next, stop, speed, and ⌖ back to the sentence being read; one
+  row on a phone). The page follows the sentence, not its whole paragraph,
+  so a long paragraph on a phone stays in view; Page Up/Down and the arrow
+  keys count as the reader scrolling away. A line break in the Markdown no
+  longer splits a sentence in two (rebuild voiced pages: fewer, whole
+  sentences).
 - **v4.4.1:** Listen speaks with Kokoro. `si build` voices every sentence
   of a `feature: t2s` page with the page's `voice:`, si.conf `voice:` or
   Kokoro (`--voice` for the build) into `<page>.voice/` beside it, reusing

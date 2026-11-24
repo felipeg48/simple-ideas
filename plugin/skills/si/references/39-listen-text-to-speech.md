@@ -29,6 +29,9 @@ when the browser has more than one voice for the page's language, a voice
 menu. The reader's speed and voice are remembered in their browser. `l`
 plays and pauses; while it plays, a click on a paragraph reads from there.
 The page follows the reading unless the reader has just scrolled away.
+Once the bar scrolls out of sight while it plays, it floats at the bottom
+of the window as a mini player (play/pause, ⏮ ⏭, ⏹, speed) with ⌖, which
+goes back to the sentence being read; on a phone it is one row of icons.
 
 **What is read.** The title and the description, then the headings (with
 their numbers), paragraphs, list items, quotes and callouts, in page order.

@@ -10,7 +10,9 @@
  * lit by window.SI_T2S.highlight: sentence (default), word, paragraph or
  * off; sentence and word use the CSS Custom Highlight API (no change to
  * the page's markup), else the paragraph gets .si-t2s-on. While it plays,
- * a click on a paragraph reads from there; l plays or pauses. ---------- */
+ * a click on a paragraph reads from there; l plays or pauses. Once the
+ * bar scrolls out of sight while it plays, it floats at the bottom of the
+ * window (a mini player, with a button back to the sentence being read). ---------- */
 (function () {
   var cfg = window.SI_T2S || {};
   var synth = window.speechSynthesis && window.SpeechSynthesisUtterance ? window.speechSynthesis : null;
@@ -56,9 +58,9 @@
     var seg = window.Intl && Intl.Segmenter ? new Intl.Segmenter(lang || undefined, { granularity: 'sentence' }) : null;
     var out = [];
     units.forEach(function (u) {
-      var parts = [];
-      if (seg) { for (var s of seg.segment(u.text)) parts.push([s.index, s.segment]); }
-      else { var re = /[^.!?…]+(?:[.!?…]+["'”’)\]]*|$)\s*/g, m; while ((m = re.exec(u.text)) && m[0]) parts.push([m.index, m[0]]); }
+      var parts = [], flat = u.text.replace(/\s/g, ' '); /* a source line break is not a sentence break; same offsets */
+      if (seg) { for (var s of seg.segment(flat)) parts.push([s.index, s.segment]); }
+      else { var re = /[^.!?…]+(?:[.!?…]+["'”’)\]]*|$)\s*/g, m; while ((m = re.exec(flat)) && m[0]) parts.push([m.index, m[0]]); }
       parts.forEach(function (p) {
         var lead = p[1].length - p[1].replace(/^\s+/, '').length, txt = p[1].trim();
         if (/[\p{L}\p{N}]/u.test(txt)) out.push({ u: u, start: p[0] + lead, end: p[0] + lead + txt.length, text: txt.replace(/\s+/g, ' ') });
@@ -102,13 +104,26 @@
     '<button type="button" data-t2s-do="prev" aria-label="Previous sentence" title="Previous sentence">⏮</button>' +
     '<button type="button" data-t2s-do="stop" aria-label="Stop" title="Stop">⏹</button>' +
     '<button type="button" data-t2s-do="next" aria-label="Next sentence" title="Next sentence">⏭</button>' +
+    '<button type="button" class="si-t2s-here" data-t2s-do="here" aria-label="Go to the sentence being read" title="Go to the sentence being read">⌖</button>' +
     '<select class="si-t2s-rate" aria-label="Speed">' + [0.75, 1, 1.25, 1.5, 1.75, 2].map(function (r) { return '<option value="' + r + '">' + r + '×</option>'; }).join('') + '</select>' +
     '<select class="si-t2s-voice" aria-label="Voice"></select>' +
     '</span>';
   var title = document.querySelector('.si-doc-title');
   var at = title;
   while (at && at.nextElementSibling && at.nextElementSibling.matches('.si-lede,.si-doc-meta')) at = at.nextElementSibling;
-  if (at) at.after(bar); else main.prepend(bar);
+  /* the slot keeps the bar's place in the page while the bar floats */
+  var slot = document.createElement('div');
+  slot.className = 'si-t2s-slot';
+  slot.appendChild(bar);
+  if (at) at.after(slot); else main.prepend(slot);
+  var away = false;
+  function dock() {
+    var float = away && st.state !== 'off';
+    if (float === bar.classList.contains('si-t2s-float')) return;
+    slot.style.minHeight = float ? slot.offsetHeight + 'px' : '';
+    bar.classList.toggle('si-t2s-float', float);
+  }
+  if (window.IntersectionObserver) new IntersectionObserver(function (es) { away = !es[es.length - 1].isIntersecting; dock(); }).observe(slot);
   function q(s) { return bar.querySelector(s); }
   var rateSel = q('.si-t2s-rate'), voiceSel = q('.si-t2s-voice');
   var rate = parseFloat(store('rate')) || parseFloat(cfg.rate) || 1;
@@ -145,6 +160,7 @@
     q('.si-t2s-play').setAttribute('aria-pressed', playing ? 'true' : 'false');
     q('.si-t2s-tools').hidden = st.state === 'off';
     q('.si-t2s-time').textContent = st.state === 'off' ? minutes() + ' min listen' : (st.i + 1) + ' / ' + sents.length;
+    dock();
   }
 
   var lit = null;
@@ -163,12 +179,14 @@
   var userScroll = 0;
   addEventListener('wheel', function () { userScroll = Date.now(); }, { passive: true });
   addEventListener('touchmove', function () { userScroll = Date.now(); }, { passive: true });
-  function follow(s) {
-    if (Date.now() - userScroll < 4000) return; /* the reader is looking elsewhere */
-    var r = s.u.el.getBoundingClientRect();
-    if (r.top < 0 || r.bottom > innerHeight) {
+  addEventListener('keydown', function (e) { if (/^(PageUp|PageDown|Home|End|ArrowUp|ArrowDown| )$/.test(e.key)) userScroll = Date.now(); });
+  function follow(s, now) {
+    if (!now && Date.now() - userScroll < 4000) return; /* the reader is looking elsewhere */
+    var sr = range(s.u, s.start, s.end), r = (sr || s.u.el).getBoundingClientRect(); /* the sentence, not its paragraph: a long one is taller than a phone */
+    var low = innerHeight - (bar.classList.contains('si-t2s-float') ? bar.offsetHeight + 24 : 0); /* not under the mini player */
+    if (now || r.top < 0 || r.bottom > low) {
       var calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
-      s.u.el.scrollIntoView({ block: 'center', behavior: calm ? 'auto' : 'smooth' });
+      scrollBy({ top: r.top + r.height / 2 - low / 2, behavior: calm ? 'auto' : 'smooth' });
     }
   }
 
@@ -257,6 +275,7 @@
     if (!b) return;
     var d = b.getAttribute('data-t2s-do');
     if (d === 'stop') stop();
+    else if (d === 'here') { userScroll = 0; follow(sents[st.i], true); }
     else play(st.i + (d === 'next' ? 1 : -1));
   });
   rateSel.addEventListener('change', function () {

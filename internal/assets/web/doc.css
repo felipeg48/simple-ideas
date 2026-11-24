@@ -40,6 +40,12 @@ html{font-size:clamp(100%,.85rem + .3vw,150%);-webkit-text-size-adjust:100%;scro
 .si-t2s{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .6rem;margin:.9rem 0 1.4rem}
 .si-t2s-tools{display:inline-flex;flex-wrap:wrap;align-items:center;gap:.3rem}
 .si-t2s-tools[hidden]{display:none}
+.si-t2s-here{display:none}
+/* while it plays and the bar is out of sight: a mini player at the bottom of the window */
+.si-t2s.si-t2s-float{position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));z-index:50;width:max-content;max-width:calc(100vw - 2rem);margin:0;transform:translateX(-50%)}
+.si-t2s-float .si-t2s-here{display:inline-block}
+body:has([data-nav="bottom"]) .si-t2s.si-t2s-float{bottom:calc(4.5rem + env(safe-area-inset-bottom,0px))}
+@media (width < 40rem){.si-t2s-float .si-t2s-label{display:none}.si-t2s.si-t2s-float,.si-t2s-float .si-t2s-tools{flex-wrap:nowrap;gap:.25rem}}
 .si-doc-layout[data-layout="guide"]{grid-template-columns:minmax(12rem,15.5rem) minmax(0,1fr) minmax(10rem,12.5rem);grid-template-areas:"nav body toc"}
 .si-doc-layout[data-layout="guide"]>.si-doc-nav{grid-area:nav;position:sticky;top:1.5rem;max-height:calc(100dvh - 3rem);overflow:auto;overscroll-behavior:contain}
 .si-doc-layout[data-layout="guide"]>.si-doc-body{grid-area:body}
@@ -794,6 +800,7 @@ pre.si-code :is(.si-diff-hunk,.si-diff-meta) .si-ln{display:none}
 .si-t2s button:focus-visible,.si-t2s select:focus-visible{outline:2px solid var(--si-accent);outline-offset:2px}
 .si-t2s-icon{font-size:.75em}
 .si-t2s-time{font:.78rem/1 var(--si-font-mono);color:var(--si-muted)}
+.si-t2s.si-t2s-float{padding:.45rem .55rem;background:var(--si-bg);border:1px solid var(--si-line);border-radius:1.6rem;box-shadow:0 .5rem 1.6rem rgb(0 0 0/.18),0 .1rem .3rem rgb(0 0 0/.1)}
 ::highlight(si-t2s){background-color:color-mix(in srgb,var(--si-accent) 20%,transparent)}
 ::highlight(si-t2s-word){background-color:color-mix(in srgb,var(--si-accent) 45%,transparent)}
 .si-t2s-on{background:color-mix(in srgb,var(--si-accent) 14%,transparent);border-radius:.25em;box-shadow:0 0 0 .25em color-mix(in srgb,var(--si-accent) 14%,transparent)}

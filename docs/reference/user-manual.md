@@ -314,7 +314,7 @@ Exchange fans out → Email, Stock, Analytics
 - `feature: t2s` in a page's front matter, or in `_nav.md` / `_site.md` for every page; `feature: none` turns it off on one page
 - `t2s-highlight: sentence | word | paragraph | off`, `t2s-rate: 1.25`
 - The voice: `si build` voices every sentence with Kokoro (or `voice:` / si.conf `voice:` / `--voice`) into `<page>.voice/` beside the page; `si play` voices as it reads; without Chrome + ffmpeg the browser's voice (`t2s-voice: Samantha`)
-- The bar: ▶ Listen, Pause, ⏮ ⏭, ⏹, speed, voice; `l` plays and pauses; a click on a paragraph reads from there
+- The bar: ▶ Listen, Pause, ⏮ ⏭, ⏹, speed, voice; `l` plays and pauses; a click on a paragraph reads from there; scrolled away, the bar floats at the bottom as a mini player, ⌖ goes back to the sentence
 - Code, tables and figures are not read; `class="si-t2s-skip"` leaves out more; full guide: RULES.md §39
 
 ---

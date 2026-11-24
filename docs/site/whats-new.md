@@ -11,7 +11,8 @@ description: si 4 teaches classes from your own computer, a Docker box per learn
 books, articles and site pages are read aloud by the browser's own voice,
 offline, with the sentence, the word or the paragraph lit as it goes. Pause,
 skip a sentence, change the speed and the voice; click a paragraph to read
-from there. See [§39](rules/39-listen-text-to-speech.md).
+from there. Scroll away and the bar follows you as a mini player at the
+bottom of the window. See [§39](rules/39-listen-text-to-speech.md).
 
 ## Graphs, trees and maps (4.3)
 
