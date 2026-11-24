@@ -5,8 +5,9 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-23, end of session)
 
-**LATEST (read first): main `1054f15`, tag v4.3.0, CI green (ci, release,
-docs-site), installed (`si --version` 4.3.0).** Working tree clean except the
+**LATEST (read first, 2026-11-24): main `886d225` (after tag v4.3.0: handoff,
+trademark notice, name scrub), CI green on v4.3.0, installed (`si --version`
+4.3.0). Nothing in progress; wait for the founder's next request.** Working tree clean except the
 untracked `.serena/` and `si-docs-site/` (not ours; leave them).
 
 **Delivery diagrams** (RULES §38, spec
@@ -35,6 +36,11 @@ re-record `docs/demos/` on your own; `.github/workflows/demos.yml` is
 finds the newest videos in the last 200 releases. The CI `demos` *test* job
 (`si demo test`) still runs on every push. v4.3.0 also made screencast start
 retry "Not attached to an active page" (`internal/webdemo/runterm.go`).
+
+**Voices:** the founder's default stays Kokoro `af_heart` (user si.conf
+`~/.si/si.conf`); they also have an ElevenLabs cloned voice, commented out
+there, usable per run with `--voice elevenlabs:<id>`. Never print that
+si.conf whole: it holds API keys (grep `^#* *voice:` only).
 
 **After every release: `make install`** so the founder's `si` matches the tag.
 
