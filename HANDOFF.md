@@ -5,7 +5,7 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-23, end of session)
 
-**LATEST (read first, 2026-11-24): v4.4.1 tagged: Listen speaks with Kokoro
+**LATEST (read first, 2026-11-24): v4.4.2 tagged: Listen mini player (the bar floats at the bottom while it plays out of sight, ⌖ back to the sentence; follow by sentence; a Markdown line break no longer splits a sentence). Before that, v4.4.1: Listen speaks with Kokoro
 (`cmd/si/listen.go`: after si build, headless Chrome asks each t2s page for
 `window.siT2S.sentences()`, Synth voices them into `<page>.voice/<hash>.m4a`,
 the list goes into `SI_T2S.audio`; si play `/_si/t2s`); single-file builds
