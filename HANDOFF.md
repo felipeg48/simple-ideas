@@ -5,7 +5,9 @@ Markdown/AsciiDoc into animated, self-contained HTML slide decks.
 
 ## Current state (2026-11-23, end of session)
 
-**LATEST (read first, 2026-11-24): v4.4.2 tagged: Listen mini player (the bar floats at the bottom while it plays out of sight, ⌖ back to the sentence; follow by sentence; a Markdown line break no longer splits a sentence). Before that, v4.4.1: Listen speaks with Kokoro
+**LATEST (read first, 2026-11-25): v4.4.4 is the newest tag; main `2392f91`, CI and docs-site green, `si` installed at 4.4.4.** v4.4.3: the teleprompter's dashed reading line shows only while auto-scroll runs (`presenter.html`, `.pv.auto`). v4.4.4: teleprompter Now/Next previews convert script-laid-out px (code windows, `codewin.js` translateY/heights) to em in `snapshot()` (`deck/04-presenter.js`), so code windows and pictures no longer fall apart into lines with gaps; the docs site got `privacy.md` and `license.md` (Help menu, footer links absolute because sub-guides share `_footer.md`). Git trap: this working copy was left on another session's branch `fix/demo-keep-drawer-carry`; v4.4.3/v4.4.4 were committed there and main was fast-forwarded to it (`git push origin <sha>:refs/heads/main`). Run `git branch --show-current` before committing; switch to main (`git switch main && git merge --ff-only origin/main`) when that branch is done. Marketing: `docs/campaign/` (git-ignored, local only) holds a LinkedIn campaign (README.md plan and taglines, posts.md 8 posts); the founder posts by hand (LinkedIn API needs a LinkedIn Page). Offered next: a carousel deck `docs/campaign/carousel.md` built with `si build --pdf`. Nothing else in progress.
+
+**Earlier (2026-11-24): v4.4.2 tagged: Listen mini player (the bar floats at the bottom while it plays out of sight, ⌖ back to the sentence; follow by sentence; a Markdown line break no longer splits a sentence). Before that, v4.4.1: Listen speaks with Kokoro
 (`cmd/si/listen.go`: after si build, headless Chrome asks each t2s page for
 `window.siT2S.sentences()`, Synth voices them into `<page>.voice/<hash>.m4a`,
 the list goes into `SI_T2S.audio`; si play `/_si/t2s`); single-file builds
