@@ -3,6 +3,11 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **Unreleased:** Install on Windows with winget (`winget install
+  simple-ideas.si`, in Microsoft's review) or Scoop (`scoop bucket add
+  simple-ideas https://github.com/felipeg48/scoop-bucket`, then `scoop
+  install si`); each release updates the Scoop bucket. `si selfupdate` on
+  an si that Scoop or winget installed says how to upgrade it.
 - **v4.5.0:** The teleprompter has Focus (the Focus button or `f`):
   the line on the reading line and the lines before and after it stay
   bright, the rest of the script dims, and the reading line becomes a soft

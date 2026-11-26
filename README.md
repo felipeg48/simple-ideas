@@ -34,6 +34,8 @@ brew install felipeg48/tap/si                    # macOS, Linux (brew upgrade si
 brew install --cask felipeg48/tap/si-studio      # si Studio, the Mac app
 sudo apt install ./simple-ideas_<version>-1_amd64.deb    # Debian, Ubuntu
 sudo dnf install ./simple-ideas-<version>-1.x86_64.rpm   # Fedora, RHEL
+winget install simple-ideas.si                   # Windows
+scoop bucket add simple-ideas https://github.com/felipeg48/scoop-bucket; scoop install si
 ```
 
 The `.deb` and `.rpm` (amd64 and arm64) are on the
@@ -42,7 +44,7 @@ The `.deb` and `.rpm` (amd64 and arm64) are on the
 
 ```bash
 chmod +x si_* && sudo mv si_* /usr/local/bin/si      # macOS / Linux
-# Windows: rename si_*.exe to si.exe, somewhere on your PATH
+# Windows by hand: rename si_*.exe to si.exe, somewhere on your PATH
 si selfupdate                                         # later: update in place, checksum-verified
 ```
 

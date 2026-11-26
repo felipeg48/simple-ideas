@@ -1,6 +1,6 @@
 ---
 title: Install
-description: Install si with Homebrew, a .deb or .rpm package, or one file for macOS, Linux and Windows; si Studio for the Mac.
+description: Install si with Homebrew, a .deb or .rpm, winget or Scoop, or one file for any system; si Studio for the Mac.
 ---
 
 # Install
@@ -39,16 +39,30 @@ sudo dnf install https://github.com/felipeg48/simple-ideas/releases/download/v$S
 On ARM, take `.aarch64.rpm`; on openSUSE, `sudo zypper install` the same
 address. `sudo dnf remove simple-ideas` takes it away.
 
-## Windows
+## Windows: winget or Scoop
 
-Download `si_v$SI_VERSION_windows_amd64.exe` (or `_arm64.exe`) from the
-[latest release](https://github.com/felipeg48/simple-ideas/releases/latest),
-rename it `si.exe` and put it in a folder on your `PATH`, then in a new
-terminal:
+With winget, which comes with Windows 10 and 11:
 
 ```powershell
-si --version
+winget install simple-ideas.si
 ```
+
+`winget upgrade simple-ideas.si` brings the next release. If winget cannot
+find it, the package is still in Microsoft's review: use Scoop meanwhile.
+
+With [Scoop](https://scoop.sh):
+
+```powershell
+scoop bucket add simple-ideas https://github.com/felipeg48/scoop-bucket
+scoop install si
+```
+
+`scoop update si` brings the next release. Both install `si.exe` on your
+`PATH`; open a new terminal and run `si --version`.
+
+Or by hand: download `si_v$SI_VERSION_windows_amd64.exe` (or `_arm64.exe`)
+from the [latest release](https://github.com/felipeg48/simple-ideas/releases/latest),
+rename it `si.exe` and put it in a folder on your `PATH`.
 
 ## One file, any system
 
@@ -60,15 +74,13 @@ chmod +x si_* && sudo mv si_* /usr/local/bin/si
 si --version
 ```
 
-Installed this way (or on Windows), si updates itself in place, checksum
-verified:
+Installed this way, si updates itself in place, checksum verified:
 
 ```bash
 si selfupdate
 ```
 
-With Homebrew or a package, upgrade through it instead; `si selfupdate` says
-so.
+With Homebrew, a package, winget or Scoop, upgrade through it instead.
 
 With Go 1.26 or newer:
 

@@ -53,8 +53,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$GITHUB_REF_NAME" desktop/dist/si-Studio-*-macos.zip
 
-  # felipeg48/homebrew-tap: Formula/si.rb and Casks/si-studio.rb for this release.
-  # Needs the HOMEBREW_TAP_TOKEN secret (a token that can write that repo); without it, skipped.
+  # felipeg48/homebrew-tap (Formula/si.rb, Casks/si-studio.rb) and felipeg48/scoop-bucket
+  # (bucket/si.json) for this release. Needs the HOMEBREW_TAP_TOKEN secret, a token that can
+  # write both repos; without it, skipped. The winget manifests (packaging/winget.sh) go to
+  # microsoft/winget-pkgs as a pull request, by hand for now.
   homebrew:
     needs: desktop-macos
     runs-on: ubuntu-latest
@@ -71,6 +73,19 @@ jobs:
           git clone "https://x-access-token:$TAP_TOKEN@github.com/felipeg48/homebrew-tap.git" tap
           packaging/homebrew.sh "$v" rel/SHA256SUMS.txt "$(shasum -a 256 "rel/si-Studio-$v-macos.zip" | cut -d' ' -f1)" tap
           cd tap
+          git config user.name "simple-ideas release"
+          git config user.email "felipeg48@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || { git commit -m "si $v"; git push; }
+      - name: Update the Scoop bucket
+        env:
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$TAP_TOKEN" ]; then exit 0; fi
+          v="${GITHUB_REF_NAME#v}"
+          git clone "https://x-access-token:$TAP_TOKEN@github.com/felipeg48/scoop-bucket.git" bucket
+          packaging/scoop.sh "$v" rel/SHA256SUMS.txt bucket
+          cd bucket
           git config user.name "simple-ideas release"
           git config user.email "felipeg48@users.noreply.github.com"
           git add -A

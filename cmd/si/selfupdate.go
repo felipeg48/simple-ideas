@@ -216,10 +216,14 @@ func replaceExecutable(exe string, data []byte) error {
 // packaged says how to upgrade an si that a package manager installed (and so
 // must not be replaced in place), or "" for a binary the user put there.
 func packaged(exe string) string {
-	exe = filepath.ToSlash(exe)
+	exe = strings.ReplaceAll(exe, `\`, "/")
 	switch {
 	case strings.Contains(exe, "/Cellar/si/"):
 		return "upgrade it with: brew upgrade si"
+	case strings.Contains(strings.ToLower(exe), "/scoop/apps/si/"):
+		return "upgrade it with: scoop update si"
+	case strings.Contains(strings.ToLower(exe), "/winget/packages/simple-ideas.si"):
+		return "upgrade it with: winget upgrade simple-ideas.si"
 	case exe == "/usr/bin/si":
 		return "install the newer .deb or .rpm from https://github.com/felipeg48/simple-ideas/releases/latest"
 	}

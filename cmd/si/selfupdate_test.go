@@ -38,8 +38,9 @@ func TestSemverLess(t *testing.T) {
 }
 
 func TestPackagedSelfUpdate(t *testing.T) {
-	for exe, brew := range map[string]bool{"/opt/homebrew/Cellar/si/4.5.0/bin/si": true, "/home/linuxbrew/.linuxbrew/Cellar/si/4.5.0/bin/si": true, "/usr/bin/si": false} {
-		if h := packaged(exe); h == "" || strings.Contains(h, "brew") != brew {
+	for exe, how := range map[string]string{"/opt/homebrew/Cellar/si/4.5.0/bin/si": "brew", "/home/linuxbrew/.linuxbrew/Cellar/si/4.5.0/bin/si": "brew", "/usr/bin/si": ".deb",
+		`C:\Users\ana\scoop\apps\si\4.5.0\si.exe`: "scoop", `C:\Users\ana\AppData\Local\Microsoft\WinGet\Packages\simple-ideas.si_Microsoft.Winget.Source_8wekyb3d8bbwe\si.exe`: "winget"} {
+		if h := packaged(exe); !strings.Contains(h, how) {
 			t.Errorf("%s: %q", exe, h)
 		}
 	}
