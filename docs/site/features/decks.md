@@ -109,7 +109,7 @@ Every deck si builds answers these keys, in `si play` or opened from a file.
 **The board.** In draw mode, <kbd>b</kbd> puts a board over the slides:
 <kbd>B</kbd> picks the paper, <kbd>g</kbd> the pattern, and **Copy** puts a
 picture of it on the clipboard to paste into a chat, a doc or a ticket
-(**PNG** saves one). The ink stays on the board as the slides move.
+(**PNG** saves one). The ink stays on the board as the slides move. [Draw and the board →](draw.md)
 
 <div class="dk-grid">
 <figure><img src="img/decks/board-white.jpg" alt="Three boxes joined by arrows, the middle one ringed in red, on a white board with graph paper" loading="lazy"><figcaption><b>Whiteboard</b> on graph paper</figcaption></figure>

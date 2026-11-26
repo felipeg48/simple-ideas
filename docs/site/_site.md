@@ -16,6 +16,7 @@ footer: simple-ideas
 - [What's new in si 4](whats-new.md)
 - Features
   - [Decks](features/decks.md)
+    - [Draw and the board](features/draw.md)
     - [Presenting](features/remote.md)
     - [Audience](features/audience.md)
     - [Try it, as the room does](features/audience-demo.md)

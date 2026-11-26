@@ -44,6 +44,51 @@ volume. [See books](features/books.md)
 Code in a macOS, Windows or terminal window, with callouts and lines that
 glide between steps. [See code](features/code.md)
 
+### Timelines · eras · orange
+
+Eras, dates and pictures on one 16:9 page you present, print or scroll as a
+poster. [See timelines](features/timelines.md)
+
+### Infographics · numbers · ok
+
+Big stats, flows and charts drawn to scale, a slide or a poster that builds
+itself, filmed as GIF or MP4. [See infographics](features/infographics.md)
+
+### Delivery diagrams · kanban · teal
+
+Kanban, gantt, sequence, burndown and flowcharts in plain lines, moving one
+step at a time. [See diagrams](features/diagrams.md)
+
+### Architecture pages · design docs · hi
+
+A design document from one file: numbered sections, cards, a flow, notes and
+phases. [See architecture pages](features/architecture.md)
+
+### Status boards · progress · ok
+
+Pills, tiles and one card per area, every bar counted from your checklists.
+[See status boards](features/status.md)
+
+### Courses · lessons · orange
+
+Readings, slides, videos, labs and quizzes in modules, with progress, SCORM
+and a certificate. [See courses](features/courses.md)
+
+### Web demos · videos · teal
+
+One script drives your web app in a browser: a narrated video, and the same
+script as a test. [See web demos](features/webdemos.md)
+
+### Video edits · recordings · hi
+
+Callouts, blur, zooms, cuts and new narration, written as lines beside the
+recording. [See video edits](features/video.md)
+
+### Animated charts · tables · ok
+
+A Markdown table becomes bars, a line or a donut that grow, re-sort and
+count up, step by step. [See animated charts](rules/33-animated-charts.md)
+
 ## A deck, live
 
 <!-- embed: live/showcase.md 1-3 -->
@@ -133,6 +178,11 @@ map editor and a code window builder. [The Studio](features/studio.md)
 
 The same deck in the terminal, with real pictures, animated canvases and a
 teleprompter in a second pane. [Terminal](features/terminal.md)
+
+### Draw and the board · present
+
+Draw on any slide, or open a whiteboard, a chalk blackboard or a blueprint,
+then copy it as a picture. [Draw and the board](features/draw.md)
 
 ### Presenting · from your phone
 
