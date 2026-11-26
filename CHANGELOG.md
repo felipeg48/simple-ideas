@@ -3,11 +3,16 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
-- **Unreleased:** Install on Windows with winget (`winget install
+- **v4.5.1:** Install on Windows with winget (`winget install
   simple-ideas.si`, in Microsoft's review) or Scoop (`scoop bucket add
   simple-ideas https://github.com/felipeg48/scoop-bucket`, then `scoop
   install si`); each release updates the Scoop bucket. `si selfupdate` on
   an si that Scoop or winget installed says how to upgrade it.
+  The board grows up: three papers (white, black with chalk, blueprint
+  blue; **B** cycles), four patterns (plain, graph paper, dots, ruled;
+  **g** cycles), both remembered; `b` now turns the board on and off.
+  **Copy** puts a picture of the board on the clipboard to paste anywhere,
+  **PNG** saves it. The Decks page shows the three boards.
 - **v4.5.0:** The teleprompter has Focus (the Focus button or `f`):
   the line on the reading line and the lines before and after it stay
   bright, the rest of the script dims, and the reading line becomes a soft

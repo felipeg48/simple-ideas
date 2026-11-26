@@ -441,7 +441,7 @@ Six build animations add depth: `tilt`, `steps: carousel`, `explode`,
 | `d` / `f` / `?` | light-dark / full screen / help |
 | `v` | auto-play — the deck reads its `Notes:` aloud and advances at each `[CLICK]`; any key that moves the deck, a click or the pen pauses it |
 | `` ` `` | terminal drawer — run local commands live (`si play` on a loopback address only) |
-| `a`, then `b` | the board: a whiteboard, `b` again a chalk blackboard, again off; its ink stays across slides until `x` |
+| `a`, then `b` | the board over the slides: paper white, black (chalk) or blueprint blue (`B`), pattern plain, grid, dots or lines (`g`), **Copy** as a picture, **PNG**; its ink stays across slides until `x`; `b` again puts it away |
 | `a`, then ⌥ + move | in draw mode, hold Option (Alt) and the cursor draws where it goes: one finger on a trackpad, no click (si.conf `draw.hold: shift`, `ctrl`, `meta` or `off` picks the key) |
 | `q` | `si play --remote`: the phone and tablet links as QR codes, on the projected screen (`--https`: over HTTPS, so the phone stays awake) |
 

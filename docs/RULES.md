@@ -1403,7 +1403,7 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
 | `p` or `Shift+S` | teleprompter window |
 | `t` | break timer HUD: pick minutes, countdown to project during a break |
 | `/` | find a slide: search titles and text, or type a number to jump |
-| `a` | draw: a pen layer over the slide (drag, or hold ⌥ Option / Alt and move: the cursor draws, no click; si.conf `draw.hold` changes the key); `b` in it: whiteboard, blackboard, off |
+| `a` | draw: a pen layer over the slide (drag, or hold ⌥ Option / Alt and move: the cursor draws, no click; si.conf `draw.hold` changes the key); `b` in it: the board (`B` paper, `g` pattern, Copy, PNG) |
 | `d` | light / dark (remembered) |
 | `f` | full screen |
 | `v` | auto-play: the deck reads its `Notes:` aloud and advances at each `[CLICK]`; again pauses, Esc stops (§11) |
@@ -1447,11 +1447,21 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   `z` undoes the last, `x` clears all, `Esc` turns it off. Strokes use the theme
   colours and clear when you change slides; they are not saved and do not print.
 - **Board** (`b` in draw mode, or **Board**): a page over the slides to draw
-  on. The first `b` is a whiteboard (markers: blue, red, green, black), the
-  second a blackboard (chalk: yellow, pink, green, white, with a chalk grain),
-  the third puts it away. Its ink stays while you move between slides (the
-  slide's own ink still clears) until `x` or **Clear**; `z` undoes on it.
-  Putting the pen away (`Esc`, **Done**) puts the board away too.
+  on; `b` again puts it away. While it is up the draw bar shows its tools:
+  - **Paper** (`B` cycles): a whiteboard (markers: blue, red, green, black), a
+    blackboard (chalk with a grain: yellow, pink, green, white) or a blueprint
+    (white, pink, yellow, cyan on blue).
+  - **Pattern** (`g` cycles): Plain, Grid (graph paper, a stronger line every
+    five cells), Dots or Lines (ruled), always light, in the paper's own tint.
+  - **Copy** puts a picture of the board (paper, pattern, ink) on the
+    clipboard, to paste into a document or a chat; on a page that is not
+    https, localhost or a file, the browser allows no clipboard and it saves
+    the picture instead. **PNG** saves it as `<deck>-board.png`.
+
+  Paper and pattern are remembered. The ink stays while you move between
+  slides (the slide's own ink still clears) until `x` or **Clear**; `z` undoes
+  on it; the pattern is not ink, so neither touches it. Putting the pen away
+  (`Esc`, **Done**) puts the board away too.
 
 - The URL hash is the position (`#7`, `#7.2`); reloads keep it, so live
   reload in `si play` stays on your slide.

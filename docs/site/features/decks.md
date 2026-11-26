@@ -101,9 +101,20 @@ Every deck si builds answers these keys, in `si play` or opened from a file.
 <div class="dk-grid">
 <figure><img src="img/decks/overview.jpg" alt="The overview: every slide, one column per section" loading="lazy"><figcaption><kbd>o</kbd> <b>Overview</b>: the whole talk, one column per section; arrows move, Enter opens</figcaption></figure>
 <figure><img src="img/decks/find.jpg" alt="Find: slides matching retry" loading="lazy"><figcaption><kbd>/</kbd> <b>Find</b>: type a word, or a number to jump to that slide</figcaption></figure>
-<figure><img src="img/decks/draw.jpg" alt="A ring and an underline drawn on a slide" loading="lazy"><figcaption><kbd>a</kbd> <b>Draw</b>: drag, or hold <kbd>⌥ Option</kbd> and move, so one finger on the trackpad draws; <kbd>c</kbd> colour, <kbd>z</kbd> undo, <kbd>x</kbd> clear, <kbd>b</kbd> a whiteboard, then a chalk blackboard</figcaption></figure>
+<figure><img src="img/decks/draw.jpg" alt="A ring and an underline drawn on a slide" loading="lazy"><figcaption><kbd>a</kbd> <b>Draw</b>: drag, or hold <kbd>⌥ Option</kbd> and move, so one finger on the trackpad draws; <kbd>c</kbd> colour, <kbd>z</kbd> undo, <kbd>x</kbd> clear, <kbd>b</kbd> a board: white, chalk black or blueprint, on graph, dot or ruled paper; Copy pastes it anywhere</figcaption></figure>
 <figure><img src="img/decks/timer.jpg" alt="A break timer counting down" loading="lazy"><figcaption><kbd>t</kbd> <b>Break timer</b>: pick the minutes, project the countdown</figcaption></figure>
 <figure><img src="img/decks/autoplay.jpg" alt="The title slide with its notes as a caption and the auto-play bar" loading="lazy"><figcaption><kbd>v</kbd> <b>Auto-play</b>: the deck reads its notes aloud, with captions, and moves on at each <code>[CLICK]</code>; any key takes over</figcaption></figure>
+</div>
+
+**The board.** In draw mode, <kbd>b</kbd> puts a board over the slides:
+<kbd>B</kbd> picks the paper, <kbd>g</kbd> the pattern, and **Copy** puts a
+picture of it on the clipboard to paste into a chat, a doc or a ticket
+(**PNG** saves one). The ink stays on the board as the slides move.
+
+<div class="dk-grid">
+<figure><img src="img/decks/board-white.jpg" alt="Three boxes joined by arrows, the middle one ringed in red, on a white board with graph paper" loading="lazy"><figcaption><b>Whiteboard</b> on graph paper</figcaption></figure>
+<figure><img src="img/decks/board-black.jpg" alt="The same sketch in yellow, pink and green chalk on a blackboard" loading="lazy"><figcaption><b>Blackboard</b>: the pens turn to chalk</figcaption></figure>
+<figure><img src="img/decks/board-blue.jpg" alt="The same sketch in white on a blue blueprint grid" loading="lazy"><figcaption><b>Blueprint</b>: white lines on a light grid</figcaption></figure>
 </div>
 
 **The deck presents itself.** Auto-play reads each slide's `Notes:` in the

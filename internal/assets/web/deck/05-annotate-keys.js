@@ -3,18 +3,80 @@
   var penColors = ['var(--si-accent)', 'var(--si-crit)', 'var(--si-ok)', 'var(--si-fg)'];
   var drawMode = false, erasing = false, drawing = false, penColor = penColors[0], curPath = null;
   var penSize = +load('si-pen-size') || 5;
-  /* the board (b in draw mode): whiteboard, blackboard, off; an opaque layer over the
-     slides with its own ink, kept across slides until cleared; off when the pen is put away */
-  var board = document.querySelector('.si-board'), boardInk = board && board.querySelector('svg'), boardKind = '';
+  /* the board (b in draw mode): an opaque page over the slides with its own ink, kept across
+     slides until cleared, put away with the pen. Its paper: white, black (chalk) or blue
+     (blueprint), B cycles; its pattern: plain, grid, dots or lines, g cycles; both remembered.
+     The pattern is its own layer under the ink, so undo and clear never touch it. */
+  var board = document.querySelector('.si-board'), boardInk = board && board.querySelector('.si-board-ink'),
+    boardPaper = board && board.querySelector('.si-board-paper'), boardKind = '';
+  var papers = ['white', 'black', 'blue'], patterns = ['plain', 'grid', 'dots', 'lines'];
+  var paper = papers.indexOf(load('si-board-paper')) >= 0 ? load('si-board-paper') : 'white';
+  var pattern = patterns.indexOf(load('si-board-pattern')) >= 0 ? load('si-board-pattern') : 'plain';
   function ink() { return boardKind ? boardInk : draw; }
   function setBoard(k) {
     if (!board) return;
     boardKind = k; board.hidden = !k;
-    if (k) { board.setAttribute('data-board', k); document.body.setAttribute('data-si-board', k); }
+    if (k) { paper = k; save('si-board-paper', k); board.setAttribute('data-board', k); document.body.setAttribute('data-si-board', k); drawPaper(); }
     else document.body.removeAttribute('data-si-board');
     syncPenUI();
   }
-  function cycleBoard() { setBoard({ '': 'white', white: 'black', black: '' }[boardKind]); }
+  function toggleBoard() { setBoard(boardKind ? '' : paper); }
+  function cyclePaper() { setBoard(papers[(papers.indexOf(boardKind || paper) + 1) % papers.length]); }
+  function setPattern(p) { pattern = p; save('si-board-pattern', p); drawPaper(); syncPenUI(); }
+  function cyclePattern() { setPattern(patterns[(patterns.indexOf(pattern) + 1) % patterns.length]); }
+  /* the pattern, in screen pixels: a cell is 1/22 of the shorter side; the colour is the paper's --_grid */
+  function drawPaper() {
+    if (!boardPaper || !boardKind) return;
+    var c = Math.max(12, Math.round(Math.min(innerWidth, innerHeight) / 22)), col = getComputedStyle(board).getPropertyValue('--_grid').trim() || '#c8d6e8';
+    var w = c, h = c, body = '';
+    if (pattern === 'grid') {
+      w = h = 5 * c;
+      for (var i = 1; i < 5; i++) body += '<path d="M' + i * c + ' 0V' + h + 'M0 ' + i * c + 'H' + w + '" stroke="' + col + '" stroke-opacity=".55" stroke-width="1"/>';
+      body += '<path d="M0 0V' + h + 'M0 0H' + w + '" stroke="' + col + '" stroke-width="1.5"/>';
+    } else if (pattern === 'dots') body = '<circle cx="' + c / 2 + '" cy="' + c / 2 + '" r="' + Math.max(1.3, c / 16).toFixed(1) + '" fill="' + col + '"/>';
+    else if (pattern === 'lines') { h = Math.round(c * 1.2); body = '<path d="M0 ' + (h - .5) + 'H' + w + '" stroke="' + col + '" stroke-width="1.2"/>'; }
+    boardPaper.innerHTML = pattern === 'plain' ? '' : '<defs><pattern id="si-board-pat" patternUnits="userSpaceOnUse" width="' + w + '" height="' + h + '">' + body +
+      '</pattern></defs><rect width="100%" height="100%" fill="url(#si-board-pat)"/>';
+  }
+  if (board) window.addEventListener('resize', drawPaper);
+  /* the board as a picture: paper colour, pattern and ink, with the colours the theme gave them
+     written in, drawn at up to 2x on a canvas */
+  function boardShot() {
+    return new Promise(function (ok, fail) {
+      var W = board.clientWidth, H = board.clientHeight, s = Math.min(2, window.devicePixelRatio || 1), cs = getComputedStyle(board);
+      var inkCopy = boardInk.cloneNode(true), src = boardInk.querySelectorAll('path'), dst = inkCopy.querySelectorAll('path');
+      each(dst, function (d, i) {
+        var c = getComputedStyle(src[i]);
+        d.removeAttribute('style');
+        d.setAttribute('stroke', c.stroke); d.setAttribute('fill', 'none'); d.setAttribute('stroke-linecap', 'round'); d.setAttribute('stroke-linejoin', 'round');
+        if (c.opacity !== '1') d.setAttribute('opacity', c.opacity);
+        if (/url\(/.test(c.filter)) d.setAttribute('filter', 'url(#si-chalk)');
+      });
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' +
+        '<rect width="100%" height="100%" fill="' + cs.backgroundColor + '"/>' + boardPaper.innerHTML + inkCopy.innerHTML + '</svg>';
+      var img = new Image(), url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+      img.onload = function () {
+        var cv = document.createElement('canvas'); cv.width = Math.round(W * s); cv.height = Math.round(H * s);
+        var g = cv.getContext('2d'); g.scale(s, s); g.drawImage(img, 0, 0, W, H); URL.revokeObjectURL(url);
+        cv.toBlob(function (b) { if (b) ok(b); else fail(new Error('no picture')); }, 'image/png');
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); fail(new Error('no picture')); };
+      img.src = url;
+    });
+  }
+  function boardSave() {
+    return boardShot().then(function (b) {
+      var a = document.createElement('a'); a.download = (data.name || 'board') + '-board.png'; a.href = URL.createObjectURL(b);
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    });
+  }
+  function flash(btn, text) { if (!btn) return; var t = btn.textContent; btn.textContent = text; setTimeout(function () { btn.textContent = t; }, 1600); }
+  /* Copy: the picture on the clipboard (https, localhost and file pages); elsewhere it is saved instead */
+  function boardCopy(btn) {
+    var saved = function () { boardSave().then(function () { flash(btn, 'Saved ✓'); }); };
+    if (!navigator.clipboard || !window.ClipboardItem || !window.isSecureContext) { saved(); return; }
+    navigator.clipboard.write([new ClipboardItem({ 'image/png': boardShot() })]).then(function () { flash(btn, 'Copied ✓'); }, saved);
+  }
   function toggleDraw(on) {
     if (!draw) return;
     if (on === undefined) on = !drawMode;
@@ -26,7 +88,7 @@
   /* clearStrokes() empties the slide's ink (a new slide); the x key and Clear empty the layer in use */
   function clearStrokes(share, layer) {
     layer = layer || draw;
-    if (layer) while (layer.lastChild && layer.lastChild.nodeName !== 'defs') layer.removeChild(layer.lastChild);
+    if (layer) each(layer.querySelectorAll(':scope > path'), function (p) { layer.removeChild(p); });
     if (share) post({ type: 'clear', i: cur });
   }
   function undoStroke() { var l = ink(); if (l && l.lastChild && l.lastChild.nodeName === 'path') dropStroke(l.lastChild); }
@@ -67,6 +129,8 @@
     each(drawBar.querySelectorAll('[data-si-size]'), function (b) { b.classList.toggle('is-on', +b.getAttribute('data-si-size') === penSize); });
     var er = drawBar.querySelector('[data-si-draw="erase"]'); if (er) er.classList.toggle('is-on', erasing);
     var bd = drawBar.querySelector('[data-si-draw="board"]'); if (bd) bd.classList.toggle('is-on', !!boardKind);
+    each(drawBar.querySelectorAll('[data-si-paper]'), function (b) { b.classList.toggle('is-on', b.getAttribute('data-si-paper') === boardKind); });
+    each(drawBar.querySelectorAll('[data-si-pattern]'), function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-si-pattern') === pattern ? 'true' : 'false'); });
   }
   function dStart(e) {
     if (!drawMode) return;
@@ -88,7 +152,7 @@
     if (curPath) { curPath.setAttribute('d', curPath.getAttribute('d') + ' L ' + e.clientX + ' ' + e.clientY); inkPush(e.clientX, e.clientY); }
   }
   function dEnd() { if (curPath) { clearTimeout(inkTimer); inkFlush(); } drawing = false; curPath = null; }
-  function eraseAt(e) { var el = document.elementFromPoint(e.clientX, e.clientY); if (el && el.parentNode === ink()) dropStroke(el); }
+  function eraseAt(e) { var el = document.elementFromPoint(e.clientX, e.clientY); if (el && el.nodeName === 'path' && el.parentNode === ink()) dropStroke(el); }
   if (draw) {
     draw.addEventListener('pointerdown', dStart);
     if (board) board.addEventListener('pointerdown', dStart);
@@ -120,10 +184,12 @@
   if (drawBar) {
     each(drawBar.querySelectorAll('[data-si-pen]'), function (b) { b.addEventListener('click', function () { penColor = b.getAttribute('data-si-pen'); erasing = false; syncPenUI(); b.blur(); }); });
     each(drawBar.querySelectorAll('[data-si-size]'), function (b) { b.addEventListener('click', function () { penSize = +b.getAttribute('data-si-size'); save('si-pen-size', penSize); syncPenUI(); b.blur(); }); });
+    each(drawBar.querySelectorAll('[data-si-paper]'), function (b) { b.addEventListener('click', function () { setBoard(b.getAttribute('data-si-paper')); b.blur(); }); });
+    each(drawBar.querySelectorAll('[data-si-pattern]'), function (b) { b.addEventListener('click', function () { setPattern(b.getAttribute('data-si-pattern')); b.blur(); }); });
     each(drawBar.querySelectorAll('[data-si-draw]'), function (b) {
       b.addEventListener('click', function () {
         var a = b.getAttribute('data-si-draw');
-        if (a === 'erase') toggleEraser(); else if (a === 'undo') undoStroke(); else if (a === 'clear') clearStrokes(true, ink()); else if (a === 'board') cycleBoard(); else if (a === 'done') toggleDraw(false);
+        if (a === 'erase') toggleEraser(); else if (a === 'undo') undoStroke(); else if (a === 'clear') clearStrokes(true, ink()); else if (a === 'board') toggleBoard(); else if (a === 'copy') boardCopy(b); else if (a === 'png') boardSave(); else if (a === 'done') toggleDraw(false);
         b.blur();
       });
     });
@@ -261,7 +327,9 @@
       if (e.key === 'e') { e.preventDefault(); toggleEraser(); return; }
       if (e.key === 'z') { e.preventDefault(); undoStroke(); return; }
       if (e.key === 'x') { e.preventDefault(); clearStrokes(true, ink()); return; }
-      if (e.key === 'b') { e.preventDefault(); cycleBoard(); return; }
+      if (e.key === 'b') { e.preventDefault(); toggleBoard(); return; }
+      if (e.key === 'B') { e.preventDefault(); cyclePaper(); return; }
+      if (e.key === 'g' && boardKind) { e.preventDefault(); cyclePattern(); return; }
     }
     switch (e.key) {
       case 'ArrowRight': case 'ArrowDown': case 'PageDown': case 'Enter': case 'j': case 'n':
