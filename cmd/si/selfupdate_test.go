@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestSHA256From(t *testing.T) {
 	sums := "abc123  si_v0.2.0_linux_amd64\n" +
@@ -30,6 +33,19 @@ func TestSemverLess(t *testing.T) {
 	for _, c := range notLess {
 		if semverLess(c[0], c[1]) {
 			t.Errorf("semverLess(%q,%q)=true, want false", c[0], c[1])
+		}
+	}
+}
+
+func TestPackagedSelfUpdate(t *testing.T) {
+	for exe, brew := range map[string]bool{"/opt/homebrew/Cellar/si/4.5.0/bin/si": true, "/home/linuxbrew/.linuxbrew/Cellar/si/4.5.0/bin/si": true, "/usr/bin/si": false} {
+		if h := packaged(exe); h == "" || strings.Contains(h, "brew") != brew {
+			t.Errorf("%s: %q", exe, h)
+		}
+	}
+	for _, exe := range []string{"/usr/local/bin/si", "/Users/ana/bin/si", `C:\Tools\si.exe`} {
+		if h := packaged(exe); h != "" {
+			t.Errorf("%s should update in place, got %q", exe, h)
 		}
 	}
 }

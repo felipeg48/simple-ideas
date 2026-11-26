@@ -29,12 +29,20 @@ Fluid on every screen, one self-contained HTML file each, with a real teleprompt
 
 ## Install
 
-**A release binary** (no Go needed) from the
-[releases page](https://github.com/felipeg48/simple-ideas/releases/latest):
+```bash
+brew install felipeg48/tap/si                    # macOS, Linux (brew upgrade si later)
+brew install --cask felipeg48/tap/si-studio      # si Studio, the Mac app
+sudo apt install ./simple-ideas_<version>-1_amd64.deb    # Debian, Ubuntu
+sudo dnf install ./simple-ideas-<version>-1.x86_64.rpm   # Fedora, RHEL
+```
+
+The `.deb` and `.rpm` (amd64 and arm64) are on the
+[releases page](https://github.com/felipeg48/simple-ideas/releases/latest), with
+**a plain binary** for every system (no Go needed):
 
 ```bash
 chmod +x si_* && sudo mv si_* /usr/local/bin/si      # macOS / Linux
-# Windows: move si_*.exe somewhere on your PATH
+# Windows: rename si_*.exe to si.exe, somewhere on your PATH
 si selfupdate                                         # later: update in place, checksum-verified
 ```
 
@@ -165,7 +173,9 @@ hold ⌥ Option and the cursor draws). Film it with `--mp4`, print it with
 </tr></table>
 
 **A real teleprompter** (`p`): your `Notes:` script in large type, auto-scroll,
-mirror, per-slide and total clocks with pace, previews of now and next.
+Fit time (it scrolls to end with the slide's minutes), Focus (the line you
+read bright, the rest dimmed), mirror, buttons in English or Spanish
+(`ui.lang: es`), per-slide and total clocks with pace, previews of now and next.
 **Two presenters?** `speakers: Ana, Felipe` and `Notes[Ana]:`: a teleprompter
 each, with the hand-over. **Record your talk** with one button, then
 `si build --narration latest` makes the narrated video and `si rehearse`

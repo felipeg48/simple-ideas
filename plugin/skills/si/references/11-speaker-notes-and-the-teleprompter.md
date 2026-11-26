@@ -93,6 +93,8 @@ static HTML (`file://`), and either window drives both. It has two tabs:
 | Tabs | `1` Teleprompter (script), `2` Speaker Notes (points); choice remembered per browser |
 | Notes | large type for reading at a distance; a guide line at reading height while auto-scroll runs (teleprompter tab only) |
 | Auto-scroll | `a` on/off, `+` / `-` speed 1 to 10 (lines per ten seconds, follows the text size) |
+| Fit time | `k` (or **Fit time**): auto-scroll at the speed that brings the last line to the reading line as the slide's `Notes: (N min)` run out, worked out again all the time (a hand scroll or a paused timer is caught up); a slide with no minutes, or past them, scrolls at the `+` / `-` speed |
+| Focus | `f` (or **Focus**): the line on the reading line and the lines before and after it stay bright, the rest of the script dims; the reading line becomes a soft band and the script starts on it; with or without auto-scroll |
 | Manual scroll | ↑ ↓, mouse wheel, trackpad; `r` back to the top (scrolls whichever tab is showing) |
 | Text size | `[` / `]` (both tabs) |
 | Mirror | `m` flips the script for teleprompter glass |
@@ -104,7 +106,7 @@ static HTML (`file://`), and either window drives both. It has two tabs:
 | Record | **● Record** (Shift+R) under `si play`: records your voice from the microphone with every slide and step change; Stop saves `.si/recordings/<talk>-<date-time>/` beside the talk (`audio.webm`, `timeline.json`, `meta.json`). It feeds `--mp4 --narration` and `si rehearse` |
 | Navigation | → ← Space PgDn PgUp Home End, buttons |
 
-Settings (tab, size, speed, mirror, notes only) are remembered per browser.
+Settings (tab, size, speed, fit time, focus, mirror, notes only) are remembered per browser. The buttons speak English or Spanish: si.conf `ui.lang: es` (§16), or a deck with `lang: es`.
 
 **Two (or more) presenters.** A talk given by two people names them in the
 front matter and gives each one a script: `Notes[Name]:` is that speaker's

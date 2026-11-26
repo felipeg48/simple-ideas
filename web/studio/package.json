@@ -20,6 +20,9 @@
     "e2e:effects": "node e2e/effects.e2e.mjs",
     "e2e:motion": "node e2e/motion.e2e.mjs",
     "e2e:speakers": "node e2e/speakers.e2e.mjs",
+    "e2e:focus": "node e2e/focus.e2e.mjs",
+    "e2e:board": "node e2e/board.e2e.mjs",
+    "e2e:l10n": "node e2e/l10n.e2e.mjs",
     "e2e:theme": "node e2e/theme.e2e.mjs",
     "e2e:a11y": "node e2e/a11y.e2e.mjs",
     "e2e:pointer": "node e2e/pointer.e2e.mjs"

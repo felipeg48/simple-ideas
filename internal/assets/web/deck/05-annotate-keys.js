@@ -3,17 +3,34 @@
   var penColors = ['var(--si-accent)', 'var(--si-crit)', 'var(--si-ok)', 'var(--si-fg)'];
   var drawMode = false, erasing = false, drawing = false, penColor = penColors[0], curPath = null;
   var penSize = +load('si-pen-size') || 5;
+  /* the board (b in draw mode): whiteboard, blackboard, off; an opaque layer over the
+     slides with its own ink, kept across slides until cleared; off when the pen is put away */
+  var board = document.querySelector('.si-board'), boardInk = board && board.querySelector('svg'), boardKind = '';
+  function ink() { return boardKind ? boardInk : draw; }
+  function setBoard(k) {
+    if (!board) return;
+    boardKind = k; board.hidden = !k;
+    if (k) { board.setAttribute('data-board', k); document.body.setAttribute('data-si-board', k); }
+    else document.body.removeAttribute('data-si-board');
+    syncPenUI();
+  }
+  function cycleBoard() { setBoard({ '': 'white', white: 'black', black: '' }[boardKind]); }
   function toggleDraw(on) {
     if (!draw) return;
     if (on === undefined) on = !drawMode;
-    drawMode = on; if (!on) { drawing = false; erasing = false; } else apTouch(); /* the pen takes over from auto-play */
+    drawMode = on; if (!on) { drawing = false; erasing = false; setBoard(''); } else apTouch(); /* the pen takes over from auto-play */
     document.body.classList.toggle('si-drawing', on);
     draw.setAttribute('aria-hidden', on ? 'false' : 'true');
     syncPenUI();
   }
-  function clearStrokes(share) { if (draw) while (draw.firstChild) draw.removeChild(draw.firstChild); if (share) post({ type: 'clear', i: cur }); }
-  function undoStroke() { if (draw && draw.lastChild) dropStroke(draw.lastChild); }
-  function dropStroke(el) { draw.removeChild(el); if (el.id) post({ type: 'erase', i: cur, id: el.id }); }
+  /* clearStrokes() empties the slide's ink (a new slide); the x key and Clear empty the layer in use */
+  function clearStrokes(share, layer) {
+    layer = layer || draw;
+    if (layer) while (layer.lastChild && layer.lastChild.nodeName !== 'defs') layer.removeChild(layer.lastChild);
+    if (share) post({ type: 'clear', i: cur });
+  }
+  function undoStroke() { var l = ink(); if (l && l.lastChild && l.lastChild.nodeName === 'path') dropStroke(l.lastChild); }
+  function dropStroke(el) { el.parentNode.removeChild(el); if (el.id) post({ type: 'erase', i: cur, id: el.id }); }
   /* shared ink: points travel in 0..1 slide coordinates (and the width as a
      fraction of the slide width), batched every 40 ms while a stroke grows */
   var inkSeq = 0, inkBuf = [], inkTimer = 0, inkW = 0;
@@ -31,15 +48,15 @@
   }
   function inkIn(m) {
     if (!draw || m.i !== cur) return;
-    if (m.type === 'clear') { clearStrokes(); return; }
+    if (m.type === 'clear') { clearStrokes(false, ink()); return; }
     var el = m.id && document.getElementById(m.id);
-    if (m.type === 'erase') { if (el && el.parentNode === draw) draw.removeChild(el); return; }
+    if (m.type === 'erase') { if (el && (el.parentNode === draw || el.parentNode === boardInk)) el.parentNode.removeChild(el); return; }
     var r = slideBox(), d = '';
     (m.p || []).forEach(function (pt) { var x = r.left + pt[0] * r.width, y = r.top + pt[1] * r.height; d += (d || el ? ' L ' : 'M ') + x.toFixed(1) + ' ' + y.toFixed(1); });
     if (!el) {
       el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       el.id = m.id; el.style.stroke = m.c; el.setAttribute('stroke-width', Math.max(1, m.w * r.width).toFixed(1));
-      el.setAttribute('d', d); draw.appendChild(el);
+      el.setAttribute('d', d); ink().appendChild(el);
     } else el.setAttribute('d', el.getAttribute('d') + d);
   }
   function cycleColor() { penColor = penColors[(penColors.indexOf(penColor) + 1) % penColors.length]; erasing = false; syncPenUI(); }
@@ -49,6 +66,7 @@
     each(drawBar.querySelectorAll('[data-si-pen]'), function (b) { b.classList.toggle('is-on', !erasing && b.getAttribute('data-si-pen') === penColor); });
     each(drawBar.querySelectorAll('[data-si-size]'), function (b) { b.classList.toggle('is-on', +b.getAttribute('data-si-size') === penSize); });
     var er = drawBar.querySelector('[data-si-draw="erase"]'); if (er) er.classList.toggle('is-on', erasing);
+    var bd = drawBar.querySelector('[data-si-draw="board"]'); if (bd) bd.classList.toggle('is-on', !!boardKind);
   }
   function dStart(e) {
     if (!drawMode) return;
@@ -61,7 +79,7 @@
     curPath.style.stroke = penColor;
     var w = (e.pointerType === 'pen' && e.pressure) ? penSize * (0.5 + e.pressure) : penSize;
     curPath.setAttribute('stroke-width', w.toFixed(1));
-    draw.appendChild(curPath);
+    ink().appendChild(curPath);
     inkW = w; inkPush(e.clientX, e.clientY);
   }
   function dMove(e) {
@@ -70,9 +88,10 @@
     if (curPath) { curPath.setAttribute('d', curPath.getAttribute('d') + ' L ' + e.clientX + ' ' + e.clientY); inkPush(e.clientX, e.clientY); }
   }
   function dEnd() { if (curPath) { clearTimeout(inkTimer); inkFlush(); } drawing = false; curPath = null; }
-  function eraseAt(e) { var el = document.elementFromPoint(e.clientX, e.clientY); if (el && el.parentNode === draw) dropStroke(el); }
+  function eraseAt(e) { var el = document.elementFromPoint(e.clientX, e.clientY); if (el && el.parentNode === ink()) dropStroke(el); }
   if (draw) {
     draw.addEventListener('pointerdown', dStart);
+    if (board) board.addEventListener('pointerdown', dStart);
     window.addEventListener('pointermove', dMove);
     window.addEventListener('pointerup', dEnd);
     window.addEventListener('pointercancel', dEnd);
@@ -104,7 +123,7 @@
     each(drawBar.querySelectorAll('[data-si-draw]'), function (b) {
       b.addEventListener('click', function () {
         var a = b.getAttribute('data-si-draw');
-        if (a === 'erase') toggleEraser(); else if (a === 'undo') undoStroke(); else if (a === 'clear') clearStrokes(true); else if (a === 'done') toggleDraw(false);
+        if (a === 'erase') toggleEraser(); else if (a === 'undo') undoStroke(); else if (a === 'clear') clearStrokes(true, ink()); else if (a === 'board') cycleBoard(); else if (a === 'done') toggleDraw(false);
         b.blur();
       });
     });
@@ -241,7 +260,8 @@
       if (e.key === 'c') { e.preventDefault(); cycleColor(); return; }
       if (e.key === 'e') { e.preventDefault(); toggleEraser(); return; }
       if (e.key === 'z') { e.preventDefault(); undoStroke(); return; }
-      if (e.key === 'x') { e.preventDefault(); clearStrokes(true); return; }
+      if (e.key === 'x') { e.preventDefault(); clearStrokes(true, ink()); return; }
+      if (e.key === 'b') { e.preventDefault(); cycleBoard(); return; }
     }
     switch (e.key) {
       case 'ArrowRight': case 'ArrowDown': case 'PageDown': case 'Enter': case 'j': case 'n':

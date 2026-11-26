@@ -5,6 +5,7 @@ package assets
 
 import (
 	"embed"
+	"encoding/json"
 	"io/fs"
 	"sort"
 	"strings"
@@ -186,6 +187,25 @@ var T2SJS string
 //
 //go:embed web/presenter.html
 var PresenterHTML string
+
+// L10n are the phrasebooks for the deck's and the teleprompter's buttons, by
+// language (ui.lang): English text → that language; a key's * stands for any text.
+var L10n = func() map[string]map[string]string {
+	out := map[string]map[string]string{}
+	ents, _ := l10nFS.ReadDir("web/l10n")
+	for _, e := range ents {
+		b, _ := l10nFS.ReadFile("web/l10n/" + e.Name())
+		m := map[string]string{}
+		if err := json.Unmarshal(b, &m); err != nil {
+			panic("assets: web/l10n/" + e.Name() + ": " + err.Error())
+		}
+		out[strings.TrimSuffix(e.Name(), ".json")] = m
+	}
+	return out
+}()
+
+//go:embed web/l10n/*.json
+var l10nFS embed.FS
 
 // MonitorHTML is si play's web monitor, the control room at /_si/monitor:
 // the server fills in {{TITLE}} and /*SI-THEME*/. Play only (a loopback page

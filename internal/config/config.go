@@ -58,6 +58,10 @@ keys.autoplay:   v          # auto-play: the deck reads its Notes: aloud and cli
 # they print: ledger, badges, checklist or steps (--view and SI_VIEW win)
 ui.view: ledger
 
+# the language of the deck's and the teleprompter's buttons: en or es
+# (unset: es for a deck with lang: es, else en)
+# ui.lang: es
+
 # si build --handout: the paper of handout PDFs
 handout.paper: a4      # a4 or letter
 
@@ -157,6 +161,7 @@ type Config struct {
 	TermBlur                 int               // terminal.blur: px of blur on the slide behind a translucent drawer (0 = none)
 	HandoutPaper             string            // handout.paper: a4 (default) or letter
 	UIView                   string            // ui.view: ledger, badges, checklist or steps ("" = ledger)
+	UILang                   string            // ui.lang: en or es, the language of the deck's buttons ("" = from the deck's lang:)
 	AudienceOff              bool              // audience.save: off: keep no poll counts or questions
 	SpeakersTurn             bool              // speakers.control: turn: only the speaker whose turn it is advances
 	Voice                    string            // voice: engine:name for si demo run and si voice say
@@ -374,6 +379,13 @@ func (c *Config) parse(r io.Reader) {
 				c.UIView = v
 			default:
 				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: ui.view wants ledger, badges, checklist or steps, got %q", ln, v))
+			}
+		case k == "ui.lang":
+			switch v = strings.ToLower(v); v {
+			case "en", "es":
+				c.UILang = v
+			default:
+				c.Warnings = append(c.Warnings, fmt.Sprintf("line %d: ui.lang wants en or es, got %q", ln, v))
 			}
 		case k == "handout.paper":
 			if p := strings.ToLower(v); p == "a4" || p == "letter" {

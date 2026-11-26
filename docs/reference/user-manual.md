@@ -435,12 +435,13 @@ Six build animations add depth: `tilt`, `steps: carousel`, `explode`,
 |---|---|
 | → ← Space | next / previous step or slide |
 | `o` | overview — one column per topic (section); ← → across topics, ↑ ↓ within one, Enter opens the selected slide |
-| `p` | teleprompter — script + speaker-notes tabs, timers, rehearsal pacing, ● Record (Shift+R) |
+| `p` | teleprompter — script + speaker-notes tabs, timers, rehearsal pacing, ● Record (Shift+R); in it `a` auto-scroll, `+`/`-` its speed, `k` Fit time (auto-scroll sets its own speed so the script ends when the slide's `Notes: (N min)` do), `f` Focus (the line you read and the lines before and after it bright, the rest dimmed) |
 | `t` | break timer (configurable presets + animation layer) |
 | `a` | draw over the slide |
 | `d` / `f` / `?` | light-dark / full screen / help |
 | `v` | auto-play — the deck reads its `Notes:` aloud and advances at each `[CLICK]`; any key that moves the deck, a click or the pen pauses it |
 | `` ` `` | terminal drawer — run local commands live (`si play` on a loopback address only) |
+| `a`, then `b` | the board: a whiteboard, `b` again a chalk blackboard, again off; its ink stays across slides until `x` |
 | `a`, then ⌥ + move | in draw mode, hold Option (Alt) and the cursor draws where it goes: one finger on a trackpad, no click (si.conf `draw.hold: shift`, `ctrl`, `meta` or `off` picks the key) |
 | `q` | `si play --remote`: the phone and tablet links as QR codes, on the projected screen (`--https`: over HTTPS, so the phone stays awake) |
 

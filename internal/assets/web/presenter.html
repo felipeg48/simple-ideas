@@ -56,9 +56,17 @@ body{overflow:hidden;height:100%}
 .pv-points code{font-size:.85em}.pv-points strong{color:var(--si-accent)}
 .pv-rehearse{color:var(--si-muted);font-variant-numeric:tabular-nums;opacity:.85}
 /* the reading line: where the eyes stay while auto-scroll moves the script; only then */
-.pv-prompt.points::after,.pv:not(.auto) .pv-prompt::after{display:none}
-.pv-prompt::after{content:"";position:absolute;left:0;right:0;top:34%;height:0;border-top:2px dashed color-mix(in srgb,var(--si-accent) 45%,transparent);pointer-events:none}
+.pv-prompt.points::after,.pv:not(.auto):not(.focus) .pv-prompt::after{display:none}
+.pv-prompt::after{content:"";position:absolute;left:0;right:0;top:var(--pv-line,34%);height:0;border-top:2px dashed color-mix(in srgb,var(--si-accent) 45%,transparent);pointer-events:none}
 .pv.mirror .pv-notes{transform:scaleX(-1)}
+/* in focus the reading line is a soft band behind the line being read, not a dashed rule through it */
+.pv.focus .pv-prompt::after{border:0;top:calc(var(--pv-line,34%) - var(--pv-lh,1.5em) / 2);height:var(--pv-lh,1.5em);background:color-mix(in srgb,var(--si-accent) 10%,transparent)}
+/* focus: the line on the reading line and one line either side stay bright, the rest dims;
+   --pv-read is the reading line in the script's own box (set by the script), lines are 1.5em */
+.pv.focus .pv-notes{padding-top:calc(var(--pv-read,30%) - .75em);
+  --pv-dim:rgba(0,0,0,.22);
+  -webkit-mask-image:linear-gradient(to bottom,var(--pv-dim) calc(var(--pv-read,30%) - 3em),#000 calc(var(--pv-read,30%) - 2.1em),#000 calc(var(--pv-read,30%) + 2.1em),var(--pv-dim) calc(var(--pv-read,30%) + 3em));
+  mask-image:linear-gradient(to bottom,var(--pv-dim) calc(var(--pv-read,30%) - 3em),#000 calc(var(--pv-read,30%) - 2.1em),#000 calc(var(--pv-read,30%) + 2.1em),var(--pv-dim) calc(var(--pv-read,30%) + 3em))}
 .pv-side{min-height:0;display:flex;flex-direction:column;gap:.5rem;overflow:auto}
 .pv-label{font-family:var(--si-font-mono);font-size:.78rem;color:var(--si-muted)}
 .pv-screen{position:relative;width:100%;aspect-ratio:var(--_aspect,16/9);flex:none;border:1px solid var(--si-line);border-radius:.6rem;overflow:hidden;background:var(--si-bg)}
@@ -125,7 +133,7 @@ body{overflow:hidden;height:100%}
   <div class="pv-bar">
     <button id="prev" title="Previous (left, PgUp)">Prev</button><button id="nextb" title="Next (right, space, PgDn)">Next</button>
     <span class="sep"></span>
-    <button id="auto" aria-pressed="false" title="Auto-scroll (a)">Auto-scroll</button><button id="slower" title="Slower (-)">&minus;</button><small id="speed"></small><button id="faster" title="Faster (+)">+</button>
+    <button id="auto" aria-pressed="false" title="Auto-scroll (a)">Auto-scroll</button><button id="slower" title="Slower (-)">&minus;</button><small id="speed"></small><button id="faster" title="Faster (+)">+</button><button id="fit" aria-pressed="false" title="Fit the time: auto-scroll sets its own speed so the script ends when this slide's minutes do (k)">Fit time</button><button id="focus" aria-pressed="false" title="Focus: only the line you read and the lines before and after it are bright (f)">Focus</button>
     <span class="sep"></span>
     <button id="smaller" title="Smaller text ([)">A&minus;</button><button id="bigger" title="Bigger text (])">A+</button>
     <button id="mirror" aria-pressed="false" title="Mirror for teleprompter glass (m)">Mirror</button>
@@ -134,7 +142,7 @@ body{overflow:hidden;height:100%}
     <span class="sep"></span>
     <button id="timer" title="Pause or resume the timer (t)">Pause</button><button id="reset" title="Reset the timer (0)">Reset</button>
     <button id="rec" aria-pressed="false" title="Record your voice with the slide timings (Shift+R); saved beside the talk in .si/recordings/" hidden>● Record</button>
-    <span class="pv-keys">&larr; &rarr; space: navigate · 1/2 tabs · &uarr; &darr;: scroll · a auto · +/- speed · [ ] size · m mirror · x notes only · s speaker</span>
+    <span class="pv-keys">&larr; &rarr; space: navigate · 1/2 tabs · &uarr; &darr;: scroll · a auto · +/- speed · k fit time · f focus · [ ] size · m mirror · x notes only · s speaker</span>
   </div>
 </div>
 <script>
@@ -220,16 +228,29 @@ body{overflow:hidden;height:100%}
   }
 
   /* ---------- teleprompter settings ---------- */
-  var size = load('size', 1), speed = load('speed', 4), mirror = load('mirror', false), only = load('only', false), auto = false;
+  var size = load('size', 1), speed = load('speed', 4), mirror = load('mirror', false), focus = load('focus', false), fit = load('fit', false), only = load('only', false), auto = false;
   function settings() {
     pv.style.setProperty('--pv-size', size);
     pv.classList.toggle('mirror', mirror); $('mirror').setAttribute('aria-pressed', mirror);
     pv.classList.toggle('prompter-only', only); $('only').setAttribute('aria-pressed', only);
     pv.classList.toggle('auto', auto); $('auto').setAttribute('aria-pressed', auto);
+    pv.classList.toggle('focus', focus); $('focus').setAttribute('aria-pressed', focus);
+    $('fit').setAttribute('aria-pressed', fit);
+    readLine();
     $('speed').textContent = 'speed ' + speed;
-    $('scrollstate').textContent = auto ? 'auto-scroll ' + speed : 'manual scroll';
-    save('size', size); save('speed', speed); save('mirror', mirror); save('only', only);
+    scrollState();
+    save('size', size); save('speed', speed); save('mirror', mirror); save('focus', focus); save('fit', fit); save('only', only);
   }
+  /* the reading line at 34% of the prompt, told to the script box in its own coordinates (focus) */
+  var readY = 0;
+  function readLine() {
+    var y = Math.round(prompt.clientHeight * 0.34);
+    readY = Math.max(0, y - notes.offsetTop);
+    prompt.style.setProperty('--pv-line', y + 'px');
+    notes.style.setProperty('--pv-read', Math.max(0, y - notes.offsetTop) + 'px');
+    prompt.style.setProperty('--pv-lh', getComputedStyle(notes).lineHeight);
+  }
+  window.addEventListener('resize', readLine);
   /* ---------- prompt tabs: teleprompter (verbatim) vs speaker notes (points) ---------- */
   var tab = load('tab', 'tele'); // 'tele' or 'notes'
   function showTab(t) {
@@ -241,6 +262,7 @@ body{overflow:hidden;height:100%}
     $('tab-tele').setAttribute('aria-pressed', tele);
     $('tab-notes').setAttribute('aria-pressed', tab === 'notes');
     $('tab-qa').setAttribute('aria-pressed', tab === 'qa');
+    readLine();
   }
   /* ---------- Q&A (si play --audience): questions from the room ---------- */
   function qaSet(id, state) {
@@ -285,13 +307,28 @@ body{overflow:hidden;height:100%}
     t.textContent = 'Q&A' + (open ? ' (' + open + ')' : '');
   }
   function activePane() { return tab === 'tele' ? notes : points; }
-  /* auto-scroll: speed 1..10, in lines per ten seconds, so it follows the text size */
+  /* fit time: the time left on this slide's Notes: (N min), or 0 when there is none or it has run out */
+  function fitLeft() { var mins = plan[cur] || 0; return mins ? Math.max(0, mins * 60000 - (now() - slideStart)) : 0; }
+  function scrollState() {
+    $('scrollstate').textContent = !auto ? 'manual scroll'
+      : !fit ? 'auto-scroll ' + speed
+      : !plan[cur] ? 'auto-scroll ' + speed + ' (no minutes on this slide)'
+      : fitLeft() ? 'auto-scroll fits ' + plan[cur] + ' min' : 'auto-scroll ' + speed + ' (time is up)';
+  }
+  /* auto-scroll: speed 1..10, in lines per ten seconds, so it follows the text size;
+     fit time: the speed that brings the last line to the reading line as the slide's minutes end,
+     worked out again every frame, so scrolling by hand or a pause is caught up smoothly */
   var lastT = 0, carry = 0;
   function frame(t) {
     if (auto) {
       var dt = lastT ? Math.min(0.1, (t - lastT) / 1000) : 0;
-      var line = parseFloat(getComputedStyle(notes).fontSize) * 1.5;
-      carry += speed * 0.1 * line * dt;
+      var line = parseFloat(getComputedStyle(notes).fontSize) * 1.5, v = speed * 0.1 * line, left = fit && fitLeft();
+      if (fit && pausedAt && plan[cur]) v = 0;
+      else if (left) {
+        var end = notes.scrollHeight - parseFloat(getComputedStyle(notes).paddingBottom) - line / 2 - readY;
+        v = Math.max(0, end - notes.scrollTop) / (left / 1000);
+      }
+      carry += v * dt;
       if (carry >= 1) { notes.scrollTop += Math.floor(carry); carry -= Math.floor(carry); }
     }
     lastT = t;
@@ -368,6 +405,7 @@ body{overflow:hidden;height:100%}
       var diff = el - Math.min(sl, mins * 60000) - due * 60000;
       $('pace').textContent = Math.abs(diff) < 15000 ? 'on time' : (diff > 0 ? fmt(diff) + ' behind' : fmt(-diff) + ' ahead');
     }
+    scrollState();
     var d = new Date(); $('clock').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
     var prev = cur >= 0 ? prevSpent[cur] : 0;
     $('rehearse').textContent = prev ? 'last ' + fmt(prev) : '';
@@ -422,6 +460,9 @@ body{overflow:hidden;height:100%}
   $('smaller').onclick = function () { size = Math.max(0.6, +(size - 0.1).toFixed(2)); settings(); };
   $('bigger').onclick = function () { size = Math.min(2.5, +(size + 0.1).toFixed(2)); settings(); };
   $('mirror').onclick = function () { mirror = !mirror; settings(); };
+  $('focus').onclick = function () { focus = !focus; settings(); };
+  function toggleFit() { fit = !fit; if (fit) auto = true; settings(); }
+  $('fit').onclick = toggleFit;
   $('only').onclick = function () { only = !only; settings(); };
   $('timer').onclick = toggleTimer;
   $('reset').onclick = resetTimer;
@@ -445,6 +486,8 @@ body{overflow:hidden;height:100%}
       case ']': size = Math.min(2.5, +(size + 0.1).toFixed(2)); settings(); break;
       case '[': size = Math.max(0.6, +(size - 0.1).toFixed(2)); settings(); break;
       case 'm': mirror = !mirror; settings(); break;
+      case 'f': focus = !focus; settings(); break;
+      case 'k': toggleFit(); break;
       case 'x': only = !only; settings(); break;
       case 's': if (speakers.length) { var ix = [''].concat(speakers).indexOf(me); pickSpeaker([''].concat(speakers)[(ix + 1) % (speakers.length + 1)]); } break;
       case 'r': activePane().scrollTop = 0; break;

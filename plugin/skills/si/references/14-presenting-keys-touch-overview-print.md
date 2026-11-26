@@ -9,7 +9,7 @@
 | `p` or `Shift+S` | teleprompter window |
 | `t` | break timer HUD: pick minutes, countdown to project during a break |
 | `/` | find a slide: search titles and text, or type a number to jump |
-| `a` | draw: a pen layer over the slide (drag, or hold ⌥ Option / Alt and move: the cursor draws, no click; si.conf `draw.hold` changes the key) |
+| `a` | draw: a pen layer over the slide (drag, or hold ⌥ Option / Alt and move: the cursor draws, no click; si.conf `draw.hold` changes the key); `b` in it: whiteboard, blackboard, off |
 | `d` | light / dark (remembered) |
 | `f` | full screen |
 | `v` | auto-play: the deck reads its `Notes:` aloud and advances at each `[CLICK]`; again pauses, Esc stops (§11) |
@@ -52,6 +52,12 @@
   the brush size (thin / medium / thick); `c` cycles colour, `e` erases strokes,
   `z` undoes the last, `x` clears all, `Esc` turns it off. Strokes use the theme
   colours and clear when you change slides; they are not saved and do not print.
+- **Board** (`b` in draw mode, or **Board**): a page over the slides to draw
+  on. The first `b` is a whiteboard (markers: blue, red, green, black), the
+  second a blackboard (chalk: yellow, pink, green, white, with a chalk grain),
+  the third puts it away. Its ink stays while you move between slides (the
+  slide's own ink still clears) until `x` or **Clear**; `z` undoes on it.
+  Putting the pen away (`Esc`, **Done**) puts the board away too.
 
 - The URL hash is the position (`#7`, `#7.2`); reloads keep it, so live
   reload in `si play` stays on your slide.

@@ -810,6 +810,8 @@ static HTML (`file://`), and either window drives both. It has two tabs:
 | Tabs | `1` Teleprompter (script), `2` Speaker Notes (points); choice remembered per browser |
 | Notes | large type for reading at a distance; a guide line at reading height while auto-scroll runs (teleprompter tab only) |
 | Auto-scroll | `a` on/off, `+` / `-` speed 1 to 10 (lines per ten seconds, follows the text size) |
+| Fit time | `k` (or **Fit time**): auto-scroll at the speed that brings the last line to the reading line as the slide's `Notes: (N min)` run out, worked out again all the time (a hand scroll or a paused timer is caught up); a slide with no minutes, or past them, scrolls at the `+` / `-` speed |
+| Focus | `f` (or **Focus**): the line on the reading line and the lines before and after it stay bright, the rest of the script dims; the reading line becomes a soft band and the script starts on it; with or without auto-scroll |
 | Manual scroll | ↑ ↓, mouse wheel, trackpad; `r` back to the top (scrolls whichever tab is showing) |
 | Text size | `[` / `]` (both tabs) |
 | Mirror | `m` flips the script for teleprompter glass |
@@ -821,7 +823,7 @@ static HTML (`file://`), and either window drives both. It has two tabs:
 | Record | **● Record** (Shift+R) under `si play`: records your voice from the microphone with every slide and step change; Stop saves `.si/recordings/<talk>-<date-time>/` beside the talk (`audio.webm`, `timeline.json`, `meta.json`). It feeds `--mp4 --narration` and `si rehearse` |
 | Navigation | → ← Space PgDn PgUp Home End, buttons |
 
-Settings (tab, size, speed, mirror, notes only) are remembered per browser.
+Settings (tab, size, speed, fit time, focus, mirror, notes only) are remembered per browser. The buttons speak English or Spanish: si.conf `ui.lang: es` (§16), or a deck with `lang: es`.
 
 **Two (or more) presenters.** A talk given by two people names them in the
 front matter and gives each one a script: `Notes[Name]:` is that speaker's
@@ -1401,7 +1403,7 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
 | `p` or `Shift+S` | teleprompter window |
 | `t` | break timer HUD: pick minutes, countdown to project during a break |
 | `/` | find a slide: search titles and text, or type a number to jump |
-| `a` | draw: a pen layer over the slide (drag, or hold ⌥ Option / Alt and move: the cursor draws, no click; si.conf `draw.hold` changes the key) |
+| `a` | draw: a pen layer over the slide (drag, or hold ⌥ Option / Alt and move: the cursor draws, no click; si.conf `draw.hold` changes the key); `b` in it: whiteboard, blackboard, off |
 | `d` | light / dark (remembered) |
 | `f` | full screen |
 | `v` | auto-play: the deck reads its `Notes:` aloud and advances at each `[CLICK]`; again pauses, Esc stops (§11) |
@@ -1444,6 +1446,12 @@ fence options go in the same brackets (`[source,go,window=mac,numbers]`);
   the brush size (thin / medium / thick); `c` cycles colour, `e` erases strokes,
   `z` undoes the last, `x` clears all, `Esc` turns it off. Strokes use the theme
   colours and clear when you change slides; they are not saved and do not print.
+- **Board** (`b` in draw mode, or **Board**): a page over the slides to draw
+  on. The first `b` is a whiteboard (markers: blue, red, green, black), the
+  second a blackboard (chalk: yellow, pink, green, white, with a chalk grain),
+  the third puts it away. Its ink stays while you move between slides (the
+  slide's own ink still clears) until `x` or **Clear**; `z` undoes on it.
+  Putting the pen away (`Esc`, **Done**) puts the board away too.
 
 - The URL hash is the position (`#7`, `#7.2`); reloads keep it, so live
   reload in `si play` stays on your slide.
@@ -2151,6 +2159,7 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `handout.paper: letter` | the paper of `si build --handout` PDFs: `a4` (default) or `letter` |
 | `terminal.opacity: 85%` | the opacity of `si play`'s terminal drawer, 40 % to 100 % (default 100 %): below 100 % the slide shows through, dimmed, and the text stays opaque; the drawer's slider changes it (remembered until this value changes). `terminal.blur: 6px` blurs the slide behind it too (§14) |
 | `terminal.prompt: clean` | the shells of `si play`'s terminal drawer: `real` (default: your own `$SHELL` with its rc files and prompt) or `clean` (si's neutral prompt, the folder's name and `$`, no rc files; `PATH` and the environment kept). A deck asks for its own with `shell:` in its front matter: `shell: zsh` (a name on `PATH` or a path), `shell: clean`, `shell: bash · clean` (§14). Filming always uses `clean`: `si demo test`/`run` and `si build --mp4` with `[TERM …]` cues |
+| `ui.lang: es` | the language of the deck's and the teleprompter's buttons, help and labels: `en` or `es` (unset: `es` for a deck with `lang: es`, else `en`); slides and notes stay as written |
 | `draw.hold: shift` | the key you hold in draw mode to draw with the cursor, no click: `alt` (⌥ Option, the default), `shift`, `ctrl`, `meta` (⌘ Command), or `off` |
 | `links.<label>: <url>` | a page outside the build that find (`/`) offers, e.g. `links.Team wiki: https://wiki.example.com`; relative paths work too |
 | `timer.time: 10,15,30` | break-timer presets (default `5,10,15,20,30,45,60`) |
@@ -2206,6 +2215,7 @@ Remappable **actions**: `overview`, `presenter`, `draw`, `timer`, `find`,
 theme: slate
 keys.draw: w          # draw with w instead of a
 draw.hold: shift      # in draw mode, hold Shift (not Option) to draw with the cursor
+ui.lang: es           # the buttons in Spanish
 feature.timer: off    # no break-timer HUD for these decks
 ```
 

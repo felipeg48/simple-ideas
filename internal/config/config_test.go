@@ -164,3 +164,14 @@ func TestSandboxHost(t *testing.T) {
 		}
 	}
 }
+
+func TestUILang(t *testing.T) {
+	for v, want := range map[string]string{"es": "es", "EN": "en"} {
+		if c := Parse(strings.NewReader("ui.lang: " + v + "\n")); c.UILang != want || len(c.Warnings) > 0 {
+			t.Errorf("ui.lang: %s → %q %v, want %q", v, c.UILang, c.Warnings, want)
+		}
+	}
+	if c := Parse(strings.NewReader("ui.lang: fr\n")); c.UILang != "" || len(c.Warnings) != 1 {
+		t.Errorf("ui.lang: fr should warn: %q %v", c.UILang, c.Warnings)
+	}
+}

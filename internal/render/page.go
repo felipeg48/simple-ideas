@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/felipeg48/simple-ideas/internal/assets"
+	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 )
 
@@ -148,6 +149,9 @@ func (dr *deckRenderer) page(slides string, problems []deck.Problem, opt Options
 	}
 	if opt.Config != nil && opt.Config.AutoplayDwell > 0 {
 		conf["dwell"] = opt.Config.AutoplayDwell // si.conf autoplay.dwell; the runtime defaults to 3 s
+	}
+	if l := uiLang(opt.Config, dr.d.Meta.Lang); l != "en" {
+		conf["l10n"] = assets.L10n[l] // the buttons' phrasebook (ui.lang, or the deck's lang:)
 	}
 	if opt.Config != nil && opt.Config.SpeakersTurn {
 		conf["turn"] = true // si.conf speakers.control: turn; read by the teleprompter
@@ -313,7 +317,7 @@ const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <tr><td>t</td><td>break timer: pick minutes, countdown to project during a break</td></tr>
 <tr><td>/</td><td>find a slide: search titles and text, or type a number to jump</td></tr>
 <tr><td>d</td><td>light / dark</td></tr>
-<tr><td>a</td><td>draw: pen over the slide (c colour, e erase, z undo, x clear, Esc off)</td></tr>
+<tr><td>a</td><td>draw: pen over the slide (c colour, e erase, z undo, x clear, b board, Esc off)</td></tr>
 <tr><td>f</td><td>full screen</td></tr>
 <tr><td>v</td><td>auto-play: the deck reads its notes aloud and advances at each click cue; any key, click or the pen takes over</td></tr>
 <tr><td>swipe</td><td>next / previous on touch screens</td></tr>
@@ -342,10 +346,11 @@ const chromeHTML = `<nav class="si-bar" aria-label="Deck controls">
 <div class="si-autoplay-bar"><span class="si-autoplay-state"></span><button type="button" data-si-ap="toggle">&#9654; Start</button><button type="button" data-si-ap="cc" aria-pressed="true" title="Captions">CC</button><button type="button" data-si-ap="stop" title="Stop (Esc)">Stop</button><span class="si-autoplay-pos"></span><span class="si-autoplay-voice"></span></div>
 </div>
 <svg class="si-draw" aria-hidden="true"></svg>
+<div class="si-board" aria-hidden="true" hidden><svg><defs><filter id="si-chalk" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="n"></feTurbulence><feDisplacementMap in="SourceGraphic" in2="n" scale="2.5" xChannelSelector="R" yChannelSelector="G" result="d"></feDisplacementMap><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.4 1.75" result="g"></feColorMatrix><feComposite in="d" in2="g" operator="in"></feComposite></filter></defs></svg></div>
 <div class="si-draw-bar" aria-label="Annotate">
 <button type="button" class="si-swatch" data-si-pen="var(--si-accent)" title="Accent" style="--_c:var(--si-accent)"></button><button type="button" class="si-swatch" data-si-pen="var(--si-crit)" title="Red" style="--_c:var(--si-crit)"></button><button type="button" class="si-swatch" data-si-pen="var(--si-ok)" title="Green" style="--_c:var(--si-ok)"></button><button type="button" class="si-swatch" data-si-pen="var(--si-fg)" title="Ink" style="--_c:var(--si-fg)"></button>
 <span class="si-draw-sep" aria-hidden="true"></span><button type="button" class="si-brush" data-si-size="2" title="Thin" style="--_s:2px"></button><button type="button" class="si-brush" data-si-size="5" title="Medium" style="--_s:5px"></button><button type="button" class="si-brush" data-si-size="9" title="Thick" style="--_s:9px"></button>
-<span class="si-draw-sep" aria-hidden="true"></span><button type="button" data-si-draw="erase" title="Eraser (e)">Erase</button><button type="button" data-si-draw="undo" title="Undo (z)">Undo</button><button type="button" data-si-draw="clear" title="Clear all (x)">Clear</button><button type="button" data-si-draw="done" title="Done (Esc)">Done</button>
+<span class="si-draw-sep" aria-hidden="true"></span><button type="button" data-si-draw="erase" title="Eraser (e)">Erase</button><button type="button" data-si-draw="undo" title="Undo (z)">Undo</button><button type="button" data-si-draw="clear" title="Clear all (x)">Clear</button><button type="button" data-si-draw="board" title="Board: whiteboard, blackboard, off (b)">Board</button><button type="button" data-si-draw="done" title="Done (Esc)">Done</button>
 </div>
 `
 
@@ -462,4 +467,16 @@ func (dr *deckRenderer) icons(b *bytes.Buffer) {
 	if v := strings.TrimSpace(m.OGImage); v != "" {
 		fmt.Fprintf(b, "<meta property=\"og:image\" content=\"%s\">\n<meta name=\"twitter:card\" content=\"summary_large_image\">\n", html.EscapeString(v))
 	}
+}
+
+// uiLang is the language of the deck's and the teleprompter's buttons: si.conf
+// ui.lang, else es for a deck whose lang: is Spanish, else en.
+func uiLang(c *config.Config, lang string) string {
+	if c != nil && c.UILang != "" {
+		return c.UILang
+	}
+	if l := strings.ToLower(lang); l == "es" || strings.HasPrefix(l, "es-") {
+		return "es"
+	}
+	return "en"
 }

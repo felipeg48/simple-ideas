@@ -101,7 +101,7 @@ Every deck si builds answers these keys, in `si play` or opened from a file.
 <div class="dk-grid">
 <figure><img src="img/decks/overview.jpg" alt="The overview: every slide, one column per section" loading="lazy"><figcaption><kbd>o</kbd> <b>Overview</b>: the whole talk, one column per section; arrows move, Enter opens</figcaption></figure>
 <figure><img src="img/decks/find.jpg" alt="Find: slides matching retry" loading="lazy"><figcaption><kbd>/</kbd> <b>Find</b>: type a word, or a number to jump to that slide</figcaption></figure>
-<figure><img src="img/decks/draw.jpg" alt="A ring and an underline drawn on a slide" loading="lazy"><figcaption><kbd>a</kbd> <b>Draw</b>: drag, or hold <kbd>⌥ Option</kbd> and move, so one finger on the trackpad draws; <kbd>c</kbd> colour, <kbd>z</kbd> undo, <kbd>x</kbd> clear</figcaption></figure>
+<figure><img src="img/decks/draw.jpg" alt="A ring and an underline drawn on a slide" loading="lazy"><figcaption><kbd>a</kbd> <b>Draw</b>: drag, or hold <kbd>⌥ Option</kbd> and move, so one finger on the trackpad draws; <kbd>c</kbd> colour, <kbd>z</kbd> undo, <kbd>x</kbd> clear, <kbd>b</kbd> a whiteboard, then a chalk blackboard</figcaption></figure>
 <figure><img src="img/decks/timer.jpg" alt="A break timer counting down" loading="lazy"><figcaption><kbd>t</kbd> <b>Break timer</b>: pick the minutes, project the countdown</figcaption></figure>
 <figure><img src="img/decks/autoplay.jpg" alt="The title slide with its notes as a caption and the auto-play bar" loading="lazy"><figcaption><kbd>v</kbd> <b>Auto-play</b>: the deck reads its notes aloud, with captions, and moves on at each <code>[CLICK]</code>; any key takes over</figcaption></figure>
 </div>
@@ -115,13 +115,17 @@ script says `[CLICK]`: a kiosk, a rehearsal to listen to, a talk to send.
 
 <kbd>d</kbd> light or dark · <kbd>f</kbd> full screen · <kbd>?</kbd> every key.
 Any key can be changed in `si.conf` (`keys.draw: w`), and the key that draws
-with the cursor too (`draw.hold: shift`).
+with the cursor too (`draw.hold: shift`). `ui.lang: es` puts the buttons, the
+help and the teleprompter in Spanish (a deck with `lang: es` does it alone).
 
 ## The teleprompter
 
 <kbd>p</kbd> opens it in a second window: your `Notes:` script in large type,
-`[CLICK]` cues where you advance, auto-scroll at your pace, mirror for
-teleprompter glass, the clock for this slide and the whole talk, and the slide
+`[CLICK]` cues where you advance, auto-scroll at your pace (`+` / `-`) or
+Fit time (<kbd>k</kbd>: the speed that ends the script as the slide's
+`Notes: (N min)` run out),
+Focus (<kbd>f</kbd>: the line you are reading and the lines before and after it
+stay bright, the rest dims), mirror for teleprompter glass, the clock for this slide and the whole talk, and the slide
 now and next.
 
 ![The teleprompter with two speakers' parts](img/decks/teleprompter.jpg)

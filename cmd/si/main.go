@@ -58,7 +58,7 @@ import (
 	"github.com/felipeg48/simple-ideas/internal/ui"
 )
 
-const version = "4.4.4"
+const version = "4.5.0"
 
 // Exit codes.
 const (

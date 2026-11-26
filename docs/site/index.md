@@ -191,4 +191,4 @@ Ask it for the talk. With the si skill it writes the Markdown, runs
 - [The features](features/decks.md): each kind of document with its example running and the Markdown behind it.
 - [The rules](rules/): every directive, front matter key and fence option, each with an example.
 - [The manual](manual.md): the same, as a deck you can present.
-- [Download](download.md): the `si` binary and the Mac app.
+- [Install](download.md): Homebrew, .deb, .rpm, Windows, the Mac app.

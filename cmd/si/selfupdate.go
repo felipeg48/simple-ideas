@@ -31,6 +31,15 @@ type ghRelease struct {
 // against the release SHA256SUMS.txt, and replaces the running executable.
 // Stdlib only: no auto-update framework, just the GitHub releases API.
 func selfUpdate(stdout, stderr io.Writer) int {
+	if exe, err := os.Executable(); err == nil {
+		if r, err := filepath.EvalSymlinks(exe); err == nil {
+			exe = r
+		}
+		if how := packaged(exe); how != "" {
+			fmt.Fprintf(stderr, "si: selfupdate: %s belongs to a package manager; %s\n", exe, how)
+			return exitProblems
+		}
+	}
 	client := &http.Client{Timeout: 90 * time.Second}
 
 	rel, err := latestRelease(client)
@@ -202,4 +211,17 @@ func replaceExecutable(exe string, data []byte) error {
 		}
 	}
 	return os.Rename(tmpName, exe)
+}
+
+// packaged says how to upgrade an si that a package manager installed (and so
+// must not be replaced in place), or "" for a binary the user put there.
+func packaged(exe string) string {
+	exe = filepath.ToSlash(exe)
+	switch {
+	case strings.Contains(exe, "/Cellar/si/"):
+		return "upgrade it with: brew upgrade si"
+	case exe == "/usr/bin/si":
+		return "install the newer .deb or .rpm from https://github.com/felipeg48/simple-ideas/releases/latest"
+	}
+	return ""
 }

@@ -3,6 +3,29 @@
 What changed in each release of si, newest first. Every release, with its
 binaries and the Mac app: https://github.com/felipeg48/simple-ideas/releases
 
+- **v4.5.0:** The teleprompter has Focus (the Focus button or `f`):
+  the line on the reading line and the lines before and after it stay
+  bright, the rest of the script dims, and the reading line becomes a soft
+  band behind the line. The script starts on that line. It works with or
+  without auto-scroll and is remembered. Fit time (the Fit time button or
+  `k`) turns auto-scroll on at the speed that brings the script's last
+  line to the reading line as the slide's `Notes: (N min)` run out; it
+  works the speed out again all the time, so scrolling by hand or pausing
+  the timer is caught up, and a slide without minutes, or past them, goes
+  back to the `+`/`-` speed.
+  The board: in draw mode, `b` (or **Board**) opens a whiteboard over the
+  slides, `b` again a blackboard with chalk, `b` again puts it away; its ink
+  stays as you move between slides until `x` or **Clear**. On a phone the
+  draw bar wraps onto two rows instead of running off the screen.
+  The buttons in Spanish: si.conf `ui.lang: es` (or a deck with `lang: es`)
+  puts the deck's bar, help, draw bar, break timer, auto-play bar and the
+  whole teleprompter in Spanish; slides and notes stay as written.
+  Install with Homebrew (`brew install felipeg48/tap/si`, and
+  `brew install --cask felipeg48/tap/si-studio` for the Mac app), or a
+  `.deb` / `.rpm` (amd64 and arm64) from the release; the site's Download
+  page is now Install, one section per system. `si selfupdate` on an si
+  that Homebrew or a package installed says how to upgrade it instead of
+  replacing it.
 - **v4.4.4:** The teleprompter's Now and Next previews draw code windows
   (and anything else a script lays out in pixels) at the preview's size:
   the code no longer falls apart into lines with gaps. The docs site has a

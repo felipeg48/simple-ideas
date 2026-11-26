@@ -313,6 +313,46 @@
       go(cur, step, true);
     }
   }
+  /* the buttons' language (si.conf ui.lang, or a deck with lang: es): SI_CONFIG.l10n is a
+     phrasebook, English → the language; this puts it on the page and keeps it there as the
+     runtime changes labels. Slides and notes are never touched. Self-contained: the
+     teleprompter window runs the same function (presenterDoc). A key's * stands for any text;
+     "Label (k)" is translated as "Label" plus its key. */
+  function siL10n(doc, L, skip) {
+    var pats = Object.keys(L).filter(function (k) { return k.indexOf('*') >= 0; }).sort(function (a, b) { return b.length - a.length; }).map(function (k) {
+      return [new RegExp('^' + k.replace(/[.?+^$()[\]{}|\\]/g, '\\$&').replace(/\*/g, '(.*?)') + '$'), L[k]];
+    });
+    function t(s) {
+      var x = s.trim(), r = x ? L[x] : null;
+      if (!x) return s;
+      for (var i = 0; r == null && i < pats.length; i++) {
+        var m = pats[i][0].exec(x), j = 1;
+        if (m) r = pats[i][1].replace(/\*/g, function () { return m[j++]; });
+      }
+      if (r == null) { var k = /^(.*?)( \([^)]*\))$/.exec(x); if (k && L[k[1]] != null) r = L[k[1]] + k[2]; }
+      return r == null ? s : s.replace(x, function () { return r; });
+    }
+    function out(n) { var e = n.nodeType === 1 ? n : n.parentNode; return !e || (skip && e.closest && e.closest(skip)); }
+    function attrs(e) {
+      ['title', 'aria-label', 'placeholder'].forEach(function (a) { var v = e.getAttribute(a), w = v && t(v); if (v && w !== v) e.setAttribute(a, w); });
+    }
+    function walk(n) {
+      if (out(n)) return;
+      if (n.nodeType === 3) { var v = n.nodeValue, w = t(v); if (w !== v) n.nodeValue = w; return; }
+      if (n.nodeType !== 1 || n.nodeName === 'SCRIPT' || n.nodeName === 'STYLE') return;
+      attrs(n);
+      for (var c = n.firstChild; c; c = c.nextSibling) walk(c);
+    }
+    walk(doc.body);
+    new MutationObserver(function (ms) {
+      ms.forEach(function (m) {
+        if (m.type === 'childList') Array.prototype.forEach.call(m.addedNodes, walk);
+        else if (m.type === 'characterData') walk(m.target);
+        else if (!out(m.target)) attrs(m.target);
+      });
+    }).observe(doc.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['title', 'aria-label', 'placeholder'] });
+  }
+  if (cfg.l10n) siL10n(document, cfg.l10n, '.si-slide,.si-notes,.si-points,.si-term,.si-web');
   window.SI = { go: go, next: forward, prev: backward, overview: overview, mode: toggleMode, refresh: refresh, run: runCmd,
     /* a command from outside (a terminal teleprompter, through si play's PositionJS) */
     cmd: function (c) { if (!role) onMsg({ data: Object.assign({ type: 'cmd' }, c) }); } };

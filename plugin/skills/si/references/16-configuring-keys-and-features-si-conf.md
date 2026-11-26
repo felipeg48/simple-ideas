@@ -12,6 +12,7 @@ front matter — no new syntax. Blank lines and `#` comments are ignored.
 | `handout.paper: letter` | the paper of `si build --handout` PDFs: `a4` (default) or `letter` |
 | `terminal.opacity: 85%` | the opacity of `si play`'s terminal drawer, 40 % to 100 % (default 100 %): below 100 % the slide shows through, dimmed, and the text stays opaque; the drawer's slider changes it (remembered until this value changes). `terminal.blur: 6px` blurs the slide behind it too (§14) |
 | `terminal.prompt: clean` | the shells of `si play`'s terminal drawer: `real` (default: your own `$SHELL` with its rc files and prompt) or `clean` (si's neutral prompt, the folder's name and `$`, no rc files; `PATH` and the environment kept). A deck asks for its own with `shell:` in its front matter: `shell: zsh` (a name on `PATH` or a path), `shell: clean`, `shell: bash · clean` (§14). Filming always uses `clean`: `si demo test`/`run` and `si build --mp4` with `[TERM …]` cues |
+| `ui.lang: es` | the language of the deck's and the teleprompter's buttons, help and labels: `en` or `es` (unset: `es` for a deck with `lang: es`, else `en`); slides and notes stay as written |
 | `draw.hold: shift` | the key you hold in draw mode to draw with the cursor, no click: `alt` (⌥ Option, the default), `shift`, `ctrl`, `meta` (⌘ Command), or `off` |
 | `links.<label>: <url>` | a page outside the build that find (`/`) offers, e.g. `links.Team wiki: https://wiki.example.com`; relative paths work too |
 | `timer.time: 10,15,30` | break-timer presets (default `5,10,15,20,30,45,60`) |
@@ -67,6 +68,7 @@ Remappable **actions**: `overview`, `presenter`, `draw`, `timer`, `find`,
 theme: slate
 keys.draw: w          # draw with w instead of a
 draw.hold: shift      # in draw mode, hold Shift (not Option) to draw with the cursor
+ui.lang: es           # the buttons in Spanish
 feature.timer: off    # no break-timer HUD for these decks
 ```
 

@@ -78,7 +78,10 @@
   function presenterDoc(relay) {
     var css = Array.prototype.map.call(document.querySelectorAll('style'), function (s) { return s.textContent; }).join('\n');
     var rl = relay && document.getElementById('si-relay');
+    /* the buttons' language: the same phrasebook, run in the teleprompter (never on the script, the previews or questions) */
+    var lx = cfg.l10n ? '<script>(' + siL10n.toString() + ')(document,' + JSON.stringify(cfg.l10n).replace(/</g, '\\u003c') + ',"#notes,#points,.pv-screen,.pv-q p,#title");<\/script>' : '';
     return window.SI_PRESENTER
+      .split('</body>').join(lx + '</body>')
       .split('</head>').join((rl ? rl.outerHTML : '') + '</head>')
       .split('__CSS__').join(css)
       .split('__TITLE__').join(data.title.replace(/[<&]/g, ''))

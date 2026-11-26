@@ -1,0 +1,31 @@
+# Linux packages of si (.deb and .rpm), made by nfpm in release.yml:
+#   cp dist/si_v4.5.0_linux_amd64 build/si
+#   VERSION=4.5.0 ARCH=amd64 nfpm pkg -f packaging/nfpm.yaml -p deb -t dist/
+# (nfpm reads the binary from build/si: it does not expand variables in paths)
+# The package is simple-ideas; the command it installs is /usr/bin/si.
+name: simple-ideas
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+release: 1
+section: utils
+priority: optional
+maintainer: Felipe Gutierrez <felipeg@gmail.com>
+description: |
+  si turns Markdown into animated, fluid HTML slide decks, articles, guides,
+  books and mind maps: si play presents with live reload and a teleprompter,
+  si build writes one self-contained HTML file.
+vendor: simple-ideas
+homepage: https://github.com/felipeg48/simple-ideas
+license: Apache-2.0
+contents:
+  - src: build/si
+    dst: /usr/bin/si
+    file_info:
+      mode: 0755
+  - src: LICENSE
+    dst: /usr/share/doc/simple-ideas/LICENSE
+# optional helpers: PDF/PNG exports (Chrome or Chromium), video (ffmpeg)
+suggests:
+  - chromium
+  - ffmpeg

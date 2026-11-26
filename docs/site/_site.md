@@ -6,7 +6,7 @@ logo: brand/mark.svg simple-ideas
 favicon: brand/favicon.svg
 touch-icon: brand/apple-touch-icon.png
 og-image: https://simple-ideas.org/brand/social-card.png
-cta: Get si → download.md
+cta: Install si → download.md
 version: v$SI_VERSION → https://github.com/felipeg48/simple-ideas/releases/tag/v$SI_VERSION
 theme: studio
 footer: simple-ideas
@@ -74,7 +74,7 @@ footer: simple-ideas
 - [Rules](rules/)
 - Help
   - [Manual](manual.md)
-  - [Download](download.md)
+  - [Install](download.md)
   - [Report a problem]($SI_BUG_URL)
   - [Request a feature]($SI_FEATURE_URL)
   - [GitHub](https://github.com/felipeg48/simple-ideas)

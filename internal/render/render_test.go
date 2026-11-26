@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/felipeg48/simple-ideas/internal/assets"
+	"github.com/felipeg48/simple-ideas/internal/config"
 	"github.com/felipeg48/simple-ideas/internal/deck"
 )
 
@@ -559,5 +561,18 @@ func TestHandoutHead(t *testing.T) {
 	d, _ = deck.Parse(p)
 	if strings.Contains(string(Deck(d, Options{}).HTML), `<figure class="si-handout-qr">`) {
 		t.Error("no QR code without handout-url:")
+	}
+}
+
+func TestUILang(t *testing.T) {
+	for _, c := range []struct {
+		conf, lang, want string
+	}{{"", "", "en"}, {"", "es", "es"}, {"", "es-MX", "es"}, {"", "en-US", "en"}, {"en", "es", "en"}, {"es", "", "es"}} {
+		if got := uiLang(&config.Config{UILang: c.conf}, c.lang); got != c.want {
+			t.Errorf("ui.lang %q, lang: %q → %q, want %q", c.conf, c.lang, got, c.want)
+		}
+	}
+	if uiLang(nil, "es") != "es" || len(assets.L10n["es"]) == 0 {
+		t.Error("no si.conf: lang: es should give the es phrasebook")
 	}
 }
